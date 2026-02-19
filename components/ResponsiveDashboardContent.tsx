@@ -135,12 +135,12 @@ const ResponsiveDashboardContent = () => {
           </button>
         </div>
 
-        {/* Today's Trio Section — white wrapper container */}
+        {/* Today's Trio Section */}
         <div
           className="mb-[clamp(2rem,2.5vw,3rem)] rounded-[14px] p-[clamp(1.25rem,1.5vw,1.75rem)]"
           style={{
             background: '#FFFFFF',
-            boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
+            border: '0.8px solid #E5E7EB',
           }}
         >
           <div className="flex items-center gap-2 mb-[clamp(1rem,1.25vw,1.5rem)]">
@@ -233,12 +233,12 @@ const ResponsiveDashboardContent = () => {
           </div>
         </div>
 
-        {/* Today's Study Tasks Section — white wrapper container */}
+        {/* Today's Study Tasks Section */}
         <div
           className="mb-[clamp(2rem,2.5vw,3rem)] rounded-[14px] p-[clamp(1.25rem,1.5vw,1.75rem)]"
           style={{
             background: '#FFFFFF',
-            boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
+            border: '0.8px solid #E5E7EB',
           }}
         >
           <div className="flex items-center justify-between mb-[clamp(1rem,1.25vw,1.5rem)]">

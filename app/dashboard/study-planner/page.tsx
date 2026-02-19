@@ -65,7 +65,7 @@ export default function StudyPlannerPage() {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-gray-50 overflow-x-hidden">
       <DashboardHeader />
 
       <div className="flex-1 overflow-y-auto">
@@ -320,9 +320,8 @@ export default function StudyPlannerPage() {
               {/* Left Card: Build Your Study Plan */}
               <div
                 style={{
-                  width: '787px',
-                  height: '597px', 
-                  flexShrink: 0,
+                  flex: 1,
+                  minWidth: 0,
                   borderRadius: '10px',
                   border: '0.8px solid #E5E7EB',
                   background: '#FFFFFF',
@@ -418,7 +417,7 @@ export default function StudyPlannerPage() {
                           onClick={() => setStudyType(type.id)}
                           className="flex items-center font-arimo transition-colors"
                           style={{
-                            width: '160px',
+                            width: '100%',
                             height: '56px',
                             borderRadius: '20px',
                             border: studyType === type.id ? '2px solid #17223E' : '1px solid #000000',
@@ -506,7 +505,8 @@ export default function StudyPlannerPage() {
               <div
                 className="flex flex-col"
                 style={{
-                  width: '398px',
+                  width: '360px',
+                  minWidth: '280px',
                   flexShrink: 0,
                   borderRadius: '10px',
                   border: '0.8px solid #E5E7EB',

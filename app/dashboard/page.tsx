@@ -21,12 +21,12 @@ export default function DashboardPage() {
 
         {/* Right Sidebar */}
         <aside
-          className="hidden xl:block overflow-y-auto"
+          className="hidden xl:block"
           style={{
             width: 'clamp(320px,18.6vw,358px)',
             minWidth: '320px',
             maxWidth: '358px',
-            background: '#D8DEE6',
+            background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)',
           }}
         >
           <div className="p-[clamp(1rem,1.25vw,1.5rem)]">

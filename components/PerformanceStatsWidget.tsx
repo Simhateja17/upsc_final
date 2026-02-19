@@ -7,11 +7,8 @@ const PerformanceStatsWidget = () => {
     <div className="w-full space-y-[clamp(12px,0.83vw,16px)]">
       {/* Performance Stats Card */}
       <div
-        className="rounded-[clamp(16px,1.04vw,20px)]"
         style={{
-          background: '#FFFFFF',
-          border: '0.8px solid #E5E7EB',
-          padding: 'clamp(20px,1.29vw,24.8px) clamp(20px,1.25vw,24px)',
+          padding: '0 0 clamp(12px,0.83vw,16px) 0',
         }}
       >
         {/* Header */}
@@ -195,8 +192,8 @@ const PerformanceStatsWidget = () => {
       <div
         className="rounded-[clamp(16px,1.04vw,20px)]"
         style={{
-          background: '#FFFFFF',
           border: '0.8px solid #E5E7EB',
+          boxShadow: '0px 4px 12px 0px #00000026',
           padding: 'clamp(20px,1.29vw,24.8px) clamp(20px,1.25vw,24px)',
         }}
       >
@@ -272,8 +269,8 @@ const PerformanceStatsWidget = () => {
       <div
         className="rounded-[clamp(16px,1.04vw,20px)]"
         style={{
-          background: '#FFFFFF',
           border: '0.8px solid #E5E7EB',
+          boxShadow: '0px 4px 12px 0px #00000026',
           padding: 'clamp(20px,1.29vw,24.8px) clamp(20px,1.25vw,24px)',
         }}
       >
@@ -351,8 +348,8 @@ const PerformanceStatsWidget = () => {
       <div
         className="rounded-[clamp(16px,1.04vw,20px)]"
         style={{
-          background: '#FFFFFF',
           border: '0.8px solid #E5E7EB',
+          boxShadow: '0px 4px 12px 0px #00000026',
           padding: 'clamp(20px,1.29vw,24.8px) clamp(20px,1.25vw,24px)',
         }}
       >
