@@ -100,22 +100,38 @@ html, body {
               0 12px 32px rgba(0, 0, 0, 0.06);
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar — hidden by default, visible on scroll/hover */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+*:hover {
+  scrollbar-color: #FFD170 transparent;
+}
+
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1a1a2e;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #FFD170;
-  border-radius: 5px;
+  background: transparent;
+  border-radius: 999px;
+  transition: background 0.3s ease;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #FFC557;
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 209, 112, 0.7);
+}
+
+*:hover::-webkit-scrollbar-thumb:hover {
+  background: #FFD170;
 }
 
 /* Glittering border animation for badges */

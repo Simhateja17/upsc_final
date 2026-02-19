@@ -53,31 +53,21 @@ const PlanIcon = () => (
 
 const Mentorship = () => {
   return (
-    <section className="w-full bg-white py-[clamp(2rem,4vw,5rem)]">
+    <section className="w-full panel-recessed py-[clamp(2rem,4vw,5rem)]">
       <div className="w-full max-w-[120rem] mx-auto px-[clamp(1.5rem,4vw,5rem)]">
         {/* Section Title with border */}
         <div className="flex justify-center mb-[clamp(1.5rem,3vw,3rem)]">
-          <div 
-            className="inline-flex items-center justify-center rounded-lg"
+          <h2
+            className="font-lora font-bold text-center"
             style={{
-              border: '1px solid rgba(0, 0, 0, 0.08)',
-              boxShadow: '0px 4px 9.7px 0px rgba(0, 0, 0, 0.03) inset',
-              padding: 'clamp(1rem, 2vw, 2rem) clamp(2rem, 4vw, 4rem)',
-              width: 'clamp(300px, 59.8%, 1148px)',
+              fontSize: 'clamp(1.75rem, 3.646vw, 70px)',
+              lineHeight: '150%',
+              letterSpacing: '-1.5%',
+              color: '#00052E',
             }}
           >
-            <h2 
-              className="font-lora font-bold text-center"
-              style={{
-                fontSize: 'clamp(1.75rem, 3.646vw, 70px)',
-                lineHeight: '150%',
-                letterSpacing: '-1.5%',
-                color: '#00052E',
-              }}
-            >
-              Personalized Mentorship
-            </h2>
-          </div>
+            Personalized Mentorship
+          </h2>
         </div>
 
         {/* Subtitle */}

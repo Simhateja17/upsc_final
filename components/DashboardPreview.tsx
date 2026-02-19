@@ -4,7 +4,7 @@ import React from 'react';
 
 const DashboardPreview = () => {
   return (
-    <section className="w-full bg-white py-[clamp(3rem,6vw,8rem)]">
+    <section className="w-full panel-recessed py-[clamp(3rem,6vw,8rem)]">
       <div className="w-full max-w-[120rem] mx-auto px-[clamp(1.5rem,4vw,5rem)]">
         {/* Section Title - consistent with other sections */}
         <h2

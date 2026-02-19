@@ -90,6 +90,7 @@ const FeaturesGrid = () => {
               className="card-elevated rounded-[1rem] p-[clamp(1.25rem,1.5vw,1.75rem)] flex flex-col"
               style={{
                 minHeight: 'clamp(14rem, 16vw, 18rem)',
+                boxShadow: '4px 4px 4px 0px #00000040',
               }}
             >
               {/* Icon */}

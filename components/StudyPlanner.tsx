@@ -4,7 +4,7 @@ import React from 'react';
 
 const StudyPlanner = () => {
   return (
-    <section className="w-full bg-[#F8F6F4] py-[clamp(3rem,5.208vw,6.25rem)]">
+    <section className="w-full panel-recessed py-[clamp(3rem,5.208vw,6.25rem)]">
       <div className="w-full max-w-[120rem] mx-auto px-[clamp(1.5rem,4vw,5rem)]">
         {/* Section Title */}
         <h2 

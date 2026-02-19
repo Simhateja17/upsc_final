@@ -10,8 +10,8 @@ const PerformanceStatsWidget = () => {
         className="rounded-[clamp(16px,1.04vw,20px)]"
         style={{
           background: '#FFFFFF',
+          border: '0.8px solid #E5E7EB',
           padding: 'clamp(20px,1.29vw,24.8px) clamp(20px,1.25vw,24px)',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 3px 10px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)',
         }}
       >
         {/* Header */}
@@ -176,7 +176,6 @@ const PerformanceStatsWidget = () => {
           background: '#74A0FF30',
           height: '50px',
           borderRadius: '16px',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 3px 10px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)',
         }}
       >
         <div className="flex items-center" style={{ gap: '8px' }}>
@@ -197,8 +196,8 @@ const PerformanceStatsWidget = () => {
         className="rounded-[clamp(16px,1.04vw,20px)]"
         style={{
           background: '#FFFFFF',
+          border: '0.8px solid #E5E7EB',
           padding: 'clamp(20px,1.29vw,24.8px) clamp(20px,1.25vw,24px)',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 3px 10px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)',
         }}
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.25vw,24px)]">
@@ -274,8 +273,8 @@ const PerformanceStatsWidget = () => {
         className="rounded-[clamp(16px,1.04vw,20px)]"
         style={{
           background: '#FFFFFF',
+          border: '0.8px solid #E5E7EB',
           padding: 'clamp(20px,1.29vw,24.8px) clamp(20px,1.25vw,24px)',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 3px 10px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)',
         }}
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
@@ -353,8 +352,8 @@ const PerformanceStatsWidget = () => {
         className="rounded-[clamp(16px,1.04vw,20px)]"
         style={{
           background: '#FFFFFF',
+          border: '0.8px solid #E5E7EB',
           padding: 'clamp(20px,1.29vw,24.8px) clamp(20px,1.25vw,24px)',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 3px 10px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)',
         }}
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">

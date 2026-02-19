@@ -31,7 +31,7 @@ const FAQ = () => {
 
   return (
     <section 
-      className="relative w-full overflow-hidden flex justify-center py-20 bg-white"
+      className="relative w-full overflow-hidden flex justify-center py-20 panel-recessed"
     >
       {/* Content Container - 1920px width reference */}
       <div className="relative z-10 w-[1920px] shrink-0 transform scale-[0.4] sm:scale-[0.5] md:scale-[0.6] lg:scale-[0.8] xl:scale-100 origin-top">

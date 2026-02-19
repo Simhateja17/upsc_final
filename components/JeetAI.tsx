@@ -59,14 +59,6 @@ const JeetAI = () => {
         background: 'linear-gradient(115.34deg, #0E182D 2.01%, #17223E 79.49%)',
       }}
     >
-      {/* Background Image */}
-      <div 
-        className="absolute inset-0 z-0 w-full h-full bg-cover bg-center bg-no-repeat opacity-30"
-        style={{
-          backgroundImage: 'url(/jeet-ai-bg.jpg)',
-        }}
-      />
-
       {/* Content Container - increased side padding for more blank space */}
       <div 
         className="relative z-10 w-full mx-auto"
@@ -98,7 +90,7 @@ const JeetAI = () => {
         </div>
 
         {/* Main Content Grid */}
-        <div className="flex flex-col lg:flex-row items-start gap-[clamp(2rem, 5vw, 5rem)]">
+        <div className="flex flex-col lg:flex-row items-stretch gap-[clamp(2rem, 5vw, 5rem)]">
           
           {/* Left Side - Feature List with divider lines */}
           <div 
@@ -166,11 +158,11 @@ const JeetAI = () => {
 
           {/* Right Side - Preview Image */}
           <div className="w-full lg:w-[65%] flex justify-center lg:justify-end">
-            <div 
-              className="relative rounded-2xl overflow-hidden"
+            <div
+              className="relative rounded-2xl overflow-hidden w-full"
               style={{
-                width: 'clamp(280px, 40vw, 600px)',
-                aspectRatio: '4/3',
+                height: '100%',
+                minHeight: 'clamp(280px, 35vw, 500px)',
                 boxShadow: '0px 20px 50px rgba(0, 0, 0, 0.3)',
               }}
             >
@@ -178,7 +170,7 @@ const JeetAI = () => {
                 src="/jeet-ai-preview.jpg"
                 alt="Jeet AI Preview"
                 fill
-                className="object-contain"
+                className="object-cover"
               />
             </div>
           </div>

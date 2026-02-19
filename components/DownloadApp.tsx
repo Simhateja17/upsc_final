@@ -6,7 +6,7 @@ import Image from 'next/image';
 const DownloadApp = () => {
   return (
     <section
-      className="w-full flex flex-col items-center bg-[#FAFBFE]"
+      className="w-full flex flex-col items-center panel-recessed"
       style={{
         paddingTop: 'clamp(3rem, 5vw, 70px)',
         paddingBottom: 'clamp(3rem, 5vw, 70px)',
