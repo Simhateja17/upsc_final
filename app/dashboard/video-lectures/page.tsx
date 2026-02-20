@@ -83,32 +83,27 @@ export default function VideoLecturesPage() {
       className="font-arimo w-full min-h-screen"
       style={{ background: '#F9FAFB' }}
     >
-      {/* ============================================================ */}
-      {/*  BACK TO DASHBOARD BUTTON                                     */}
-      {/* ============================================================ */}
-      <div style={{ padding: 'clamp(12px, 1.27vw, 17px) clamp(20px, 2.25vw, 30px)' }}>
-        <Link href="/dashboard">
-          <button
-            className="flex items-center gap-2 font-arimo font-semibold"
-            style={{
-              width: 'clamp(180px, 17.73vw, 237px)',
-              height: 'clamp(40px, 3.81vw, 51px)',
-              borderRadius: '20px',
-              background: 'rgba(255,255,255,0.05)',
-              boxShadow: '0px 4px 4px 0px rgba(0,0,0,0.25)',
-              border: '1px solid #E5E7EB',
-              padding: '0 clamp(14px, 1.5vw, 20px)',
-              fontSize: 'clamp(13px, 1.05vw, 14px)',
-              color: '#17223E',
-              backgroundColor: '#FFFFFF',
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="#17223E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back to dashboard
-          </button>
-        </Link>
+      {/* @RiseWithJeet button - top right */}
+      <div className="w-full flex justify-end" style={{ padding: 'clamp(12px, 1.27vw, 17px) clamp(20px, 2.25vw, 30px)' }}>
+        <a
+          href="https://www.youtube.com/@RiseWithJeet"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 font-arimo font-semibold text-white"
+          style={{
+            background: '#17223E',
+            borderRadius: '26843500px',
+            padding: 'clamp(8px, 0.75vw, 10px) clamp(16px, 1.5vw, 20px)',
+            fontSize: 'clamp(12px, 1.05vw, 14px)',
+          }}
+        >
+          {/* YouTube icon */}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FF0000"/>
+            <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="white"/>
+          </svg>
+          @RiseWithJeet
+        </a>
       </div>
 
       {/* Centered content wrapper — Section 1 */}
@@ -123,28 +118,6 @@ export default function VideoLecturesPage() {
         {/*  SECTION 1: HERO                                              */}
         {/* ============================================================ */}
         <div className="flex flex-col items-center" style={{ paddingTop: 'clamp(8px, 1vw, 16px)', paddingBottom: 'clamp(24px, 2.5vw, 40px)' }}>
-          {/* @RiseWithJeet button - top right */}
-          <div className="w-full flex justify-end" style={{ marginBottom: 'clamp(16px, 1.5vw, 24px)' }}>
-            <a
-              href="https://www.youtube.com/@RiseWithJeet"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 font-arimo font-semibold text-white"
-              style={{
-                background: '#17223E',
-                borderRadius: '26843500px',
-                padding: 'clamp(8px, 0.75vw, 10px) clamp(16px, 1.5vw, 20px)',
-                fontSize: 'clamp(12px, 1.05vw, 14px)',
-              }}
-            >
-              {/* YouTube icon */}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FF0000"/>
-                <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="white"/>
-              </svg>
-              @RiseWithJeet
-            </a>
-          </div>
 
           {/* Badge pill */}
           <div
