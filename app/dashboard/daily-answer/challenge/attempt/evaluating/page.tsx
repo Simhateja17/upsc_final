@@ -285,7 +285,7 @@ export default function EvaluatingPage() {
                 height: '100%',
                 width: `${progressPercent}%`,
                 borderRadius: '10px',
-                background: '#FDC700',
+                background: '#101828',
                 transition: 'width 1s linear',
               }}
             />

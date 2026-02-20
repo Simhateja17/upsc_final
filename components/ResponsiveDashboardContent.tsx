@@ -155,81 +155,87 @@ const ResponsiveDashboardContent = () => {
             <Link
               href="/dashboard/daily-mcq"
               aria-label="Open Daily MCQ"
-              className="block bg-white rounded-[10px] border border-[#E5E7EB] p-[clamp(1rem,1.25vw,1.5rem)] relative cursor-pointer h-full flex flex-col hover:border-[#D0D5DD] transition-colors"
+              className="block bg-white rounded-[14px] border border-[#E5E7EB] p-[clamp(1.25rem,1.75vw,2rem)] relative cursor-pointer h-full flex flex-col hover:border-[#D0D5DD] transition-colors"
             >
-              <div className="absolute top-3 right-3 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                <img src="/image-removebg-preview (48) 1.png" alt="Completed" className="w-4 h-4" />
+              <div className="absolute top-4 right-4 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <img src="/image-removebg-preview (48) 1.png" alt="Completed" className="w-5 h-5" />
               </div>
 
-              <div className="flex items-center gap-2 mb-3">
-                <img src="/Text.png" alt="MCQ" className="w-5 h-5" />
-                <h3 className="font-inter font-semibold text-[clamp(15px,0.94vw,16px)] text-[#1A1A1A]">
+              <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">AI Evaluation</div>
+
+              <div className="flex items-center gap-3 mb-4">
+                <img src="/Text.png" alt="MCQ" className="w-7 h-7" />
+                <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                   Daily MCQ
                 </h3>
               </div>
 
-              <p className="font-inter text-[clamp(13px,0.73vw,14px)] text-gray-600 mb-1">
+              <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-gray-600 mb-2">
                 <span className="font-medium text-green-600">Status: Completed</span>
               </p>
-              <p className="font-inter text-[clamp(13px,0.73vw,14px)] text-[#1A1A1A] font-medium mb-4 flex-grow">
+              <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-6 flex-grow">
                 5 Questions - Policy & Economy
               </p>
 
-              <div className="w-full bg-[#17223E] text-white rounded-lg py-2 px-4 font-inter font-medium text-[clamp(13px,0.73vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
-                <img src="/image-removebg-preview (48) 1.png" alt="Completed" className="w-4 h-4" />
+              <div className="w-full bg-[#17223E] text-white rounded-lg py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                <img src="/image-removebg-preview (48) 1.png" alt="Completed" className="w-5 h-5" />
                 Completed
               </div>
             </Link>
 
             {/* Daily Editorial Card */}
-            <Link href="/dashboard/daily-answer" className="block h-full"> 
-            <div className="bg-white rounded-[10px] border border-[#E5E7EB] p-[clamp(1rem,1.25vw,1.5rem)] h-full flex flex-col hover:border-[#D0D5DD] transition-colors cursor-pointer">
-              <div className="flex items-center gap-2 mb-3">
-                <img src="/image-removebg-preview (31) 1.png" alt="Editorial" className="w-5 h-5" />
-                <h3 className="font-inter font-semibold text-[clamp(15px,0.94vw,16px)] text-[#1A1A1A]">
+            <Link href="/dashboard/daily-editorial" className="block h-full">
+            <div className="bg-white rounded-[14px] border border-[#E5E7EB] p-[clamp(1.25rem,1.75vw,2rem)] h-full flex flex-col hover:border-[#D0D5DD] transition-colors cursor-pointer">
+              <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">AI Evaluation</div>
+
+              <div className="flex items-center gap-3 mb-4">
+                <img src="/image-removebg-preview (31) 1.png" alt="Editorial" className="w-7 h-7" />
+                <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                   Daily Editorial
                 </h3>
               </div>
 
-              <p className="font-inter text-[clamp(13px,0.73vw,14px)] text-gray-600 mb-1">
+              <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-gray-600 mb-2">
                 <span className="font-medium">Status: Pending</span>
               </p>
-              <p className="font-inter text-[clamp(13px,0.73vw,14px)] text-[#1A1A1A] font-medium mb-4 flex-grow">
+              <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-6 flex-grow">
                 India-US Trade Relations
               </p>
 
-              <button className="w-full bg-[#17223E] text-white rounded-lg py-2 px-4 font-inter font-medium text-[clamp(13px,0.73vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2">
-                <img src="/TrioCard.png" alt="Read" className="w-4 h-4" />
+              <div className="w-full bg-[#17223E] text-white rounded-lg py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                <img src="/TrioCard.png" alt="Read" className="w-5 h-5" />
                 Read Now
-              </button>
+              </div>
             </div>
             </Link>
 
             {/* Mains Question Card */}
-            <div className="bg-white rounded-[10px] border border-[#E5E7EB] p-[clamp(1rem,1.25vw,1.5rem)] relative h-full flex flex-col hover:border-[#D0D5DD] transition-colors">
-              <div className="absolute top-3 right-3 px-2 py-1 bg-teal-50 text-teal-600 rounded text-[clamp(11px,0.63vw,12px)] font-medium">
+            <Link href="/dashboard/daily-answer" className="block h-full">
+            <div className="bg-white rounded-[14px] border border-[#E5E7EB] p-[clamp(1.25rem,1.75vw,2rem)] h-full flex flex-col hover:border-[#D0D5DD] transition-colors cursor-pointer">
+              <div className="mb-4 px-3 py-1 bg-teal-50 text-teal-600 rounded-full text-[clamp(12px,0.73vw,13px)] font-medium w-fit">
                 AI Evaluation
               </div>
 
-              <div className="flex items-center gap-2 mb-3">
-                <img src="/image-removebg-preview (31) 1.png" alt="Mains" className="w-5 h-5" />
-                <h3 className="font-inter font-semibold text-[clamp(15px,0.94vw,16px)] text-[#1A1A1A]">
+              <div className="flex items-center gap-3 mb-4">
+                <img src="/image-removebg-preview (31) 1.png" alt="Mains" className="w-7 h-7" />
+                <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                   Mains Question
                 </h3>
               </div>
 
-              <p className="font-inter text-[clamp(13px,0.73vw,14px)] text-gray-600 mb-1">
+              <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-gray-600 mb-2">
                 <span className="font-medium">Status: Pending</span>
               </p>
-              <p className="font-inter text-[clamp(13px,0.73vw,14px)] text-[#1A1A1A] font-medium mb-4 flex-grow">
+              <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-6 flex-grow">
                 Local Self Governance
               </p>
 
-              <button className="w-full bg-[#17223E] text-white rounded-lg py-2 px-4 font-inter font-medium text-[clamp(13px,0.73vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2">
-                <img src="/TrioCard (1).png" alt="Attempt" className="w-4 h-4" />
+              <button className="w-full bg-[#17223E] text-white rounded-lg py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2">
+                <img src="/TrioCard (1).png" alt="Attempt" className="w-5 h-5" />
                 Attempt Now
               </button>
             </div>
+            </Link>
           </div>
         </div>
 

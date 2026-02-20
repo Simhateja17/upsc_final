@@ -1,14 +1,10 @@
 import Sidebar from '@/components/Sidebar';
-import DashboardHeader from '@/components/DashboardHeader';
 import ResponsiveDashboardContent from '@/components/ResponsiveDashboardContent';
 import PerformanceStatsWidget from '@/components/PerformanceStatsWidget';
 
 export default function DashboardPage() {
   return (
-    <div className="flex flex-col h-screen" style={{ background: '#D8DEE6' }}>
-      {/* Dashboard Header - Full Width */}
-      <DashboardHeader />
-
+    <div className="flex overflow-hidden" style={{ background: '#D8DEE6', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
       {/* Content Area with Sidebar */}
       <div className="flex flex-1 overflow-y-auto">
         {/* Left Sidebar */}

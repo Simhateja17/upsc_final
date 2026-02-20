@@ -1,15 +1,11 @@
 'use client';
 
 import React from 'react';
-import DashboardHeader from '@/components/DashboardHeader';
 import Link from 'next/link';
 
 export default function DailyMcqResultsPage() {
   return (
     <div className="flex flex-col min-h-screen panel-recessed">
-      {/* Header */}
-      <DashboardHeader />
-
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center py-[clamp(2rem,4vw,4rem)] px-[clamp(1rem,2vw,3rem)]">
         <div 

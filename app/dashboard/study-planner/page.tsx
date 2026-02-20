@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import DashboardHeader from '@/components/DashboardHeader';
 
 export default function StudyPlannerPage() {
   const [taskTitle, setTaskTitle] = useState('');
@@ -65,9 +64,7 @@ export default function StudyPlannerPage() {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 overflow-x-hidden">
-      <DashboardHeader />
-
+    <div className="flex flex-col bg-gray-50 overflow-x-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
       <div className="flex-1 overflow-y-auto">
         <div className="flex gap-5 p-6">
 
@@ -204,9 +201,8 @@ export default function StudyPlannerPage() {
             <div
               style={{
                 width: '290px',
-                height: '409.6px',
                 borderRadius: '16px',
-                border: '0.8px solidrgb(229, 231, 235)',
+                border: '0.8px solid rgb(229, 231, 235)',
                 background: '#FFFFFF',
                 boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
                 padding: '24px',

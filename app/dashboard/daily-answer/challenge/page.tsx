@@ -1,50 +1,11 @@
 'use client';
 
 import React from 'react';
-import DashboardHeader from '@/components/DashboardHeader';
 import Link from 'next/link';
 
 export default function DailyMainsChallengeContextPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-white font-arimo">
-      {/* Dark Header Strip from image */}
-      <div 
-        className="w-full flex items-center justify-between px-8"
-        style={{
-          height: '101px',
-          background: 'linear-gradient(90deg, #0E182D 0%, #17223E 100%)'
-        }}
-      >
-         {/* Logo */}
-         <div className="flex items-center gap-2">
-             {/* Assuming Logo.png is available or using the text RiseWithJeet */}
-             <div className="flex flex-col">
-                <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
-                <span className="text-white font-bold text-lg">RiseWithJeet</span>
-             </div>
-         </div>
-         
-         <div className="flex items-center gap-4">
-             <button 
-                className="text-[#111827] px-6 py-2 rounded-full font-bold"
-                style={{ background: '#FCD34D' }}
-             >
-                Start Free Trial
-             </button>
-             {/* User profile */}
-             <div className="flex items-center gap-3 border border-[#374151] rounded-full pl-2 pr-4 py-1 bg-[#1F2937]">
-                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs font-bold text-gray-700">RJ</div>
-                <div className="flex flex-col text-left">
-                    <div className="text-sm font-bold text-white leading-none">Rahul Joshi</div>
-                    <div className="text-[10px] text-gray-400 leading-none mt-1">2025 UPSC Aspirant</div>
-                </div>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2.5 4.5L6 8L9.5 4.5" stroke="#9CA3AF" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-             </div>
-         </div>
-      </div>
-
+    <div className="flex flex-col min-h-screen bg-[#F3F4F6] font-arimo">
       <div className="flex-1 flex flex-col items-center pt-16 pb-20 w-full max-w-[1440px] mx-auto">
         
         {/* Top Tag */}

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, Manrope, Roboto, Poppins, Arimo } from 'next/font/google'
+import { Inter, Manrope, Roboto, Poppins, Arimo, Tinos, Fahkwang } from 'next/font/google'
 import './globals.css'
 
 const inter = Inter({
@@ -11,6 +11,19 @@ const inter = Inter({
 const arimo = Arimo({
   subsets: ['latin'],
   variable: '--font-arimo',
+  weight: ['400', '500', '600', '700'],
+})
+
+const tinos = Tinos({
+  subsets: ['latin'],
+  variable: '--font-tinos',
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
+})
+
+const fahkwang = Fahkwang({
+  subsets: ['latin'],
+  variable: '--font-fahkwang',
   weight: ['400', '500', '600', '700'],
 })
 
@@ -45,7 +58,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${manrope.variable} ${roboto.variable} ${poppins.variable} ${arimo.variable}`}>{children}</body>
+      <body className={`${inter.variable} ${manrope.variable} ${roboto.variable} ${poppins.variable} ${arimo.variable} ${tinos.variable} ${fahkwang.variable}`}>{children}</body>
     </html>
   )
 }

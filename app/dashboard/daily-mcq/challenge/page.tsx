@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import DashboardHeader from '@/components/DashboardHeader';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -12,9 +11,6 @@ export default function DailyMcqChallengePage() {
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: '#FFFFFF' }}>
-      {/* Header */}
-      <DashboardHeader />
-
       {/* Main Content */}
       <main className="flex-1 px-[clamp(3rem,6.25vw,8rem)] py-8">
         <div className="max-w-[900px] mx-auto">
@@ -42,8 +38,7 @@ export default function DailyMcqChallengePage() {
             style={{
               maxWidth: '1050px',
               borderRadius: '10px',
-              borderLeft: '4px solid #155DFC',
-              background: '#EAECEF40',
+background: '#EAECEF40',
               boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
               padding: '24px',
             }}

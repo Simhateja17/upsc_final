@@ -20,6 +20,8 @@ const config: Config = {
         'roboto': ['var(--font-roboto)', 'sans-serif'],
         'poppins': ['var(--font-poppins)', 'sans-serif'],
         'arimo': ['var(--font-arimo)', 'sans-serif'],
+        'tinos': ['var(--font-tinos)', 'serif'],
+        'fahkwang': ['var(--font-fahkwang)', 'sans-serif'],
       },
       fontSize: {
         // Responsive fluid typography using clamp()

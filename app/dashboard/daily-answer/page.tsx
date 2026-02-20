@@ -1,15 +1,12 @@
 'use client';
 
 import React from 'react';
-import DashboardHeader from '@/components/DashboardHeader';
 import Link from 'next/link';
 
 
 export default function DailyMainsChallengePage() {
   return (
-    <div className="flex flex-col h-screen bg-gray-50 font-arimo relative overflow-hidden">
-      <DashboardHeader />
-      
+    <div className="flex flex-col bg-gray-50 font-arimo relative overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
       <main className="flex-1 flex items-center justify-center p-6 relative z-10">
         <div 
           className="relative bg-white rounded-[16px] flex flex-col items-center shadow-lg"
