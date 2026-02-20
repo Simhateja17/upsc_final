@@ -268,6 +268,7 @@ export default function VideoLecturesPage() {
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
             padding: '0 clamp(16px, 2vw, 30px)',
+            justifyContent: 'center',
           }}
         >
           {categories.map((cat) => (
