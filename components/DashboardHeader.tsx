@@ -18,25 +18,27 @@ const DashboardHeader = () => {
       {/* Right Section - Button + User Profile */}
       <div className="flex items-center gap-[clamp(1rem,1.5vw,2rem)]">
         {/* Start Free Trial Button */}
-        <button
-          className="inline-flex items-center justify-end"
-          style={{
-            padding: '15px 24px 14px 24px',
-            borderRadius: '30px',
-            background: '#FFD170',
-            boxShadow: '0 4px 17.1px 0 rgba(255, 255, 255, 0.06) inset',
-            color: '#000',
-            textAlign: 'center',
-            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, sans-serif',
-            fontSize: 'clamp(18px, 1.3vw, 25px)',
-            fontWeight: 590,
-            lineHeight: '110%',
-            letterSpacing: '-0.375px',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Start Free Trial
-        </button>
+        <Link href="/dashboard/free-trial">
+          <button
+            className="inline-flex items-center justify-end"
+            style={{
+              padding: '15px 24px 14px 24px',
+              borderRadius: '30px',
+              background: '#FFD170',
+              boxShadow: '0 4px 17.1px 0 rgba(255, 255, 255, 0.06) inset',
+              color: '#000',
+              textAlign: 'center',
+              fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, sans-serif',
+              fontSize: 'clamp(18px, 1.3vw, 25px)',
+              fontWeight: 590,
+              lineHeight: '110%',
+              letterSpacing: '-0.375px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Start Free Trial
+          </button>
+        </Link>
 
         {/* User Profile Section */}
       <div

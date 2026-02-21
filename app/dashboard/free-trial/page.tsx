@@ -1,0 +1,1267 @@
+'use client';
+
+import React, { useState } from 'react';
+
+/* ------------------------------------------------------------------ */
+/*  Data                                                               */
+/* ------------------------------------------------------------------ */
+
+const heroPills = [
+  { label: 'End-to-End Guidance', emoji: '✅' },
+  { label: 'WhatsApp Access', emoji: '💬' },
+  { label: 'Personalized Strategy', emoji: '🎯' },
+  { label: "Mentees' Sample Plans", emoji: '👥' },
+  { label: 'Limited Seats', emoji: '🔒' },
+];
+
+const heroStats = [
+  { value: '94K+', label: 'Community' },
+  { value: '400+', label: 'Mentees' },
+  { value: '4.9', label: 'Rating' },
+  { value: 'Free', label: 'First Call', highlight: true },
+];
+
+const mentorTags = [
+  { label: '✦ Solo Mentor', gold: true },
+  { label: 'UPSC Strategy' },
+  { label: 'Answer Writing' },
+  { label: 'Interview Prep' },
+  { label: 'Mains GS I–IV' },
+];
+
+const mentorStats = [
+  { value: '94K+', label: 'FOLLOWERS' },
+  { value: '280+', label: 'FREE PDFS' },
+  { value: '3 yrs', label: 'TEACHING' },
+];
+
+const pricingPlans = [
+  {
+    name: 'Foundation',
+    emoji: '🚀',
+    price: '₹4,999',
+    period: '/mo',
+    tagColor: '#155DFC',
+    tagBg: '#DBEAFE',
+    tags: ['Prelims-focused', '3-month plan'],
+    features: [
+      { text: 'Bi-weekly 1-on-1 calls (45 min)', badge: 'Core' },
+      { text: 'Personalized study roadmap', badge: 'Core' },
+      { text: 'WhatsApp doubt resolution (48h)', badge: null },
+      { text: 'Monthly progress review', badge: null },
+      { text: 'Curated resource list', badge: null },
+    ],
+    cta: 'Start Foundation',
+    ctaStyle: 'dark' as const,
+    highlight: false,
+    note: null,
+  },
+  {
+    name: 'Serious Attempt',
+    emoji: '🔥',
+    price: '₹8,999',
+    period: '/mo',
+    tagColor: '#C68A0B',
+    tagBg: '#FEF3C7',
+    tags: ['Prelims + Mains', '6-month plan'],
+    features: [
+      { text: 'Weekly 1-on-1 calls (60 min)', badge: 'Core' },
+      { text: 'Full Prelims + Mains strategy', badge: 'Core' },
+      { text: 'WhatsApp doubt resolution (24h)', badge: null },
+      { text: 'Answer writing review (4/mo)', badge: 'Core' },
+      { text: 'Mock test analysis & feedback', badge: null },
+      { text: 'Peer study-group access', badge: null },
+    ],
+    cta: 'Start Serious Attempt',
+    ctaStyle: 'gold' as const,
+    highlight: true,
+    note: 'Limited to 8 slots @ June batch',
+  },
+  {
+    name: 'Final Mile',
+    emoji: '🏆',
+    price: '₹14,999',
+    period: '/mo',
+    tagColor: '#155DFC',
+    tagBg: '#DBEAFE',
+    tags: ['Full journey', '12-month plan'],
+    features: [
+      { text: 'Weekly 1-on-1 calls (90 min)', badge: 'Core' },
+      { text: 'End-to-end Prelims → Interview', badge: 'Core' },
+      { text: 'WhatsApp priority (same-day)', badge: null },
+      { text: 'Unlimited answer reviews', badge: 'Core' },
+      { text: 'Interview mock sessions', badge: null },
+      { text: 'Emergency strategy calls', badge: null },
+    ],
+    cta: 'Start Final Mile',
+    ctaStyle: 'dark' as const,
+    highlight: false,
+    note: 'Spots close in free-call queue',
+  },
+];
+
+const whyFeatures = [
+  {
+    emoji: '🗺️',
+    title: 'A Real Roadmap',
+    description: 'Not a generic PDF — a living plan built around your weak areas, your schedule, and your target year.',
+  },
+  {
+    emoji: '✍️',
+    title: 'Answer Writing That Improves',
+    description: 'Get line-by-line feedback on your Mains answers from someone who knows what examiners look for.',
+  },
+  {
+    emoji: '🎤',
+    title: 'Interview Stage Support',
+    description: 'Mock interviews, DAF analysis, and confidence-building — so you walk in ready, not nervous.',
+  },
+  {
+    emoji: '💬',
+    title: 'No Question Too Small',
+    description: 'WhatsApp access means you never stay stuck. Ask about sources, schedules, or strategy anytime.',
+  },
+  {
+    emoji: '📊',
+    title: 'Accountability That Works',
+    description: 'Weekly check-ins, monthly reviews, and honest progress tracking that keeps you on course.',
+  },
+  {
+    emoji: '🔍',
+    title: 'Someone Spots Your Gaps',
+    description: 'A mentor who reads your answers and watches your pattern catches blind spots you can\'t see yourself.',
+  },
+];
+
+const testimonials = [
+  {
+    initials: 'PR',
+    name: 'Priya Rajan',
+    credential: 'UPSC Prelims 2024 · Delhi · Foundation',
+    quote: 'Jeet Sir didn\'t just give me a study plan — he rewired how I approach the exam. His weekly calls kept me accountable when I wanted to quit. Cleared Prelims on my first attempt.',
+    color: '#155DFC',
+  },
+  {
+    initials: 'AK',
+    name: 'Ankit Kumar',
+    credential: 'UPSC Mains 2024 · Bihar · Serious Attempt',
+    quote: 'The answer writing feedback alone was worth 10x the fee. He\'d mark every paragraph and show me exactly where I was losing marks. My Mains score jumped 80+ marks in 3 months.',
+    color: '#C68A0B',
+  },
+  {
+    initials: 'SM',
+    name: 'Sneha Mishra',
+    credential: 'UPSC Interview 2024 · MP · Final Mile',
+    quote: 'I was terrified of the interview board. Jeet Sir ran 6 mock sessions, tore apart my DAF, and rebuilt my confidence. I walked in calm and walked out knowing I\'d done my best.',
+    color: '#16A34A',
+  },
+];
+
+const faqItems = [
+  {
+    question: 'How is this different from just watching Jeet Sir on YouTube?',
+    answer: 'YouTube gives you the "what" — mentorship gives you the "how, when, and why for YOU." In 1-on-1 sessions, we analyze your specific weak areas, build a personalized roadmap around your schedule, and adjust it every week based on your progress. YouTube is a broadcast; mentorship is a conversation.',
+  },
+  {
+    question: '₹12,999 is a lot. How do I know it\'s worth it?',
+    answer: 'Most aspirants spend ₹1–2 lakh on coaching that treats everyone the same. Here, every rupee goes toward strategy built for your stage — whether you\'re 6 months or 18 months from the exam. Plus, the free discovery call lets you experience the approach before committing a single rupee.',
+  },
+  {
+    question: 'What if I don\'t clear even with mentorship?',
+    answer: 'No one can guarantee a rank — and anyone who does is lying. What mentorship guarantees is that you\'ll prepare smarter, waste less time, and give your best attempt. Many of our mentees say the biggest value was clarity and confidence, even beyond the result.',
+  },
+  {
+    question: 'I\'m a working professional with 2–3 hours a day. Is this realistic for me?',
+    answer: 'Absolutely — in fact, that\'s where mentorship shines most. We\'ll build a plan that fits your 2–3 hour window, prioritize high-yield topics, and cut the noise so you\'re studying what actually matters for your target year. Several of our working-professional mentees have cleared Prelims on their first attempt.',
+  },
+  {
+    question: 'Is the free discovery call actually free with no catch?',
+    answer: 'Yes, 100%. It\'s a 20-minute call where we understand your background, your target, and your current preparation. You\'ll walk away with a rough strategy outline whether you join or not. There\'s no hard sell — if it\'s not a fit, we\'ll tell you honestly.',
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
+
+export default function FreeTrialPage() {
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+
+  return (
+    <div style={{ background: '#F9FAFB', minHeight: '100vh' }}>
+      <div
+        style={{
+          maxWidth: 'clamp(960px, 75vw, 1200px)',
+          margin: '0 auto',
+          padding: 'clamp(32px, 4vw, 60px) clamp(16px, 2vw, 30px)',
+        }}
+      >
+
+        {/* ================================================================ */}
+        {/*  SECTION 1: HERO                                                  */}
+        {/* ================================================================ */}
+        <section style={{ textAlign: 'center', marginBottom: 'clamp(48px, 5vw, 80px)' }}>
+          {/* Gold label */}
+          <div
+            style={{
+              display: 'inline-block',
+              background: 'rgba(198, 138, 11, 0.08)',
+              border: '1px solid rgba(198, 138, 11, 0.25)',
+              borderRadius: '26843500px',
+              padding: 'clamp(6px, 0.5vw, 8px) clamp(14px, 1.2vw, 20px)',
+              fontSize: 'clamp(10px, 0.8vw, 12px)',
+              fontWeight: 700,
+              letterSpacing: '1.5px',
+              color: '#C68A0B',
+              textTransform: 'uppercase' as const,
+              marginBottom: 'clamp(16px, 1.5vw, 24px)',
+            }}
+            className="font-arimo"
+          >
+            ⚡ JEET · PERSONALIZED MENTORSHIP
+          </div>
+
+          {/* Heading */}
+          <h1
+            style={{
+              fontSize: 'clamp(32px, 3.5vw, 52px)',
+              fontWeight: 700,
+              color: '#101828',
+              lineHeight: 1.15,
+              marginBottom: 'clamp(16px, 1.5vw, 24px)',
+            }}
+            className="font-arimo"
+          >
+            The guidance that turns<br />
+            <span className="font-tinos italic" style={{ color: '#C68A0B' }}>aspirants</span>{' '}
+            into officers.
+          </h1>
+
+          {/* Description */}
+          <p
+            style={{
+              fontSize: 'clamp(15px, 1.1vw, 18px)',
+              color: '#4A5565',
+              lineHeight: 1.7,
+              maxWidth: '560px',
+              margin: '0 auto',
+              marginBottom: 'clamp(24px, 2vw, 36px)',
+            }}
+            className="font-arimo"
+          >
+            1-on-1 sessions for 3–12 months — tailored to your stage &amp; your timeline.<br />
+            Mentored by Jeet Singh.
+          </p>
+
+          {/* Feature pills */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap' as const,
+              justifyContent: 'center',
+              gap: 'clamp(8px, 0.7vw, 12px)',
+              marginBottom: 'clamp(28px, 2.5vw, 40px)',
+            }}
+          >
+            {heroPills.map((pill) => (
+              <div
+                key={pill.label}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#FFFFFF',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '26843500px',
+                  padding: 'clamp(8px, 0.6vw, 10px) clamp(14px, 1vw, 18px)',
+                  fontSize: 'clamp(12px, 0.85vw, 14px)',
+                  fontWeight: 500,
+                  color: '#374151',
+                }}
+                className="font-arimo"
+              >
+                <span>{pill.emoji}</span> {pill.label}
+              </div>
+            ))}
+          </div>
+
+          {/* Stats card */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 'clamp(20px, 2.5vw, 40px)',
+              background: '#FFFFFF',
+              border: '1px solid #E5E7EB',
+              borderRadius: '16px',
+              padding: 'clamp(16px, 1.5vw, 24px) clamp(24px, 2.5vw, 40px)',
+              boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.06)',
+              flexWrap: 'wrap' as const,
+              justifyContent: 'center',
+            }}
+          >
+            {heroStats.map((stat, i) => (
+              <React.Fragment key={stat.label}>
+                {i > 0 && (
+                  <div style={{ width: '1px', height: '32px', background: '#E5E7EB' }} />
+                )}
+                <div style={{ textAlign: 'center' }}>
+                  <div
+                    style={{
+                      fontSize: 'clamp(20px, 1.6vw, 26px)',
+                      fontWeight: 700,
+                      color: stat.highlight ? '#C68A0B' : '#101828',
+                    }}
+                    className="font-arimo"
+                  >
+                    {stat.value}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 'clamp(11px, 0.75vw, 13px)',
+                      color: '#6A7282',
+                      fontWeight: 500,
+                      marginTop: '2px',
+                    }}
+                    className="font-arimo"
+                  >
+                    {stat.label}
+                  </div>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+        </section>
+
+        {/* ================================================================ */}
+        {/*  SECTION 2: JEET SIR MENTOR CARD                                  */}
+        {/* ================================================================ */}
+        <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #162456 0%, #0F172B 50%, #030712 100%)',
+              borderRadius: '24px',
+              padding: 'clamp(28px, 3vw, 44px)',
+              color: '#FFFFFF',
+            }}
+          >
+            {/* Top row */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                flexWrap: 'wrap' as const,
+                gap: 'clamp(20px, 2vw, 32px)',
+                marginBottom: 'clamp(24px, 2vw, 36px)',
+              }}
+            >
+              {/* Left: Avatar + info */}
+              <div style={{ flex: '1 1 400px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 1vw, 16px)', marginBottom: 'clamp(12px, 1vw, 16px)' }}>
+                  {/* Yellow "J" avatar */}
+                  <div
+                    style={{
+                      width: 'clamp(48px, 3.5vw, 56px)',
+                      height: 'clamp(48px, 3.5vw, 56px)',
+                      background: '#FDC700',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 'clamp(22px, 1.8vw, 28px)',
+                      fontWeight: 700,
+                      color: '#101828',
+                    }}
+                    className="font-arimo"
+                  >
+                    J
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 'clamp(20px, 1.6vw, 26px)',
+                        fontWeight: 700,
+                      }}
+                      className="font-arimo"
+                    >
+                      Jeet Sir
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 'clamp(13px, 0.9vw, 15px)',
+                        color: '#94A3B8',
+                        marginTop: '2px',
+                      }}
+                      className="font-arimo"
+                    >
+                      UPSC Educator · YouTuber · Mentor
+                    </div>
+                  </div>
+                </div>
+
+                {/* Skill tags */}
+                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 'clamp(6px, 0.5vw, 8px)' }}>
+                  {mentorTags.map((tag) => (
+                    <span
+                      key={tag.label}
+                      style={{
+                        display: 'inline-block',
+                        padding: 'clamp(5px, 0.4vw, 7px) clamp(10px, 0.8vw, 14px)',
+                        borderRadius: '26843500px',
+                        fontSize: 'clamp(11px, 0.75vw, 13px)',
+                        fontWeight: 600,
+                        ...(tag.gold
+                          ? { background: 'rgba(253, 199, 0, 0.15)', color: '#FDC700', border: '1px solid rgba(253, 199, 0, 0.3)' }
+                          : { background: 'transparent', color: '#94A3B8', border: '1px solid #4A5565' }),
+                      }}
+                      className="font-arimo"
+                    >
+                      {tag.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: Stats panel */}
+              <div
+                style={{
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '16px',
+                  padding: 'clamp(16px, 1.5vw, 24px) clamp(20px, 2vw, 32px)',
+                  display: 'flex',
+                  gap: 'clamp(20px, 2.5vw, 40px)',
+                  flexWrap: 'wrap' as const,
+                }}
+              >
+                {mentorStats.map((stat, i) => (
+                  <React.Fragment key={stat.label}>
+                    {i > 0 && (
+                      <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }} />
+                    )}
+                    <div style={{ textAlign: 'center' }}>
+                      <div
+                        style={{
+                          fontSize: 'clamp(20px, 1.6vw, 26px)',
+                          fontWeight: 700,
+                          color: '#C68A0B',
+                        }}
+                        className="font-arimo"
+                      >
+                        {stat.value}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 'clamp(10px, 0.7vw, 12px)',
+                          fontWeight: 600,
+                          letterSpacing: '1px',
+                          color: '#94A3B8',
+                          marginTop: '4px',
+                        }}
+                        className="font-arimo"
+                      >
+                        {stat.label}
+                      </div>
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom bar */}
+            <div
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '14px',
+                padding: 'clamp(12px, 1vw, 16px) clamp(16px, 1.5vw, 24px)',
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap' as const,
+                gap: 'clamp(12px, 1vw, 16px)',
+              }}
+            >
+              {/* Green dot + text */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 auto' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16A34A', flexShrink: 0 }} />
+                <span
+                  style={{
+                    fontSize: 'clamp(12px, 0.85vw, 14px)',
+                    color: '#FFFFFF',
+                    fontWeight: 500,
+                  }}
+                  className="font-arimo"
+                >
+                  Accepting mentees · Limited seats for June 2025 batch
+                </span>
+              </div>
+
+              {/* Pills */}
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 'clamp(6px, 0.5vw, 8px)' }}>
+                <span
+                  style={{
+                    padding: 'clamp(4px, 0.3vw, 6px) clamp(10px, 0.8vw, 14px)',
+                    borderRadius: '26843500px',
+                    fontSize: 'clamp(11px, 0.7vw, 12px)',
+                    fontWeight: 600,
+                    color: '#FDC700',
+                    border: '1px solid rgba(253, 199, 0, 0.3)',
+                  }}
+                  className="font-arimo"
+                >
+                  ✦ Only 4 seats left
+                </span>
+                <span
+                  style={{
+                    padding: 'clamp(4px, 0.3vw, 6px) clamp(10px, 0.8vw, 14px)',
+                    borderRadius: '26843500px',
+                    fontSize: 'clamp(11px, 0.7vw, 12px)',
+                    fontWeight: 500,
+                    color: '#94A3B8',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}
+                  className="font-arimo"
+                >
+                  Next batch: June 1
+                </span>
+                <span
+                  style={{
+                    padding: 'clamp(4px, 0.3vw, 6px) clamp(10px, 0.8vw, 14px)',
+                    borderRadius: '26843500px',
+                    fontSize: 'clamp(11px, 0.7vw, 12px)',
+                    fontWeight: 500,
+                    color: '#94A3B8',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}
+                  className="font-arimo"
+                >
+                  Sat &amp; Sun sessions
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================================================================ */}
+        {/*  SECTION 3: PRICING                                               */}
+        {/* ================================================================ */}
+        <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
+          {/* Label */}
+          <div
+            style={{
+              textAlign: 'center',
+              marginBottom: 'clamp(12px, 1vw, 16px)',
+              fontSize: 'clamp(10px, 0.8vw, 12px)',
+              fontWeight: 700,
+              letterSpacing: '1.5px',
+              color: '#C68A0B',
+              textTransform: 'uppercase' as const,
+            }}
+            className="font-arimo"
+          >
+            🏆 CHOOSE YOUR PLAN
+          </div>
+
+          {/* Heading */}
+          <h2
+            style={{
+              textAlign: 'center',
+              fontSize: 'clamp(26px, 2.8vw, 40px)',
+              fontWeight: 700,
+              color: '#101828',
+              marginBottom: 'clamp(32px, 3vw, 48px)',
+            }}
+            className="font-arimo"
+          >
+            One program. Your entire journey.
+          </h2>
+
+          {/* 3-col grid */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 'clamp(16px, 1.5vw, 24px)',
+            }}
+          >
+            {pricingPlans.map((plan) => (
+              <div
+                key={plan.name}
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: '20px',
+                  border: plan.highlight ? '2px solid #FDC700' : '1px solid #E5E7EB',
+                  padding: 'clamp(24px, 2vw, 32px)',
+                  display: 'flex',
+                  flexDirection: 'column' as const,
+                  boxShadow: plan.highlight
+                    ? '0px 4px 24px 0px rgba(253, 199, 0, 0.12), 0px 1px 3px 0px rgba(0,0,0,0.06)'
+                    : '0px 1px 3px 0px rgba(0,0,0,0.06)',
+                  position: 'relative' as const,
+                }}
+              >
+                {/* Plan name + emoji */}
+                <div
+                  style={{
+                    fontSize: 'clamp(18px, 1.4vw, 22px)',
+                    fontWeight: 700,
+                    color: '#101828',
+                    marginBottom: 'clamp(6px, 0.5vw, 8px)',
+                  }}
+                  className="font-arimo"
+                >
+                  {plan.emoji} {plan.name}
+                </div>
+
+                {/* Tags */}
+                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px', marginBottom: 'clamp(16px, 1.2vw, 20px)' }}>
+                  {plan.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      style={{
+                        padding: '3px 10px',
+                        borderRadius: '26843500px',
+                        fontSize: 'clamp(10px, 0.7vw, 12px)',
+                        fontWeight: 600,
+                        color: plan.tagColor,
+                        background: plan.tagBg,
+                      }}
+                      className="font-arimo"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Price */}
+                <div style={{ marginBottom: 'clamp(20px, 1.5vw, 28px)' }}>
+                  <span
+                    style={{
+                      fontSize: 'clamp(28px, 2.2vw, 36px)',
+                      fontWeight: 700,
+                      color: '#101828',
+                    }}
+                    className="font-arimo"
+                  >
+                    {plan.price}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 'clamp(14px, 1vw, 16px)',
+                      color: '#6A7282',
+                      fontWeight: 500,
+                    }}
+                    className="font-arimo"
+                  >
+                    {plan.period}
+                  </span>
+                </div>
+
+                {/* Features */}
+                <div style={{ flex: 1, marginBottom: 'clamp(20px, 1.5vw, 28px)' }}>
+                  {plan.features.map((feat) => (
+                    <div
+                      key={feat.text}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '8px',
+                        marginBottom: 'clamp(10px, 0.8vw, 14px)',
+                        fontSize: 'clamp(13px, 0.9vw, 15px)',
+                        color: '#374151',
+                        lineHeight: 1.5,
+                      }}
+                      className="font-arimo"
+                    >
+                      <span style={{ color: '#16A34A', fontWeight: 700, flexShrink: 0, marginTop: '1px' }}>✓</span>
+                      <span>
+                        {feat.text}
+                        {feat.badge && (
+                          <span
+                            style={{
+                              marginLeft: '6px',
+                              padding: '1px 7px',
+                              borderRadius: '26843500px',
+                              fontSize: 'clamp(9px, 0.6vw, 10px)',
+                              fontWeight: 700,
+                              color: plan.tagColor,
+                              background: plan.tagBg,
+                              verticalAlign: 'middle',
+                            }}
+                          >
+                            {feat.badge}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA */}
+                <button
+                  style={{
+                    width: '100%',
+                    padding: 'clamp(12px, 1vw, 16px)',
+                    borderRadius: '12px',
+                    border: 'none',
+                    fontSize: 'clamp(14px, 1vw, 16px)',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    ...(plan.ctaStyle === 'gold'
+                      ? { background: '#FDC700', color: '#101828' }
+                      : { background: '#101828', color: '#FFFFFF' }),
+                  }}
+                  className="font-arimo"
+                >
+                  {plan.cta}
+                </button>
+
+                {/* Note */}
+                {plan.note && (
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      fontSize: 'clamp(11px, 0.7vw, 12px)',
+                      color: '#6A7282',
+                      marginTop: 'clamp(8px, 0.6vw, 12px)',
+                      fontWeight: 500,
+                    }}
+                    className="font-arimo"
+                  >
+                    {plan.note}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Below pricing: links */}
+          <div
+            style={{
+              textAlign: 'center',
+              marginTop: 'clamp(24px, 2vw, 36px)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              flexWrap: 'wrap' as const,
+              gap: 'clamp(12px, 1.5vw, 24px)',
+            }}
+          >
+            <span
+              style={{
+                fontSize: 'clamp(13px, 0.9vw, 15px)',
+                color: '#6A7282',
+              }}
+              className="font-arimo"
+            >
+              Still deciding?
+            </span>
+            <button
+              style={{
+                padding: 'clamp(8px, 0.6vw, 10px) clamp(16px, 1.2vw, 22px)',
+                borderRadius: '10px',
+                border: 'none',
+                background: '#101828',
+                color: '#FFFFFF',
+                fontSize: 'clamp(13px, 0.9vw, 15px)',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+              className="font-arimo"
+            >
+              Compare All Plans →
+            </button>
+            <button
+              style={{
+                padding: 'clamp(8px, 0.6vw, 10px) clamp(16px, 1.2vw, 22px)',
+                borderRadius: '10px',
+                border: '1.5px solid #C68A0B',
+                background: 'transparent',
+                color: '#C68A0B',
+                fontSize: 'clamp(13px, 0.9vw, 15px)',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+              className="font-arimo"
+            >
+              🤙 Free Discovery Call
+            </button>
+          </div>
+        </section>
+
+        {/* ================================================================ */}
+        {/*  SECTION 4: WHY MENTORSHIP WORKS + FEATURE CARDS                  */}
+        {/* ================================================================ */}
+        <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
+          {/* Dark banner */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #162456 0%, #0F172B 50%, #030712 100%)',
+              borderRadius: '24px',
+              padding: 'clamp(28px, 3vw, 44px)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap' as const,
+              gap: 'clamp(20px, 2vw, 32px)',
+              marginBottom: 'clamp(28px, 2.5vw, 40px)',
+            }}
+          >
+            <div style={{ flex: '1 1 500px' }}>
+              {/* Gold label */}
+              <div
+                style={{
+                  fontSize: 'clamp(10px, 0.8vw, 12px)',
+                  fontWeight: 700,
+                  letterSpacing: '1.5px',
+                  color: '#C68A0B',
+                  textTransform: 'uppercase' as const,
+                  marginBottom: 'clamp(12px, 1vw, 16px)',
+                }}
+                className="font-arimo"
+              >
+                ★ WHY MENTORSHIP WORKS
+              </div>
+
+              {/* Heading */}
+              <h2
+                style={{
+                  fontSize: 'clamp(24px, 2.4vw, 36px)',
+                  fontWeight: 700,
+                  color: '#FFFFFF',
+                  lineHeight: 1.25,
+                  marginBottom: 'clamp(12px, 1vw, 16px)',
+                }}
+                className="font-arimo"
+              >
+                A coach who knows you beats a{' '}
+                <span className="font-tinos italic" style={{ color: '#C68A0B' }}>
+                  course that doesn&apos;t.
+                </span>
+              </h2>
+
+              {/* Description */}
+              <p
+                style={{
+                  fontSize: 'clamp(14px, 1vw, 16px)',
+                  color: '#94A3B8',
+                  lineHeight: 1.7,
+                  maxWidth: '480px',
+                }}
+                className="font-arimo"
+              >
+                Generic courses give you content. A mentor gives you direction,
+                accountability, and someone who adjusts the plan when life happens.
+              </p>
+            </div>
+
+            {/* Right side: large 1-on-1 text */}
+            <div style={{ textAlign: 'center', flex: '0 0 auto' }}>
+              <div
+                style={{
+                  fontSize: 'clamp(48px, 5vw, 72px)',
+                  fontWeight: 700,
+                  color: '#C68A0B',
+                  lineHeight: 1,
+                }}
+                className="font-arimo"
+              >
+                1-on-1
+              </div>
+              <div
+                style={{
+                  fontSize: 'clamp(13px, 0.9vw, 15px)',
+                  color: '#94A3B8',
+                  fontWeight: 500,
+                  marginTop: '8px',
+                }}
+                className="font-arimo"
+              >
+                Utterly personal. Never generic.
+              </div>
+            </div>
+          </div>
+
+          {/* 6 feature cards (3x2 grid) */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 'clamp(16px, 1.5vw, 24px)',
+            }}
+          >
+            {whyFeatures.map((feat) => (
+              <div
+                key={feat.title}
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: '16px',
+                  border: '0.8px solid #E5E7EB',
+                  padding: 'clamp(20px, 1.8vw, 28px)',
+                  boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.06)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 'clamp(28px, 2.2vw, 36px)',
+                    marginBottom: 'clamp(10px, 0.8vw, 14px)',
+                  }}
+                >
+                  {feat.emoji}
+                </div>
+                <div
+                  style={{
+                    fontSize: 'clamp(15px, 1.1vw, 18px)',
+                    fontWeight: 700,
+                    color: '#101828',
+                    marginBottom: 'clamp(6px, 0.5vw, 8px)',
+                  }}
+                  className="font-arimo"
+                >
+                  {feat.title}
+                </div>
+                <div
+                  style={{
+                    fontSize: 'clamp(13px, 0.85vw, 14px)',
+                    color: '#4A5565',
+                    lineHeight: 1.65,
+                  }}
+                  className="font-arimo"
+                >
+                  {feat.description}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ================================================================ */}
+        {/*  SECTION 5: TESTIMONIALS                                          */}
+        {/* ================================================================ */}
+        <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(28px, 2.5vw, 40px)' }}>
+            <h2
+              style={{
+                fontSize: 'clamp(26px, 2.8vw, 40px)',
+                fontWeight: 700,
+                color: '#101828',
+                marginBottom: 'clamp(6px, 0.5vw, 8px)',
+              }}
+              className="font-arimo"
+            >
+              What UPSC Aspirants Say
+            </h2>
+            <p
+              style={{
+                fontSize: 'clamp(14px, 1vw, 16px)',
+                color: '#6A7282',
+              }}
+              className="font-arimo"
+            >
+              From Jeet Sir&apos;s Mentees
+            </p>
+          </div>
+
+          {/* 3-col grid */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 'clamp(16px, 1.5vw, 24px)',
+            }}
+          >
+            {testimonials.map((t) => (
+              <div
+                key={t.initials}
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: '16px',
+                  border: '0.8px solid #E5E7EB',
+                  padding: 'clamp(24px, 2vw, 32px)',
+                  boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.06)',
+                  display: 'flex',
+                  flexDirection: 'column' as const,
+                }}
+              >
+                {/* 5 gold stars */}
+                <div style={{ fontSize: 'clamp(14px, 1vw, 18px)', marginBottom: 'clamp(12px, 1vw, 16px)' }}>
+                  {'★'.repeat(5).split('').map((s, i) => (
+                    <span key={i} style={{ color: '#FDC700' }}>{s}</span>
+                  ))}
+                </div>
+
+                {/* Quote */}
+                <p
+                  style={{
+                    fontSize: 'clamp(13px, 0.9vw, 15px)',
+                    color: '#374151',
+                    lineHeight: 1.7,
+                    fontStyle: 'italic',
+                    flex: 1,
+                    marginBottom: 'clamp(16px, 1.5vw, 24px)',
+                  }}
+                  className="font-arimo"
+                >
+                  &ldquo;{t.quote}&rdquo;
+                </p>
+
+                {/* Avatar + name */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px, 0.8vw, 12px)' }}>
+                  <div
+                    style={{
+                      width: 'clamp(36px, 2.8vw, 44px)',
+                      height: 'clamp(36px, 2.8vw, 44px)',
+                      borderRadius: '50%',
+                      background: t.color,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 'clamp(12px, 0.9vw, 14px)',
+                      fontWeight: 700,
+                      color: '#FFFFFF',
+                      flexShrink: 0,
+                    }}
+                    className="font-arimo"
+                  >
+                    {t.initials}
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 'clamp(13px, 0.9vw, 15px)',
+                        fontWeight: 600,
+                        color: '#101828',
+                      }}
+                      className="font-arimo"
+                    >
+                      {t.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 'clamp(11px, 0.75vw, 13px)',
+                        color: '#6A7282',
+                      }}
+                      className="font-arimo"
+                    >
+                      {t.credential}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ================================================================ */}
+        {/*  SECTION 6: CTA BANNER                                            */}
+        {/* ================================================================ */}
+        <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
+          <div
+            style={{
+              background: 'linear-gradient(90deg, #FDC700, #FF8904, #FF6900)',
+              borderRadius: '24px',
+              padding: 'clamp(32px, 3.5vw, 52px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap' as const,
+              gap: 'clamp(20px, 2vw, 32px)',
+              overflow: 'hidden',
+              position: 'relative' as const,
+            }}
+          >
+            <div style={{ flex: '1 1 400px', position: 'relative' as const, zIndex: 1 }}>
+              <h2
+                style={{
+                  fontSize: 'clamp(24px, 2.4vw, 36px)',
+                  fontWeight: 700,
+                  color: '#101828',
+                  lineHeight: 1.25,
+                  marginBottom: 'clamp(16px, 1.5vw, 24px)',
+                }}
+                className="font-arimo"
+              >
+                Limited seats. Real results.<br />
+                Start with a free call.
+              </h2>
+
+              {/* Buttons */}
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 'clamp(8px, 0.8vw, 12px)' }}>
+                <button
+                  style={{
+                    padding: 'clamp(12px, 1vw, 16px) clamp(20px, 1.8vw, 28px)',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: '#101828',
+                    color: '#FFFFFF',
+                    fontSize: 'clamp(14px, 1vw, 16px)',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  className="font-arimo"
+                >
+                  🤙 Book Free Discovery Call
+                </button>
+                <button
+                  style={{
+                    padding: 'clamp(12px, 1vw, 16px) clamp(20px, 1.8vw, 28px)',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: '#FFFFFF',
+                    color: '#101828',
+                    fontSize: 'clamp(14px, 1vw, 16px)',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  className="font-arimo"
+                >
+                  📺 Watch on YouTube First
+                </button>
+              </div>
+            </div>
+
+            {/* Decorative circles */}
+            <div style={{ position: 'relative' as const, zIndex: 0, flex: '0 0 auto' }}>
+              <div
+                style={{
+                  width: 'clamp(80px, 8vw, 120px)',
+                  height: 'clamp(80px, 8vw, 120px)',
+                  borderRadius: '50%',
+                  background: 'rgba(255, 105, 0, 0.25)',
+                  position: 'absolute' as const,
+                  right: '0',
+                  top: '-20px',
+                }}
+              />
+              <div
+                style={{
+                  width: 'clamp(50px, 5vw, 80px)',
+                  height: 'clamp(50px, 5vw, 80px)',
+                  borderRadius: '50%',
+                  background: 'rgba(255, 137, 4, 0.3)',
+                  position: 'relative' as const,
+                }}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ================================================================ */}
+        {/*  SECTION 7: FAQ                                                   */}
+        {/* ================================================================ */}
+        <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
+          {/* Label */}
+          <div
+            style={{
+              textAlign: 'center',
+              fontSize: 'clamp(10px, 0.8vw, 12px)',
+              fontWeight: 700,
+              letterSpacing: '1.5px',
+              color: '#C68A0B',
+              textTransform: 'uppercase' as const,
+              marginBottom: 'clamp(8px, 0.6vw, 12px)',
+            }}
+            className="font-arimo"
+          >
+            BEFORE YOU DECIDE
+          </div>
+
+          {/* Heading */}
+          <h2
+            style={{
+              textAlign: 'center',
+              fontSize: 'clamp(26px, 2.8vw, 40px)',
+              fontWeight: 700,
+              color: '#101828',
+              marginBottom: 'clamp(32px, 3vw, 48px)',
+            }}
+            className="font-arimo"
+          >
+            The questions you&apos;re actually thinking
+          </h2>
+
+          {/* Accordion */}
+          <div
+            style={{
+              maxWidth: '800px',
+              margin: '0 auto',
+              display: 'flex',
+              flexDirection: 'column' as const,
+              gap: 'clamp(10px, 0.8vw, 14px)',
+            }}
+          >
+            {faqItems.map((item, index) => (
+              <div
+                key={index}
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: '14px',
+                  border: '0.8px solid #E5E7EB',
+                  overflow: 'hidden',
+                  boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.04)',
+                }}
+              >
+                {/* Question row */}
+                <button
+                  onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
+                  style={{
+                    width: '100%',
+                    padding: 'clamp(16px, 1.3vw, 22px) clamp(20px, 1.8vw, 28px)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '12px',
+                    textAlign: 'left' as const,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 'clamp(14px, 1vw, 16px)',
+                      fontWeight: 600,
+                      color: '#101828',
+                      lineHeight: 1.5,
+                    }}
+                    className="font-arimo"
+                  >
+                    {item.question}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 'clamp(18px, 1.3vw, 22px)',
+                      color: '#6A7282',
+                      flexShrink: 0,
+                      transform: expandedFaq === index ? 'rotate(45deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease',
+                      lineHeight: 1,
+                    }}
+                  >
+                    +
+                  </span>
+                </button>
+
+                {/* Answer */}
+                {expandedFaq === index && (
+                  <div
+                    style={{
+                      padding: '0 clamp(20px, 1.8vw, 28px) clamp(16px, 1.3vw, 22px)',
+                      fontSize: 'clamp(13px, 0.9vw, 15px)',
+                      color: '#4A5565',
+                      lineHeight: 1.75,
+                    }}
+                    className="font-arimo"
+                  >
+                    {item.answer}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+      </div>
+    </div>
+  );
+}
