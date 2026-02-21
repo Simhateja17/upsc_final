@@ -155,7 +155,7 @@ export default function DailyAnswerAttemptPage() {
                             >
                                 {/* Cloud Icon */}
                                 <div className="mb-4">
-                                    <img src="/uplaod.png" alt="Upload" style={{ width: '80px', height: '80px' }} />
+                                    <img src="/uplaod/.png" alt="Upload" style={{ width: '80px', height: '80px' }} />
                                 </div>
 
                                 {/* Drop Text */}
@@ -193,12 +193,11 @@ export default function DailyAnswerAttemptPage() {
 
                                 {/* Browse Files Button */}
                                 <button 
-                                    className="bg-white text-[#111827] font-bold rounded-[10px] hover:bg-gray-50 transition-colors"
+                                    className="bg-white border border-[#D1D5DB] text-[#111827] font-bold rounded-[10px] hover:bg-gray-50 transition-colors"
                                     style={{
                                         width: '156px',
                                         height: '48px',
-                                        fontSize: '16px',
-                                        border: '1.6px solid #17223E'
+                                        fontSize: '16px'
                                     }}
                                 >
                                     Browse Files
