@@ -176,9 +176,6 @@ const PerformanceStatsWidget = () => {
         }}
       >
         <div className="flex items-center" style={{ gap: '8px' }}>
-          <svg style={{ width: '20px', height: '20px' }} viewBox="0 0 24 24" fill="#1E2875">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-          </svg>
           <span className="font-outfit font-semibold whitespace-nowrap" style={{ fontSize: '18px', lineHeight: '1', color: '#1E2875' }}>
             Weekly Leaderboard
           </span>
@@ -199,7 +196,7 @@ const PerformanceStatsWidget = () => {
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.25vw,24px)]">
           <img
-            src="/achievement-badges-icon.png"
+            src="/ach.png"
             alt="Achievement Badges"
             className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
           />
@@ -276,7 +273,7 @@ const PerformanceStatsWidget = () => {
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
           <img
-            src="/smart-revision-icon.png"
+            src="/smart.png"
             alt="Smart Revision Tools"
             className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
           />
@@ -320,7 +317,7 @@ const PerformanceStatsWidget = () => {
             }}
           >
             <img 
-              src="/newspaper-folding.png" 
+              src="/mindmap.png" 
               alt="Mindmaps" 
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
@@ -334,7 +331,7 @@ const PerformanceStatsWidget = () => {
             }}
           >
             <img 
-              src="/tree-list.png" 
+              src="/news.png" 
               alt="Quick Notes" 
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
@@ -355,7 +352,7 @@ const PerformanceStatsWidget = () => {
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
           <img
-            src="/quick-settings-icon.png"
+            src="/settings.png"
             alt="Quick Settings"
             className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
           />
@@ -468,7 +465,7 @@ const PerformanceStatsWidget = () => {
         }}
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(12px,0.83vw,16px)]">
-          <img src="/calendar.png" alt="Calendar" className="w-[clamp(18px,1.09vw,21px)] h-[clamp(20px,1.25vw,24px)]" />
+          <img src="/c.png" alt="Calendar" className="w-[clamp(18px,1.09vw,21px)] h-[clamp(20px,1.25vw,24px)]" />
           <h3 className="font-inter font-semibold text-white" style={{ fontSize: 'clamp(13px,0.78vw,15px)', lineHeight: '1.2' }}>
             Upcoming Test
           </h3>

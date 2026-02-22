@@ -80,16 +80,16 @@ const subjects = [
   { emoji: '\uD83C\uDF3E', label: 'Agriculture', bg: '#DBEAFE', border: '#BFDBFE' },
   { emoji: '\uD83D\uDCB0', label: 'Economy', bg: '#FFF7ED', border: '#FED7AA' },
   { emoji: '\uD83C\uDF0D', label: 'IR', bg: '#DBEAFE', border: '#BFDBFE' },
-  { emoji: '\uD83C\uDF0E', label: 'Environment', bg: '#F0FDF4', border: '#BBF7D0' },
+  { emoji: '\uD83C\uDF0E', label: 'Environment', bg: '#F0FDF4', border: '#BBF7D0', icon: '/environment.png' },
   { emoji: '\uD83D\uDCBB', label: 'Tech', bg: '#DBEAFE', border: '#BFDBFE' },
   { emoji: '\uD83C\uDFDB', label: 'Polity', bg: '#F3E8FF', border: '#DDD6FE' },
 ];
 
 const learningStats = [
-  { icon: '\u2611\uFE0F', label: 'Editorials read', value: '142 / 210', color: '#047857' },
-  { icon: '\uD83D\uDD52', label: 'Total reading time', value: '28.5 hrs', color: '#1D4ED8' },
-  { icon: '\u2705', label: "This week's target", value: '78%', color: '#16A34A' },
-  { icon: '\uD83C\uDFC5', label: 'Longest streak', value: '21 days', color: '#7C3AED' },
+  { icon: '/dark.png', label: 'Editorials read', value: '142 / 210', color: '#047857' },
+  { icon: '/tatal.png', label: 'Total reading time', value: '28.5 hrs', color: '#1D4ED8' },
+  { icon: '/light.png', label: "This week's target", value: '78%', color: '#16A34A' },
+  { icon: '/longeset.png', label: 'Longest streak', value: '21 days', color: '#7C3AED' },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -254,8 +254,7 @@ export default function DailyEditorialPage() {
                   transition: 'all 0.2s ease',
                 }}
               >
-                {/* Hindu icon placeholder */}
-                <span style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>&#x1F4F0;</span>
+                <img src="/hindu.png" alt="Hindu" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
                 The Hindu
               </button>
 
@@ -275,7 +274,7 @@ export default function DailyEditorialPage() {
                   transition: 'all 0.2s ease',
                 }}
               >
-                <span style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>&#x1F4D1;</span>
+                <img src="/indian.png" alt="Indian Express" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
                 Indian Express
               </button>
             </div>
@@ -296,10 +295,7 @@ export default function DailyEditorialPage() {
                   transition: 'all 0.2s ease',
                 }}
               >
-                {/* List icon */}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path d="M8 6H21M8 12H21M8 18H21M3 6H3.01M3 12H3.01M3 18H3.01" stroke={viewMode === 'list' ? '#FFFFFF' : '#4A5565'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <img src="/list.png" alt="List" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                 List View
               </button>
 
@@ -415,7 +411,7 @@ export default function DailyEditorialPage() {
                         cursor: 'pointer',
                       }}
                     >
-                      <span style={{ fontSize: '14px' }}>&#x1F4CC;</span>
+                      <img src="/paper.png" alt="Save" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                       Save
                     </button>
 
@@ -452,10 +448,7 @@ export default function DailyEditorialPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    {/* Sparkle */}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#FFD272" stroke="#FFD272" strokeWidth="1"/>
-                    </svg>
+                    <img src="/summaruze.png" alt="Summarize" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                     Summarize with Jeet AI
                   </button>
                 </div>
@@ -578,7 +571,10 @@ export default function DailyEditorialPage() {
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  <span>{s.emoji}</span>
+                  {s.icon
+                    ? <img src={s.icon} alt={s.label} style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
+                    : <span>{s.emoji}</span>
+                  }
                   {s.label}
                 </button>
               ))}
@@ -700,15 +696,13 @@ export default function DailyEditorialPage() {
                   style={{
                     width: 'clamp(32px, 3vw, 40px)',
                     height: 'clamp(32px, 3vw, 40px)',
-                    borderRadius: 'clamp(6px, 0.6vw, 8px)',
-                    background: checked ? '#FFD273' : 'rgba(255,255,255,0.08)',
+                    borderRadius: '10px',
+                    background: checked ? '#F3BB4B' : 'rgba(255,255,255,0.08)',
                     border: checked ? 'none' : '1px solid rgba(255,255,255,0.12)',
                   }}
                 >
                   {checked && (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M5 12L10 17L19 6" stroke="#0E182D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+                    <img src="/blue tick.png" alt="tick" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
                   )}
                 </div>
               ))}
@@ -765,7 +759,7 @@ export default function DailyEditorialPage() {
               {learningStats.map((stat) => (
                 <div key={stat.label} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span style={{ fontSize: '14px' }}>{stat.icon}</span>
+                    <img src={stat.icon} alt={stat.label} style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
                     <span className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#4A5565' }}>
                       {stat.label}
                     </span>

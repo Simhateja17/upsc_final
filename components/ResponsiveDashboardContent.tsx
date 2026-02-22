@@ -5,12 +5,12 @@ import Link from 'next/link';
 
 const ResponsiveDashboardContent = () => {
   return (
-    <div className="w-full min-h-screen py-[clamp(1.5rem,3vw,4rem)] px-[clamp(1rem,2vw,3rem)]" style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}>
+    <div className="w-full min-h-screen py-[clamp(1.5rem,3vw,4rem)] px-[clamp(1rem,2vw,3rem)]" style={{ background: '#FAFBFE' }}>
       <div className="max-w-[1400px] mx-auto">
 
         {/* Greeting Card */}
         <div
-          className="w-full max-w-[min(848px,90vw)] mx-auto rounded-[16px] p-[clamp(1.5rem,2.08vw,2rem)] mb-[clamp(1.5rem,2vw,2.5rem)]"
+          className="w-full rounded-[16px] p-[clamp(1.5rem,2.08vw,2rem)] mb-[clamp(1.5rem,2vw,2.5rem)]"
           style={{
             background: 'linear-gradient(180deg, #0E182D 0%, #17223E 100%)',
           }}
@@ -37,38 +37,40 @@ const ResponsiveDashboardContent = () => {
               }}
             >
               <p>Welcome to your personalized command center for UPSC 2026 preparation.</p>
-              <p>🗓 <span className="font-medium">UPSC Prelims 2026: 89 days remaining.</span> Ready to rise up? Let's make today count.</p>
+              <p className="font-bold text-white">Ready to rise up? Let&apos;s make today count.</p>
             </div>
           </div>
 
-          {/* Quote Section */}
+          {/* Countdown Section */}
           <div
-            className="px-[clamp(1rem,1.04vw,1.25rem)] py-[clamp(0.75rem,0.83vw,1rem)] rounded-[4px]"
+            className="px-[clamp(1rem,1.04vw,1.25rem)] py-[clamp(0.75rem,0.83vw,1rem)] rounded-[4px] flex items-center gap-3"
             style={{
               background: 'rgba(255, 255, 255, 0.1)',
               borderLeft: '4px solid #FF8904',
             }}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/red.png" alt="Calendar" className="w-[clamp(16px,1.04vw,20px)] h-[clamp(16px,1.04vw,20px)] flex-shrink-0" />
             <p
-              className="font-arimo italic text-white"
+              className="font-arimo text-white"
               style={{
-                fontSize: 'clamp(13px,0.73vw,14px)',
+                fontSize: 'clamp(13px,0.83vw,16px)',
                 lineHeight: '1.43',
                 letterSpacing: '0px',
               }}
             >
-              "Success is not final, failure is not fatal: it is the courage to continue that counts." - Winston Churchill
+              UPSC Prelims 2026: 89 days remaining.
             </p>
           </div>
         </div>
 
         {/* Search Bar & Action Buttons */}
-        <div className="flex flex-wrap gap-[clamp(0.75rem,1.04vw,1.25rem)] items-center justify-center mb-[clamp(2rem,3vw,3.5rem)]">
+        <div className="flex flex-wrap gap-[clamp(0.75rem,1.04vw,1.25rem)] items-center mb-[clamp(2rem,3vw,3.5rem)]">
           {/* Search Bar */}
           <div
-            className="flex-1 max-w-[min(602px,50vw)] min-w-[280px] flex items-center gap-[clamp(0.5rem,0.68vw,0.75rem)] px-[clamp(1rem,1.56vw,1.5rem)] rounded-[40px] bg-[#DAE2FF]"
+            className="flex-1 min-w-[280px] flex items-center gap-[clamp(0.5rem,0.68vw,0.75rem)] px-[clamp(1.25rem,1.56vw,1.75rem)] rounded-[40px] bg-[#DAE2FF]"
             style={{
-              height: 'clamp(38px,2.03vw,39px)',
+              height: 'clamp(48px,2.8vw,56px)',
             }}
           >
             <svg
@@ -85,7 +87,7 @@ const ResponsiveDashboardContent = () => {
               placeholder="Ask jeet AI: 'Explain currant affairs'"
               className="flex-1 bg-transparent outline-none font-inter text-black placeholder:text-black"
               style={{
-                fontSize: 'clamp(13px,0.73vw,14px)',
+                fontSize: 'clamp(14px,0.83vw,16px)',
                 lineHeight: '1',
               }}
             />
@@ -95,7 +97,7 @@ const ResponsiveDashboardContent = () => {
           <button
             className="px-[clamp(1.25rem,1.46vw,1.75rem)] rounded-[20px] font-inter font-medium text-white border-2 flex items-center gap-2 hover:opacity-90 transition-opacity"
             style={{
-              height: 'clamp(38px,2.03vw,39px)',
+              height: 'clamp(48px,2.8vw,56px)',
               fontSize: 'clamp(14px,0.78vw,15px)',
               background: '#17223E',
               borderColor: '#17223E',
@@ -117,7 +119,7 @@ const ResponsiveDashboardContent = () => {
           <button
             className="px-[clamp(1.25rem,1.46vw,1.75rem)] rounded-[20px] font-inter font-medium border-2 hover:bg-[#17223E] hover:text-white transition-colors flex items-center gap-2"
             style={{
-              height: 'clamp(38px,2.03vw,39px)',
+              height: 'clamp(48px,2.8vw,56px)',
               fontSize: 'clamp(14px,0.78vw,15px)',
               background: 'rgba(255, 255, 255, 0.11)',
               borderColor: '#17223E',
@@ -127,7 +129,7 @@ const ResponsiveDashboardContent = () => {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/calendar.png"
+              src="/c.png"
               alt="Calendar"
               className="w-[clamp(14px,0.83vw,16px)] h-[clamp(14px,0.83vw,16px)]"
             />
@@ -155,7 +157,7 @@ const ResponsiveDashboardContent = () => {
             <Link
               href="/dashboard/daily-mcq"
               aria-label="Open Daily MCQ"
-              className="block bg-white rounded-[14px] border border-[#E5E7EB] p-[clamp(1.25rem,1.75vw,2rem)] relative cursor-pointer h-full flex flex-col hover:border-[#D0D5DD] transition-colors"
+              className="block bg-[#F9FAFB] rounded-[14px] border border-[#E5E7EB] p-[clamp(1.25rem,1.75vw,2rem)] relative cursor-pointer h-full flex flex-col hover:border-[#D0D5DD] transition-colors"
             >
               <div className="absolute top-4 right-4 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                 <img src="/image-removebg-preview (48) 1.png" alt="Completed" className="w-5 h-5" />
@@ -177,7 +179,7 @@ const ResponsiveDashboardContent = () => {
                 5 Questions - Policy & Economy
               </p>
 
-              <div className="w-full bg-[#17223E] text-white rounded-lg py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+              <div className="w-full bg-[#17223E] text-white rounded-[8px] py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
                 <img src="/image-removebg-preview (48) 1.png" alt="Completed" className="w-5 h-5" />
                 Completed
               </div>
@@ -185,7 +187,7 @@ const ResponsiveDashboardContent = () => {
 
             {/* Daily Editorial Card */}
             <Link href="/dashboard/daily-editorial" className="block h-full">
-            <div className="bg-white rounded-[14px] border border-[#E5E7EB] p-[clamp(1.25rem,1.75vw,2rem)] h-full flex flex-col hover:border-[#D0D5DD] transition-colors cursor-pointer">
+            <div className="bg-[#F9FAFB] rounded-[14px] border border-[#E5E7EB] p-[clamp(1.25rem,1.75vw,2rem)] h-full flex flex-col hover:border-[#D0D5DD] transition-colors cursor-pointer">
               <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">AI Evaluation</div>
 
               <div className="flex items-center gap-3 mb-4">
@@ -202,7 +204,7 @@ const ResponsiveDashboardContent = () => {
                 India-US Trade Relations
               </p>
 
-              <div className="w-full bg-[#17223E] text-white rounded-lg py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+              <div className="w-full bg-[#17223E] text-white rounded-[8px] py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
                 <img src="/TrioCard.png" alt="Read" className="w-5 h-5" />
                 Read Now
               </div>
@@ -211,7 +213,7 @@ const ResponsiveDashboardContent = () => {
 
             {/* Mains Question Card */}
             <Link href="/dashboard/daily-answer" className="block h-full">
-            <div className="bg-white rounded-[14px] border border-[#E5E7EB] p-[clamp(1.25rem,1.75vw,2rem)] h-full flex flex-col hover:border-[#D0D5DD] transition-colors cursor-pointer">
+            <div className="bg-[#F9FAFB] rounded-[14px] border border-[#E5E7EB] p-[clamp(1.25rem,1.75vw,2rem)] h-full flex flex-col hover:border-[#D0D5DD] transition-colors cursor-pointer">
               <div className="mb-4 px-3 py-1 bg-teal-50 text-teal-600 rounded-full text-[clamp(12px,0.73vw,13px)] font-medium w-fit">
                 AI Evaluation
               </div>
@@ -230,7 +232,7 @@ const ResponsiveDashboardContent = () => {
                 Local Self Governance
               </p>
 
-              <button className="w-full bg-[#17223E] text-white rounded-lg py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2">
+              <button className="w-full bg-[#17223E] text-white rounded-[8px] py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2">
                 <img src="/TrioCard (1).png" alt="Attempt" className="w-5 h-5" />
                 Attempt Now
               </button>
@@ -255,14 +257,14 @@ const ResponsiveDashboardContent = () => {
               </h2>
             </div>
             <div className="flex items-center gap-3">
-              <button className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center">
-                <img src="/arrow-right.png" alt="Previous" className="w-4 h-4 opacity-60" />
+              <button className="flex items-center justify-center">
+                <img src="/o.png" alt="Previous" style={{ width: '35px', height: '35px' }} />
               </button>
               <span className="font-inter text-[clamp(13px,0.73vw,14px)] text-gray-400 px-4">
                 Today • Wed, Mar 19
               </span>
-              <button className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors flex items-center justify-center">
-                <img src="/arrow-right.png" alt="Next" className="w-4 h-4 transform rotate-180 opacity-60" />
+              <button className="flex items-center justify-center">
+                <img src="/oo.png" alt="Next" style={{ width: '35px', height: '35px' }} />
               </button>
             </div>
           </div>
@@ -274,8 +276,8 @@ const ResponsiveDashboardContent = () => {
                 Complete Polity Chapter 5 - Fundamental Rights
               </h3>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[clamp(12px,0.68vw,13px)] font-medium">
-                  <img src="/Clip path group.png" alt="Reading" className="w-3.5 h-3.5" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-blue-600" style={{ background: '#DBEAFE' }}>
+                  <img src="/b.png" alt="Reading" className="w-3.5 h-3.5" />
                   Reading
                 </span>
                 <span className="inline-flex items-center gap-1 text-gray-600 text-[clamp(12px,0.68vw,13px)]">
@@ -285,7 +287,7 @@ const ResponsiveDashboardContent = () => {
                   </svg>
                   9:00 AM - 11:00 AM (2h)
                 </span>
-                <span className="text-purple-600 text-[clamp(12px,0.68vw,13px)] font-medium">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-purple-700" style={{ background: '#F3E8FF' }}>
                   Indian Polity
                 </span>
               </div>
@@ -304,8 +306,8 @@ const ResponsiveDashboardContent = () => {
                 Watch Economics Lecture - Fiscal Policy
               </h3>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[clamp(12px,0.68vw,13px)] font-medium">
-                  <img src="/Clip path group.png" alt="Reading" className="w-3.5 h-3.5" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-blue-600" style={{ background: '#DBEAFE' }}>
+                  <img src="/b.png" alt="Reading" className="w-3.5 h-3.5" />
                   Reading
                 </span>
                 <span className="inline-flex items-center gap-1 text-gray-600 text-[clamp(12px,0.68vw,13px)]">
@@ -315,7 +317,7 @@ const ResponsiveDashboardContent = () => {
                   </svg>
                   2:00 PM - 3:30 PM (1.5h)
                 </span>
-                <span className="text-purple-600 text-[clamp(12px,0.68vw,13px)] font-medium">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-purple-700" style={{ background: '#F3E8FF' }}>
                   Indian Polity
                 </span>
               </div>
@@ -334,8 +336,8 @@ const ResponsiveDashboardContent = () => {
                 Solve 50 MCQs on Modern History
               </h3>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[clamp(12px,0.68vw,13px)] font-medium">
-                  <img src="/Clip path group.png" alt="Reading" className="w-3.5 h-3.5" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-blue-600" style={{ background: '#DBEAFE' }}>
+                  <img src="/b.png" alt="Reading" className="w-3.5 h-3.5" />
                   Reading
                 </span>
                 <span className="inline-flex items-center gap-1 text-gray-600 text-[clamp(12px,0.68vw,13px)]">
@@ -345,7 +347,7 @@ const ResponsiveDashboardContent = () => {
                   </svg>
                   4:00 PM - 5:00 PM (1h)
                 </span>
-                <span className="text-purple-600 text-[clamp(12px,0.68vw,13px)] font-medium">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-purple-700" style={{ background: '#F3E8FF' }}>
                   Indian Polity
                 </span>
               </div>

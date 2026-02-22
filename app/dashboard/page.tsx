@@ -4,7 +4,7 @@ import PerformanceStatsWidget from '@/components/PerformanceStatsWidget';
 
 export default function DashboardPage() {
   return (
-    <div className="flex overflow-hidden" style={{ background: '#D8DEE6', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
+    <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
       {/* Content Area with Sidebar */}
       <div className="flex flex-1 overflow-y-auto">
         {/* Left Sidebar */}
@@ -22,7 +22,7 @@ export default function DashboardPage() {
             width: 'clamp(320px,18.6vw,358px)',
             minWidth: '320px',
             maxWidth: '358px',
-            background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)',
+            background: '#FAFBFE',
           }}
         >
           <div className="p-[clamp(1rem,1.25vw,1.5rem)]">

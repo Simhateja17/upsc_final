@@ -36,12 +36,12 @@ export default function StudyPlannerPage() {
   const studyTypes = [
     { id: 'video', label: 'Video Lectures', icon: '/study-type-video.png' },
     { id: 'reading', label: 'Reading', icon: '/study-type-reading.png' },
-    { id: 'practice', label: 'Practice', icon: '/study-type-practice.png' },
-    { id: 'revision', label: 'Revision', icon: '/study-type-revision.png' },
+    { id: 'practice', label: 'Practice', icon: '/practise.png' },
+    { id: 'revision', label: 'Revision', icon: '/revision.png' },
     { id: 'test', label: 'Test', icon: '/study-type-test.png' },
-    { id: 'notes', label: 'Note Making', icon: '/study-type-notemaking.png' },
-    { id: 'answer', label: 'Answer Writing', icon: '/study-type-answerwriting.png' },
-    { id: 'other', label: 'Other', icon: '/study-type-practice.png' },
+    { id: 'notes', label: 'Note Making', icon: '/notes.png' },
+    { id: 'answer', label: 'Answer Writing', icon: '/answer writing.png' },
+    { id: 'other', label: 'Other', icon: '/others.png' },
   ];
 
   const quickAddRows = [
@@ -145,21 +145,11 @@ export default function StudyPlannerPage() {
               }}
             >
               {/* Header */}
-              <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
-                <div className="flex items-center" style={{ gap: '8px' }}>
-                  {/* Green + icon */}
-                  <div
-                    className="flex items-center justify-center rounded-full"
-                    style={{ width: '28px', height: '28px', background: '#22C55E', flexShrink: 0 }}
-                  >
-                    <span className="text-white font-bold" style={{ fontSize: '20px', lineHeight: 1 }}>+</span>
-                  </div>
-                  <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
-                    Quick Add to Plan
-                  </span>
-                </div>
-                {/* Avatar on right */}
-                <img src="/quick-add-icon.png" alt="avatar" style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0 }} />
+              <div className="flex items-center" style={{ marginBottom: '16px', gap: '8px' }}>
+                <img src="/plus.png" alt="Plus" style={{ width: '28px', height: '28px', objectFit: 'contain', flexShrink: 0 }} />
+                <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
+                  Quick Add to Plan
+                </span>
               </div>
 
               {/* Quick Add Buttons — row-by-row layout */}
@@ -328,7 +318,7 @@ export default function StudyPlannerPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between" style={{ marginBottom: '18px' }}>
                   <div className="flex items-center" style={{ gap: '6px' }}>
-                    <span style={{ fontSize: '18px' }}>🗒</span>
+                    <img src="/build.png" alt="Build" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
                     <h2 className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
                       Build Your Study Plan
                     </h2>
@@ -337,10 +327,7 @@ export default function StudyPlannerPage() {
                     className="flex items-center gap-2 font-arimo font-semibold text-white hover:opacity-90 transition-opacity"
                     style={{ height: '34px', padding: '0 14px', borderRadius: '8px', background: '#17223E', fontSize: '13px' }}
                   >
-                    <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none">
-                      <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+                    <img src="/saved.png" alt="Save" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                     Save Plan
                   </button>
                 </div>
@@ -411,24 +398,24 @@ export default function StudyPlannerPage() {
                         <button
                           key={type.id}
                           onClick={() => setStudyType(type.id)}
-                          className="flex items-center font-arimo transition-colors"
+                          className="flex flex-col items-center justify-center font-arimo transition-colors"
                           style={{
                             width: '100%',
-                            height: '56px',
+                            height: '80px',
                             borderRadius: '20px',
-                            border: studyType === type.id ? '2px solid #17223E' : '1px solid #000000',
-                            background: studyType === type.id ? '#F0F4FF' : '#FFFFFF',
+                            border: studyType === type.id ? '2px solid #17223E' : '1px solid #E5E7EB',
+                            background: '#FFFFFF',
                             boxShadow: '0px 4px 4px 0px #00000040',
-                            padding: '0 14px',
-                            gap: '8px',
+                            padding: '8px 6px',
+                            gap: '4px',
                           }}
                         >
                           <img src={type.icon} alt={type.label} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
                           <span
-                            className="font-arimo whitespace-nowrap"
+                            className="font-arimo text-center"
                             style={{
-                              fontSize: '14px',
-                              lineHeight: '20px',
+                              fontSize: '12px',
+                              lineHeight: '16px',
                               fontWeight: 500,
                               color: '#374151',
                             }}
@@ -558,13 +545,13 @@ export default function StudyPlannerPage() {
                     style={{
                       height: '44px',
                       borderRadius: '10px',
-                      background: '#00A63E',
+                      background: '#00BC7D',
                       fontSize: '14px',
                     }}
                   >
                     <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="currentColor">
                       <circle cx="12" cy="12" r="10" fill="white"/>
-                      <path d="M10 8l6 4-6 4V8z" fill="#00A63E"/>
+                      <path d="M10 8l6 4-6 4V8z" fill="#00BC7D"/>
                     </svg>
                     Start Focus Session with This Plan
                   </button>
