@@ -37,21 +37,22 @@ const mentorStats = [
 
 const pricingPlans = [
   {
-    name: 'Foundation',
+    name: 'Foundation Plan',
     emoji: '🚀',
+    subtitle: 'If your test is 12+ months away',
     price: '₹4,999',
-    period: '/mo',
+    period: '/per month',
     tagColor: '#155DFC',
     tagBg: '#DBEAFE',
-    tags: ['Prelims-focused', '3-month plan'],
+    tags: ['All materials', 'Flexible Pace', 'No Coaching'],
     features: [
-      { text: 'Bi-weekly 1-on-1 calls (45 min)', badge: 'Core' },
-      { text: 'Personalized study roadmap', badge: 'Core' },
-      { text: 'WhatsApp doubt resolution (48h)', badge: null },
-      { text: 'Monthly progress review', badge: null },
-      { text: 'Curated resource list', badge: null },
+      { text: '4 sessions/month', subtext: 'One per week', badge: 'Core' },
+      { text: 'WhatsApp access', subtext: '48hr response', badge: 'Core' },
+      { text: 'Monthly study plan', subtext: 'Tailored to you', badge: 'Core' },
+      { text: 'Full resource access', subtext: 'PDFs & guides', badge: 'Core' },
+      { text: 'Monthly progress review', subtext: null, badge: null },
     ],
-    cta: 'Start Foundation',
+    cta: 'Get Started → ₹4,999/mo →',
     ctaStyle: 'dark' as const,
     highlight: false,
     note: null,
@@ -59,20 +60,21 @@ const pricingPlans = [
   {
     name: 'Serious Attempt',
     emoji: '🔥',
+    subtitle: 'If test is 6–12 months away',
     price: '₹8,999',
-    period: '/mo',
+    period: '/per month',
     tagColor: '#C68A0B',
     tagBg: '#FEF3C7',
-    tags: ['Prelims + Mains', '6-month plan'],
+    tags: ['Answer + Mocks', 'Answer Writing', 'Mock Feedback'],
     features: [
-      { text: 'Weekly 1-on-1 calls (60 min)', badge: 'Core' },
-      { text: 'Full Prelims + Mains strategy', badge: 'Core' },
-      { text: 'WhatsApp doubt resolution (24h)', badge: null },
-      { text: 'Answer writing review (4/mo)', badge: 'Core' },
-      { text: 'Mock test analysis & feedback', badge: null },
-      { text: 'Peer study-group access', badge: null },
+      { text: '8 sessions/month', subtext: 'Twice each week', badge: 'Core' },
+      { text: 'Answer writing reviews', subtext: 'Detailed, fast', badge: '2x/wk' },
+      { text: 'Mock test debriefs', subtext: 'After each mock', badge: '2x/mo' },
+      { text: 'Priority WhatsApp', subtext: '24hr max reply', badge: null },
+      { text: 'Fortnightly study plans', subtext: null, badge: 'Core' },
+      { text: 'Full resource access', subtext: null, badge: 'Done' },
     ],
-    cta: 'Start Serious Attempt',
+    cta: 'Enrol Now → ₹8,999/mo →',
     ctaStyle: 'gold' as const,
     highlight: true,
     note: 'Limited to 8 slots @ June batch',
@@ -80,20 +82,21 @@ const pricingPlans = [
   {
     name: 'Final Mile',
     emoji: '🏆',
+    subtitle: 'Interview & revision · highest intensity',
     price: '₹14,999',
-    period: '/mo',
+    period: '/per month',
     tagColor: '#155DFC',
     tagBg: '#DBEAFE',
-    tags: ['Full journey', '12-month plan'],
+    tags: ['DAF Analysis', 'Mock Interview', '24/7 Access'],
     features: [
-      { text: 'Weekly 1-on-1 calls (90 min)', badge: 'Core' },
-      { text: 'End-to-end Prelims → Interview', badge: 'Core' },
-      { text: 'WhatsApp priority (same-day)', badge: null },
-      { text: 'Unlimited answer reviews', badge: 'Core' },
-      { text: 'Interview mock sessions', badge: null },
-      { text: 'Emergency strategy calls', badge: null },
+      { text: '12 sessions/month', subtext: '3 per week', badge: '3x/wk' },
+      { text: 'Unlimited answer reviews', subtext: 'Fast', badge: '24-48h' },
+      { text: 'Mock interview sessions', subtext: 'Tailored', badge: '2x/mo' },
+      { text: 'DAF analysis', subtext: '+ topic cards', badge: null },
+      { text: '24/7 WhatsApp access', subtext: null, badge: 'Instant' },
+      { text: 'Confidence coaching', subtext: 'Mental', badge: 'Daily' },
     ],
-    cta: 'Start Final Mile',
+    cta: 'Enrol Now → ₹14,999/mo →',
     ctaStyle: 'dark' as const,
     highlight: false,
     note: 'Spots close in free-call queue',
@@ -569,19 +572,34 @@ export default function FreeTrialPage() {
               fontSize: 'clamp(26px, 2.8vw, 40px)',
               fontWeight: 700,
               color: '#101828',
-              marginBottom: 'clamp(32px, 3vw, 48px)',
+              marginBottom: 'clamp(10px, 0.8vw, 14px)',
             }}
             className="font-arimo"
           >
             One program. Your entire journey.
           </h2>
 
-          {/* 3-col grid */}
+          {/* Subheading */}
+          <p
+            style={{
+              textAlign: 'center',
+              fontSize: 'clamp(14px, 1vw, 16px)',
+              color: '#6A7282',
+              lineHeight: 1.6,
+              marginBottom: 'clamp(32px, 3vw, 48px)',
+            }}
+            className="font-arimo"
+          >
+            Pick the plan that matches your stage — or book a free call and let Jeet Sir recommend the right fit.
+          </p>
+
+          {/* 3-col flex */}
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
+              display: 'flex',
               gap: 'clamp(16px, 1.5vw, 24px)',
+              justifyContent: 'center',
+              alignItems: 'stretch',
             }}
           >
             {pricingPlans.map((plan) => (
@@ -589,37 +607,85 @@ export default function FreeTrialPage() {
                 key={plan.name}
                 style={{
                   background: '#FFFFFF',
-                  borderRadius: '20px',
-                  border: plan.highlight ? '2px solid #FDC700' : '1px solid #E5E7EB',
-                  padding: 'clamp(24px, 2vw, 32px)',
+                  borderRadius: 'clamp(20px, 1.8vw, 24px)',
+                  border: plan.highlight ? '1.6px solid #C68A0B' : '1.6px solid #E5E7EB',
+                  padding: 'clamp(20px, 1.8vw, 28px)',
                   display: 'flex',
                   flexDirection: 'column' as const,
+                  flex: '1 1 clamp(280px, 25.6vw, 342px)',
                   boxShadow: plan.highlight
-                    ? '0px 4px 24px 0px rgba(253, 199, 0, 0.12), 0px 1px 3px 0px rgba(0,0,0,0.06)'
+                    ? '0px 8px 10px -6px #FFEDD4, 0px 20px 25px -5px #FFEDD4'
                     : '0px 1px 3px 0px rgba(0,0,0,0.06)',
                   position: 'relative' as const,
                 }}
               >
-                {/* Plan name + emoji */}
+                {/* Emoji */}
+                <div
+                  style={{
+                    fontSize: 'clamp(24px, 1.8vw, 30px)',
+                    marginBottom: 'clamp(8px, 0.6vw, 10px)',
+                  }}
+                >
+                  {plan.emoji}
+                </div>
+
+                {/* Plan name */}
                 <div
                   style={{
                     fontSize: 'clamp(18px, 1.4vw, 22px)',
                     fontWeight: 700,
                     color: '#101828',
-                    marginBottom: 'clamp(6px, 0.5vw, 8px)',
+                    marginBottom: 'clamp(2px, 0.2vw, 4px)',
                   }}
                   className="font-arimo"
                 >
-                  {plan.emoji} {plan.name}
+                  {plan.name}
+                </div>
+
+                {/* Subtitle */}
+                <div
+                  style={{
+                    fontSize: 'clamp(12px, 0.85vw, 14px)',
+                    color: '#6A7282',
+                    marginBottom: 'clamp(14px, 1.2vw, 20px)',
+                  }}
+                  className="font-arimo"
+                >
+                  {plan.subtitle}
+                </div>
+
+                {/* Price */}
+                <div style={{ marginBottom: 'clamp(16px, 1.2vw, 20px)' }}>
+                  <span
+                    style={{
+                      fontSize: 'clamp(28px, 2.2vw, 36px)',
+                      fontWeight: 700,
+                      color: '#101828',
+                    }}
+                    className="font-arimo"
+                  >
+                    {plan.price}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 'clamp(13px, 0.9vw, 15px)',
+                      color: '#6A7282',
+                      fontWeight: 500,
+                      marginLeft: '4px',
+                    }}
+                    className="font-arimo"
+                  >
+                    {plan.period}
+                  </span>
                 </div>
 
                 {/* Tags */}
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px', marginBottom: 'clamp(16px, 1.2vw, 20px)' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px', marginBottom: 'clamp(18px, 1.4vw, 24px)' }}>
                   {plan.tags.map((tag) => (
                     <span
                       key={tag}
                       style={{
-                        padding: '3px 10px',
+                        padding: 'clamp(3px, 0.25vw, 5px) clamp(8px, 0.7vw, 12px)',
                         borderRadius: '26843500px',
                         fontSize: 'clamp(10px, 0.7vw, 12px)',
                         fontWeight: 600,
@@ -633,29 +699,8 @@ export default function FreeTrialPage() {
                   ))}
                 </div>
 
-                {/* Price */}
-                <div style={{ marginBottom: 'clamp(20px, 1.5vw, 28px)' }}>
-                  <span
-                    style={{
-                      fontSize: 'clamp(28px, 2.2vw, 36px)',
-                      fontWeight: 700,
-                      color: '#101828',
-                    }}
-                    className="font-arimo"
-                  >
-                    {plan.price}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 'clamp(14px, 1vw, 16px)',
-                      color: '#6A7282',
-                      fontWeight: 500,
-                    }}
-                    className="font-arimo"
-                  >
-                    {plan.period}
-                  </span>
-                </div>
+                {/* Divider */}
+                <div style={{ height: '1px', background: '#E5E7EB', marginBottom: 'clamp(18px, 1.4vw, 24px)' }} />
 
                 {/* Features */}
                 <div style={{ flex: 1, marginBottom: 'clamp(20px, 1.5vw, 28px)' }}>
@@ -663,36 +708,51 @@ export default function FreeTrialPage() {
                     <div
                       key={feat.text}
                       style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '8px',
-                        marginBottom: 'clamp(10px, 0.8vw, 14px)',
-                        fontSize: 'clamp(13px, 0.9vw, 15px)',
-                        color: '#374151',
-                        lineHeight: 1.5,
+                        marginBottom: 'clamp(12px, 1vw, 16px)',
                       }}
                       className="font-arimo"
                     >
-                      <span style={{ color: '#16A34A', fontWeight: 700, flexShrink: 0, marginTop: '1px' }}>✓</span>
-                      <span>
-                        {feat.text}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          fontSize: 'clamp(13px, 0.9vw, 15px)',
+                          color: '#374151',
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        <span style={{ color: '#16A34A', fontWeight: 700, flexShrink: 0 }}>✓</span>
+                        <span style={{ flex: 1 }}>{feat.text}</span>
                         {feat.badge && (
                           <span
                             style={{
-                              marginLeft: '6px',
-                              padding: '1px 7px',
+                              padding: '1px 8px',
                               borderRadius: '26843500px',
                               fontSize: 'clamp(9px, 0.6vw, 10px)',
                               fontWeight: 700,
                               color: plan.tagColor,
                               background: plan.tagBg,
-                              verticalAlign: 'middle',
+                              whiteSpace: 'nowrap' as const,
+                              flexShrink: 0,
                             }}
                           >
                             {feat.badge}
                           </span>
                         )}
-                      </span>
+                      </div>
+                      {feat.subtext && (
+                        <div
+                          style={{
+                            fontSize: 'clamp(11px, 0.75vw, 12px)',
+                            color: '#9CA3AF',
+                            marginLeft: 'calc(8px + clamp(13px, 0.9vw, 15px))',
+                            marginTop: '2px',
+                          }}
+                        >
+                          {feat.subtext}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -702,7 +762,7 @@ export default function FreeTrialPage() {
                   style={{
                     width: '100%',
                     padding: 'clamp(12px, 1vw, 16px)',
-                    borderRadius: '12px',
+                    borderRadius: 'clamp(10px, 0.9vw, 12px)',
                     border: 'none',
                     fontSize: 'clamp(14px, 1vw, 16px)',
                     fontWeight: 600,
@@ -722,7 +782,7 @@ export default function FreeTrialPage() {
                     style={{
                       textAlign: 'center',
                       fontSize: 'clamp(11px, 0.7vw, 12px)',
-                      color: '#6A7282',
+                      color: plan.highlight ? '#C68A0B' : '#155DFC',
                       marginTop: 'clamp(8px, 0.6vw, 12px)',
                       fontWeight: 500,
                     }}
