@@ -61,7 +61,7 @@ const polityVideos = [
     categoryColor: '#1E40AF',
     views: '2.1L',
     date: '1 week ago',
-    hot: false,
+    hot: true,
   },
 ];
 
@@ -69,7 +69,7 @@ const stats = [
   { number: '500', suffix: '+', label: 'Free Lectures' },
   { number: '12', suffix: '+', label: 'Core Subjects' },
   { number: '1L', suffix: '+', label: 'Subscribers' },
-  { number: '\u221E', suffix: '', label: 'Always Free' },
+  { number: '', suffix: '', label: 'Always Free', icon: '/infi.png' },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -131,9 +131,7 @@ export default function VideoLecturesPage() {
               marginBottom: 'clamp(14px, 1.5vw, 20px)',
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#FFD273" stroke="#FFD273" strokeWidth="1"/>
-            </svg>
+            <img src="/cap.png" alt="cap" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
             India&apos;s Most Comprehensive UPSC Platform
           </div>
 
@@ -148,7 +146,7 @@ export default function VideoLecturesPage() {
             }}
           >
             Master Your{' '}
-            <span className="font-tinos italic" style={{ color: '#C68A0B' }}>UPSC Journey</span>
+            <span className="font-arimo font-bold italic" style={{ color: '#C68A0B' }}>UPSC Journey</span>
             <br />
             with Expert Video Lectures
           </h1>
@@ -171,7 +169,7 @@ export default function VideoLecturesPage() {
           <button
             className="flex items-center gap-2 font-arimo font-bold"
             style={{
-              background: '#FDC700',
+              background: '#FFD170',
               color: '#17223E',
               borderRadius: '30px',
               padding: 'clamp(12px, 1.2vw, 16px) clamp(28px, 2.5vw, 36px)',
@@ -203,9 +201,10 @@ export default function VideoLecturesPage() {
               {stats.map((stat, idx) => (
                 <React.Fragment key={stat.label}>
                   <div className="flex flex-col items-center" style={{ flex: 1 }}>
-                    <div className="font-arimo font-bold" style={{ fontSize: 'clamp(24px, 2.5vw, 34px)', color: '#162456', lineHeight: 1.2 }}>
+                    <div className="font-arimo font-bold flex items-center gap-1" style={{ fontSize: 'clamp(24px, 2.5vw, 34px)', color: '#162456', lineHeight: 1.2 }}>
                       {stat.number}
                       {stat.suffix && <span style={{ color: '#DBAC49' }}>{stat.suffix}</span>}
+                      {stat.icon && <img src={stat.icon} alt="icon" style={{ width: '88.40px', height: '40px', objectFit: 'contain', marginLeft: '2px' }} />}
                     </div>
                     <div className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 13px)', color: '#6A7282', marginTop: '4px' }}>
                       {stat.label}
@@ -306,8 +305,8 @@ export default function VideoLecturesPage() {
               textAlign: 'center',
             }}
           >
-            Pick Your Subject,{' '}
-            <span className="font-tinos italic" style={{ color: '#FDC700' }}>Start Learning.</span>
+            Pick Your Subject,<br />
+            <span className="font-arimo font-bold italic" style={{ color: '#FDC700' }}>Start Learning.</span>
           </h2>
 
           {/* 4x3 subject grid */}
@@ -390,7 +389,7 @@ export default function VideoLecturesPage() {
                   marginBottom: 'clamp(4px, 0.4vw, 6px)',
                 }}
               >
-                Never Miss a{' '}
+                Never Miss a<br />
                 <span style={{ color: '#F0B100' }}>Lecture Again.</span>
               </h3>
 
@@ -453,8 +452,7 @@ export default function VideoLecturesPage() {
                 height: 'clamp(100px, 10vw, 140px)',
                 borderRadius: '50%',
                 background: 'rgba(25,60,184,0.3)',
-                flexShrink: 0,
-              }}
+                flexShrink: 0,                opacity: 0.4,              }}
             >
               <span style={{ fontSize: 'clamp(48px, 5vw, 68px)' }}>{'\uD83D\uDD14'}</span>
             </div>
@@ -490,7 +488,18 @@ export default function VideoLecturesPage() {
           {/* Header */}
           <div style={{ marginBottom: 'clamp(6px, 0.6vw, 8px)' }}>
             <div className="flex items-center gap-2" style={{ marginBottom: 'clamp(4px, 0.4vw, 6px)' }}>
-              <span style={{ fontSize: 'clamp(22px, 2vw, 28px)' }}>{'\uD83C\uDFDB\uFE0F'}</span>
+              <div
+                className="flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)',
+                  borderRadius: '10px',
+                  width: 'clamp(32px, 2.8vw, 40px)',
+                  height: 'clamp(32px, 2.8vw, 40px)',
+                  flexShrink: 0,
+                }}
+              >
+                <span style={{ fontSize: 'clamp(18px, 1.6vw, 22px)' }}>{'\uD83C\uDFDB\uFE0F'}</span>
+              </div>
               <h2
                 className="font-arimo font-bold"
                 style={{
@@ -612,11 +621,7 @@ export default function VideoLecturesPage() {
                         cursor: 'pointer',
                       }}
                     >
-                      {/* PDF icon */}
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="#101828" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="#101828" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
+                      <img src="/pdf.png" alt="pdf" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                       PDF
                     </button>
 
@@ -633,10 +638,7 @@ export default function VideoLecturesPage() {
                         cursor: 'pointer',
                       }}
                     >
-                      {/* Chat icon */}
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="#101828" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
+                      <img src="/think.png" alt="ask mentor" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                       Ask Mentor
                     </button>
 
@@ -652,11 +654,7 @@ export default function VideoLecturesPage() {
                         cursor: 'pointer',
                       }}
                     >
-                      {/* YouTube play icon */}
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FFFFFF"/>
-                        <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#162456"/>
-                      </svg>
+                      <img src="/yt.png" alt="watch" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                       Watch
                     </button>
                   </div>

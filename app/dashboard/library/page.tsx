@@ -286,14 +286,14 @@ const heroStats = [
   { number: '360', suffix: '+', label: 'Free PDFs' },
   { number: '25', suffix: '+', label: 'PYQ-Backed Notes' },
   { number: '1L', suffix: '+', label: 'Downloads' },
-  { number: '\u221E', suffix: '', label: 'Always Free' },
+  { number: '', suffix: '', label: 'Always Free', icon: '/infi.png' },
 ];
 
 const bottomStats = [
-  { number: '94K', suffix: '+', label: 'ACTIVE ASPIRANTS', suffixColor: '#155DFC' },
-  { number: '280', suffix: '+', label: 'FREE PDFS', suffixColor: '#EA580C' },
-  { number: '500', suffix: '+', label: 'PYQS SOLVED', suffixColor: '#155DFC' },
-  { number: '100', suffix: '%', label: 'ALWAYS FREE', suffixColor: '#16A34A' },
+  { number: '94K', suffix: '+', label: 'ACTIVE ASPIRANTS', suffixColor: '#101828' },
+  { number: '280', suffix: '+', label: 'FREE PDFS', suffixColor: '#FF6900', numberColor: '#FF6900' },
+  { number: '500', suffix: '+', label: 'PYQS SOLVED', suffixColor: '#101828' },
+  { number: '100', suffix: '%', label: 'ALWAYS FREE', suffixColor: '#101828' },
 ];
 
 const testimonials = [
@@ -363,9 +363,7 @@ export default function LibraryPage() {
               marginBottom: 'clamp(14px, 1.5vw, 20px)',
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#FFD273" stroke="#FFD273" strokeWidth="1" />
-            </svg>
+            <img src="/cap.png" alt="cap" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
             India&apos;s Most Comprehensive UPSC Platform
           </div>
 
@@ -426,9 +424,10 @@ export default function LibraryPage() {
               {heroStats.map((stat, idx) => (
                 <React.Fragment key={stat.label}>
                   <div className="flex flex-col items-center" style={{ flex: 1 }}>
-                    <div className="font-arimo font-bold" style={{ fontSize: 'clamp(24px, 2.5vw, 34px)', color: '#162456', lineHeight: 1.2 }}>
+                    <div className="font-arimo font-bold flex items-center gap-1" style={{ fontSize: 'clamp(24px, 2.5vw, 34px)', color: '#162456', lineHeight: 1.2 }}>
                       {stat.number}
                       {stat.suffix && <span style={{ color: '#DBAC49' }}>{stat.suffix}</span>}
+                      {(stat as any).icon && <img src={(stat as any).icon} alt="icon" style={{ width: '88.40px', height: '40px', objectFit: 'contain', marginLeft: '2px' }} />}
                     </div>
                     <div className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 13px)', color: '#6A7282', marginTop: '4px' }}>
                       {stat.label}
@@ -805,15 +804,15 @@ export default function LibraryPage() {
                     style={{
                       width: 'clamp(36px, 3.2vw, 44px)',
                       height: 'clamp(36px, 3.2vw, 44px)',
-                      borderRadius: '50%',
-                      background: '#FEE2E2',
+                      borderRadius: '10px',
+                      background: '#FEF2F2',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
                     }}
                   >
-                    <span style={{ fontSize: 'clamp(16px, 1.4vw, 20px)' }}>{'\uD83D\uDCC4'}</span>
+                    <img src="/redpdf.png" alt="pdf" style={{ width: 'clamp(20px, 1.8vw, 26px)', height: 'clamp(20px, 1.8vw, 26px)', objectFit: 'contain' }} />
                   </div>
 
                   {/* Title & subtitle */}
@@ -855,8 +854,12 @@ export default function LibraryPage() {
                         border: 'none',
                         cursor: 'pointer',
                         whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
                       }}
                     >
+                      <img src="/bbook.png" alt="read" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
                       Read
                     </button>
                     <button
@@ -870,8 +873,12 @@ export default function LibraryPage() {
                         border: 'none',
                         cursor: 'pointer',
                         whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
                       }}
                     >
+                      <img src="/get pdf.png" alt="get pdf" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
                       Get PDF
                     </button>
                   </div>
@@ -895,8 +902,25 @@ export default function LibraryPage() {
             gap: 'clamp(24px, 3vw, 40px)',
             marginBottom: 'clamp(40px, 4vw, 60px)',
             flexWrap: 'wrap' as const,
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
+          {/* Background books image */}
+          <img
+            src="/bookssss.png"
+            alt=""
+            style={{
+              position: 'absolute',
+              right: 'clamp(60px, 8vw, 120px)',
+              top: '0',
+              width: '128px',
+              height: '128px',
+              objectFit: 'contain',
+              opacity: 0.2,
+              pointerEvents: 'none',
+            }}
+          />
           {/* Left side */}
           <div style={{ flex: 1, minWidth: 'clamp(280px, 40vw, 400px)' }}>
             <div
@@ -1071,7 +1095,7 @@ export default function LibraryPage() {
                 boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.06)',
               }}
             >
-              <div className="font-arimo font-bold" style={{ fontSize: 'clamp(28px, 2.8vw, 38px)', color: '#101828', lineHeight: 1.2 }}>
+              <div className="font-arimo font-bold" style={{ fontSize: 'clamp(28px, 2.8vw, 38px)', color: (stat as any).numberColor || '#101828', lineHeight: 1.2 }}>
                 {stat.number}
                 <span style={{ color: stat.suffixColor }}>{stat.suffix}</span>
               </div>
@@ -1136,9 +1160,10 @@ export default function LibraryPage() {
               <div
                 key={t.initials}
                 style={{
-                  background: '#FFFBEB',
+                  background: 'linear-gradient(135deg, #FEFCE8 0%, #FFF7ED 100%)',
                   borderRadius: '16px',
                   padding: 'clamp(18px, 2vw, 24px)',
+                  border: '1px solid #FFF085',
                 }}
               >
                 {/* Stars */}
@@ -1171,7 +1196,7 @@ export default function LibraryPage() {
                       width: 'clamp(36px, 3.2vw, 44px)',
                       height: 'clamp(36px, 3.2vw, 44px)',
                       borderRadius: '50%',
-                      background: '#1E40AF',
+                      background: 'linear-gradient(135deg, #1C398E 0%, #1447E6 100%)',
                       color: '#FFFFFF',
                       fontSize: 'clamp(12px, 1.05vw, 14px)',
                       flexShrink: 0,
@@ -1251,7 +1276,7 @@ export default function LibraryPage() {
 
             <div className="flex items-center" style={{ gap: 'clamp(10px, 1vw, 14px)', flexWrap: 'wrap' }}>
               <button
-                className="font-arimo font-bold"
+                className="font-arimo font-bold flex items-center gap-2"
                 style={{
                   background: '#101828',
                   color: '#FFFFFF',
@@ -1263,10 +1288,11 @@ export default function LibraryPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
+                <img src="/bookssss.png" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
                 Start Studying Free
               </button>
               <button
-                className="font-arimo font-bold"
+                className="font-arimo font-bold flex items-center gap-2"
                 style={{
                   background: '#FFFFFF',
                   color: '#101828',
@@ -1278,24 +1304,28 @@ export default function LibraryPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
+                <img src="/📺.png" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
                 Watch on YouTube
               </button>
             </div>
           </div>
 
           {/* Right side - decorative rocket */}
-          <div
-            className="flex items-center justify-center"
+          <img
+            src="/rocket.png"
+            alt=""
             style={{
-              width: 'clamp(80px, 8vw, 110px)',
-              height: 'clamp(80px, 8vw, 110px)',
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.3)',
-              flexShrink: 0,
+              position: 'absolute',
+              right: '0',
+              top: '0',
+              width: '200px',
+              height: '128px',
+              objectFit: 'contain',
+              objectPosition: 'right top',
+              opacity: 0.1,
+              pointerEvents: 'none',
             }}
-          >
-            <span style={{ fontSize: 'clamp(40px, 4vw, 56px)' }}>{'\uD83D\uDE80'}</span>
-          </div>
+          />
         </div>
       </div>
     </div>
