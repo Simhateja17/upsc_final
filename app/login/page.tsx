@@ -274,20 +274,22 @@ export default function LoginPage() {
 
       {/* ── RIGHT PANEL ── */}
       <div
-        className="flex-1 flex flex-col"
-        style={{ background: '#F9FAFB', minHeight: 787 }}
+        className="flex-1 flex flex-col items-center"
+        style={{ background: '#F9FAFB', minHeight: 787, paddingTop: 72 }}
       >
+        {/* Single centered container for tab + form */}
+        <div style={{ width: 448 }}>
+
         {/* Tab row */}
         <div
-          className="flex justify-center"
-          style={{ paddingTop: 72, visibility: activeTab === 'success' ? 'hidden' : 'visible' }}
+          style={{ visibility: activeTab === 'success' ? 'hidden' : 'visible', marginBottom: 32 }}
         >
           {/* Tab container */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              width: 421,
+              width: '100%',
               height: 54,
               borderRadius: 10,
               border: '1px solid #D1D5DC',
@@ -348,14 +350,9 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Form area — centered in right panel */}
+        {/* Form area */}
         <div
           className="flex flex-col"
-          style={{
-            width: activeTab === 'signup' ? 384 : activeTab === 'success' ? 384 : 448,
-            margin: '0 auto',
-            marginTop: activeTab === 'success' ? 60 : 32,
-          }}
         >
 
         {/* ── SUCCESS SCREEN ── */}
@@ -1001,6 +998,7 @@ export default function LoginPage() {
             <Image src="/icon-login-arrow.png" alt="" width={18} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) saturate(100%) invert(27%) sepia(97%) saturate(2500%) hue-rotate(217deg) brightness(102%)' }} />
           </button>
           </>)}
+        </div>
         </div>
       </div>
     </div>

@@ -39,7 +39,7 @@ const Sidebar = () => {
       title: 'ANALYTICS',
       items: [
         { id: 'performance', label: 'Performance Analytics', icon: '/sidebar-performance-new.png', path: '/dashboard/performance' },
-        { id: 'test-analytics', label: 'Analytics', icon: '/sidebar-analytics-new.png', path: '/dashboard/test-analytics' },
+        { id: 'test-analytics', label: 'Test Analytics', icon: '/sidebar-analytics-new.png', path: '/dashboard/test-analytics' },
       ],
     },
     {
@@ -52,13 +52,9 @@ const Sidebar = () => {
     {
       title: 'COMMUNITY',
       items: [
-        { id: 'study-groups', label: 'Study Groups', icon: '/sidebar-study-groups.png', path: '/dashboard/study-groups' },
+        { id: 'study-groups', label: 'Study Groups', icon: '/sidebar-mindmap.png', path: '/dashboard/study-groups' },
+        { id: 'leaderboard', label: 'Leaderboard', icon: '/sidebar-study-groups.png', path: '/dashboard/leaderboard' },
         { id: 'discussion', label: 'Discussion', icon: '/sidebar-discussion.png', path: '/dashboard/discussion' },
-      ],
-    },
-    {
-      title: 'SUPPORT',
-      items: [
         { id: 'qa-forum', label: 'Q&A Forum', icon: '/sidebar-qa-forum.png', path: '/dashboard/qa-forum' },
         { id: 'mental-health', label: 'Mental Health Buddy', icon: '/sidebar-mental-health-new.png', path: '/dashboard/mental-health' },
       ],
@@ -66,28 +62,26 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-[clamp(280px,15.4vw,305px)] h-screen bg-white overflow-y-auto sticky top-0 left-0" style={{ boxShadow: '3px 0 12px rgba(0,0,0,0.06), 1px 0 3px rgba(0,0,0,0.04)', zIndex: 1 }}>
-      {/* Sidebar Content */}
-      <nav className="py-[clamp(1rem,1.5vw,1.5rem)] px-[clamp(0.75rem,1vw,1rem)]">
+    <aside className="w-[260px] min-w-[260px] h-full bg-white overflow-y-auto flex-shrink-0" style={{ boxShadow: '3px 0 12px rgba(0,0,0,0.06), 1px 0 3px rgba(0,0,0,0.04)', zIndex: 1 }}>
+      <nav className="pt-5 pb-8 px-4">
         {navigationSections.map((section, sectionIndex) => (
-          <div key={sectionIndex} className="mb-[clamp(1.5rem,2vw,2rem)]">
+          <div key={sectionIndex} className="mb-5">
             {/* Section Title */}
-            <h3 className="text-[#666666] font-inter font-medium text-[clamp(14px,1.04vw,20px)] uppercase tracking-[-0.01em] mb-[clamp(0.75rem,1vw,1rem)] px-[clamp(0.5rem,0.625vw,0.75rem)]">
+            <h3 className="text-[#999999] font-inter font-semibold text-[10px] uppercase tracking-[0.08em] mb-2 px-3">
               {section.title}
             </h3>
 
             {/* Section Items */}
-            <ul className="space-y-[clamp(0.25rem,0.4vw,0.5rem)]">
+            <ul className="space-y-0.5">
               {section.items.map((item) => (
                 <li key={item.id}>
                   <Link
                     href={item.path}
                     onClick={() => setActiveItem(item.id)}
                     className={`
-                      flex items-center gap-[clamp(0.75rem,0.83vw,1rem)]
-                      px-[clamp(0.5rem,0.625vw,0.75rem)]
-                      py-[clamp(0.5rem,0.625vw,0.75rem)]
-                      rounded-[4px]
+                      flex items-center gap-[10px]
+                      px-3 py-[9px]
+                      rounded-[6px]
                       transition-all duration-200
                       ${
                         activeItem === item.id
@@ -96,16 +90,13 @@ const Sidebar = () => {
                       }
                     `}
                   >
-                    {/* Icon */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={item.icon} 
+                    <img
+                      src={item.icon}
                       alt={item.label}
-                      className="w-[clamp(16px,1.25vw,24px)] h-[clamp(16px,1.25vw,24px)] flex-shrink-0 object-contain"
+                      className="w-[18px] h-[18px] flex-shrink-0 object-contain"
                     />
-
-                    {/* Label */}
-                    <span className="font-inter font-medium text-[clamp(14px,0.94vw,18px)] leading-[100%]">
+                    <span className="font-inter font-medium text-[13px] leading-none whitespace-nowrap">
                       {item.label}
                     </span>
                   </Link>

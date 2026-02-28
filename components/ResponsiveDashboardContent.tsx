@@ -1,10 +1,112 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 
-const ResponsiveDashboardContent = () => {
+const AddTaskModal = ({ onClose }: { onClose: () => void }) => {
+  const [title, setTitle] = useState('');
+  const [subject, setSubject] = useState('');
+  const [startTime, setStartTime] = useState('14:00');
+  const [endTime, setEndTime] = useState('15:30');
+
   return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl p-8 w-full max-w-[520px] mx-4 relative"
+        style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-inter font-bold text-[22px] text-[#17223E]">Add Custom Study Task</h2>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-500 font-medium text-[16px]"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Task Title */}
+        <div className="mb-5">
+          <label className="block font-inter font-medium text-[14px] text-[#6366F1] mb-2">Task Title</label>
+          <input
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="e.g., Complete Polity Chapter 5"
+            className="w-full border-2 border-[#6366F1] rounded-xl px-4 py-3 font-inter text-[14px] text-gray-500 outline-none focus:border-[#4F46E5] transition-colors"
+          />
+        </div>
+
+        {/* Subject */}
+        <div className="mb-5">
+          <label className="block font-inter font-medium text-[14px] text-[#6366F1] mb-2">Subject</label>
+          <select
+            value={subject}
+            onChange={e => setSubject(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-500 outline-none focus:border-[#6366F1] bg-white transition-colors appearance-auto"
+          >
+            <option value="">Select Subject</option>
+            <option value="indian-polity">Indian Polity</option>
+            <option value="history">History</option>
+            <option value="geography">Geography</option>
+            <option value="economics">Economics</option>
+            <option value="environment">Environment</option>
+            <option value="current-affairs">Current Affairs</option>
+            <option value="science-tech">Science & Technology</option>
+          </select>
+        </div>
+
+        {/* Time */}
+        <div className="mb-7">
+          <label className="block font-inter font-medium text-[14px] text-[#6366F1] mb-2">Time</label>
+          <div className="flex gap-4">
+            <input
+              type="time"
+              value={startTime}
+              onChange={e => setStartTime(e.target.value)}
+              className="flex-1 border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] transition-colors"
+            />
+            <input
+              type="time"
+              value={endTime}
+              onChange={e => setEndTime(e.target.value)}
+              className="flex-1 border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 border-2 border-gray-200 rounded-xl py-3 font-inter font-medium text-[15px] text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <span>✕</span> Cancel
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-xl py-3 font-inter font-medium text-[15px] text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            style={{ background: 'linear-gradient(135deg, #6366F1, #8B5CF6)' }}
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Add Task
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ResponsiveDashboardContent = () => {
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+
+  return (
+    <>
     <div className="w-full min-h-screen py-[clamp(1.5rem,3vw,4rem)] px-[clamp(1rem,2vw,3rem)]" style={{ background: '#FAFBFE' }}>
       <div className="max-w-[1400px] mx-auto">
 
@@ -16,7 +118,7 @@ const ResponsiveDashboardContent = () => {
           }}
         >
           {/* Greeting Section */}
-          <div className="mb-[clamp(1.5rem,2.34vw,2.5rem)]">
+          <div className="mb-[clamp(0.5rem,0.75vw,0.75rem)]">
             <h1
               className="font-arimo font-bold text-white mb-[clamp(1rem,1.56vw,1.5rem)]"
               style={{
@@ -95,6 +197,7 @@ const ResponsiveDashboardContent = () => {
 
           {/* Add Task Button */}
           <button
+            onClick={() => setShowAddTaskModal(true)}
             className="px-[clamp(1.25rem,1.46vw,1.75rem)] rounded-[20px] font-inter font-medium text-white border-2 flex items-center gap-2 hover:opacity-90 transition-opacity"
             style={{
               height: 'clamp(48px,2.8vw,56px)',
@@ -176,8 +279,9 @@ const ResponsiveDashboardContent = () => {
               aria-label="Open Daily MCQ"
               className="block bg-[#F9FAFB] rounded-[14px] border border-[#E5E7EB] p-[clamp(1.25rem,1.75vw,2rem)] relative cursor-pointer h-full flex flex-col hover:border-[#D0D5DD] transition-colors"
             >
-              <div className="absolute top-4 right-4 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                <img src="/image-removebg-preview (48) 1.png" alt="Completed" className="w-5 h-5" />
+              <div className="absolute top-4 right-4 flex items-center justify-center" style={{ width: '24px', height: '24px' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/container-icon.png" alt="Completed" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
               </div>
 
               <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">AI Evaluation</div>
@@ -197,7 +301,13 @@ const ResponsiveDashboardContent = () => {
               </p>
 
               <div className="w-full bg-[#17223E] text-white rounded-[8px] py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
-                <img src="/image-removebg-preview (48) 1.png" alt="Completed" className="w-5 h-5" />
+                <div style={{
+                  width: '22px',
+                  height: '16px',
+                  aspectRatio: '11/8',
+                  background: 'url("/image-removebg-preview (48) 1.png") transparent 50% / cover no-repeat',
+                  flexShrink: 0,
+                }} />
                 Completed
               </div>
             </Link>
@@ -273,21 +383,25 @@ const ResponsiveDashboardContent = () => {
                 Today's Study Tasks
               </h2>
             </div>
-            <div className="flex items-center gap-3">
-              <button className="flex items-center justify-center">
-                <img src="/o.png" alt="Previous" style={{ width: '35px', height: '35px' }} />
+            <div className="flex items-center gap-2">
+              <button className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M15 18l-6-6 6-6" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </button>
-              <span className="font-inter text-[clamp(13px,0.73vw,14px)] text-gray-400 px-4">
+              <span className="font-inter font-medium text-[clamp(13px,0.83vw,15px)] text-gray-400 px-2">
                 Today • Wed, Mar 19
               </span>
-              <button className="flex items-center justify-center">
-                <img src="/oo.png" alt="Next" style={{ width: '35px', height: '35px' }} />
+              <button className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 18l6-6-6-6" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </button>
             </div>
           </div>
 
           {/* Task 1 - Red Border */}
-          <div className="rounded-lg border-l-4 border-red-500 p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-start justify-between">
+          <div className="rounded-lg border-l-4 border-red-500 bg-white p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-start justify-between" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
             <div className="flex-1">
               <h3 className="font-inter font-semibold text-[clamp(14px,0.94vw,16px)] text-[#1A1A1A] mb-2">
                 Complete Polity Chapter 5 - Fundamental Rights
@@ -317,7 +431,7 @@ const ResponsiveDashboardContent = () => {
           </div>
 
           {/* Task 2 - Green Border */}
-          <div className="rounded-lg border-l-4 border-green-500 p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-start justify-between">
+          <div className="rounded-lg border-l-4 border-green-500 bg-white p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-start justify-between" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
             <div className="flex-1">
               <h3 className="font-inter font-semibold text-[clamp(14px,0.94vw,16px)] text-[#1A1A1A] mb-2">
                 Watch Economics Lecture - Fiscal Policy
@@ -347,7 +461,7 @@ const ResponsiveDashboardContent = () => {
           </div>
 
           {/* Task 3 - Yellow Border */}
-          <div className="rounded-lg border-l-4 border-yellow-500 p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-start justify-between">
+          <div className="rounded-lg border-l-4 border-yellow-500 bg-white p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-start justify-between" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
             <div className="flex-1">
               <h3 className="font-inter font-semibold text-[clamp(14px,0.94vw,16px)] text-[#1A1A1A] mb-2">
                 Solve 50 MCQs on Modern History
@@ -393,7 +507,7 @@ const ResponsiveDashboardContent = () => {
                 </p>
               </div>
             </div>
-            <button className="px-[clamp(1rem,1.25vw,1.5rem)] py-[clamp(0.4rem,0.52vw,0.6rem)] bg-[#17223E] text-white rounded-lg font-inter font-medium text-[clamp(12px,0.68vw,13px)] hover:bg-[#1E2875] transition-colors flex items-center gap-1.5 flex-shrink-0">
+            <button onClick={() => setShowAddTaskModal(true)} className="px-[clamp(1rem,1.25vw,1.5rem)] py-[clamp(0.4rem,0.52vw,0.6rem)] bg-[#17223E] text-white rounded-lg font-inter font-medium text-[clamp(12px,0.68vw,13px)] hover:bg-[#1E2875] transition-colors flex items-center gap-1.5 flex-shrink-0">
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
                 <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
               </svg>
@@ -413,6 +527,9 @@ const ResponsiveDashboardContent = () => {
 
       </div>
     </div>
+
+      {showAddTaskModal && <AddTaskModal onClose={() => setShowAddTaskModal(false)} />}
+    </>
   );
 };
 

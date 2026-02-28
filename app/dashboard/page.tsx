@@ -5,11 +5,11 @@ import PerformanceStatsWidget from '@/components/PerformanceStatsWidget';
 export default function DashboardPage() {
   return (
     <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
-      {/* Content Area with Sidebar */}
-      <div className="flex flex-1 overflow-y-auto">
-        {/* Left Sidebar */}
-        <Sidebar />
+      {/* Left Sidebar — outside the scrolling container */}
+      <Sidebar />
 
+      {/* Scrollable Content Area */}
+      <div className="flex flex-1 overflow-y-auto">
         {/* Main Content Area */}
         <main className="flex-1">
           <ResponsiveDashboardContent />

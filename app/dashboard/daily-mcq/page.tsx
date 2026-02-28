@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function DailyMcqIntroPage() {
   return (
-    <div className="flex flex-col min-h-screen panel-recessed">
+    <div className="flex flex-col overflow-hidden panel-recessed" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-4">
         {/* Intro Card */}

@@ -21,18 +21,18 @@ const categories = [
 ];
 
 const subjectCards = [
-  { name: 'Indian Polity', emoji: '\uD83C\uDFDB\uFE0F', videos: 81, views: '312K' },
-  { name: 'Modern History', emoji: '\uD83D\uDCDC', videos: 64, views: '287K' },
-  { name: 'Geography', emoji: '\uD83C\uDF0D', videos: 72, views: '245K' },
-  { name: 'Indian Economy', emoji: '\uD83D\uDCCA', videos: 58, views: '198K' },
-  { name: 'Environment', emoji: '\uD83C\uDF3F', videos: 45, views: '176K' },
-  { name: 'Science & Tech', emoji: '\uD83D\uDD2C', videos: 39, views: '154K' },
-  { name: 'Ancient History', emoji: '\uD83C\uDFFA', videos: 36, views: '142K' },
-  { name: 'Ethics GSA', emoji: '\u2696\uFE0F', videos: 42, views: '168K' },
-  { name: 'International Relations', emoji: '\uD83C\uDF10', videos: 33, views: '129K' },
-  { name: 'Art & Culture', emoji: '\uD83C\uDFA8', videos: 28, views: '115K' },
-  { name: 'Internal Security', emoji: '\uD83D\uDEE1\uFE0F', videos: 24, views: '98K' },
-  { name: 'Essay & Answer Writing', emoji: '\u270D\uFE0F', videos: 31, views: '186K' },
+  { name: 'Indian Polity', emoji: '\uD83C\uDFDB\uFE0F', videos: 81, views: '312K', category: 'Polity' },
+  { name: 'Modern History', emoji: '\uD83D\uDCDC', videos: 64, views: '287K', category: 'History' },
+  { name: 'Geography', emoji: '\uD83C\uDF0D', videos: 72, views: '245K', category: 'Geography' },
+  { name: 'Indian Economy', emoji: '\uD83D\uDCCA', videos: 58, views: '198K', category: 'Economy' },
+  { name: 'Environment', emoji: '\uD83C\uDF3F', videos: 45, views: '176K', category: 'Environment' },
+  { name: 'Science & Tech', emoji: '\uD83D\uDD2C', videos: 39, views: '154K', category: 'Science & Tech' },
+  { name: 'Ancient History', emoji: '\uD83C\uDFFA', videos: 36, views: '142K', category: 'History' },
+  { name: 'Ethics GSA', emoji: '\u2696\uFE0F', videos: 42, views: '168K', category: 'Ethics' },
+  { name: 'International Relations', emoji: '\uD83C\uDF10', videos: 33, views: '129K', category: 'IR' },
+  { name: 'Art & Culture', emoji: '\uD83C\uDFA8', videos: 28, views: '115K', category: 'Art & Culture' },
+  { name: 'Internal Security', emoji: '\uD83D\uDEE1\uFE0F', videos: 24, views: '98K', category: 'IR' },
+  { name: 'Current Affairs', emoji: '\uD83D\uDCF0', videos: 31, views: '186K', category: 'Current Affairs' },
 ];
 
 const polityVideos = [
@@ -76,7 +76,15 @@ const stats = [
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 export default function VideoLecturesPage() {
-  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showMentorModal, setShowMentorModal] = useState(false);
+
+  const filteredSubjects = selectedCategory === null
+    ? []
+    : selectedCategory === 'All Categories'
+      ? subjectCards
+      : subjectCards.filter((s) => s.category === selectedCategory);
 
   return (
     <div
@@ -253,6 +261,7 @@ export default function VideoLecturesPage() {
                 borderRadius: '26843500px',
                 background: selectedCategory === cat ? '#162456' : '#F3F4F6',
                 color: selectedCategory === cat ? '#FFFFFF' : '#364153',
+                outline: selectedCategory === cat ? 'none' : 'none',
                 fontSize: 'clamp(12px, 1.05vw, 14px)',
                 border: 'none',
                 cursor: 'pointer',
@@ -309,56 +318,57 @@ export default function VideoLecturesPage() {
             <span className="font-arimo font-bold italic" style={{ color: '#FDC700' }}>Start Learning.</span>
           </h2>
 
-          {/* 4x3 subject grid */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: 'clamp(14px, 1.5vw, 20px)',
-            }}
-          >
-            {subjectCards.map((subject) => (
-              <div
-                key={subject.name}
-                style={{
-                  background: '#FFFFFF',
-                  borderRadius: '14px',
-                  padding: 'clamp(18px, 2vw, 24px)',
-                  boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {/* Emoji icon */}
-                <div style={{ fontSize: 'clamp(28px, 3vw, 38px)', marginBottom: 'clamp(10px, 1vw, 14px)' }}>
-                  {subject.emoji}
-                </div>
-
-                {/* Subject name */}
+          {/* Subject grid — shown only when a category is selected */}
+          {selectedCategory === null ? (
+            <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>👆</div>
+              <p className="font-arimo font-medium" style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>
+                Select a category above to browse subjects
+              </p>
+            </div>
+          ) : filteredSubjects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+              <p className="font-arimo font-medium" style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>
+                No subjects found for this category
+              </p>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: 'clamp(14px, 1.5vw, 20px)',
+              }}
+            >
+              {filteredSubjects.map((subject) => (
                 <div
-                  className="font-arimo font-bold"
+                  key={subject.name}
                   style={{
-                    fontSize: 'clamp(14px, 1.2vw, 16px)',
-                    color: '#17223E',
-                    marginBottom: 'clamp(4px, 0.4vw, 6px)',
+                    background: '#FFFFFF',
+                    borderRadius: '14px',
+                    padding: 'clamp(18px, 2vw, 24px)',
+                    boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
                   }}
                 >
-                  {subject.name}
+                  <div style={{ fontSize: 'clamp(28px, 3vw, 38px)', marginBottom: 'clamp(10px, 1vw, 14px)' }}>
+                    {subject.emoji}
+                  </div>
+                  <div
+                    className="font-arimo font-bold"
+                    style={{ fontSize: 'clamp(14px, 1.2vw, 16px)', color: '#17223E', marginBottom: 'clamp(4px, 0.4vw, 6px)' }}
+                  >
+                    {subject.name}
+                  </div>
+                  <div className="font-arimo" style={{ fontSize: 'clamp(10px, 0.9vw, 12px)', color: '#364153' }}>
+                    {subject.videos} videos &middot; {subject.views} Views
+                  </div>
                 </div>
-
-                {/* Stats */}
-                <div
-                  className="font-arimo"
-                  style={{
-                    fontSize: 'clamp(10px, 0.9vw, 12px)',
-                    color: '#364153',
-                  }}
-                >
-                  {subject.videos} videos &middot; {subject.views} Views
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ============================================================ */}
@@ -610,6 +620,7 @@ export default function VideoLecturesPage() {
                   <div className="flex items-center" style={{ gap: 'clamp(6px, 0.6vw, 8px)' }}>
                     {/* PDF button */}
                     <button
+                      onClick={() => setShowLoginModal(true)}
                       className="flex items-center gap-1 font-arimo font-medium"
                       style={{
                         padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)',
@@ -627,6 +638,7 @@ export default function VideoLecturesPage() {
 
                     {/* Ask Mentor button */}
                     <button
+                      onClick={() => setShowMentorModal(true)}
                       className="flex items-center gap-1 font-arimo font-medium"
                       style={{
                         padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)',
@@ -665,39 +677,28 @@ export default function VideoLecturesPage() {
         </div>
 
         {/* ============================================================ */}
-        {/*  SECTION 6: BOTTOM CARDS (LOGIN + ASK MENTOR)                  */}
-        {/* ============================================================ */}
+        {/*  SECTION 6: ASK MENTOR CARD ONLY                             */}
+        {/* Section 6 removed — cards are now modals */}
+      </div>
+
+      {/* ── Ask the Mentor Modal ── */}
+      {showMentorModal && (
         <div
-          className="flex"
-          style={{
-            gap: 'clamp(16px, 1.8vw, 24px)',
-            alignItems: 'flex-start',
-          }}
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setShowMentorModal(false)}
         >
-          {/* ── Login to Download Card ── */}
           <div
-            style={{
-              flex: 1,
-              background: '#FFFFFF',
-              borderRadius: '24px',
-              border: '1.6px solid #6A7282',
-              padding: 'clamp(20px, 2.51vw, 33px)',
-            }}
+            style={{ background: '#FFFFFF', borderRadius: '24px', border: '1.6px solid #6A7282', padding: '28px', width: '100%', maxWidth: '480px', margin: '0 16px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Top row: emoji + close */}
-            <div className="flex items-center justify-between" style={{ marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-              <span style={{ fontSize: 'clamp(28px, 2.8vw, 38px)' }}>📥</span>
-              <button
+            {/* Top row */}
+            <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/mentor-icon.png" alt="Ask Mentor" style={{ width: '56px', height: '56px', objectFit: 'contain' }} />
+              <button onClick={() => setShowMentorModal(false)}
                 className="flex items-center justify-center"
-                style={{
-                  width: 'clamp(26px, 2.2vw, 30px)',
-                  height: 'clamp(26px, 2.2vw, 30px)',
-                  borderRadius: '50%',
-                  background: '#F3F4F6',
-                  border: 'none',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
+                style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#F3F4F6', border: 'none', cursor: 'pointer' }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
                   <path d="M18 6L6 18M6 6L18 18" stroke="#4A5565" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -705,90 +706,107 @@ export default function VideoLecturesPage() {
               </button>
             </div>
 
-            {/* Heading */}
-            <h3
-              className="font-arimo font-bold"
-              style={{ fontSize: 'clamp(20px, 2.09vw, 28px)', color: '#101828', lineHeight: 1.2, marginBottom: 'clamp(6px, 0.6vw, 8px)' }}
+            <h3 className="font-arimo font-bold" style={{ fontSize: '24px', color: '#101828', lineHeight: 1.2, marginBottom: '8px' }}>
+              Ask the Mentor
+            </h3>
+            <p className="font-arimo" style={{ fontSize: '14px', color: '#4A5565', marginBottom: '20px', lineHeight: 1.5 }}>
+              Have any doubt about <strong>Introduction to Indian Constitution I Historical Background</strong>...Jeet Sir responds within 24 hours.
+            </p>
+
+            <p className="font-arimo font-bold" style={{ fontSize: '13px', color: '#101828', marginBottom: '6px' }}>Your doubt or question</p>
+            <textarea
+              placeholder="e.g. At 18:32, I didn't understand why Article 370 had was mentioned u..."
+              className="w-full font-arimo outline-none resize-none"
+              style={{ height: '100px', borderRadius: '14px', border: '1.6px solid #D1D5DC', padding: '12px 16px', fontSize: '14px', color: '#0A0A0A', background: '#FFFFFF', marginBottom: '14px' }}
+            />
+
+            <p className="font-arimo font-bold" style={{ fontSize: '13px', color: '#101828', marginBottom: '6px' }}>Your name (optional)</p>
+            <input type="text" placeholder="e.g. Rahul from Delhi" className="w-full font-arimo outline-none"
+              style={{ height: '50px', borderRadius: '14px', border: '1.6px solid #D1D5DC', padding: '0 16px', fontSize: '14px', color: '#0A0A0A', background: '#FFFFFF', marginBottom: '16px' }}
+            />
+
+            <button className="w-full flex items-center justify-center font-arimo font-bold text-white"
+              style={{ height: '52px', borderRadius: '14px', background: '#101828', fontSize: '14px', border: 'none', cursor: 'pointer', marginBottom: '12px' }}
             >
+              Submit Doubt &rarr;
+            </button>
+
+            <p className="font-arimo text-center" style={{ fontSize: '12px', color: '#6A7282' }}>
+              Answers posted on{' '}
+              <span style={{ color: '#E7000B', fontWeight: 600, cursor: 'pointer' }}>YouTube Community</span>
+              {' '}&amp;{' '}
+              <span style={{ color: '#1E40AF', fontWeight: 600, cursor: 'pointer' }}>Telegram</span>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Login to Download Modal ── */}
+      {showLoginModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setShowLoginModal(false)}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: '24px',
+              border: '1.6px solid #6A7282',
+              padding: 'clamp(20px, 2.51vw, 33px)',
+              width: '100%',
+              maxWidth: '480px',
+              margin: '0 16px',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top row: emoji + close */}
+            <div className="flex items-center justify-between" style={{ marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
+              <span style={{ fontSize: '32px' }}>📥</span>
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="flex items-center justify-center"
+                style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#F3F4F6', border: 'none', cursor: 'pointer' }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="#4A5565" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+
+            <h3 className="font-arimo font-bold" style={{ fontSize: '24px', color: '#101828', lineHeight: 1.2, marginBottom: '8px' }}>
               Login to Download
             </h3>
-
-            <p className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#4A5565', marginBottom: 'clamp(18px, 1.8vw, 24px)' }}>
+            <p className="font-arimo" style={{ fontSize: '14px', color: '#4A5565', marginBottom: '20px' }}>
               Please Sign-in to download <strong>Telegram Accts</strong>
             </p>
 
-            {/* Email input */}
-            <div style={{ marginBottom: 'clamp(10px, 1vw, 14px)' }}>
-              <input
-                type="email"
-                placeholder="Email address"
-                className="w-full font-arimo outline-none"
-                style={{
-                  height: 'clamp(44px, 4.12vw, 55px)',
-                  borderRadius: '14px',
-                  border: '1.6px solid #D1D5DC',
-                  padding: '0 16px',
-                  fontSize: 'clamp(13px, 1.12vw, 15px)',
-                  color: '#0A0A0A',
-                  background: '#FFFFFF',
-                }}
+            <div style={{ marginBottom: '12px' }}>
+              <input type="email" placeholder="Email address" className="w-full font-arimo outline-none"
+                style={{ height: '50px', borderRadius: '14px', border: '1.6px solid #D1D5DC', padding: '0 16px', fontSize: '14px', color: '#0A0A0A', background: '#FFFFFF' }}
+              />
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <input type="password" placeholder="Password" className="w-full font-arimo outline-none"
+                style={{ height: '50px', borderRadius: '14px', border: '1.6px solid #D1D5DC', padding: '0 16px', fontSize: '14px', color: '#0A0A0A', background: '#FFFFFF' }}
               />
             </div>
 
-            {/* Password input */}
-            <div style={{ marginBottom: 'clamp(14px, 1.5vw, 18px)' }}>
-              <input
-                type="password"
-                placeholder="Password"
-                className="w-full font-arimo outline-none"
-                style={{
-                  height: 'clamp(44px, 4.12vw, 55px)',
-                  borderRadius: '14px',
-                  border: '1.6px solid #D1D5DC',
-                  padding: '0 16px',
-                  fontSize: 'clamp(13px, 1.12vw, 15px)',
-                  color: '#0A0A0A',
-                  background: '#FFFFFF',
-                }}
-              />
-            </div>
-
-            {/* Sign In & Download button */}
-            <button
-              className="w-full flex items-center justify-center gap-2 font-arimo font-bold text-white"
-              style={{
-                height: 'clamp(48px, 4.48vw, 60px)',
-                borderRadius: '14px',
-                background: '#162456',
-                fontSize: 'clamp(13px, 1.12vw, 15px)',
-                border: 'none',
-                cursor: 'pointer',
-                marginBottom: 'clamp(14px, 1.4vw, 18px)',
-              }}
+            <button className="w-full flex items-center justify-center font-arimo font-bold text-white"
+              style={{ height: '52px', borderRadius: '14px', background: '#162456', fontSize: '14px', border: 'none', cursor: 'pointer', marginBottom: '16px' }}
             >
               Sign In &amp; Download &rarr;
             </button>
 
-            {/* Divider */}
-            <div className="flex items-center" style={{ gap: 'clamp(10px, 1vw, 14px)', marginBottom: 'clamp(14px, 1.4vw, 18px)' }}>
+            <div className="flex items-center" style={{ gap: '12px', marginBottom: '16px' }}>
               <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
-              <span className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#6A7282' }}>— or —</span>
+              <span className="font-arimo" style={{ fontSize: '13px', color: '#6A7282' }}>— or —</span>
               <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
             </div>
 
-            {/* Continue with Google button */}
-            <button
-              className="w-full flex items-center justify-center gap-2 font-arimo font-semibold"
-              style={{
-                height: 'clamp(48px, 4.48vw, 60px)',
-                borderRadius: '14px',
-                border: '1.6px solid #D1D5DC',
-                background: '#FFFFFF',
-                color: '#101828',
-                fontSize: 'clamp(13px, 1.12vw, 15px)',
-                cursor: 'pointer',
-                marginBottom: 'clamp(14px, 1.4vw, 18px)',
-              }}
+            <button className="w-full flex items-center justify-center gap-2 font-arimo font-semibold"
+              style={{ height: '52px', borderRadius: '14px', border: '1.6px solid #D1D5DC', background: '#FFFFFF', color: '#101828', fontSize: '14px', cursor: 'pointer', marginBottom: '16px' }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -799,125 +817,13 @@ export default function VideoLecturesPage() {
               Continue with Google
             </button>
 
-            {/* Footer links */}
             <div className="flex items-center justify-between">
-              <span className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#1E40AF', cursor: 'pointer' }}>
-                New? Create free account &rarr;
-              </span>
-              <span className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#6A7282', cursor: 'pointer' }}>
-                🌐 Forgot?
-              </span>
+              <span className="font-arimo" style={{ fontSize: '13px', color: '#1E40AF', cursor: 'pointer' }}>New? Create free account &rarr;</span>
+              <span className="font-arimo" style={{ fontSize: '13px', color: '#6A7282', cursor: 'pointer' }}>🌐 Forgot?</span>
             </div>
-          </div>
-
-          {/* ── Ask the Mentor Card (offset down) ── */}
-          <div
-            style={{
-              flex: 1,
-              background: '#FFFFFF',
-              borderRadius: '24px',
-              border: '1.6px solid #6A7282',
-              padding: 'clamp(20px, 2.51vw, 33px)',
-              marginTop: 'clamp(100px, 12.33vw, 165px)',
-            }}
-          >
-            {/* Top row: emoji + close */}
-            <div className="flex items-center justify-between" style={{ marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-              <span style={{ fontSize: 'clamp(28px, 2.8vw, 38px)' }}>{'\uD83E\uDD14'}</span>
-              <button
-                className="flex items-center justify-center"
-                style={{
-                  width: 'clamp(26px, 2.2vw, 30px)',
-                  height: 'clamp(26px, 2.2vw, 30px)',
-                  borderRadius: '50%',
-                  background: '#F3F4F6',
-                  border: 'none',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="#4A5565" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-
-            {/* Heading */}
-            <h3
-              className="font-arimo font-bold"
-              style={{ fontSize: 'clamp(20px, 2.09vw, 28px)', color: '#101828', lineHeight: 1.2, marginBottom: 'clamp(6px, 0.6vw, 8px)' }}
-            >
-              Ask the Mentor
-            </h3>
-
-            <p className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#4A5565', marginBottom: 'clamp(18px, 1.8vw, 24px)', lineHeight: 1.5 }}>
-              Have any doubt about <strong>Introduction to Indian Constitution I Historical Background</strong>...Jeet Sir responds within 24 hours.
-            </p>
-
-            {/* Your doubt or question */}
-            <p className="font-arimo font-bold" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#101828', marginBottom: 'clamp(6px, 0.6vw, 8px)' }}>
-              Your doubt or question
-            </p>
-            <textarea
-              placeholder="e.g. At 18:32, I didn't understand why Article 370 had was mentioned u..."
-              className="w-full font-arimo outline-none resize-none"
-              style={{
-                height: 'clamp(90px, 8.61vw, 115px)',
-                borderRadius: '14px',
-                border: '1.6px solid #D1D5DC',
-                padding: '16px',
-                fontSize: 'clamp(13px, 1.12vw, 15px)',
-                color: '#0A0A0A',
-                background: '#FFFFFF',
-                marginBottom: 'clamp(12px, 1.2vw, 16px)',
-              }}
-            />
-
-            {/* Your name (optional) */}
-            <p className="font-arimo font-bold" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#101828', marginBottom: 'clamp(6px, 0.6vw, 8px)' }}>
-              Your name (optional)
-            </p>
-            <input
-              type="text"
-              placeholder="e.g. Rahul from Delhi"
-              className="w-full font-arimo outline-none"
-              style={{
-                height: 'clamp(44px, 4.12vw, 55px)',
-                borderRadius: '14px',
-                border: '1.6px solid #D1D5DC',
-                padding: '0 16px',
-                fontSize: 'clamp(13px, 1.12vw, 15px)',
-                color: '#0A0A0A',
-                background: '#FFFFFF',
-                marginBottom: 'clamp(14px, 1.5vw, 20px)',
-              }}
-            />
-
-            {/* Submit Doubt button */}
-            <button
-              className="w-full flex items-center justify-center gap-2 font-arimo font-bold text-white"
-              style={{
-                height: 'clamp(48px, 4.48vw, 60px)',
-                borderRadius: '14px',
-                background: '#101828',
-                fontSize: 'clamp(13px, 1.12vw, 15px)',
-                border: 'none',
-                cursor: 'pointer',
-                marginBottom: 'clamp(12px, 1.2vw, 16px)',
-              }}
-            >
-              Submit Doubt &rarr;
-            </button>
-
-            <p className="font-arimo text-center" style={{ fontSize: 'clamp(11px, 0.9vw, 13px)', color: '#6A7282' }}>
-              Answers posted on{' '}
-              <span style={{ color: '#E7000B', fontWeight: 600, cursor: 'pointer' }}>YouTube Community</span>
-              {' '}&amp;{' '}
-              <span style={{ color: '#1E40AF', fontWeight: 600, cursor: 'pointer' }}>Telegram</span>
-            </p>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

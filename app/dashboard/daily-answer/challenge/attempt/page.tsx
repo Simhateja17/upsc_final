@@ -153,9 +153,10 @@ export default function DailyAnswerAttemptPage() {
                                     // padding: '40px' // Removed fixed padding to let flex center content
                                 }}
                             >
-                                {/* Cloud Icon */}
+                                {/* Upload Icon */}
                                 <div className="mb-4">
-                                    <img src="/uplaod/.png" alt="Upload" style={{ width: '80px', height: '80px' }} />
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src="/upload-icon.png" alt="Upload" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
                                 </div>
 
                                 {/* Drop Text */}
