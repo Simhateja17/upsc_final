@@ -1,8 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function PyqPage() {
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showAttemptModal, setShowAttemptModal] = useState(false);
+  const [mode, setMode] = useState<'prelims' | 'mains'>('prelims');
+
   return (
     <div
       className="flex flex-col items-center overflow-y-auto"
@@ -110,9 +114,10 @@ export default function PyqPage() {
                 paddingLeft: '32px',
                 paddingRight: '32px',
                 borderRadius: '26843500px',
-                background: '#0F172B',
+                background: mode === 'prelims' ? '#0F172B' : 'transparent',
                 gap: '12px',
               }}
+              onClick={() => setMode('prelims')}
             >
               <img
                 src="/9k.png"
@@ -127,7 +132,7 @@ export default function PyqPage() {
                   lineHeight: '28px',
                   letterSpacing: 0,
                   textAlign: 'center',
-                  color: '#FFFFFF',
+                  color: mode === 'prelims' ? '#FFFFFF' : '#4A5565',
                 }}
               >
                 Prelims
@@ -140,9 +145,10 @@ export default function PyqPage() {
                 paddingRight: '32px',
                 height: '63.9875px',
                 borderRadius: '26843500px',
-                background: 'transparent',
+                background: mode === 'mains' ? '#0F172B' : 'transparent',
                 gap: '12px',
               }}
+              onClick={() => setMode('mains')}
             >
               <img
                 src="/8k.png"
@@ -157,7 +163,7 @@ export default function PyqPage() {
                   lineHeight: '28px',
                   letterSpacing: 0,
                   textAlign: 'center',
-                  color: '#4A5565',
+                  color: mode === 'mains' ? '#FFFFFF' : '#4A5565',
                 }}
               >
                 Mains
@@ -170,6 +176,8 @@ export default function PyqPage() {
         <div className="flex flex-col lg:flex-row-reverse gap-6">
           {/* Questions list */}
           <section className="flex-1 min-w-0">
+            {mode === 'prelims' ? (
+              <>
             <div className="rounded-[16px] bg-white shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.1)] p-6 mb-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
                 <h3 className="font-bold text-[20px] md:text-[24px] text-[#101828]">
@@ -564,11 +572,292 @@ export default function PyqPage() {
                   letterSpacing: 0,
                   textAlign: 'center',
                 }}
+                onClick={() => setShowLoginModal(true)}
               >
                 <span className="text-[20px] leading-none" aria-hidden>🔥</span>
                 <span>Login to Load 2,380+ More Questions</span>
               </button>
             </div>
+              </>
+            ) : (
+              <>
+                {/* Mains header */}
+                <div
+                  className="mb-6"
+                  style={{
+                    width: '540px',
+                    maxWidth: '100%',
+                    height: '87.975px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <h3
+                    style={{
+                      width: '356px',
+                      maxWidth: '100%',
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 700,
+                      fontSize: '24px',
+                      lineHeight: '32px',
+                      color: '#101828',
+                    }}
+                  >
+                    Mains Questions - All Papers
+                  </h3>
+                  <p
+                    style={{
+                      marginTop: '8px',
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 400,
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                      color: '#6A7282',
+                    }}
+                  >
+                    Showing 3 of 800 questions
+                  </p>
+                </div>
+
+                {/* Mains question cards (3) */}
+                {[1, 2, 3].map((idx) => (
+                  <div
+                    key={idx}
+                    className="mb-6"
+                    style={{
+                      width: '540px',
+                      maxWidth: '100%',
+                      borderRadius: '16px',
+                      border: '0.8px solid #E5E7EB',
+                      background: '#FFFFFF',
+                      boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
+                      padding: '32px',
+                    }}
+                  >
+                    {/* Tag row */}
+                    <div
+                      className="flex flex-wrap gap-2 mb-4"
+                      style={{ width: '474.4px', maxWidth: '100%' }}
+                    >
+                      <span
+                        className="px-3 py-1 rounded-[8px] text-[12px] font-bold"
+                        style={{ background: '#1E40AF', color: '#FFFFFF' }}
+                      >
+                        UPSC MAINS 2024
+                      </span>
+                      <span
+                        className="px-3 py-1 rounded-[8px] text-[12px] font-bold"
+                        style={{ background: '#DBEAFE', color: '#1447E6' }}
+                      >
+                        GS PAPER II
+                      </span>
+                      <span
+                        className="px-3 py-1 rounded-[8px] text-[12px] font-bold"
+                        style={{ background: '#FFEDD4', color: '#CA3500' }}
+                      >
+                        GOVERNANCE
+                      </span>
+                      <span
+                        className="px-3 py-1 rounded-[8px] text-[12px] font-bold"
+                        style={{ background: '#F3E8FF', color: '#8200DB' }}
+                      >
+                        15 MARKS
+                      </span>
+                    </div>
+
+                    {/* AI Evaluation pill */}
+                    <div
+                      className="inline-flex items-center mb-4"
+                      style={{
+                        borderRadius: '8px',
+                        background: '#17223E',
+                        padding: '4px 16px',
+                      }}
+                    >
+                      <span style={{ fontSize: '14px', marginRight: '8px' }} aria-hidden>
+                        ✨
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: 'Arimo, sans-serif',
+                          fontWeight: 700,
+                          fontSize: '14px',
+                          lineHeight: '20px',
+                          color: '#FFD272',
+                        }}
+                      >
+                        AI Evaluation
+                      </span>
+                    </div>
+
+                    {/* Meta */}
+                    <div
+                      className="mb-2"
+                      style={{
+                        width: '474.4px',
+                        maxWidth: '100%',
+                        fontFamily: 'Inter, sans-serif',
+                        fontWeight: 400,
+                        fontSize: '12px',
+                        lineHeight: '16px',
+                        letterSpacing: '0.3px',
+                        textTransform: 'uppercase',
+                        color: '#6A7282',
+                      }}
+                    >
+                      MAINS · GS-II · QUESTION #1
+                    </div>
+
+                    {/* Question text */}
+                    <p
+                      className="mb-4"
+                      style={{
+                        width: '474.4px',
+                        maxWidth: '100%',
+                        fontFamily: 'Inter, sans-serif',
+                        fontWeight: 500,
+                        fontSize: '16px',
+                        lineHeight: '26px',
+                        color: '#101828',
+                      }}
+                    >
+                      &quot;The role of civil society organisations in policy-making has increased significantly in India,
+                      yet their accountability remains a critical concern.&quot;{' '}
+                      <span style={{ fontWeight: 700 }}>
+                        Examine with relevant examples.
+                      </span>
+                    </p>
+
+                    {/* Stats row */}
+                    <div
+                      className="flex flex-wrap items-center gap-6 mb-6"
+                      style={{ width: '474.4px', maxWidth: '100%' }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span aria-hidden>📝</span>
+                        <span
+                          style={{
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            color: '#6A7282',
+                          }}
+                        >
+                          150 words
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span aria-hidden>📊</span>
+                        <span
+                          style={{
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            color: '#6A7282',
+                          }}
+                        >
+                          Characters
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span aria-hidden>📅</span>
+                        <span
+                          style={{
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            color: '#6A7282',
+                          }}
+                        >
+                          2024
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Buttons row */}
+                    <div
+                      className="flex items-center gap-3 mb-4"
+                      style={{ width: '474.4px', maxWidth: '100%' }}
+                    >
+                      <button
+                        className="flex items-center justify-center"
+                        style={{
+                          width: '205px',
+                          height: '59px',
+                          borderRadius: '14px',
+                          background: '#101828',
+                          color: '#FFFFFF',
+                          fontFamily: 'Inter, sans-serif',
+                          fontWeight: 700,
+                          fontSize: '16px',
+                          lineHeight: '24px',
+                        }}
+                        onClick={() => setShowAttemptModal(true)}
+                      >
+                        <span aria-hidden style={{ marginRight: '8px' }}>
+                          🔥
+                        </span>
+                        <span>Write &amp; AI Evaluate</span>
+                      </button>
+                      <button
+                        className="flex items-center justify-center"
+                        style={{
+                          width: '182px',
+                          height: '59px',
+                          borderRadius: '14px',
+                          background: '#0F172A',
+                          color: '#FFFFFF',
+                          fontFamily: 'Inter, sans-serif',
+                          fontWeight: 700,
+                          fontSize: '16px',
+                          lineHeight: '24px',
+                        }}
+                      >
+                        <span>Model Answer</span>
+                      </button>
+                      <button
+                        className="flex items-center justify-center"
+                        style={{
+                          width: '65px',
+                          height: '59px',
+                          borderRadius: '14px',
+                          border: '1.6px solid #FFC9C9',
+                          fontFamily: 'Inter, sans-serif',
+                          fontWeight: 500,
+                          fontSize: '20px',
+                          lineHeight: '28px',
+                          color: '#0A0A0A',
+                        }}
+                      >
+                        ✏️
+                      </button>
+                    </div>
+
+                    {/* Footnote */}
+                    <div
+                      className="flex items-center gap-2 justify-end"
+                      style={{
+                        width: '474.4px',
+                        maxWidth: '100%',
+                        fontFamily: 'Inter, sans-serif',
+                        fontWeight: 400,
+                        fontSize: '14px',
+                        lineHeight: '20px',
+                        color: '#6A7282',
+                      }}
+                    >
+                      <img
+                        src="/icon-21-lock.png"
+                        alt="Locked"
+                        style={{ width: '20px', height: '20px', objectFit: 'contain' }}
+                      />
+                      <span>Full model answer on login</span>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </section>
 
           {/* Right: filters */}
@@ -732,6 +1021,258 @@ export default function PyqPage() {
           </aside>
         </div>
       </div>
+
+      {/* Login modal - Unlock Full PYQ Access */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: 'rgba(15,23,42,0.45)' }}>
+          <div
+            className="relative flex flex-col items-center text-center"
+            style={{
+              width: '448px',
+              maxWidth: '100%',
+              minHeight: '549.2px',
+              borderRadius: '24px',
+              background: '#FFFFFF',
+              boxShadow: '0px 25px 50px -12px #00000040',
+              padding: '40px 32px 32px',
+            }}
+          >
+            {/* Target icon placeholder */}
+            <div
+              className="mb-6 flex items-center justify-center"
+              style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '9999px',
+                background: '#0F172B',
+              }}
+            >
+              <span style={{ fontSize: '36px' }} aria-hidden>
+                🎯
+              </span>
+            </div>
+
+            {/* Heading */}
+            <h2
+              style={{
+                width: '347px',
+                maxWidth: '100%',
+                height: '36px',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 700,
+                fontSize: '30px',
+                lineHeight: '36px',
+                color: '#101828',
+                marginBottom: '16px',
+              }}
+            >
+              Unlock Full PYQ Access
+            </h2>
+
+            {/* Description */}
+            <p
+              style={{
+                width: '367px',
+                maxWidth: '100%',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 400,
+                fontSize: '16px',
+                lineHeight: '26px',
+                color: '#4A5565',
+                marginBottom: '32px',
+              }}
+            >
+              Login or create a free account to attempt questions, save progress, read full explanations, and use
+              AI-powered Mains Answer Evaluation.
+            </p>
+
+            {/* Create Free Account button */}
+            <button
+              className="flex items-center justify-center mb-3"
+              style={{
+                width: '368px',
+                maxWidth: '100%',
+                height: '60px',
+                borderRadius: '16px',
+                gap: '8px',
+                background: '#0F172B',
+                color: '#FFFFFF',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 700,
+                fontSize: '18px',
+                lineHeight: '28px',
+              }}
+            >
+              <span aria-hidden>🚀</span>
+              <span>Create Free Account</span>
+            </button>
+
+            {/* Login with Google button */}
+            <button
+              className="flex items-center justify-center mb-5"
+              style={{
+                width: '368px',
+                maxWidth: '100%',
+                height: '63.2px',
+                borderRadius: '16px',
+                gap: '8px',
+                background: '#FFFBEB',
+                border: '1.6px solid #FEE685',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 700,
+                fontSize: '18px',
+                lineHeight: '28px',
+                color: '#101828',
+              }}
+            >
+              <span aria-hidden>🔑</span>
+              <span>Login with Google</span>
+            </button>
+
+            {/* Maybe later */}
+            <button
+              type="button"
+              onClick={() => setShowLoginModal(false)}
+              style={{
+                width: '368px',
+                maxWidth: '100%',
+                height: '48px',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 500,
+                fontSize: '16px',
+                lineHeight: '24px',
+                color: '#6A7282',
+              }}
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Attempt / Question review modal - opens from Write & AI Evaluate */}
+      {showAttemptModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+          style={{ background: 'rgba(15,23,42,0.5)' }}
+          onClick={() => setShowAttemptModal(false)}
+        >
+          <div
+            className="rounded-[24px] bg-white flex flex-col my-8"
+            style={{
+              width: '896px',
+              maxWidth: '100%',
+              minHeight: '882px',
+              gap: '24px',
+              padding: '32px 32px 32px 40px',
+              borderLeft: '8px solid #00A63E',
+              boxShadow: '0px 4px 6px -4px #0000001A, 0px 10px 15px -3px #0000001A',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header: question #, tags, actions */}
+            <div
+              className="flex items-center justify-between flex-wrap gap-2"
+              style={{ width: '824px', maxWidth: '100%', height: '48px' }}
+            >
+              <div className="flex items-center gap-2 flex-wrap">
+                <div
+                  className="rounded-[14px] flex items-center justify-center flex-shrink-0"
+                  style={{ width: 48, height: 48, background: '#1E293B', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: '18px', lineHeight: '28px' }}
+                >
+                  1
+                </div>
+                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold" style={{ background: '#1E293B', color: '#FFFFFF' }}>2024</span>
+                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold" style={{ background: '#FEF3C6', color: '#BB4D00' }}>History</span>
+                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex items-center gap-1" style={{ background: '#FFEDD4', color: '#F54900' }}>🔥 Medium</span>
+                <span className="px-3 py-1 rounded-full text-[14px] font-semibold flex items-center gap-1" style={{ background: '#DCFCE7', color: '#008236' }}>✅ Attempted</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setShowAttemptModal(false)} className="w-10 h-10 rounded-[14px] flex items-center justify-center text-[18px]" style={{ background: '#1E293B', color: '#FFF' }} aria-label="Close">×</button>
+                <button type="button" className="w-10 h-10 rounded-[14px] flex items-center justify-center" style={{ background: '#F3F4F6', color: '#364153' }} aria-label="Edit">✏️</button>
+                <button type="button" className="w-10 h-10 rounded-[14px] flex items-center justify-center" style={{ background: '#F3F4F6', color: '#364153' }} aria-label="Full screen">⛶</button>
+              </div>
+            </div>
+
+            {/* Question text */}
+            <p style={{ width: '824px', maxWidth: '100%', fontFamily: 'Inter', fontWeight: 400, fontSize: '18px', lineHeight: '29.25px', color: '#1E2939' }}>
+              With reference to the history of ancient India, which of the following statements is/are correct?
+            </p>
+
+            {/* Statements */}
+            <div style={{ width: '824px', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '16px', lineHeight: '24px', color: '#364153' }}>1. Arthashastra was written by Vishnugupta</p>
+              <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '16px', lineHeight: '24px', color: '#364153' }}>2. Indica was written by Deimachos</p>
+              <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '16px', lineHeight: '24px', color: '#364153' }}>3. Mudrarakshasa was written by Visakhadatta</p>
+            </div>
+
+            {/* Options */}
+            <div style={{ width: '824px', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                { label: 'A', text: '1 and 2 only', correct: false, wrong: false },
+                { label: 'B', text: '1 and 3 only', correct: true, wrong: false },
+                { label: 'C', text: '2 and 3 only', correct: false, wrong: false },
+                { label: 'D', text: '1, 2 and 3', correct: false, wrong: true },
+              ].map(({ label, text, correct, wrong }) => (
+                <div
+                  key={label}
+                  className="flex items-center gap-3 rounded-[14px] pl-4 py-3"
+                  style={{
+                    minHeight: 65,
+                    background: correct ? '#F0FDF4' : wrong ? '#FEF2F2' : '#F9FAFB',
+                    border: correct ? '1.6px solid #00C950' : wrong ? '1.6px solid #FB2C36' : '0.8px solid #E5E7EB',
+                  }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[16px] font-bold"
+                    style={{ background: correct ? '#00A63E' : wrong ? '#E7000B' : '#D1D5DC', color: correct || wrong ? '#FFFFFF' : '#364153' }}
+                  >
+                    {label}
+                  </div>
+                  <span style={{ fontFamily: 'Inter', fontWeight: correct || wrong ? 500 : 400, fontSize: '16px', lineHeight: '24px', color: '#1E2939' }}>{text}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Explanation */}
+            <div style={{ width: '774.4px', maxWidth: '100%' }}>
+              <div className="flex items-center gap-2 mb-2" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: '14px', lineHeight: '20px', letterSpacing: '0.35px', textTransform: 'uppercase', color: '#016630' }}>
+                <span aria-hidden>✅</span>
+                <span>Explanation</span>
+              </div>
+              <p style={{ width: '100%', fontFamily: 'Inter', fontWeight: 400, fontSize: '16px', lineHeight: '26px', color: '#364153', marginBottom: 12 }}>
+                Arthashastra is attributed to Kautilya/Vishnugupta/Chanakya (correct). Indica was written by Megasthenes, not Deimachos. Mudrarakshasa was indeed written by Visakhadatta — a Sanskrit play on Chandragupta&apos;s ascent.
+              </p>
+              <div className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#6A7282' }}>
+                <span aria-hidden>📖</span>
+                <span>UPSC CSE Prelims 2024, GS Paper I</span>
+              </div>
+            </div>
+
+            {/* Bottom bar */}
+            <div className="flex items-center justify-between flex-wrap gap-4" style={{ width: '824px', maxWidth: '100%', marginTop: 'auto', paddingTop: 8 }}>
+              <button
+                type="button"
+                className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5"
+                style={{ background: '#DCFCE7', color: '#008236', fontFamily: 'Inter', fontWeight: 600, fontSize: '16px', lineHeight: '24px' }}
+              >
+                <span aria-hidden>✅</span>
+                <span>Attempted · Reset</span>
+              </button>
+              <div className="flex items-center gap-6">
+                <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#6A7282' }}>
+                  <span aria-hidden>👁</span>
+                  <span>1,240 views</span>
+                </span>
+                <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#6A7282' }}>
+                  <span aria-hidden>🎯</span>
+                  <span>58% avg accuracy</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

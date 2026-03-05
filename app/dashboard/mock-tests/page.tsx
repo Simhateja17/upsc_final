@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 /* ─── Data Arrays ─── */
@@ -61,6 +61,14 @@ const benchmarks = [
   { emoji: '📊', label: 'Your streak top 18%', color: '#F97316', width: '45%' },
 ];
 
+const evaluationSteps = [
+  'Reading your handwritten answers',
+  'Identifying key points & arguments',
+  'Comparing with model answers',
+  'Preparing detailed markup & feedback',
+  "Generating Jeet Sir's analysis",
+];
+
 /* ─── StepHeader Helper ─── */
 
 function StepHeader({ step, label }: { step: number; label: string }) {
@@ -109,6 +117,102 @@ export default function MockTestsPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
 
   const estimatedMinutes = Math.ceil(questionCount * 1.6);
+
+  /* ─── Mains Practice Modal State ─── */
+  const [showMainsModal, setShowMainsModal] = useState(false);
+  const [mainsCurrentQ, setMainsCurrentQ] = useState(1);
+  const [mainsAllRead, setMainsAllRead] = useState(false);
+  const [mainsSeconds, setMainsSeconds] = useState(66 * 60 + 56);
+  const [mainsUploadedFiles, setMainsUploadedFiles] = useState<File[]>([]);
+  const [showMainsEvaluation, setShowMainsEvaluation] = useState(false);
+  const [evaluationStep, setEvaluationStep] = useState(0);
+  const [showMainsResults, setShowMainsResults] = useState(false);
+  const mainsFileRef = useRef<HTMLInputElement>(null);
+  const TOTAL_MAINS_Q = 2;
+
+  const mainsQuestions = [
+    {
+      text: [
+        'Examine the role of ',
+        'socio-religious reform movements',
+        ' of the 19th century in laying the foundation of Indian nationalism.',
+      ],
+      boldIdx: [1],
+      hint: 'Discuss key reformers, their social impact and how reform created a modern consciousness.',
+      marks: 15,
+      time: 7,
+    },
+    {
+      text: [
+        'Critically examine the role of ',
+        'civil society organisations',
+        ' in Indian policy-making and the challenges of ensuring their accountability.',
+      ],
+      boldIdx: [1],
+      hint: 'Discuss examples from governance, RTI, environment and social welfare sectors.',
+      marks: 15,
+      time: 7,
+    },
+  ];
+
+  useEffect(() => {
+    if (!showMainsModal) return;
+    const interval = setInterval(() => {
+      setMainsSeconds(s => (s > 0 ? s - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [showMainsModal]);
+
+  useEffect(() => {
+    if (!showMainsEvaluation) return;
+    setEvaluationStep(0);
+    const interval = setInterval(() => {
+      setEvaluationStep(prev => {
+        if (prev >= evaluationSteps.length - 1) return prev;
+        return prev + 1;
+      });
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [showMainsEvaluation]);
+
+  useEffect(() => {
+    if (!showMainsEvaluation || evaluationStep < evaluationSteps.length - 1) return;
+    const t = setTimeout(() => {
+      setShowMainsEvaluation(false);
+      setShowMainsResults(true);
+    }, 800);
+    return () => clearTimeout(t);
+  }, [showMainsEvaluation, evaluationStep]);
+
+  const formatMainsTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const openMainsModal = () => {
+    setShowMainsModal(true);
+    setMainsCurrentQ(1);
+    setMainsAllRead(false);
+    setMainsSeconds(66 * 60 + 56);
+    setMainsUploadedFiles([]);
+    setShowMainsEvaluation(false);
+    setShowMainsResults(false);
+  };
+
+  const closeMainsModal = () => {
+    setShowMainsModal(false);
+    setShowMainsEvaluation(false);
+    setShowMainsResults(false);
+  };
+
+  const handleMainsNext = () => {
+    if (mainsCurrentQ < TOTAL_MAINS_Q) {
+      setMainsCurrentQ(q => q + 1);
+    } else {
+      setMainsAllRead(true);
+    }
+  };
 
   /* Derive display labels for summary */
   const sourceLabel = questionSources.find(s => s.id === selectedSource)?.label ?? 'Daily MCQ';
@@ -284,7 +388,7 @@ export default function MockTestsPage() {
                 }}>Prelims</span>
               </button>
               <button
-                onClick={() => setSelectedExamMode('mains')}
+                onClick={() => { setSelectedExamMode('mains'); openMainsModal(); }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -1018,6 +1122,658 @@ export default function MockTestsPage() {
 
         </div>
       </main>
+
+      {/* ─── Mains Practice Modal ─── */}
+      {showMainsModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto"
+          style={{ background: 'rgba(15,23,42,0.72)', paddingTop: '40px', paddingBottom: '40px' }}
+          onClick={closeMainsModal}
+        >
+          <div
+            style={{ width: '960px', maxWidth: 'calc(100vw - 32px)', display: 'flex', flexDirection: 'column', gap: '24px' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {!showMainsEvaluation && (
+              <>
+            {/* ── CARD 1: Question Reader ── */}
+            <div style={{
+              borderRadius: '32px',
+              background: '#FFFFFF',
+              boxShadow: '0px 4px 6px -4px #0000001A, 0px 10px 15px -3px #0000001A',
+              overflow: 'hidden',
+            }}>
+              {/* Header */}
+              {!mainsAllRead ? (
+                <div style={{
+                  height: '56px',
+                  background: '#0F172B',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingLeft: '32px',
+                  paddingRight: '32px',
+                }}>
+                  {/* Left: brand */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '16px', lineHeight: 1 }}>✨</span>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '16px', lineHeight: '24px', color: '#FDC700' }}>
+                      Mains Practice
+                    </span>
+                  </div>
+                  {/* Right: counter + timer */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#99A1AF' }}>
+                      Q {mainsCurrentQ} of {TOTAL_MAINS_Q}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="8" cy="8" r="6.5" stroke="#99A1AF" strokeWidth="1.3"/>
+                        <path d="M8 5v3.2l2.1 2.1" stroke="#99A1AF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', lineHeight: '20px', color: '#FFFFFF' }}>
+                        {formatMainsTime(mainsSeconds)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Header after all read */
+                <div style={{
+                  height: '68px',
+                  background: '#0F172B',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingLeft: '32px',
+                  paddingRight: '32px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '16px', lineHeight: 1 }}>✨</span>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '16px', lineHeight: '24px', color: '#FDC700' }}>
+                      Mains Practice
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#99A1AF' }}>
+                      Upload your answers
+                    </span>
+                    <button
+                      onClick={closeMainsModal}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        paddingLeft: '24px',
+                        paddingRight: '16px',
+                        height: '36px',
+                        borderRadius: '26843500px',
+                        background: '#FFFFFF',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 8.5L6.5 12L13 5" stroke="#0F172B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', lineHeight: '20px', color: '#0F172B', paddingRight: '8px' }}>
+                        Done
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Body */}
+              {!mainsAllRead ? (
+                <div style={{ padding: '40px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  {/* Question meta row */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{
+                      background: '#1E293B',
+                      borderRadius: '999px',
+                      padding: '4px 14px',
+                    }}>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', lineHeight: '16px', color: '#FFFFFF', letterSpacing: '0px' }}>
+                        QUESTION {mainsCurrentQ} OF {TOTAL_MAINS_Q}
+                      </span>
+                    </div>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', lineHeight: '20px', color: '#6A7282' }}>
+                      {mainsQuestions[mainsCurrentQ - 1].marks} marks · {mainsQuestions[mainsCurrentQ - 1].time} min
+                    </span>
+                  </div>
+
+                  {/* Question text */}
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '18px', lineHeight: '29.25px', color: '#101828', margin: 0 }}>
+                    {mainsQuestions[mainsCurrentQ - 1].text.map((part, i) =>
+                      mainsQuestions[mainsCurrentQ - 1].boldIdx.includes(i)
+                        ? <strong key={i} style={{ fontWeight: 700 }}>{part}</strong>
+                        : <span key={i}>{part}</span>
+                    )}
+                  </p>
+
+                  {/* Hint box */}
+                  <div style={{
+                    borderTopRightRadius: '14px',
+                    borderBottomRightRadius: '14px',
+                    borderLeft: '4px solid #FDC700',
+                    background: '#FFFBEB',
+                    padding: '16px 16px 16px 20px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '8px',
+                  }}>
+                    <span style={{ fontSize: '16px', flexShrink: 0, lineHeight: 1.4 }}>💡</span>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontStyle: 'italic', fontSize: '14px', lineHeight: '20px', color: '#364153' }}>
+                      {mainsQuestions[mainsCurrentQ - 1].hint}
+                    </span>
+                  </div>
+
+                  {/* Next / Finish button */}
+                  <button
+                    onClick={handleMainsNext}
+                    style={{
+                      width: '186.86px',
+                      height: '48px',
+                      borderRadius: '14px',
+                      background: '#0F172B',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 600,
+                      fontSize: '16px',
+                      lineHeight: '24px',
+                      color: '#FFFFFF',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {mainsCurrentQ < TOTAL_MAINS_Q ? 'Next Question →' : 'Finish Reading →'}
+                  </button>
+                </div>
+              ) : (
+                /* All read body */
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '48px 40px 52px',
+                  gap: '12px',
+                }}>
+                  <span style={{ fontSize: '52px', lineHeight: 1 }}>✍️</span>
+                  <h3 style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 700,
+                    fontSize: '24px',
+                    lineHeight: '32px',
+                    color: '#101828',
+                    margin: '8px 0 0',
+                  }}>
+                    All {TOTAL_MAINS_Q} questions read!
+                  </h3>
+                  <p style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 400,
+                    fontSize: '16px',
+                    lineHeight: '24px',
+                    color: '#6A7282',
+                    textAlign: 'center',
+                    maxWidth: '480px',
+                    margin: '4px 0 0',
+                  }}>
+                    Now write your answers on paper. Take your time — there&apos;s no rush.<br />
+                    Once done, photograph your answer sheets and upload below for AI evaluation.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* ── CARD 2: Upload Handwritten Answers (visible after all read) ── */}
+            {mainsAllRead && (
+              <div style={{
+                borderRadius: '32px',
+                background: '#FFFFFF',
+                boxShadow: '0px 4px 6px -4px #0000001A, 0px 10px 15px -3px #0000001A',
+                padding: '40px',
+              }}>
+                {/* Upload heading */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '9999px',
+                    background: '#D08700',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <span style={{ fontSize: '16px', lineHeight: 1 }}>📝</span>
+                  </div>
+                  <span style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 700,
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    letterSpacing: '0.7px',
+                    textTransform: 'uppercase',
+                    color: '#364153',
+                  }}>
+                    Upload Your Handwritten Answers
+                  </span>
+                </div>
+
+                {/* Description */}
+                <p style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 400,
+                  fontSize: '16px',
+                  lineHeight: '24px',
+                  color: '#6A7282',
+                  marginBottom: '32px',
+                  maxWidth: '837px',
+                }}>
+                  You&apos;ve read all the questions. Now write your answers on paper, photograph/scan the{' '}
+                  <strong style={{ fontWeight: 700, color: '#101828' }}>sheets</strong> and upload below. AI will{' '}
+                  <span style={{ fontWeight: 700, color: '#432DD7' }}>evaluate</span> each answer with detailed markup.
+                </p>
+
+                {/* Upload dropzone */}
+                <div
+                  onClick={() => mainsFileRef.current?.click()}
+                  style={{
+                    borderRadius: '16px',
+                    border: '1.6px solid #D1D5DC',
+                    background: '#F9FAFB',
+                    height: '247.2px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    marginBottom: '24px',
+                    gap: '8px',
+                    transition: 'border-color 0.15s ease',
+                  }}
+                >
+                  <input
+                    ref={mainsFileRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={e => { if (e.target.files) setMainsUploadedFiles(Array.from(e.target.files)); }}
+                  />
+                  <span style={{ fontSize: '48px', lineHeight: 1 }}>📄</span>
+                  <span style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 600,
+                    fontSize: '16px',
+                    lineHeight: '24px',
+                    color: '#101828',
+                    textAlign: 'center',
+                  }}>
+                    {mainsUploadedFiles.length > 0
+                      ? `${mainsUploadedFiles.length} file(s) selected`
+                      : 'Click to upload answer sheet(s)'}
+                  </span>
+                  <span style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 400,
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    color: '#6A7282',
+                    textAlign: 'center',
+                  }}>
+                    JPG, PNG or PDF · Multiple pages supported
+                  </span>
+                </div>
+
+                {/* Submit button */}
+                <button
+                  onClick={() => setShowMainsEvaluation(true)}
+                  style={{
+                    width: '100%',
+                    height: '60px',
+                    borderRadius: '16px',
+                    background: '#45556C',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    marginBottom: '12px',
+                  }}
+                >
+                  <span style={{ fontSize: '22px', lineHeight: 1 }}>🤖</span>
+                  <span style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 700,
+                    fontSize: '18px',
+                    lineHeight: '28px',
+                    color: '#FFFFFF',
+                    textAlign: 'center',
+                  }}>
+                    Submit for AI Evaluation
+                  </span>
+                </button>
+
+                {/* Helper text */}
+                <p style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 400,
+                  fontSize: '12px',
+                  lineHeight: '16px',
+                  color: '#6A7282',
+                  textAlign: 'center',
+                  margin: 0,
+                }}>
+                  AI will analyze your answers in <strong style={{ fontWeight: 700 }}>~30 seconds</strong>. Detailed markup provided.
+                </p>
+              </div>
+            )}
+
+            </>
+            )}
+
+            {showMainsEvaluation && (
+              <div
+                style={{
+                  width: '960px',
+                  maxWidth: '100%',
+                  height: '472px',
+                  borderRadius: '32px',
+                  background: 'linear-gradient(135deg, #1D293D 0%, #0F172B 50%, #162456 100%)',
+                  boxShadow: '0px 8px 10px -6px #0000001A, 0px 20px 25px -5px #0000001A',
+                  padding: '40px 48px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  gap: '24px',
+                }}
+              >
+                <div style={{ width: '864px', maxWidth: '100%', textAlign: 'center' }}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <span style={{ fontSize: '40px', lineHeight: 1 }}>🧠</span>
+                  </div>
+                  <h2
+                    style={{
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 700,
+                      fontSize: '30px',
+                      lineHeight: '36px',
+                      letterSpacing: '0px',
+                      color: '#FFFFFF',
+                      margin: 0,
+                    }}
+                  >
+                    AI is evaluating your answers...
+                  </h2>
+                  <p
+                    style={{
+                      marginTop: '8px',
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 400,
+                      fontSize: '16px',
+                      lineHeight: '24px',
+                      letterSpacing: '0px',
+                      color: '#BEDBFF',
+                    }}
+                  >
+                    This usually takes about 30 seconds
+                  </p>
+                </div>
+
+                {/* Progress bar */}
+                <div style={{ width: '448px', maxWidth: '100%', marginTop: '16px' }}>
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '8px',
+                      borderRadius: '26843500px',
+                      background: '#314158',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${((evaluationStep + 1) / evaluationSteps.length) * 100}%`,
+                        height: '100%',
+                        borderRadius: '26843500px',
+                        background: 'linear-gradient(90deg, #FDC700 0%, #FF6900 100%)',
+                        transition: 'width 0.4s ease',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Steps list */}
+                <div
+                  style={{
+                    width: '448px',
+                    maxWidth: '100%',
+                    marginTop: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                  }}
+                >
+                  {evaluationSteps.map((stepLabel, index) => {
+                    const isActive = index === evaluationStep;
+                    return (
+                      <div
+                        key={stepLabel}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          opacity: isActive ? 1 : 0.85,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '26843500px',
+                            border: `2px solid ${isActive ? '#FDC700' : '#4B5563'}`,
+                            background: isActive ? '#FDC700' : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {isActive && (
+                            <span
+                              style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '999px',
+                                background: '#0F172B',
+                              }}
+                            />
+                          )}
+                        </div>
+                        <span
+                          style={{
+                            fontFamily: 'Inter, sans-serif',
+                            fontWeight: isActive ? 500 : 400,
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            letterSpacing: '0px',
+                            color: isActive ? '#FDC700' : '#6A7282',
+                          }}
+                        >
+                          {stepLabel}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ─── AI Evaluation Results ─── */}
+            {showMainsResults && (
+              <div style={{ width: '960px', maxWidth: 'calc(100vw - 32px)', display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {/* Results header */}
+                <div
+                  style={{
+                    width: '100%',
+                    minHeight: '160px',
+                    padding: '32px 40px 32px 40px',
+                    background: 'linear-gradient(135deg, #1D293D 0%, #0F172B 50%, #162456 100%)',
+                    borderRadius: '32px 32px 0 0',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: '24px',
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '16px', lineHeight: 1 }}>🤖</span>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', lineHeight: '16px', letterSpacing: '0px', color: '#FDC700', textTransform: 'uppercase' }}>
+                        AI EVALUATION COMPLETE
+                      </span>
+                    </div>
+                    <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '30px', lineHeight: '36px', letterSpacing: '0px', color: '#FFFFFF', margin: '0 0 8px' }}>
+                      Good attempt across 2 questions
+                    </h2>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '14px', lineHeight: '20px', letterSpacing: '0px', color: '#BEDBFF', margin: 0 }}>
+                      Mains · GS Paper I · 2 Questions evaluated
+                    </p>
+                  </div>
+                  <div style={{ width: '96px', height: '96px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '30px', lineHeight: '36px', color: '#FFFFFF' }}>64%</span>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '12px', lineHeight: '16px', color: '#99A1AF', textTransform: 'uppercase' }}>Marks</span>
+                  </div>
+                </div>
+
+                {/* Results content card */}
+                <div style={{ padding: '40px', background: '#FFFFFF', borderRadius: '0 0 32px 32px', boxShadow: '0px 4px 6px -4px #0000001A, 0px 10px 15px -3px #0000001A' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                    <div
+                      style={{
+                        width: '100%',
+                        maxWidth: '880px',
+                        borderRadius: '16px',
+                        background: '#EFF6FF',
+                        padding: '24px',
+                      }}
+                    >
+                      <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', lineHeight: '16px', letterSpacing: '0.6px', textTransform: 'uppercase', color: '#312C85', marginBottom: '12px' }}>
+                        Question 1
+                      </div>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '16px', lineHeight: '24px', color: '#101828', margin: '0 0 16px' }}>
+                        Examine the role of socio-religious reform movements of the 19th century in laying the foundation of Indian nationalism.
+                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+                        <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '48px', lineHeight: '48px', color: '#312C85' }}>B+</span>
+                        <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#4A5565' }}>9/15</span>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                        <div style={{ flex: '1', minWidth: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '20px', lineHeight: 1 }}>✓</span>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', lineHeight: '16px', color: '#101828', textAlign: 'center' }}>What went right</span>
+                        </div>
+                        <div style={{ flex: '1', minWidth: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '20px', lineHeight: 1 }}>↑</span>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', lineHeight: '16px', color: '#101828', textAlign: 'center' }}>Needs improvement</span>
+                        </div>
+                        <div style={{ flex: '1', minWidth: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '20px', lineHeight: 1 }}>✗</span>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '12px', lineHeight: '16px', color: '#101828', textAlign: 'center' }}>Key misses</span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                          <span style={{ color: '#16A34A', fontSize: '16px', flexShrink: 0, lineHeight: '24px' }}>✓</span>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '16px', lineHeight: '24px', color: '#16A34A', margin: 0 }}>
+                            <strong style={{ fontWeight: 600 }}>Strengths:</strong>{' '}
+                            <strong>Strong introduction with relevant context.</strong> Multidimensional analysis covering <strong>social, economic and political angles.</strong>
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                          <span style={{ color: '#2563EB', fontSize: '16px', flexShrink: 0, lineHeight: '24px' }}>ℹ</span>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '16px', lineHeight: '24px', color: '#2563EB', margin: 0 }}>
+                            <strong style={{ fontWeight: 600 }}>Improve:</strong>{' '}
+                            <strong>Conclusion could be more forward-looking</strong> — mention <strong>contemporary relevance.</strong>
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                          <span style={{ color: '#DC2626', fontSize: '16px', flexShrink: 0, lineHeight: '24px' }}>✗</span>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '16px', lineHeight: '24px', color: '#DC2626', margin: 0 }}>
+                            <strong style={{ fontWeight: 600 }}>Missed:</strong>{' '}
+                            <strong>Did not address the &quot;regional variation&quot; dimension.</strong> Could mention Bengal, Maharashtra separately.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '16px', lineHeight: 1 }}>📊</span>
+                        <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', lineHeight: '16px', letterSpacing: '0.6px', textTransform: 'uppercase', color: '#312C85' }}>
+                          Jeet Sir&apos;s Overall Feedback
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                          <span style={{ fontSize: '14px', flexShrink: 0, lineHeight: '20px' }}>💡</span>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#101828', margin: 0 }}>
+                            Your writing shows <strong style={{ fontWeight: 700 }}>conceptual clarity</strong> but needs more <strong style={{ fontWeight: 700 }}>structured formatting</strong> — use subheadings, bullet points where allowed.
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                          <span style={{ fontSize: '14px', flexShrink: 0, lineHeight: '20px' }}>📚</span>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#101828', margin: 0 }}>
+                            Revise <strong style={{ fontWeight: 700 }}>recent government schemes</strong> and link them to answers — examiners reward contemporary examples.
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                          <span style={{ fontSize: '14px', flexShrink: 0, lineHeight: '20px' }}>🎯</span>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#101828', margin: 0 }}>
+                            Word limit discipline is good. Focus on <strong style={{ fontWeight: 700 }}>dimensions analysis</strong> — social, economic, political, environmental angles strengthen answers significantly.
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => { closeMainsModal(); router.push('/dashboard/mock-tests/next-steps'); }}
+                        style={{
+                          width: '100%',
+                          height: '56px',
+                          borderRadius: '16px',
+                          background: '#0F172B',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          fontFamily: 'Inter, sans-serif',
+                          fontWeight: 700,
+                          fontSize: '16px',
+                          lineHeight: '24px',
+                          color: '#FFFFFF',
+                        }}
+                      >
+                        <span style={{ fontSize: '18px', lineHeight: 1 }}>💬</span>
+                        What would you like to do next? →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
