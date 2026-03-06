@@ -42,10 +42,18 @@ const DashboardHeader = () => {
 
         {/* User Profile Section */}
       <div
-        className="flex items-center gap-[clamp(0.5rem,0.8vw,1rem)] px-[clamp(0.75rem,1.2vw,1.5rem)] py-[clamp(0.5rem,0.6vw,0.75rem)] rounded-[36px] min-w-[clamp(180px,11.6vw,223px)] h-[clamp(48px,2.97vw,57px)] relative"
+        className="rounded-[36px] flex-shrink-0"
         style={{
-          background: 'linear-gradient(85.13deg, rgba(30, 40, 117, 0.5) 2.96%, rgba(30, 40, 117, 0.5) 96.14%)',
-          border: '1px solid #B19E66',
+          padding: '1px',
+          background: 'conic-gradient(from 0deg, #B19E66 14%, rgba(255,255,255,0.04) 35%, #FFFFFF 65%, rgba(255,255,255,0.07) 85%, #B19E66 100%)',
+          minWidth: 'clamp(180px,11.6vw,223px)',
+          height: 'clamp(48px,2.97vw,57px)',
+        }}
+      >
+      <div
+        className="flex items-center gap-[clamp(0.5rem,0.8vw,1rem)] px-[clamp(0.75rem,1.2vw,1.5rem)] py-[clamp(0.5rem,0.6vw,0.75rem)] rounded-[35px] w-full h-full relative"
+        style={{
+          background: 'linear-gradient(180deg, #1E2875 0%, #1E2875 100%)',
           boxShadow: '0px 16px 64px 0px rgba(104, 1, 255, 0.12)',
         }}
       >
@@ -102,6 +110,7 @@ const DashboardHeader = () => {
             />
           </svg>
         </div>
+      </div>
       </div>
       </div>
     </header>

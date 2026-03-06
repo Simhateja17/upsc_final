@@ -5,11 +5,11 @@ import Link from 'next/link';
 
 export default function DailyMcqIntroPage() {
   return (
-    <div className="flex flex-col overflow-hidden panel-recessed" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
+    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#ffffff' }}>
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-4">
         {/* Intro Card */}
-        <div className="w-full max-w-[448px] card-elevated rounded-[16px] p-8 text-center">
+        <div className="card-elevated rounded-[16px] p-8 text-center" style={{ width: '605px', height: '630px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           {/* Icon */}
           <div className="flex justify-center mb-6">
             <img 
