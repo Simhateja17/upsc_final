@@ -47,6 +47,7 @@ const Sidebar = () => {
       items: [
         { id: 'flashcards', label: 'Flashcards', icon: '/sidebar-flashcards-new.png', path: '/dashboard/flashcards' },
         { id: 'mindmap', label: 'Mindmaps', icon: '/sidebar-mindmap-new.png', path: '/dashboard/mindmap' },
+        { id: 'spaced-repetition', label: 'Spaced Repetition', icon: '/image-removebg-preview-30-1.png', path: '/dashboard/spaced-repetition' },
       ],
     },
     {
@@ -73,35 +74,47 @@ const Sidebar = () => {
 
             {/* Section Items */}
             <ul className="space-y-0.5">
-              {section.items.map((item) => (
-                <li key={item.id}>
-                  <Link
-                    href={item.path}
-                    onClick={() => setActiveItem(item.id)}
-                    className={`
-                      flex items-center gap-[10px]
-                      px-3 py-[9px]
-                      rounded-[6px]
-                      transition-all duration-200
-                      ${
-                        activeItem === item.id
-                          ? 'bg-[#EFF6FF] text-[#17223E]'
-                          : 'text-[#1A1A1A] hover:bg-gray-50 hover:text-[#17223E]'
-                      }
-                    `}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.icon}
-                      alt={item.label}
-                      className="w-[18px] h-[18px] flex-shrink-0 object-contain"
-                    />
-                    <span className="font-inter font-medium text-[13px] leading-none whitespace-nowrap">
-                      {item.label}
-                    </span>
-                  </Link>
-                </li>
-              ))}
+              {section.items.map((item) => {
+                const isSpacedRepetition = item.id === 'spaced-repetition';
+                return (
+                  <li key={item.id}>
+                    <Link
+                      href={item.path}
+                      onClick={() => setActiveItem(item.id)}
+                      className={`
+                        flex items-center gap-[10px]
+                        px-3
+                        rounded-[6px]
+                        transition-all duration-200
+                        ${isSpacedRepetition ? 'py-3 rounded-[10px] min-h-[48px]' : 'py-[9px]'}
+                        ${
+                          activeItem === item.id
+                            ? 'bg-[#EFF6FF] text-[#17223E]'
+                            : 'text-[#1A1A1A] hover:bg-gray-50 hover:text-[#17223E]'
+                        }
+                      `}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.icon}
+                        alt={item.label}
+                        className="w-[18px] h-[18px] flex-shrink-0 object-contain"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                      <span
+                        className={isSpacedRepetition ? 'whitespace-nowrap' : 'font-inter font-medium text-[13px] leading-none whitespace-nowrap'}
+                        style={
+                          isSpacedRepetition
+                            ? { fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: 'inherit' }
+                            : undefined
+                        }
+                      >
+                        {item.label}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}
