@@ -79,10 +79,13 @@ export const dailyAnswerService = {
 export const editorialService = {
   getToday: (source?: string) =>
     api.get<any>(`/editorials/today${source && source !== 'all' ? `?source=${source}` : ''}`, authConfig()),
+  getLiveNews: (source?: string) =>
+    api.get<any>(`/editorials/live-news${source && source !== 'all' ? `?source=${source}` : ''}`, authConfig()),
   getById: (id: string) => api.get<any>(`/editorials/${id}`, authConfig()),
   markRead: (id: string) => api.post<any>(`/editorials/${id}/mark-read`, {}, authConfig()),
   toggleSave: (id: string) => api.post<any>(`/editorials/${id}/save`, {}, authConfig()),
   summarize: (id: string) => api.post<any>(`/editorials/${id}/summarize`, {}, authConfig()),
+  syncNews: () => api.post<any>('/editorials/sync-news', {}, authConfig()),
   getStats: () => api.get<any>('/editorials/stats', authConfig()),
 };
 

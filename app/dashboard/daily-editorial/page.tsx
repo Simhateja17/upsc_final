@@ -68,7 +68,8 @@ export default function DailyEditorialPage() {
   useEffect(() => {
     const source = activeNewspaper === 'hindu' ? 'The Hindu' : 'Indian Express';
     setLoading(true);
-    editorialService.getToday(source)
+    // Use getLiveNews to fetch real-time news from News API
+    editorialService.getLiveNews(source)
       .then(res => {
         if (res.data && Array.isArray(res.data)) {
           setEditorials(res.data);
