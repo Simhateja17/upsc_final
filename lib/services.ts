@@ -119,6 +119,18 @@ export const pricingService = {
   getTestimonials: () => api.get<any>('/mentorship/testimonials'),
 };
 
+// ==================== Jeet AI Chat ====================
+
+export const aiService = {
+  chat: (message: string, conversationId?: string) =>
+    api.post<any>('/ai/chat', { message, conversationId }, authConfig()),
+  getConversations: () => api.get<any>('/ai/conversations', authConfig()),
+  getConversation: (conversationId: string) =>
+    api.get<any>(`/ai/conversations/${conversationId}`, authConfig()),
+  deleteConversation: (conversationId: string) =>
+    api.delete<any>(`/ai/conversations/${conversationId}`, authConfig()),
+};
+
 // ==================== CMS (Public) ====================
 
 export const cmsService = {

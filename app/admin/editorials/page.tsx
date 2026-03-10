@@ -24,7 +24,7 @@ export default function EditorialManager() {
     setLoading(true);
     adminService
       .getEditorials()
-      .then((res) => setEditorials(res.data || []))
+      .then((res) => setEditorials(Array.isArray(res.data) ? res.data : res.data?.editorials || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   };

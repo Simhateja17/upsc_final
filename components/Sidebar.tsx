@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const Sidebar = () => {
+const Sidebar = ({ forceShow = false }: { forceShow?: boolean }) => {
   const pathname = usePathname();
 
   const navigationSections = [
@@ -60,6 +60,9 @@ const Sidebar = () => {
       ],
     },
   ];
+
+  // Hide dashboard sidebar on Jeet GPT — it has its own sidebar (unless explicitly forced)
+  if (!forceShow && pathname === '/dashboard/jeet-gpt') return null;
 
   return (
     <aside className="w-[260px] min-w-[260px] h-full bg-white overflow-y-auto flex-shrink-0" style={{ boxShadow: '3px 0 12px rgba(0,0,0,0.06), 1px 0 3px rgba(0,0,0,0.04)', zIndex: 1 }}>
