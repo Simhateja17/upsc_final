@@ -421,40 +421,40 @@ export default function JeetGPTPage() {
           </div>
         ) : !showChat ? (
           /* Welcome screen */
-          <div className="flex-1 overflow-y-auto flex flex-col items-center px-6 py-8">
-            <div className="w-20 h-20 rounded-[24px] flex items-center justify-center mb-6" style={{ background: '#1E3A5F' }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="flex-1 flex flex-col items-center justify-center px-6 py-4 overflow-hidden">
+            <div className="w-14 h-14 rounded-[18px] flex items-center justify-center mb-3" style={{ background: '#1E3A5F' }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
                 <path d="M6 12v5c3 3 9 3 12 0v-5" />
               </svg>
             </div>
-            <h1 className="font-inter font-bold text-[30px] leading-9 text-center mb-4" style={{ color: '#101828' }}>
+            <h1 className="font-inter font-bold text-[24px] leading-8 text-center mb-2" style={{ color: '#101828' }}>
               Hi {user?.firstName || 'there'}, I&apos;m <span className="font-bold italic" style={{ color: '#D08700' }}>Jeet AI</span>.
             </h1>
-            <p className="font-inter text-[16px] leading-6 text-center max-w-[561px] mb-4" style={{ color: '#4A5565' }}>
+            <p className="font-inter text-[14px] leading-5 text-center max-w-[561px] mb-2" style={{ color: '#4A5565' }}>
               I&apos;m your intelligent UPSC preparation partner — from ancient history to current affairs, revision strategy, or just thinking through a topic together.
             </p>
-            <p className="font-inter text-[18px] leading-5 mb-10" style={{ color: '#99A1AF' }}>How can I help you today in your preparation?</p>
+            <p className="font-inter text-[15px] leading-5 mb-5" style={{ color: '#99A1AF' }}>How can I help you today in your preparation?</p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[800px] w-full mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-[800px] w-full mb-5">
               {suggestionCards.map((card, i) => (
-                <button key={i} type="button" onClick={() => setInputValue(card.prompt)} className="text-left p-6 rounded-[16px] border transition-colors hover:border-[#D08700]/50 hover:shadow-md" style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF' }}>
-                  <div className="w-10 h-10 rounded-[14px] flex items-center justify-center mb-4" style={{ background: card.iconBg }}>{card.icon}</div>
-                  <h3 className="font-inter font-bold text-[18px] leading-[27px] mb-2" style={{ color: '#101828' }}>{card.title}</h3>
-                  <p className="font-inter text-[14px] leading-5" style={{ color: '#6A7282' }}>{card.subtitle}</p>
+                <button key={i} type="button" onClick={() => setInputValue(card.prompt)} className="text-left p-4 rounded-[14px] border transition-colors hover:border-[#D08700]/50 hover:shadow-md" style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF' }}>
+                  <div className="w-8 h-8 rounded-[10px] flex items-center justify-center mb-2" style={{ background: card.iconBg }}>{card.icon}</div>
+                  <h3 className="font-inter font-bold text-[15px] leading-5 mb-1" style={{ color: '#101828' }}>{card.title}</h3>
+                  <p className="font-inter text-[12px] leading-4" style={{ color: '#6A7282' }}>{card.subtitle}</p>
                 </button>
               ))}
             </div>
 
             <form onSubmit={handleSubmit} className="w-full max-w-[968px]">
               <div className="flex items-center gap-3 px-4 py-3 rounded-[16px]" style={{ border: '0.8px solid #E5E7EB', background: '#F9FAFB' }}>
-                <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Ask me anything about your preparation..." className="flex-1 bg-transparent font-inter text-[16px] outline-none" style={{ color: '#101828' }} disabled={isLoading} />
-                <button type="submit" disabled={!inputValue.trim() || isLoading} className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0 disabled:opacity-50" style={{ background: '#1E3A5F' }}>
-                  {isLoading ? <Spinner /> : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>}
+                <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Ask me anything about your preparation..." className="flex-1 bg-transparent font-inter text-[14px] outline-none" style={{ color: '#101828' }} disabled={isLoading} />
+                <button type="submit" disabled={!inputValue.trim() || isLoading} className="w-9 h-9 rounded-full flex items-center justify-center text-white flex-shrink-0 disabled:opacity-50" style={{ background: '#1E3A5F' }}>
+                  {isLoading ? <Spinner /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>}
                 </button>
               </div>
               {error && <p className="font-inter text-[12px] text-center mt-2" style={{ color: '#FB2C36' }}>{error}</p>}
-              <p className="font-inter text-[12px] leading-4 text-center mt-3 italic" style={{ color: '#99A1AF' }}>
+              <p className="font-inter text-[11px] leading-4 text-center mt-2 italic" style={{ color: '#99A1AF' }}>
                 Jeet AI can make mistakes. Verify important facts from NCERT &amp; official sources.
               </p>
             </form>
