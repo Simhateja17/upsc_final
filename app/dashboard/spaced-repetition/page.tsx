@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Sidebar from '@/components/Sidebar';
 
 const subjectPills = [
   { label: 'Critical:', count: '2 subjects', icon: '🔴' },
@@ -58,7 +57,6 @@ export default function SpacedRepetitionPage() {
 
   return (
     <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
-      <Sidebar />
       <div className="flex-1 overflow-y-auto">
         <div className="w-full max-w-[1168px] mx-auto px-6 py-6">
           {/* Weak Subject Tracker - AI-Powered Gap Analysis */}

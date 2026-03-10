@@ -2,14 +2,38 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { useCmsContent } from '@/hooks/useCmsContent';
+
+const defaultFooterLinks = {
+  company: ['About Us', 'How to work?', 'Populer Course', 'Service'],
+  courses: ['Categories', 'Ofline Course', 'Vidio Course'],
+  support: ['FAQ', 'Help Center', 'Career', 'Privacy'],
+};
+
+const defaultContactInfo = {
+  phone: '+0913-705-3875',
+  email: 'ElizabethJ@jourrapide.com',
+  address: '4808 Skinner Hollow Road\nDays Creek, OR 97429',
+  telegram: 'https://t.me/risewithjeet',
+};
+
+const defaults = {
+  footer_contact_title: 'Still have some doubt?',
+  footer_contact_subtitle: "Let's solve it together. Get personal guidance from our mentors and experts.",
+  footer_links: defaultFooterLinks,
+  footer_contact_info: defaultContactInfo,
+};
 
 const Footer = () => {
   const [showModal, setShowModal] = useState(false);
+  const { get } = useCmsContent('home', defaults);
+  const footerLinks = get('footer_links', defaultFooterLinks);
+  const contactInfo = get('footer_contact_info', defaultContactInfo);
 
   return (
     <footer className="w-full relative overflow-hidden bg-[#F8FAFC]">
       {/* 1. Contact Section - Card Style */}
-      <div 
+      <div
         className="w-full flex justify-center"
         style={{
           paddingTop: 'clamp(2rem, 5vw, 70px)',
@@ -19,7 +43,7 @@ const Footer = () => {
         }}
       >
         {/* Card Container */}
-        <div 
+        <div
           className="relative w-full rounded-2xl overflow-hidden"
           style={{
             maxWidth: '900px',
@@ -30,11 +54,11 @@ const Footer = () => {
           }}
         >
           {/* Decorative blobs */}
-          <div 
+          <div
             className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-30"
             style={{ background: 'radial-gradient(circle, #c7d2fe, transparent 70%)' }}
           />
-          <div 
+          <div
             className="absolute -bottom-16 -left-16 w-32 h-32 rounded-full opacity-20"
             style={{ background: 'radial-gradient(circle, #a5b4fc, transparent 70%)' }}
           />
@@ -42,7 +66,7 @@ const Footer = () => {
           {/* Content */}
           <div className="relative z-10">
             {/* Heading */}
-            <h2 
+            <h2
               className="font-plus-jakarta font-bold text-[#1C2E45]"
               style={{
                 fontSize: 'clamp(1.5rem, 2.5vw, 2rem)',
@@ -50,11 +74,11 @@ const Footer = () => {
                 marginBottom: 'clamp(0.5rem, 1vw, 0.75rem)',
               }}
             >
-              Still have some doubt?
+              {get('footer_contact_title')}
             </h2>
-            
+
             {/* Subtext */}
-            <p 
+            <p
               className="font-inter text-[#64748B]"
               style={{
                 fontSize: 'clamp(0.9rem, 1.1vw, 1.1rem)',
@@ -62,13 +86,12 @@ const Footer = () => {
                 marginBottom: 'clamp(1.5rem, 2.5vw, 2rem)',
               }}
             >
-              Let's solve it together. Get personal guidance from our{' '}
-              <span className="text-[#6366F1] font-medium">mentors and experts</span>.
+              {get('footer_contact_subtitle')}
             </p>
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-4">
-              <button 
+              <button
                 onClick={() => setShowModal(true)}
                 className="flex items-center gap-2 transition-all hover:scale-105 hover:shadow-lg"
                 style={{
@@ -81,7 +104,7 @@ const Footer = () => {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                   <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <span 
+                <span
                   className="font-plus-jakarta font-semibold text-white"
                   style={{ fontSize: 'clamp(0.85rem, 1vw, 1rem)' }}
                 >
@@ -89,8 +112,8 @@ const Footer = () => {
                 </span>
               </button>
 
-              <a 
-                href="mailto:mentors@example.com"
+              <a
+                href={`mailto:${contactInfo.email}`}
                 className="flex items-center gap-2 text-[#64748B] hover:text-[#6366F1] transition-colors"
                 style={{ fontSize: 'clamp(0.85rem, 1vw, 1rem)' }}
               >
@@ -107,15 +130,15 @@ const Footer = () => {
 
       {/* Modal */}
       {showModal && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={() => setShowModal(false)}
         >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          
+
           {/* Modal Content */}
-          <div 
+          <div
             className="relative bg-white rounded-2xl p-6 w-full max-w-sm"
             style={{ boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)' }}
             onClick={(e) => e.stopPropagation()}
@@ -123,7 +146,7 @@ const Footer = () => {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-plus-jakarta font-bold text-[#1C2E45] text-xl">Get in touch</h3>
-              <button 
+              <button
                 onClick={() => setShowModal(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
@@ -136,8 +159,8 @@ const Footer = () => {
             {/* Contact Options */}
             <div className="flex flex-col gap-3">
               {/* Email */}
-              <a 
-                href="mailto:mentors@example.com"
+              <a
+                href={`mailto:${contactInfo.email}`}
                 className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
               >
                 <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#6366F1]">
@@ -148,13 +171,13 @@ const Footer = () => {
                 </div>
                 <div>
                   <p className="font-plus-jakarta font-semibold text-[#1C2E45]">Email us</p>
-                  <p className="font-inter text-sm text-[#6366F1]">mentors@example.com</p>
+                  <p className="font-inter text-sm text-[#6366F1]">{contactInfo.email}</p>
                 </div>
               </a>
 
               {/* Phone */}
-              <a 
-                href="tel:+11234567890"
+              <a
+                href={`tel:${contactInfo.phone}`}
                 className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
               >
                 <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#6366F1]">
@@ -164,7 +187,7 @@ const Footer = () => {
                 </div>
                 <div>
                   <p className="font-plus-jakarta font-semibold text-[#1C2E45]">Call us</p>
-                  <p className="font-inter text-sm text-[#6366F1]">+1 (123) 456-7890</p>
+                  <p className="font-inter text-sm text-[#6366F1]">{contactInfo.phone}</p>
                 </div>
               </a>
 
@@ -187,7 +210,7 @@ const Footer = () => {
       )}
 
       {/* 2. Main Footer - Full Width Dark Section */}
-      <div 
+      <div
         className="w-full flex justify-center items-start pt-[80px] pb-[80px]"
         style={{
           background: 'linear-gradient(93.39deg, #0E182D 10.35%, #1C2E45 95.5%)',
@@ -195,13 +218,13 @@ const Footer = () => {
         }}
       >
         <div className="w-full max-w-[1920px] px-8 md:px-16 flex flex-col lg:flex-row justify-between items-start gap-12 lg:gap-0">
-          
+
           {/* Logo Section */}
           <div className="flex-shrink-0">
             <div className="relative w-[171px] h-[137px]">
-              <Image 
-                src="/footer-logo.png" 
-                alt="RiseWithJeet" 
+              <Image
+                src="/footer-logo.png"
+                alt="RiseWithJeet"
                 fill
                 className="object-contain"
               />
@@ -210,28 +233,27 @@ const Footer = () => {
 
           {/* Links Container */}
           <div className="flex-grow flex flex-col md:flex-row justify-end gap-12 md:gap-24 xl:gap-32 w-full lg:w-auto">
-            
+
             {/* Company Column */}
             <div className="flex flex-col gap-6">
               <h3 className="font-roboto font-semibold text-white text-[30px] leading-[100%]">Company</h3>
               <ul className="flex flex-col gap-5">
-                <li><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">About Us</a></li>
-                <li><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">How to work?</a></li>
-                <li><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">Populer Course</a></li>
-                <li><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">Service</a></li>
+                {(footerLinks.company || defaultFooterLinks.company).map((link: string, i: number) => (
+                  <li key={i}><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">{link}</a></li>
+                ))}
               </ul>
-              
+
               {/* Telegram QR Code */}
               <div className="mt-4">
-                <a 
-                  href="https://t.me/risewithjeet" 
-                  target="_blank" 
+                <a
+                  href={contactInfo.telegram || defaultContactInfo.telegram}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="block w-[100px] h-[100px] rounded-lg overflow-hidden hover:scale-105 transition-transform"
                 >
-                  <Image 
-                    src="/telegram-qr.png" 
-                    alt="Join our Telegram Community @RISEWITHJEET" 
+                  <Image
+                    src="/telegram-qr.png"
+                    alt="Join our Telegram Community @RISEWITHJEET"
                     width={100}
                     height={100}
                     className="object-cover"
@@ -244,9 +266,9 @@ const Footer = () => {
             <div className="flex flex-col gap-6">
               <h3 className="font-roboto font-semibold text-white text-[30px] leading-[100%]">Courses</h3>
               <ul className="flex flex-col gap-5">
-                <li><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">Categories</a></li>
-                <li><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">Ofline Course</a></li>
-                <li><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">Vidio Course</a></li>
+                {(footerLinks.courses || defaultFooterLinks.courses).map((link: string, i: number) => (
+                  <li key={i}><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">{link}</a></li>
+                ))}
               </ul>
             </div>
 
@@ -254,10 +276,9 @@ const Footer = () => {
             <div className="flex flex-col gap-6">
               <h3 className="font-roboto font-semibold text-white text-[30px] leading-[100%]">Support</h3>
               <ul className="flex flex-col gap-5">
-                <li><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">FAQ</a></li>
-                <li><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">Help Center</a></li>
-                <li><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">Career</a></li>
-                <li><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">Privacy</a></li>
+                {(footerLinks.support || defaultFooterLinks.support).map((link: string, i: number) => (
+                  <li key={i}><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">{link}</a></li>
+                ))}
               </ul>
             </div>
 
@@ -265,11 +286,15 @@ const Footer = () => {
             <div className="flex flex-col gap-6">
               <h3 className="font-roboto font-semibold text-white text-[30px] leading-[100%]">Contact Info</h3>
               <ul className="flex flex-col gap-5">
-                <li className="font-roboto font-normal text-white text-[25px] leading-[100%]">+0913-705-3875</li>
-                <li className="font-roboto font-normal text-white text-[25px] leading-[100%]">ElizabethJ@jourrapide.com</li>
+                <li className="font-roboto font-normal text-white text-[25px] leading-[100%]">{contactInfo.phone}</li>
+                <li className="font-roboto font-normal text-white text-[25px] leading-[100%]">{contactInfo.email}</li>
                 <li className="font-roboto font-normal text-white text-[25px] leading-[100%]">
-                  4808 Skinner Hollow Road<br />
-                  Days Creek, OR 97429
+                  {(contactInfo.address || defaultContactInfo.address).split('\n').map((line: string, i: number) => (
+                    <React.Fragment key={i}>
+                      {i > 0 && <br />}
+                      {line}
+                    </React.Fragment>
+                  ))}
                 </li>
               </ul>
             </div>

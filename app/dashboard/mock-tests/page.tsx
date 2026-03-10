@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Sidebar from '@/components/Sidebar';
 import { mockTestService, dashboardService } from '@/lib/services';
 
 /* ─── Fallback Data Arrays (used while API loads or on error) ─── */

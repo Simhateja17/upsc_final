@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useCmsContent } from '@/hooks/useCmsContent';
 
 // Quote Icon for testimonial
 const QuoteIcon = () => (
@@ -51,7 +52,26 @@ const PlanIcon = () => (
   </div>
 );
 
+const featureIconComponents = [SessionIcon, ChartIcon, PlanIcon];
+
+const defaultMentorshipFeatures = [
+  { title: 'Weekly One-on-One Sessions', description: 'Personalized feedback and strategy adjustments' },
+  { title: 'Progress Analytics Dashboard', description: 'Visualize your preparation with detailed insights' },
+  { title: 'Dynamic Study Plan Adjustments', description: 'Your plan evolves based on performance and goals' },
+];
+
+const defaults = {
+  mentorship_title: 'Personalized Mentorship',
+  mentorship_subtitle: 'Guidance from experienced mentors who understand the UPSC journey',
+  mentorship_quote: 'The difference between aspirants and officers is often not knowledge but strategy. We help you build the right strategy, maintain consistency, and overcome plateaus.',
+  mentorship_author: 'Jeet Sharma',
+  mentorship_features: defaultMentorshipFeatures,
+};
+
 const Mentorship = () => {
+  const { get } = useCmsContent('home', defaults);
+  const mentorshipFeatures = get('mentorship_features', defaultMentorshipFeatures);
+
   return (
     <section className="w-full panel-recessed py-[clamp(2rem,4vw,5rem)]">
       <div className="w-full max-w-[120rem] mx-auto px-[clamp(1.5rem,4vw,5rem)]">
@@ -66,18 +86,18 @@ const Mentorship = () => {
               color: '#00052E',
             }}
           >
-            Personalized Mentorship
+            {get('mentorship_title')}
           </h2>
         </div>
 
         {/* Subtitle */}
-        <p 
+        <p
           className="text-center text-[#5A6B7D] mb-[clamp(1rem,1.5vw,1.5rem)]"
           style={{
             fontSize: 'clamp(0.875rem, 1.042vw, 1.25rem)',
           }}
         >
-          Guidance from experienced mentors who understand the UPSC journey
+          {get('mentorship_subtitle')}
         </p>
 
         {/* Accent line */}
@@ -88,7 +108,7 @@ const Mentorship = () => {
         {/* Mentorship Content Grid */}
         <div className="flex flex-col lg:flex-row gap-[clamp(2rem,4vw,5rem)] items-start">
           {/* Left - Testimonial Card */}
-          <div 
+          <div
             className="w-full lg:w-[45%] bg-white rounded-2xl p-[clamp(1.5rem,2.5vw,3rem)] shadow-sm"
             style={{
               border: '1px solid #E7E0DA',
@@ -100,29 +120,29 @@ const Mentorship = () => {
             </div>
 
             {/* Quote Text */}
-            <p 
+            <p
               className="font-inter italic text-[#1C2E45] mb-[clamp(1.5rem,2vw,2.5rem)]"
               style={{
                 fontSize: 'clamp(0.875rem, 1.146vw, 1.375rem)',
                 lineHeight: '170%',
               }}
             >
-              The difference between aspirants and officers is often not knowledge but strategy. We help you build the right strategy, maintain consistency, and overcome plateaus.
+              {get('mentorship_quote')}
             </p>
 
             {/* Author */}
             <div className="flex items-center gap-3">
               <UserIcon />
               <div>
-                <p 
+                <p
                   className="font-inter font-semibold text-[#1C2E45]"
                   style={{
                     fontSize: 'clamp(0.875rem, 1.042vw, 1.25rem)',
                   }}
                 >
-                  Jeet Sharma
+                  {get('mentorship_author')}
                 </p>
-                <p 
+                <p
                   className="font-inter text-[#5A6B7D]"
                   style={{
                     fontSize: 'clamp(0.75rem, 0.833vw, 1rem)',
@@ -136,7 +156,7 @@ const Mentorship = () => {
 
           {/* Right - Jeet Path Features */}
           <div className="w-full lg:w-[55%]">
-            <h3 
+            <h3
               className="font-plus-jakarta font-bold text-[#1C2E45] mb-[clamp(0.75rem,1vw,1rem)]"
               style={{
                 fontSize: 'clamp(1.25rem, 1.563vw, 1.875rem)',
@@ -145,7 +165,7 @@ const Mentorship = () => {
               Jeet Path: Your Personalized Roadmap
             </h3>
 
-            <p 
+            <p
               className="text-[#5A6B7D] mb-[clamp(1.5rem,2vw,2.5rem)]"
               style={{
                 fontSize: 'clamp(0.75rem, 0.938vw, 1.125rem)',
@@ -157,78 +177,36 @@ const Mentorship = () => {
 
             {/* Feature List */}
             <div className="space-y-[clamp(1rem,1.5vw,1.5rem)]">
-              {/* Weekly Sessions */}
-              <div className="flex items-start gap-3">
-                <SessionIcon />
-                <div>
-                  <p 
-                    className="font-inter font-semibold text-[#1C2E45]"
-                    style={{
-                      fontSize: 'clamp(0.875rem, 1.042vw, 1.25rem)',
-                    }}
-                  >
-                    Weekly One-on-One Sessions
-                  </p>
-                  <p 
-                    className="text-[#5A6B7D]"
-                    style={{
-                      fontSize: 'clamp(0.75rem, 0.833vw, 1rem)',
-                    }}
-                  >
-                    Personalized feedback and strategy adjustments
-                  </p>
-                </div>
-              </div>
-
-              {/* Progress Analytics */}
-              <div className="flex items-start gap-3">
-                <ChartIcon />
-                <div>
-                  <p 
-                    className="font-inter font-semibold text-[#1C2E45]"
-                    style={{
-                      fontSize: 'clamp(0.875rem, 1.042vw, 1.25rem)',
-                    }}
-                  >
-                    Progress Analytics Dashboard
-                  </p>
-                  <p 
-                    className="text-[#5A6B7D]"
-                    style={{
-                      fontSize: 'clamp(0.75rem, 0.833vw, 1rem)',
-                    }}
-                  >
-                    Visualize your preparation with detailed insights
-                  </p>
-                </div>
-              </div>
-
-              {/* Dynamic Study Plan */}
-              <div className="flex items-start gap-3">
-                <PlanIcon />
-                <div>
-                  <p 
-                    className="font-inter font-semibold text-[#1C2E45]"
-                    style={{
-                      fontSize: 'clamp(0.875rem, 1.042vw, 1.25rem)',
-                    }}
-                  >
-                    Dynamic Study Plan Adjustments
-                  </p>
-                  <p 
-                    className="text-[#5A6B7D]"
-                    style={{
-                      fontSize: 'clamp(0.75rem, 0.833vw, 1rem)',
-                    }}
-                  >
-                    Your plan evolves based on performance and goals
-                  </p>
-                </div>
-              </div>
+              {mentorshipFeatures.map((feature: any, index: number) => {
+                const IconComponent = featureIconComponents[index] || featureIconComponents[0];
+                return (
+                  <div key={index} className="flex items-start gap-3">
+                    <IconComponent />
+                    <div>
+                      <p
+                        className="font-inter font-semibold text-[#1C2E45]"
+                        style={{
+                          fontSize: 'clamp(0.875rem, 1.042vw, 1.25rem)',
+                        }}
+                      >
+                        {feature.title}
+                      </p>
+                      <p
+                        className="text-[#5A6B7D]"
+                        style={{
+                          fontSize: 'clamp(0.75rem, 0.833vw, 1rem)',
+                        }}
+                      >
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* CTA Button */}
-            <button 
+            <button
               className="mt-[clamp(1.5rem,2.5vw,3rem)] flex items-center gap-2 bg-[#1C2E45] hover:bg-[#2A4060] text-white rounded-lg transition-colors"
               style={{
                 padding: 'clamp(0.75rem, 1vw, 1rem) clamp(1.5rem, 2vw, 2rem)',

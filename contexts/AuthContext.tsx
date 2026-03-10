@@ -46,14 +46,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // It fires INITIAL_SESSION on page load (including hard refresh) with the
     // current session — no race condition with manual token checks.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'TOKEN_REFRESHED') {
+        // Just update stored tokens — don't re-fetch user or risk clearing state
+        if (session) {
+          storeTokens(session.access_token, session.refresh_token ?? '');
+        }
+        return;
+      }
+
+      if (event === 'SIGNED_OUT') {
+        clearTokens();
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+
       if (session) {
         storeTokens(session.access_token, session.refresh_token ?? '');
         try {
-          const { user } = await authService.getMe();
-          setUser(user);
+          const { user: freshUser } = await authService.getMe();
+          setUser(freshUser);
         } catch {
-          setUser(null);
-          clearTokens();
+          // getMe failed — keep existing user state if we have one
+          // (e.g. login() already set the user before this event fired)
         }
       } else {
         clearTokens();
@@ -70,6 +85,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await authService.login(data);
       setUser(response.user);
+      // If role is missing from callback response, fetch it from /auth/me
+      if (!response.user.role) {
+        try {
+          const { user: fullUser } = await authService.getMe();
+          setUser(fullUser);
+        } catch {
+          // Keep the user from login response — role will be fetched by onAuthStateChange
+        }
+      }
     } finally {
       setIsLoading(false);
     }

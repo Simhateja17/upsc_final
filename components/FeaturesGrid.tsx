@@ -2,8 +2,9 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { useCmsContent } from '@/hooks/useCmsContent';
 
-const features = [
+const defaultFeatures = [
   {
     title: 'AI Powered Learning',
     description: 'Get instant feedback on answers, personalized study recommendations, and intelligent doubt solving.',
@@ -42,6 +43,11 @@ const features = [
   },
 ];
 
+const defaults = {
+  features_title: 'Your Complete UPSC Preparation Ecosystem',
+  features: defaultFeatures,
+};
+
 // SVG Icons for missing images
 const CommunityIcon = () => (
   <svg width="45" height="45" viewBox="0 0 45 45" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -68,23 +74,26 @@ const AnalyticsIcon = () => (
 );
 
 const FeaturesGrid = () => {
+  const { get } = useCmsContent('home', defaults);
+  const features = get('features', defaultFeatures);
+
   return (
     <section className="w-full py-[clamp(3rem,5.208vw,6.25rem)] panel-recessed" style={{ background: '#4A5565' }}>
       <div className="w-full max-w-[85rem] mx-auto px-[clamp(2rem,6vw,8rem)]">
         {/* Section Heading */}
-        <h2 
+        <h2
           className="font-lora font-bold text-center text-[#1C2E45] leading-[150%] mb-[clamp(2rem,4.167vw,5rem)]"
           style={{
             fontSize: 'clamp(2rem, 3.385vw, 4.063rem)',
             letterSpacing: '0.01em',
           }}
         >
-          Your Complete UPSC Preparation Ecosystem
+          {get('features_title')}
         </h2>
 
         {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[clamp(1.25rem,1.5vw,1.75rem)]">
-          {features.map((feature, index) => (
+          {features.map((feature: any, index: number) => (
             <div
               key={index}
               className="card-elevated rounded-[1rem] p-[clamp(1.25rem,1.5vw,1.75rem)] flex flex-col"
@@ -111,7 +120,7 @@ const FeaturesGrid = () => {
               </div>
 
               {/* Title */}
-              <h3 
+              <h3
                 className="font-jakarta font-bold text-[#1C2E45] leading-[140%] mb-[clamp(0.5rem,0.75vw,1rem)]"
                 style={{
                   fontSize: 'clamp(1rem, 1.25vw, 1.5rem)',
@@ -122,7 +131,7 @@ const FeaturesGrid = () => {
               </h3>
 
               {/* Description */}
-              <p 
+              <p
                 className="font-inter font-normal text-black leading-[160%]"
                 style={{
                   fontSize: 'clamp(0.75rem, 0.95vw, 1.125rem)',

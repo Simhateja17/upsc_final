@@ -2,59 +2,67 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { useCmsContent } from '@/hooks/useCmsContent';
+
+const defaultFaqs = [
+  {
+    question: 'The expense windows adapted sir. Wrong widen drawn.',
+    answer: 'Offending belonging promotion provision an be oh consulted ourselves it. Blessing welcomed ladyship she met humoured sir breeding her.',
+  },
+  {
+    question: 'Six curiosity day assurance bed necessary?',
+    answer: 'Extensive discourse real as an particular principles as. Blessing welcomed ladyship she met humoured sir breeding her.',
+  },
+  {
+    question: 'Produce say the ten moments parties?',
+    answer: 'Extensive discourse real as an particular principles as. Blessing welcomed ladyship she met humoured sir breeding her.',
+  },
+  {
+    question: 'Simple innate summer fat appear basket his desire joy?',
+    answer: 'Extensive discourse real as an particular principles as. Blessing welcomed ladyship she met humoured sir breeding her.',
+  },
+  {
+    question: 'Outward clothes promise at gravity do excited?',
+    answer: 'Extensive discourse real as an particular principles as. Blessing welcomed ladyship she met humoured sir breeding her.',
+  },
+];
+
+const defaults = {
+  faq_title: 'Frequently Asked Questions',
+  faq_items: defaultFaqs,
+};
 
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState<number>(0);
-
-  const faqs = [
-    {
-      question: 'The expense windows adapted sir. Wrong widen drawn.',
-      answer: 'Offending belonging promotion provision an be oh consulted ourselves it. Blessing welcomed ladyship she met humoured sir breeding her.',
-    },
-    {
-      question: 'Six curiosity day assurance bed necessary?',
-      answer: 'Extensive discourse real as an particular principles as. Blessing welcomed ladyship she met humoured sir breeding her.',
-    },
-    {
-      question: 'Produce say the ten moments parties?',
-      answer: 'Extensive discourse real as an particular principles as. Blessing welcomed ladyship she met humoured sir breeding her.',
-    },
-    {
-      question: 'Simple innate summer fat appear basket his desire joy?',
-      answer: 'Extensive discourse real as an particular principles as. Blessing welcomed ladyship she met humoured sir breeding her.',
-    },
-    {
-      question: 'Outward clothes promise at gravity do excited?',
-      answer: 'Extensive discourse real as an particular principles as. Blessing welcomed ladyship she met humoured sir breeding her.',
-    },
-  ];
+  const { get } = useCmsContent('home', defaults);
+  const faqs = get('faq_items', defaultFaqs);
 
   return (
-    <section 
+    <section
       className="relative w-full overflow-hidden flex justify-center py-20 panel-recessed"
     >
       {/* Content Container - 1920px width reference */}
       <div className="relative z-10 w-[1920px] shrink-0 transform scale-[0.4] sm:scale-[0.5] md:scale-[0.6] lg:scale-[0.8] xl:scale-100 origin-top">
-        
+
         {/* Title Container */}
-        <div 
+        <div
           className="flex items-center justify-center mx-auto mb-12"
           style={{ width: '967px', height: '91px' }}
         >
-          <h2 
+          <h2
             className="font-lora font-semibold text-center p-0 m-0 text-[#1C2E45]"
             style={{ fontSize: '70px', lineHeight: '150%', letterSpacing: '0.01em' }}
           >
-            Frequently Asked Questions
+            {get('faq_title')}
           </h2>
         </div>
 
         {/* FAQ Items */}
-        <div 
+        <div
           className="flex flex-col gap-0 mx-auto"
           style={{ width: '1347px' }}
         >
-          {faqs.map((faq, index) => (
+          {faqs.map((faq: any, index: number) => (
             <div
               key={index}
               className="relative cursor-pointer transition-all duration-300 bg-white border border-[#E8E8E8] rounded-[10px] mb-[10px]"
@@ -65,13 +73,13 @@ const FAQ = () => {
               onClick={() => setOpenIndex(openIndex === index ? -1 : index)}
             >
               <div className="flex items-center justify-between">
-                <h3 
+                <h3
                   className="font-manrope font-extrabold text-black"
                   style={{ fontSize: '22px', lineHeight: '22px', letterSpacing: '0' }}
                 >
                   {faq.question}
                 </h3>
-                
+
                 {/* Plus Icon */}
                 <div
                   className="relative flex-shrink-0"
@@ -88,10 +96,10 @@ const FAQ = () => {
                   />
                 </div>
               </div>
-              
+
               {/* Answer - Only show when open */}
               {openIndex === index && (
-                <p 
+                <p
                   className="font-manrope font-medium mt-6"
                   style={{
                     fontSize: '16px',

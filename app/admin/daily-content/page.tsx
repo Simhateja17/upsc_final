@@ -35,8 +35,8 @@ export default function DailyContentManager() {
       adminService.getDailyMCQSets().catch(() => ({ data: [] })),
       adminService.getDailyMainsQuestions().catch(() => ({ data: [] })),
     ]).then(([mcqRes, mainsRes]) => {
-      setMcqSets(mcqRes.data || []);
-      setMainsQuestions(mainsRes.data || []);
+      setMcqSets(Array.isArray(mcqRes.data) ? mcqRes.data : mcqRes.data?.sets || []);
+      setMainsQuestions(Array.isArray(mainsRes.data) ? mainsRes.data : mainsRes.data?.questions || []);
     }).finally(() => setLoading(false));
   };
 

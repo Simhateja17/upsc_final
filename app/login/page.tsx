@@ -116,7 +116,7 @@ function LoginPageContent() {
   };
 
   const goToDashboard = () => {
-    router.push('/dashboard');
+    router.push(user?.role === 'admin' ? '/admin' : '/dashboard');
   };
 
   return (

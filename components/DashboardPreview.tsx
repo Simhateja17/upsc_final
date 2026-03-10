@@ -1,8 +1,15 @@
 'use client';
 
 import React from 'react';
+import { useCmsContent } from '@/hooks/useCmsContent';
+
+const defaults = {
+  dashboard_preview_title: 'Personalized Dashboard Preview',
+};
 
 const DashboardPreview = () => {
+  const { get } = useCmsContent('home', defaults);
+
   return (
     <section className="w-full panel-recessed py-[clamp(3rem,6vw,8rem)]">
       <div className="w-full max-w-[120rem] mx-auto px-[clamp(1.5rem,4vw,5rem)]">
@@ -14,9 +21,9 @@ const DashboardPreview = () => {
             letterSpacing: '0.01em'
           }}
         >
-          Personalized Dashboard Preview
+          {get('dashboard_preview_title')}
         </h2>
-        
+
         {/* Placeholder space for dashboard preview */}
         <div
           className="w-full mt-[clamp(2rem,4vw,5rem)]"

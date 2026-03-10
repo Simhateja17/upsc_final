@@ -1,14 +1,24 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
+import { useCmsContent } from '@/hooks/useCmsContent';
+
+const defaultLiveFeatures = [
+  { emoji: '⏱️', title: 'Pomodoro Timer', desc: 'Stay focused with proven time management' },
+  { emoji: '🏆', title: 'Leaderboards', desc: 'Track rankings & compete healthily' },
+  { emoji: '📋', title: 'Task Cards', desc: 'Share goals & stay accountable' },
+  { emoji: '🔍', title: 'Peer Review', desc: 'Get feedback from fellow aspirants' },
+];
+
+const defaults = {
+  live_study_room_title: 'Live Study Room',
+  live_study_room_subtitle: 'Study With 10,000+ UPSC Aspirants',
+  live_study_room_features: defaultLiveFeatures,
+};
 
 const LiveStudyRoom = () => {
-  const features = [
-    { emoji: '⏱️', title: 'Pomodoro Timer', desc: 'Stay focused with proven time management' },
-    { emoji: '🏆', title: 'Leaderboards', desc: 'Track rankings & compete healthily' },
-    { emoji: '📋', title: 'Task Cards', desc: 'Share goals & stay accountable' },
-    { emoji: '🔍', title: 'Peer Review', desc: 'Get feedback from fellow aspirants' },
-  ];
+  const { get } = useCmsContent('home', defaults);
+  const features = get('live_study_room_features', defaultLiveFeatures);
 
   const avatars = [
     { letter: 'S', bg: '#4CAF50' },
@@ -18,7 +28,7 @@ const LiveStudyRoom = () => {
   ];
 
   return (
-    <section 
+    <section
       className="w-full flex flex-col items-center"
       style={{
         background: '#05070A',
@@ -28,9 +38,9 @@ const LiveStudyRoom = () => {
         paddingRight: 'clamp(1.5rem, 5vw, 80px)',
       }}
     >
-      
+
       {/* Section Title */}
-      <h2 
+      <h2
         className="font-lora font-bold text-center"
         style={{
           fontSize: 'clamp(2rem, 3.385vw, 4.063rem)',
@@ -40,7 +50,7 @@ const LiveStudyRoom = () => {
           marginBottom: 'clamp(1.5rem, 3vw, 40px)',
         }}
       >
-        Live Study Room
+        {get('live_study_room_title')}
       </h2>
 
       {/* Subheading */}
@@ -52,11 +62,11 @@ const LiveStudyRoom = () => {
           marginBottom: 'clamp(1rem, 2vw, 24px)',
         }}
       >
-        Study With 10,000+ UPSC Aspirants
+        {get('live_study_room_subtitle')}
       </h3>
 
       {/* Live Badge */}
-      <div 
+      <div
         className="flex items-center gap-2 rounded-full"
         style={{
           padding: 'clamp(0.4rem, 0.7vw, 0.6rem) clamp(1rem, 2vw, 1.5rem)',
@@ -66,13 +76,13 @@ const LiveStudyRoom = () => {
         }}
       >
         <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span 
+        <span
           className="font-inter"
           style={{ fontSize: 'clamp(0.85rem, 1vw, 1rem)', color: '#4ADE80' }}
         >
           532
         </span>
-        <span 
+        <span
           className="font-inter text-white/70"
           style={{ fontSize: 'clamp(0.85rem, 1vw, 1rem)' }}
         >
@@ -81,11 +91,11 @@ const LiveStudyRoom = () => {
       </div>
 
       {/* Integrated Live Study Room Card */}
-      <div 
+      <div
         className="w-full flex justify-center"
         style={{ marginBottom: 'clamp(2.5rem, 5vw, 60px)' }}
       >
-        <div 
+        <div
           className="rounded-2xl flex flex-col sm:flex-row items-center gap-4 sm:gap-6"
           style={{
             padding: 'clamp(1rem, 2vw, 1.5rem) clamp(1.5rem, 3vw, 2.5rem)',
@@ -98,7 +108,7 @@ const LiveStudyRoom = () => {
           <div className="flex items-center">
             <div className="flex -space-x-2">
               {avatars.map((a, i) => (
-                <div 
+                <div
                   key={i}
                   className="flex items-center justify-center rounded-full border-2 border-[#0E182D] font-bold text-white"
                   style={{
@@ -112,7 +122,7 @@ const LiveStudyRoom = () => {
                   {a.letter}
                 </div>
               ))}
-              <div 
+              <div
                 className="flex items-center justify-center rounded-full border-2 border-[#0E182D] font-semibold text-white/80"
                 style={{
                   width: 'clamp(32px, 2.5vw, 40px)',
@@ -138,7 +148,7 @@ const LiveStudyRoom = () => {
 
           {/* Status Badges */}
           <div className="flex items-center gap-3">
-            <div 
+            <div
               className="flex items-center gap-1.5 rounded-full"
               style={{
                 padding: '0.3rem 0.75rem',
@@ -151,7 +161,7 @@ const LiveStudyRoom = () => {
                 Focus Guard On
               </span>
             </div>
-            <div 
+            <div
               className="flex items-center gap-1.5 rounded-full"
               style={{
                 padding: '0.3rem 0.75rem',
@@ -169,7 +179,7 @@ const LiveStudyRoom = () => {
       </div>
 
       {/* Features Grid */}
-      <div 
+      <div
         className="w-full grid grid-cols-2 lg:grid-cols-4"
         style={{
           maxWidth: '1000px',
@@ -177,18 +187,18 @@ const LiveStudyRoom = () => {
           marginBottom: 'clamp(2.5rem, 5vw, 60px)',
         }}
       >
-        {features.map((f, i) => (
+        {features.map((f: any, i: number) => (
           <div key={i} className="flex flex-col items-center text-center">
             <span style={{ fontSize: 'clamp(2rem, 3vw, 3rem)', marginBottom: 'clamp(0.5rem, 1vw, 0.75rem)' }}>
               {f.emoji}
             </span>
-            <h4 
+            <h4
               className="font-plus-jakarta font-bold text-white"
               style={{ fontSize: 'clamp(0.9rem, 1.1vw, 1.1rem)', marginBottom: '0.35rem' }}
             >
               {f.title}
             </h4>
-            <p 
+            <p
               className="font-inter text-white/50"
               style={{ fontSize: 'clamp(0.78rem, 0.9vw, 0.9rem)', lineHeight: '150%' }}
             >

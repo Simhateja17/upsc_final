@@ -23,6 +23,13 @@ const AdminSidebar = () => {
       ],
     },
     {
+      title: 'CMS',
+      items: [
+        { id: 'content-hub', label: 'Content Hub', path: '/admin/cms/hub', icon: '🏠' },
+        { id: 'pages', label: 'Page Manager', path: '/admin/cms', icon: '📄' },
+      ],
+    },
+    {
       title: 'PLATFORM',
       items: [
         { id: 'testimonials', label: 'Testimonials', path: '/admin/testimonials', icon: '⭐' },

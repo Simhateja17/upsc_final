@@ -1,8 +1,19 @@
 'use client';
 
 import React from 'react';
+import { useCmsContent } from '@/hooks/useCmsContent';
+
+const defaults = {
+  hero_badge: "🏆 India's #1 AI-Powered UPSC Platform",
+  hero_title: 'Everything you need to crack UPSC, <span class="text-[#FFD170]">Simplified</span>',
+  hero_subtitle: "Trusted by 50,000+ aspirants preparing with AI-powered learning, daily MCQs practice, instant mains answer evaluation, expert mentorship, and smart revision tools.",
+  hero_cta_primary: "Start Your Free Trial",
+  hero_cta_secondary: "Watch Platform Demo",
+};
 
 const Hero = () => {
+  const { get } = useCmsContent('home', defaults);
+
   return (
     <section className="relative w-full min-h-screen flex items-center justify-center overflow-hidden pt-[73px]">
       {/* Background Image - covers both header and hero */}
@@ -28,28 +39,27 @@ const Hero = () => {
             }}
           >
             <p className="text-[clamp(0.875rem,0.938vw,1.125rem)] text-white font-sf-pro font-medium">
-              🏆 India&apos;s #1 AI-Powered UPSC Platform
+              {get('hero_badge')}
             </p>
           </div>
 
           {/* Hero Heading Container */}
-          <div 
+          <div
             className="relative max-w-[80.625rem] w-full"
           >
             {/* Heading with gradient text - no box */}
             <div className="text-center">
-              <h1 
+              <h1
                 className="font-sf-pro font-bold text-center text-white"
                 style={{
                   fontSize: 'clamp(2rem, 3.333vw, 64px)',
                   lineHeight: '150%',
                   letterSpacing: '-1.5%',
                 }}
-              >
-                Everything you need to crack UPSC, <span className="text-[#FFD170]">Simplified</span>
-              </h1>
-              
-              <p 
+                dangerouslySetInnerHTML={{ __html: get('hero_title') }}
+              />
+
+              <p
                 className="mt-[clamp(1rem,1.563vw,1.875rem)] font-geist font-bold text-center text-white/80 mx-auto"
                 style={{
                   fontSize: 'clamp(1rem, 1.8vw, 32px)',
@@ -58,9 +68,7 @@ const Hero = () => {
                   maxWidth: '100%',
                 }}
               >
-                Trusted by 50,000+ aspirants preparing with AI-powered learning, daily MCQs<br />
-                practice, instant mains answer evaluation, expert mentorship, and smart revision<br />
-                tools.
+                {get('hero_subtitle')}
               </p>
             </div>
           </div>
@@ -75,13 +83,13 @@ const Hero = () => {
                 boxShadow: '0px 4px 17.1px 0px rgba(255, 255, 255, 0.06) inset',
               }}
             >
-              <span 
+              <span
                 className="font-sf-pro font-semibold leading-[110%] tracking-[-0.015em] text-black"
                 style={{
-                  fontSize: 'clamp(1.5rem, 2.083vw, 2.5rem)', // 24px to 40px
+                  fontSize: 'clamp(1.5rem, 2.083vw, 2.5rem)',
                 }}
               >
-                Start Your Free Trial
+                {get('hero_cta_primary')}
               </span>
             </button>
 
@@ -98,10 +106,10 @@ const Hero = () => {
               <span
                 className="font-sf-pro font-semibold leading-[110%] tracking-[-0.015em] text-white"
                 style={{
-                  fontSize: 'clamp(1.5rem, 2.083vw, 2.5rem)', // 24px to 40px
+                  fontSize: 'clamp(1.5rem, 2.083vw, 2.5rem)',
                 }}
               >
-                Watch Platform Demo
+                {get('hero_cta_secondary')}
               </span>
             </button>
           </div>

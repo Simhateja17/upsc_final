@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Sidebar from '@/components/Sidebar';
 
 const subjectMeta: Record<string, { title: string; icon: string }> = {
   polity: { title: 'Indian Polity', icon: '🏛️' },
@@ -61,7 +60,6 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
 
   return (
     <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
-      <Sidebar />
       <div className="flex-1 overflow-y-auto" style={{ background: '#FFFFFF' }}>
         <div className="w-full max-w-[1180px] mx-auto px-6 py-6">
           {/* Back to Topics */}

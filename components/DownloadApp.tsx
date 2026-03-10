@@ -2,8 +2,15 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { useCmsContent } from '@/hooks/useCmsContent';
+
+const defaults = {
+  download_app_title: 'Download the App',
+};
 
 const DownloadApp = () => {
+  const { get } = useCmsContent('home', defaults);
+
   return (
     <section
       className="w-full flex flex-col items-center panel-recessed"
@@ -24,7 +31,7 @@ const DownloadApp = () => {
           marginBottom: 'clamp(2rem, 4vw, 50px)'
         }}
       >
-        Download the App
+        {get('download_app_title')}
       </h2>
 
       {/* iPhone Image - compact */}

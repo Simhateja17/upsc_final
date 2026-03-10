@@ -119,6 +119,12 @@ export const pricingService = {
   getTestimonials: () => api.get<any>('/mentorship/testimonials'),
 };
 
+// ==================== CMS (Public) ====================
+
+export const cmsService = {
+  getPageContent: (slug: string) => api.get<any>(`/cms/${encodeURIComponent(slug)}`),
+};
+
 // ==================== Admin ====================
 
 export const adminService = {
@@ -214,6 +220,15 @@ export const adminService = {
     api.post<any>('/admin/pricing', data, authConfig()),
   updatePricingPlan: (id: string, data: any) => api.put<any>(`/admin/pricing/${id}`, data, authConfig()),
   deletePricingPlan: (id: string) => api.delete<any>(`/admin/pricing/${id}`, authConfig()),
+
+  // CMS
+  getCmsPages: () => api.get<any>('/admin/cms/pages', authConfig()),
+  getCmsPage: (slug: string) => api.get<any>(`/admin/cms/pages/${encodeURIComponent(slug)}`, authConfig()),
+  bulkUpdateCmsSections: (slug: string, sections: any[]) =>
+    api.put<any>(`/admin/cms/pages/${encodeURIComponent(slug)}/bulk`, { sections }, authConfig()),
+  createCmsSection: (data: any) => api.post<any>('/admin/cms/sections', data, authConfig()),
+  updateCmsSection: (id: string, data: any) => api.put<any>(`/admin/cms/sections/${id}`, data, authConfig()),
+  deleteCmsSection: (id: string) => api.delete<any>(`/admin/cms/sections/${id}`, authConfig()),
 
   // Library
   createSubject: (data: any) => api.post<any>('/admin/library/subjects', data, authConfig()),

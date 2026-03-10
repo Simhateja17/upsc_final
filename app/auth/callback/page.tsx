@@ -25,17 +25,27 @@ export default function AuthCallback() {
 
         storeTokens(session.access_token, session.refresh_token ?? '');
 
-        // Sync user into our Prisma database
+        // Sync user into our Prisma database and get role
+        let userRole = 'user';
         try {
-          await api.post('/auth/callback', {
+          const res = await api.post<{ user: { role?: string } }>('/auth/callback', {
             accessToken: session.access_token,
             refreshToken: session.refresh_token,
           });
+          userRole = res.data?.user?.role || 'user';
         } catch {
-          // User might already exist — continue
+          // User might already exist — try getMe to get role
+          try {
+            const meRes = await api.get<{ user: { role?: string } }>('/auth/me', {
+              headers: { Authorization: `Bearer ${session.access_token}` } as any,
+            });
+            userRole = meRes.data?.user?.role || 'user';
+          } catch {
+            // Continue with default role
+          }
         }
 
-        router.replace('/dashboard');
+        router.replace(userRole === 'admin' ? '/admin' : '/dashboard');
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : 'Something went wrong.');
         setStatus('error');

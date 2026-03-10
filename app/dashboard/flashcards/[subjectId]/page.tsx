@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Sidebar from '@/components/Sidebar';
 import CreateFlashcardModal from '@/components/CreateFlashcardModal';
 
 const subjectMeta: Record<string, { title: string; icon: string; cards: number; topics: number }> = {
@@ -34,7 +33,6 @@ export default function FlashcardsSubjectPage({ params }: { params: { subjectId:
 
   return (
     <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
-      <Sidebar />
       <div className="flex-1 overflow-y-auto" style={{ background: '#FFFFFF' }}>
         <div className="w-full max-w-[1180px] mx-auto px-6 py-6">
           {/* Back to Subjects */}

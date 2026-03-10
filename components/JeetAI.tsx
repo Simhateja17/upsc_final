@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useCmsContent } from '@/hooks/useCmsContent';
 
 // SVG Icons for each feature
 const MainsEvaluatorIcon = () => (
@@ -32,28 +33,24 @@ const CurrentAffairsIcon = () => (
 
 const featureIcons = [MainsEvaluatorIcon, UPSCGPTIcon, TestGeneratorIcon, CurrentAffairsIcon];
 
+const defaultJeetaiFeatures = [
+  { title: 'Mains Evaluator', description: 'Evaluate Mains answers within minutes' },
+  { title: 'UPSC GPT', description: '' },
+  { title: 'Test generators', description: '' },
+  { title: 'Current Affairs', description: '' },
+];
+
+const defaults = {
+  jeetai_title: 'Experience Jeet AI in Action',
+  jeetai_features: defaultJeetaiFeatures,
+};
+
 const JeetAI = () => {
-  const features = [
-    {
-      title: 'Mains Evaluator',
-      description: 'Evaluate Mains answers within minutes',
-    },
-    {
-      title: 'UPSC GPT',
-      description: '',
-    },
-    {
-      title: 'Test generators',
-      description: '',
-    },
-    {
-      title: 'Current Affairs',
-      description: '',
-    },
-  ];
+  const { get } = useCmsContent('home', defaults);
+  const features = get('jeetai_features', defaultJeetaiFeatures);
 
   return (
-    <section 
+    <section
       className="relative w-full overflow-hidden"
       style={{
         minHeight: 'clamp(500px, 70.1vh, 757px)',
@@ -61,7 +58,7 @@ const JeetAI = () => {
       }}
     >
       {/* Content Container - increased side padding for more blank space */}
-      <div 
+      <div
         className="relative z-10 w-full mx-auto"
         style={{
           maxWidth: '1400px',
@@ -71,40 +68,40 @@ const JeetAI = () => {
           paddingBottom: 'clamp(2rem, 8%, 80px)',
         }}
       >
-        
+
         {/* Section Title - centered, consistent with other sections */}
-        <div 
+        <div
           className="flex justify-center"
           style={{
             marginBottom: 'clamp(2.5rem, 6vw, 80px)',
           }}
         >
-          <h2 
+          <h2
             className="font-lora font-bold text-center text-white leading-[150%]"
             style={{
               fontSize: 'clamp(2rem, 3.385vw, 4.063rem)',
               letterSpacing: '0.01em',
             }}
           >
-            Experience Jeet AI in Action
+            {get('jeetai_title')}
           </h2>
         </div>
 
         {/* Main Content Grid */}
         <div className="flex flex-col lg:flex-row items-stretch gap-[clamp(2rem, 5vw, 5rem)]">
-          
+
           {/* Left Side - Feature List with divider lines */}
-          <div 
+          <div
             className="w-full lg:w-[35%]"
             style={{
               display: 'flex',
               flexDirection: 'column',
             }}
           >
-            {features.map((feature, index) => {
-              const IconComponent = featureIcons[index];
+            {features.map((feature: any, index: number) => {
+              const IconComponent = featureIcons[index] || featureIcons[0];
               return (
-                <div 
+                <div
                   key={index}
                   className="flex items-start cursor-pointer group"
                   style={{
@@ -115,7 +112,7 @@ const JeetAI = () => {
                   }}
                 >
                   {/* Feature Icon */}
-                  <div 
+                  <div
                     className="flex-shrink-0 flex items-center justify-center rounded-lg"
                     style={{
                       width: 'clamp(36px, 2.5vw, 44px)',
@@ -125,10 +122,10 @@ const JeetAI = () => {
                   >
                     <IconComponent />
                   </div>
-                  
+
                   {/* Text Content */}
                   <div>
-                    <h3 
+                    <h3
                       className="font-plus-jakarta font-bold text-[#DED4C4] group-hover:text-[#F5C67B] transition-colors"
                       style={{
                         fontSize: 'clamp(0.95rem, 1.25vw, 22px)',
@@ -139,7 +136,7 @@ const JeetAI = () => {
                       {feature.title}
                     </h3>
                     {feature.description && (
-                      <p 
+                      <p
                         className="font-inter font-normal"
                         style={{
                           fontSize: 'clamp(0.8rem, 1vw, 16px)',
