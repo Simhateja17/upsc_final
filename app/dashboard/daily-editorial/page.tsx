@@ -1067,6 +1067,24 @@ export default function DailyEditorialPage() {
                       code: ({ children }) => (
                         <code style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '4px', padding: '2px 6px', fontSize: '13px', color: '#FACC15' }}>{children}</code>
                       ),
+                      table: ({ children }) => (
+                        <div style={{ overflowX: 'auto', marginBottom: '12px' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>{children}</table>
+                        </div>
+                      ),
+                      thead: ({ children }) => (
+                        <thead style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>{children}</thead>
+                      ),
+                      tbody: ({ children }) => <tbody>{children}</tbody>,
+                      tr: ({ children }) => (
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{children}</tr>
+                      ),
+                      th: ({ children }) => (
+                        <th style={{ padding: '8px 14px', textAlign: 'left', color: '#94A3B8', fontWeight: 600, whiteSpace: 'nowrap' }}>{children}</th>
+                      ),
+                      td: ({ children }) => (
+                        <td style={{ padding: '8px 14px', color: '#CBD5E1', verticalAlign: 'top' }}>{children}</td>
+                      ),
                     }}
                   >
                     {summaryModal.summary}
