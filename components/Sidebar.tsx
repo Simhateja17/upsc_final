@@ -47,6 +47,7 @@ const Sidebar = ({ forceShow = false }: { forceShow?: boolean }) => {
       title: 'REVISION TOOLS',
       items: [
         { id: 'flashcards', label: 'Flashcards', icon: '/sidebar-flashcards-new.png', path: '/dashboard/flashcards' },
+        { id: 'spaced-repetition', label: 'Spaced Repetition', icon: '/sidebar-flashcards-new.png', path: '/dashboard/spaced-repetition' },
         { id: 'mindmap', label: 'Mindmaps', icon: '/sidebar-mindmap-new.png', path: '/dashboard/mindmap' },
       ],
     },
