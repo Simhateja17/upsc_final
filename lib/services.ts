@@ -46,6 +46,7 @@ export const dashboardService = {
   getActivity: (limit = 10) => api.get<any>(`/user/activity?limit=${limit}`, authConfig()),
   getPerformance: () => api.get<any>('/user/performance', authConfig()),
   getPracticeStats: () => api.get<any>('/user/practice-stats', authConfig()),
+  getTestAnalytics: () => api.get<any>('/user/test-analytics', authConfig()),
 };
 
 // ==================== Daily MCQ ====================
