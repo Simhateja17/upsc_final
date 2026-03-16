@@ -76,7 +76,7 @@ export default function SpacedRepetitionPage() {
 
   const toggleRemind = (id: string, current: boolean) => {
     spacedRepService.updateItem(id, { remindEnabled: !current })
-      .then((res) => {
+      .then((res: { status: string }) => {
         if (res.status === 'success') {
           setItems((prev) => prev.map((i) => i.id === id ? { ...i, remindEnabled: !current } : i));
         }
@@ -86,7 +86,7 @@ export default function SpacedRepetitionPage() {
 
   const toggleSchedule = (id: string, day: number) => {
     spacedRepService.updateItem(id, { scheduleDay: day })
-      .then((res) => {
+      .then((res: { status: string }) => {
         if (res.status === 'success') {
           setItems((prev) => prev.map((i) => i.id === id ? { ...i, scheduleDay: day } : i));
         }
