@@ -16,10 +16,84 @@ interface Question {
 
 type QuestionStatus = 'unattempted' | 'answered' | 'marked' | 'current';
 
+const SAMPLE_QUESTIONS: Question[] = [
+  {
+    id: 1,
+    subject: 'Polity',
+    difficulty: 'Medium',
+    text: 'Which of the following statements about the Preamble to the Indian Constitution is/are correct?\n\n1. The Preamble is a part of the Constitution\n2. It can be amended under Article 368\n3. It has been amended only once',
+    options: [
+      { label: 'A', text: '1 only' },
+      { label: 'B', text: '1 and 2 only' },
+      { label: 'C', text: '1, 2 and 3' },
+      { label: 'D', text: '2 and 3 only' },
+    ],
+    correct: 'B',
+    explanation: 'The Preamble is part of the Constitution (Kesavananda Bharati) and can be amended under Article 368 (subject to basic structure). It has been amended once (42nd Amendment).',
+  },
+  {
+    id: 2,
+    subject: 'History',
+    difficulty: 'Easy',
+    text: 'The term “Swaraj” was first used prominently by:',
+    options: [
+      { label: 'A', text: 'Bal Gangadhar Tilak' },
+      { label: 'B', text: 'Mahatma Gandhi' },
+      { label: 'C', text: 'Dadabhai Naoroji' },
+      { label: 'D', text: 'Subhas Chandra Bose' },
+    ],
+    correct: 'C',
+    explanation: 'Dadabhai Naoroji used “Swaraj” prominently; later Tilak popularized it widely.',
+  },
+  {
+    id: 3,
+    subject: 'Geography',
+    difficulty: 'Medium',
+    text: 'Which one of the following factors most directly influences the formation of monsoon winds over the Indian subcontinent?',
+    options: [
+      { label: 'A', text: 'Earth’s rotation alone' },
+      { label: 'B', text: 'Seasonal differential heating of land and sea' },
+      { label: 'C', text: 'Ocean currents only' },
+      { label: 'D', text: 'Mountain building processes' },
+    ],
+    correct: 'B',
+    explanation: 'Monsoon is driven by seasonal differential heating between land and sea creating pressure gradients.',
+  },
+  {
+    id: 4,
+    subject: 'Economy',
+    difficulty: 'Hard',
+    text: 'In the context of inflation targeting, which institution sets the policy repo rate in India?',
+    options: [
+      { label: 'A', text: 'Ministry of Finance' },
+      { label: 'B', text: 'NITI Aayog' },
+      { label: 'C', text: 'Monetary Policy Committee (RBI)' },
+      { label: 'D', text: 'SEBI' },
+    ],
+    correct: 'C',
+    explanation: 'The RBI’s Monetary Policy Committee sets the policy repo rate under the inflation targeting framework.',
+  },
+  {
+    id: 5,
+    subject: 'Environment',
+    difficulty: 'Medium',
+    text: '“Biodiversity hotspot” refers to a region that:',
+    options: [
+      { label: 'A', text: 'Has only high species richness' },
+      { label: 'B', text: 'Has high endemism and is under significant threat' },
+      { label: 'C', text: 'Has low endemism but high productivity' },
+      { label: 'D', text: 'Is protected as a national park' },
+    ],
+    correct: 'B',
+    explanation: 'Hotspots have high endemism and have lost a large portion of their original habitat (high threat).',
+  },
+];
+
 function MockTestAttemptInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const testId = searchParams.get('testId');
+  const title = searchParams.get('title') || 'Prelims Practice';
 
   /* ─── API / Loading State ─── */
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -37,8 +111,16 @@ function MockTestAttemptInner() {
   /* ─── Load questions from API ─── */
   useEffect(() => {
     if (!testId) {
-      setError('No test ID provided. Please generate a test first.');
+      // No testId: fall back to a built-in 5-question set so the UI always opens from "Resume".
+      setQuestions(SAMPLE_QUESTIONS);
+      const statuses: Record<number, QuestionStatus> = {};
+      SAMPLE_QUESTIONS.forEach((_, i) => {
+        statuses[i] = i === 0 ? 'current' : 'unattempted';
+      });
+      setQuestionStatuses(statuses);
+      setTimeLeft(15 * 60);
       setLoading(false);
+      setError(null);
       return;
     }
 
@@ -135,7 +217,50 @@ function MockTestAttemptInner() {
   };
 
   const handleSubmit = async () => {
-    if (!testId) return;
+    // Sample mode (no testId): store local results and open results screen
+    if (!testId) {
+      const total = questions.length;
+      const correctCount = correct;
+      const wrongCount = wrong;
+      const skippedCount = Math.max(0, total - Object.keys(selectedOptions).length);
+      const accuracyPct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+      const review = questions.map((q, idx) => {
+        const selected = selectedOptions[idx];
+        const status: 'correct' | 'wrong' | 'skipped' =
+          selected ? (selected === q.correct ? 'correct' : 'wrong') : 'skipped';
+        const delta = status === 'correct' ? 2 : status === 'wrong' ? -0.67 : 0;
+        // simple, deterministic per-question time estimate for UI
+        const timeSec = 60 + (idx % 4) * 15;
+        return {
+          idx: idx + 1,
+          text: q.text.split('\n').slice(0, 2).join(' ').trim(),
+          timeSec,
+          status,
+          delta,
+        };
+      });
+
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(
+          'mockTestSampleResults',
+          JSON.stringify({
+            title,
+            total,
+            correct: correctCount,
+            wrong: wrongCount,
+            skipped: skippedCount,
+            accuracyPct,
+            scoreText: `${correctCount}/${total}`,
+            review,
+            selectedOptions,
+            questions,
+          })
+        );
+      }
+
+      router.push(`/dashboard/mock-tests/attempt/results?mode=sample&title=${encodeURIComponent(title)}`);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -165,6 +290,8 @@ function MockTestAttemptInner() {
   const netScore = correct * 2 - wrong * 0.67;
 
   const currentQ = questions[currentIdx];
+  const [questionTitle, questionBodyRaw] = (currentQ?.text ?? '').split('\n\n', 2);
+  const questionBody = questionBodyRaw ?? '';
 
   const statusColor: Record<QuestionStatus, string> = {
     answered: '#00C950',
@@ -240,46 +367,78 @@ function MockTestAttemptInner() {
   return (
     <div style={{ minHeight: '100vh', background: '#FFFFFF', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
 
-      {/* ── Header ── */}
-      <header style={{
-        width: '100%',
-        height: '56px',
-        background: '#0F172B',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingLeft: '32px',
-        paddingRight: '32px',
-        boxSizing: 'border-box',
-        borderBottom: '1px solid #1E293B',
-        flexShrink: 0,
-      }}>
-        {/* Left – title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '16px' }}>✨</span>
-          <span style={{ fontWeight: 600, fontSize: '16px', lineHeight: '24px', color: '#FDC700' }}>
-            Prelims Practice
-          </span>
-        </div>
+      {/* ── Sub-header (matches screenshot strip) ── */}
+      <div
+        style={{
+          background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
+          padding: '10px 24px 12px',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span aria-hidden="true" style={{ fontSize: 14, lineHeight: '16px' }}>🏛️</span>
+              <span style={{ fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {title}
+              </span>
+            </div>
+            <div style={{ fontWeight: 500, fontSize: 11, lineHeight: '16px', color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>
+              Today Prelims Mock Test · {totalQuestions} Questions · +0.67 per wrong
+            </div>
+          </div>
 
-        {/* Centre – avatar */}
-        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px', color: '#fff' }}>
-          P
-        </div>
-
-        {/* Right – counter + timer */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <span style={{ fontWeight: 500, fontSize: '14px', color: '#D1D5DC' }}>
-            Q {currentIdx + 1} of {totalQuestions}
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#1E293B', borderRadius: '8px', padding: '6px 12px' }}>
-            <span style={{ fontSize: '14px' }}>⏱</span>
-            <span style={{ fontWeight: 700, fontSize: '16px', color: timeLeft < 300 ? '#EF4444' : '#FFFFFF', letterSpacing: '1px' }}>
-              {formatTime(timeLeft)}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span aria-hidden="true" style={{ fontSize: 16, lineHeight: '16px' }}>⏳</span>
+                <span style={{ fontWeight: 800, fontSize: 18, lineHeight: '22px', color: '#FFFFFF' }}>
+                  {formatTime(timeLeft)}
+                </span>
+              </div>
+              <div style={{ fontWeight: 700, fontSize: 10, lineHeight: '12px', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.6)' }}>
+                TIME LEFT
+              </div>
+            </div>
           </div>
         </div>
-      </header>
+      </div>
+
+      {/* ── Progress row (1116×44) ── */}
+      <div
+        style={{
+          background: '#FFFFFF',
+          borderBottom: '0.8px solid #E5E7EB',
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
+        <div
+          style={{
+            width: 1116,
+            height: 44,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingLeft: 32,
+            paddingRight: 32,
+            boxSizing: 'border-box',
+          }}
+        >
+          <div style={{ flex: 1, marginRight: 16, height: 4, borderRadius: 999, background: '#E5E7EB', overflow: 'hidden' }}>
+            <div
+              style={{
+                width: `${Math.round(((currentIdx + 1) / Math.max(1, totalQuestions)) * 100)}%`,
+                height: '100%',
+                background: '#00C950',
+              }}
+            />
+          </div>
+          <div style={{ fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#364153', whiteSpace: 'nowrap' }}>
+            Q {currentIdx + 1} / {totalQuestions} - {answered} Answered
+          </div>
+        </div>
+      </div>
 
       {/* ── Submit Error Banner ── */}
       {error && (
@@ -296,31 +455,146 @@ function MockTestAttemptInner() {
         </div>
       )}
 
-      {/* ── Body ── */}
-      <div style={{ display: 'flex', flex: 1, gap: '0', overflow: 'hidden' }}>
-
+      {/* ── Body (centered fixed frame) ── */}
+      <div
+        style={{
+          flex: 1,
+          background: '#F9FAFB',
+          padding: '24px',
+          boxSizing: 'border-box',
+          display: 'flex',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          minHeight: 0,
+        }}
+      >
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 1116,
+            height: '100%',
+            maxHeight: 848.7999877929688,
+            display: 'flex',
+            gap: 24,
+            boxSizing: 'border-box',
+          }}
+        >
         {/* ── Question Panel ── */}
-        <main style={{ flex: 1, overflowY: 'auto', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px', background: '#FFFFFF' }}>
+        <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Question Card */}
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '32px', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
-            {/* Tags */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-              <span style={{ background: '#0F172B', color: '#FFFFFF', fontWeight: 700, fontSize: '13px', borderRadius: '8px', padding: '4px 12px' }}>
-                Q {currentIdx + 1}
-              </span>
-              <span style={{ background: 'none', color: '#155DFC', fontWeight: 500, fontSize: '13px', borderRadius: '8px', padding: '4px 12px' }}>
-                {currentQ.subject}
-              </span>
-              <span style={{ background: '#F3F4F6', fontSize: '13px', borderRadius: '8px', padding: '4px 12px', fontWeight: 500, color: '#6A7282' }}>
-                {currentQ.difficulty}
-              </span>
+          <div
+            className="questionCardScroll"
+            style={{
+              background: '#FFFFFF',
+              borderRadius: 16,
+              border: '1px solid #E5E7EB',
+              padding: 24,
+              boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              flex: 1,
+            }}
+          >
+            <style>{`
+              .questionCardScroll::-webkit-scrollbar { width: 0px; height: 0px; }
+              .questionCardScroll::-webkit-scrollbar-thumb { background: transparent; }
+            `}</style>
+            {/* Question header row (pill + bookmark) */}
+            <div
+              style={{
+                width: 634.4000244140625,
+                height: 44,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginTop: 8.8,
+                marginLeft: 8.8,
+                marginBottom: 16,
+              }}
+            >
+              <div
+                style={{
+                  width: 103.20000457763672,
+                  height: 32,
+                  borderRadius: 10,
+                  background: '#101828',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <span
+                  style={{
+                    width: 73,
+                    height: 20,
+                    fontFamily: 'Inter',
+                    fontWeight: 700,
+                    fontSize: 14,
+                    lineHeight: '20px',
+                    color: '#FFFFFF',
+                  }}
+                >
+                  Question {currentIdx + 1}
+                </span>
+              </div>
+
+              <div
+                aria-label="Bookmark"
+                style={{
+                  width: 32,
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {/* Inline icon so no asset needed */}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M7 3.5h10A1.5 1.5 0 0 1 18.5 5v16l-6.5-3-6.5 3V5A1.5 1.5 0 0 1 7 3.5Z"
+                    stroke="#111827"
+                    strokeWidth="1.6"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
             </div>
 
-            {/* Question Text */}
-            <p style={{ fontSize: '17px', fontWeight: 500, color: '#0F172A', lineHeight: '28px', marginBottom: '28px' }}>
-              {currentQ.text}
-            </p>
+            {/* Question Text (fixed frame per layout) */}
+            <div
+              style={{
+                width: 634.4,
+                height: 160,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16,
+                boxSizing: 'border-box',
+                marginBottom: 28,
+              }}
+            >
+              <div
+                style={{
+                  width: 541,
+                  height: 56,
+                  fontSize: 18,
+                  fontWeight: 400,
+                  color: '#17223E',
+                  lineHeight: '28px',
+                  letterSpacing: 0,
+                  whiteSpace: 'normal',
+                }}
+              >
+                {questionTitle || currentQ.text}
+              </div>
+              {questionBody ? (
+                <div style={{ fontSize: 15, fontWeight: 400, color: '#0F172A', lineHeight: '24px', whiteSpace: 'pre-line' }}>
+                  {questionBody}
+                </div>
+              ) : null}
+            </div>
 
             {/* Options */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -438,9 +712,9 @@ function MockTestAttemptInner() {
             alignItems: 'center',
             justifyContent: 'space-between',
             background: '#FFFFFF',
-            borderRadius: '14px',
-            padding: '14px 24px',
-            border: '1px solid #E2E8F0',
+            borderRadius: 12,
+            padding: '14px 18px',
+            border: '1px solid #E5E7EB',
           }}>
             {/* Left actions */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -538,92 +812,30 @@ function MockTestAttemptInner() {
           </div>
         </main>
 
-        {/* ── Right Sidebar ── */}
-        <aside style={{
-          width: '360px',
-          flexShrink: 0,
-          overflowY: 'auto',
-          padding: '24px 20px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
-          background: '#060E1F',
-        }}>
-
-          {/* Live Stats */}
-          <div style={{ background: '#0F172B', borderRadius: '16px', padding: '20px' }}>
-            <div style={{ fontWeight: 700, fontSize: '12px', letterSpacing: '0.6px', color: '#FDC700', textTransform: 'uppercase', marginBottom: '16px' }}>
-              Live Stats
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', borderRadius: '12px', overflow: 'hidden' }}>
-              {[
-                { label: 'CORRECT', value: correct, color: '#00C950' },
-                { label: 'WRONG', value: wrong, color: '#FF4444' },
-                { label: 'MARKED', value: marked, color: '#FFFFFF' },
-                { label: 'NET SCORE', value: netScore.toFixed(1), color: '#FFFFFF', big: true },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  style={{
-                    padding: '16px',
-                    textAlign: 'center',
-                    background: '#0F172B',
-                  }}
-                >
-                  <div style={{ fontSize: stat.big ? '30px' : '28px', fontWeight: 700, color: stat.color, lineHeight: 1 }}>
-                    {stat.value}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#99A1AF', letterSpacing: '0.6px', marginTop: '6px', textTransform: 'uppercase' }}>
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div style={{ background: '#0F172B', borderRadius: '16px', padding: '20px' }}>
-            <div style={{ fontWeight: 700, fontSize: '12px', letterSpacing: '0.6px', color: '#FDC700', textTransform: 'uppercase', marginBottom: '16px' }}>
-              Legend
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[
-                { color: '#00C950', label: 'Answered' },
-                { color: '#2B7FFF', label: 'Current' },
-                { color: '#FDC700', label: 'Marked' },
-                { color: '#4A5565', label: 'Unattempted' },
-              ].map(item => (
-                <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '16px', height: '16px', borderRadius: '4px', background: item.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: '14px', color: '#D1D5DC' }}>{item.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Question Navigator */}
-          <div style={{ background: '#0F172B', borderRadius: '16px', padding: '20px' }}>
-            <div style={{ fontWeight: 700, fontSize: '12px', letterSpacing: '0.6px', color: '#FDC700', textTransform: 'uppercase', marginBottom: '16px' }}>
+        {/* ── Right panel (Navigator card) ── */}
+        <aside style={{ width: 360, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E5E7EB', padding: 20, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)' }}>
+            <div style={{ fontWeight: 700, fontSize: 12, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 12 }}>
               Question Navigator
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
               {questions.map((_, idx) => {
-                const status = questionStatuses[idx] || 'unattempted';
+                const isCurrent = idx === currentIdx;
                 return (
                   <button
                     key={idx}
                     onClick={() => goToQuestion(idx)}
                     style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '10px',
-                      background: statusColor[status],
-                      border: 'none',
-                      color: '#FFFFFF',
-                      fontWeight: 600,
-                      fontSize: '14px',
+                      width: 34,
+                      height: 34,
+                      borderRadius: 10,
+                      border: '1px solid #E5E7EB',
+                      background: isCurrent ? '#0F172B' : '#F3F4F6',
+                      color: isCurrent ? '#FFFFFF' : '#111827',
+                      fontWeight: 700,
+                      fontSize: 13,
                       cursor: 'pointer',
-                      transition: 'transform 0.1s ease',
                     }}
                   >
                     {idx + 1}
@@ -631,50 +843,48 @@ function MockTestAttemptInner() {
                 );
               })}
             </div>
-          </div>
 
-          {/* Submit Test */}
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            style={{
-              width: '100%',
-              height: '56px',
-              background: submitting ? '#1E293B' : '#0F172B',
-              border: 'none',
-              borderRadius: '16px',
-              color: '#FFFFFF',
-              fontWeight: 600,
-              fontSize: '16px',
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              opacity: submitting ? 0.7 : 1,
-              transition: 'background 0.15s ease',
-            }}
-            onMouseEnter={e => { if (!submitting) e.currentTarget.style.background = '#1E293B'; }}
-            onMouseLeave={e => { if (!submitting) e.currentTarget.style.background = '#0F172B'; }}
-          >
-            {submitting ? (
-              <>
-                <div style={{
-                  width: '18px',
-                  height: '18px',
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderTopColor: '#FFF',
-                  borderRadius: '50%',
-                  animation: 'spin 0.8s linear infinite',
-                }} />
-                Submitting...
-                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-              </>
-            ) : (
-              '🏁 Submit Test'
-            )}
-          </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+              {[
+                { label: 'Answered', color: '#00C950', value: answered },
+                { label: 'Unanswered', color: '#94A3B8', value: Math.max(0, totalQuestions - answered) },
+                { label: 'Bookmarked', color: '#F59E0B', value: marked },
+              ].map((row) => (
+                <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 3, background: row.color }} />
+                    <span style={{ fontSize: 12, color: '#374151' }}>{row.label}</span>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#111827' }}>{row.value}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 12, marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 6 }}>Est. Score</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#0F172B', marginBottom: 14 }}>{netScore.toFixed(1)}</div>
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                style={{
+                  width: '100%',
+                  height: 44,
+                  background: '#0F172B',
+                  border: 'none',
+                  borderRadius: 12,
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  opacity: submitting ? 0.7 : 1,
+                }}
+              >
+                ✓ Submit Test
+              </button>
+            </div>
+          </div>
         </aside>
+        </div>
       </div>
     </div>
   );

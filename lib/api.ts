@@ -1,4 +1,5 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// Default aligns with `.env.example` and backend `upsc_backend` dev port.
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
 interface ApiResponse<T> {
   status: 'success' | 'error';

@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const heroStats = [
   { value: '847', label: 'Active', valueColor: '#D4AF37' },
@@ -88,13 +89,15 @@ export default function TestSeriesPage() {
         background: '#F9FAFB',
         minHeight: 'calc(100vh - 111px)',
         fontFamily: 'Inter, system-ui, sans-serif',
+        overflowX: 'hidden',
       }}
     >
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <div style={{ flex: 1, overflowY: 'auto' }}>
           <div
             style={{
-              width: 1687,
+              width: '100%',
+              maxWidth: 1687,
               margin: '0 auto',
               padding: '35px 24px 48px',
               boxSizing: 'border-box',
@@ -103,32 +106,36 @@ export default function TestSeriesPage() {
             {/* Hero */}
             <div
               style={{
-                width: 1623,
-                height: 297,
+                width: '100%',
+                maxWidth: 1478,
+                height: 233,
                 marginBottom: 32,
                 borderRadius: 16,
                 background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
                 display: 'flex',
-                gap: 24,
-                padding: 24,
+                gap: 16,
+                padding: 16,
                 boxSizing: 'border-box',
+                marginLeft: 'auto',
+                marginRight: 'auto',
+                overflow: 'hidden',
               }}
             >
               {/* Left */}
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 16 }}>
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
                 <div>
                   <span
                     style={{
                       display: 'inline-block',
                       fontFamily: 'Inter',
                       fontWeight: 600,
-                      fontSize: 14,
-                      lineHeight: '20px',
+                      fontSize: 12,
+                      lineHeight: '16px',
                       color: '#0B1120',
                       background: '#FDC700',
-                      padding: '4px 12px',
-                      borderRadius: 6,
-                      marginBottom: 16,
+                      padding: '4px 10px',
+                      borderRadius: 8,
+                      marginBottom: 10,
                     }}
                   >
                     ⚡ TEST SERIES · ALL PROGRAMS
@@ -137,10 +144,10 @@ export default function TestSeriesPage() {
                     style={{
                       fontFamily: 'Inter',
                       fontWeight: 700,
-                      fontSize: 48,
-                      lineHeight: '48px',
+                      fontSize: 40,
+                      lineHeight: '44px',
                       color: '#FFFFFF',
-                      marginBottom: 8,
+                      marginBottom: 6,
                     }}
                   >
                     Choose Your <span style={{ color: '#FDC700', fontStyle: 'italic' }}>Battle Plan.</span>
@@ -149,11 +156,11 @@ export default function TestSeriesPage() {
                     style={{
                       fontFamily: 'Inter',
                       fontWeight: 400,
-                      fontSize: 14,
-                      lineHeight: '20px',
+                      fontSize: 12,
+                      lineHeight: '16px',
                       color: '#D1D5DC',
-                      maxWidth: 655,
-                      marginBottom: 16,
+                      maxWidth: 650,
+                      marginBottom: 10,
                     }}
                   >
                     From NCERT foundations to full Prelims war-room simulations — each series is crafted to mirror real UPSC patterns. Rise every day. Rise with Jeet.
@@ -216,24 +223,28 @@ export default function TestSeriesPage() {
               <div
                 style={{
                   width: 256,
+                  height: 212,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 16,
+                  marginTop: 2,
                 }}
               >
-                <div
+                <span
                   style={{
                     fontFamily: 'Inter',
-                    fontWeight: 800,
-                    fontSize: 28,
-                    lineHeight: '32px',
-                    letterSpacing: '0px',
-                    color: '#FF8904',
-                    textTransform: 'uppercase',
+                    fontWeight: 600,
+                    fontSize: 12,
+                    lineHeight: '16px',
+                    color: '#0B1120',
+                    background: '#FF8904',
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    width: 'fit-content',
                   }}
                 >
-                  ⚡&nbsp; YOUR ACTIVE SERIES
-                </div>
+                  ⚡ YOUR ACTIVE SERIES
+                </span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {activeSeries.map((s) => (
                     <Link
@@ -243,40 +254,36 @@ export default function TestSeriesPage() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: 12,
-                        padding: '22px 22px',
-                        borderRadius: 24,
-                        border: '2px solid rgba(255,255,255,0.16)',
-                        background: 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)',
+                        padding: '12px',
+                        borderRadius: 10,
+                        border: '0.8px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.1)',
+                        borderTop: '0.8px solid rgba(255,255,255,0.2)',
                         textDecoration: 'none',
                         color: 'inherit',
-                        height: 140,
+                        height: 61.5875,
                         boxSizing: 'border-box',
                       }}
                     >
                       <div
                         style={{
-                          width: 74,
-                          height: 74,
-                          borderRadius: 14,
+                          width: 32,
+                          height: 32,
+                          borderRadius: 4,
                           background: s.bg,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: 34,
-                          flexShrink: 0,
+                          fontSize: 18,
                         }}
                       >
                         {s.icon}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 38, lineHeight: '44px', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {s.title}
-                        </div>
-                        <div style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 34, lineHeight: '40px', color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>
-                          {s.progress}
-                        </div>
+                        <div style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}>{s.title}</div>
+                        <div style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, lineHeight: '16px', color: '#99A1AF' }}>{s.progress}</div>
                       </div>
-                      <span style={{ fontFamily: 'Inter', fontSize: 44, lineHeight: '44px', color: 'rgba(255,255,255,0.55)', marginLeft: 12 }}>→</span>
+                      <span style={{ fontFamily: 'Inter', fontSize: 16, lineHeight: '24px', color: '#FFFFFF' }}>→</span>
                     </Link>
                   ))}
                 </div>
@@ -292,7 +299,8 @@ export default function TestSeriesPage() {
                 gap: 8,
                 marginBottom: 24,
                 padding: '12px 0',
-                width: 1639,
+                width: '100%',
+                maxWidth: 1639,
               }}
             >
               {filters.map((f, i) => (
@@ -354,7 +362,8 @@ export default function TestSeriesPage() {
             {/* Content block (matches #F9FAFB 1639×2214) */}
             <div
               style={{
-                width: 1639,
+                width: '100%',
+                maxWidth: 1639,
                 minHeight: 2214,
                 background: '#F9FAFB',
                 boxSizing: 'border-box',
@@ -362,7 +371,7 @@ export default function TestSeriesPage() {
             >
               {/* Your Enrolled Series */}
               <div style={{ marginBottom: 32 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8, width: 1639 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8, width: '100%' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                     <span
                       aria-hidden="true"
@@ -386,7 +395,14 @@ export default function TestSeriesPage() {
                   </div>
                   <Link href="/dashboard/test-series" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px', color: '#155DFC', textDecoration: 'none' }}>View all →</Link>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 524px)', gap: 24, width: 1639 }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gap: 24,
+                    width: '100%',
+                  }}
+                >
                   {enrolledPrograms.map((p) => (
                     <ProgramCard key={p.title} program={p} enrolled />
                   ))}
@@ -399,7 +415,14 @@ export default function TestSeriesPage() {
                   <span aria-hidden="true" style={{ fontSize: 18, lineHeight: '18px' }}>🧭</span>
                   <h2 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, lineHeight: '28px', color: '#101828', margin: 0 }}>Explore All Programs</h2>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 524px)', gap: 24, width: 1639 }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gap: 24,
+                    width: '100%',
+                  }}
+                >
                   {explorePrograms.map((p, idx) => (
                     <ProgramCard key={'explore-' + idx} program={p} enrolled={false} />
                   ))}
@@ -441,13 +464,27 @@ function ProgramCard({
   };
   enrolled: boolean;
 }) {
+  const router = useRouter();
+  const [starting, setStarting] = useState(false);
   const statusStyle = program.statusTag ? statusTagStyles[program.statusTag] ?? { bg: '#F3F4F6', color: '#374151' } : { bg: '#F3F4F6', color: '#374151' };
   const categoryLine = program.tags.join(' · ');
   const descriptionWidth = program.title === 'Ink & Insight Series' ? 473 : 484;
+
+  const handleResume = async () => {
+    if (starting) return;
+    setStarting(true);
+    try {
+      router.push(`/dashboard/mock-tests/attempt?title=${encodeURIComponent(program.title)}`);
+    } finally {
+      setStarting(false);
+    }
+  };
+
   return (
     <div
       style={{
-        width: 524,
+        width: '100%',
+        maxWidth: 524,
         minHeight: 303,
         borderRadius: 24,
         border: '0.8px solid #E5E7EB',
@@ -573,7 +610,26 @@ function ProgramCard({
           {enrolled ? (
             <>
               <button type="button" style={{ width: 101, height: 40, fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#4A5565', background: '#F3F4F6', border: 'none', borderRadius: 10, cursor: 'pointer' }}>📊 Analytics</button>
-              <button type="button" style={{ width: 113.4, height: 40, fontFamily: 'Inter', fontWeight: 700, fontSize: 14, color: '#FFFFFF', background: '#1E2939', border: 'none', borderRadius: 10, cursor: 'pointer' }}>▶ Resume</button>
+              <button
+                type="button"
+                onClick={handleResume}
+                disabled={starting}
+                style={{
+                  width: 113.4,
+                  height: 40,
+                  fontFamily: 'Inter',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  color: '#FFFFFF',
+                  background: starting ? '#4A5565' : '#1E2939',
+                  border: 'none',
+                  borderRadius: 10,
+                  cursor: starting ? 'not-allowed' : 'pointer',
+                  opacity: starting ? 0.8 : 1,
+                }}
+              >
+                ▶ {starting ? 'Starting…' : 'Resume'}
+              </button>
             </>
           ) : (
             <>

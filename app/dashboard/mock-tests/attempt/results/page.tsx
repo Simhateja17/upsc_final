@@ -4,6 +4,89 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService } from '@/lib/services';
 
+interface Question {
+  id: number;
+  subject: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  text: string;
+  options: { label: string; text: string }[];
+  correct: string;
+  explanation: string;
+}
+
+const SAMPLE_QUESTIONS: Question[] = [
+  {
+    id: 1,
+    subject: 'Polity',
+    difficulty: 'Medium',
+    text: 'Which of the following statements about the Preamble to the Indian Constitution is/are correct?\n\n1. The Preamble is a part of the Constitution\n2. It can be amended under Article 368\n3. It has been amended only once',
+    options: [
+      { label: 'A', text: '1 only' },
+      { label: 'B', text: '1 and 2 only' },
+      { label: 'C', text: '1, 2 and 3' },
+      { label: 'D', text: '2 and 3 only' },
+    ],
+    correct: 'B',
+    explanation: 'The Preamble is part of the Constitution (Kesavananda Bharati) and can be amended under Article 368 (subject to basic structure). It has been amended once (42nd Amendment).',
+  },
+  {
+    id: 2,
+    subject: 'History',
+    difficulty: 'Easy',
+    text: 'The term “Swaraj” was first used prominently by:',
+    options: [
+      { label: 'A', text: 'Bal Gangadhar Tilak' },
+      { label: 'B', text: 'Mahatma Gandhi' },
+      { label: 'C', text: 'Dadabhai Naoroji' },
+      { label: 'D', text: 'Subhas Chandra Bose' },
+    ],
+    correct: 'C',
+    explanation: 'Dadabhai Naoroji used “Swaraj” prominently; later Tilak popularized it widely.',
+  },
+  {
+    id: 3,
+    subject: 'Geography',
+    difficulty: 'Medium',
+    text: 'Which one of the following factors most directly influences the formation of monsoon winds over the Indian subcontinent?',
+    options: [
+      { label: 'A', text: 'Earth’s rotation alone' },
+      { label: 'B', text: 'Seasonal differential heating of land and sea' },
+      { label: 'C', text: 'Ocean currents only' },
+      { label: 'D', text: 'Mountain building processes' },
+    ],
+    correct: 'B',
+    explanation: 'Monsoon is driven by seasonal differential heating between land and sea creating pressure gradients.',
+  },
+  {
+    id: 4,
+    subject: 'Economy',
+    difficulty: 'Hard',
+    text: 'In the context of inflation targeting, which institution sets the policy repo rate in India?',
+    options: [
+      { label: 'A', text: 'Ministry of Finance' },
+      { label: 'B', text: 'NITI Aayog' },
+      { label: 'C', text: 'Monetary Policy Committee (RBI)' },
+      { label: 'D', text: 'SEBI' },
+    ],
+    correct: 'C',
+    explanation: 'The RBI’s Monetary Policy Committee sets the policy repo rate under the inflation targeting framework.',
+  },
+  {
+    id: 5,
+    subject: 'Environment',
+    difficulty: 'Medium',
+    text: '“Biodiversity hotspot” refers to a region that:',
+    options: [
+      { label: 'A', text: 'Has only high species richness' },
+      { label: 'B', text: 'Has high endemism and is under significant threat' },
+      { label: 'C', text: 'Has low endemism but high productivity' },
+      { label: 'D', text: 'Is protected as a national park' },
+    ],
+    correct: 'B',
+    explanation: 'Hotspots have high endemism and have lost a large portion of their original habitat (high threat).',
+  },
+];
+
 function CircleScore({ pct }: { pct: number }) {
   const r = 68;
   const circ = 2 * Math.PI * r;
@@ -52,12 +135,44 @@ function MockTestResultsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const testId = searchParams.get('testId');
+  const mode = searchParams.get('mode');
+  const title = searchParams.get('title') || 'Test Series';
 
   const [results, setResults] = useState<ResultsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(1);
 
   useEffect(() => {
+    if (mode === 'sample') {
+      try {
+        const raw = typeof window !== 'undefined' ? sessionStorage.getItem('mockTestSampleResults') : null;
+        if (!raw) throw new Error('No local results found.');
+        const data = JSON.parse(raw) as any;
+        setResults({
+          total: data.total ?? 5,
+          correct: data.correct ?? 0,
+          wrong: data.wrong ?? 0,
+          skipped: data.skipped ?? 0,
+          netScore: (Number(data.correct ?? 0) * 2 - Number(data.wrong ?? 0) * 0.67).toFixed(2),
+          scorePct: data.accuracyPct ?? 0,
+          perfLabel: 'Keep Going — Every Attempt Makes You Better!',
+          subjectStats: [],
+          analysis: [],
+          testLabel: title,
+          // stash for render
+          // @ts-expect-error - stored for sample render only
+          _sample: data,
+        } as any);
+        setLoading(false);
+        setError(null);
+      } catch (e: any) {
+        setError(e.message || 'No local results.');
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!testId) {
       setError('No test ID provided.');
       setLoading(false);
@@ -195,156 +310,262 @@ function MockTestResultsInner() {
     );
   }
 
-  const { total, correct, wrong, skipped, netScore, scorePct, perfLabel, subjectStats, analysis, testLabel } = results;
+  const { total, correct, wrong, skipped, scorePct } = results;
+  // @ts-expect-error - sample-only payload
+  const sample = (results as any)._sample as any | undefined;
 
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif' }}>
+      <div
+        style={{
+          width: 1024,
+          minHeight: 955.9750366210938,
+          marginTop: 52,
+          marginLeft: 46,
+          boxSizing: 'border-box',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => router.push('/dashboard/test-series')}
+          style={{ background: 'transparent', border: 'none', color: '#374151', fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}
+        >
+          ← Back to Series
+        </button>
 
-      {/* ── Header ── */}
-      <header style={{
-        width: '100%', height: '56px', background: '#0F172B',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        paddingLeft: '32px', paddingRight: '32px', boxSizing: 'border-box', flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '16px' }}>✨</span>
-          <span style={{ fontWeight: 600, fontSize: '16px', color: '#FDC700' }}>Prelims Practice</span>
-        </div>
-        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px', color: '#fff' }}>P</div>
-        <span style={{ fontWeight: 600, fontSize: '14px', color: '#FDC700' }}>Results</span>
-      </header>
-
-      {/* ── Content ── */}
-      <div style={{ maxWidth: '768px', margin: '0 auto', padding: '32px 16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-
-        {/* ── Hero Card ── */}
-        <div style={{
-          borderRadius: '24px',
-          background: 'linear-gradient(135deg, #1D293D 0%, #0F172B 50%, #162456 100%)',
-          padding: '40px 48px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0',
-          overflow: 'hidden', position: 'relative',
-        }}>
-          {/* Badge */}
-          <div style={{
-            background: 'rgba(253,199,0,0.15)', border: '1px solid rgba(253,199,0,0.4)',
-            borderRadius: '20px', padding: '4px 14px', marginBottom: '24px',
-            display: 'flex', alignItems: 'center', gap: '6px',
-          }}>
-            <span style={{ fontSize: '12px' }}>⭐</span>
-            <span style={{ fontWeight: 600, fontSize: '12px', color: '#FDC700', letterSpacing: '0.5px' }}>TEST COMPLETE</span>
-          </div>
-
-          {/* Score Circle */}
-          <CircleScore pct={scorePct} />
-
-          {/* Title */}
-          <h1 style={{ fontSize: '36px', fontWeight: 700, color: '#FFFFFF', margin: '24px 0 8px', textAlign: 'center', lineHeight: '40px' }}>
-            {perfLabel}
-          </h1>
-          <p style={{ fontSize: '16px', color: '#99A1AF', margin: 0, textAlign: 'center' }}>
-            {testLabel} · {total} Questions
-          </p>
-        </div>
-
-        {/* ── Stats Row ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
-          {[
-            { img: '/stat-icon-9.png',  value: correct,  label: 'Correct' },
-            { img: '/stat-icon-11.png', value: wrong,    label: 'Wrong' },
-            { img: '/stat-icon-2.png',  value: skipped,  label: 'Skipped' },
-            { img: '/stat-icon-14.png', value: netScore, label: 'Net (-¼)' },
-          ].map(stat => (
-            <div key={stat.label} style={{
-              background: '#FFFFFF', borderRadius: '16px', padding: '24px',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-            }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={stat.img} alt={stat.label} style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
-              <span style={{ fontSize: '36px', fontWeight: 700, color: '#101828', lineHeight: '40px' }}>{stat.value}</span>
-              <span style={{ fontSize: '12px', fontWeight: 400, color: '#6A7282', letterSpacing: '0.6px', textTransform: 'uppercase' }}>{stat.label}</span>
+        <div
+          style={{
+            borderRadius: 16,
+            background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
+            padding: '28px 32px',
+            textAlign: 'center',
+            color: '#FFFFFF',
+            marginBottom: 18,
+          }}
+        >
+          <div style={{ width: 96, height: 96, borderRadius: 999, background: '#FFFFFF', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ color: '#0F172B', fontWeight: 800, fontSize: 26, lineHeight: '28px' }}>
+              {correct}/{total}
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280' }}>Score</div>
             </div>
-          ))}
+          </div>
+
+          <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Keep Going — Every Attempt Makes You Better!</div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 14 }}>
+            {title} · Mock Test · {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 18 }}>
+            <StatMini label="CORRECT" value={correct} color="#00C950" />
+            <StatMini label="WRONG" value={wrong} color="#FB2C36" />
+            <StatMini label="SKIPPED" value={skipped} color="#60A5FA" />
+            <StatMini label="ACCURACY" value={`${scorePct}%`} color="#FFFFFF" />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
+            <button
+              type="button"
+              onClick={() => router.push(`/dashboard/mock-tests/attempt?mode=sample&title=${encodeURIComponent(title)}`)}
+              style={{ height: 36, borderRadius: 10, padding: '0 16px', border: 'none', background: 'linear-gradient(89.92deg, #F1A901 0.07%, #FD7302 99.93%)', color: '#0B1120', fontWeight: 800, cursor: 'pointer' }}
+            >
+              ↻ Reattempt
+            </button>
+            <button type="button" style={{ height: 36, borderRadius: 10, padding: '0 16px', border: 'none', background: '#314158', color: '#FFFFFF', fontWeight: 700, cursor: 'pointer' }}>
+              📊 Full Analysis
+            </button>
+            <button type="button" style={{ height: 36, borderRadius: 10, padding: '0 16px', border: 'none', background: '#314158', color: '#FFFFFF', fontWeight: 700, cursor: 'pointer' }}>
+              📄 PDF Report
+            </button>
+          </div>
         </div>
 
-        {/* ── Subject-wise Breakdown ── */}
-        {subjectStats.length > 0 && (
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-            <span style={{ fontSize: '16px' }}>📊</span>
-            <span style={{ fontWeight: 700, fontSize: '14px', color: '#101828', letterSpacing: '0.35px', textTransform: 'uppercase' }}>Subject-wise Breakdown</span>
+        <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800, color: '#101828', marginBottom: 12 }}>
+            <span style={{ width: 18, height: 18, borderRadius: 4, border: '2px solid #00C950', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#00C950' }}>✓</span>
+            Answer Review
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {subjectStats.map(({ subject, correct: sc, total: st }) => {
-              const pct = st > 0 ? (sc / st) * 100 : 0;
-              const barColor = pct === 100 ? '#00C950' : pct > 0 ? '#FDC700' : '#FB2C36';
-              const scoreColor = pct === 100 ? '#00A63E' : pct > 0 ? '#CA8A04' : '#E7000B';
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(sample?.review ?? []).map((row: any) => {
+              const questions: Question[] = (sample?.questions as Question[] | undefined) ?? SAMPLE_QUESTIONS;
+              const selectedOptions: Record<number, string> = (sample?.selectedOptions as Record<number, string> | undefined) ?? {};
+              const q = questions[(row.idx ?? 1) - 1];
+              const selected = selectedOptions[(row.idx ?? 1) - 1];
+              const isExpanded = expandedIdx === row.idx;
+              const borderColor = row.status === 'wrong' ? '#FB2C36' : '#E5E7EB';
+              const bg = row.status === 'wrong' ? '#FEF2F24D' : '#FFFFFF';
+              const height = row.status === 'wrong' ? 73.5999984741211 : 65.5999984741211;
+              const rightText = row.status === 'skipped' ? 'Skipped' : (row.delta < 0 ? row.delta.toFixed(2) : row.delta.toString());
+              const rightColor = row.status === 'wrong' ? '#FB2C36' : row.status === 'correct' ? '#00C950' : '#6B7280';
               return (
-                <div key={subject} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '16px', color: '#364153', width: '110px', flexShrink: 0 }}>{subject}</span>
-                  <div style={{ flex: 1, position: 'relative', height: '8px', background: '#E5E7EB', borderRadius: '999px', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${pct}%`, background: barColor, borderRadius: '999px', transition: 'width 0.6s ease' }} />
-                  </div>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: scoreColor, width: '32px', textAlign: 'right', flexShrink: 0 }}>{sc}/{st}</span>
+                <div key={row.idx} style={{ width: 904.4000244140625 }}>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedIdx(prev => (prev === row.idx ? null : row.idx))}
+                    style={{
+                      width: 904.4000244140625,
+                      height,
+                      borderRadius: 10,
+                      background: bg,
+                      borderStyle: 'solid',
+                      borderTopWidth: 0.8,
+                      borderRightWidth: 0.8,
+                      borderBottomWidth: 0.8,
+                      borderLeftWidth: 4,
+                      borderColor,
+                      boxSizing: 'border-box',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0 16px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 999, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#6B7280', flexShrink: 0 }}>
+                        {row.idx}
+                      </div>
+                      <div style={{ fontSize: 13, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 720 }}>
+                        {row.text}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexShrink: 0 }}>
+                      <div style={{ fontSize: 12, color: '#6B7280' }}>🕒 {row.timeSec}s</div>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: rightColor, minWidth: 52, textAlign: 'right' }}>{rightText}</div>
+                      <div style={{ color: '#6B7280', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease' }}>⌄</div>
+                    </div>
+                  </button>
+
+                  {isExpanded && q ? (
+                    <div
+                      style={{
+                        width: 904.4000244140625,
+                        marginTop: 10,
+                        borderRadius: 12,
+                        border: '1px solid #E5E7EB',
+                        background: '#FFFFFF',
+                        padding: 18,
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                          <div style={{ width: 28, height: 28, borderRadius: 999, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#6B7280', flexShrink: 0 }}>
+                            {row.idx}
+                          </div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: '#111827', lineHeight: '20px', minWidth: 0 }}>
+                            {q.text.split('\n').slice(0, 1).join(' ')}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+                          <div style={{ fontSize: 12, color: '#6B7280' }}>🕒 {row.timeSec}s</div>
+                          <div style={{ fontSize: 12, fontWeight: 800, color: rightColor, minWidth: 52, textAlign: 'right' }}>{rightText}</div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', background: '#F3F4F6', borderRadius: 8, padding: '4px 8px' }}>
+                          {q.subject}
+                        </span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#854D0E', background: '#FEF08A', borderRadius: 8, padding: '4px 8px' }}>
+                          PYQ 2019
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {q.options.map((opt) => {
+                          const isCorrect = opt.label === q.correct;
+                          const isSelected = selected === opt.label;
+                          const isWrongSelected = isSelected && !isCorrect;
+                          const rowBg = isCorrect ? '#F0FDF4' : isWrongSelected ? '#FEF2F2' : '#FFFFFF';
+                          const rowBorder = isCorrect ? '1px solid #86EFAC' : isWrongSelected ? '1px solid #FCA5A5' : '1px solid #E5E7EB';
+                          const right = isCorrect ? '✓ Correct' : isWrongSelected ? '✕ Your Answer' : '';
+                          const rightCol = isCorrect ? '#16A34A' : isWrongSelected ? '#DC2626' : '#6B7280';
+                          return (
+                            <div
+                              key={opt.label}
+                              style={{
+                                borderRadius: 10,
+                                border: rowBorder,
+                                background: rowBg,
+                                padding: '12px 14px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 12,
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                <div style={{ width: 26, height: 26, borderRadius: 8, border: '1px solid #E5E7EB', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#111827', flexShrink: 0 }}>
+                                  {opt.label}
+                                </div>
+                                <div style={{ fontSize: 13, color: '#111827', minWidth: 0 }}>
+                                  {opt.text}
+                                </div>
+                              </div>
+                              {right ? <div style={{ fontSize: 12, fontWeight: 700, color: rightCol, flexShrink: 0 }}>{right}</div> : <div />}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {selected ? (
+                        <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>
+                          You picked:{' '}
+                          <span style={{ fontWeight: 800, color: row.status === 'wrong' ? '#DC2626' : '#16A34A' }}>
+                            {selected} — {(q.options.find(o => o.label === selected)?.text ?? '')}
+                          </span>
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>You picked: <span style={{ fontWeight: 800, color: '#6B7280' }}>Skipped</span></div>
+                      )}
+
+                      <div
+                        style={{
+                          marginTop: 12,
+                          background: '#EFF6FF',
+                          borderRadius: 10,
+                          padding: '14px 14px',
+                          border: '1px solid #BFDBFE',
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: 800, color: '#155DFC', marginBottom: 6 }}>
+                          Explanation:
+                        </div>
+                        <div style={{ fontSize: 13, color: '#1D4ED8', lineHeight: '18px' }}>
+                          {q.explanation}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14, fontSize: 12 }}>
+                        <button type="button" style={{ background: 'transparent', border: 'none', color: '#DC2626', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+                          Add to Flashcards
+                        </button>
+                        <button type="button" style={{ background: 'transparent', border: 'none', color: '#D97706', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+                          Mark Weak
+                        </button>
+                        <button type="button" style={{ background: 'transparent', border: 'none', color: '#2563EB', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+                          Study Notes
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
           </div>
         </div>
-        )}
-
-        {/* ── Jeet Sir's Analysis ── */}
-        {analysis.length > 0 && (
-        <div style={{
-          background: '#FFFFFF', borderRadius: '16px',
-          borderLeft: '4px solid #AD46FF',
-          padding: '24px 24px 24px 28px',
-          display: 'flex', flexDirection: 'column', gap: '16px',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '16px' }}>📊</span>
-            <span style={{ fontWeight: 700, fontSize: '14px', color: '#101828', letterSpacing: '0.35px', textTransform: 'uppercase' }}>Jeet Sir&apos;s Analysis</span>
-          </div>
-          {analysis.map((item, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <span style={{ fontSize: '16px', flexShrink: 0 }}>{item.emoji}</span>
-              <span style={{ fontSize: '14px', color: '#364153', lineHeight: '20px' }} dangerouslySetInnerHTML={{ __html: item.text }} />
-            </div>
-          ))}
-        </div>
-        )}
-
-        {/* ── Bottom Buttons ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <button
-            onClick={() => router.push(`/dashboard/mock-tests/next-steps?testId=${testId}`)}
-            style={{
-              height: '56px', borderRadius: '16px',
-              background: 'linear-gradient(135deg, #1D293D 0%, #0F172B 50%, #162456 100%)',
-              border: 'none', cursor: 'pointer',
-              fontWeight: 600, fontSize: '16px', color: '#FFFFFF',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            }}
-          >
-            💭 What would you like to do next?
-          </button>
-          <button
-            onClick={() => router.push(`/dashboard/mock-tests/attempt?testId=${testId}`)}
-            style={{
-              height: '56px', borderRadius: '16px',
-              background: '#FFFFFF',
-              border: '1.6px solid #E5E7EB', cursor: 'pointer',
-              fontWeight: 600, fontSize: '16px', color: '#364153',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            }}
-          >
-            📄 Review Answers
-          </button>
-        </div>
-
       </div>
+    </div>
+  );
+}
+
+function StatMini({ label, value, color }: { label: string; value: any; color: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+      <div style={{ fontSize: 22, fontWeight: 900, color }}>{value}</div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em' }}>{label}</div>
     </div>
   );
 }
