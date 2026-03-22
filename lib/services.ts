@@ -131,6 +131,9 @@ export const videoService = {
   getSubjects: () => api.get<any>('/videos/subjects'),
   getVideosBySubject: (subject: string) => api.get<any>(`/videos/${encodeURIComponent(subject)}`),
   getStats: () => api.get<any>('/videos/stats'),
+  getVideoQuestions: (videoId: string) => api.get<any>(`/videos/${videoId}/questions`),
+  submitVideoQuiz: (videoId: string, answers: Record<string, number>) =>
+    api.post<any>(`/videos/${videoId}/submit`, { answers }),
   askMentor: (question: string) =>
     api.post<any>('/videos/mentor/ask', { question }, authConfig()),
 };
@@ -325,6 +328,10 @@ export const adminService = {
     api.post<any>('/admin/videos', data, authConfig()),
   updateVideo: (id: string, data: any) => api.put<any>(`/admin/videos/${id}`, data, authConfig()),
   deleteVideo: (id: string) => api.delete<any>(`/admin/videos/${id}`, authConfig()),
+  getVideoQuestions: (videoId: string) => api.get<any>(`/admin/videos/${videoId}/questions`, authConfig()),
+  createVideoQuestion: (videoId: string, data: { question: string; options: string[]; correctOption: number; explanation?: string; order?: number }) =>
+    api.post<any>(`/admin/videos/${videoId}/questions`, data, authConfig()),
+  deleteVideoQuestion: (videoId: string, qid: string) => api.delete<any>(`/admin/videos/${videoId}/questions/${qid}`, authConfig()),
 
   // Testimonials Management
   getTestimonials: () => api.get<any>('/admin/testimonials', authConfig()),

@@ -5,6 +5,24 @@ import Link from 'next/link';
 import { videoService } from '@/lib/services';
 
 /* ------------------------------------------------------------------ */
+/*  YouTube embed helper                                               */
+/* ------------------------------------------------------------------ */
+function getYouTubeEmbedUrl(url: string): string {
+  let videoId = '';
+  try {
+    if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1].split('?')[0];
+    } else if (url.includes('youtube.com/watch')) {
+      const u = new URL(url);
+      videoId = u.searchParams.get('v') || '';
+    } else if (url.includes('youtube.com/embed/')) {
+      videoId = url.split('youtube.com/embed/')[1].split('?')[0];
+    }
+  } catch {}
+  return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0` : url;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 const SUBJECT_EMOJIS: Record<string, string> = {
@@ -60,6 +78,13 @@ export default function VideoLecturesPage() {
   const [mentorSubmitting, setMentorSubmitting] = useState(false);
   const [mentorSuccess, setMentorSuccess] = useState(false);
 
+  // Watch + Quiz modal state
+  const [watchVideo, setWatchVideo] = useState<any>(null);
+  const [videoQuestions, setVideoQuestions] = useState<any[]>([]);
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
+  const [quizResults, setQuizResults] = useState<any>(null);
+  const [quizLoading, setQuizLoading] = useState(false);
+
   const categories = ['All Categories', ...apiSubjects.map(s => s.name)];
   const filteredSubjects = selectedCategory === 'All Categories'
     ? apiSubjects
@@ -98,6 +123,26 @@ export default function VideoLecturesPage() {
       .then(vRes => { if (vRes.data?.videos) setSubjectVideos(vRes.data.videos); })
       .catch(() => {})
       .finally(() => setSubjectVideosLoading(false));
+  };
+
+  const handleWatchVideo = (video: any) => {
+    setWatchVideo(video);
+    setVideoQuestions([]);
+    setQuizAnswers({});
+    setQuizResults(null);
+    videoService.getVideoQuestions(video.id)
+      .then(res => setVideoQuestions(res.data || []))
+      .catch(() => {});
+  };
+
+  const handleQuizSubmit = async () => {
+    if (!watchVideo) return;
+    setQuizLoading(true);
+    try {
+      const res = await videoService.submitVideoQuiz(watchVideo.id, quizAnswers);
+      setQuizResults(res.data);
+    } catch {}
+    setQuizLoading(false);
   };
 
   const handleAskMentor = async () => {
@@ -512,26 +557,14 @@ export default function VideoLecturesPage() {
                             <img src="/think.png" alt="ask mentor" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                             Ask Mentor
                           </button>
-                          {video.videoUrl ? (
-                            <a
-                              href={video.videoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 font-arimo font-bold text-white"
-                              style={{ padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)', borderRadius: '10px', background: '#162456', fontSize: 'clamp(11px, 0.9vw, 13px)', textDecoration: 'none' }}
-                            >
-                              <img src="/yt.png" alt="watch" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
-                              Watch
-                            </a>
-                          ) : (
-                            <button
-                              className="flex items-center gap-1 font-arimo font-bold text-white"
-                              style={{ padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)', borderRadius: '10px', background: '#162456', border: 'none', fontSize: 'clamp(11px, 0.9vw, 13px)', cursor: 'pointer' }}
-                            >
-                              <img src="/yt.png" alt="watch" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
-                              Watch
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleWatchVideo(video)}
+                            className="flex items-center gap-1 font-arimo font-bold text-white"
+                            style={{ padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)', borderRadius: '10px', background: '#162456', border: 'none', fontSize: 'clamp(11px, 0.9vw, 13px)', cursor: 'pointer' }}
+                          >
+                            <img src="/yt.png" alt="watch" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                            Watch
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -824,6 +857,200 @@ export default function VideoLecturesPage() {
         {/*  SECTION 6: ASK MENTOR CARD ONLY                             */}
         {/* Section 6 removed — cards are now modals */}
       </div>
+
+      {/* ── Watch Video + Quiz Modal ── */}
+      {watchVideo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.75)' }}
+          onClick={() => setWatchVideo(null)}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: '20px',
+              width: '100%',
+              maxWidth: '820px',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              margin: '0 16px',
+              boxShadow: '0 24px 80px rgba(0,0,0,0.35)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between" style={{ padding: '20px 24px 16px' }}>
+              <div style={{ flex: 1, paddingRight: '16px' }}>
+                <p className="font-arimo font-bold" style={{ fontSize: '18px', color: '#101828', lineHeight: 1.3 }}>
+                  {watchVideo.title}
+                </p>
+                {watchVideo.instructor && (
+                  <p className="font-arimo" style={{ fontSize: '13px', color: '#6A7282', marginTop: '4px' }}>
+                    by {watchVideo.instructor}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setWatchVideo(null)}
+                className="flex items-center justify-center flex-shrink-0"
+                style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F3F4F6', border: 'none', cursor: 'pointer' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="#4A5565" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* YouTube Embed */}
+            <div style={{ padding: '0 24px', marginBottom: '24px' }}>
+              {watchVideo.videoUrl ? (
+                <div style={{ position: 'relative', paddingBottom: '56.25%', borderRadius: '14px', overflow: 'hidden', background: '#000' }}>
+                  <iframe
+                    src={getYouTubeEmbedUrl(watchVideo.videoUrl)}
+                    title={watchVideo.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                  />
+                </div>
+              ) : (
+                <div
+                  className="flex flex-col items-center justify-center font-arimo"
+                  style={{ background: '#F3F4F6', borderRadius: '14px', height: '240px', color: '#9CA3AF', fontSize: '14px' }}
+                >
+                  <span style={{ fontSize: '36px', marginBottom: '8px' }}>🎬</span>
+                  Video URL not set yet
+                </div>
+              )}
+            </div>
+
+            {/* Quiz Section */}
+            <div style={{ padding: '0 24px 28px' }}>
+              {quizResults ? (
+                /* Results view */
+                <div>
+                  <div
+                    className="flex items-center gap-3"
+                    style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '14px', padding: '16px 20px', marginBottom: '20px' }}
+                  >
+                    <span style={{ fontSize: '28px' }}>🎯</span>
+                    <div>
+                      <p className="font-arimo font-bold" style={{ fontSize: '18px', color: '#065F46' }}>
+                        You scored {quizResults.score} / {quizResults.total}
+                      </p>
+                      <p className="font-arimo" style={{ fontSize: '13px', color: '#047857' }}>
+                        {quizResults.total > 0
+                          ? `${Math.round((quizResults.score / quizResults.total) * 100)}% correct`
+                          : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    {quizResults.results.map((r: any, idx: number) => (
+                      <div key={r.id} style={{ background: '#F9FAFB', borderRadius: '12px', padding: '16px' }}>
+                        <p className="font-arimo font-semibold" style={{ fontSize: '14px', color: '#101828', marginBottom: '10px' }}>
+                          Q{idx + 1}. {r.question}
+                        </p>
+                        <div className="space-y-2">
+                          {(r.options as string[]).map((opt: string, i: number) => {
+                            const isCorrect = i === r.correctOption;
+                            const isSelected = i === r.selected;
+                            let bg = '#FFFFFF', border = '#E5E7EB', color = '#374151';
+                            if (isCorrect) { bg = '#ECFDF5'; border = '#6EE7B7'; color = '#065F46'; }
+                            else if (isSelected && !isCorrect) { bg = '#FEF2F2'; border = '#FECACA'; color = '#991B1B'; }
+                            return (
+                              <div key={i} style={{ background: bg, border: `1px solid ${border}`, borderRadius: '8px', padding: '8px 12px', color, fontSize: '13px' }}
+                                className="font-arimo flex items-center gap-2">
+                                <span style={{ fontWeight: 600 }}>{['A', 'B', 'C', 'D'][i]}.</span>
+                                {opt}
+                                {isCorrect && <span style={{ marginLeft: 'auto' }}>✓</span>}
+                                {isSelected && !isCorrect && <span style={{ marginLeft: 'auto' }}>✗</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {r.explanation && (
+                          <p className="font-arimo" style={{ fontSize: '12px', color: '#6A7282', marginTop: '8px', padding: '8px 12px', background: '#FFFBEB', borderRadius: '8px', border: '1px solid #FDE68A' }}>
+                            💡 {r.explanation}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => { setQuizAnswers({}); setQuizResults(null); }}
+                    className="font-arimo font-semibold"
+                    style={{ marginTop: '16px', padding: '10px 24px', borderRadius: '10px', background: '#162456', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                  >
+                    Retake Quiz
+                  </button>
+                </div>
+              ) : videoQuestions.length === 0 ? (
+                <p className="font-arimo text-center" style={{ fontSize: '14px', color: '#9CA3AF', padding: '12px 0' }}>
+                  No quiz questions for this video yet.
+                </p>
+              ) : (
+                /* Quiz attempt view */
+                <div>
+                  <h3 className="font-arimo font-bold" style={{ fontSize: '16px', color: '#101828', marginBottom: '16px' }}>
+                    📝 Test Your Understanding ({videoQuestions.length} question{videoQuestions.length !== 1 ? 's' : ''})
+                  </h3>
+                  <div className="space-y-5">
+                    {videoQuestions.map((q: any, idx: number) => (
+                      <div key={q.id} style={{ background: '#F9FAFB', borderRadius: '12px', padding: '16px' }}>
+                        <p className="font-arimo font-semibold" style={{ fontSize: '14px', color: '#101828', marginBottom: '10px' }}>
+                          Q{idx + 1}. {q.question}
+                        </p>
+                        <div className="space-y-2">
+                          {(q.options as string[]).map((opt: string, i: number) => {
+                            const selected = quizAnswers[q.id] === i;
+                            return (
+                              <button
+                                key={i}
+                                onClick={() => setQuizAnswers(prev => ({ ...prev, [q.id]: i }))}
+                                className="w-full text-left font-arimo flex items-center gap-2"
+                                style={{
+                                  background: selected ? '#EFF6FF' : '#FFFFFF',
+                                  border: `1.5px solid ${selected ? '#3B82F6' : '#E5E7EB'}`,
+                                  borderRadius: '8px',
+                                  padding: '9px 12px',
+                                  fontSize: '13px',
+                                  color: selected ? '#1D4ED8' : '#374151',
+                                  fontWeight: selected ? 600 : 400,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <span style={{ fontWeight: 700, minWidth: '18px' }}>{['A', 'B', 'C', 'D'][i]}.</span>
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={handleQuizSubmit}
+                    disabled={quizLoading || Object.keys(quizAnswers).length === 0}
+                    className="font-arimo font-bold text-white"
+                    style={{
+                      marginTop: '20px',
+                      padding: '12px 32px',
+                      borderRadius: '12px',
+                      background: quizLoading || Object.keys(quizAnswers).length === 0 ? '#9CA3AF' : '#162456',
+                      border: 'none',
+                      cursor: quizLoading || Object.keys(quizAnswers).length === 0 ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                    }}
+                  >
+                    {quizLoading ? 'Submitting...' : `Submit Answers (${Object.keys(quizAnswers).length}/${videoQuestions.length})`}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Ask the Mentor Modal ── */}
       {showMentorModal && (
