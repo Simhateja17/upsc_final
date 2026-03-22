@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService, dashboardService } from '@/lib/services';
 
-/* ─── Fallback Data Arrays (used while API loads or on error) ─── */
+/* ─── Static Config (UI structure only, not data) ─── */
 
 const prelimsPaperTypes = [
   { id: 'gs1', icon: '/2k.png', label: 'GS Paper I', description: 'General Studies — History, Geography, Polity, Economy, Science', isDefault: true },
@@ -17,14 +17,6 @@ const fallbackQuestionSources = [
   { id: 'subject-wise', emoji: '🎯', label: 'Subject-wise', description: 'Deep dive into specific UPSC subjects' },
   { id: 'mixed-bag', emoji: '🎲', label: 'Mixed Bag', description: 'Random questions across all subjects' },
   { id: 'full-length', emoji: '🏅', label: 'Full Length Test', description: 'Complete exam simulation experience', pro: true },
-];
-
-const fallbackSubjects = [
-  { id: 'all', label: 'All Subjects', count: null },
-  { id: 'history', label: 'History', count: 348 },
-  { id: 'geography', label: 'Geography', count: 398 },
-  { id: 'polity', label: 'Polity', count: 348 },
-  { id: 'economy', label: 'Economy', count: 368 },
 ];
 
 const fallbackExamModes = [
@@ -50,12 +42,6 @@ const fallbackDifficulties = [
   { id: 'medium', emoji: '⚡', label: 'Medium', description: 'Exam standard' },
   { id: 'hard', emoji: '🔥', label: 'Hard', description: 'Advanced level' },
   { id: 'mixed', emoji: '🎯', label: 'Mixed', description: 'All difficulty levels' },
-];
-
-const fallbackBenchmarks = [
-  { emoji: '🏆', label: 'Rank 1-100 avg 82%+', color: '#3B82F6', width: '82%' },
-  { emoji: '✅', label: 'Cutoff clearers 60+ daily', color: '#16A34A', width: '60%' },
-  { emoji: '📊', label: 'Your streak top 18%', color: '#F97316', width: '45%' },
 ];
 
 /* ─── StepHeader Helper ─── */
@@ -95,10 +81,11 @@ function StepHeader({ step, label }: { step: number; label: string }) {
 
 /* ─── Page Component ─── */
 
-export default function MockTestsPage() {
+function MockTestsPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedSource, setSelectedSource] = useState('daily-mcq');
-  const [selectedSubject, setSelectedSubject] = useState('all');
+  const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [selectedExamMode, setSelectedExamMode] = useState('prelims');
   const [selectedPaperType, setSelectedPaperType] = useState('gs1');
   const [selectedOptional, setSelectedOptional] = useState<string | null>(null);
@@ -106,36 +93,35 @@ export default function MockTestsPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
 
   /* ─── API State ─── */
-  const [subjects, setSubjects] = useState(fallbackSubjects);
+  const [subjects, setSubjects] = useState<{ name: string; count: number }[]>([]);
   const [questionSources, setQuestionSources] = useState(fallbackQuestionSources);
   const [examModes, setExamModes] = useState(fallbackExamModes);
   const [mainsPaperTypes, setMainsPaperTypes] = useState(fallbackMainsPaperTypes);
   const [optionalSubjects, setOptionalSubjects] = useState(fallbackOptionalSubjects);
   const [difficulties, setDifficulties] = useState(fallbackDifficulties);
-  const [benchmarks, setBenchmarks] = useState(fallbackBenchmarks);
-  const [practiceStats, setPracticeStats] = useState<{ completed: number; remaining: number; streak: number } | null>(null);
+  const [practiceStats, setPracticeStats] = useState<{ todayCount: number; streak: number } | null>(null);
+  const [platformStats, setPlatformStats] = useState<{ questionsCount: number; testsCount: number; usersCount: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /* ─── Load subjects, config, and practice stats from API ─── */
+  /* ─── Load all data from API ─── */
   useEffect(() => {
     let cancelled = false;
     async function loadData() {
       setLoading(true);
       setError(null);
       try {
-        const [subjectsRes, configRes, statsRes] = await Promise.all([
+        const [subjectsRes, configRes, statsRes, platformRes] = await Promise.all([
           mockTestService.getSubjects(),
           mockTestService.getConfig(),
           dashboardService.getPracticeStats(),
+          mockTestService.getPlatformStats(),
         ]);
 
         if (cancelled) return;
 
-        if (subjectsRes.data) {
-          setSubjects(subjectsRes.data);
-        }
+        if (subjectsRes.data) setSubjects(subjectsRes.data);
         if (configRes.data) {
           const cfg = configRes.data;
           if (cfg.questionSources) setQuestionSources(cfg.questionSources);
@@ -143,11 +129,9 @@ export default function MockTestsPage() {
           if (cfg.mainsPaperTypes) setMainsPaperTypes(cfg.mainsPaperTypes);
           if (cfg.optionalSubjects) setOptionalSubjects(cfg.optionalSubjects);
           if (cfg.difficulties) setDifficulties(cfg.difficulties);
-          if (cfg.benchmarks) setBenchmarks(cfg.benchmarks);
         }
-        if (statsRes.data) {
-          setPracticeStats(statsRes.data);
-        }
+        if (statsRes.data) setPracticeStats(statsRes.data);
+        if (platformRes.data) setPlatformStats(platformRes.data);
       } catch (err: any) {
         if (!cancelled) {
           console.error('Failed to load mock test config:', err);
@@ -160,6 +144,14 @@ export default function MockTestsPage() {
     loadData();
     return () => { cancelled = true; };
   }, []);
+
+  /* ─── Pre-fill from series query params ─── */
+  useEffect(() => {
+    const subject = searchParams.get('subject');
+    const difficulty = searchParams.get('difficulty');
+    if (subject) setSelectedSubject(subject);
+    if (difficulty) setSelectedDifficulty(difficulty);
+  }, [searchParams]);
 
   /* ─── Generate Test Handler ─── */
   const handleGenerateTest = async () => {
@@ -194,7 +186,7 @@ export default function MockTestsPage() {
   const paperLabel = selectedExamMode === 'mains'
     ? (mainsPaperTypes.find(p => p.id === selectedPaperType)?.label ?? 'GS I')
     : (prelimsPaperTypes.find(p => p.id === selectedPaperType)?.label ?? 'GS Paper I');
-  const subjectLabel = subjects.find(s => s.id === selectedSubject)?.label ?? 'All Topics';
+  const subjectLabel = subjects.find(s => s.name === selectedSubject)?.name ?? selectedSubject ?? 'All Topics';
   const difficultyLabel = difficulties.find(d => d.id === selectedDifficulty)?.label ?? 'Medium';
 
   /* ─── Card style helper ─── */
@@ -286,9 +278,9 @@ export default function MockTestsPage() {
               margin: '0 auto',
             }}>
               {[
-                { value: '4800+', label: 'Questions', color: '#101828' },
-                { value: '2.1L+', label: 'Tests Taken', color: '#101828' },
-                { value: '94K+', label: 'Community', color: '#101828' },
+                { value: platformStats ? `${platformStats.questionsCount.toLocaleString('en-IN')}+` : '—', label: 'Questions', color: '#101828' },
+                { value: platformStats ? `${platformStats.testsCount.toLocaleString('en-IN')}+` : '—', label: 'Tests Taken', color: '#101828' },
+                { value: platformStats ? `${platformStats.usersCount.toLocaleString('en-IN')}+` : '—', label: 'Community', color: '#101828' },
                 { value: '\u221E', label: 'Always Growing', color: '#DBAC49' },
               ].map((stat, idx, arr) => (
                 <div key={stat.label} style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
@@ -392,7 +384,8 @@ export default function MockTestsPage() {
               <p style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 'clamp(13px, 0.85vw, 15px)', lineHeight: 1.6, color: '#CBD5E1' }}>
                 {practiceStats ? (
                   <>
-                    You&apos;ve completed <span style={{ color: '#16A34A', fontWeight: 700 }}>{practiceStats.completed} questions</span> today — <span style={{ color: '#16A34A', fontWeight: 700 }}>{practiceStats.remaining} remaining</span> on free tier
+                    You&apos;ve taken <span style={{ color: '#16A34A', fontWeight: 700 }}>{practiceStats.todayCount} test{practiceStats.todayCount !== 1 ? 's' : ''}</span> today
+                    {practiceStats.streak > 0 && <> · <span style={{ color: '#F97316', fontWeight: 700 }}>{practiceStats.streak} day streak</span></>}
                   </>
                 ) : (
                   <>Start practicing to track your daily progress.</>
@@ -643,11 +636,11 @@ export default function MockTestsPage() {
             <StepHeader step={2} label="Subject Filter" />
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(8px, 0.55vw, 10px)', marginBottom: 'clamp(12px, 1vw, 16px)' }}>
               {subjects.map(subj => {
-                const isSelected = selectedSubject === subj.id;
+                const isSelected = selectedSubject === subj.name;
                 return (
                   <button
-                    key={subj.id}
-                    onClick={() => setSelectedSubject(subj.id)}
+                    key={subj.name}
+                    onClick={() => setSelectedSubject(subj.name)}
                     style={{
                       background: isSelected ? '#17223E' : '#FFF',
                       color: isSelected ? '#FFF' : '#374151',
@@ -664,8 +657,8 @@ export default function MockTestsPage() {
                       gap: '6px',
                     }}
                   >
-                    {subj.label}
-                    {subj.count !== null && (
+                    {subj.name}
+                    {subj.count > 0 && (
                       <span style={{ opacity: 0.7, fontWeight: 500, fontSize: 'clamp(11px, 0.7vw, 13px)' }}>{subj.count}</span>
                     )}
                   </button>
@@ -1168,10 +1161,29 @@ export default function MockTestsPage() {
                   textTransform: 'uppercase' as const,
                   marginBottom: 'clamp(10px, 0.8vw, 14px)',
                 }}>
-                  Performance Benchmark
+                  Your Activity
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 0.8vw, 14px)' }}>
-                  {benchmarks.map((b, i) => (
+                  {[
+                    {
+                      emoji: '🔥',
+                      label: practiceStats ? `${practiceStats.streak} day streak` : 'No streak yet',
+                      color: '#F97316',
+                      width: practiceStats ? `${Math.min(practiceStats.streak * 10, 100)}%` : '0%',
+                    },
+                    {
+                      emoji: '📝',
+                      label: practiceStats ? `${practiceStats.todayCount} test${practiceStats.todayCount !== 1 ? 's' : ''} today` : 'No tests today',
+                      color: '#3B82F6',
+                      width: practiceStats ? `${Math.min(practiceStats.todayCount * 20, 100)}%` : '0%',
+                    },
+                    {
+                      emoji: '📚',
+                      label: platformStats ? `${platformStats.questionsCount.toLocaleString('en-IN')} questions available` : 'Loading...',
+                      color: '#16A34A',
+                      width: '100%',
+                    },
+                  ].map((b, i) => (
                     <div key={i}>
                       <div style={{
                         fontFamily: 'var(--font-inter), Inter, sans-serif',
@@ -1255,5 +1267,13 @@ export default function MockTestsPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function MockTestsPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#F9FAFB' }} />}>
+      <MockTestsPageInner />
+    </Suspense>
   );
 }

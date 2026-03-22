@@ -95,6 +95,7 @@ export const editorialService = {
 export const mockTestService = {
   getSubjects: () => api.get<any>('/mock-tests/subjects'),
   getConfig: () => api.get<any>('/mock-tests/config'),
+  getPlatformStats: () => api.get<any>('/mock-tests/platform-stats'),
   generate: (config: { source: string; subject: string; examMode: string; paperType?: string; questionCount: number; difficulty: string }) =>
     api.post<any>('/mock-tests/generate', config, authConfig()),
   getQuestions: (testId: string) => api.get<any>(`/mock-tests/${testId}/questions`, authConfig()),
@@ -422,4 +423,70 @@ export const adminService = {
     );
     return res.json();
   },
+};
+
+// ==================== Test Series ====================
+
+export const testSeriesService = {
+  getStats: () => api.get<any>('/test-series/stats'),
+  listSeries: () => api.get<any>('/test-series'),
+  getEnrolled: () => api.get<any>('/test-series/enrolled', authConfig()),
+  enroll: (seriesId: string) => api.post<any>(`/test-series/${seriesId}/enroll`, {}, authConfig()),
+  unenroll: (seriesId: string) => api.delete<any>(`/test-series/${seriesId}/enroll`, authConfig()),
+  // Admin
+  createSeries: (data: any) => api.post<any>('/test-series', data, authConfig()),
+  updateSeries: (seriesId: string, data: any) => api.put<any>(`/test-series/${seriesId}`, data, authConfig()),
+  deleteSeries: (seriesId: string) => api.delete<any>(`/test-series/${seriesId}`, authConfig()),
+};
+
+// ==================== Study Materials (RAG) ====================
+
+export const studyMaterialService = {
+  list: (params?: { subject?: string; status?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.subject) query.set('subject', params.subject);
+    if (params?.status) query.set('status', params.status);
+    const qs = query.toString();
+    return api.get<any>(`/admin/study-materials${qs ? `?${qs}` : ''}`, authConfig());
+  },
+  upload: async (file: File, subject: string, topic?: string, source?: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('subject', subject);
+    if (topic) formData.append('topic', topic);
+    if (source) formData.append('source', source);
+    const token = getToken();
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/admin/study-materials/upload`,
+      { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: formData }
+    );
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Upload failed');
+    return json;
+  },
+  delete: (id: string) => api.delete<any>(`/admin/study-materials/${id}`, authConfig()),
+
+  listMockMaterials: (params?: { subject?: string; status?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.subject) query.set('subject', params.subject);
+    if (params?.status) query.set('status', params.status);
+    const qs = query.toString();
+    return api.get<any>(`/admin/mock-test-materials${qs ? `?${qs}` : ''}`, authConfig());
+  },
+  uploadMockMaterial: async (file: File, subject: string, topic?: string, source?: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('subject', subject);
+    if (topic) formData.append('topic', topic);
+    if (source) formData.append('source', source);
+    const token = getToken();
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/admin/mock-test-materials/upload`,
+      { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: formData }
+    );
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Upload failed');
+    return json;
+  },
+  deleteMockMaterial: (id: string) => api.delete<any>(`/admin/mock-test-materials/${id}`, authConfig()),
 };

@@ -1,488 +1,710 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import '../../../styles/test-series-v2.css';
+import { testSeriesService } from '@/lib/services';
 
-// Import font from Google Fonts for Playfair Display
-import { Plus_Jakarta_Sans, Playfair_Display } from 'next/font/google';
+interface HeroStats {
+  activeSeries: number;
+  totalStudents: number;
+  testsTaken: number;
+  successRate: number;
+}
 
-const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-plus-jakarta' });
-const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair', style: ['normal', 'italic'] });
-
-// Test Series Data
-const SERIES_DATA = [
-  {
-    id: 'ncert',
-    cat: 'foundation',
-    name: 'जड़ें मज़बूत Series',
-    nameEn: 'NCERT Foundation Blitz',
-    tagline: 'Build roots so strong, no examiner can shake you.',
-    icon: '📖',
-    cardGrad: 'linear-gradient(135deg,#d4e9df 0%,#b8d9c8 100%)',
-    color: '#2D6A4F',
-    colorBg: '#F0FDF4',
-    tags: ['NCERT Cl.6–12', 'All Subjects', 'Chapter-wise'],
-    diff: 'Beginner',
-    tests: 60,
-    dur: '3 Months',
-    enrolled: 4820,
-    rating: 4.8,
-    reviews: 312,
-    status: 'open',
-    progress: null,
-    price: 799,
-    oldPrice: 1499,
-    desc: 'Chapter-wise NCERT tests covering Polity, History, Geography, Economy & Science. Concept explanations with every question.',
-  },
-  {
-    id: 'current',
-    cat: 'current-affairs',
-    name: 'Rozana Ladon Series',
-    nameEn: 'Daily Current Affairs Challenge',
-    tagline: 'Every day is a new battle — fight it with knowledge.',
-    icon: '📰',
-    cardGrad: 'linear-gradient(135deg,#ddd6f3 0%,#c9bfee 100%)',
-    color: '#9A3412',
-    colorBg: '#FFF7ED',
-    tags: ['Daily 10 Qs', 'The Hindu · PIB', 'Monthly Test'],
-    diff: 'Intermediate',
-    tests: 365,
-    dur: '1 Year',
-    enrolled: 11240,
-    rating: 4.9,
-    reviews: 824,
-    status: 'open',
-    progress: 34,
-    price: 1199,
-    oldPrice: 2499,
-    desc: 'Daily 10 MCQs from The Hindu, PIB & Yojana. Weekly 40-Q recaps and monthly 100-Q mega test.',
-  },
-  {
-    id: 'pyq',
-    cat: 'pyq',
-    name: 'Topper Ki Pathshala',
-    nameEn: 'PYQ Challenge Series',
-    tagline: "The examiner's mind is hidden in old questions.",
-    icon: '🏛️',
-    cardGrad: 'linear-gradient(135deg,#fde8c8 0%,#f5d5a0 100%)',
-    color: '#B45309',
-    colorBg: '#FFFBEB',
-    tags: ['PYQ 1979–2025', 'Trend Analysis', 'All Subjects'],
-    diff: 'Advanced',
-    tests: 45,
-    dur: '2 Months',
-    enrolled: 7634,
-    rating: 4.9,
-    reviews: 580,
-    status: 'open',
-    progress: null,
-    price: 999,
-    oldPrice: 1999,
-    desc: 'Complete UPSC PYQ bank 1979–2025. Topic-wise & year-wise tests with trend analysis and frequency mapping.',
-  },
-  {
-    id: 'prelims',
-    cat: 'mock',
-    name: 'PrelimsBlitz 2026',
-    nameEn: 'Full Mock Prelims Series',
-    tagline: "Train like it's exam day — every single time.",
-    icon: '⚡',
-    cardGrad: 'linear-gradient(135deg,#fad5d5 0%,#f5bbbb 100%)',
-    color: '#B91C1C',
-    colorBg: '#FFF1F2',
-    tags: ['200 Questions', 'All-India Rank', 'UPSC Pattern'],
-    diff: 'Advanced',
-    tests: 20,
-    dur: '2 Months',
-    enrolled: 14320,
-    rating: 4.9,
-    reviews: 1124,
-    status: 'open',
-    progress: 35,
-    price: 1299,
-    oldPrice: 2499,
-    desc: '200-question full Prelims mocks with All-India Rank, negative marking simulation and video solutions.',
-  },
-  {
-    id: 'basics',
-    cat: 'foundation',
-    name: 'Zero Se Hero Series',
-    nameEn: 'Basics & Concepts Booster',
-    tagline: 'Every topper started from zero — this is your zero.',
-    icon: '🌱',
-    cardGrad: 'linear-gradient(135deg,#c8eedd 0%,#a8e0c8 100%)',
-    color: '#065F46',
-    colorBg: '#ECFDF5',
-    tags: ['Beginners', 'Concept Based', 'No Neg. Marking'],
-    diff: 'Beginner',
-    tests: 30,
-    dur: '6 Weeks',
-    enrolled: 22400,
-    rating: 4.6,
-    reviews: 1850,
-    status: 'free',
-    progress: null,
-    price: 0,
-    oldPrice: null,
-    desc: '20-question concept tests, no negative marking. Perfect Day 1 start for fresh aspirants. Fully free.',
-  },
-  {
-    id: 'csat',
-    cat: 'csat',
-    name: 'CSAT Crack Code',
-    nameEn: 'CSAT Mastery Program',
-    tagline: 'Paper 2 fears no more — crack the code, own the exam.',
-    icon: '🧮',
-    cardGrad: 'linear-gradient(135deg,#ccdff7 0%,#b0ceef 100%)',
-    color: '#0F766E',
-    colorBg: '#F0FDFA',
-    tags: ['CSAT Paper II', 'Aptitude', 'Comprehension'],
-    diff: 'Intermediate',
-    tests: 25,
-    dur: '6 Weeks',
-    enrolled: 6240,
-    rating: 4.7,
-    reviews: 388,
-    status: 'open',
-    progress: null,
-    price: 799,
-    oldPrice: 1499,
-    desc: 'Comprehension, Maths, Reasoning & Data Interpretation. CSAT full mocks with speed-building drills.',
-  },
-  {
-    id: 'daw',
-    cat: 'mains',
-    name: 'Ink & Insight Series',
-    nameEn: 'Daily Answer Writing Program',
-    tagline: 'The pen that writes every day — wins ultimately.',
-    icon: '✍️',
-    cardGrad: 'linear-gradient(135deg,#d0dcf8 0%,#b8c8f4 100%)',
-    color: '#1D4ED8',
-    colorBg: '#EEF2FF',
-    tags: ['Daily Writing', 'Expert Evaluation', 'GS I–IV'],
-    diff: 'Advanced',
-    tests: 180,
-    dur: '6 Months',
-    enrolled: 3840,
-    rating: 4.8,
-    reviews: 260,
-    status: 'open',
-    progress: 12,
-    price: 1799,
-    oldPrice: 3499,
-    desc: '2 answer-writing questions daily, evaluated by experts within 24 hrs. Keywords, model answers & feedback.',
-  },
-  {
-    id: 'mains',
-    cat: 'mains',
-    name: 'Mains Manifest Series',
-    nameEn: 'Full Mains Test Series 2026',
-    tagline: 'Manifest your IAS selection — write your destiny.',
-    icon: '🗺️',
-    cardGrad: 'linear-gradient(135deg,#e2d4f5 0%,#d0bef0 100%)',
-    color: '#4C1D95',
-    colorBg: '#F5F3FF',
-    tags: ['Mains 2026', 'GS I–IV', 'Expert Evaluated'],
-    diff: 'Expert',
-    tests: 12,
-    dur: '3 Months',
-    enrolled: 2640,
-    rating: 4.9,
-    reviews: 190,
-    status: 'enrolling',
-    progress: null,
-    price: 2999,
-    oldPrice: 5999,
-    desc: 'Full-length GS I–IV + Essay mocks evaluated by Ex-IAS officers. All-India Mains Rank after each paper.',
-  },
-  {
-    id: 'gsfoundation',
-    cat: 'gs',
-    name: 'GS Masterstroke Series',
-    nameEn: 'GS Foundation Mastery',
-    tagline: 'Four papers, one warrior — dominate every front.',
-    icon: '⚔️',
-    cardGrad: 'linear-gradient(135deg,#ccdaf5 0%,#b4c8f0 100%)',
-    color: '#1E3A5F',
-    colorBg: '#EFF6FF',
-    tags: ['GS I', 'GS II', 'GS III', 'GS IV'],
-    diff: 'Intermediate',
-    tests: 80,
-    dur: '4 Months',
-    enrolled: 5920,
-    rating: 4.7,
-    reviews: 420,
-    status: 'open',
-    progress: null,
-    price: 1499,
-    oldPrice: 2999,
-    desc: 'Subject-wise tests across all 4 GS Papers — Prelims MCQs + Mains answer writing in one series.',
-  },
+const filters = [
+  { key: 'all', label: '📚 All Series' },
+  { key: 'prelims', label: '🏛️ Prelims' },
+  { key: 'mains', label: '✍️ Mains' },
+  { key: 'current-affairs', label: '📰 Current Affairs' },
+  { key: 'pyq', label: '📋 PYQ' },
+  { key: 'csat', label: '📊 CSAT' },
+  { key: 'foundation', label: '🏁 Foundation' },
+  { key: 'gs-papers', label: '📑 GS Papers' },
+  { key: 'optional', label: '🎓 Optional' },
+  { key: 'free', label: '🎁 Free' },
 ];
 
-const FILTERS = [
-  { id: 'all', label: 'All Series' },
-  { id: 'foundation', label: 'Foundation' },
-  { id: 'current-affairs', label: 'Current Affairs' },
-  { id: 'pyq', label: 'PYQ' },
-  { id: 'mock', label: 'Full Mocks' },
-  { id: 'mains', label: 'Mains' },
-  { id: 'csat', label: 'CSAT' },
-  { id: 'gs', label: 'GS Papers' },
-];
+// Map examMode/subject to an emoji icon
+function seriesIcon(examMode: string, subject?: string | null): string {
+  if (subject?.toLowerCase().includes('polity')) return '🏛️';
+  if (subject?.toLowerCase().includes('history')) return '📜';
+  if (subject?.toLowerCase().includes('geography')) return '🌍';
+  if (subject?.toLowerCase().includes('economy')) return '📈';
+  if (subject?.toLowerCase().includes('science')) return '🔬';
+  if (examMode === 'mains') return '✍️';
+  return '📄';
+}
+
+interface SeriesItem {
+  id: string;
+  title: string;
+  description: string;
+  examMode: string;
+  subject?: string | null;
+  difficulty: string;
+  totalTests: number;
+  questionsPerTest: number;
+  price: number;
+  enrollmentCount?: number;
+}
+
+interface EnrolledItem {
+  enrollmentId: string;
+  testsCompleted: number;
+  progress: string;
+  series: SeriesItem;
+}
 
 export default function TestSeriesPage() {
-  const router = useRouter();
-  const [filter, setFilter] = useState('all');
+  const [allSeries, setAllSeries] = useState<SeriesItem[]>([]);
+  const [enrollments, setEnrollments] = useState<EnrolledItem[]>([]);
+  const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
+  const [enrolling, setEnrolling] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [heroStats, setHeroStats] = useState<HeroStats | null>(null);
 
-  const filteredSeries = filter === 'all' ? SERIES_DATA : SERIES_DATA.filter((s) => s.cat === filter);
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const [seriesRes, enrolledRes, statsRes] = await Promise.allSettled([
+          testSeriesService.listSeries(),
+          testSeriesService.getEnrolled(),
+          testSeriesService.getStats(),
+        ]);
 
-  const handleStartTest = (seriesId: string) => {
-    router.push(`/dashboard/mock-tests/attempt?series=${seriesId}`);
+        if (seriesRes.status === 'fulfilled' && seriesRes.value.data) {
+          setAllSeries(seriesRes.value.data as SeriesItem[]);
+        }
+
+        if (enrolledRes.status === 'fulfilled' && enrolledRes.value.data) {
+          const enrolled = enrolledRes.value.data as EnrolledItem[];
+          setEnrollments(enrolled);
+          setEnrolledIds(new Set(enrolled.map((e) => e.series.id)));
+        }
+
+        if (statsRes.status === 'fulfilled' && statsRes.value.data) {
+          setHeroStats(statsRes.value.data as HeroStats);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const handleEnroll = async (seriesId: string) => {
+    if (enrolling) return;
+    setEnrolling(seriesId);
+    try {
+      await testSeriesService.enroll(seriesId);
+      const enrolled = await testSeriesService.getEnrolled();
+      if (enrolled.data) {
+        const items = enrolled.data as EnrolledItem[];
+        setEnrollments(items);
+        setEnrolledIds(new Set(items.map((e) => e.series.id)));
+      }
+    } catch (err) {
+      console.error('Enroll failed:', err);
+    } finally {
+      setEnrolling(null);
+    }
   };
 
+  // Enrolled series with their full data
+  const enrolledSeries = enrollments.map((e) => ({ ...e.series, progress: e.progress, testsCompleted: e.testsCompleted }));
+
+  // Non-enrolled series
+  const exploreSeries = allSeries.filter((s) => !enrolledIds.has(s.id));
+
   return (
-    <div className={`${plusJakarta.variable} ${playfair.variable}`} style={{ fontFamily: 'var(--font-plus-jakarta), sans-serif', background: 'var(--bg)', minHeight: 'calc(100vh - 111px)', padding: '28px 20px 100px' }}>
-      <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
-        {/* Hero Section */}
-        <div className="cat-hero fade">
-          <div className="ch-noise"></div>
-          <div className="ch-line"></div>
-          <div className="ch-inner">
-            <div style={{ position: 'relative', zIndex: 2 }}>
-              <div className="ch-eyebrow">
-                <span className="ch-dot"></span>
-                India&apos;s Smartest UPSC Test Platform · 2026
+    <div
+      style={{
+        background: '#F9FAFB',
+        minHeight: 'calc(100vh - 111px)',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        overflowX: 'hidden',
+      }}
+    >
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 1687,
+              margin: '0 auto',
+              padding: '35px 24px 48px',
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Hero */}
+            <div
+              style={{
+                width: '100%',
+                maxWidth: 1478,
+                height: 233,
+                marginBottom: 32,
+                borderRadius: 16,
+                background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
+                display: 'flex',
+                gap: 16,
+                padding: 16,
+                boxSizing: 'border-box',
+                marginLeft: 'auto',
+                marginRight: 'auto',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Left */}
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
+                <div>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      fontFamily: 'Inter',
+                      fontWeight: 600,
+                      fontSize: 12,
+                      lineHeight: '16px',
+                      color: '#0B1120',
+                      background: '#FDC700',
+                      padding: '4px 10px',
+                      borderRadius: 8,
+                      marginBottom: 10,
+                    }}
+                  >
+                    ⚡ TEST SERIES · ALL PROGRAMS
+                  </span>
+                  <h1
+                    style={{
+                      fontFamily: 'Inter',
+                      fontWeight: 700,
+                      fontSize: 40,
+                      lineHeight: '44px',
+                      color: '#FFFFFF',
+                      marginBottom: 6,
+                    }}
+                  >
+                    Choose Your <span style={{ color: '#FDC700', fontStyle: 'italic' }}>Battle Plan.</span>
+                  </h1>
+                  <p
+                    style={{
+                      fontFamily: 'Inter',
+                      fontWeight: 400,
+                      fontSize: 12,
+                      lineHeight: '16px',
+                      color: '#D1D5DC',
+                      maxWidth: 650,
+                      marginBottom: 10,
+                    }}
+                  >
+                    From NCERT foundations to full Prelims war-room simulations — each series is crafted to mirror real UPSC patterns. Rise every day. Rise with Jeet.
+                  </p>
+                </div>
+                {/* Stats strip */}
+                {(() => {
+                  const statCards = [
+                    { value: heroStats ? String(heroStats.activeSeries) : '—', label: 'Active', valueColor: '#D4AF37', width: 117.375 },
+                    { value: heroStats ? heroStats.totalStudents.toLocaleString('en-IN') : '—', label: 'Students', valueColor: '#00D492', width: 144.8 },
+                    { value: heroStats ? heroStats.testsTaken.toLocaleString('en-IN') + (heroStats.testsTaken > 0 ? '+' : '') : '—', label: 'Tests Taken', valueColor: '#FFFFFF', width: 181.225 },
+                    { value: heroStats ? `${heroStats.successRate}%` : '—', label: 'Success Rate', valueColor: '#FF8904', width: 160 },
+                    { value: '∞', label: 'TESTS', valueColor: '#FFFFFF', labelWeight: 600, width: 107 },
+                  ];
+                  return (
+                    <div style={{ display: 'flex', borderRadius: 14, overflow: 'hidden', border: '0.8px solid #364153' }}>
+                      {statCards.map((card, index) => (
+                        <div
+                          key={card.label}
+                          style={{
+                            width: card.width,
+                            height: 101.5875,
+                            background: '#1C273B',
+                            borderTop: '0.8px solid #364153',
+                            padding: '24.8px 32.8px 0.8px',
+                            borderLeft: index === 0 ? undefined : '0.8px solid #364153',
+                            borderTopLeftRadius: index === 0 ? 14 : 0,
+                            borderBottomLeftRadius: index === 0 ? 14 : 0,
+                            borderTopRightRadius: index === statCards.length - 1 ? 14 : 0,
+                            borderBottomRightRadius: index === statCards.length - 1 ? 14 : 0,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            textAlign: 'center',
+                            boxSizing: 'border-box',
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontFamily: 'Inter',
+                              fontWeight: 700,
+                              fontSize: index === statCards.length - 1 ? 36 : 30,
+                              lineHeight: index === statCards.length - 1 ? '40px' : '36px',
+                              color: card.valueColor,
+                            }}
+                          >
+                            {card.value}
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: 'Inter',
+                              fontWeight: (card as { labelWeight?: number }).labelWeight ?? 400,
+                              fontSize: 12,
+                              lineHeight: '16px',
+                              color: index === statCards.length - 1 ? '#99A1AF' : '#6A7282',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.3px',
+                              marginTop: 4,
+                            }}
+                          >
+                            {card.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
-              <h1 className="ch-h1">
-                Rise with <span className="it">Jeet</span> —<br />
-                Test Series That <span className="it">Transforms</span>
-              </h1>
-              <p className="ch-sub">10 battle-tested series. 600+ tests. From NCERT basics to Mains writing — every step of your UPSC journey covered with intelligence, analytics & mentorship.</p>
-              <div className="ch-pills">
-                <div className="chp">
-                  <span className="chpv">10</span>
-                  <span className="chpl">Series</span>
-                </div>
-                <div className="chp">
-                  <span className="chpv">600+</span>
-                  <span className="chpl">Tests</span>
-                </div>
-                <div className="chp">
-                  <span className="chpv" style={{ color: '#86EFAC' }}>
-                    80K+
-                  </span>
-                  <span className="chpl">Students</span>
-                </div>
-                <div className="chp">
-                  <span className="chpv" style={{ color: '#FCD34D' }}>
-                    340+
-                  </span>
-                  <span className="chpl">Selections</span>
-                </div>
-                <div className="chp">
-                  <span className="chpv" style={{ color: '#FCD34D' }}>
-                    4.9 ★
-                  </span>
-                  <span className="chpl">Rating</span>
+              {/* Your Active Series */}
+              <div
+                style={{
+                  width: 256,
+                  height: 212,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16,
+                  marginTop: 2,
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'Inter',
+                    fontWeight: 600,
+                    fontSize: 12,
+                    lineHeight: '16px',
+                    color: '#0B1120',
+                    background: '#FF8904',
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    width: 'fit-content',
+                  }}
+                >
+                  ⚡ YOUR ACTIVE SERIES
+                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {enrolledSeries.slice(0, 3).map((s) => (
+                    <Link
+                      key={s.id}
+                      href="/dashboard/test-series"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '12px',
+                        borderRadius: 10,
+                        border: '0.8px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.1)',
+                        borderTop: '0.8px solid rgba(255,255,255,0.2)',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        height: 61.5875,
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 4,
+                          background: '#E9D4FF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 18,
+                        }}
+                      >
+                        {seriesIcon(s.examMode, s.subject)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</div>
+                        <div style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, lineHeight: '16px', color: '#99A1AF' }}>{s.progress}</div>
+                      </div>
+                      <span style={{ fontFamily: 'Inter', fontSize: 16, lineHeight: '24px', color: '#FFFFFF' }}>→</span>
+                    </Link>
+                  ))}
+                  {enrolledSeries.length === 0 && !loading && (
+                    <div style={{ fontFamily: 'Inter', fontSize: 12, color: '#99A1AF', padding: '8px 12px' }}>No active series yet. Enroll below!</div>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="ch-ring" style={{ position: 'relative', zIndex: 2 }}>
-              <svg viewBox="0 0 108 108">
-                <defs>
-                  <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#D97706" />
-                    <stop offset="100%" stopColor="#F59E0B" />
-                  </linearGradient>
-                </defs>
-                <circle cx="54" cy="54" r="42" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="7" />
-                <circle cx="54" cy="54" r="42" fill="none" stroke="url(#rg)" strokeWidth="7" strokeDasharray="263.9" strokeDashoffset="47.5" strokeLinecap="round" />
-              </svg>
-              <div className="ch-ring-lbl">
-                <span className="ch-ring-v">340+</span>
-                <span className="ch-ring-s">Selections</span>
+
+            {/* Filter bar */}
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 24,
+                padding: '12px 0',
+                width: '100%',
+                maxWidth: 1639,
+              }}
+            >
+              {filters.map((f, i) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  style={{
+                    fontFamily: 'Inter',
+                    fontWeight: 600,
+                    fontSize: 14,
+                    lineHeight: '20px',
+                    height: 37.6,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    borderRadius: 26843500,
+                    padding: '8px 16px',
+                    boxSizing: 'border-box',
+                    color: i === 0 ? '#FFFFFF' : '#364153',
+                    background: i === 0 ? '#101828' : '#FFFFFF',
+                    border: i === 0 ? '0.8px solid #101828' : '0.8px solid #E5E7EB',
+                    borderTop: i === 0 ? '0.8px solid #101828' : '0.8px solid #E5E7EB',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <Link
+                  href="/dashboard/test-analytics"
+                  style={{
+                    height: 38,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    borderRadius: 10,
+                    padding: '8px 16px',
+                    boxSizing: 'border-box',
+                    fontFamily: 'Inter',
+                    fontWeight: 600,
+                    fontSize: 14,
+                    lineHeight: '20px',
+                    color: '#364153',
+                    background: '#FFFFFF',
+                    border: '0.8px solid #E5E7EB',
+                    textDecoration: 'none',
+                  }}
+                >
+                  📊 My Progress
+                </Link>
+                <Link
+                  href="/dashboard/test-analytics"
+                  style={{
+                    height: 38,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    borderRadius: 10,
+                    padding: '8px 16px',
+                    boxSizing: 'border-box',
+                    fontFamily: 'Inter',
+                    fontWeight: 600,
+                    fontSize: 14,
+                    lineHeight: '20px',
+                    color: '#0B1120',
+                    background: 'linear-gradient(89.92deg, #F1A901 0.07%, #FD7302 99.93%)',
+                    border: '0.8px solid #E5E7EB',
+                    borderTop: '0.8px solid #E5E7EB',
+                    textDecoration: 'none',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  📊&nbsp; Analytics
+                </Link>
               </div>
+            </div>
+
+            {/* Content block */}
+            <div
+              style={{
+                width: '100%',
+                maxWidth: 1639,
+                minHeight: 400,
+                background: '#F9FAFB',
+                boxSizing: 'border-box',
+              }}
+            >
+              {loading ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '64px 0', gap: 12 }}>
+                  <div style={{ width: 32, height: 32, border: '3px solid #E5E7EB', borderTopColor: '#0F172B', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  <span style={{ color: '#6B7280', fontSize: 14 }}>Loading series...</span>
+                  <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                </div>
+              ) : (
+                <>
+                  {/* Your Enrolled Series */}
+                  {enrolledSeries.length > 0 && (
+                    <div style={{ marginBottom: 32 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8, width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                          <span aria-hidden="true" style={{ width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#F97316', fontSize: 18, lineHeight: '18px', flexShrink: 0 }}>🧡</span>
+                          <h2 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: '#101828', margin: 0, whiteSpace: 'nowrap' }}>
+                            Your Enrolled Series
+                          </h2>
+                        </div>
+                        <Link href="/dashboard/test-series" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px', color: '#155DFC', textDecoration: 'none' }}>View all →</Link>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 24, width: '100%' }}>
+                        {enrolledSeries.map((s) => (
+                          <ProgramCard
+                            key={s.id}
+                            series={s}
+                            isEnrolled
+                            enrolling={enrolling === s.id}
+                            onEnroll={() => handleEnroll(s.id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Explore All Programs */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                      <span aria-hidden="true" style={{ fontSize: 18, lineHeight: '18px' }}>🧭</span>
+                      <h2 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, lineHeight: '28px', color: '#101828', margin: 0 }}>Explore All Programs</h2>
+                    </div>
+                    {exploreSeries.length === 0 ? (
+                      <div style={{ color: '#6B7280', fontSize: 14, padding: '32px 0' }}>
+                        {allSeries.length === 0 ? 'No test series available yet. Check back soon!' : 'You\'re enrolled in all available series!'}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 24, width: '100%' }}>
+                        {exploreSeries.map((s) => (
+                          <ProgramCard
+                            key={s.id}
+                            series={s}
+                            isEnrolled={false}
+                            enrolling={enrolling === s.id}
+                            onEnroll={() => handleEnroll(s.id)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
-
-        {/* Filter Bar */}
-        <div className="fbar fade d1">
-          {FILTERS.map((f) => (
-            <button key={f.id} className={`fb ${filter === f.id ? 'on' : ''}`} onClick={() => setFilter(f.id)}>
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Series Grid */}
-        <div className="sgrid">
-          {filteredSeries.map((series, i) => (
-            <SeriesCard key={series.id} series={series} index={i} onStartTest={handleStartTest} />
-          ))}
-        </div>
       </div>
-
-      {/* Toast (for notifications) */}
-      <div className="toast" id="toast"></div>
     </div>
   );
 }
 
-// Series Card Component
-function SeriesCard({ series, index, onStartTest }: { series: any; index: number; onStartTest: (id: string) => void }) {
+const statusTagStyles: Record<string, { bg: string; color: string }> = {
+  prelims: { bg: '#D1FAE5', color: '#065F46' },
+  mains: { bg: '#DBEAFE', color: '#1447E6' },
+  free: { bg: '#D1FAE5', color: '#065F46' },
+  default: { bg: '#F3F4F6', color: '#374151' },
+};
+
+function ProgramCard({
+  series,
+  isEnrolled,
+  enrolling,
+  onEnroll,
+}: {
+  series: SeriesItem & { progress?: string; testsCompleted?: number };
+  isEnrolled: boolean;
+  enrolling: boolean;
+  onEnroll: () => void;
+}) {
   const router = useRouter();
-  const delay = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'][index % 6];
+  const [starting, setStarting] = useState(false);
 
-  const catMap: Record<string, string> = {
-    foundation: 'Foundation',
-    'current-affairs': 'Current Affairs',
-    pyq: 'PYQ Series',
-    mock: 'Full Mock',
-    mains: 'Mains Writing',
-    csat: 'CSAT Prep',
-    gs: 'GS Papers',
-    optional: 'Optional Subject',
-  };
-  const catLabel = catMap[series.cat] || series.cat;
-
-  const statusMap: Record<string, string> = {
-    open: 'Open',
-    live: 'Live',
-    free: 'Free',
-    enrolling: 'Enrolling',
-    upcoming: 'Upcoming',
-  };
-  const statusLabel = statusMap[series.status] || 'Open';
-  const dotCls = series.status === 'live' ? 'live' : series.status === 'free' ? 'free' : '';
-
-  const done = series.progress !== null ? Math.round((series.tests * series.progress) / 100) : 0;
-  const left = series.progress !== null ? series.tests - done : series.tests;
-  const progPct = series.progress || 0;
-  const hasProgress = series.progress !== null;
-
+  const statusStyle = statusTagStyles[series.examMode] ?? statusTagStyles.default;
+  const icon = seriesIcon(series.examMode, series.subject);
   const isFree = series.price === 0;
+  const priceDisplay = isFree ? 'Free' : `₹${series.price}`;
+  const statusLabel = series.examMode.charAt(0).toUpperCase() + series.examMode.slice(1);
 
-  const handleCardClick = () => {
-    router.push(`/dashboard/test-series/${series.id}`);
-  };
-
-  const handlePrimaryAction = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isFree || hasProgress) {
-      onStartTest(series.id);
-    } else {
-      // Open payment modal (implement later)
-      alert(`Enroll in ${series.name}`);
-    }
+  const handleResume = () => {
+    if (starting) return;
+    setStarting(true);
+    const params = new URLSearchParams({
+      seriesId: series.id,
+      difficulty: series.difficulty,
+    });
+    if (series.subject) params.set('subject', series.subject);
+    router.push(`/dashboard/mock-tests?${params.toString()}`);
   };
 
   return (
-    <div className={`sc fade ${delay}`} onClick={handleCardClick}>
-      {/* DARK HEADER BAND */}
-      <div className="sc-header" style={{ background: series.cardGrad }}>
-        <div className="sc-header-icon">{series.icon}</div>
-        <div className="sc-header-text">
-          <div className="sc-header-title">{series.name}</div>
-          <div className="sc-header-tags">
-            <span className="sc-htag">{catLabel}</span>
-            <span className="sc-htag-sep">·</span>
-            <span className="sc-htag">{statusLabel}</span>
-          </div>
-        </div>
-        <div className={`sc-status-dot ${dotCls}`}></div>
-      </div>
-
-      {/* META PILLS */}
-      <div className="sc-meta-strip">
-        <div className="sc-meta-pill">
-          <span className="mp-ico">👥</span>
-          {series.enrolled >= 1000 ? (series.enrolled / 1000).toFixed(1) + 'K' : series.enrolled}
-        </div>
-        <div className="sc-meta-pill">
-          <span className="mp-ico">📝</span>
-          {series.tests} tests
-        </div>
-        <div className="sc-meta-pill">
-          <span className="mp-ico">⏱</span>
-          {series.dur}
-        </div>
-        <div className="sc-meta-pill">
-          <span className="mp-ico">★</span>
-          {series.rating}
-        </div>
-      </div>
-
-      {/* WHITE BODY */}
-      <div className="sc-body">
-        <div className="sc-desc">{series.desc}</div>
-
-        {/* TESTS / DONE / LEFT stats */}
-        <div className="sc-stats">
-          <div className="sc-stat">
-            <div className="sc-stat-v">{series.tests}</div>
-            <div className="sc-stat-l">Tests</div>
-          </div>
-          <div className="sc-stat">
-            <div className="sc-stat-v done">{done}</div>
-            <div className="sc-stat-l">Done</div>
-          </div>
-          <div className="sc-stat">
-            <div className="sc-stat-v left">{left}</div>
-            <div className="sc-stat-l">Left</div>
-          </div>
-        </div>
-
-        {/* PROGRESS */}
-        <div className="sc-prog-row">
-          <span className="sc-prog-lbl">Progress</span>
-          <span className="sc-prog-val">{hasProgress ? `${done} / ${series.tests}` : 'Not started'}</span>
-        </div>
-        <div className="sc-prog">
-          <div className="sc-prog-fill" style={{ width: `${progPct}%`, background: hasProgress ? '#4F46E5' : '#E4E4E7' }}></div>
-        </div>
-
-        {/* FOOTER: price + buttons */}
-        <div className="sc-foot">
-          {!isFree && (
-            <div className="sc-price-block">
-              {series.oldPrice && <div className="sc-price-old">₹{series.oldPrice}</div>}
-              <div className="sc-price-new">₹{series.price.toLocaleString('en-IN')}</div>
-              {series.oldPrice && <div className="sc-price-tag">-{Math.round(((series.oldPrice - series.price) / series.oldPrice) * 100)}%</div>}
-            </div>
-          )}
-          {isFree && <div className="sc-price-free">FREE</div>}
-          <button
-            className="sc-btn-outline"
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/dashboard/test-series/${series.id}`);
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 524,
+        minHeight: 303,
+        borderRadius: 24,
+        border: '0.8px solid #E5E7EB',
+        background: '#FFFFFF',
+        display: 'flex',
+        flexDirection: 'column',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
+        boxShadow: '0px 2px 4px -2px rgba(0,0,0,0.10), 0px 4px 6px -1px rgba(0,0,0,0.10)',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          height: 84.8,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.8px 24px 0px',
+          background: 'linear-gradient(135deg, #EFF6FF 0%, #FAF5FF 100%)',
+          borderBottom: '0.8px solid #E5E7EB',
+          boxSizing: 'border-box',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.8)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 24,
+              flexShrink: 0,
+              boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)',
             }}
           >
-            Details
-          </button>
-          {hasProgress ? (
+            {icon}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3
+              style={{
+                fontFamily: 'var(--font-playfair), "Playfair Display", serif',
+                fontWeight: 700,
+                fontSize: 18,
+                lineHeight: '28px',
+                color: '#101828',
+                margin: 0,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {series.title}
+            </h3>
+            <div style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, lineHeight: '16px', color: '#99A1AF', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+              {series.examMode.toUpperCase()}{series.subject ? ` · ${series.subject}` : ''}
+            </div>
+          </div>
+        </div>
+        <span
+          style={{
+            fontFamily: 'Inter',
+            fontWeight: 600,
+            fontSize: 12,
+            lineHeight: '16px',
+            color: statusStyle.color,
+            background: statusStyle.bg,
+            padding: '6px 12px',
+            borderRadius: 10,
+            textTransform: 'uppercase',
+            flexShrink: 0,
+          }}
+        >
+          {statusLabel}
+        </span>
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: '24px 24px 0px', boxSizing: 'border-box', flex: 1 }}>
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#364153', marginBottom: 12 }}>
+          <span>📄 {series.totalTests} Tests</span>
+          <span>❓ {series.questionsPerTest} Q/test</span>
+          <span>🎯 {series.difficulty.charAt(0).toUpperCase() + series.difficulty.slice(1)}</span>
+          {series.enrollmentCount !== undefined && <span>👥 {series.enrollmentCount}</span>}
+        </div>
+        <p
+          style={{
+            fontFamily: 'Inter',
+            fontWeight: 400,
+            fontSize: 14,
+            lineHeight: '22.75px',
+            color: '#6A7282',
+            margin: 0,
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+          }}
+        >
+          {series.description}
+        </p>
+        {isEnrolled && series.progress && (
+          <div style={{ marginTop: 8, fontFamily: 'Inter', fontSize: 12, color: '#6B7280' }}>
+            Progress: {series.progress}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '16px 24px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontFamily: 'var(--font-playfair), "Playfair Display", serif', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: '#101828' }}>{priceDisplay}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {isEnrolled ? (
             <>
-              <button className="sc-btn-primary resume" onClick={handlePrimaryAction}>
-                ▶ Resume
-              </button>
+              <button type="button" style={{ width: 101, height: 40, fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#4A5565', background: '#F3F4F6', border: 'none', borderRadius: 10, cursor: 'pointer' }}>📊 Analytics</button>
               <button
-                className="sc-analytics-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  router.push(`/dashboard/test-series/${series.id}/results/1`);
+                type="button"
+                onClick={handleResume}
+                disabled={starting}
+                style={{
+                  width: 113.4,
+                  height: 40,
+                  fontFamily: 'Inter',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  color: '#FFFFFF',
+                  background: starting ? '#4A5565' : '#1E2939',
+                  border: 'none',
+                  borderRadius: 10,
+                  cursor: starting ? 'not-allowed' : 'pointer',
+                  opacity: starting ? 0.8 : 1,
                 }}
               >
-                📊 Analytics
+                ▶ {starting ? 'Starting…' : 'Resume'}
               </button>
             </>
           ) : (
-            <button className={`sc-btn-primary ${isFree ? 'free' : ''}`} onClick={handlePrimaryAction}>
-              {isFree ? '▶ Start Free' : 'Enroll Now'}
-            </button>
+            <>
+              <button type="button" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: '#374151', background: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 14px', cursor: 'pointer' }}>Details</button>
+              <button
+                type="button"
+                onClick={onEnroll}
+                disabled={enrolling}
+                style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: isFree ? '#065F46' : '#FFFFFF', background: enrolling ? '#9CA3AF' : (isFree ? '#D1FAE5' : '#101828'), border: 'none', borderRadius: 8, padding: '8px 16px', cursor: enrolling ? 'not-allowed' : 'pointer' }}
+              >
+                {enrolling ? '...' : (isFree ? '► Start Free' : '► Enroll Now')}
+              </button>
+            </>
           )}
         </div>
       </div>

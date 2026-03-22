@@ -34,6 +34,8 @@ const navigationSections: NavSection[] = [
       { id: 'flashcards', label: 'Flashcards', path: '/admin/flashcards', icon: '🃏' },
       { id: 'mindmaps', label: 'Mindmaps', path: '/admin/mindmaps', icon: '🗺️' },
       { id: 'spaced-rep', label: 'Spaced Rep', path: '/admin/spaced-repetition', icon: '🔁' },
+      { id: 'test-series', label: 'Test Series', path: '/admin/test-series', icon: '🏆' },
+      { id: 'rag-manager', label: 'RAG Manager', path: '/admin/rag-manager', icon: '🧠' },
     ],
   },
   {
@@ -53,6 +55,7 @@ const navigationSections: NavSection[] = [
           { id: 'cms-dash-answer', label: 'Daily Answer', path: '/admin/cms/dashboard%2Fdaily-answer', icon: '✍️' },
           { id: 'cms-dash-editorial', label: 'Editorial', path: '/admin/cms/dashboard%2Fdaily-editorial', icon: '📰' },
           { id: 'cms-dash-mock', label: 'Mock Tests', path: '/admin/cms/dashboard%2Fmock-tests', icon: '📝' },
+          { id: 'cms-dash-test-series', label: 'Test Series', path: '/admin/cms/dashboard%2Ftest-series', icon: '🏆' },
           { id: 'cms-dash-library', label: 'Library', path: '/admin/cms/dashboard%2Flibrary', icon: '📖' },
           { id: 'cms-dash-video', label: 'Video Lectures', path: '/admin/cms/dashboard%2Fvideo-lectures', icon: '🎥' },
           { id: 'cms-dash-jeet', label: 'Jeet GPT', path: '/admin/cms/dashboard%2Fjeet-gpt', icon: '⚡' },
