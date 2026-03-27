@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useCmsContent } from '@/hooks/useCmsContent';
 
 const defaultFooterLinks = {
-  company: ['About Us', 'How to work?', 'Populer Course', 'Service'],
+  company: ['Our Story', 'How to work?', 'Populer Course', 'Service'],
   courses: ['Categories', 'Ofline Course', 'Vidio Course'],
-  support: ['FAQ', 'Help Center', 'Career', 'Privacy'],
+  support: ['FAQ', 'Help Center', 'Career', 'Your Privacy Matters'],
 };
 
 const defaultContactInfo = {
@@ -239,7 +240,14 @@ const Footer = () => {
               <h3 className="font-roboto font-semibold text-white text-[30px] leading-[100%]">Company</h3>
               <ul className="flex flex-col gap-5">
                 {(footerLinks.company || defaultFooterLinks.company).map((link: string, i: number) => (
-                  <li key={i}><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">{link}</a></li>
+                  <li key={i}>
+                    <a
+                      href={link === 'Our Story' ? '/our-story' : '#'}
+                      className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap"
+                    >
+                      {link}
+                    </a>
+                  </li>
                 ))}
               </ul>
 
@@ -277,14 +285,21 @@ const Footer = () => {
               <h3 className="font-roboto font-semibold text-white text-[30px] leading-[100%]">Support</h3>
               <ul className="flex flex-col gap-5">
                 {(footerLinks.support || defaultFooterLinks.support).map((link: string, i: number) => (
-                  <li key={i}><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap">{link}</a></li>
+                  <li key={i}>
+                    <Link
+                      href={link === 'Your Privacy Matters' ? '/privacy' : '#'}
+                      className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap"
+                    >
+                      {link}
+                    </Link>
+                  </li>
                 ))}
               </ul>
             </div>
 
-            {/* Contact Info Column */}
+            {/* Contact Us Column */}
             <div className="flex flex-col gap-6">
-              <h3 className="font-roboto font-semibold text-white text-[30px] leading-[100%]">Contact Info</h3>
+              <a href="/contact" className="font-roboto font-semibold text-white text-[30px] leading-[100%] hover:text-[#FFD170] transition-colors">Contact Us</a>
               <ul className="flex flex-col gap-5">
                 <li className="font-roboto font-normal text-white text-[25px] leading-[100%]">{contactInfo.phone}</li>
                 <li className="font-roboto font-normal text-white text-[25px] leading-[100%]">{contactInfo.email}</li>

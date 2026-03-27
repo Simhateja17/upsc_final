@@ -147,42 +147,94 @@ const DashboardHeader = () => {
           {/* Dropdown Menu */}
           {showDropdown && (
             <div
-              className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg overflow-hidden z-50"
+              className="absolute right-0 top-full mt-3 w-[300px] rounded-2xl shadow-2xl overflow-hidden z-50"
               style={{
-                background: '#1E2939',
-                border: '1px solid #374151',
+                background: '#FFFFFF',
+                border: '1px solid #E5E7EB',
+                fontFamily: 'Inter, sans-serif',
               }}
             >
-              <Link
-                href="/dashboard"
-                className="block px-4 py-3 text-white hover:bg-[#374151] transition-colors text-sm"
-                onClick={() => setShowDropdown(false)}
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/dashboard/profile"
-                className="block px-4 py-3 text-white hover:bg-[#374151] transition-colors text-sm"
-                onClick={() => setShowDropdown(false)}
-              >
-                My Profile
-              </Link>
-              {user?.role === 'admin' && (
+              {/* User Info Header */}
+              <div className="px-6 pt-6 pb-4">
+                <p className="text-[#111827] font-semibold text-lg leading-7">{displayName}</p>
+                <p className="text-[#6B7280] text-sm mt-1">{user?.email || ''}</p>
+              </div>
+
+              <hr className="border-[#F3F4F6]" />
+
+              {/* Menu Items */}
+              <div className="py-2">
                 <Link
-                  href="/admin"
-                  className="block px-4 py-3 text-[#A78BFA] hover:bg-[#374151] transition-colors text-sm font-medium"
+                  href="/dashboard/profile"
+                  className="flex items-center gap-4 px-6 py-3.5 text-[#45556C] hover:bg-[#F9FAFB] transition-colors"
+                  style={{ fontSize: '18px', fontWeight: 500, lineHeight: '28px' }}
                   onClick={() => setShowDropdown(false)}
                 >
-                  Admin Panel
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/human.png" alt="" width={24} height={24} className="w-6 h-6 object-contain" />
+                  My Profile
                 </Link>
+                <Link
+                  href="/dashboard/settings"
+                  className="flex items-center gap-4 px-6 py-3.5 text-[#45556C] hover:bg-[#F9FAFB] transition-colors"
+                  style={{ fontSize: '18px', fontWeight: 500, lineHeight: '28px' }}
+                  onClick={() => setShowDropdown(false)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/sett.png" alt="" width={24} height={24} className="w-6 h-6 object-contain" />
+                  Account Settings
+                </Link>
+                <Link
+                  href="/dashboard/billing"
+                  className="flex items-center gap-4 px-6 py-3.5 text-[#45556C] hover:bg-[#F9FAFB] transition-colors"
+                  style={{ fontSize: '18px', fontWeight: 500, lineHeight: '28px' }}
+                  onClick={() => setShowDropdown(false)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/card.png" alt="" width={24} height={24} className="w-6 h-6 object-contain" />
+                  Billing
+                </Link>
+                <Link
+                  href="/dashboard/feedback"
+                  className="flex items-center gap-4 px-6 py-3.5 text-[#45556C] hover:bg-[#F9FAFB] transition-colors"
+                  style={{ fontSize: '18px', fontWeight: 500, lineHeight: '28px' }}
+                  onClick={() => setShowDropdown(false)}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                  Feedback
+                </Link>
+              </div>
+
+              {user?.role === 'admin' && (
+                <>
+                  <hr className="border-[#F3F4F6]" />
+                  <div className="py-2">
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-4 px-6 py-3.5 text-[#7C3AED] hover:bg-[#F9FAFB] transition-colors font-medium"
+                      style={{ fontSize: '18px', fontWeight: 500, lineHeight: '28px' }}
+                      onClick={() => setShowDropdown(false)}
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      Admin Panel
+                    </Link>
+                  </div>
+                </>
               )}
-              <hr className="border-[#374151]" />
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-3 text-red-400 hover:bg-[#374151] transition-colors text-sm"
-              >
-                Logout
-              </button>
+
+              <hr className="border-[#F3F4F6]" />
+
+              {/* Sign Out */}
+              <div className="py-2">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-4 w-full text-left px-6 py-3.5 text-red-500 hover:bg-[#FEF2F2] transition-colors"
+                  style={{ fontSize: '18px', fontWeight: 500, lineHeight: '28px' }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  Sign out
+                </button>
+              </div>
             </div>
           )}
         </div>

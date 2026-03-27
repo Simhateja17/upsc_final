@@ -31,6 +31,9 @@ const Header = () => {
         <Link href="/material" className="text-white text-xl font-serif font-semibold hover:text-[#F5C75D] transition-colors">
           Study Material
         </Link>
+        <Link href="/contact" className="text-white text-xl font-serif font-semibold hover:text-[#F5C75D] transition-colors">
+          Contact
+        </Link>
       </div>
       {/* Login & Sign Up Buttons */}
       <div className="flex items-center gap-3">
