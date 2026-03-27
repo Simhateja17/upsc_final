@@ -8,7 +8,7 @@ import { useCmsContent } from '@/hooks/useCmsContent';
 const defaultFooterLinks = {
   company: ['Our Story', 'How to work?', 'Populer Course', 'Service'],
   courses: ['Categories', 'Ofline Course', 'Vidio Course'],
-  support: ['FAQ', 'Help Center', 'Career', 'Your Privacy Matters'],
+  support: ['FAQ', 'Help Center', 'Career', 'Terms of Service', 'Your Privacy Matters', 'Cookie Policy', 'Refund Policy'],
 };
 
 const defaultContactInfo = {
@@ -287,7 +287,7 @@ const Footer = () => {
                 {(footerLinks.support || defaultFooterLinks.support).map((link: string, i: number) => (
                   <li key={i}>
                     <Link
-                      href={link === 'Your Privacy Matters' ? '/privacy' : '#'}
+                      href={link === 'Your Privacy Matters' ? '/privacy' : link === 'Terms of Service' ? '/terms' : link === 'Cookie Policy' ? '/cookies' : link === 'Refund Policy' ? '/refund' : '#'}
                       className="font-roboto font-normal text-white hover:text-[#FFD170] text-[25px] leading-[100%] whitespace-nowrap"
                     >
                       {link}

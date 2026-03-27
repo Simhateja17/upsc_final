@@ -475,7 +475,7 @@ export default function PrivacyPage() {
           <div className="flex items-center gap-6">
             {[
               { label: 'Your Privacy Matters', href: '/privacy' },
-              { label: 'Terms of Service', href: '#' },
+              { label: 'Terms of Service', href: '/terms' },
               { label: 'Contact Us', href: '#' },
               { label: 'Blog', href: '#' },
             ].map((l) => (
