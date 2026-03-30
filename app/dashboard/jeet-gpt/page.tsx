@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useAuth } from '@/contexts/AuthContext';
 import { jeetAIService } from '@/lib/services';
 
@@ -112,93 +114,116 @@ function formatTime(dateStr?: string | Date): string {
   return h + ':' + m.toString().padStart(2, '0') + ' ' + (am ? 'am' : 'pm');
 }
 
-/* ── Simple markdown renderer (bold, code, headings, bullets) ── */
-function renderMarkdown(text: string): React.ReactNode {
-  const lines = text.split('\n');
-  const elements: React.ReactNode[] = [];
-  let listItems: string[] = [];
-
-  const flushList = (key: string) => {
-    if (listItems.length > 0) {
-      elements.push(
-        <ul key={key} className="list-disc pl-5 space-y-1 mb-3">
-          {listItems.map((item, i) => (
-            <li key={i} className="font-inter text-[14px] leading-6" style={{ color: '#364153' }}>
-              {inlineFormat(item)}
-            </li>
-          ))}
-        </ul>
-      );
-      listItems = [];
-    }
-  };
-
-  lines.forEach((line, idx) => {
-    const trimmed = line.trim();
-
-    // Heading 3
-    if (trimmed.startsWith('### ')) {
-      flushList('list-' + idx);
-      elements.push(
-        <h3 key={idx} className="font-inter font-bold text-[15px] leading-6 mt-4 mb-1" style={{ color: '#101828' }}>
-          {inlineFormat(trimmed.slice(4))}
-        </h3>
-      );
-    // Heading 2
-    } else if (trimmed.startsWith('## ')) {
-      flushList('list-' + idx);
-      elements.push(
-        <h2 key={idx} className="font-inter font-bold text-[17px] leading-7 mt-5 mb-2" style={{ color: '#101828' }}>
-          {inlineFormat(trimmed.slice(3))}
-        </h2>
-      );
-    // Heading 1
-    } else if (trimmed.startsWith('# ')) {
-      flushList('list-' + idx);
-      elements.push(
-        <h1 key={idx} className="font-inter font-bold text-[20px] leading-8 mt-5 mb-2" style={{ color: '#101828' }}>
-          {inlineFormat(trimmed.slice(2))}
-        </h1>
-      );
-    // Bullet
-    } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-      listItems.push(trimmed.slice(2));
-    // Numbered list
-    } else if (/^\d+\.\s/.test(trimmed)) {
-      listItems.push(trimmed.replace(/^\d+\.\s/, ''));
-    // Blank line
-    } else if (trimmed === '') {
-      flushList('list-' + idx);
-    // Normal paragraph
-    } else {
-      flushList('list-' + idx);
-      elements.push(
-        <p key={idx} className="font-inter text-[14px] leading-6 mb-2" style={{ color: '#364153' }}>
-          {inlineFormat(trimmed)}
-        </p>
-      );
-    }
-  });
-
-  flushList('list-end');
-  return <>{elements}</>;
-}
-
-function inlineFormat(text: string): React.ReactNode {
-  // Split on **bold**, *italic*, `code`
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} style={{ color: '#101828' }}>{part.slice(2, -2)}</strong>;
-    }
-    if (part.startsWith('*') && part.endsWith('*')) {
-      return <em key={i}>{part.slice(1, -1)}</em>;
-    }
-    if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={i} className="px-1.5 py-0.5 rounded text-[13px]" style={{ background: '#F3F4F6', color: '#1447E6', fontFamily: 'monospace' }}>{part.slice(1, -1)}</code>;
-    }
-    return part;
-  });
+/* ── Markdown renderer using react-markdown ── */
+function MarkdownRenderer({ content }: { content: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        h1: ({ children }) => (
+          <h1 className="font-inter font-bold text-[20px] leading-8 mt-5 mb-2" style={{ color: '#101828' }}>{children}</h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="font-inter font-bold text-[17px] leading-7 mt-5 mb-2" style={{ color: '#101828' }}>{children}</h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="font-inter font-bold text-[15px] leading-6 mt-4 mb-1" style={{ color: '#101828' }}>{children}</h3>
+        ),
+        h4: ({ children }) => (
+          <h4 className="font-inter font-bold text-[14px] leading-5 mt-3 mb-1" style={{ color: '#101828' }}>{children}</h4>
+        ),
+        p: ({ children }) => (
+          <p className="font-inter text-[14px] leading-6 mb-2" style={{ color: '#364153' }}>{children}</p>
+        ),
+        ul: ({ children }) => (
+          <ul className="list-disc pl-5 space-y-1 mb-3">{children}</ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="list-decimal pl-5 space-y-1 mb-3">{children}</ol>
+        ),
+        li: ({ children }) => (
+          <li className="font-inter text-[14px] leading-6" style={{ color: '#364153' }}>{children}</li>
+        ),
+        strong: ({ children }) => (
+          <strong style={{ color: '#101828' }}>{children}</strong>
+        ),
+        em: ({ children }) => <em>{children}</em>,
+        code: ({ className, children, ...props }) => {
+          const isBlock = className?.includes('language-');
+          if (isBlock) {
+            return (
+              <code className={className} {...props}>{children}</code>
+            );
+          }
+          return (
+            <code
+              className="px-1.5 py-0.5 rounded text-[13px]"
+              style={{ background: '#F3F4F6', color: '#1447E6', fontFamily: 'monospace' }}
+              {...props}
+            >
+              {children}
+            </code>
+          );
+        },
+        pre: ({ children }) => (
+          <pre
+            className="rounded-lg p-4 mb-3 overflow-x-auto text-[13px] leading-5"
+            style={{ background: '#1E293B', color: '#E2E8F0', fontFamily: 'monospace' }}
+          >
+            {children}
+          </pre>
+        ),
+        blockquote: ({ children }) => (
+          <blockquote
+            className="pl-4 mb-3 italic"
+            style={{ borderLeft: '3px solid #D08700', color: '#4A5565' }}
+          >
+            {children}
+          </blockquote>
+        ),
+        a: ({ href, children }) => (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+            style={{ color: '#1447E6' }}
+          >
+            {children}
+          </a>
+        ),
+        hr: () => <hr className="my-4" style={{ borderColor: '#E5E7EB' }} />,
+        table: ({ children }) => (
+          <div className="overflow-x-auto mb-3">
+            <table className="w-full border-collapse text-[13px]" style={{ border: '1px solid #E5E7EB' }}>
+              {children}
+            </table>
+          </div>
+        ),
+        thead: ({ children }) => <thead>{children}</thead>,
+        tbody: ({ children }) => <tbody>{children}</tbody>,
+        tr: ({ children }) => <tr>{children}</tr>,
+        th: ({ children }) => (
+          <th
+            className="font-inter font-semibold text-left px-3 py-2"
+            style={{ background: '#F9FAFB', color: '#101828', border: '1px solid #E5E7EB' }}
+          >
+            {children}
+          </th>
+        ),
+        td: ({ children }) => (
+          <td
+            className="font-inter px-3 py-2"
+            style={{ color: '#364153', border: '1px solid #E5E7EB' }}
+          >
+            {children}
+          </td>
+        ),
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
 }
 
 const DAILY_QUERY_LIMIT = 10;
@@ -476,7 +501,7 @@ export default function JeetGPTPage() {
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#1E3A5F' }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F0B100" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
                         </div>
-                        <div className="flex-1 min-w-0">{renderMarkdown(msg.content)}</div>
+                        <div className="flex-1 min-w-0"><MarkdownRenderer content={msg.content} /></div>
                       </div>
                       <div className="flex justify-end mt-3">
                         <span className="font-inter text-[12px]" style={{ color: '#99A1AF' }}>{formatTime(msg.createdAt)}</span>
