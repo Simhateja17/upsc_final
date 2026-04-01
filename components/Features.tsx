@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const features = [
   {
@@ -629,19 +630,21 @@ const Features = () => {
               </div>
 
               {/* CTA Button */}
-              <button 
-                className="mt-[clamp(1.5rem,2.5vw,3rem)] flex items-center gap-2 bg-[#1C2E45] hover:bg-[#2A4060] text-white rounded-lg transition-colors"
-                style={{
-                  padding: 'clamp(0.75rem, 1vw, 1rem) clamp(1.5rem, 2vw, 2rem)',
-                  fontSize: 'clamp(0.875rem, 1.042vw, 1.25rem)',
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 2L9 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M18 2L12 18L9 11L2 8L18 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Schedule Mentor Session
-              </button>
+              <Link href="/dashboard/free-trial">
+                <button
+                  className="mt-[clamp(1.5rem,2.5vw,3rem)] flex items-center gap-2 bg-[#1C2E45] hover:bg-[#2A4060] text-white rounded-lg transition-colors"
+                  style={{
+                    padding: 'clamp(0.75rem, 1vw, 1rem) clamp(1.5rem, 2vw, 2rem)',
+                    fontSize: 'clamp(0.875rem, 1.042vw, 1.25rem)',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 2L9 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M18 2L12 18L9 11L2 8L18 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Schedule Mentor Session
+                </button>
+              </Link>
             </div>
           </div>
         </div>

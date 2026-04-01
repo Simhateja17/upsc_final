@@ -116,15 +116,17 @@ const PerformanceStatsWidget = () => {
                 className="rounded-full flex items-center gap-[clamp(4px,0.31vw,6px)]"
                 style={{
                   background: '#D1FAE5',
-                  padding: 'clamp(4px,0.31vw,6px) clamp(8px,0.52vw,10px)',
+                  padding: 'clamp(6px,0.42vw,8px) clamp(12px,0.83vw,16px)',
                 }}
               >
-                <svg className="w-[clamp(14px,0.83vw,16px)] h-[clamp(14px,0.83vw,16px)] text-green-600" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C11.5 2 8 5.5 8 10c0 3 2 5 4 7 2-2 4-4 4-7 0-4.5-3.5-8-4-8z"/>
-                  <path d="M12 22c-1 0-2-1-2-2s1-3 2-3 2 2 2 3-1 2-2 2z" opacity="0.7"/>
-                </svg>
-                <span className="font-inter font-semibold text-green-700" style={{ fontSize: 'clamp(11px,0.68vw,13px)' }}>
-                  {streakLabel}
+                <img
+                  src="/fire-icon-green.png"
+                  alt="On Fire"
+                  className="w-[clamp(16px,1.04vw,20px)] h-[clamp(16px,1.04vw,20px)]"
+                  style={{ objectFit: 'contain' }}
+                />
+                <span className="font-inter font-semibold text-green-700" style={{ fontSize: 'clamp(12px,0.83vw,16px)' }}>
+                  {streakLabel || 'On Fire!'}
                 </span>
               </div>
             </div>
@@ -214,18 +216,19 @@ const PerformanceStatsWidget = () => {
 
               {/* Jeet Coins */}
               <div
-                className="rounded-[14px] flex flex-col items-center justify-center text-center"
+                className="rounded-[14px] flex flex-col justify-center"
                 style={{
                   background: '#EEF2FF',
                   padding: '16px 12px',
                 }}
               >
-                <div className="flex items-center justify-center" style={{ gap: '4px', marginBottom: '6px' }}>
-                  <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="9" fill="#FFD700"/>
-                    <text x="12" y="16" fontSize="10" fill="#000" textAnchor="middle" fontWeight="bold">&#x20B9;</text>
-                  </svg>
-                  <span className="font-outfit font-bold text-[#17223E] leading-none" style={{ fontSize: '20px' }}>
+                <div className="flex items-center" style={{ gap: '6px', marginBottom: '6px' }}>
+                  <img
+                    src="/funds-icon.png"
+                    alt="Jeet Coins"
+                    style={{ width: '28px', height: '28px', objectFit: 'contain' }}
+                  />
+                  <span className="font-outfit font-bold text-[#17223E] leading-none" style={{ fontSize: '22px' }}>
                     {jeetCoins ?? '--'}
                   </span>
                 </div>

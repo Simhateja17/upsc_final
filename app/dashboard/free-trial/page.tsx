@@ -897,7 +897,9 @@ export default function FreeTrialPage() {
                 }}
                 className="font-arimo"
               >
-                ★ WHY MENTORSHIP WORKS
+                ★ WHY{' '}
+                <span style={{ background: '#C68A0B', color: '#0F172B', padding: '1px 5px', borderRadius: '3px' }}>MENTORSHIP</span>
+                {' '}WORKS
               </div>
 
               {/* Heading */}
@@ -911,8 +913,8 @@ export default function FreeTrialPage() {
                 }}
                 className="font-arimo"
               >
-                A coach who knows you beats a{' '}
-                <span className="font-tinos italic" style={{ color: '#C68A0B' }}>
+                A coach who knows you<br />beats a{' '}
+                <span style={{ color: '#C68A0B' }}>
                   course that doesn&apos;t.
                 </span>
               </h2>
@@ -927,8 +929,9 @@ export default function FreeTrialPage() {
                 }}
                 className="font-arimo"
               >
-                Generic courses give you content. A mentor gives you direction,
-                accountability, and someone who adjusts the plan when life happens.
+                UPSC prep is personal. Jeet Sir&apos;s{' '}
+                <span style={{ background: '#C68A0B', color: '#0F172B', padding: '1px 5px', borderRadius: '3px', fontWeight: 600 }}>mentorship</span>
+                {' '}is built around you — not a batch schedule.
               </p>
             </div>
 
@@ -954,7 +957,7 @@ export default function FreeTrialPage() {
                 }}
                 className="font-arimo"
               >
-                Utterly personal. Never generic.
+                Utterly personal.<br />Never generic.
               </div>
             </div>
           </div>
@@ -1135,32 +1138,45 @@ export default function FreeTrialPage() {
         <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
           <div
             style={{
-              background: 'linear-gradient(90deg, #FDC700, #FF8904, #FF6900)',
+              background: 'linear-gradient(90deg, #FF8904 0%, #FFAA30 100%)',
               borderRadius: '24px',
-              padding: 'clamp(32px, 3.5vw, 52px)',
+              padding: 'clamp(28px, 3vw, 44px) clamp(32px, 3.5vw, 52px)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap' as const,
-              gap: 'clamp(20px, 2vw, 32px)',
               overflow: 'hidden',
               position: 'relative' as const,
             }}
           >
+            {/* Left content */}
             <div style={{ flex: '1 1 400px', position: 'relative' as const, zIndex: 1 }}>
               <h2
                 style={{
-                  fontSize: 'clamp(24px, 2.4vw, 36px)',
+                  fontSize: 'clamp(22px, 2.2vw, 32px)',
                   fontWeight: 700,
                   color: '#101828',
                   lineHeight: 1.25,
-                  marginBottom: 'clamp(16px, 1.5vw, 24px)',
+                  marginBottom: 'clamp(10px, 0.8vw, 14px)',
                 }}
                 className="font-arimo"
               >
                 Limited seats. Real results.<br />
                 Start with a free call.
               </h2>
+
+              {/* Description */}
+              <p
+                style={{
+                  fontSize: 'clamp(13px, 0.9vw, 15px)',
+                  color: '#1C1C1C',
+                  lineHeight: 1.6,
+                  marginBottom: 'clamp(16px, 1.5vw, 24px)',
+                  maxWidth: '420px',
+                }}
+                className="font-arimo"
+              >
+                Book a free 15-minute discovery call with Jeet Sir — no pressure, no sales pitch.
+                Just an honest conversation about your prep and what you actually need.
+              </p>
 
               {/* Buttons */}
               <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 'clamp(8px, 0.8vw, 12px)' }}>
@@ -1175,10 +1191,14 @@ export default function FreeTrialPage() {
                     fontSize: 'clamp(14px, 1vw, 16px)',
                     fontWeight: 600,
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
                   }}
                   className="font-arimo"
                 >
-                  🤙 Book Free Discovery Call
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.26h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.81-1.81a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  Book Free Discovery Call
                 </button>
                 <button
                   style={{
@@ -1190,37 +1210,45 @@ export default function FreeTrialPage() {
                     fontSize: 'clamp(14px, 1vw, 16px)',
                     fontWeight: 600,
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
                   }}
                   className="font-arimo"
                 >
-                  📺 Watch on YouTube First
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
+                  Watch on YouTube First
                 </button>
               </div>
             </div>
 
-            {/* Decorative circles */}
-            <div style={{ position: 'relative' as const, zIndex: 0, flex: '0 0 auto' }}>
-              <div
-                style={{
-                  width: 'clamp(80px, 8vw, 120px)',
-                  height: 'clamp(80px, 8vw, 120px)',
-                  borderRadius: '50%',
-                  background: 'rgba(255, 105, 0, 0.25)',
-                  position: 'absolute' as const,
-                  right: '0',
-                  top: '-20px',
-                }}
-              />
-              <div
-                style={{
-                  width: 'clamp(50px, 5vw, 80px)',
-                  height: 'clamp(50px, 5vw, 80px)',
-                  borderRadius: '50%',
-                  background: 'rgba(255, 137, 4, 0.3)',
-                  position: 'relative' as const,
-                }}
-              />
-            </div>
+            {/* Decorative circles — absolutely positioned on the right */}
+            <div
+              style={{
+                position: 'absolute' as const,
+                right: '-40px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '260px',
+                height: '260px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.18)',
+                zIndex: 0,
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute' as const,
+                right: '60px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '180px',
+                height: '180px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.13)',
+                zIndex: 0,
+              }}
+            />
           </div>
         </section>
 

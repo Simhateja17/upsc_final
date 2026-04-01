@@ -243,7 +243,7 @@ export default function LibraryPage() {
             <div className="flex items-center justify-between">
               {heroStats.map((stat, idx) => (
                 <React.Fragment key={stat.label}>
-                  <div className="flex flex-col items-center" style={{ flex: 1 }}>
+                  <div className="flex flex-col items-center">
                     <div className="font-arimo font-bold" style={{ fontSize: 'clamp(15px, 1.4vw, 19px)', color: stat.label === 'Always Free' ? '#DBAC49' : '#162456', lineHeight: 1.2 }}>
                       {stat.number}
                       {stat.suffix && <span style={{ color: '#DBAC49' }}>{stat.suffix}</span>}
@@ -491,8 +491,32 @@ export default function LibraryPage() {
                   alignItems: 'center',
                   gap: 'clamp(12px, 1.2vw, 18px)',
                   flexShrink: 0,
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
+                {/* Decorative ellipses */}
+                <div style={{
+                  position: 'absolute',
+                  width: '252px',
+                  height: '134px',
+                  borderRadius: '50%',
+                  background: '#ABC5FF30',
+                  top: '-40px',
+                  left: '-60px',
+                  pointerEvents: 'none',
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  width: '170.472px',
+                  height: '187.861px',
+                  borderRadius: '50%',
+                  background: '#ABC5FF30',
+                  transform: 'rotate(-90.622deg)',
+                  bottom: '-60px',
+                  right: '-50px',
+                  pointerEvents: 'none',
+                }} />
                 <div className="flex flex-col items-center">
                   <div className="font-arimo font-bold" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#101828', lineHeight: 1.2 }}>
                     {selectedApiSubject?.pdfCount ?? 0}

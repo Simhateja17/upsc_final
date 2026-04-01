@@ -135,9 +135,10 @@ export default function OurStoryPage() {
         style={{ background: 'linear-gradient(155.68deg, #0e182d 0%, #17223e 100%)' }}
       >
         {/* Badge */}
-        <div className="flex items-center gap-2 bg-[#1d293d] border border-[#d08700] rounded-full px-4 py-2 mb-8">
-          <Image src="/our-story-star.png" alt="star" width={16} height={16} />
-          <span className="text-[#e2e8f0] text-sm">India's #1 AI-Powered UPSC Platform</span>
+        <div className="relative flex items-center gap-3 bg-[#131e33] border-2 border-[#d08700] rounded-full px-6 py-4 mb-8">
+          <Image src="/Icon (3).png" alt="RiseWithJeet" width={36} height={36} className="rounded-full" />
+          <Image src="/star.png" alt="star" width={28} height={28} />
+          <span className="text-white text-2xl font-bold">India's #1 AI-Powered UPSC Platform</span>
         </div>
 
         {/* Eyebrow */}

@@ -12,12 +12,28 @@ const prelimsPaperTypes = [
 ];
 
 const fallbackQuestionSources = [
-  { id: 'daily-mcq', emoji: '📝', label: 'Daily MCQ', description: 'Fresh questions every day based on current affairs' },
-  { id: 'practice-pyq', emoji: '📚', label: 'Practice PYQ', description: 'Previous year questions sorted by topic & year' },
-  { id: 'subject-wise', emoji: '🎯', label: 'Subject-wise', description: 'Deep dive into specific UPSC subjects' },
-  { id: 'mixed-bag', emoji: '🎲', label: 'Mixed Bag', description: 'Random questions across all subjects' },
-  { id: 'full-length', emoji: '🏅', label: 'Full Length Test', description: 'Complete exam simulation experience', pro: true },
+  { id: 'daily-mcq', icon: '/sun.png', label: 'Daily MCQ', description: 'Fresh from 10 curated daily picks' },
+  { id: 'practice-pyq', icon: '/script.png', label: 'Practice PYQ', description: 'UPSC papers 2010 – 2024' },
+  { id: 'subject-wise', icon: '/booksss.png', label: 'Subject-wise', description: 'Deep-dive any one subject' },
+  { id: 'mixed-bag', icon: '/shinee.png', label: 'Mixed Bag', description: 'Random cross-subject mix' },
+  { id: 'full-length', icon: '/cuppp.png', label: 'Full Length Test', description: 'Complete 100-Q simulation', pro: true },
 ];
+
+const subjectEmojiMap: Record<string, string> = {
+  'All Subjects': '🌐',
+  'All Topics': '🌐',
+  'History': '📚',
+  'Geography': '🗺️',
+  'Polity': '⚖️',
+  'Economy': '📊',
+  'Science & Tech': '🔬',
+  'Environment': '🌿',
+  'Current Affairs': '📰',
+  'Art & Culture': '🎨',
+  'International Relations': '🌍',
+  'Security & Defence': '🛡️',
+  'Art': '🎨',
+};
 
 const fallbackExamModes = [
   { id: 'prelims', label: 'Prelims', description: 'Objective MCQs · 2 hour format' },
@@ -25,10 +41,10 @@ const fallbackExamModes = [
 ];
 
 const fallbackMainsPaperTypes = [
-  { id: 'gs1', label: 'GS Paper I', description: 'Indian Heritage, History, Geography & Society' },
-  { id: 'gs2', label: 'GS Paper II', description: 'Governance, Constitution, Polity & IR' },
-  { id: 'gs3', label: 'GS Paper III', description: 'Technology, Economic Dev, Biodiversity & Security' },
-  { id: 'gs4', label: 'GS Paper IV', description: 'Ethics, Integrity & Aptitude' },
+  { id: 'gs1', emoji: '🌍', label: 'GS I', description: 'Heritage, Culture, History & Geography' },
+  { id: 'gs2', emoji: '⚖️', label: 'GS II', description: 'Governance, Polity, Social Justice & IR' },
+  { id: 'gs3', emoji: '🚀', label: 'GS III', description: 'Technology, Economy, Environment & Security' },
+  { id: 'gs4', emoji: '🧠', label: 'GS IV', description: 'Ethics, Integrity & Aptitude' },
 ];
 
 const fallbackOptionalSubjects = [
@@ -91,6 +107,8 @@ function MockTestsPageInner() {
   const [selectedOptional, setSelectedOptional] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState(5);
   const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
+  const [showProModal, setShowProModal] = useState(false);
+  const [proModalFeature, setProModalFeature] = useState<string>('Full-Length Tests');
 
   /* ─── API State ─── */
   const [subjects, setSubjects] = useState<{ name: string; count: number }[]>([]);
@@ -171,7 +189,7 @@ function MockTestsPageInner() {
       if (!testId) {
         throw new Error('No test ID returned from server');
       }
-      router.push(`/dashboard/mock-tests/attempt?testId=${testId}`);
+      router.push(`/dashboard/mock-tests/attempt?testId=${testId}&examMode=${selectedExamMode}`);
     } catch (err: any) {
       console.error('Failed to generate test:', err);
       setError(err.message || 'Failed to generate test. Please try again.');
@@ -194,17 +212,132 @@ function MockTestsPageInner() {
     background: '#FFF',
     border: '0.8px solid #E5E7EB',
     borderRadius: '16px',
-    padding: 'clamp(20px, 1.8vw, 32px)',
-    marginBottom: 'clamp(16px, 1.4vw, 24px)',
+    padding: 'clamp(20px, 1.7vw, 28px)',
+    marginBottom: 'clamp(14px, 1.2vw, 20px)',
   };
 
   return (
     <div className="flex overflow-hidden" style={{ background: '#D8DEE6', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
+
+      {/* ── Pro Upgrade Modal ── */}
+      {showProModal && (
+        <div
+          onClick={() => setShowProModal(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, padding: '16px',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#FFFFFF', borderRadius: '24px',
+              padding: '28px 24px 24px',
+              width: '100%', maxWidth: '360px',
+              position: 'relative', boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
+            }}
+          >
+            {/* Close */}
+            <button
+              onClick={() => setShowProModal(false)}
+              style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#6B7280', lineHeight: 1 }}
+            >×</button>
+
+            {/* Icon */}
+            <div style={{ textAlign: 'center', fontSize: '40px', marginBottom: '12px' }}>📋</div>
+
+            {/* Title */}
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '20px', color: '#101828', textAlign: 'center', marginBottom: '8px' }}>
+              {proModalFeature} Await
+            </h2>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280', textAlign: 'center', lineHeight: 1.5, marginBottom: '18px' }}>
+              Complete 100-question papers replicating real UPSC patterns.{' '}
+              <strong style={{ color: '#101828' }}>Top rankers</strong> swear by this format.
+            </p>
+
+            {/* Usage bar */}
+            <div style={{ background: '#F3F4F6', borderRadius: '10px', padding: '10px 14px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6B7280' }}>Free today: <strong style={{ color: '#101828' }}>3 / 10</strong> questions used</span>
+              </div>
+              <div style={{ height: '6px', background: '#E5E7EB', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: '30%', background: 'linear-gradient(90deg, #FF6900, #FDC700)', borderRadius: '999px' }} />
+              </div>
+            </div>
+
+            {/* Plans */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '18px' }}>
+              {/* Monthly Pro */}
+              <div style={{ border: '1.5px solid #E5E7EB', borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '20px' }}>⚡</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#101828' }}>Monthly Pro</div>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6B7280' }}>Unlimited tests, all subjects, PYQ, analytics</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#101828' }}>₹299</div>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#6B7280' }}>/month</div>
+                </div>
+              </div>
+
+              {/* 6-Month Pro + Mentorship (Most Popular) */}
+              <div style={{ border: '2px solid #101828', borderRadius: '14px', padding: '14px 16px', background: '#0F172B', display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
+                <span style={{
+                  position: 'absolute', top: '-11px', left: '50%', transform: 'translateX(-50%)',
+                  background: '#FDC700', color: '#101828', fontFamily: 'Inter, sans-serif',
+                  fontWeight: 700, fontSize: '10px', padding: '3px 10px', borderRadius: '999px',
+                  whiteSpace: 'nowrap',
+                }}>⭐ MOST POPULAR</span>
+                <span style={{ fontSize: '20px' }}>🎓</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#FFFFFF' }}>6-Month Pro + Mentorship</div>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#94A3B8' }}>Pro + personal mentorship with Jeet Sir</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#FDC700' }}>₹1299</div>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#94A3B8' }}>/6 months</div>
+                </div>
+              </div>
+
+              {/* Annual Elite */}
+              <div style={{ border: '1.5px solid #E5E7EB', borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '20px' }}>🏆</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#101828' }}>Annual Elite</div>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6B7280' }}>Full year + live classes + Interview prep</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#101828' }}>₹1999</div>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#6B7280' }}>/year</div>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <a href="/dashboard/free-trial" style={{ display: 'block', textDecoration: 'none' }}>
+              <button style={{
+                width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
+                background: '#101828', color: '#FFFFFF',
+                fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px',
+                cursor: 'pointer', marginBottom: '10px',
+              }}>
+                View All Plans &amp; Start Free Trial →
+              </button>
+            </a>
+            <div style={{ textAlign: 'center', fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9CA3AF', cursor: 'pointer' }}
+              onClick={() => setShowProModal(false)}>
+              Continue with free tier
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main scrollable content */}
       <main className="flex-1 overflow-y-auto" style={{ background: '#F9FAFB' }}>
 
         {/* ── Hero Area (Full Width) ── */}
-        <div style={{ textAlign: 'center', padding: 'clamp(28px, 3vw, 48px) clamp(16px, 1.5vw, 24px) clamp(16px, 1.4vw, 24px)', maxWidth: '1320px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', padding: 'clamp(28px, 2.5vw, 40px) clamp(16px, 1.5vw, 24px) clamp(14px, 1.2vw, 20px)', maxWidth: '1320px', margin: '0 auto' }}>
 
             {/* Badge pill */}
             <div style={{
@@ -214,13 +347,10 @@ function MockTestsPageInner() {
               fontFamily: 'Inter, sans-serif',
               fontWeight: 600,
               fontSize: '12px',
-              lineHeight: '16px',
-              letterSpacing: '0px',
               padding: '4px 14px',
               borderRadius: '999px',
-              marginBottom: '20px',
+              marginBottom: '14px',
               border: '1px solid #0F172B',
-              boxShadow: '0px 1px 3px 0px #0000001A',
             }}>
               📊 India&apos;s #1 UPSC Mock Test Platform
             </div>
@@ -229,14 +359,13 @@ function MockTestsPageInner() {
             <h1 style={{
               fontFamily: 'Inter, sans-serif',
               fontWeight: 700,
-              fontSize: '48px',
-              lineHeight: '48px',
-              letterSpacing: '0px',
+              fontSize: '42px',
+              lineHeight: '50px',
               color: '#101828',
-              marginBottom: '16px',
+              marginBottom: '8px',
             }}>
               Build Your{' '}
-              <span style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontStyle: 'italic', fontSize: '48px', lineHeight: '48px', color: '#C68A0B' }}>Perfect</span>{' '}
+              <span style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontStyle: 'italic', fontSize: '42px', lineHeight: '50px', color: '#C68A0B' }}>Perfect</span>{' '}
               Mock Test
             </h1>
 
@@ -244,37 +373,25 @@ function MockTestsPageInner() {
             <p style={{
               fontFamily: 'Inter, sans-serif',
               fontWeight: 400,
-              fontSize: '16px',
-              lineHeight: '24px',
-              letterSpacing: '0px',
+              fontSize: '15px',
+              lineHeight: '22px',
               color: '#4A5565',
-              marginBottom: '0px',
+              marginBottom: '20px',
             }}>
-              Adaptive questions · Real exam environment · Detailed analytics.
-            </p>
-            <p style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 400,
-              fontSize: '16px',
-              lineHeight: '24px',
-              letterSpacing: '0px',
-              color: '#4A5565',
-              marginBottom: '28px',
-            }}>
-              Everything free. Add as much it.
+              Adaptive questions · Real exam environment · Detailed analytics. Everything free.
             </p>
 
             {/* Stats Container */}
             <div style={{
               background: '#FFFFFF',
-              borderRadius: '24px',
+              borderRadius: '16px',
               border: '0.8px solid #E5E7EB',
-              boxShadow: '0px 1px 3px 0px #0000001A, 0px 1px 2px -1px #0000001A',
-              padding: '24px 32px',
+              boxShadow: '0px 1px 3px 0px #0000001A',
+              padding: '20px 36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              maxWidth: '614px',
+              maxWidth: '600px',
               margin: '0 auto',
             }}>
               {[
@@ -288,9 +405,8 @@ function MockTestsPageInner() {
                     <div style={{
                       fontFamily: 'Arimo, sans-serif',
                       fontWeight: 700,
-                      fontSize: '36px',
+                      fontSize: '32px',
                       lineHeight: '40px',
-                      letterSpacing: '0px',
                       color: stat.color,
                       fontVariantEmoji: 'text' as React.CSSProperties['fontVariantEmoji'],
                     }}>
@@ -301,9 +417,8 @@ function MockTestsPageInner() {
                     <div style={{
                       fontFamily: 'Arimo, sans-serif',
                       fontWeight: 400,
-                      fontSize: '14px',
-                      lineHeight: '20px',
-                      letterSpacing: '0px',
+                      fontSize: '11px',
+                      lineHeight: '16px',
                       color: '#6A7282',
                       textAlign: 'center',
                     }}>
@@ -321,63 +436,50 @@ function MockTestsPageInner() {
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
-              borderRadius: '26843500px',
-              padding: '8px',
-              gap: '0px',
+              borderRadius: '999px',
+              padding: '5px',
               background: '#FFFFFF',
               border: '0.8px solid #E5E7EB',
-              boxShadow: '0px 1px 3px 0px #0000001A, 0px 1px 2px -1px #0000001A',
-              marginTop: '28px',
+              boxShadow: '0px 1px 3px 0px #0000001A',
+              marginTop: '22px',
             }}>
               <button
                 onClick={() => setSelectedExamMode('prelims')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
-                  paddingLeft: '32px',
-                  paddingRight: '32px',
-                  height: '64px',
-                  borderRadius: '26843500px',
+                  gap: '10px',
+                  paddingLeft: '30px',
+                  paddingRight: '30px',
+                  height: '58px',
+                  borderRadius: '999px',
                   border: 'none',
                   cursor: 'pointer',
                   background: selectedExamMode === 'prelims' ? '#0F172B' : 'transparent',
                   transition: 'all 0.2s ease',
                 }}
               >
-                <img src="/9k.png" alt="Prelims" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
-                <span style={{
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 700,
-                  fontSize: '18px',
-                  lineHeight: '28px',
-                  color: selectedExamMode === 'prelims' ? '#FFFFFF' : '#4A5565',
-                }}>Prelims</span>
+                <img src="/9k.png" alt="Prelims" style={{ width: '22px', height: '22px', objectFit: 'contain', flexShrink: 0 }} />
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '17px', color: selectedExamMode === 'prelims' ? '#FFFFFF' : '#4A5565' }}>Prelims</span>
               </button>
               <button
                 onClick={() => setSelectedExamMode('mains')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
-                  paddingLeft: '32px',
-                  paddingRight: '32px',
-                  height: '64px',
-                  borderRadius: '26843500px',
+                  gap: '10px',
+                  paddingLeft: '30px',
+                  paddingRight: '30px',
+                  height: '58px',
+                  borderRadius: '999px',
                   border: 'none',
                   cursor: 'pointer',
                   background: selectedExamMode === 'mains' ? '#0F172B' : 'transparent',
                   transition: 'all 0.2s ease',
                 }}
               >
-                <img src="/8k.png" alt="Mains" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
-                <span style={{
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 700,
-                  fontSize: '18px',
-                  lineHeight: '28px',
-                  color: selectedExamMode === 'mains' ? '#FFFFFF' : '#4A5565',
-                }}>Mains</span>
+                <img src="/8k.png" alt="Mains" style={{ width: '22px', height: '22px', objectFit: 'contain', flexShrink: 0 }} />
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '17px', color: selectedExamMode === 'mains' ? '#FFFFFF' : '#4A5565' }}>Mains</span>
               </button>
             </div>
 
@@ -394,7 +496,7 @@ function MockTestsPageInner() {
           </div>
 
         {/* ── Two Column Layout: Steps + Test Summary ── */}
-        <div style={{ display: 'flex', gap: 'clamp(16px, 1.4vw, 24px)', padding: '0 clamp(16px, 1.5vw, 24px) clamp(20px, 2vw, 36px)', maxWidth: '1320px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', gap: 'clamp(10px, 1vw, 16px)', padding: '0 clamp(12px, 1.2vw, 20px) clamp(12px, 1.2vw, 20px)', maxWidth: '1320px', margin: '0 auto' }}>
 
         {/* ── Left Column: Steps ── */}
         <div style={{ flex: '1 1 0', minWidth: 0 }}>
@@ -403,35 +505,29 @@ function MockTestsPageInner() {
           <div style={{
             background: '#FFFFFF',
             border: '1px solid #E5E7EB',
-            borderRadius: '24px',
-            padding: '32px',
-            marginBottom: 'clamp(16px, 1.4vw, 24px)',
+            borderRadius: '18px',
+            padding: '24px 28px',
+            marginBottom: 'clamp(14px, 1.2vw, 20px)',
+            boxShadow: '0 4px 24px 0 rgba(16,24,40,0.07), 0 1.5px 6px 0 rgba(16,24,40,0.04)',
           }}>
             {/* Step Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
               <div style={{
                 width: '32px',
                 height: '32px',
-                borderRadius: '26843500px',
+                borderRadius: '50%',
                 background: '#0F172B',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
               }}>
-                <span style={{
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 700,
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  color: '#FFFFFF',
-                }}>1</span>
+                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#FFFFFF' }}>1</span>
               </div>
               <span style={{
                 fontFamily: 'Inter, sans-serif',
                 fontWeight: 700,
                 fontSize: '14px',
-                lineHeight: '20px',
                 letterSpacing: '0.35px',
                 textTransform: 'uppercase' as const,
                 color: '#101828',
@@ -440,20 +536,19 @@ function MockTestsPageInner() {
               </span>
             </div>
 
-            {/* Subtitle */}
+            {/* Select paper type label */}
             <div style={{
               fontFamily: 'Inter, sans-serif',
-              fontWeight: 400,
+              fontWeight: 700,
               fontSize: '14px',
-              lineHeight: '20px',
-              color: '#4A5565',
-              marginBottom: '20px',
+              color: '#17223E',
+              marginBottom: '12px',
             }}>
               Select paper type
             </div>
 
             {/* Paper Type Cards */}
-            <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' as const }}>
               {(selectedExamMode === 'mains' ? mainsPaperTypes : prelimsPaperTypes).map(paper => {
                 const isSelected = selectedPaperType === paper.id;
                 return (
@@ -462,12 +557,11 @@ function MockTestsPageInner() {
                     onClick={() => setSelectedPaperType(paper.id)}
                     style={{
                       flex: '1 1 0',
-                      minWidth: '280px',
-                      height: '179px',
+                      minWidth: selectedExamMode === 'mains' ? '110px' : '190px',
                       background: isSelected ? '#EFF6FF' : '#F9FAFB',
                       border: isSelected ? '1.6px solid #BEDBFF' : '1.6px solid #E5E7EB',
-                      borderRadius: '16px',
-                      padding: '20px',
+                      borderRadius: '14px',
+                      padding: '16px 16px',
                       cursor: 'pointer',
                       textAlign: 'left',
                       position: 'relative',
@@ -476,51 +570,137 @@ function MockTestsPageInner() {
                       flexDirection: 'column' as const,
                     }}
                   >
+                    {(paper as { emoji?: string }).emoji && (
+                      <div style={{ fontSize: '26px', marginBottom: '6px', lineHeight: 1 }}>
+                        {(paper as { emoji?: string }).emoji}
+                      </div>
+                    )}
                     {(paper as { icon?: string }).icon && (
-                      <div style={{ marginBottom: '12px' }}>
-                        <img src={(paper as { icon?: string }).icon} alt={paper.label} style={{ width: '36px', height: '40px', objectFit: 'contain' }} />
+                      <div style={{ marginBottom: '5px' }}>
+                        <img src={(paper as { icon?: string }).icon} alt={paper.label} style={{ width: '24px', height: '28px', objectFit: 'contain' }} />
                       </div>
                     )}
                     {(paper as { isDefault?: boolean }).isDefault && (
                       <span style={{
                         position: 'absolute',
-                        top: '16px',
-                        right: '16px',
+                        top: '8px',
+                        right: '8px',
                         background: '#FDC700',
                         color: '#101828',
                         fontFamily: 'Inter, sans-serif',
                         fontWeight: 700,
-                        fontSize: '12px',
-                        lineHeight: '16px',
-                        padding: '4px 12px',
-                        borderRadius: '26843500px',
+                        fontSize: '10px',
+                        padding: '2px 6px',
+                        borderRadius: '999px',
                       }}>
                         DEFAULT
                       </span>
                     )}
-                    <div style={{
-                      fontFamily: 'Inter, sans-serif',
-                      fontWeight: 700,
-                      fontSize: '18px',
-                      lineHeight: '28px',
-                      color: '#101828',
-                      marginBottom: '4px',
-                    }}>
+                    <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#101828', marginBottom: '3px' }}>
                       {paper.label}
                     </div>
-                    <div style={{
-                      fontFamily: 'Inter, sans-serif',
-                      fontWeight: 400,
-                      fontSize: '14px',
-                      lineHeight: '20px',
-                      color: '#4A5565',
-                    }}>
+                    <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '13px', color: '#4A5565', lineHeight: 1.4 }}>
                       {paper.description}
                     </div>
                   </button>
                 );
               })}
             </div>
+
+            {/* Focus on a Specific Subject */}
+            <div style={{
+              background: '#F0F4FF',
+              borderRadius: '14px',
+              padding: '16px 20px',
+            }}>
+              <div style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 700,
+                fontSize: '13px',
+                letterSpacing: '0.5px',
+                color: '#17223E',
+                marginBottom: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}>
+                🎯 FOCUS ON A SPECIFIC SUBJECT
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {subjects.map(subj => {
+                  const isSelected = selectedSubject === subj.name;
+                  return (
+                    <button
+                      key={subj.name}
+                      onClick={() => setSelectedSubject(subj.name)}
+                      style={{
+                        background: isSelected ? '#17223E' : '#FFF',
+                        color: isSelected ? '#FFF' : '#374151',
+                        border: isSelected ? '1.5px solid #17223E' : '1.5px solid #E5E7EB',
+                        borderRadius: '999px',
+                        padding: '6px 16px',
+                        fontFamily: 'Inter, sans-serif',
+                        fontWeight: 600,
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                      }}
+                    >
+                      {subjectEmojiMap[subj.name] && (
+                        <span style={{ fontSize: '14px', lineHeight: 1 }}>{subjectEmojiMap[subj.name]}</span>
+                      )}
+                      {subj.name}
+                      {subj.count > 0 && (
+                        <span style={{ opacity: 0.7, fontWeight: 500, fontSize: 'clamp(11px, 0.7vw, 13px)' }}>{subj.count}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Optional Subject (Mains only) */}
+            {selectedExamMode === 'mains' && (
+              <div style={{ marginTop: '20px' }}>
+                <div style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  color: '#17223E',
+                  marginBottom: '12px',
+                }}>
+                  Optional Subject
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(6px, 0.45vw, 10px)' }}>
+                  {optionalSubjects.map(opt => {
+                    const isSelected = selectedOptional === opt;
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => setSelectedOptional(isSelected ? null : opt)}
+                        style={{
+                          background: isSelected ? '#17223E' : '#FFF',
+                          color: isSelected ? '#FFF' : '#374151',
+                          border: isSelected ? '1.5px solid #17223E' : '1.5px solid #E5E7EB',
+                          borderRadius: '999px',
+                          padding: 'clamp(5px, 0.4vw, 7px) clamp(12px, 0.9vw, 18px)',
+                          fontFamily: 'Inter, sans-serif',
+                          fontWeight: 600,
+                          fontSize: 'clamp(12px, 0.78vw, 13px)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── Loading Spinner ── */}
@@ -578,20 +758,27 @@ function MockTestsPageInner() {
           {!loading && (
           <div style={cardStyle}>
                 <StepHeader step={2} label="Question Source" />
-                <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 'clamp(8px, 0.6vw, 12px)', overflowX: 'auto' }}>
+                <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '8px', overflowX: 'auto' }}>
               {questionSources.map(src => {
                 const isSelected = selectedSource === src.id;
                 return (
                   <button
                     key={src.id}
-                    onClick={() => setSelectedSource(src.id)}
+                    onClick={() => {
+                      if ((src as any).pro) {
+                        setProModalFeature(src.label);
+                        setShowProModal(true);
+                      } else {
+                        setSelectedSource(src.id);
+                      }
+                    }}
                     style={{
                       flex: '1 1 0',
-                      minWidth: '120px',
+                      minWidth: '110px',
                       background: isSelected ? '#EFF6FF' : '#FFF',
                       border: isSelected ? '2px solid #155DFC' : '1.5px solid #E5E7EB',
                       borderRadius: '14px',
-                      padding: 'clamp(14px, 1.1vw, 20px)',
+                      padding: '16px 16px',
                       cursor: 'pointer',
                       textAlign: 'left',
                       position: 'relative',
@@ -614,13 +801,13 @@ function MockTestsPageInner() {
                         PRO
                       </span>
                     )}
-                    <div style={{ marginBottom: '6px' }}>
-                      <img src={(src as { icon?: string }).icon} alt={src.label} style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+                    <div style={{ marginBottom: '8px' }}>
+                      <img src={(src as { icon?: string }).icon} alt={src.label} style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
                     </div>
-                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 700, fontSize: 'clamp(13px, 0.85vw, 15px)', color: '#101828', marginBottom: '4px' }}>
+                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#101828', marginBottom: '4px' }}>
                       {src.label}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 'clamp(11px, 0.72vw, 13px)', color: '#6B7280', lineHeight: 1.4 }}>
+                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: '12px', color: '#6B7280', lineHeight: 1.4 }}>
                       {src.description}
                     </div>
                   </button>
@@ -630,184 +817,11 @@ function MockTestsPageInner() {
           </div>
           )}
 
-          {/* ── Step 2: Subject Filter ── */}
+
+          {/* ── Step 3: Number of Questions ── */}
           {!loading && (
           <div style={cardStyle}>
-            <StepHeader step={2} label="Subject Filter" />
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(8px, 0.55vw, 10px)', marginBottom: 'clamp(12px, 1vw, 16px)' }}>
-              {subjects.map(subj => {
-                const isSelected = selectedSubject === subj.name;
-                return (
-                  <button
-                    key={subj.name}
-                    onClick={() => setSelectedSubject(subj.name)}
-                    style={{
-                      background: isSelected ? '#17223E' : '#FFF',
-                      color: isSelected ? '#FFF' : '#374151',
-                      border: isSelected ? '1.5px solid #17223E' : '1.5px solid #E5E7EB',
-                      borderRadius: '999px',
-                      padding: 'clamp(6px, 0.45vw, 8px) clamp(14px, 1vw, 20px)',
-                      fontFamily: 'var(--font-inter), Inter, sans-serif',
-                      fontWeight: 600,
-                      fontSize: 'clamp(12px, 0.8vw, 14px)',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    {subj.name}
-                    {subj.count > 0 && (
-                      <span style={{ opacity: 0.7, fontWeight: 500, fontSize: 'clamp(11px, 0.7vw, 13px)' }}>{subj.count}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            <div style={{
-              background: '#17223E',
-              color: '#FFF',
-              borderRadius: '12px',
-              padding: 'clamp(10px, 0.75vw, 14px) clamp(16px, 1.2vw, 22px)',
-              fontFamily: 'var(--font-inter), Inter, sans-serif',
-              fontSize: 'clamp(12px, 0.78vw, 14px)',
-              fontWeight: 500,
-            }}>
-              Scroll to explore all subjects →
-            </div>
-          </div>
-          )}
-
-          {/* ── Step 3: Exam Mode ── */}
-          {!loading && (
-          <div style={cardStyle}>
-            <StepHeader step={3} label="Exam Mode" />
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(10px, 0.8vw, 14px)', marginBottom: 'clamp(14px, 1.1vw, 20px)' }}>
-              {examModes.map(mode => {
-                const isSelected = selectedExamMode === mode.id;
-                const isMains = mode.id === 'mains';
-                return (
-                  <button
-                    key={mode.id}
-                    onClick={() => setSelectedExamMode(mode.id)}
-                    style={{
-                      flex: '1 1 clamp(200px, 20vw, 280px)',
-                      background: isMains && isSelected ? '#17223E' : isSelected ? '#EFF6FF' : '#FFF',
-                      border: isMains && isSelected ? '2px solid #FDC700' : isSelected ? '2px solid #155DFC' : '1.5px solid #E5E7EB',
-                      borderRadius: '14px',
-                      padding: 'clamp(16px, 1.3vw, 24px)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      color: isMains && isSelected ? '#FFF' : '#101828',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 700, fontSize: 'clamp(15px, 1vw, 18px)', marginBottom: '4px' }}>
-                      {mode.label}
-                    </div>
-                    <div style={{
-                      fontFamily: 'var(--font-inter), Inter, sans-serif',
-                      fontSize: 'clamp(12px, 0.78vw, 14px)',
-                      color: isMains && isSelected ? '#CBD5E1' : '#6B7280',
-                    }}>
-                      {mode.description}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Conditional: Mains selected */}
-            {selectedExamMode === 'mains' && (
-              <>
-                {/* Paper Type */}
-                <div style={{ marginBottom: 'clamp(14px, 1.1vw, 20px)' }}>
-                  <div style={{
-                    fontFamily: 'var(--font-inter), Inter, sans-serif',
-                    fontWeight: 700,
-                    fontSize: 'clamp(13px, 0.85vw, 15px)',
-                    color: '#17223E',
-                    marginBottom: 'clamp(10px, 0.8vw, 14px)',
-                  }}>
-                    Select paper type
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(10px, 0.8vw, 14px)' }}>
-                    {mainsPaperTypes.map(paper => {
-                      const isSelected = selectedPaperType === paper.id;
-                      return (
-                        <button
-                          key={paper.id}
-                          onClick={() => setSelectedPaperType(paper.id)}
-                          style={{
-                            flex: '1 1 clamp(180px, 18vw, 220px)',
-                            background: isSelected ? '#EFF6FF' : '#FFF',
-                            border: isSelected ? '2px solid #155DFC' : '1.5px solid #E5E7EB',
-                            borderRadius: '12px',
-                            padding: 'clamp(12px, 1vw, 18px)',
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 700, fontSize: 'clamp(13px, 0.85vw, 15px)', color: '#101828', marginBottom: '3px' }}>
-                            {paper.label}
-                          </div>
-                          <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 'clamp(11px, 0.7vw, 12px)', color: '#6B7280', lineHeight: 1.4 }}>
-                            {paper.description}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Optional Subject */}
-                <div>
-                  <div style={{
-                    fontFamily: 'var(--font-inter), Inter, sans-serif',
-                    fontWeight: 700,
-                    fontSize: 'clamp(13px, 0.85vw, 15px)',
-                    color: '#17223E',
-                    marginBottom: 'clamp(10px, 0.8vw, 14px)',
-                  }}>
-                    Optional Subject
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(6px, 0.45vw, 10px)' }}>
-                    {optionalSubjects.map(opt => {
-                      const isSelected = selectedOptional === opt;
-                      return (
-                        <button
-                          key={opt}
-                          onClick={() => setSelectedOptional(isSelected ? null : opt)}
-                          style={{
-                            background: isSelected ? '#17223E' : '#FFF',
-                            color: isSelected ? '#FFF' : '#374151',
-                            border: isSelected ? '1.5px solid #17223E' : '1.5px solid #E5E7EB',
-                            borderRadius: '999px',
-                            padding: 'clamp(5px, 0.4vw, 7px) clamp(12px, 0.9vw, 18px)',
-                            fontFamily: 'var(--font-inter), Inter, sans-serif',
-                            fontWeight: 600,
-                            fontSize: 'clamp(12px, 0.78vw, 13px)',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-          )}
-
-          {/* ── Step 4: Number of Questions ── */}
-          {!loading && (
-          <div style={cardStyle}>
-            <StepHeader step={4} label="Number of Questions" />
+            <StepHeader step={3} label="Number of Questions" />
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(4px, 0.4vw, 8px)', marginBottom: 'clamp(16px, 1.2vw, 22px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(18px, 1.5vw, 28px)' }}>
                 <button
@@ -1042,10 +1056,10 @@ function MockTestsPageInner() {
           </div>
           )}
 
-          {/* ── Step 5: Difficulty ── */}
+          {/* ── Step 4: Difficulty ── */}
           {!loading && (
           <div style={cardStyle}>
-            <StepHeader step={5} label="Difficulty" />
+            <StepHeader step={4} label="Difficulty" />
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(10px, 0.8vw, 14px)' }}>
               {difficulties.map(diff => {
                 const isSelected = selectedDifficulty === diff.id;

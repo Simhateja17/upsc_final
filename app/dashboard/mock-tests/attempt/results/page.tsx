@@ -101,8 +101,8 @@ function CircleScore({ pct }: { pct: number }) {
         strokeDashoffset={circ / 4}
         strokeLinecap="round"
       />
-      <text x="80" y="74" textAnchor="middle" fill="#FFFFFF" fontSize="36" fontWeight="700" fontFamily="Inter">{pct}%</text>
-      <text x="80" y="96" textAnchor="middle" fill="#99A1AF" fontSize="11" fontFamily="Inter" letterSpacing="1">SCORE</text>
+      <text x="80" y="70" textAnchor="middle" fill="#FFFFFF" fontSize="36" fontWeight="700" fontFamily="Inter">{pct}%</text>
+      <text x="80" y="90" textAnchor="middle" fill="#99A1AF" fontSize="11" fontFamily="Inter" letterSpacing="2">SCORE</text>
     </svg>
   );
 }

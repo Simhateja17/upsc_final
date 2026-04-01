@@ -78,7 +78,7 @@ const FeaturesGrid = () => {
   const features = get('features', defaultFeatures);
 
   return (
-    <section className="w-full py-[clamp(3rem,5.208vw,6.25rem)] panel-recessed" style={{ background: '#4A5565' }}>
+    <section className="w-full py-[clamp(3rem,5.208vw,6.25rem)]" style={{ background: '#F4F6FA' }}>
       <div className="w-full max-w-[85rem] mx-auto px-[clamp(2rem,6vw,8rem)]">
         {/* Section Heading */}
         <h2
