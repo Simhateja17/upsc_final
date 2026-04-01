@@ -35,12 +35,12 @@ interface StudyTask {
 }
 
 const borderColors: Record<string, string> = {
-  high: 'border-red-500',
-  medium: 'border-green-500',
-  low: 'border-yellow-500',
+  high: 'border-l-red-500',
+  medium: 'border-l-green-500',
+  low: 'border-l-yellow-500',
 };
 
-const borderColorsFallback = ['border-red-500', 'border-green-500', 'border-yellow-500'];
+const borderColorsFallback = ['border-l-red-500', 'border-l-green-500', 'border-l-yellow-500'];
 
 const AddTaskModal = ({ onClose, onTaskAdded }: { onClose: () => void; onTaskAdded: (task: StudyTask) => void }) => {
   const [title, setTitle] = useState('');
