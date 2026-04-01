@@ -35,12 +35,12 @@ interface StudyTask {
 }
 
 const borderColors: Record<string, string> = {
-  high: 'border-l-red-500',
-  medium: 'border-l-green-500',
-  low: 'border-l-yellow-500',
+  high: '#EF4444',
+  medium: '#22C55E',
+  low: '#EAB308',
 };
 
-const borderColorsFallback = ['border-l-red-500', 'border-l-green-500', 'border-l-yellow-500'];
+const borderColorsFallback = ['#EF4444', '#22C55E', '#EAB308'];
 
 const AddTaskModal = ({ onClose, onTaskAdded }: { onClose: () => void; onTaskAdded: (task: StudyTask) => void }) => {
   const [title, setTitle] = useState('');
@@ -579,7 +579,7 @@ const ResponsiveDashboardContent = () => {
           ) : (
             <>
               {displayTasks.map((task, index) => {
-                const borderClass = task.priority
+                const leftBorderColor = task.priority
                   ? (borderColors[task.priority] || borderColorsFallback[index % 3])
                   : borderColorsFallback[index % 3];
                 const timeLabel = task.startTime && task.endTime
@@ -589,8 +589,8 @@ const ResponsiveDashboardContent = () => {
                 return (
                   <div
                     key={task._id || task.id || index}
-                    className={`rounded-lg border border-[#E5E7EB] border-l-4 ${borderClass} p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-start justify-between bg-[#F3F4F6]`}
-                    style={{ boxShadow: '0 1px 1px rgba(16, 24, 40, 0.04)' }}
+                    className="rounded-lg border border-[#E5E7EB] border-l-4 p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-start justify-between bg-[#F3F4F6]"
+                    style={{ boxShadow: '0 1px 1px rgba(16, 24, 40, 0.04)', borderLeftColor: leftBorderColor }}
                   >
                     <div className="flex-1">
                       <h3 className="font-inter font-semibold text-[clamp(14px,0.94vw,16px)] text-[#1A1A1A] mb-2">
