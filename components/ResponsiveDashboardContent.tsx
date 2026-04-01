@@ -589,7 +589,7 @@ const ResponsiveDashboardContent = () => {
                 return (
                   <div
                     key={task._id || task.id || index}
-                    className="rounded-lg border border-[#E5E7EB] border-l-4 p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-start justify-between bg-[#F3F4F6]"
+                    className="rounded-lg border border-[#E5E7EB] border-l-4 p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-start justify-between bg-[#F9FAFB]"
                     style={{ boxShadow: '0 1px 1px rgba(16, 24, 40, 0.04)', borderLeftColor: leftBorderColor }}
                   >
                     <div className="flex-1">
