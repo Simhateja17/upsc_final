@@ -78,7 +78,7 @@ const PerformanceStatsWidget = () => {
         {/* Header */}
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
           <img
-            src="/image-removebg-preview (41) 1.png"
+            src="/image-removebg-preview (41) 1.svg"
             alt="Performance Stats"
             className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
           />
@@ -120,7 +120,7 @@ const PerformanceStatsWidget = () => {
                 }}
               >
                 <img
-                  src="/fire-icon-green.png"
+                  src="/fire-icon-green.svg"
                   alt="On Fire"
                   className="w-[clamp(16px,1.04vw,20px)] h-[clamp(16px,1.04vw,20px)]"
                   style={{ objectFit: 'contain' }}
@@ -290,7 +290,7 @@ const PerformanceStatsWidget = () => {
               }}
             >
               <img
-                src="/image-removebg-preview (24) 1.png"
+                src="/image-removebg-preview (24) 1.svg"
                 alt="30-Day Streak"
                 style={{ width: '70%', height: 'auto' }}
               />
@@ -308,7 +308,7 @@ const PerformanceStatsWidget = () => {
               }}
             >
               <img
-                src="/image-removebg-preview (40) 1.png"
+                src="/image-removebg-preview (40) 1.svg"
                 alt="Quick Learner"
                 style={{ width: '70%', height: 'auto' }}
               />
@@ -326,7 +326,7 @@ const PerformanceStatsWidget = () => {
               }}
             >
               <img
-                src="/image-removebg-preview (22) 1 (1).png"
+                src="/image-removebg-preview (22) 1 (1).svg"
                 alt="95% Accuracy"
                 style={{ width: '70%', height: 'auto' }}
               />
@@ -348,7 +348,7 @@ const PerformanceStatsWidget = () => {
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
           <img
-            src="/smart.png"
+            src="/smart.svg"
             alt="Smart Revision Tools"
             className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
           />
@@ -392,7 +392,7 @@ const PerformanceStatsWidget = () => {
             }}
           >
             <img
-              src="/mindmap.png"
+              src="/mindmap.svg"
               alt="Mindmaps"
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
@@ -427,7 +427,7 @@ const PerformanceStatsWidget = () => {
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
           <img
-            src="/settings.png"
+            src="/settings.svg"
             alt="Quick Settings"
             className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
           />

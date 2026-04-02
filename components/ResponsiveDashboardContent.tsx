@@ -420,7 +420,7 @@ const ResponsiveDashboardContent = () => {
           }}
         >
           <div className="flex items-center gap-2 mb-[clamp(1rem,1.25vw,1.5rem)]">
-            <img src="/image-removebg-preview (46) 1.png" alt="Today's Trio" className="w-[clamp(18px,1.25vw,22px)] h-[clamp(18px,1.25vw,22px)]" />
+            <img src="/image-removebg-preview (46) 1.svg" alt="Today's Trio" className="w-[clamp(18px,1.25vw,22px)] h-[clamp(18px,1.25vw,22px)]" />
             <h2 className="font-inter font-bold text-[clamp(18px,1.2vw,20px)] text-[#1A1A1A]">
               Today's Trio
             </h2>
@@ -440,7 +440,7 @@ const ResponsiveDashboardContent = () => {
               >
                 {isMcqCompleted && (
                   <div className="absolute top-4 right-4 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                    <img src="/image-removebg-preview (48) 1.png" alt="Completed" className="w-5 h-5" />
+                    <img src="/image-removebg-preview (48) 1.svg" alt="Completed" className="w-5 h-5" />
                   </div>
                 )}
 
@@ -463,7 +463,7 @@ const ResponsiveDashboardContent = () => {
                 <div className={`w-full ${isMcqCompleted ? 'bg-[#17223E]' : 'bg-[#17223E]'} text-white rounded-[8px] py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2`} role="button">
                   {isMcqCompleted ? (
                     <>
-                      <img src="/image-removebg-preview (48) 1.png" alt="Completed" className="w-5 h-5" />
+                      <img src="/image-removebg-preview (48) 1.svg" alt="Completed" className="w-5 h-5" />
                       Completed
                     </>
                   ) : (
@@ -481,7 +481,7 @@ const ResponsiveDashboardContent = () => {
                 <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">AI Evaluation</div>
 
                 <div className="flex items-center gap-3 mb-4">
-                  <img src="/image-removebg-preview (31) 1.png" alt="Editorial" className="w-7 h-7" />
+                  <img src="/image-removebg-preview (31) 1.svg" alt="Editorial" className="w-7 h-7" />
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                     Daily Editorial
                   </h3>
@@ -509,7 +509,7 @@ const ResponsiveDashboardContent = () => {
                 </div>
 
                 <div className="flex items-center gap-3 mb-4">
-                  <img src="/image-removebg-preview (31) 1.png" alt="Mains" className="w-7 h-7" />
+                  <img src="/image-removebg-preview (31) 1.svg" alt="Mains" className="w-7 h-7" />
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                     Mains Question
                   </h3>
@@ -542,7 +542,7 @@ const ResponsiveDashboardContent = () => {
         >
           <div className="flex items-center justify-between mb-[clamp(1rem,1.25vw,1.5rem)]">
             <div className="flex items-center gap-2">
-              <img src="/image-removebg-preview (5) 1.png" alt="Today's Study Tasks" className="w-[clamp(18px,1.25vw,22px)] h-[clamp(18px,1.25vw,22px)]" />
+              <img src="/image-removebg-preview (5) 1.svg" alt="Today's Study Tasks" className="w-[clamp(18px,1.25vw,22px)] h-[clamp(18px,1.25vw,22px)]" />
               <h2 className="font-inter font-bold text-[clamp(18px,1.2vw,20px)] text-[#1A1A1A]">
                 Today's Study Tasks
               </h2>
