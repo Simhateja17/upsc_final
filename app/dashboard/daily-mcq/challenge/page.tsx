@@ -12,6 +12,8 @@ interface Question {
   category: string;
   difficulty: string;
   options: { id: string; text: string }[];
+  correctOption: string;
+  explanation: string | null;
 }
 
 export default function DailyMcqChallengePage() {
@@ -24,6 +26,7 @@ export default function DailyMcqChallengePage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
 
@@ -55,8 +58,14 @@ export default function DailyMcqChallengePage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [loading]);
 
+  const handleSelectAnswer = (questionId: string, optionId: string) => {
+    // Once answered, don't allow changing
+    if (answers[questionId]) return;
+    setAnswers(prev => ({ ...prev, [questionId]: optionId }));
+  };
+
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (submitting || submitted) return;
     setSubmitting(true);
     if (timerRef.current) clearInterval(timerRef.current);
 
@@ -68,7 +77,8 @@ export default function DailyMcqChallengePage() {
 
     try {
       await dailyMcqService.submit(answerArray, timeTaken);
-      router.push('/dashboard/daily-mcq/results');
+      setSubmitted(true);
+      setSubmitting(false);
     } catch {
       setSubmitting(false);
     }
@@ -87,6 +97,12 @@ export default function DailyMcqChallengePage() {
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
+  const hasAnswered = !!answers[q.id];
+
+  // Stats for submitted state
+  const totalAnswered = Object.keys(answers).length;
+  const correctCount = questions.filter(qu => answers[qu.id] && answers[qu.id] === qu.correctOption).length;
+  const wrongCount = questions.filter(qu => answers[qu.id] && answers[qu.id] !== qu.correctOption).length;
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: '#FFFFFF' }}>
@@ -108,10 +124,17 @@ export default function DailyMcqChallengePage() {
                   </h1>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-xs font-bold text-[#E7000B] flex items-center gap-2 px-4 py-2 bg-[#FEF2F2] border border-[#FFC9C9] rounded-full whitespace-nowrap">
-                    <span className="w-1.5 h-1.5 bg-[#E7000B] rounded-full"></span>
-                    Todays Challenge is LIVE
-                  </span>
+                  {submitted ? (
+                    <span className="text-xs font-bold text-[#00A63E] flex items-center gap-2 px-4 py-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-full whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 bg-[#00A63E] rounded-full"></span>
+                      Submitted — {correctCount}/{questions.length} Correct
+                    </span>
+                  ) : (
+                    <span className="text-xs font-bold text-[#E7000B] flex items-center gap-2 px-4 py-2 bg-[#FEF2F2] border border-[#FFC9C9] rounded-full whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 bg-[#E7000B] rounded-full"></span>
+                      Todays Challenge is LIVE
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -122,41 +145,131 @@ export default function DailyMcqChallengePage() {
                   <img src="/tag-one.png" alt="Tag" className="w-4 h-4" />
                   <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px]">{q.category} • {q.difficulty}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <img src="/timer-icon.png" alt="Timer" className="w-10 h-10" />
-                  <div className="flex flex-col items-end">
-                    <span className={`font-arimo font-bold text-xl leading-none ${timeLeft < 60 ? 'text-red-600' : 'text-[#101828]'}`}>
-                      {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-                    </span>
-                    <span className="text-[10px] text-gray-500 uppercase tracking-wide">TIME LEFT</span>
+                {!submitted && (
+                  <div className="flex items-center gap-2">
+                    <img src="/timer-icon.png" alt="Timer" className="w-10 h-10" />
+                    <div className="flex flex-col items-end">
+                      <span className={`font-arimo font-bold text-xl leading-none ${timeLeft < 60 ? 'text-red-600' : 'text-[#101828]'}`}>
+                        {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+                      </span>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-wide">TIME LEFT</span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
             <div className="mb-6">
-              <p className="font-arimo font-bold text-[#101828] text-sm mb-3">
+              <p className="font-arimo font-bold text-[#101828] text-sm mb-6">
                 <span className="font-bold">Question {q.questionNum}:</span> {q.questionText}
               </p>
 
-              <p className="font-arimo text-[#101828] text-sm mb-6">
-                Which of the statements given above are correct?
-              </p>
-
               <div className="space-y-3">
-                {q.options.map((option: any) => (
-                  <button
-                    key={option.id}
-                    onClick={() => setAnswers(prev => ({ ...prev, [q.id]: option.id }))}
-                    className={`w-full flex items-center gap-4 p-4 border rounded-lg transition-colors bg-white text-left ${
-                      answers[q.id] === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-400'
-                    }`}
-                  >
-                    <span className="font-arimo font-bold text-[#101828] text-base">{option.id}</span>
-                    <span className="font-arimo text-[#101828] text-sm">{option.text}</span>
-                  </button>
-                ))}
+                {q.options.map((option: any) => {
+                  const isSelected = answers[q.id] === option.id;
+                  const isCorrectOpt = option.id === q.correctOption;
+                  const isWrongSelected = isSelected && !isCorrectOpt;
+
+                  let bg = '#FFFFFF';
+                  let border = '2px solid #E2E8F0';
+                  let circleColor = '#CBD5E1';
+                  let circleBg = 'transparent';
+                  let circleText = '#64748B';
+                  let circleIcon: string = option.id;
+                  let textColor = '#1E293B';
+                  let fontWeight = 400;
+
+                  if (hasAnswered) {
+                    if (isCorrectOpt) {
+                      bg = '#F0FDF4';
+                      border = '2px solid #00C950';
+                      circleColor = '#00C950';
+                      circleBg = '#DCFCE7';
+                      circleText = '#00C950';
+                      circleIcon = '✓';
+                      textColor = '#14532D';
+                      fontWeight = 600;
+                    } else if (isWrongSelected) {
+                      bg = '#FEF2F2';
+                      border = '2px solid #FB2C36';
+                      circleColor = '#FB2C36';
+                      circleBg = '#FEE2E2';
+                      circleText = '#FB2C36';
+                      circleIcon = '✕';
+                      textColor = '#7F1D1D';
+                      fontWeight = 600;
+                    }
+                  } else if (isSelected) {
+                    bg = '#EFF6FF';
+                    border = '2px solid #2B7FFF';
+                    circleColor = '#2B7FFF';
+                    circleBg = '#DBEAFE';
+                    circleText = '#2B7FFF';
+                    fontWeight = 600;
+                  }
+
+                  return (
+                    <button
+                      key={option.id}
+                      onClick={() => handleSelectAnswer(q.id, option.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        padding: '16px 20px',
+                        borderRadius: '12px',
+                        border,
+                        background: bg,
+                        cursor: hasAnswered ? 'default' : 'pointer',
+                        textAlign: 'left' as const,
+                        transition: 'all 0.15s ease',
+                        width: '100%',
+                      }}
+                    >
+                      <span style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        border: `2px solid ${circleColor}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        fontSize: '14px',
+                        color: circleText,
+                        flexShrink: 0,
+                        background: circleBg,
+                      }}>
+                        {circleIcon}
+                      </span>
+                      <span style={{ fontSize: '15px', color: textColor, fontWeight }}>
+                        {option.text}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
+
+              {/* Explanation — shown after answering */}
+              {hasAnswered && q.explanation && (
+                <div style={{
+                  marginTop: '20px',
+                  background: '#EFF6FF',
+                  borderLeft: '4px solid #2B7FFF',
+                  borderRadius: '10px',
+                  padding: '16px 16px 16px 20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}>
+                  <span style={{ fontWeight: 600, fontSize: '14px', color: '#155DFC', lineHeight: '20px' }}>
+                    EXPLANATION
+                  </span>
+                  <span style={{ fontSize: '14px', fontWeight: 400, color: '#1C398E', lineHeight: '20px' }}>
+                    {q.explanation}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-between">
@@ -170,19 +283,50 @@ export default function DailyMcqChallengePage() {
               </button>
 
               <div className="flex items-center gap-2">
-                {questions.map((_, i) => (
-                  <button key={i} onClick={() => setCurrentQuestion(i)}
-                    className={`w-8 h-8 rounded-full font-arimo font-bold text-sm transition-all ${
-                      currentQuestion === i ? 'bg-[#00A63E] text-white'
-                        : answers[questions[i].id] ? 'bg-blue-100 text-blue-700'
-                        : 'text-[#6B7280] hover:bg-gray-100'
-                    }`}>
-                    {i + 1}
-                  </button>
-                ))}
+                {questions.map((qu, i) => {
+                  const answered = !!answers[qu.id];
+                  const isCorrect = answered && answers[qu.id] === qu.correctOption;
+                  const isWrong = answered && answers[qu.id] !== qu.correctOption;
+
+                  let bgColor = '';
+                  let txtColor = '#6B7280';
+
+                  if (currentQuestion === i) {
+                    bgColor = '#00A63E';
+                    txtColor = '#FFFFFF';
+                  } else if (isCorrect) {
+                    bgColor = '#DCFCE7';
+                    txtColor = '#14532D';
+                  } else if (isWrong) {
+                    bgColor = '#FEE2E2';
+                    txtColor = '#7F1D1D';
+                  }
+
+                  return (
+                    <button key={i} onClick={() => setCurrentQuestion(i)}
+                      className="w-8 h-8 rounded-full font-arimo font-bold text-sm transition-all"
+                      style={{
+                        background: bgColor || undefined,
+                        color: txtColor,
+                      }}
+                      onMouseEnter={(e) => { if (!bgColor) e.currentTarget.style.background = '#F3F4F6'; }}
+                      onMouseLeave={(e) => { if (!bgColor) e.currentTarget.style.background = ''; }}
+                    >
+                      {i + 1}
+                    </button>
+                  );
+                })}
               </div>
 
-              {currentQuestion === questions.length - 1 ? (
+              {submitted ? (
+                <button
+                  className="flex items-center gap-2 bg-[#17223E] text-white px-5 py-2 rounded-lg hover:bg-[#1E2875] transition-colors"
+                  onClick={() => router.push('/dashboard/daily-mcq/results')}
+                >
+                  <span className="font-arimo font-bold text-sm">View Results</span>
+                  <svg className="w-3 h-3" viewBox="0 0 16 16" fill="none"><path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+              ) : currentQuestion === questions.length - 1 ? (
                 <button
                   className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                   onClick={handleSubmit}
