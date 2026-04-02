@@ -197,16 +197,16 @@ export default function DailyEditorialPage() {
           <button
             className="flex items-center gap-2 font-arimo font-semibold"
             style={{
-              width: 'clamp(180px, 17.73vw, 237px)',
               height: 'clamp(40px, 3.81vw, 51px)',
               borderRadius: '20px',
               background: 'rgba(255,255,255,0.05)',
               boxShadow: '0px 4px 4px 0px rgba(0,0,0,0.25)',
               border: '1px solid #E5E7EB',
-              padding: '0 clamp(14px, 1.5vw, 20px)',
+              padding: '0 clamp(16px, 1.5vw, 20px)',
               fontSize: 'clamp(13px, 1.05vw, 14px)',
               color: '#17223E',
               backgroundColor: '#FFFFFF',
+              whiteSpace: 'nowrap',
             }}
           >
             {/* Arrow left */}

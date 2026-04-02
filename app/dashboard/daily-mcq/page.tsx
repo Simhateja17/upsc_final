@@ -51,6 +51,10 @@ export default function DailyMcqIntroPage() {
     );
   }
 
+  const displayTitle = mcq.title
+    .replace(/\s*(?:-{1,3}|\u2013|\u2014)\s*[^-\u2013\u2014]+$/u, '')
+    .trim();
+
   return (
     <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#ffffff' }}>
       {/* Main Content */}
@@ -59,11 +63,11 @@ export default function DailyMcqIntroPage() {
         <div className="card-elevated rounded-[16px] p-8 text-center" style={{ width: '605px', height: '630px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           {/* Icon */}
           <div className="flex justify-center mb-6">
-            <img src="/image-removebg-preview (22) 1.png" alt="Target Icon" className="w-[51px] h-[44px] object-contain" />
+            <img src="/icons/dashboard/daily-mcq.png" alt="Target Icon" className="w-[51px] h-[44px] object-contain" />
           </div>
 
           <h1 className="font-arimo font-bold text-[#101828] text-[24px] leading-[32px] mb-2">
-            {mcq.title}
+            {displayTitle || mcq.title}
           </h1>
 
           <p className="font-arimo text-[#667085] text-[14px] leading-[20px] mb-6">

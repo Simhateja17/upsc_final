@@ -420,7 +420,7 @@ const ResponsiveDashboardContent = () => {
           }}
         >
           <div className="flex items-center gap-2 mb-[clamp(1rem,1.25vw,1.5rem)]">
-            <img src="/image-removebg-preview (46) 1.svg" alt="Today's Trio" className="w-[clamp(18px,1.25vw,22px)] h-[clamp(18px,1.25vw,22px)]" />
+            <img src="/icons/dashboard/trio-header.png" alt="Today's Trio" className="w-[clamp(18px,1.25vw,22px)] h-[clamp(18px,1.25vw,22px)]" />
             <h2 className="font-inter font-bold text-[clamp(18px,1.2vw,20px)] text-[#1A1A1A]">
               Today's Trio
             </h2>
@@ -447,7 +447,7 @@ const ResponsiveDashboardContent = () => {
                 <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">AI Evaluation</div>
 
                 <div className="flex items-center gap-3 mb-4">
-                  <img src="/Text.png" alt="MCQ" className="w-7 h-7" />
+                  <img src="/icons/dashboard/daily-mcq.png" alt="MCQ" className="w-7 h-7" />
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                     Daily MCQ
                   </h3>
@@ -481,7 +481,7 @@ const ResponsiveDashboardContent = () => {
                 <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">AI Evaluation</div>
 
                 <div className="flex items-center gap-3 mb-4">
-                  <img src="/image-removebg-preview (31) 1.svg" alt="Editorial" className="w-7 h-7" />
+                  <img src="/icons/dashboard/editorial.png" alt="Editorial" className="w-7 h-7" />
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                     Daily Editorial
                   </h3>
@@ -509,7 +509,7 @@ const ResponsiveDashboardContent = () => {
                 </div>
 
                 <div className="flex items-center gap-3 mb-4">
-                  <img src="/image-removebg-preview (31) 1.svg" alt="Mains" className="w-7 h-7" />
+                  <img src="/icons/dashboard/mains.png" alt="Mains" className="w-7 h-7" />
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                     Mains Question
                   </h3>
@@ -542,7 +542,7 @@ const ResponsiveDashboardContent = () => {
         >
           <div className="flex items-center justify-between mb-[clamp(1rem,1.25vw,1.5rem)]">
             <div className="flex items-center gap-2">
-              <img src="/image-removebg-preview (5) 1.svg" alt="Today's Study Tasks" className="w-[clamp(18px,1.25vw,22px)] h-[clamp(18px,1.25vw,22px)]" />
+              <img src="/icons/dashboard/tasks-header.png" alt="Today's Study Tasks" className="w-[clamp(18px,1.25vw,22px)] h-[clamp(18px,1.25vw,22px)]" />
               <h2 className="font-inter font-bold text-[clamp(18px,1.2vw,20px)] text-[#1A1A1A]">
                 Today's Study Tasks
               </h2>

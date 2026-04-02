@@ -16,6 +16,29 @@ interface Question {
 
 type QuestionStatus = 'unattempted' | 'answered' | 'marked' | 'current';
 
+function normalizeDurationToSeconds(rawDuration: unknown, questionCount: number): number {
+  const fallbackMinutes = Math.max(1, Math.ceil(questionCount * 1.6));
+  const fallbackSeconds = fallbackMinutes * 60;
+
+  const parsed =
+    typeof rawDuration === 'number'
+      ? rawDuration
+      : typeof rawDuration === 'string'
+        ? Number(rawDuration)
+        : NaN;
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallbackSeconds;
+  }
+
+  // DB records may store duration in minutes; normalize to seconds for countdown.
+  if (parsed <= 240) {
+    return Math.round(parsed * 60);
+  }
+
+  return Math.round(parsed);
+}
+
 const SAMPLE_QUESTIONS: Question[] = [
   {
     id: 1,
@@ -157,9 +180,9 @@ function MockTestAttemptInner() {
           statuses[i] = i === 0 ? 'current' : 'unattempted';
         });
         setQuestionStatuses(statuses);
-        // Set timer based on question count (approx 1.6 min per question)
-        const duration = res.data?.duration || Math.ceil(qs.length * 1.6) * 60;
-        setTimeLeft(duration);
+        // Set timer based on API duration (minutes or seconds) with a safe fallback.
+        const durationSeconds = normalizeDurationToSeconds(res.data?.duration, qs.length);
+        setTimeLeft(durationSeconds);
       } catch (err: any) {
         if (!cancelled) {
           console.error('Failed to load questions:', err);
@@ -659,54 +682,40 @@ function MockTestAttemptInner() {
           boxSizing: 'border-box',
           display: 'flex',
           justifyContent: 'center',
-          overflow: 'hidden',
-          minHeight: 0,
+          overflow: 'visible',
         }}
       >
         <div
           style={{
             width: '100%',
             maxWidth: 1116,
-            height: '100%',
-            maxHeight: 848.7999877929688,
             display: 'flex',
             gap: 24,
             boxSizing: 'border-box',
+            alignItems: 'flex-start',
           }}
         >
         {/* ── Question Panel ── */}
-        <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
 
           {/* Question Card */}
           <div
-            className="questionCardScroll"
             style={{
               background: '#FFFFFF',
               borderRadius: 16,
               border: '1px solid #E5E7EB',
               padding: 24,
               boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)',
-              overflowY: 'auto',
-              overflowX: 'hidden',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              flex: 1,
+              overflow: 'visible',
             }}
           >
-            <style>{`
-              .questionCardScroll::-webkit-scrollbar { width: 0px; height: 0px; }
-              .questionCardScroll::-webkit-scrollbar-thumb { background: transparent; }
-            `}</style>
             {/* Question header row (pill + bookmark) */}
             <div
               style={{
-                width: 634.4000244140625,
-                height: 44,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginTop: 8.8,
-                marginLeft: 8.8,
+                marginTop: 8,
                 marginBottom: 16,
               }}
             >
@@ -761,8 +770,6 @@ function MockTestAttemptInner() {
             {/* Question Text (fixed frame per layout) */}
             <div
               style={{
-                width: 634.4,
-                height: 160,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 16,
@@ -772,14 +779,12 @@ function MockTestAttemptInner() {
             >
               <div
                 style={{
-                  width: 541,
-                  height: 56,
                   fontSize: 18,
                   fontWeight: 400,
                   color: '#17223E',
                   lineHeight: '28px',
                   letterSpacing: 0,
-                  whiteSpace: 'normal',
+                  whiteSpace: 'pre-line',
                 }}
               >
                 {questionTitle || currentQ.text}

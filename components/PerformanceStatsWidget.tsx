@@ -78,7 +78,7 @@ const PerformanceStatsWidget = () => {
         {/* Header */}
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
           <img
-            src="/image-removebg-preview (41) 1.svg"
+            src="/icons/dashboard/perf-header.png"
             alt="Performance Stats"
             className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
           />
@@ -290,7 +290,7 @@ const PerformanceStatsWidget = () => {
               }}
             >
               <img
-                src="/image-removebg-preview (24) 1.svg"
+                src="/icons/dashboard/badge-streak.png"
                 alt="30-Day Streak"
                 style={{ width: '70%', height: 'auto' }}
               />
@@ -308,7 +308,7 @@ const PerformanceStatsWidget = () => {
               }}
             >
               <img
-                src="/image-removebg-preview (40) 1.svg"
+                src="/icons/dashboard/badge-learner.png"
                 alt="Quick Learner"
                 style={{ width: '70%', height: 'auto' }}
               />
@@ -326,7 +326,7 @@ const PerformanceStatsWidget = () => {
               }}
             >
               <img
-                src="/image-removebg-preview (22) 1 (1).svg"
+                src="/icons/dashboard/badge-accuracy.png"
                 alt="95% Accuracy"
                 style={{ width: '70%', height: 'auto' }}
               />
@@ -348,7 +348,7 @@ const PerformanceStatsWidget = () => {
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
           <img
-            src="/smart.svg"
+            src="/icons/dashboard/target-sm.png"
             alt="Smart Revision Tools"
             className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
           />
@@ -392,7 +392,7 @@ const PerformanceStatsWidget = () => {
             }}
           >
             <img
-              src="/mindmap.svg"
+              src="/icons/dashboard/brain.png"
               alt="Mindmaps"
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
@@ -427,7 +427,7 @@ const PerformanceStatsWidget = () => {
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
           <img
-            src="/settings.svg"
+            src="/icons/dashboard/settings.png"
             alt="Quick Settings"
             className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
           />

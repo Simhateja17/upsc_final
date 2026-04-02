@@ -93,7 +93,7 @@ export default function DailyMcqChallengePage() {
       <main className="flex-1 px-[clamp(3rem,6.25vw,8rem)] py-8">
         <div className="max-w-[900px] mx-auto">
           <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 mb-6 hover:opacity-70 transition-opacity"
-            style={{ width: '237px', height: '51px', borderRadius: '20px', background: '#1C50D40D', fontFamily: 'Outfit, sans-serif', fontWeight: 600, fontSize: '22px', color: '#17223E' }}>
+            style={{ height: '51px', borderRadius: '20px', background: '#1C50D40D', fontFamily: 'Outfit, sans-serif', fontWeight: 600, fontSize: '22px', color: '#17223E', padding: '0 20px', whiteSpace: 'nowrap' }}>
             ← Back to dashboard
           </Link>
 
@@ -206,3 +206,4 @@ export default function DailyMcqChallengePage() {
     </div>
   );
 }
+

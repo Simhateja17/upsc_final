@@ -91,7 +91,7 @@ export default function NextStepsPage() {
           <div className="flex justify-center">
             <Link href="/dashboard">
               <button className="flex items-center justify-center gap-2 bg-white hover:opacity-70 transition-opacity font-arimo"
-                style={{ width: '212px', height: '51.2px', borderRadius: '10px', border: '1.6px solid #2B7FFF', fontSize: '16px', fontWeight: 400, color: '#155DFC' }}>
+                style={{ height: '51.2px', borderRadius: '10px', border: '1.6px solid #2B7FFF', fontSize: '16px', fontWeight: 400, color: '#155DFC', padding: '0 20px', whiteSpace: 'nowrap' }}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke="#155DFC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 Back to Dashboard
               </button>
