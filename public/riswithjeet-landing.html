@@ -8,8 +8,8 @@
 <style>
 :root {
   /* CHANGE 1: Royal Navy Blue palette */
-  --hero-bg: #070E1E;
-  --navy-deep: #070E1E;
+  --hero-bg: #061125;
+  --navy-deep: #061125;
   --navy: #0B1530;
   --navy-mid: #0F1E42;
   --navy-light: #132550;
@@ -19,6 +19,8 @@
   --gold: #E8B84B;
   --gold-light: #F5CC6A;
   --gold-dark: #C8960A;
+  --hero-base: #060C1C;
+  --hero-corner: #373533; /* top-left tint (1/3 area) */
   --emerald: #10B981;
   --cyan: #06B6D4;
   --rose: #F43F5E;
@@ -53,7 +55,7 @@ nav {
   position:fixed; top:0; left:0; right:0; z-index:200;
   display:flex; align-items:center; justify-content:space-between;
   padding:0 56px; height:66px;
-  background:rgba(7,14,30,0.95);
+  background:rgba(13,25,49,0.92);
   backdrop-filter:blur(24px) saturate(200%);
   border-bottom:1px solid rgba(255,255,255,0.06);
   transition:background 0.3s;
@@ -89,7 +91,10 @@ nav {
 ══════════════════════════════════════════ */
 .hero {
   min-height:100vh;
-  background:var(--navy-deep);
+  background:
+    radial-gradient(circle at 8% 12%, rgba(55,53,51,0.62) 0%, rgba(55,53,51,0.32) 22%, rgba(55,53,51,0.10) 46%, rgba(55,53,51,0) 66%),
+    linear-gradient(135deg, var(--hero-base) 0%, var(--hero-base) 100%);
+  background-color: var(--hero-base);
   position:relative;
   display:flex; flex-direction:column;
   align-items:center; justify-content:center; text-align:center;
@@ -107,25 +112,25 @@ nav {
 .hero::before {
   content:''; position:absolute; inset:0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.024) 1px, transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,0.024) 1px, transparent 1px);
+    linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.022) 1px, transparent 1px);
   background-size:48px 48px;
   pointer-events:none; z-index:1;
 }
 
-/* CHANGE 1: White/light glow – top-left corner */
+/* top-left corner glow – kept very subtle */
 .hero::after {
   content:''; position:absolute;
   top:-220px; left:-260px;
   width:840px; height:840px;
   background:radial-gradient(
     circle at 36% 36%,
-    rgba(243,236,224,0.22) 0%,
-    rgba(191,205,234,0.12) 29%,
-    rgba(89,123,186,0.08) 47%,
-    rgba(20,34,71,0) 72%
+    rgba(55,53,51,0.34) 0%,
+    rgba(55,53,51,0.18) 26%,
+    rgba(55,53,51,0.07) 52%,
+    rgba(55,53,51,0) 74%
   );
-  pointer-events:none; z-index:1; opacity:0.92;
+  pointer-events:none; z-index:1; opacity:0.5;
 }
 
 /* Small dim floating checkbox marks in grid */
@@ -1238,70 +1243,24 @@ window.addEventListener('scroll', () => {
   window.addEventListener('resize', () => { resize(); drawHero(); });
 
   function drawHero() {
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0,0,W,H);
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0,0,W,H);
+  
+      // Base gradient matching Figma hero (#0D1931 → #090F1F → #2E2C2D)
+      // Base fill
+      ctx.fillStyle = '#060C1C';
+      ctx.fillRect(0,0,W,H);
 
-    // Royal Navy Deep base
-    const bg = ctx.createLinearGradient(0,0,0,H);
-    bg.addColorStop(0,'#0A1328');
-    bg.addColorStop(0.42,'#06112A');
-    bg.addColorStop(1,'#040A18');
-    ctx.fillStyle = bg;
-    ctx.fillRect(0,0,W,H);
-
-    // Warm, soft corner bloom matching Figma hero
-    const tlGlow = ctx.createRadialGradient(-140, -120, 0, -140, -120, W*0.72);
-    tlGlow.addColorStop(0, 'rgba(246,240,228,0.18)');
-    tlGlow.addColorStop(0.28, 'rgba(196,210,236,0.10)');
-    tlGlow.addColorStop(0.52, 'rgba(90,122,185,0.07)');
-    tlGlow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = tlGlow;
-    ctx.fillRect(0,0,W,H);
-
-    // Center atmospheric navy glow
-    const centerGlow = ctx.createRadialGradient(W/2, -70, 0, W/2, -70, W*0.74);
-    centerGlow.addColorStop(0, 'rgba(24,56,142,0.24)');
-    centerGlow.addColorStop(0.42, 'rgba(13,38,104,0.17)');
-    centerGlow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = centerGlow;
-    ctx.fillRect(0,0,W,H);
-
-    // Subtle deep-blue shaping on right side
-    const rightGlow = ctx.createRadialGradient(W*0.9, H*0.32, 0, W*0.9, H*0.32, W*0.5);
-    rightGlow.addColorStop(0, 'rgba(21,50,124,0.14)');
-    rightGlow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = rightGlow;
-    ctx.fillRect(0,0,W,H);
-
-    // Vertical light rays (Figma style)
-    const rays = [
-      { x: W*0.17, opacity:0.042, width:1.5 },
-      { x: W*0.26, opacity:0.028, width:1.4 },
-      { x: W*0.36, opacity:0.024, width:1.2 },
-      { x: W*0.50, opacity:0.030, width:1.6 },
-      { x: W*0.63, opacity:0.020, width:1.2 },
-      { x: W*0.78, opacity:0.018, width:1.2 },
-      { x: W*0.88, opacity:0.020, width:1.1 },
-    ];
-    rays.forEach(r => {
-      const rg = ctx.createLinearGradient(0, 0, 0, H);
-      rg.addColorStop(0, 'rgba(84,135,223,0)');
-      rg.addColorStop(0.18, `rgba(84,135,223,${r.opacity})`);
-      rg.addColorStop(0.62, `rgba(84,135,223,${r.opacity * 0.78})`);
-      rg.addColorStop(1, 'rgba(84,135,223,0)');
-      ctx.fillStyle = rg;
-      ctx.fillRect(r.x, 0, r.width, H);
-    });
-
-    // Edge vignette to keep focus centered
-    const vignette = ctx.createRadialGradient(W/2, H/2, W*0.25, W/2, H/2, W*0.9);
-    vignette.addColorStop(0, 'rgba(0,0,0,0)');
-    vignette.addColorStop(1, 'rgba(0,0,0,0.36)');
-    ctx.fillStyle = vignette;
-    ctx.fillRect(0,0,W,H);
-  }
-  drawHero();
-})();
+      // Localized top-left accent
+      const tlWarm = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(W,H)*0.50); // ~1/3 coverage
+      tlWarm.addColorStop(0,   'rgba(55,53,51,0.62)');
+      tlWarm.addColorStop(0.26,'rgba(55,53,51,0.30)');
+      tlWarm.addColorStop(1,   'rgba(6,12,28,0)');
+      ctx.fillStyle = tlWarm;
+      ctx.fillRect(0,0,W,H);
+    }
+    drawHero();
+  })();
 
 // ── Dynamic Island hover animation ──
 const di = document.querySelector('.dynamic-island');

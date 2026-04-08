@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import DashboardHeader from '@/components/DashboardHeader';
 import Sidebar from '@/components/Sidebar';
 
@@ -31,7 +32,17 @@ export default function DashboardLayout({
       });
       return;
     }
-    router.push('/login');
+
+    // Double-check Supabase session before redirecting — prevents
+    // race conditions where user state hasn't hydrated yet.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        router.push('/login');
+      } else {
+        // Session exists but user state hasn't caught up — refresh again
+        refreshUser();
+      }
+    });
   }, [isLoading, isAuthenticated, refreshUser, router]);
 
   if (isLoading || !isAuthenticated) return null;

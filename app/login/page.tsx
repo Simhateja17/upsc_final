@@ -65,9 +65,19 @@ function LoginPageContent() {
 
     try {
       await login({ email: loginEmail, password: loginPassword });
-      // Redirect is handled by the useEffect watching isAuthenticated/user
+      // Redirect immediately after login succeeds — don't wait for useEffect
+      router.replace('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      const msg = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      if (msg.toLowerCase().includes('invalid login') || msg.toLowerCase().includes('invalid credentials') || msg.toLowerCase().includes('wrong password')) {
+        setError('Incorrect email or password. Please try again.');
+      } else if (msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('not confirmed')) {
+        setError('Please verify your email first. Check your inbox for a confirmation link.');
+      } else if (msg.toLowerCase().includes('rate limit')) {
+        setError('Too many login attempts. Please wait a few minutes and try again.');
+      } else {
+        setError(msg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -99,7 +109,15 @@ function LoginPageContent() {
       });
       setActiveTab('success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Signup failed. Please try again.');
+      const msg = err instanceof Error ? err.message : 'Signup failed. Please try again.';
+      if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('email rate')) {
+        setError('Too many signup attempts. Please wait a few minutes and try again, or use Google sign-up.');
+      } else if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
+        setError('This email is already registered. Please log in instead.');
+        setActiveTab('login');
+      } else {
+        setError(msg);
+      }
     } finally {
       setIsLoading(false);
     }
