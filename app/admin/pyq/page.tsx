@@ -18,6 +18,7 @@ interface PYQQuestion {
 }
 
 export default function PYQManager() {
+  const [mode, setMode] = useState<'prelims' | 'mains'>('prelims');
   const [questions, setQuestions] = useState<PYQQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -31,11 +32,39 @@ export default function PYQManager() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const LIMIT = 20;
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const waitForUploadToFinish = async (uploadId: string) => {
+    console.log(`[PYQ Admin] Polling started for uploadId=${uploadId}`);
+    const maxAttempts = 40; // ~2 minutes
+    for (let i = 0; i < maxAttempts; i++) {
+      console.log(`[PYQ Admin] Poll attempt ${i + 1}/${maxAttempts} for uploadId=${uploadId}`);
+      const detail = await adminService.getPYQUploadDetail(uploadId);
+      const upload = detail?.data;
+      const status = String(upload?.status || '').toLowerCase();
+      console.log(`[PYQ Admin] Upload status=${status || 'unknown'}`, upload);
+
+      if (status === 'failed') {
+        console.error(`[PYQ Admin] Parsing failed for uploadId=${uploadId}`, upload);
+        throw new Error(upload?.errorMessage || 'PDF parsing failed. Check backend logs/API keys and try another PDF.');
+      }
+
+      if (status === 'parsed' || status === 'reviewed' || status === 'completed') {
+        console.log(`[PYQ Admin] Parsing complete for uploadId=${uploadId}`, upload);
+        return upload;
+      }
+
+      await sleep(3000);
+    }
+
+    console.warn(`[PYQ Admin] Poll timeout for uploadId=${uploadId}`);
+    return null;
+  };
 
   const loadQuestions = (page = currentPage) => {
     setLoading(true);
     adminService
-      .getPYQQuestions({ ...(statusFilter ? { status: statusFilter } : {}), page, limit: LIMIT })
+      .getPYQQuestions({ mode, ...(statusFilter ? { status: statusFilter } : {}), page, limit: LIMIT })
       .then((res) => {
         setQuestions(res.data?.questions || []);
         if (res.data?.pagination) {
@@ -50,8 +79,9 @@ export default function PYQManager() {
 
   useEffect(() => {
     setCurrentPage(1);
+    setSelectedIds(new Set());
     loadQuestions(1);
-  }, [statusFilter]);
+  }, [statusFilter, mode]);
 
   const goToPage = (page: number) => {
     if (page < 1 || page > totalPages) return;
@@ -63,20 +93,37 @@ export default function PYQManager() {
     const file = fileRef.current?.files?.[0];
     if (!file) return;
 
+    console.log(`[PYQ Admin] Upload requested: mode=${mode}, file=${file.name}, size=${file.size}`);
     setUploading(true);
-    setUploadMsg('Uploading & parsing PDF...');
+    setUploadMsg('Uploading PDF...');
 
     try {
-      const res = await adminService.uploadPYQ(file);
-      if (res.success !== false) {
-        setUploadMsg(`Extracted ${res.data?.extractedCount ?? '?'} questions!`);
-        loadQuestions();
-      } else {
-        setUploadMsg(`Error: ${res.message}`);
+      const res = await adminService.uploadPYQ(file, mode);
+      console.log('[PYQ Admin] Upload API response:', res);
+      if (res?.status !== 'success' || !res?.data?.uploadId) {
+        console.error('[PYQ Admin] Upload API returned error payload:', res);
+        throw new Error(res?.message || 'Upload failed');
       }
+
+      setUploadMsg('PDF uploaded. Parsing questions in background...');
+      const upload = await waitForUploadToFinish(res.data.uploadId);
+
+      if (!upload) {
+        setUploadMsg('Parsing is taking longer than expected. Please refresh in a minute.');
+        console.warn('[PYQ Admin] Parsing not completed within polling window.');
+        loadQuestions(1);
+      } else {
+        const extractedCount = Number(upload.totalExtracted || 0);
+        console.log(`[PYQ Admin] Final extracted count=${extractedCount}`, upload);
+        setUploadMsg(`Parsed ${extractedCount} question${extractedCount === 1 ? '' : 's'} successfully.`);
+        loadQuestions(1);
+      }
+      if (fileRef.current) fileRef.current.value = '';
     } catch (err: any) {
+      console.error('[PYQ Admin] Upload/parsing flow failed:', err);
       setUploadMsg(`Error: ${err.message}`);
     } finally {
+      console.log('[PYQ Admin] Upload flow finished');
       setUploading(false);
     }
   };
@@ -84,7 +131,7 @@ export default function PYQManager() {
   const handleBulkAction = async (status: string) => {
     if (selectedIds.size === 0) return;
     try {
-      await adminService.bulkApprovePYQ(Array.from(selectedIds), status);
+      await adminService.bulkApprovePYQ(Array.from(selectedIds), status, mode);
       setSelectedIds(new Set());
       loadQuestions();
     } catch {}
@@ -115,7 +162,7 @@ export default function PYQManager() {
   const saveEdit = async () => {
     if (!editingId) return;
     try {
-      await adminService.updatePYQQuestion(editingId, editData);
+      await adminService.updatePYQQuestion(editingId, editData, mode);
       setEditingId(null);
       loadQuestions();
     } catch {}
@@ -135,6 +182,24 @@ export default function PYQManager() {
       >
         PYQ Manager
       </h1>
+      <div className="inline-flex rounded-xl bg-white p-1 mb-5" style={{ border: '1px solid #E5E7EB' }}>
+        <button
+          type="button"
+          onClick={() => setMode('prelims')}
+          className="px-4 py-2 rounded-lg text-sm font-medium"
+          style={{ background: mode === 'prelims' ? '#111827' : 'transparent', color: mode === 'prelims' ? '#fff' : '#374151' }}
+        >
+          Prelims
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('mains')}
+          className="px-4 py-2 rounded-lg text-sm font-medium"
+          style={{ background: mode === 'mains' ? '#111827' : 'transparent', color: mode === 'mains' ? '#fff' : '#374151' }}
+        >
+          Mains
+        </button>
+      </div>
 
       {/* Upload Section */}
       <div
@@ -142,7 +207,7 @@ export default function PYQManager() {
         style={{ border: '1px solid #E5E7EB' }}
       >
         <h2 className="font-inter font-semibold text-[#111827] mb-4" style={{ fontSize: 'clamp(16px, 1.1vw, 20px)' }}>
-          Upload PYQ PDF
+          Upload {mode === 'prelims' ? 'Prelims' : 'Mains'} PYQ PDF
         </h2>
         <div className="flex flex-wrap gap-3 items-end">
           <div>
@@ -164,7 +229,9 @@ export default function PYQManager() {
           </button>
         </div>
         <p className="mt-2 text-xs text-[#9CA3AF] font-inter">
-          Year and paper type are automatically detected from the PDF content.
+          {mode === 'prelims'
+            ? 'Prelims PDFs are parsed into objective MCQs automatically.'
+            : 'Mains PDFs are parsed into descriptive questions automatically.'}
         </p>
         {uploadMsg && (
           <p className="mt-3 text-sm font-inter" style={{ color: uploadMsg.startsWith('Error') ? '#EF4444' : '#10B981' }}>
@@ -307,7 +374,7 @@ export default function PYQManager() {
                           )}
                         </div>
                         <p className="text-sm text-[#374151] leading-relaxed">{q.questionText}</p>
-                        {q.options && (
+                        {mode === 'prelims' && q.options && (
                           <div className="mt-2 grid grid-cols-2 gap-1">
                             {(Array.isArray(q.options) ? q.options : []).map((opt: any) => (
                               <span

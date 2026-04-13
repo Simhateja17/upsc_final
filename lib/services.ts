@@ -294,9 +294,10 @@ export const adminService = {
     api.put<any>(`/admin/users/${id}`, data, authConfig()),
 
   // PYQ Management
-  uploadPYQ: async (file: File) => {
+  uploadPYQ: async (file: File, mode: 'prelims' | 'mains' = 'prelims') => {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('mode', mode);
 
     const token = getToken();
     const res = await fetch(
@@ -311,8 +312,9 @@ export const adminService = {
   },
   getPYQUploads: () => api.get<any>('/admin/pyq/uploads', authConfig()),
   getPYQUploadDetail: (id: string) => api.get<any>(`/admin/pyq/uploads/${id}`, authConfig()),
-  getPYQQuestions: (params?: { status?: string; subject?: string; year?: number; page?: number; limit?: number }) => {
+  getPYQQuestions: (params?: { mode?: 'prelims' | 'mains'; status?: string; subject?: string; year?: number; page?: number; limit?: number }) => {
     const query = new URLSearchParams();
+    if (params?.mode) query.set('mode', params.mode);
     if (params?.status) query.set('status', params.status);
     if (params?.subject) query.set('subject', params.subject);
     if (params?.year) query.set('year', String(params.year));
@@ -321,11 +323,11 @@ export const adminService = {
     const qs = query.toString();
     return api.get<any>(`/admin/pyq/questions${qs ? `?${qs}` : ''}`, authConfig());
   },
-  updatePYQQuestion: (id: string, data: any) =>
-    api.put<any>(`/admin/pyq/questions/${id}`, data, authConfig()),
-  bulkApprovePYQ: (ids: string[], status: string) =>
-    api.post<any>('/admin/pyq/questions/bulk-approve', { ids, status }, authConfig()),
-  getPYQStats: () => api.get<any>('/admin/pyq/stats', authConfig()),
+  updatePYQQuestion: (id: string, data: any, mode: 'prelims' | 'mains' = 'prelims') =>
+    api.put<any>(`/admin/pyq/questions/${id}?mode=${mode}`, data, authConfig()),
+  bulkApprovePYQ: (ids: string[], status: string, mode: 'prelims' | 'mains' = 'prelims') =>
+    api.post<any>(`/admin/pyq/questions/bulk-approve?mode=${mode}`, { ids, status }, authConfig()),
+  getPYQStats: (mode: 'prelims' | 'mains' = 'prelims') => api.get<any>(`/admin/pyq/stats?mode=${mode}`, authConfig()),
 
   // Daily MCQ
   getDailyMCQSets: () => api.get<any>('/admin/daily-mcq', authConfig()),
