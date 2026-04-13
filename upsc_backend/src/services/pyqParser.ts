@@ -1,6 +1,11 @@
 import { invokeModelJSON } from "../config/llm";
 import prisma from "../config/database";
 import { extractTextFromFile } from "../config/gemini";
+import { execFile } from "child_process";
+import { promises as fs } from "fs";
+import os from "os";
+import path from "path";
+import { promisify } from "util";
 
 export type PYQParseMode = "prelims" | "mains";
 
@@ -44,6 +49,7 @@ export const QUESTION_BOUNDARY_RE = /^\s*(?:\d+[\.\)]|Q[\.\s]?\d+[\.\)]?)\s+/m;
 const LOG_PREFIX = "[PYQ-PIPELINE]";
 const AI_MAX_RETRIES = 3;
 const CHUNK_CONCURRENCY = 3;
+const execFileAsync = promisify(execFile);
 
 function log(step: string, msg: string, data?: any) {
   const timestamp = new Date().toISOString();
@@ -153,6 +159,25 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   log("PDF-EXTRACT", `Preview (first 200 chars): "${text.substring(0, 200).replace(/\n/g, "\\n")}"`);
 
   return text;
+}
+
+async function extractTextFromPDFViaCLI(buffer: Buffer): Promise<string> {
+  const base = `pyq_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const tmpPdf = path.join(os.tmpdir(), `${base}.pdf`);
+  const tmpTxt = path.join(os.tmpdir(), `${base}.txt`);
+
+  try {
+    await fs.writeFile(tmpPdf, buffer);
+    await execFileAsync(
+      process.env.PDFTOTEXT_PATH || "pdftotext",
+      ["-layout", "-nopgbrk", "-enc", "UTF-8", tmpPdf, tmpTxt],
+      { timeout: 30000 }
+    );
+    const out = await fs.readFile(tmpTxt, "utf8");
+    return out || "";
+  } finally {
+    await Promise.allSettled([fs.unlink(tmpPdf), fs.unlink(tmpTxt)]);
+  }
 }
 
 function paragraphFallbackSplit(text: string, chunkSize: number): string[] {
@@ -396,27 +421,34 @@ export async function parsePYQPdf(
     if (!text || text.trim().length < 50) {
       log(
         "STEP-1",
-        "No text extracted from PDF. Attempting OCR fallback for scanned/image PDF."
+        "No text extracted from PDF parser. Trying pdftotext CLI fallback."
       );
       try {
-        const ocrText = await extractTextFromFile(pdfBuffer, "application/pdf");
-        if (ocrText && ocrText.trim().length >= 50) {
-          text = ocrText;
-          log("STEP-1", `OCR fallback succeeded (${ocrText.length} chars extracted)`);
+        const cliText = await extractTextFromPDFViaCLI(pdfBuffer);
+        if (cliText && cliText.trim().length >= 50) {
+          text = cliText;
+          log("STEP-1", `pdftotext fallback succeeded (${cliText.length} chars extracted)`);
         } else {
-          await updatePYQUploadCompat(uploadId, {
-            status: "failed",
-            errorMessage:
-              "No extractable text found in PDF. The file appears scanned/image-only and OCR returned insufficient text.",
-          });
-          return;
+          // Last attempt: Azure OCR helper (may not support PDF directly in all setups).
+          const ocrText = await extractTextFromFile(pdfBuffer, "application/pdf");
+          if (ocrText && ocrText.trim().length >= 50) {
+            text = ocrText;
+            log("STEP-1", `OCR fallback succeeded (${ocrText.length} chars extracted)`);
+          } else {
+            await updatePYQUploadCompat(uploadId, {
+              status: "failed",
+              errorMessage:
+                "No extractable text found. PDF parser and pdftotext fallback returned insufficient text.",
+            });
+            return;
+          }
         }
       } catch (ocrErr: any) {
         const reason =
           ocrErr instanceof Error ? ocrErr.message : String(ocrErr || "Unknown OCR error");
         await updatePYQUploadCompat(uploadId, {
           status: "failed",
-          errorMessage: `PDF text extraction failed and OCR fallback failed: ${reason}`,
+          errorMessage: `PDF text extraction failed. Fallbacks failed: ${reason}`,
         });
         return;
       }

@@ -1,33 +1,12 @@
-import { GoogleGenAI } from "@google/genai";
-import { azureClient, chatDeployment } from "./azure";
-
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-  console.warn("[Gemini] GEMINI_API_KEY is not set — Gemini features will be unavailable.");
-}
-
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+import { azureClient, chatDeployment, generateJSON as azureGenerateJSON } from "./azure";
 
 export async function generateJSON<T>(
   prompt: string,
   system: string,
   temperature = 0.7
 ): Promise<T> {
-  if (!ai) {
-    throw new Error("Gemini API is not configured. Set GEMINI_API_KEY to use this feature.");
-  }
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: prompt,
-    config: {
-      systemInstruction: system,
-      temperature,
-      responseMimeType: "application/json",
-    },
-  });
-
-  const text = response.text ?? "";
-  return JSON.parse(text) as T;
+  // Backwards-compatible wrapper name; uses Azure infrastructure only.
+  return azureGenerateJSON<T>(prompt, system, temperature);
 }
 
 const OCR_INSTRUCTION =
@@ -74,69 +53,24 @@ async function extractTextWithAzure(
 }
 
 /**
- * OCR via Gemini (free tier — may hit quota limits).
- */
-async function extractTextWithGemini(
-  fileBuffer: Buffer,
-  mimeType: string
-): Promise<string> {
-  if (!ai) {
-    throw new Error("Gemini API is not configured. Set GEMINI_API_KEY to use this feature.");
-  }
-
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: [
-      {
-        role: "user",
-        parts: [
-          { text: OCR_INSTRUCTION },
-          {
-            inlineData: {
-              data: fileBuffer.toString("base64"),
-              mimeType,
-            },
-          },
-        ],
-      },
-    ],
-    config: {
-      temperature: 0.0,
-      httpOptions: { timeout: 15000 },
-    },
-  });
-
-  return (response.text ?? "").trim();
-}
-
-/**
  * OCR / vision extraction: reads a handwritten answer sheet (image or PDF)
- * and returns the extracted plain text. Tries Azure OpenAI first (paid),
- * falls back to Gemini if Azure fails.
+ * and returns the extracted plain text using Azure only.
  */
 export async function extractTextFromFile(
   fileBuffer: Buffer,
   mimeType: string
 ): Promise<string> {
-  // Primary: Azure OpenAI vision (paid, reliable)
-  if (azureClient) {
-    try {
-      console.log("[OCR] Trying Azure OpenAI vision...");
-      const text = await extractTextWithAzure(fileBuffer, mimeType);
-      console.log(`[OCR] Azure OK (${text.length} chars)`);
-      return text;
-    } catch (err) {
-      console.warn("[OCR] Azure vision failed, trying Gemini fallback:", err instanceof Error ? err.message : err);
-    }
+  if (mimeType === "application/pdf") {
+    throw new Error(
+      "Azure vision OCR does not accept raw PDF in image_url. Convert PDF pages to images first."
+    );
   }
 
-  // Fallback: Gemini (free tier — may be quota-exhausted)
-  if (ai) {
-    console.log("[OCR] Trying Gemini...");
-    const text = await extractTextWithGemini(fileBuffer, mimeType);
-    console.log(`[OCR] Gemini OK (${text.length} chars)`);
-    return text;
+  if (!azureClient) {
+    throw new Error("Azure OpenAI is not configured for OCR.");
   }
-
-  throw new Error("No OCR provider available — configure Azure OpenAI or Gemini API key.");
+  console.log("[OCR] Trying Azure OpenAI vision...");
+  const text = await extractTextWithAzure(fileBuffer, mimeType);
+  console.log(`[OCR] Azure OK (${text.length} chars)`);
+  return text;
 }
