@@ -20,16 +20,7 @@ function buildDbOps(attemptId: string): EvaluationDbOps {
           improvements: [],
           suggestions: [],
         },
-        update: {
-          status: "evaluating",
-          score: 0,
-          maxScore,
-          strengths: [],
-          improvements: [],
-          suggestions: [],
-          detailedFeedback: null,
-          evaluatedAt: null,
-        },
+        update: { status: "evaluating" },
       });
     },
     saveAttemptText: async (text, wordCount) => {
