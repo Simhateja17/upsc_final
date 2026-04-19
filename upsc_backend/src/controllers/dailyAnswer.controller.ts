@@ -133,25 +133,18 @@ export const uploadAnswer = async (req: Request, res: Response, next: NextFuncti
       return res.status(404).json({ status: "error", message: "No mains question for today" });
     }
 
-    let fileUrl: string | null = null;
-
-    // Handle file upload via multer
-    if (req.file) {
-      const fileName = `${userId}/${Date.now()}_${req.file.originalname}`;
-      await uploadFile(
-        STORAGE_BUCKETS.ANSWER_UPLOADS,
-        fileName,
-        req.file.buffer,
-        req.file.mimetype
-      );
-      fileUrl = fileName;
-    } else if (req.body.fileUrl) {
-      fileUrl = req.body.fileUrl;
-    }
-
-    if (!fileUrl) {
+    if (!req.file) {
       return res.status(400).json({ status: "error", message: "File upload is required" });
     }
+
+    const fileName = `${userId}/${Date.now()}_${req.file.originalname}`;
+    await uploadFile(
+      STORAGE_BUCKETS.ANSWER_UPLOADS,
+      fileName,
+      req.file.buffer,
+      req.file.mimetype
+    );
+    const fileUrl = fileName;
 
     const attempt = await prisma.mainsAttempt.upsert({
       where: { userId_questionId: { userId, questionId: question.id } },

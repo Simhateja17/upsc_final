@@ -61,25 +61,36 @@ Question (${question.paper} - ${question.subject}, ${question.marks} marks):
 "${question.questionText}"
 
 Student's Answer:
+"""
 ${answerText}
+"""
 
 ${ocrNote
-  ? "This answer was OCR-extracted from a handwritten submission; grade the content rigorously but be lenient about minor spelling artifacts that may come from OCR.\n\n"
-  : ""}Score on a scale of 0-${question.marks} based on:
-1. Structure & Organization (introduction, body, conclusion)
-2. Content Depth & Accuracy
-3. Balance of Perspectives (multiple viewpoints)
-4. Use of Examples & Facts (data, case studies, reports)
-5. Clarity & Language Quality
-6. Relevance to Question Asked
+  ? "This answer was OCR-extracted from a handwritten submission; grade the content rigorously but be lenient about minor spelling artifacts from OCR.\n\n"
+  : ""}SCORING RUBRIC (strict, evidence-based):
+1. Structure & Organization — introduction, body, conclusion
+2. Content Depth & Accuracy — correct facts, concepts, frameworks
+3. Balance of Perspectives — multiple viewpoints where relevant
+4. Use of Examples & Facts — data, case studies, committee reports
+5. Clarity & Language Quality — grammar, flow, precision
+6. Relevance to Question Asked — directly addresses the demand
 
-Return ONLY a JSON object with:
+CRITICAL RULES — FOLLOW EXACTLY:
+- ALWAYS base your scoring ONLY on the actual text inside the triple quotes above. NEVER invent or assume content the student did not write. NEVER award strengths that are not demonstrably present in the answer text.
+- If the answer is OFF-TOPIC, IRRELEVANT, GIBBERISH, an unrelated document (work log, personal notes, a different subject, etc.), or clearly does not address the question: the score MUST be 0-15% of max marks. State explicitly in detailedFeedback that the answer is off-topic. strengths SHOULD be an empty list (unless there is something genuinely good). improvements MUST start with "Answer does not address the question — rewrite focusing on <the exact demand of the question>".
+- If the answer is VERY SHORT (under 50 words) or INCOMPLETE: cap the score at 30% of max marks and say so.
+- If the answer is well-written but only PARTIALLY addresses the question: cap at 60% of max marks and flag the gap.
+- Only award high scores (>75%) for answers that are ON-TOPIC, well-structured, substantively correct, and multi-dimensional.
+- Every item in "strengths" must quote or paraphrase a specific line/idea the student actually wrote. Do NOT list generic praise.
+- Every item in "improvements" must be specific to what this answer got wrong or missed, not generic tips.
+
+Return ONLY a JSON object (no prose, no markdown fences) with this exact shape:
 {
-  "score": <number 0-${question.marks}>,
-  "strengths": ["strength1", "strength2", "strength3"],
-  "improvements": ["improvement1", "improvement2", "improvement3"],
-  "suggestions": ["suggestion1", "suggestion2"],
-  "detailedFeedback": "2-3 paragraph detailed feedback",
+  "score": <integer 0-${question.marks}>,
+  "strengths": ["..."],
+  "improvements": ["..."],
+  "suggestions": ["..."],
+  "detailedFeedback": "2-3 short paragraphs grounded in the student's actual text",
   "metrics": [
     {"label": "Structure", "value": <0-10>, "maxValue": 10},
     {"label": "Content", "value": <0-10>, "maxValue": 10},
@@ -92,7 +103,7 @@ Return ONLY a JSON object with:
   ];
 
   const system =
-    "You are an expert UPSC Mains answer evaluator. You evaluate answers strictly but fairly, like a UPSC examiner. Always return valid JSON only.";
+    "You are a strict UPSC Mains answer evaluator. You grade ONLY the text the student actually wrote. You never hallucinate content, never praise things not present in the answer, and heavily penalise off-topic or irrelevant submissions. Always return valid JSON only — no extra prose.";
 
   return invokeModelJSON<EvaluationResult>(messages, {
     system,
@@ -193,23 +204,53 @@ export async function evaluateAnswerGeneric(params: {
     const errStack = error instanceof Error ? error.stack : String(error);
     console.error(`[eval] attempt ${attemptId} FAILED:`, errStack);
 
-    // Fallback: save with baseline estimate but don't crash
+    // Honest failure: no fake score, clear guidance to the user. We still mark
+    // the evaluation as "completed" so the frontend navigates off the spinner.
+    const userFacingReason = classifyEvalError(errMsg);
     try {
       await dbOps.saveEvaluation({
-        score: Math.round(question.marks * 0.5),
+        score: 0,
         maxScore: question.marks,
         status: "completed",
-        strengths: ["Answer submitted successfully"],
-        improvements: ["AI evaluation encountered an issue — manual review recommended"],
-        suggestions: ["Try resubmitting for a fresh evaluation"],
-        detailedFeedback:
-          `Evaluation failed: ${errMsg}. Your answer has been scored with a baseline estimate. Please try resubmitting.`,
+        strengths: [],
+        improvements: [userFacingReason.improvement],
+        suggestions: [userFacingReason.suggestion],
+        detailedFeedback: userFacingReason.detail,
         evaluatedAt: new Date(),
       });
     } catch (updateError) {
-      console.error("[eval] Failed to save fallback evaluation:", updateError);
+      console.error("[eval] Failed to save failure evaluation:", updateError);
     }
   }
+}
+
+function classifyEvalError(errMsg: string): {
+  improvement: string;
+  suggestion: string;
+  detail: string;
+} {
+  const msg = errMsg.toLowerCase();
+  if (msg.includes("unsupported file type") || msg.includes("unsupported mime")) {
+    return {
+      improvement: "The uploaded file type is not supported for evaluation.",
+      suggestion: "Upload a JPG or PNG photo of your handwritten answer, a PDF scan, or a DOCX of typed text.",
+      detail:
+        "We couldn't evaluate this file because its format isn't supported. Please re-upload as JPG, PNG, PDF, or DOCX — or type your answer directly.",
+    };
+  }
+  if (msg.includes("ocr") || msg.includes("image_url") || msg.includes("vision")) {
+    return {
+      improvement: "We couldn't read your handwriting from the uploaded image.",
+      suggestion: "Retake the photo in bright, even lighting with the page flat and fully in frame.",
+      detail:
+        "Our OCR could not extract a readable answer from your upload. This usually happens with blurry photos, low light, or very faint pencil marks. Please resubmit with a clearer image or type your answer.",
+    };
+  }
+  return {
+    improvement: "AI evaluation could not be completed for this submission.",
+    suggestion: "Please try resubmitting your answer.",
+    detail: `Evaluation failed: ${errMsg}. No score has been assigned. Please resubmit your answer to try again.`,
+  };
 }
 
 /**
@@ -235,7 +276,18 @@ export async function evaluateAnswer(
           improvements: [],
           suggestions: [],
         },
-        update: { status: "evaluating" },
+        // Reset prior eval output so stale strengths/feedback from a previous
+        // submission on this attempt don't leak into the new results.
+        update: {
+          status: "evaluating",
+          score: 0,
+          maxScore,
+          strengths: [],
+          improvements: [],
+          suggestions: [],
+          detailedFeedback: null,
+          evaluatedAt: null,
+        },
       });
     },
     saveAttemptText: async (text, wordCount) => {
