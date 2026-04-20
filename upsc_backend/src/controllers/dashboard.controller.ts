@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/database";
+import { supabaseAdmin } from "../config/supabase";
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const ORDERED_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -140,7 +141,18 @@ export const getPerformance = async (req: Request, res: Response, next: NextFunc
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [mcqAgg, recentMcqAttempts, mainsCount, mockCount, streak, todayActivities, syllabusCov] = await Promise.all([
+    const [
+      mcqAgg,
+      recentMcqAttempts,
+      mainsCount,
+      mockCount,
+      mockMainsCount,
+      pyqMainsCount,
+      streak,
+      todayActivities,
+      syllabusCov,
+      seriesAttemptsRes,
+    ] = await Promise.all([
       prisma.mCQAttempt.aggregate({
         where: { userId },
         _count: { id: true },
@@ -151,10 +163,24 @@ export const getPerformance = async (req: Request, res: Response, next: NextFunc
       prisma.mCQAttempt.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 20 }),
       prisma.mainsAttempt.count({ where: { userId } }),
       prisma.mockTestAttempt.count({ where: { userId } }),
+      prisma.mockTestMainsAttempt.count({ where: { userId } }),
+      prisma.pyqMainsAttempt.count({ where: { userId } }),
       prisma.userStreak.findUnique({ where: { userId } }),
       prisma.userActivity.findMany({ where: { userId, createdAt: { gte: today } } }),
       prisma.syllabusCoverage.findMany({ where: { userId } }),
+      supabaseAdmin
+        .from("test_series_attempts")
+        .select("id, score, total", { count: "exact" })
+        .eq("user_id", userId),
     ]);
+    const seriesAttemptsCount = seriesAttemptsRes.count ?? 0;
+    const seriesAttemptsList = (seriesAttemptsRes.data ?? []) as Array<{ score: number | null; total: number | null }>;
+
+    // Mock-test prelims question totals (correct+wrong+skipped across all attempts).
+    const mockAgg = await prisma.mockTestAttempt.aggregate({
+      where: { userId },
+      _sum: { correctCount: true, wrongCount: true, skippedCount: true },
+    });
 
     // Collect strong/weak topics from last 20 MCQ attempts
     const topicStrength: Record<string, { correct: number; total: number }> = {};
@@ -183,8 +209,19 @@ export const getPerformance = async (req: Request, res: Response, next: NextFunc
     const studyMinutes = estimatedMinutes % 60;
     const studyTimeToday = `${studyHours}h ${studyMinutes}m`;
 
-    // Total tests taken (MCQ + mock)
-    const testsTaken = mcqAgg._count.id + mockCount;
+    // Total tests taken across every submitted source.
+    const testsTaken =
+      mcqAgg._count.id + mockCount + mockMainsCount + pyqMainsCount + mainsCount + seriesAttemptsCount;
+
+    // Total questions attempted across every source.
+    const mcqQuestions =
+      (mcqAgg._sum.correctCount ?? 0) + (mcqAgg._sum.wrongCount ?? 0) + (mcqAgg._sum.skippedCount ?? 0);
+    const mockPrelimsQuestions =
+      (mockAgg._sum.correctCount ?? 0) + (mockAgg._sum.wrongCount ?? 0) + (mockAgg._sum.skippedCount ?? 0);
+    const seriesQuestions = seriesAttemptsList.reduce((s, a) => s + (a.total ?? 0), 0);
+    // Each mains attempt = 1 written answer.
+    const mainsQuestions = mainsCount + mockMainsCount + pyqMainsCount;
+    const questionsAttempted = mcqQuestions + mockPrelimsQuestions + seriesQuestions + mainsQuestions;
 
     // Rank — placeholder (could be computed from leaderboard later)
     const rank = null;
@@ -203,6 +240,7 @@ export const getPerformance = async (req: Request, res: Response, next: NextFunc
       data: {
         studyTimeToday,
         testsTaken,
+        questionsAttempted,
         rank,
         rankPercentile,
         jeetCoins,
@@ -216,8 +254,14 @@ export const getPerformance = async (req: Request, res: Response, next: NextFunc
           avgTimePerQuestion: Math.round(mcqAgg._avg.timeTaken ?? 0),
           bestPercentile: mcqAgg._max.percentile ?? 0,
         },
-        mains: { totalAttempts: mainsCount },
+        mains: {
+          totalAttempts: mainsCount + mockMainsCount + pyqMainsCount,
+          dailyAnswerAttempts: mainsCount,
+          mockTestMainsAttempts: mockMainsCount,
+          pyqMainsAttempts: pyqMainsCount,
+        },
         mockTests: { totalAttempts: mockCount },
+        testSeries: { totalAttempts: seriesAttemptsCount },
         streak: streak || { currentStreak: 0, longestStreak: 0 },
         strongTopics,
         weakTopics,
@@ -236,7 +280,16 @@ export const getTestAnalytics = async (req: Request, res: Response, next: NextFu
   try {
     const userId = req.user!.id;
 
-    const [mcqAgg, recentMcq, mockAttempts, mainsAttempts, streak] = await Promise.all([
+    const [
+      mcqAgg,
+      recentMcq,
+      mockAttempts,
+      mainsAttempts,
+      mockTestMainsAttempts,
+      pyqMainsAttempts,
+      streak,
+      seriesAttemptsRes,
+    ] = await Promise.all([
       prisma.mCQAttempt.aggregate({
         where: { userId },
         _count: { id: true },
@@ -259,10 +312,58 @@ export const getTestAnalytics = async (req: Request, res: Response, next: NextFu
       prisma.mainsAttempt.findMany({
         where: { userId },
         orderBy: { createdAt: 'asc' },
-        include: { evaluation: { select: { score: true } } },
+        include: { evaluation: { select: { score: true, maxScore: true, status: true } } },
+      }),
+      prisma.mockTestMainsAttempt.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'asc' },
+        include: {
+          evaluation: { select: { score: true, maxScore: true, status: true } },
+          mockTest: { select: { title: true } },
+        },
+      }),
+      prisma.pyqMainsAttempt.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'asc' },
+        include: {
+          evaluation: { select: { score: true, maxScore: true, status: true } },
+          mainsQuestion: { select: { subject: true, paper: true, year: true } },
+        },
       }),
       prisma.userStreak.findUnique({ where: { userId } }),
+      supabaseAdmin
+        .from("test_series_attempts")
+        .select("id, test_id, score, total, submitted_at, time_taken_seconds")
+        .eq("user_id", userId)
+        .order("submitted_at", { ascending: false })
+        .limit(20),
     ]);
+
+    // Resolve test-series titles for any attempts we found.
+    const seriesAttempts = seriesAttemptsRes.data ?? [];
+    const seriesTestIds = Array.from(new Set(seriesAttempts.map((a: any) => a.test_id).filter(Boolean)));
+    let seriesTestTitleMap: Record<string, { title: string; seriesTitle: string }> = {};
+    if (seriesTestIds.length > 0) {
+      const { data: testRows } = await supabaseAdmin
+        .from("test_series_tests")
+        .select("id, title, series_id")
+        .in("id", seriesTestIds);
+      const seriesIds = Array.from(new Set((testRows || []).map((t: any) => t.series_id).filter(Boolean)));
+      let seriesTitleById: Record<string, string> = {};
+      if (seriesIds.length > 0) {
+        const { data: seriesRows } = await supabaseAdmin
+          .from("test_series")
+          .select("id, title")
+          .in("id", seriesIds);
+        for (const s of seriesRows || []) seriesTitleById[s.id] = s.title;
+      }
+      for (const t of testRows || []) {
+        seriesTestTitleMap[t.id] = {
+          title: t.title || "Series Test",
+          seriesTitle: seriesTitleById[t.series_id] || "Test Series",
+        };
+      }
+    }
 
     // --- Weekly MCQ trend (last 8 ISO weeks) ---
     const weekMap: Record<string, number[]> = {};
@@ -319,16 +420,71 @@ export const getTestAnalytics = async (req: Request, res: Response, next: NextFu
       }))
       .sort((a, b) => b.accuracy - a.accuracy);
 
-    // --- Mains trend ---
-    const mainsTrend = mainsAttempts
-      .filter(a => a.evaluation)
-      .map((a, i) => ({ attempt: `T${i + 1}`, score: a.evaluation!.score }));
+    // --- Mains trend (merged across Daily Answer + Mock Test Mains + PYQ Mains) ---
+    type MainsPoint = {
+      source: "daily" | "mock" | "pyq";
+      createdAt: Date;
+      score: number;
+      maxScore: number;
+      scorePct: number;
+    };
+    const mainsPoints: MainsPoint[] = [];
+    for (const a of mainsAttempts) {
+      if (!a.evaluation || a.evaluation.status !== "completed") continue;
+      const max = a.evaluation.maxScore || 10;
+      mainsPoints.push({
+        source: "daily",
+        createdAt: new Date(a.createdAt),
+        score: a.evaluation.score,
+        maxScore: max,
+        scorePct: max > 0 ? (a.evaluation.score / max) * 100 : 0,
+      });
+    }
+    for (const a of mockTestMainsAttempts) {
+      if (!a.evaluation || a.evaluation.status !== "completed") continue;
+      const max = a.evaluation.maxScore || 15;
+      mainsPoints.push({
+        source: "mock",
+        createdAt: new Date(a.createdAt),
+        score: a.evaluation.score,
+        maxScore: max,
+        scorePct: max > 0 ? (a.evaluation.score / max) * 100 : 0,
+      });
+    }
+    for (const a of pyqMainsAttempts) {
+      if (!a.evaluation || a.evaluation.status !== "completed") continue;
+      const max = a.evaluation.maxScore || 15;
+      mainsPoints.push({
+        source: "pyq",
+        createdAt: new Date(a.createdAt),
+        score: a.evaluation.score,
+        maxScore: max,
+        scorePct: max > 0 ? (a.evaluation.score / max) * 100 : 0,
+      });
+    }
+    mainsPoints.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+    const mainsTrend = mainsPoints.map((p, i) => ({
+      attempt: `T${i + 1}`,
+      score: Math.round(p.scorePct * 10) / 10,
+      rawScore: p.score,
+      maxScore: p.maxScore,
+      source: p.source,
+    }));
     const mainsScores = mainsTrend.map(t => t.score);
+    const totalMainsAttempts =
+      mainsAttempts.length + mockTestMainsAttempts.length + pyqMainsAttempts.length;
     const mainsStats = {
-      totalAnswers: mainsAttempts.length,
+      totalAnswers: totalMainsAttempts,
+      evaluatedAnswers: mainsPoints.length,
       avgScore: mainsScores.length > 0 ? Math.round(avg(mainsScores) * 10) / 10 : 0,
       latestScore: mainsScores[mainsScores.length - 1] ?? 0,
       improvement: mainsScores.length >= 2 ? (mainsScores[mainsScores.length - 1] - mainsScores[mainsScores.length - 2]) : 0,
+      breakdown: {
+        dailyAnswer: mainsAttempts.length,
+        mockTestMains: mockTestMainsAttempts.length,
+        pyqMains: pyqMainsAttempts.length,
+      },
     };
 
     // --- Time per question daily ---
@@ -338,29 +494,112 @@ export const getTestAnalytics = async (req: Request, res: Response, next: NextFu
       return { day, avgSeconds: avgSec };
     });
 
-    // --- Test history ---
-    const testHistory = mockAttempts.map(a => {
+    const relDate = (d: Date) => {
+      const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+      return diffDays === 0 ? 'Today' : diffDays === 1 ? 'Yesterday' : `${diffDays}d ago`;
+    };
+
+    // --- Test history (merged: mock prelims + mock mains + pyq mains + test series) ---
+    const historyRows: Array<{
+      id: string;
+      name: string;
+      series: string;
+      date: string;
+      score: string;
+      accuracy: number;
+      sortAt: number;
+      rank: null;
+    }> = [];
+
+    for (const a of mockAttempts) {
       const createdAt = new Date(a.createdAt);
-      const diffDays = Math.floor((now.getTime() - createdAt.getTime()) / 86400000);
-      const dateStr = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Yesterday' : `${diffDays}d ago`;
-      return {
+      historyRows.push({
         id: a.id,
         name: a.mockTest.title,
         series: a.mockTest.source ?? 'Full Mock',
-        date: dateStr,
+        date: relDate(createdAt),
         score: `${a.score}/${a.totalMarks}`,
         accuracy: Math.round(a.accuracy),
-        rank: null as null,
-      };
-    });
+        sortAt: createdAt.getTime(),
+        rank: null,
+      });
+    }
 
-    const totalQuestions = (mcqAgg._sum.correctCount ?? 0) + (mcqAgg._sum.wrongCount ?? 0) + (mcqAgg._sum.skippedCount ?? 0);
+    for (const a of mockTestMainsAttempts) {
+      if (!a.evaluation || a.evaluation.status !== "completed") continue;
+      const createdAt = new Date(a.createdAt);
+      const max = a.evaluation.maxScore || 15;
+      const pct = max > 0 ? Math.round((a.evaluation.score / max) * 100) : 0;
+      historyRows.push({
+        id: a.id,
+        name: a.mockTest?.title || 'Mains Mock Test',
+        series: 'Mock Test · Mains',
+        date: relDate(createdAt),
+        score: `${a.evaluation.score}/${max}`,
+        accuracy: pct,
+        sortAt: createdAt.getTime(),
+        rank: null,
+      });
+    }
+
+    for (const a of pyqMainsAttempts) {
+      if (!a.evaluation || a.evaluation.status !== "completed") continue;
+      const createdAt = new Date(a.createdAt);
+      const max = a.evaluation.maxScore || 15;
+      const pct = max > 0 ? Math.round((a.evaluation.score / max) * 100) : 0;
+      const q = a.mainsQuestion;
+      historyRows.push({
+        id: a.id,
+        name: q ? `PYQ ${q.year} · ${q.subject}` : 'PYQ Mains',
+        series: q?.paper ? `PYQ · ${q.paper}` : 'PYQ · Mains',
+        date: relDate(createdAt),
+        score: `${a.evaluation.score}/${max}`,
+        accuracy: pct,
+        sortAt: createdAt.getTime(),
+        rank: null,
+      });
+    }
+
+    for (const a of seriesAttempts as any[]) {
+      const submittedAt = a.submitted_at ? new Date(a.submitted_at) : new Date();
+      const total = a.total || 0;
+      const score = a.score || 0;
+      const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+      const meta = seriesTestTitleMap[a.test_id] || { title: 'Series Test', seriesTitle: 'Test Series' };
+      historyRows.push({
+        id: a.id,
+        name: meta.title,
+        series: meta.seriesTitle,
+        date: relDate(submittedAt),
+        score: `${score}/${total}`,
+        accuracy: pct,
+        sortAt: submittedAt.getTime(),
+        rank: null,
+      });
+    }
+
+    historyRows.sort((a, b) => b.sortAt - a.sortAt);
+    const testHistory = historyRows.slice(0, 30).map(({ sortAt, ...row }) => row);
+
+    // Aggregate questions across every source, not just daily MCQs.
+    const mcqQuestions = (mcqAgg._sum.correctCount ?? 0) + (mcqAgg._sum.wrongCount ?? 0) + (mcqAgg._sum.skippedCount ?? 0);
+    const mockPrelimsQuestions = mockAttempts.reduce(
+      (s, a) => s + (a.correctCount ?? 0) + (a.wrongCount ?? 0) + (a.skippedCount ?? 0),
+      0,
+    );
+    const seriesQuestions = (seriesAttempts as any[]).reduce((s, a) => s + (a.total ?? 0), 0);
+    const mainsQuestions = mainsAttempts.length + mockTestMainsAttempts.length + pyqMainsAttempts.length;
+    const totalQuestions = mcqQuestions + mockPrelimsQuestions + seriesQuestions + mainsQuestions;
 
     res.json({
       status: 'success',
       data: {
         summary: {
-          totalTests: mockAttempts.length,
+          totalTests:
+            mockAttempts.length +
+            mockTestMainsAttempts.length +
+            pyqMainsAttempts.length +
+            seriesAttempts.length,
           avgAccuracy: Math.round((mcqAgg._avg.accuracy ?? 0) * 10) / 10,
           bestPercentile: mcqAgg._max.percentile ?? 0,
           currentStreak: streak?.currentStreak ?? 0,
@@ -369,6 +608,12 @@ export const getTestAnalytics = async (req: Request, res: Response, next: NextFu
           mcqCorrect: mcqAgg._sum.correctCount ?? 0,
           mcqWrong: mcqAgg._sum.wrongCount ?? 0,
           mcqSkipped: mcqAgg._sum.skippedCount ?? 0,
+          breakdown: {
+            mockPrelims: mockAttempts.length,
+            mockMains: mockTestMainsAttempts.length,
+            pyqMains: pyqMainsAttempts.length,
+            testSeries: seriesAttempts.length,
+          },
         },
         subjectAccuracy,
         weeklyMcqTrend,

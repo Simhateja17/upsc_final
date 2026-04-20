@@ -14,6 +14,11 @@ interface Question {
   explanation: string;
 }
 
+interface MainsAnswer {
+  text: string;
+  file: File | null;
+}
+
 type QuestionStatus = 'unattempted' | 'answered' | 'marked' | 'current';
 
 function normalizeDurationToSeconds(rawDuration: unknown, questionCount: number): number {
@@ -134,9 +139,10 @@ function MockTestAttemptInner() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [startTime] = useState(Date.now());
 
-  /* ─── Mains Upload State ─── */
-  const [mainsPhase, setMainsPhase] = useState<'questions' | 'upload' | 'evaluating'>('questions');
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  /* ─── Mains State ─── */
+  const [mainsPhase, setMainsPhase] = useState<'questions' | 'evaluating'>('questions');
+  const [mainsAnswers, setMainsAnswers] = useState<Record<number, MainsAnswer>>({});
+  const [evaluationProgress, setEvaluationProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* ─── Load questions from API ─── */
@@ -254,34 +260,108 @@ function MockTestAttemptInner() {
   };
 
   /* ─── Mains handlers ─── */
+  const currentAnswer: MainsAnswer = mainsAnswers[currentIdx] || { text: '', file: null };
+
+  const handleMainsTextChange = (value: string) => {
+    setMainsAnswers(prev => ({
+      ...prev,
+      [currentIdx]: { ...(prev[currentIdx] || { text: '', file: null }), text: value },
+    }));
+  };
+
+  const handleMainsFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setMainsAnswers(prev => ({
+      ...prev,
+      [currentIdx]: { ...(prev[currentIdx] || { text: '', file: null }), file },
+    }));
+    // Reset input so re-selecting the same file still fires change
+    e.target.value = '';
+  };
+
+  const handleMainsRemoveFile = () => {
+    setMainsAnswers(prev => ({
+      ...prev,
+      [currentIdx]: { ...(prev[currentIdx] || { text: '', file: null }), file: null },
+    }));
+  };
+
   const handleMainsNext = () => {
-    if (currentIdx < totalQuestions - 1) {
-      setCurrentIdx(i => i + 1);
-    } else {
-      setMainsPhase('upload');
-    }
+    if (currentIdx < totalQuestions - 1) setCurrentIdx(i => i + 1);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setUploadedFiles(prev => [...prev, ...files]);
+  const handleMainsPrev = () => {
+    if (currentIdx > 0) setCurrentIdx(i => i - 1);
   };
 
-  const handleRemoveFile = (idx: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== idx));
-  };
-
-  const handleMainsSubmit = async () => {
-    if (uploadedFiles.length === 0) return;
-    setMainsPhase('evaluating');
-    // Simulate AI evaluation - navigate to results after delay
-    setTimeout(() => {
-      if (testId) {
-        router.push(`/dashboard/mock-tests/attempt/results?testId=${testId}&examMode=mains`);
-      } else {
-        router.push(`/dashboard/mock-tests/attempt/results?mode=sample&title=${encodeURIComponent(title)}&examMode=mains`);
+  const waitForEvaluation = async (attemptId: string, maxMs = 120_000) => {
+    const started = Date.now();
+    while (Date.now() - started < maxMs) {
+      try {
+        const res = await mockTestService.getMainsEvaluationStatus(testId!, attemptId);
+        if (res.data?.isComplete) return true;
+      } catch {
+        /* transient — keep polling */
       }
-    }, 3000);
+      await new Promise(r => setTimeout(r, 2500));
+    }
+    return false;
+  };
+
+  const handleMainsSubmitAll = async () => {
+    if (!testId) {
+      setError('Cannot submit without a test session. Please regenerate the test.');
+      return;
+    }
+
+    // Require at least one form of answer per question
+    const missing = questions.findIndex((_, i) => {
+      const a = mainsAnswers[i];
+      return !a || (!a.text.trim() && !a.file);
+    });
+    if (missing !== -1) {
+      setCurrentIdx(missing);
+      setError(`Please provide an answer for Question ${missing + 1} (text or file).`);
+      return;
+    }
+
+    setError(null);
+    setMainsPhase('evaluating');
+    setEvaluationProgress({ done: 0, total: totalQuestions });
+
+    const attemptIds: string[] = [];
+    try {
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        const a = mainsAnswers[i];
+        const resp = await mockTestService.submitMainsAnswer(testId, String(q.id), {
+          answerText: a?.text?.trim() || undefined,
+          file: a?.file || undefined,
+        });
+        const attemptId = resp.data?.attemptId;
+        if (attemptId) attemptIds.push(attemptId);
+        setEvaluationProgress(p => ({ ...p, done: Math.min(p.total, i + 1) }));
+      }
+
+      // Poll for each attempt to complete evaluation
+      for (const id of attemptIds) {
+        await waitForEvaluation(id);
+      }
+
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(
+          `mockTestMainsAttempts:${testId}`,
+          JSON.stringify({ attemptIds, title })
+        );
+      }
+      router.push(
+        `/dashboard/mock-tests/attempt/results?testId=${testId}&examMode=mains&title=${encodeURIComponent(title)}`
+      );
+    } catch (err: any) {
+      console.error('Mains submit failed:', err);
+      setError(err.message || 'Failed to submit answers. Please try again.');
+      setMainsPhase('questions');
+    }
   };
 
   const handleSubmit = async () => {
@@ -435,92 +515,28 @@ function MockTestAttemptInner() {
   /* ──────────────────────────── MAINS UI ──────────────────────────── */
   if (isMains) {
     const marksPerQ = totalMarks && totalQuestions ? Math.round(totalMarks / totalQuestions) : 15;
-    const minPerQ = Math.round(marksPerQ * 0.5);
+    const minPerQ = Math.max(1, Math.round(marksPerQ * 0.5));
+    const isLast = currentIdx === totalQuestions - 1;
+    const answeredCount = questions.reduce((acc, _, i) => {
+      const a = mainsAnswers[i];
+      return acc + (a && (a.text.trim() || a.file) ? 1 : 0);
+    }, 0);
 
     /* ── Evaluating screen ── */
     if (mainsPhase === 'evaluating') {
+      const { done, total } = evaluationProgress;
+      const pct = total > 0 ? Math.max(8, Math.round((done / total) * 100)) : 8;
       return (
-        <div style={{ minHeight: '100vh', background: '#0F172B', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', gap: 24 }}>
+        <div style={{ minHeight: '100vh', background: '#0F172B', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', gap: 20, padding: 24 }}>
           <div style={{ fontSize: 56 }}>🧠</div>
-          <h2 style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 700, margin: 0 }}>AI is evaluating your answers...</h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, margin: 0 }}>This usually takes about 30 seconds</p>
-          <div style={{ width: 320, height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 999, overflow: 'hidden', marginTop: 8 }}>
-            <div style={{ height: '100%', width: '40%', background: '#F59E0B', borderRadius: 999, animation: 'progress 3s linear forwards' }} />
+          <h2 style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 700, margin: 0, textAlign: 'center' }}>AI is evaluating your answers...</h2>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, margin: 0 }}>
+            Submitting {done} of {total} · this usually takes about 30–60 seconds
+          </p>
+          <div style={{ width: 360, maxWidth: '90%', height: 8, background: 'rgba(255,255,255,0.15)', borderRadius: 999, overflow: 'hidden', marginTop: 8 }}>
+            <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg,#FBBF24,#F59E0B)', borderRadius: 999, transition: 'width 0.4s ease' }} />
           </div>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, margin: 0 }}>● Reading your handwritten answers</p>
-          <style>{`@keyframes progress { from { width: 10% } to { width: 90% } }`}</style>
-        </div>
-      );
-    }
-
-    /* ── Upload screen ── */
-    if (mainsPhase === 'upload') {
-      return (
-        <div style={{ minHeight: '100vh', background: '#F9FAFB', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
-          {/* Header */}
-          <div style={{ background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)', padding: '10px 24px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 14 }}>✍️</span>
-              <span style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 14 }}>{title}</span>
-            </div>
-            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600 }}>Upload your answers</span>
-            <span style={{ color: '#00C950', fontSize: 13, fontWeight: 700, background: 'rgba(0,201,80,0.12)', padding: '4px 12px', borderRadius: 8 }}>✓ Done</span>
-          </div>
-
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', gap: 24 }}>
-            {/* All read card */}
-            <div style={{ background: '#FFFFFF', borderRadius: 20, padding: '32px', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', maxWidth: 480, width: '100%' }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>✍️</div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0F172B', margin: '0 0 10px' }}>All {totalQuestions} questions read!</h2>
-              <p style={{ color: '#6B7280', fontSize: 14, lineHeight: '22px', margin: 0 }}>
-                Now write your answers on paper. Take your time — there&apos;s no rush.<br />
-                Once done, photograph your answer sheets and upload below for AI evaluation.
-              </p>
-            </div>
-
-            {/* Upload card */}
-            <div style={{ background: '#FFFFFF', borderRadius: 20, padding: '28px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', maxWidth: 480, width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontSize: 14, fontWeight: 700 }}>📎</div>
-                <span style={{ fontWeight: 700, fontSize: 15, color: '#0F172B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Upload your handwritten answers</span>
-              </div>
-              <p style={{ color: '#6B7280', fontSize: 13, lineHeight: '20px', marginBottom: 20 }}>
-                You&apos;ve read all the questions. Now write your answers on paper, photograph/scan the sheets and upload below. AI will evaluate each answer with detailed markup.
-              </p>
-
-              {/* Drop zone */}
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                style={{ border: '2px dashed #D1D5DB', borderRadius: 14, padding: '32px 24px', textAlign: 'center', cursor: 'pointer', background: '#FAFAFA', marginBottom: 16 }}
-              >
-                <input ref={fileInputRef} type="file" multiple accept=".jpg,.jpeg,.png,.pdf" style={{ display: 'none' }} onChange={handleFileSelect} />
-                <div style={{ fontSize: 36, marginBottom: 8 }}>📄</div>
-                <p style={{ color: '#374151', fontWeight: 600, fontSize: 14, margin: '0 0 4px' }}>Click to upload answer sheet(s)</p>
-                <p style={{ color: '#9CA3AF', fontSize: 12, margin: 0 }}>JPG, PNG or PDF · Multiple pages supported</p>
-              </div>
-
-              {/* File list */}
-              {uploadedFiles.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                  {uploadedFiles.map((f, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F3F4F6', borderRadius: 10, padding: '8px 12px' }}>
-                      <span style={{ fontSize: 13, color: '#374151', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }}>{f.name}</span>
-                      <button onClick={() => handleRemoveFile(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 16, padding: 0 }}>✕</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <button
-                onClick={handleMainsSubmit}
-                disabled={uploadedFiles.length === 0}
-                style={{ width: '100%', padding: '14px', background: uploadedFiles.length === 0 ? '#94A3B8' : '#0F172B', color: '#FFFFFF', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: 15, cursor: uploadedFiles.length === 0 ? 'not-allowed' : 'pointer' }}
-              >
-                🧠 Submit for AI Evaluation
-              </button>
-              <p style={{ textAlign: 'center', color: '#9CA3AF', fontSize: 12, marginTop: 10 }}>AI will analyze your answers in ~90 seconds. Evaluation tips provided.</p>
-            </div>
-          </div>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, margin: 0 }}>● Reading answers &nbsp;●&nbsp; Scoring against rubric &nbsp;●&nbsp; Preparing feedback</p>
         </div>
       );
     }
@@ -535,7 +551,9 @@ function MockTestAttemptInner() {
               <span style={{ fontSize: 14 }}>✍️</span>
               <span style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 14 }}>{title}</span>
             </div>
-            <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: 14 }}>Q {currentIdx + 1} of {totalQuestions}</span>
+            <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontSize: 14 }}>
+              Question {currentIdx + 1} of {totalQuestions}
+            </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 16 }}>⏱️</span>
               <span style={{ color: '#FFFFFF', fontWeight: 800, fontSize: 18 }}>{formatTime(timeLeft)}</span>
@@ -543,11 +561,31 @@ function MockTestAttemptInner() {
           </div>
         </div>
 
+        {/* Progress bar */}
+        <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: 720, padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ flex: 1, height: 4, background: '#E5E7EB', borderRadius: 999, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${Math.round(((currentIdx + 1) / Math.max(1, totalQuestions)) * 100)}%`, background: '#F59E0B', transition: 'width 0.25s ease' }} />
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#364153', whiteSpace: 'nowrap' }}>
+              {answeredCount} / {totalQuestions} answered
+            </div>
+          </div>
+        </div>
+
+        {/* Error banner */}
+        {error && (
+          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 14 }}>⚠️</span>
+            <span style={{ fontSize: 14, color: '#991B1B' }}>{error}</span>
+          </div>
+        )}
+
         {/* Question card */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px' }}>
-          <div style={{ background: '#FFFFFF', borderRadius: 20, padding: '32px', boxShadow: '0 4px 24px rgba(0,0,0,0.07)', maxWidth: 680, width: '100%' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 24px' }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 20, padding: '28px 32px', boxShadow: '0 4px 24px rgba(0,0,0,0.07)', maxWidth: 720, width: '100%' }}>
             {/* Badge row */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
               <div style={{ background: '#0F172B', color: '#FFFFFF', fontWeight: 700, fontSize: 12, letterSpacing: '0.08em', padding: '6px 14px', borderRadius: 8, textTransform: 'uppercase' }}>
                 Question {currentIdx + 1} of {totalQuestions}
               </div>
@@ -557,24 +595,129 @@ function MockTestAttemptInner() {
             </div>
 
             {/* Question text */}
-            <p style={{ fontSize: 17, fontWeight: 500, color: '#17223E', lineHeight: '28px', marginBottom: 20 }}>
+            <p style={{ fontSize: 17, fontWeight: 500, color: '#17223E', lineHeight: '28px', marginBottom: 24, whiteSpace: 'pre-line' }}>
               {currentQ.text}
             </p>
 
-            {/* Directive hint if available */}
-            {currentQ.explanation && (
-              <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 24, borderLeft: '4px solid #F59E0B' }}>
-                <p style={{ fontSize: 13, color: '#92400E', margin: 0, lineHeight: '20px' }}>{currentQ.explanation}</p>
-              </div>
-            )}
+            {/* Text answer */}
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#0F172B', marginBottom: 8, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              Your Answer
+            </label>
+            <textarea
+              value={currentAnswer.text}
+              onChange={(e) => handleMainsTextChange(e.target.value)}
+              placeholder="Type your answer here… or upload a PDF/image below."
+              rows={8}
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                border: '1px solid #D1D5DB',
+                borderRadius: 12,
+                fontSize: 15,
+                lineHeight: '24px',
+                color: '#0F172B',
+                fontFamily: 'inherit',
+                resize: 'vertical',
+                boxSizing: 'border-box',
+                outline: 'none',
+                background: '#FAFAFA',
+              }}
+            />
+            <div style={{ marginTop: 6, fontSize: 12, color: '#6B7280' }}>
+              {currentAnswer.text.trim() ? `${currentAnswer.text.trim().split(/\s+/).filter(Boolean).length} words` : 'No text yet'}
+            </div>
 
-            {/* Next button */}
-            <button
-              onClick={handleMainsNext}
-              style={{ background: '#0F172B', color: '#FFFFFF', border: 'none', borderRadius: 12, padding: '13px 28px', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-            >
-              {currentIdx < totalQuestions - 1 ? 'Next Question →' : 'Done Reading →'}
-            </button>
+            {/* File upload */}
+            <div style={{ marginTop: 18 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#0F172B', marginBottom: 8, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Or upload handwritten answer (PDF / Image)
+              </label>
+              {!currentAnswer.file ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ border: '2px dashed #D1D5DB', borderRadius: 12, padding: '20px 16px', textAlign: 'center', cursor: 'pointer', background: '#FAFAFA' }}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    style={{ display: 'none' }}
+                    onChange={handleMainsFileSelect}
+                  />
+                  <div style={{ fontSize: 28, marginBottom: 4 }}>📄</div>
+                  <p style={{ color: '#374151', fontWeight: 600, fontSize: 13, margin: '0 0 2px' }}>Click to upload your answer sheet</p>
+                  <p style={{ color: '#9CA3AF', fontSize: 11, margin: 0 }}>JPG, PNG or PDF · one file per question</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 10, padding: '10px 14px' }}>
+                  <span style={{ fontSize: 13, color: '#15803D', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    📎 {currentAnswer.file.name}
+                  </span>
+                  <button onClick={handleMainsRemoveFile} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#15803D', fontSize: 16, padding: 0, fontWeight: 700 }}>✕</button>
+                </div>
+              )}
+            </div>
+
+            {/* Navigation */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 28, gap: 12 }}>
+              <button
+                onClick={handleMainsPrev}
+                disabled={currentIdx === 0}
+                style={{
+                  background: 'none',
+                  border: '1.5px solid #CBD5E1',
+                  borderRadius: 10,
+                  padding: '10px 18px',
+                  color: currentIdx === 0 ? '#CBD5E1' : '#334155',
+                  cursor: currentIdx === 0 ? 'not-allowed' : 'pointer',
+                  fontWeight: 600,
+                  fontSize: 14,
+                }}
+              >
+                ← Prev
+              </button>
+
+              {isLast ? (
+                <button
+                  onClick={handleMainsSubmitAll}
+                  style={{
+                    background: 'linear-gradient(90deg,#F1A901,#FD7302)',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: 12,
+                    padding: '13px 28px',
+                    fontWeight: 800,
+                    fontSize: 15,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(253,115,2,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  🧠 Submit &amp; Evaluate
+                </button>
+              ) : (
+                <button
+                  onClick={handleMainsNext}
+                  style={{
+                    background: '#0F172B',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: 12,
+                    padding: '13px 28px',
+                    fontWeight: 700,
+                    fontSize: 15,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  Next Question →
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

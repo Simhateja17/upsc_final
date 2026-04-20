@@ -135,14 +135,23 @@ export default function PerformancePage() {
   const mcq = data?.mcq ?? {};
   const streak = data?.streak ?? {};
   const mockTests = data?.mockTests ?? {};
+  const mains = data?.mains ?? {};
+  const testSeries = data?.testSeries ?? {};
   const weeklyMcqTrend = analyticsData?.weeklyMcqTrend ?? [];
   const dailyActivity = analyticsData?.dailyActivity ?? [];
 
-  const totalTests = (mcq.totalAttempts ?? 0) + (mockTests.totalAttempts ?? 0);
+  const totalTests =
+    data?.testsTaken ??
+    ((mcq.totalAttempts ?? 0) +
+      (mockTests.totalAttempts ?? 0) +
+      (mains.totalAttempts ?? 0) +
+      (testSeries.totalAttempts ?? 0));
   const avgAccuracy = mcq.avgAccuracy ?? 0;
   const bestPercentile = mcq.bestPercentile ?? 0;
   const currentStreak = streak.currentStreak ?? 0;
-  const totalQuestions = (mcq.totalCorrect ?? 0) + (mcq.totalWrong ?? 0) + (mcq.totalSkipped ?? 0);
+  const totalQuestions =
+    data?.questionsAttempted ??
+    ((mcq.totalCorrect ?? 0) + (mcq.totalWrong ?? 0) + (mcq.totalSkipped ?? 0));
 
   const chartTrendData: TrendPoint[] = weeklyMcqTrend.length > 0
     ? weeklyMcqTrend.slice(-8).map((week: any, index: number) => ({

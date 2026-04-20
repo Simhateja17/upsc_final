@@ -105,6 +105,41 @@ export const mockTestService = {
     api.put<any>(`/mock-tests/${testId}/save-progress`, { answers }, authConfig()),
   getResults: (testId: string) => api.get<any>(`/mock-tests/${testId}/results`, authConfig()),
   getRecommendations: (testId: string) => api.get<any>(`/mock-tests/${testId}/recommendations`, authConfig()),
+
+  // Mains AI evaluation
+  submitMainsAnswer: async (
+    testId: string,
+    questionId: string,
+    opts: { answerText?: string; file?: File }
+  ): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
+    const fd = new FormData();
+    fd.append('mockTestQuestionId', questionId);
+    if (opts.answerText) fd.append('answerText', opts.answerText);
+    if (opts.file) fd.append('file', opts.file);
+
+    const token = getToken();
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/mock-tests/${testId}/mains-submit`,
+      {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      }
+    );
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Submit failed');
+    return json;
+  },
+  getMainsEvaluationStatus: (testId: string, attemptId: string) =>
+    api.get<any>(
+      `/mock-tests/${testId}/mains-evaluation-status?attemptId=${encodeURIComponent(attemptId)}`,
+      authConfig()
+    ),
+  getMainsResults: (testId: string, attemptId: string) =>
+    api.get<any>(
+      `/mock-tests/${testId}/mains-results?attemptId=${encodeURIComponent(attemptId)}`,
+      authConfig()
+    ),
 };
 
 // ==================== Study Planner ====================
