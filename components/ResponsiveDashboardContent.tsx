@@ -603,7 +603,7 @@ const ResponsiveDashboardContent = () => {
                 Today's Trio
               </h2>
             </div>
-            <Link href="#" className="font-inter text-[14px] text-[#6366F1] font-medium hover:text-[#4F46E5] transition-colors">
+            <Link href="/dashboard" className="font-inter text-[14px] text-[#6366F1] font-medium hover:text-[#4F46E5] transition-colors">
               View All →
             </Link>
           </div>

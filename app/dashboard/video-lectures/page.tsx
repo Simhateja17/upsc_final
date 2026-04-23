@@ -804,7 +804,7 @@ export default function VideoLecturesPage() {
                       </button>
                       {video.videoUrl ? (
                         <a
-                          href={video.videoUrl}
+                          href={video.videoUrl.startsWith('http') ? video.videoUrl : `https://${video.videoUrl}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 font-arimo font-bold text-white"

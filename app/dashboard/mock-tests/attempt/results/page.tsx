@@ -131,11 +131,27 @@ interface ResultsData {
   testLabel?: string;
 }
 
+interface MainsPerQuestion {
+  idx: number;
+  questionText: string;
+  subject: string;
+  score: number;
+  maxScore: number;
+  strengths: string[];
+  improvements: string[];
+  suggestions: string[];
+  detailedFeedback?: string;
+  answerText?: string | null;
+  wordCount?: number;
+}
+
 function MockTestResultsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const testId = searchParams.get('testId');
   const mode = searchParams.get('mode');
+  const examMode = searchParams.get('examMode') || 'prelims';
+  const isMains = examMode === 'mains';
   const title = searchParams.get('title') || 'Test Series';
 
   const [results, setResults] = useState<ResultsData | null>(null);
@@ -143,8 +159,62 @@ function MockTestResultsInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(1);
+  const [mainsData, setMainsData] = useState<MainsPerQuestion[] | null>(null);
+
+  /* ─── Mains results loader ─── */
+  useEffect(() => {
+    if (!isMains || !testId) return;
+    let cancelled = false;
+
+    async function loadMains() {
+      setLoading(true);
+      setError(null);
+      try {
+        const raw = typeof window !== 'undefined'
+          ? sessionStorage.getItem(`mockTestMainsAttempts:${testId}`)
+          : null;
+        if (!raw) throw new Error('No mains evaluation session found. Please re-attempt the test.');
+        const { attemptIds } = JSON.parse(raw) as { attemptIds: string[] };
+        if (!attemptIds?.length) throw new Error('No mains attempts recorded.');
+
+        const out: MainsPerQuestion[] = [];
+        for (let i = 0; i < attemptIds.length; i++) {
+          const id = attemptIds[i];
+          const res = await mockTestService.getMainsResults(testId!, id);
+          if (cancelled) return;
+          const d = res.data || {};
+          out.push({
+            idx: i + 1,
+            questionText: d.question?.questionText || '',
+            subject: d.question?.subject || '',
+            score: Number(d.score ?? 0),
+            maxScore: Number(d.maxScore ?? 15),
+            strengths: Array.isArray(d.strengths) ? d.strengths : [],
+            improvements: Array.isArray(d.improvements) ? d.improvements : [],
+            suggestions: Array.isArray(d.suggestions) ? d.suggestions : [],
+            detailedFeedback: d.detailedFeedback,
+            answerText: d.answerText,
+            wordCount: d.wordCount,
+          });
+        }
+        if (!cancelled) {
+          setMainsData(out);
+          setLoading(false);
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          setError(e.message || 'Failed to load mains results.');
+          setLoading(false);
+        }
+      }
+    }
+
+    loadMains();
+    return () => { cancelled = true; };
+  }, [isMains, testId]);
 
   useEffect(() => {
+    if (isMains) return; // handled by mains loader above
     if (mode === 'sample') {
       try {
         const raw = typeof window !== 'undefined' ? sessionStorage.getItem('mockTestSampleResults') : null;
@@ -300,7 +370,7 @@ function MockTestResultsInner() {
   }
 
   /* ─── Error State ─── */
-  if (error || !results) {
+  if (error || (!isMains && !results) || (isMains && !mainsData)) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -334,7 +404,149 @@ function MockTestResultsInner() {
     );
   }
 
-  const { total, correct, wrong, skipped, scorePct } = results;
+  /* ─── Mains Results View (PYQ-style) ─── */
+  if (isMains && mainsData) {
+    const totalScore = mainsData.reduce((a, b) => a + (b.score || 0), 0);
+    const totalMax = mainsData.reduce((a, b) => a + (b.maxScore || 0), 0) || 1;
+    const pct = Math.round((totalScore / totalMax) * 100);
+    const headline =
+      pct >= 70 ? 'Strong attempt across all questions'
+      : pct >= 50 ? 'Good attempt — solid foundation'
+      : 'Keep practising — real progress ahead';
+
+    const gradeFor = (s: number, m: number): string => {
+      const p = m > 0 ? (s / m) * 100 : 0;
+      if (p >= 85) return 'A';
+      if (p >= 75) return 'A-';
+      if (p >= 65) return 'B+';
+      if (p >= 55) return 'B';
+      if (p >= 45) return 'C+';
+      if (p >= 35) return 'C';
+      return 'D';
+    };
+
+    return (
+      <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
+        <div style={{ maxWidth: 960, margin: '0 auto' }}>
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard/mock-tests')}
+            style={{ background: 'transparent', border: 'none', color: '#374151', fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}
+          >
+            ← Back to Mock Tests
+          </button>
+
+          {/* Header card */}
+          <div style={{ borderRadius: 24, background: '#0F172B', overflow: 'hidden', marginBottom: 24 }}>
+            <div style={{ padding: '28px 32px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: '#1E3A5F', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#FBBF24', textTransform: 'uppercase', marginBottom: 8 }}>
+                  🖥 AI EVALUATION COMPLETE
+                </div>
+                <h2 style={{ fontSize: 24, fontWeight: 800, color: '#FFFFFF', margin: '0 0 4px' }}>{headline}</h2>
+                <p style={{ fontSize: 14, color: '#94A3B8', margin: 0 }}>
+                  {title} · Mains · {mainsData.length} Questions evaluated
+                </p>
+              </div>
+              <div style={{ position: 'relative', width: 96, height: 96 }}>
+                <svg width="96" height="96" viewBox="0 0 96 96" style={{ transform: 'rotate(-90deg)' }}>
+                  <circle cx="48" cy="48" r="42" fill="none" stroke="#64748B" strokeWidth="6" />
+                  <circle
+                    cx="48" cy="48" r="42" fill="none" stroke="#FBBF24" strokeWidth="6"
+                    strokeDasharray={`${2 * Math.PI * 42}`}
+                    strokeDashoffset={2 * Math.PI * 42 * (1 - Math.min(1, Math.max(0, pct / 100)))}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: '#FFFFFF', lineHeight: 1 }}>{pct}%</span>
+                  <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600, letterSpacing: '0.1em', marginTop: 4 }}>MARKS</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Per-question cards */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {mainsData.map((q) => {
+              const grade = gradeFor(q.score, q.maxScore);
+              return (
+                <div key={q.idx} style={{ background: '#F1F5F9', borderRadius: 16, padding: '22px 24px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#64748B', marginBottom: 10 }}>
+                    QUESTION {q.idx}{q.subject ? ` · ${q.subject.toUpperCase()}` : ''}
+                  </div>
+                  <p style={{ fontSize: 15, lineHeight: '24px', color: '#334155', margin: '0 0 14px', whiteSpace: 'pre-line' }}>
+                    {q.questionText}
+                  </p>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
+                    <span style={{ fontSize: 28, fontWeight: 800, color: '#1E3A5F' }}>{grade}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#64748B' }}>
+                      {q.score}/{q.maxScore} marks
+                    </span>
+                    {typeof q.wordCount === 'number' && q.wordCount > 0 && (
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', background: '#E2E8F0', borderRadius: 8, padding: '4px 10px' }}>
+                        {q.wordCount} words
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {q.strengths.length > 0 && (
+                      <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
+                        <span style={{ color: '#15803D', fontWeight: 700, flexShrink: 0 }}>✓ Strengths:</span>
+                        <span>{q.strengths.join(' ')}</span>
+                      </div>
+                    )}
+                    {q.improvements.length > 0 && (
+                      <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
+                        <span style={{ color: '#EA580C', fontWeight: 700, flexShrink: 0 }}>↑ Improve:</span>
+                        <span>{q.improvements.join(' ')}</span>
+                      </div>
+                    )}
+                    {q.suggestions.length > 0 && (
+                      <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
+                        <span style={{ color: '#DC2626', fontWeight: 700, flexShrink: 0 }}>✕ Key misses:</span>
+                        <span>{q.suggestions.join(' ')}</span>
+                      </div>
+                    )}
+                    {q.detailedFeedback && (
+                      <div style={{ marginTop: 6, fontSize: 13, color: '#475569', lineHeight: '20px', background: '#FFFFFF', borderRadius: 10, padding: '10px 14px', border: '1px solid #E2E8F0' }}>
+                        {q.detailedFeedback}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Overall feedback */}
+          <div style={{ marginTop: 24, background: '#1E293B', borderRadius: 16, padding: '24px 28px' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', color: '#94A3B8', marginBottom: 12 }}>
+              📊 JEET SIR&apos;S OVERALL FEEDBACK
+            </div>
+            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
+                <span>💡</span>
+                <span>Overall you scored <strong>{totalScore}/{totalMax}</strong> ({pct}%). Focus next on the questions below 50% to lift your average quickly.</span>
+              </li>
+              <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
+                <span>📖</span>
+                <span>Layer in recent policy / current-affairs examples — examiners consistently reward contemporary linkage on mains.</span>
+              </li>
+              <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
+                <span>🎯</span>
+                <span>Push for multi-dimensional analysis: social, economic, political, and environmental angles strengthen answers significantly.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const { total, correct, wrong, skipped, scorePct } = results!;
   const sample = (results as any)._sample as any | undefined;
 
   return (
