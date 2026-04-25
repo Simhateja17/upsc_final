@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { dashboardService } from '@/lib/services';
 
 interface PerformanceData {
@@ -73,6 +74,106 @@ const PerformanceStatsWidget = () => {
 
   const displayRank = rank ?? getDailyDummyRank();
   const displayRankPercentile = rankPercentile ?? null;
+
+  // Dynamic Achievement Badges
+  interface Badge {
+    id: string;
+    name: string;
+    icon: string;
+    status: 'earned' | 'in-progress' | 'locked';
+    progress?: string;
+    bgColor: string;
+    borderColor?: string;
+  }
+
+  const computeBadges = (): Badge[] => {
+    // For loading state or no data, return all locked
+    if (loading) {
+      return [
+        { id: 'streak', name: '30-Day Streak', icon: '🔥', status: 'locked', bgColor: '#F9FAFB', borderColor: '#E5E7EB' },
+        { id: 'learner', name: 'Quick Learner', icon: '⚡', status: 'locked', bgColor: '#F9FAFB', borderColor: '#E5E7EB' },
+        { id: 'accuracy', name: '95% Accuracy', icon: '🎯', status: 'locked', bgColor: '#F9FAFB', borderColor: '#E5E7EB' },
+        { id: 'polity', name: 'Polity Pro', icon: '🏛️', status: 'locked', bgColor: '#F9FAFB', borderColor: '#E5E7EB' },
+        { id: 'allrounder', name: 'All-Rounder', icon: '🌟', status: 'locked', bgColor: '#F9FAFB', borderColor: '#E5E7EB' },
+        { id: 'centurion', name: 'Centurion', icon: '📚', status: 'locked', bgColor: '#F9FAFB', borderColor: '#E5E7EB', progress: '0/100' },
+      ];
+    }
+
+    const streakCount = streak?.currentStreak ?? 0;
+    const longestStreak = streak?.longestStreak ?? 0;
+    const testsCount = performance?.testsTaken ?? 0;
+    const accuracy = performance?.syllabusCoverage ?? 0; // Using syllabus coverage as proxy for accuracy
+
+    return [
+      {
+        id: 'streak',
+        name: '30-Day Streak',
+        icon: '🔥',
+        status: longestStreak >= 30 || streakCount >= 30 ? 'earned' : streakCount >= 7 ? 'in-progress' : 'locked',
+        bgColor: longestStreak >= 30 || streakCount >= 30 ? '#FFF5E6' : streakCount >= 7 ? '#FEF3C7' : '#F9FAFB',
+        borderColor: longestStreak >= 30 || streakCount >= 30 ? '#FDBA74' : streakCount >= 7 ? '#FCD34D' : '#E5E7EB',
+      },
+      {
+        id: 'learner',
+        name: 'Quick Learner',
+        icon: '⚡',
+        status: testsCount >= 5 ? 'earned' : testsCount >= 1 ? 'in-progress' : 'locked',
+        bgColor: testsCount >= 5 ? '#FFF9E6' : testsCount >= 1 ? '#FEF3C7' : '#F9FAFB',
+        borderColor: testsCount >= 5 ? '#FCD34D' : testsCount >= 1 ? '#FCD34D' : '#E5E7EB',
+      },
+      {
+        id: 'accuracy',
+        name: '95% Accuracy',
+        icon: '🎯',
+        status: accuracy >= 95 ? 'earned' : accuracy >= 50 ? 'in-progress' : 'locked',
+        bgColor: accuracy >= 95 ? '#ECFDF5' : accuracy >= 50 ? '#DBEAFE' : '#F9FAFB',
+        borderColor: accuracy >= 95 ? '#6EE7B7' : accuracy >= 50 ? '#93C5FD' : '#E5E7EB',
+      },
+      {
+        id: 'polity',
+        name: 'Polity Pro',
+        icon: '🏛️',
+        status: testsCount >= 10 ? 'earned' : testsCount >= 3 ? 'in-progress' : 'locked',
+        bgColor: testsCount >= 10 ? '#FFF5E6' : testsCount >= 3 ? '#FEF3C7' : '#F9FAFB',
+        borderColor: testsCount >= 10 ? '#FDBA74' : testsCount >= 3 ? '#FCD34D' : '#E5E7EB',
+      },
+      {
+        id: 'allrounder',
+        name: 'All-Rounder',
+        icon: '🌟',
+        status: (testsCount >= 5 && accuracy >= 50) ? 'earned' : testsCount >= 2 ? 'in-progress' : 'locked',
+        bgColor: (testsCount >= 5 && accuracy >= 50) ? '#FFF9E6' : testsCount >= 2 ? '#FEF3C7' : '#F9FAFB',
+        borderColor: (testsCount >= 5 && accuracy >= 50) ? '#FCD34D' : testsCount >= 2 ? '#FCD34D' : '#E5E7EB',
+      },
+      {
+        id: 'centurion',
+        name: 'Centurion',
+        icon: '📚',
+        status: testsCount >= 100 ? 'earned' : 'locked',
+        bgColor: testsCount >= 100 ? '#ECFDF5' : '#F9FAFB',
+        borderColor: testsCount >= 100 ? '#6EE7B7' : '#E5E7EB',
+        progress: `${Math.min(testsCount, 100)}/100`,
+      },
+    ];
+  };
+
+  const badges = computeBadges();
+
+  const getBadgeStatusColor = (status: Badge['status']) => {
+    switch (status) {
+      case 'earned': return '#F59E0B';
+      case 'in-progress': return '#3B82F6';
+      case 'locked': return '#9CA3AF';
+    }
+  };
+
+  const getBadgeStatusText = (status: Badge['status']) => {
+    switch (status) {
+      case 'earned': return 'Earned';
+      case 'in-progress': return 'In Progress';
+      case 'locked': return 'Locked';
+    }
+  };
 
   return (
     <div className="w-full space-y-[clamp(12px,0.83vw,16px)]">
@@ -261,6 +362,7 @@ const PerformanceStatsWidget = () => {
         }}
       >
         <div className="flex items-center" style={{ gap: '8px' }}>
+          <span className="text-[20px]">🏆</span>
           <span className="font-outfit font-semibold whitespace-nowrap" style={{ fontSize: '18px', lineHeight: '1', color: '#1E2875' }}>
             Weekly Leaderboard
           </span>
@@ -281,70 +383,47 @@ const PerformanceStatsWidget = () => {
         }}
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.25vw,24px)]">
-          <img
-            src="/ach.png"
-            alt="Achievement Badges"
-            className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
-          />
+          <span className="text-[22px]">🏅</span>
           <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(16px,1.04vw,20px)', lineHeight: '1.2' }}>
             Achievement Badges
           </h3>
         </div>
-        <div className="flex justify-between items-start gap-[clamp(8px,0.52vw,12px)]">
-          <div className="flex-1 flex flex-col items-center gap-[clamp(6px,0.42vw,8px)]">
+        <div className="grid grid-cols-3 gap-[clamp(8px,0.52vw,12px)]">
+          {badges.map((badge) => (
             <div
-              className="rounded-full flex items-center justify-center overflow-hidden"
+              key={badge.id}
+              className="flex flex-col items-center gap-[6px] rounded-[12px] p-[10px]"
               style={{
-                width: 'clamp(52px,3.33vw,64px)',
-                height: 'clamp(52px,3.33vw,64px)',
-                background: '#FFF5E6',
+                background: badge.bgColor,
+                border: badge.borderColor ? `1px solid ${badge.borderColor}` : 'none',
+                opacity: badge.status === 'locked' ? 0.7 : 1,
               }}
             >
-              <img
-                src="/icons/dashboard/badge-streak.png"
-                alt="30-Day Streak"
-                style={{ width: '70%', height: 'auto' }}
-              />
+              <span className="text-[28px]" style={{ filter: badge.status === 'locked' ? 'grayscale(1)' : 'none' }}>
+                {badge.icon}
+              </span>
+              <p
+                className="font-arimo font-bold text-center"
+                style={{
+                  fontSize: 'clamp(10px,0.63vw,12px)',
+                  lineHeight: '1.33',
+                  color: badge.status === 'locked' ? '#9CA3AF' : '#101828',
+                }}
+              >
+                {badge.name}
+              </p>
+              <p
+                className="font-arimo text-center font-medium"
+                style={{
+                  fontSize: 'clamp(9px,0.52vw,10px)',
+                  lineHeight: '1.2',
+                  color: getBadgeStatusColor(badge.status),
+                }}
+              >
+                {badge.progress || getBadgeStatusText(badge.status)}
+              </p>
             </div>
-            <p className="font-arimo font-bold text-[#101828] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>30-Day Streak</p>
-            <p className="font-arimo text-[#F97316] text-center" style={{ fontSize: 'clamp(9px,0.52vw,10px)', lineHeight: '1.2' }}>Earned</p>
-          </div>
-          <div className="flex-1 flex flex-col items-center gap-[clamp(6px,0.42vw,8px)]">
-            <div
-              className="rounded-full flex items-center justify-center overflow-hidden"
-              style={{
-                width: 'clamp(52px,3.33vw,64px)',
-                height: 'clamp(52px,3.33vw,64px)',
-                background: '#FFF9E6',
-              }}
-            >
-              <img
-                src="/icons/dashboard/badge-learner.png"
-                alt="Quick Learner"
-                style={{ width: '70%', height: 'auto' }}
-              />
-            </div>
-            <p className="font-arimo font-bold text-[#101828] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Quick Learner</p>
-            <p className="font-arimo text-[#F97316] text-center" style={{ fontSize: 'clamp(9px,0.52vw,10px)', lineHeight: '1.2' }}>Earned</p>
-          </div>
-          <div className="flex-1 flex flex-col items-center gap-[clamp(6px,0.42vw,8px)]">
-            <div
-              className="rounded-full flex items-center justify-center overflow-hidden"
-              style={{
-                width: 'clamp(52px,3.33vw,64px)',
-                height: 'clamp(52px,3.33vw,64px)',
-                background: '#FFF5F5',
-              }}
-            >
-              <img
-                src="/icons/dashboard/badge-accuracy.png"
-                alt="95% Accuracy"
-                style={{ width: '70%', height: 'auto' }}
-              />
-            </div>
-            <p className="font-arimo font-bold text-[#101828] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>95% Accuracy</p>
-            <p className="font-arimo text-[#6B7280] text-center" style={{ fontSize: 'clamp(9px,0.52vw,10px)', lineHeight: '1.2' }}>In Progress</p>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -358,72 +437,52 @@ const PerformanceStatsWidget = () => {
         }}
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
-          <img
-            src="/icons/dashboard/target-sm.png"
-            alt="Smart Revision Tools"
-            className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
-          />
+          <span className="text-[22px]">🎯</span>
           <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(16px,1.04vw,20px)', lineHeight: '1.4' }}>
             Smart Revision Tools
           </h3>
         </div>
         <div className="grid grid-cols-2 gap-[clamp(12px,0.83vw,16px)]">
-          <button
-            className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:shadow-md transition-shadow flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
-            style={{
-              padding: 'clamp(12px,0.83vw,16px)',
-            }}
-          >
-            <img
-              src="/icon-folder.png"
-              alt="Flashcards"
-              style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
-            />
-            <p className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Flashcards</p>
-            <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
-          </button>
-          <button
-            className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:shadow-md transition-shadow flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
-            style={{
-              padding: 'clamp(12px,0.83vw,16px)',
-            }}
-          >
-            <img
-              src="/list-fail.png"
-              alt="Wrong Attempts"
-              style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
-            />
-            <p className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Wrong Attempts</p>
-            <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
-          </button>
-          <button
-            className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:shadow-md transition-shadow flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
-            style={{
-              padding: 'clamp(12px,0.83vw,16px)',
-            }}
-          >
-            <img
-              src="/icons/dashboard/brain.png"
-              alt="Mindmaps"
-              style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
-            />
-            <p className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Mindmaps</p>
-            <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
-          </button>
-          <button
-            className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:shadow-md transition-shadow flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
-            style={{
-              padding: 'clamp(12px,0.83vw,16px)',
-            }}
-          >
-            <img
-              src="/news.png"
-              alt="Quick Notes"
-              style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
-            />
-            <p className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Quick Notes</p>
-            <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
-          </button>
+          <Link href="/dashboard/flashcards">
+            <div
+              className="border border-[#E5E7EB] bg-white rounded-[14px] flex flex-col items-center gap-[10px] cursor-pointer transition-all hover:border-[#17223E] hover:shadow-md hover:scale-[1.02]"
+              style={{ padding: '16px 12px' }}
+            >
+              <span className="text-[32px]">🃏</span>
+              <p className="font-arimo font-bold text-[#101828] text-center" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Flashcards</p>
+              <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
+            </div>
+          </Link>
+          <Link href="/dashboard/wrong-attempts">
+            <div
+              className="border border-[#E5E7EB] bg-white rounded-[14px] flex flex-col items-center gap-[10px] cursor-pointer transition-all hover:border-[#17223E] hover:shadow-md hover:scale-[1.02]"
+              style={{ padding: '16px 12px' }}
+            >
+              <span className="text-[32px]">❌</span>
+              <p className="font-arimo font-bold text-[#101828] text-center" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Wrong Attempts</p>
+              <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
+            </div>
+          </Link>
+          <Link href="/dashboard/mindmaps">
+            <div
+              className="border border-[#E5E7EB] bg-white rounded-[14px] flex flex-col items-center gap-[10px] cursor-pointer transition-all hover:border-[#17223E] hover:shadow-md hover:scale-[1.02]"
+              style={{ padding: '16px 12px' }}
+            >
+              <span className="text-[32px]">🧠</span>
+              <p className="font-arimo font-bold text-[#101828] text-center" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Mindmaps</p>
+              <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
+            </div>
+          </Link>
+          <Link href="/dashboard/quick-notes">
+            <div
+              className="border border-[#E5E7EB] bg-white rounded-[14px] flex flex-col items-center gap-[10px] cursor-pointer transition-all hover:border-[#17223E] hover:shadow-md hover:scale-[1.02]"
+              style={{ padding: '16px 12px' }}
+            >
+              <span className="text-[32px]">📝</span>
+              <p className="font-arimo font-bold text-[#101828] text-center" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Quick Notes</p>
+              <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
+            </div>
+          </Link>
         </div>
       </div>
 

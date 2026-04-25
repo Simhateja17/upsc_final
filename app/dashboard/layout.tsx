@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import DashboardHeader from '@/components/DashboardHeader';
 import Sidebar from '@/components/Sidebar';
+import MilestonePopup from '@/components/MilestonePopup';
 
 const HIDE_SIDEBAR_ROUTES = ['/dashboard/profile', '/dashboard/settings', '/dashboard/billing', '/dashboard/feedback'];
 
@@ -20,6 +21,17 @@ export default function DashboardLayout({
   const didTryRefreshRef = useRef(false);
   const hideSidebar = HIDE_SIDEBAR_ROUTES.includes(pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showMilestone, setShowMilestone] = useState(false);
+
+  // Show milestone popup placeholder on dashboard mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Placeholder: always show on login for demo purposes
+      // TODO: wire to actual milestone checks (streak, tests completed, etc.)
+      const timer = setTimeout(() => setShowMilestone(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated]);
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -77,6 +89,16 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Milestone Popup — WIP placeholder */}
+      <MilestonePopup
+        isOpen={showMilestone}
+        onClose={() => setShowMilestone(false)}
+        type="streak"
+        value={30}
+        title="Streak milestone!"
+        description="You've studied for 30 days in a row. You're in the top 5% of aspirants on the platform."
+      />
     </div>
   );
 }

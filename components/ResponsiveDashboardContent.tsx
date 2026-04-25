@@ -14,6 +14,7 @@ function getGreeting() {
 
 interface DashboardData {
   daysRemaining?: number;
+  streak?: number;
   trio?: {
     mcq?: { status?: string; topic?: string; questionCount?: number };
     editorial?: { status?: string; topic?: string };
@@ -294,6 +295,8 @@ const ResponsiveDashboardContent = () => {
   const [tasks, setTasks] = useState<StudyTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [tasksLoading, setTasksLoading] = useState(true);
+  const [showLoginToast, setShowLoginToast] = useState(false);
+  const [toastStreak, setToastStreak] = useState(0);
 
   const userName = user?.firstName || 'Rahul';
   const greeting = getGreeting();
@@ -332,6 +335,20 @@ const ResponsiveDashboardContent = () => {
     return () => { mounted = false; };
   }, []);
 
+  // Login success toast
+  useEffect(() => {
+    const justLoggedIn = localStorage.getItem('justLoggedIn');
+    if (justLoggedIn === 'true') {
+      localStorage.removeItem('justLoggedIn');
+      // Get streak from dashboard data or default
+      const streak = dashboardData?.streak ?? 0;
+      setToastStreak(streak);
+      setShowLoginToast(true);
+      const timer = setTimeout(() => setShowLoginToast(false), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [dashboardData]);
+
   const trio = dashboardData?.trio;
   const daysRemaining = dashboardData?.daysRemaining ?? null;
 
@@ -365,6 +382,40 @@ const ResponsiveDashboardContent = () => {
 
   return (
     <>
+    {/* Login Success Toast */}
+    {showLoginToast && (
+      <div
+        className="fixed top-5 right-5 z-50 flex items-start gap-3 rounded-[12px] p-4 pr-10 shadow-lg"
+        style={{
+          background: '#FFFFFF',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1), 0px 4px 6px -4px rgba(0,0,0,0.1)',
+          maxWidth: '320px',
+          animation: 'slideInRight 0.3s ease-out',
+        }}
+      >
+        <div className="w-8 h-8 bg-[#22C55E] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
+            <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <p className="font-inter font-bold text-[15px] text-[#101828] mb-1">Success</p>
+          <p className="font-inter text-[13px] text-[#6B7280] leading-[20px]">
+            Welcome back! 🔥 {toastStreak > 0 ? `${toastStreak}-day streak` : 'Start your streak'} — keep it going!
+          </p>
+        </div>
+        <button
+          onClick={() => setShowLoginToast(false)}
+          className="absolute top-3 right-3 text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    )}
+
     <div className="w-full min-h-screen py-[clamp(0.75rem,1.25vw,1.5rem)] px-[clamp(0.75rem,1.25vw,1.5rem)]" style={{ background: '#FAFBFE' }}>
       <div className="max-w-[1400px] mx-auto">
 
@@ -430,45 +481,42 @@ const ResponsiveDashboardContent = () => {
                   fontSize: '16px',
                 }}
               >
-                UPSC Prelims 2026: {daysRemaining !== null ? `${daysRemaining} days remaining` : '-- days remaining'}.
+                UPSC Prelims 2026: {Math.max(0, Math.ceil((new Date(2026, 5, 2).getTime() - Date.now()) / 86400000))} days remaining.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Search Bar & Schedule Button */}
+        {/* Search Bar & Action Buttons */}
         <div className="flex flex-wrap gap-[clamp(0.75rem,1vw,1rem)] items-center mb-[clamp(1rem,1.5vw,1.5rem)]">
-          <div
-            className="flex-1 min-w-[280px] flex items-center gap-[clamp(0.5rem,0.68vw,0.75rem)] px-[clamp(1rem,1.25vw,1.25rem)] rounded-[40px]"
-            style={{
-              height: 'clamp(44px,2.6vw,50px)',
-              background: '#E8ECFF',
-            }}
-          >
-            <svg
-              className="w-[clamp(16px,0.9vw,18px)] h-[clamp(16px,0.9vw,18px)] flex-shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="11" cy="11" r="7" stroke="#6B7280" strokeWidth="2"/>
-              <path d="M20 20L16.5 16.5" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            <input
-              type="text"
-              placeholder="Ask jeet AI: 'Explain current affairs'"
-              className="flex-1 bg-transparent outline-none font-inter text-[#1A1A1A] placeholder:text-[#6B7280]"
+          <Link href="/dashboard/jeet-gpt" className="flex-1 min-w-[280px]">
+            <div
+              className="flex items-center gap-[clamp(0.5rem,0.68vw,0.75rem)] px-[clamp(1rem,1.25vw,1.25rem)] rounded-[40px] cursor-pointer"
               style={{
-                fontSize: 'clamp(13px,0.8vw,14px)',
-                lineHeight: '1',
+                height: 'clamp(44px,2.6vw,50px)',
+                background: '#E8ECFF',
               }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  window.location.href = '/dashboard/jeet-gpt';
-                }
-              }}
-            />
-          </div>
+            >
+              <svg
+                className="w-[clamp(16px,0.9vw,18px)] h-[clamp(16px,0.9vw,18px)] flex-shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="11" cy="11" r="7" stroke="#6B7280" strokeWidth="2"/>
+                <path d="M20 20L16.5 16.5" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <span
+                className="font-inter text-[#6B7280]"
+                style={{
+                  fontSize: 'clamp(13px,0.8vw,14px)',
+                  lineHeight: '1',
+                }}
+              >
+                Ask jeet AI: &apos;Explain current affairs&apos;
+              </span>
+            </div>
+          </Link>
 
           <Link href="/dashboard/study-planner">
             <button
@@ -486,6 +534,21 @@ const ResponsiveDashboardContent = () => {
                 <path d="M8 2.5V6.5M16 2.5V6.5M3.5 9.5H20.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
               <span>Schedule</span>
+            </button>
+          </Link>
+
+          <Link href="/dashboard/mock-tests">
+            <button
+              className="px-[clamp(1rem,1.25vw,1.5rem)] rounded-[40px] font-inter font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity"
+              style={{
+                height: 'clamp(44px,2.6vw,50px)',
+                fontSize: 'clamp(13px,0.8vw,14px)',
+                background: '#F59E0B',
+                color: '#FFFFFF',
+              }}
+            >
+              <span className="text-[16px]">🚀</span>
+              <span>Generate Test</span>
             </button>
           </Link>
         </div>

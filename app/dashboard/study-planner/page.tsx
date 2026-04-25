@@ -59,6 +59,7 @@ export default function StudyPlannerPage() {
   const [adding, setAdding] = useState(false);
   const [studiedDays, setStudiedDays] = useState<number[]>([]);
   const [showSaveToast, setShowSaveToast] = useState(false);
+  const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Focus session state
   const [focusActive, setFocusActive] = useState(false);
@@ -147,6 +148,12 @@ export default function StudyPlannerPage() {
     } catch {}
   };
 
+  const showSaveAcknowledgement = () => {
+    setShowSaveToast(true);
+    if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
+    saveToastTimerRef.current = setTimeout(() => setShowSaveToast(false), 3000);
+  };
+
   // Focus session timer
   useEffect(() => {
     if (focusActive && !focusPaused && !focusDone) {
@@ -159,6 +166,12 @@ export default function StudyPlannerPage() {
     }
     return () => { if (focusTimerRef.current) clearInterval(focusTimerRef.current); };
   }, [focusActive, focusPaused, focusDone]);
+
+  useEffect(() => {
+    return () => {
+      if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
+    };
+  }, []);
 
   const startFocusSession = () => {
     if (tasks.length === 0) return;
@@ -198,7 +211,7 @@ export default function StudyPlannerPage() {
         return newIdx;
       });
       setFocusTaskSecs(0);
-    }, 400);
+    }, 1400);
   };
 
   const focusSkip = () => {
@@ -289,6 +302,20 @@ export default function StudyPlannerPage() {
   }, 0);
   const totalStudyHours = Math.floor(totalStudyMinutes / 60);
   const totalStudyMins = totalStudyMinutes % 60;
+
+  // Completed task hours
+  const completedStudyMinutes = tasks
+    .filter(t => t.isCompleted)
+    .reduce((sum, t) => {
+      if (t.startTime && t.endTime) {
+        const [sh, sm] = t.startTime.split(':').map(Number);
+        const [eh, em] = t.endTime.split(':').map(Number);
+        return sum + Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+      }
+      return sum;
+    }, 0);
+  const completedStudyHours = Math.floor(completedStudyMinutes / 60);
+
   const totalStudyLabel = totalStudyMinutes > 0
     ? `Total Study Time: ${totalStudyMinutes} minutes (${totalStudyHours}h ${totalStudyMins}m)`
     : 'Total Study Time: —';
@@ -332,29 +359,168 @@ export default function StudyPlannerPage() {
     <>
     <div className="flex flex-col bg-gray-50 overflow-x-hidden" style={{ height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
-        <div className="flex flex-col lg:flex-row gap-5 p-4 md:p-6">
+        <div className="flex flex-row gap-5 p-4 md:p-6">
 
           {/* ═══════ Left Column: Main Content ═══════ */}
           <div className="flex-1 min-w-0">
 
-            {/* Dark Banner */}
+            {/* Hero Banner — matches Figma study planner design */}
             <div
-              className="rounded-[16px]"
+              className="rounded-[16px] border border-white/5 overflow-hidden relative"
               style={{
-                background: 'linear-gradient(135deg, #0D1931 0%, #090F1F 50%, #2E2C2D 100%)',
-                padding: '22px 28px',
+                background: 'linear-gradient(105deg, #060C1C 0%, #080F1C 50%, #0D121F 75%, #1A1819 100%)',
+                padding: '24px 26px 22px',
                 marginBottom: '16px',
               }}
             >
-              <div className="flex items-center" style={{ gap: '10px', marginBottom: '4px' }}>
-                <img src="/calendar-study-planner.png" alt="Calendar" style={{ width: '28px', height: '28px' }} />
-                <h1 className="font-arimo font-bold text-white" style={{ fontSize: '26px', lineHeight: '32px' }}>
-                  Study Planner
+              {/* Warm radial glow — bottom-right like Figma */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    'radial-gradient(ellipse at 92% 88%, rgba(55,53,51,0.40) 0%, rgba(55,53,51,0.15) 25%, rgba(55,53,51,0.04) 50%, transparent 70%)',
+                }}
+              />
+              {/* Fine grid overlay */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)',
+                  backgroundSize: '48px 48px',
+                }}
+              />
+              {/* Subtle gold glow — upper-middle */}
+              <div
+                className="absolute left-[28%] -top-[50px] w-[260px] h-[260px] rounded-full pointer-events-none"
+                style={{
+                  background: 'radial-gradient(circle, rgba(232,184,75,.07) 0%, transparent 65%)',
+                }}
+              />
+
+              <div className="relative z-10">
+                {/* Pill Badge */}
+                <div
+                  className="inline-flex items-center gap-[6px] mb-[14px]"
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '100px',
+                    background: 'rgba(10,20,48,0.65)',
+                    border: '1px solid rgba(232,184,75,0.28)',
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: '0 2px 12px rgba(232,184,75,0.08), inset 0 1px 0 rgba(255,255,255,0.05)',
+                  }}
+                >
+                  <span className="text-[13px]">📅</span>
+                  <span
+                    className="text-[11px] font-extrabold tracking-[1.2px] uppercase"
+                    style={{ color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}
+                  >
+                    Daily Study Planner
+                  </span>
+                </div>
+
+                {/* Heading */}
+                <h1
+                  className="text-white font-bold leading-tight mb-[6px]"
+                  style={{
+                    fontSize: 'clamp(22px, 2.6vw, 30px)',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    letterSpacing: '-0.5px',
+                  }}
+                >
+                  Where{' '}
+                  <span style={{ color: '#E8B84B' }}>planning meets purpose</span>
                 </h1>
+
+                {/* Subtitle */}
+                <p
+                  className="mb-[18px]"
+                  style={{
+                    fontSize: '13px',
+                    lineHeight: '20px',
+                    color: 'rgba(255,255,255,0.45)',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                  }}
+                >
+                  Personalized study schedule with daily targets and progress tracking.
+                </p>
+
+                {/* Stats Strip */}
+                <div
+                  className="flex gap-0 rounded-[12px] overflow-hidden"
+                  style={{ border: '0.8px solid #2A3242', maxWidth: '420px' }}
+                >
+                  <div
+                    className="flex-1 p-[10px_12px] text-center"
+                    style={{ background: 'rgba(28,39,59,0.7)', borderRight: '0.8px solid #2A3242' }}
+                  >
+                    <div
+                      className="text-[18px] font-bold leading-none"
+                      style={{ color: '#F59E0B', fontFamily: 'Inter, system-ui, sans-serif' }}
+                    >
+                      {totalStudyHours}h
+                    </div>
+                    <div
+                      className="text-[9px] font-bold tracking-[1px] uppercase mt-[4px]"
+                      style={{ color: '#6A7282', fontFamily: 'Inter, system-ui, sans-serif' }}
+                    >
+                      Planned
+                    </div>
+                  </div>
+                  <div
+                    className="flex-1 p-[10px_12px] text-center"
+                    style={{ background: 'rgba(28,39,59,0.7)', borderRight: '0.8px solid #2A3242' }}
+                  >
+                    <div
+                      className="text-[18px] font-bold leading-none"
+                      style={{ color: '#F87171', fontFamily: 'Inter, system-ui, sans-serif' }}
+                    >
+                      {completedStudyHours > 0 ? `${completedStudyHours}h` : '0h'}
+                    </div>
+                    <div
+                      className="text-[9px] font-bold tracking-[1px] uppercase mt-[4px]"
+                      style={{ color: '#6A7282', fontFamily: 'Inter, system-ui, sans-serif' }}
+                    >
+                      Done
+                    </div>
+                  </div>
+                  <div
+                    className="flex-1 p-[10px_12px] text-center"
+                    style={{ background: 'rgba(28,39,59,0.7)', borderRight: '0.8px solid #2A3242' }}
+                  >
+                    <div
+                      className="text-[18px] font-bold leading-none"
+                      style={{ color: '#34D399', fontFamily: 'Inter, system-ui, sans-serif' }}
+                    >
+                      {tasks.filter(t => t.isCompleted).length}/{tasks.length}
+                    </div>
+                    <div
+                      className="text-[9px] font-bold tracking-[1px] uppercase mt-[4px]"
+                      style={{ color: '#6A7282', fontFamily: 'Inter, system-ui, sans-serif' }}
+                    >
+                      Tasks
+                    </div>
+                  </div>
+                  <div
+                    className="flex-1 p-[10px_12px] text-center"
+                    style={{ background: 'rgba(28,39,59,0.7)' }}
+                  >
+                    <div
+                      className="text-[18px] font-bold leading-none"
+                      style={{ color: '#FFFFFF', fontFamily: 'Inter, system-ui, sans-serif' }}
+                    >
+                      {tasks.length > 0 ? Math.round((tasks.filter(t => t.isCompleted).length / tasks.length) * 100) + '%' : '—'}
+                    </div>
+                    <div
+                      className="text-[9px] font-bold tracking-[1px] uppercase mt-[4px]"
+                      style={{ color: '#6A7282', fontFamily: 'Inter, system-ui, sans-serif' }}
+                    >
+                      Progress
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p className="font-arimo" style={{ fontSize: '13px', lineHeight: '20px', fontWeight: 400, color: '#E5E7EB' }}>
-                Personalized study schedule with daily targets and progress tracking.
-              </p>
             </div>
 
             {/* Date Picker */}
@@ -420,7 +586,7 @@ export default function StudyPlannerPage() {
                   <button
                     className="flex items-center gap-2 font-arimo font-semibold text-white hover:opacity-90 transition-opacity"
                     style={{ height: '34px', padding: '0 14px', borderRadius: '8px', background: '#17223E', fontSize: '13px' }}
-                    onClick={() => { setShowSaveToast(true); setTimeout(() => setShowSaveToast(false), 3000); }}
+                    onClick={showSaveAcknowledgement}
                   >
                     <img src="/saved.png" alt="Save" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                     Save Plan
@@ -676,15 +842,83 @@ export default function StudyPlannerPage() {
             </div>
             </div>
 
-            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals + Planner Sync ── */}
+            {/* ── Bottom Row: Time Distribution + Syllabus Coverage + Weekly Goals + Planner Sync ── */}
             <div className="flex gap-4 mt-4">
-              
+
+              {/* Card 0: Time Distribution */}
+              <div
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] flex-1"
+              >
+                <div className="flex items-center gap-2 mb-6">
+                  <div style={{ position: 'relative', width: '28px', height: '28px' }}>
+                    <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
+                  </div>
+                  <h2 className="font-arimo font-bold text-[#17223E]" style={{ fontSize: '20px', lineHeight: '28px' }}>
+                    Time Distribution
+                  </h2>
+                </div>
+
+                {/* SVG Pie Chart */}
+                <div className="flex items-center justify-center mb-4">
+                  {totalTypeMins === 0 ? (
+                    <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '180px' }}>
+                      No timed tasks today
+                    </div>
+                  ) : (
+                    <svg viewBox="0 0 220 220" width="180" height="180">
+                      {(() => {
+                        const cx = 110, cy = 110, r = 85;
+                        let angle = -Math.PI / 2;
+                        return timeByType.map((slice) => {
+                          const sliceAngle = (slice.minutes / totalTypeMins) * 2 * Math.PI;
+                          const path = pieSlicePath(cx, cy, r, angle, angle + sliceAngle);
+                          angle += sliceAngle;
+                          return <path key={slice.id} d={path} fill={slice.color} stroke="#fff" strokeWidth="2" />;
+                        });
+                      })()}
+                      {/* Center label */}
+                      <text x="110" y="105" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="22" fontFamily="Arimo, sans-serif">
+                        {fmtHours(totalTypeMins)}
+                      </text>
+                      <text x="110" y="128" textAnchor="middle" dominantBaseline="middle" fill="#6B7280" fontSize="11" fontFamily="Arimo, sans-serif">
+                        total
+                      </text>
+                    </svg>
+                  )}
+                </div>
+
+                {/* Legend */}
+                <div className="space-y-3 px-2">
+                  {totalTypeMins === 0 ? (
+                    typeConfig.slice(0, 3).map(tc => (
+                      <div key={tc.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full" style={{ background: tc.color }}></span>
+                          <span className="font-arimo text-[#374151] text-sm font-medium">{tc.label}</span>
+                        </div>
+                        <span className="font-arimo font-bold text-[#9CA3AF] text-sm">—</span>
+                      </div>
+                    ))
+                  ) : (
+                    timeByType.map(slice => (
+                      <div key={slice.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full" style={{ background: slice.color }}></span>
+                          <span className="font-arimo text-[#374151] text-sm font-medium">{slice.label}</span>
+                        </div>
+                        <span className="font-arimo font-bold text-[#111827] text-sm">{fmtHours(slice.minutes)}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
               {/* Card 1: Syllabus Coverage */}
               <div
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] flex-1"
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <img src="/image-removebg-preview%20(60)%201.png" alt="Syllabus" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                  <img src="/image-removebg-preview%20(60)%201.png" alt="Syllabus" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
                   <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '16px', lineHeight: '24px' }}>
                     Syllabus Coverage
                   </h3>
@@ -712,7 +946,7 @@ export default function StudyPlannerPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     {/* Target Icon */}
-                    <img src="/image-removebg-preview%20(61)%201%20(1).png" alt="Goals" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                    <img src="/image-removebg-preview%20(61)%201%20(1).png" alt="Goals" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
                     <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '16px', lineHeight: '24px' }}>
                       Weekly Goals
                     </h3>
@@ -767,7 +1001,7 @@ export default function StudyPlannerPage() {
               >
                 <div>
                     <div className="flex items-center gap-2 mb-4">
-                      <img src="/image-removebg-preview%20(64)%201.png" alt="Sync" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                      <img src="/image-removebg-preview%20(64)%201.png" alt="Sync" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
                       <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '16px', lineHeight: '24px' }}>
                         Planner Sync
                       </h3>
@@ -777,7 +1011,7 @@ export default function StudyPlannerPage() {
                       {/* Google Calendar */}
                       <div className="flex items-center justify-between pb-3 border-b border-[#F3F4F6]">
                         <div className="flex items-center gap-3">
-                          <img src="/Container%20(3).png" alt="GCal" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                          <img src="/Container%20(3).png" alt="GCal" style={{ width: '20px', height: '20px', objectFit: 'contain', flexShrink: 0 }} />
                           <span className="font-arimo text-[#101828]" style={{ fontSize: '14px' }}>Google Calendar</span>
                         </div>
                         {/* Toggle ON */}
@@ -789,7 +1023,7 @@ export default function StudyPlannerPage() {
                       {/* Smart Notifications */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <img src="/Container%20(4).png" alt="Notifications" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                          <img src="/Container%20(4).png" alt="Notifications" style={{ width: '20px', height: '20px', objectFit: 'contain', flexShrink: 0 }} />
                           <span className="font-arimo text-[#101828]" style={{ fontSize: '14px' }}>Smart Notifications</span>
                         </div>
                         {/* Toggle ON */}
@@ -812,8 +1046,8 @@ export default function StudyPlannerPage() {
             </div>
           </div>
 
-          {/* ═══════ Right Column (290px): Streak + Quick Add + Time Distribution ═══════ */}
-          <div className="flex-shrink-0 flex flex-col gap-5 w-full lg:w-[290px]">
+          {/* ═══════ Right Column (290px): Streak + Quick Add ═══════ */}
+          <div className="flex-shrink-0 flex flex-col gap-5 w-[290px]">
 
             {/* Study Streak Card */}
             <div
@@ -932,103 +1166,47 @@ export default function StudyPlannerPage() {
               </div>
             </div>
 
-            {/* Time Distribution Card */}
-            <div
-              style={{
-                width: '290px',
-                borderRadius: '16px',
-                border: '0.8px solid rgb(229, 231, 235)',
-                background: '#FFFFFF',
-                boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
-                padding: '24px',
-                marginTop: '16px'
-              }}
-            >
-              <div className="flex items-center gap-2 mb-6">
-                <div style={{ position: 'relative', width: '28px', height: '28px' }}>
-                  <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
-                </div>
-                <h2 className="font-arimo font-bold text-[#17223E]" style={{ fontSize: '20px', lineHeight: '28px' }}>
-                  Time Distribution
-                </h2>
-              </div>
-
-              {/* SVG Pie Chart */}
-              <div className="flex items-center justify-center mb-4">
-                {totalTypeMins === 0 ? (
-                  <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '180px' }}>
-                    No timed tasks today
-                  </div>
-                ) : (
-                  <svg viewBox="0 0 220 220" width="180" height="180">
-                    {(() => {
-                      const cx = 110, cy = 110, r = 85;
-                      let angle = -Math.PI / 2;
-                      return timeByType.map((slice) => {
-                        const sliceAngle = (slice.minutes / totalTypeMins) * 2 * Math.PI;
-                        const path = pieSlicePath(cx, cy, r, angle, angle + sliceAngle);
-                        angle += sliceAngle;
-                        return <path key={slice.id} d={path} fill={slice.color} stroke="#fff" strokeWidth="2" />;
-                      });
-                    })()}
-                    {/* Center label */}
-                    <text x="110" y="105" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="22" fontFamily="Arimo, sans-serif">
-                      {fmtHours(totalTypeMins)}
-                    </text>
-                    <text x="110" y="128" textAnchor="middle" dominantBaseline="middle" fill="#6B7280" fontSize="11" fontFamily="Arimo, sans-serif">
-                      total
-                    </text>
-                  </svg>
-                )}
-              </div>
-
-              {/* Legend */}
-              <div className="space-y-3 px-2">
-                {totalTypeMins === 0 ? (
-                  typeConfig.slice(0, 3).map(tc => (
-                    <div key={tc.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full" style={{ background: tc.color }}></span>
-                        <span className="font-arimo text-[#374151] text-sm font-medium">{tc.label}</span>
-                      </div>
-                      <span className="font-arimo font-bold text-[#9CA3AF] text-sm">—</span>
-                    </div>
-                  ))
-                ) : (
-                  timeByType.map(slice => (
-                    <div key={slice.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full" style={{ background: slice.color }}></span>
-                        <span className="font-arimo text-[#374151] text-sm font-medium">{slice.label}</span>
-                      </div>
-                      <span className="font-arimo font-bold text-[#111827] text-sm">{fmtHours(slice.minutes)}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-
-            </div>
           </div>
         </div>
       </div>
     </div>
 
-    {/* ── Save Plan Toast ── */}
+    {/* ── Save Plan Popup ── */}
     {showSaveToast && (
-      <div className="fixed top-6 right-6 z-[100] animate-bounce">
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+        style={{ background: 'rgba(15, 23, 42, 0.42)' }}
+        onClick={() => setShowSaveToast(false)}
+      >
         <div
-          className="flex items-center gap-3 rounded-xl px-5 py-3"
+          className="rounded-2xl bg-white shadow-2xl"
           style={{
-            background: '#00BC7D',
-            boxShadow: '0 8px 24px rgba(0,188,125,0.35)',
+            width: 'min(92vw, 360px)',
+            border: '1px solid #E5E7EB',
+            padding: '22px 20px',
           }}
+          onClick={(e) => e.stopPropagation()}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          <span className="font-arimo font-bold text-white" style={{ fontSize: '15px' }}>
-            Your plan is saved!
-          </span>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center justify-center rounded-full" style={{ width: '38px', height: '38px', background: '#DCFCE7' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M20 6L9 17L4 12" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '18px' }}>
+              Your plan is saved!
+            </h3>
+          </div>
+          <p className="font-arimo text-[#4B5563]" style={{ fontSize: '14px', lineHeight: '20px' }}>
+            Study plan details are saved successfully.
+          </p>
+          <button
+            onClick={() => setShowSaveToast(false)}
+            className="mt-5 w-full font-arimo font-bold text-white rounded-[10px] hover:opacity-90 transition-opacity"
+            style={{ height: '42px', background: '#17223E', fontSize: '14px' }}
+          >
+            OK
+          </button>
         </div>
       </div>
     )}
@@ -1195,8 +1373,20 @@ export default function StudyPlannerPage() {
                             <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px' }}>{task.startTime}{task.endTime ? ` – ${task.endTime}` : ''}</p>
                           )}
                         </div>
-                        {isActive && (
-                          <span className="font-arimo font-bold text-[#312C85]" style={{ fontSize: '11px', background: '#E0E7FF', borderRadius: '4px', padding: '2px 6px' }}>Active</span>
+                        {(isActive || isJustMarked) && (
+                          <span
+                            className="font-arimo font-bold"
+                            style={{
+                              fontSize: '11px',
+                              background: isJustMarked ? '#DCFCE7' : '#E0E7FF',
+                              color: isJustMarked ? '#15803D' : '#312C85',
+                              borderRadius: '4px',
+                              padding: '2px 6px',
+                              transition: 'all 0.25s ease',
+                            }}
+                          >
+                            {isJustMarked ? 'Done ✓' : 'Active'}
+                          </span>
                         )}
                       </div>
                     );
@@ -1216,10 +1406,24 @@ export default function StudyPlannerPage() {
                 <button
                   onClick={focusMarkDone}
                   disabled={justCompleted}
-                  className="flex-1 font-arimo font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-70"
-                  style={{ height: '44px', borderRadius: '10px', background: justCompleted ? '#059669' : '#00BC7D', fontSize: '14px', transition: 'all 0.3s ease' }}
+                  className="flex-1 font-arimo font-bold text-white"
+                  style={{
+                    height: '44px',
+                    borderRadius: '10px',
+                    background: justCompleted ? '#15803D' : '#00BC7D',
+                    fontSize: '14px',
+                    transition: 'all 0.25s ease',
+                    transform: justCompleted ? 'scale(1.04)' : 'scale(1)',
+                    boxShadow: justCompleted ? '0 0 0 4px rgba(0,188,125,0.25)' : 'none',
+                    letterSpacing: justCompleted ? '0.02em' : '0',
+                  }}
                 >
-                  {justCompleted ? '✓ Done!' : '✓ Mark Done &amp; Next'}
+                  {justCompleted ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Task Marked Done!
+                    </span>
+                  ) : '✓ Mark Done & Next'}
                 </button>
                 <button
                   onClick={() => setFocusDone(true)}
@@ -1246,7 +1450,7 @@ export default function StudyPlannerPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <img src="/image-removebg-preview%20(61)%201%20(1).png" alt="Goals" style={{ width: '24px', height: '24px' }} />
+              <img src="/image-removebg-preview%20(61)%201%20(1).png" alt="Goals" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
               <h2 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '18px' }}>Edit Weekly Goals</h2>
             </div>
             <button onClick={() => setShowGoalsModal(false)} className="hover:bg-gray-100 rounded-lg p-1 transition-colors">
@@ -1334,4 +1538,3 @@ export default function StudyPlannerPage() {
     </>
   );
 }
-

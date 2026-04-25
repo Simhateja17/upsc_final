@@ -213,18 +213,41 @@ export default function VideoLecturesPage() {
           </Link>
 
           <div
-            className="flex items-center gap-2 font-arimo font-semibold text-[#e8a820]"
+            className="flex items-center gap-[6px]"
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '26843500px',
-              padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.5vw, 20px)',
-              fontSize: 'clamp(11px, 0.9vw, 13px)',
-              letterSpacing: '0.5px',
+              background: 'rgba(10,22,40,0.85)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              borderRadius: '100px',
+              padding: '5px 6px 5px 14px',
             }}
           >
-            <img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-            SIMPLIFIED VIDEO LECTURES
+            <span
+              style={{
+                color: 'rgba(255,255,255,0.75)',
+                fontWeight: 800,
+                fontSize: '11px',
+                letterSpacing: '1.2px',
+                textTransform: 'uppercase',
+                fontFamily: 'Arimo, sans-serif',
+              }}
+            >
+              SIMPLIFIED
+            </span>
+            <span
+              style={{
+                background: '#e8a820',
+                color: '#0a1628',
+                fontWeight: 800,
+                fontSize: '11px',
+                letterSpacing: '1.2px',
+                textTransform: 'uppercase',
+                padding: '4px 12px',
+                borderRadius: '100px',
+                fontFamily: 'Arimo, sans-serif',
+              }}
+            >
+              VIDEO LECTURES
+            </span>
           </div>
 
           <a
@@ -263,7 +286,18 @@ export default function VideoLecturesPage() {
             Master Your{' '}
             <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>UPSC Journey</em>
             <br />
-            with Expert Video Lectures
+            with Expert{' '}
+            <span
+              style={{
+                background: '#FDC700',
+                color: '#0a1628',
+                padding: '2px 10px 4px',
+                borderRadius: '6px',
+                display: 'inline-block',
+              }}
+            >
+              Video Lectures
+            </span>
           </h1>
 
           <p
@@ -279,30 +313,22 @@ export default function VideoLecturesPage() {
             Every editorial, every perspective mapped to what UPSC asks.
           </p>
 
-          {/* Stats strip — dark boxes like Figma */}
+          {/* Stats strip — matches Figma */}
           <div className="flex gap-0 rounded-[12px] overflow-hidden" style={{ border: '0.8px solid rgba(255,255,255,0.1)' }}>
             <div className="flex-1 p-[10px_16px] text-center" style={{ background: 'rgba(255,255,255,0.05)', borderRight: '0.8px solid rgba(255,255,255,0.08)' }}>
-              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#FDC700' }}>
-                {apiStats?.totalLectures ?? '100'}+
-              </div>
-              <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Video Lectures</div>
+              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#FDC700' }}>100+</div>
+              <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Free Lectures</div>
             </div>
             <div className="flex-1 p-[10px_16px] text-center" style={{ background: 'rgba(255,255,255,0.05)', borderRight: '0.8px solid rgba(255,255,255,0.08)' }}>
-              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#F87171' }}>
-                {apiStats?.totalSubjects ?? '12'}+
-              </div>
+              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#F87171' }}>12+</div>
               <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Core Subjects</div>
             </div>
             <div className="flex-1 p-[10px_16px] text-center" style={{ background: 'rgba(255,255,255,0.05)', borderRight: '0.8px solid rgba(255,255,255,0.08)' }}>
-              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#4ADE80' }}>
-                {apiStats?.totalHours ?? '15'}K+
-              </div>
+              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#4ADE80' }}>15K+</div>
               <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Subscribers</div>
             </div>
             <div className="flex-1 p-[10px_16px] text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
-              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#FFFFFF' }}>
-                ∞
-              </div>
+              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#FFFFFF' }}>∞</div>
               <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Always Free</div>
             </div>
           </div>

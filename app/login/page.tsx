@@ -142,6 +142,7 @@ function LoginPageContent() {
 
     try {
       await login({ email: loginEmail, password: loginPassword });
+      localStorage.setItem('justLoggedIn', 'true');
       // Redirect immediately after login succeeds — don't wait for useEffect
       router.replace('/dashboard');
     } catch (err) {
