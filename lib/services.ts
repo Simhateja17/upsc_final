@@ -1,5 +1,6 @@
 import api from './api';
-import { getStoredTokens } from './auth';
+import { getStoredTokens, storeTokens } from './auth';
+import { supabase } from './supabase';
 
 function getToken(): string | undefined {
   const tokens = getStoredTokens();
@@ -8,6 +9,31 @@ function getToken(): string | undefined {
 
 function authConfig() {
   return { token: getToken() };
+}
+
+async function freshAuthConfig() {
+  const { data, error } = await supabase.auth.getSession();
+  if (!error && data.session?.access_token) {
+    storeTokens(data.session.access_token, data.session.refresh_token ?? '');
+    return { token: data.session.access_token };
+  }
+
+  return authConfig();
+}
+
+async function syncCurrentSessionWithBackend() {
+  const { data, error } = await supabase.auth.getSession();
+  const session = data.session;
+
+  if (error || !session?.access_token) return null;
+
+  storeTokens(session.access_token, session.refresh_token ?? '');
+  await api.post('/auth/callback', {
+    accessToken: session.access_token,
+    refreshToken: session.refresh_token ?? '',
+  });
+
+  return { token: session.access_token };
 }
 
 // ==================== Jeet AI Chat ====================
@@ -46,7 +72,21 @@ export const dashboardService = {
   getActivity: (limit = 10) => api.get<any>(`/user/activity?limit=${limit}`, authConfig()),
   getPerformance: () => api.get<any>('/user/performance', authConfig()),
   getPracticeStats: () => api.get<any>('/user/practice-stats', authConfig()),
-  getTestAnalytics: () => api.get<any>('/user/test-analytics', authConfig()),
+  getTestAnalytics: async () => {
+    const config = { ...(await freshAuthConfig()), timeout: 5000 };
+
+    try {
+      return await api.get<any>('/user/test-analytics', config);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
+      if (!/auth/i.test(message)) throw err;
+
+      const syncedConfig = await syncCurrentSessionWithBackend();
+      if (!syncedConfig) throw err;
+
+      return api.get<any>('/user/test-analytics', { ...syncedConfig, timeout: 5000 });
+    }
+  },
 };
 
 // ==================== Daily MCQ ====================
