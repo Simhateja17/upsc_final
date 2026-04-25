@@ -223,23 +223,23 @@ export default function DailyEditorialPage() {
       {/* ============================================================ */}
       <div className="flex flex-col items-center" style={{ paddingTop: 'clamp(8px, 1vw, 16px)', paddingBottom: 'clamp(24px, 2.5vw, 40px)' }}>
         {/* Tag pill */}
-        <div
-          className="flex items-center gap-2 font-arimo font-semibold text-white"
-          style={{
-            background: '#101828',
-            borderRadius: '26843500px',
-            padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.5vw, 20px)',
-            fontSize: 'clamp(11px, 0.9vw, 13px)',
-            letterSpacing: '0.5px',
-            marginBottom: 'clamp(14px, 1.5vw, 20px)',
-          }}
-        >
-          {/* Sparkle icon */}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#FFD273" stroke="#FFD273" strokeWidth="1"/>
-          </svg>
-          DAILY NEWS ANALYSIS
-        </div>
+          <div
+            className="flex items-center gap-2 font-arimo font-semibold text-white"
+            style={{
+              background: '#101828',
+              borderRadius: '26843500px',
+              padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.5vw, 20px)',
+              fontSize: 'clamp(11px, 0.9vw, 13px)',
+              letterSpacing: '0.5px',
+              marginBottom: 'clamp(14px, 1.5vw, 20px)',
+            }}
+          >
+            {/* Sparkle icon */}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#FFD273" stroke="#FFD273" strokeWidth="1"/>
+            </svg>
+            CURRENT AFFAIRS &amp; DAILY NEWS ANALYSIS
+          </div>
 
         {/* Main heading */}
         <h1

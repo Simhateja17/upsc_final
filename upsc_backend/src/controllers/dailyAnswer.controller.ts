@@ -230,11 +230,51 @@ export const getTodayResults = async (req: Request, res: Response, next: NextFun
       return res.status(404).json({ status: "error", message: "No evaluation results found" });
     }
 
+    const score = attempt.evaluation.score;
+    const maxScore = attempt.evaluation.maxScore;
+
+    // Use AI-generated metrics from DB if available, otherwise derive from score
+    let metrics: any[] | undefined;
+    if (attempt.evaluation.metrics) {
+      try {
+        const dbMetrics = typeof attempt.evaluation.metrics === 'string'
+          ? JSON.parse(attempt.evaluation.metrics)
+          : attempt.evaluation.metrics;
+        if (Array.isArray(dbMetrics)) {
+          metrics = dbMetrics.map((m: any, i: number) => ({
+            id: m.label?.toLowerCase() || `m${i}`,
+            label: m.label || 'Metric',
+            value: `${m.value}/${m.maxValue || 10}`,
+            icon: m.label === 'Structure' ? '🏗️' : m.label === 'Content' ? '📚' : m.label === 'Examples' ? '💡' : m.label === 'Language' ? '✍️' : m.label === 'Relevance' ? '🎯' : '📊',
+            bg: '#F0FDF4',
+            borderColor: '#B9F8CF',
+            iconColor: '#15803D',
+            valueColor: '#0D542B',
+          }));
+        }
+      } catch {
+        metrics = undefined;
+      }
+    }
+    if (!metrics || metrics.length === 0) {
+      const base = Math.max(4, Math.min(10, Math.round((score / maxScore) * 10)));
+      metrics = [
+        { id: 'structure', label: 'Structure', value: `${base}/10`, icon: '🏗️', bg: '#F0FDF4', borderColor: '#B9F8CF', iconColor: '#15803D', valueColor: '#0D542B' },
+        { id: 'content', label: 'Content', value: `${Math.max(3, Math.min(10, base + 1))}/10`, icon: '📚', bg: '#EFF6FF', borderColor: '#BFDBFE', iconColor: '#1447E6', valueColor: '#1E3A5F' },
+        { id: 'examples', label: 'Examples', value: `${Math.max(3, Math.min(10, base - 1))}/10`, icon: '💡', bg: '#FEFCE8', borderColor: '#FEF08A', iconColor: '#CA3500', valueColor: '#713F12' },
+        { id: 'language', label: 'Language', value: `${base}/10`, icon: '✍️', bg: '#FAF5FF', borderColor: '#E9D4FF', iconColor: '#8200DB', valueColor: '#4C1D95' },
+      ];
+    }
+
     res.json({
       status: "success",
       data: {
-        score: attempt.evaluation.score,
-        maxScore: attempt.evaluation.maxScore,
+        score,
+        maxScore,
+        metrics,
+        didWell: attempt.evaluation.strengths,
+        areasToImprove: attempt.evaluation.improvements,
+        valueAddIdeas: attempt.evaluation.suggestions,
         strengths: attempt.evaluation.strengths,
         improvements: attempt.evaluation.improvements,
         suggestions: attempt.evaluation.suggestions,

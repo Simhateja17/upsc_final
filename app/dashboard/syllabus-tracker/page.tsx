@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { userService, syllabusService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
+import { SYLLABUS_DATA } from '@/data/syllabus/syllabusData';
 import HeroSection from './components/HeroSection';
 import StageTabs from './components/StageTabs';
 import SubjectList from './components/SubjectList';
@@ -61,18 +62,34 @@ export default function SyllabusTrackerPage() {
 
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Load syllabus structure from API
+  // Load syllabus structure from API with localStorage + static fallback
   useEffect(() => {
+    const cached = localStorage.getItem('syllabusData');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setSyllabusData(parsed);
+        setSyllabusLoading(false);
+      } catch {
+        // Invalid cache, use static fallback
+        setSyllabusData(SYLLABUS_DATA);
+        setSyllabusLoading(false);
+      }
+    } else {
+      // Use static data immediately so UI never blocks
+      setSyllabusData(SYLLABUS_DATA);
+      setSyllabusLoading(false);
+    }
     syllabusService.getSyllabus()
       .then(res => {
         if (res.data) {
           setSyllabusData(res.data);
+          localStorage.setItem('syllabusData', JSON.stringify(res.data));
         }
       })
       .catch(err => {
         console.error('Failed to load syllabus data:', err);
-      })
-      .finally(() => setSyllabusLoading(false));
+      });
   }, []);
 
   // Load tracker state from API on mount, fall back to localStorage

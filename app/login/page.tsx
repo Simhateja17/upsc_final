@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, type CSSProperties } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -41,6 +41,7 @@ function LoginPageContent() {
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showWelcomeBack, setShowWelcomeBack] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -58,6 +59,11 @@ function LoginPageContent() {
     }
   }, [tabParam]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setShowWelcomeBack(localStorage.getItem('rwj_has_logged_in') === '1');
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -65,6 +71,8 @@ function LoginPageContent() {
 
     try {
       await login({ email: loginEmail, password: loginPassword });
+      localStorage.setItem('rwj_has_logged_in', '1');
+      sessionStorage.setItem('rwj_login_success', '1');
       // Redirect immediately after login succeeds — don't wait for useEffect
       router.replace('/dashboard');
     } catch (err) {
@@ -143,6 +151,32 @@ function LoginPageContent() {
         .login-left-panel { width: 478px; flex-shrink: 0; }
         .login-right-panel { padding-top: 72px; }
         .login-form-container { width: 448px; }
+        .success-burst {
+          position: absolute;
+          left: 50%;
+          top: 44px;
+          width: 170px;
+          height: 110px;
+          transform: translateX(-50%);
+          pointer-events: none;
+        }
+        .success-burst span {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 8px;
+          height: 18px;
+          border-radius: 999px;
+          background: var(--burst-color);
+          transform: translate(-50%, -50%) rotate(var(--burst-rotate)) translateY(0);
+          animation: burst-pop 900ms ease-out both;
+          animation-delay: var(--burst-delay);
+        }
+        @keyframes burst-pop {
+          0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--burst-rotate)) translateY(0) scale(0.2); }
+          18% { opacity: 1; }
+          100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--burst-rotate)) translateY(-58px) scale(1); }
+        }
         @media (max-width: 1023px) {
           .login-left-panel { display: none !important; }
           .login-right-panel {
@@ -446,7 +480,19 @@ function LoginPageContent() {
 
         {/* ── SUCCESS SCREEN ── */}
         {activeTab === 'success' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+            <div className="success-burst" aria-hidden="true">
+              {[
+                ['#F59E0B', '-70deg', '0ms'],
+                ['#10B981', '-38deg', '70ms'],
+                ['#155DFC', '-10deg', '120ms'],
+                ['#EF4444', '18deg', '40ms'],
+                ['#D9A84F', '44deg', '100ms'],
+                ['#8B5CF6', '72deg', '150ms'],
+              ].map(([color, rotate, delay]) => (
+                <span key={`${color}-${rotate}`} style={{ '--burst-color': color, '--burst-rotate': rotate, '--burst-delay': delay } as CSSProperties} />
+              ))}
+            </div>
             {/* Celebration image */}
             <Image src="/success-celebration.png" alt="You're in!" width={100} height={100} style={{ objectFit: 'contain', marginBottom: 16 }} />
 
@@ -756,9 +802,9 @@ function LoginPageContent() {
               />
               <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, lineHeight: '19.5px', color: '#4A5565' }}>
                 I agree to the{' '}
-                <Link href="#" style={{ fontWeight: 600, color: '#155DFC', textDecoration: 'none' }}>Terms of Service</Link>
+                <Link href="/terms" style={{ fontWeight: 600, color: '#155DFC', textDecoration: 'none' }}>Terms of Service</Link>
                 {' '}and{' '}
-                <Link href="#" style={{ fontWeight: 600, color: '#155DFC', textDecoration: 'none' }}>Privacy Policy.</Link>
+                <Link href="/privacy" style={{ fontWeight: 600, color: '#155DFC', textDecoration: 'none' }}>Privacy Policy.</Link>
                 <br />
                 I consent to receive UPSC preparation updates from Rise with Jeet.
               </span>
@@ -818,8 +864,17 @@ function LoginPageContent() {
                   letterSpacing: 0,
                 }}
               >
-                Welcome{' '}
-                <span style={{ color: '#D9A84F', fontStyle: 'italic', fontWeight: 700 }}>back</span>{' '}
+                {showWelcomeBack ? (
+                  <>
+                    Welcome{' '}
+                    <span style={{ color: '#D97706', fontStyle: 'italic', fontWeight: 700 }}>back</span>{' '}
+                  </>
+                ) : (
+                  <>
+                    Sign in to{' '}
+                    <span style={{ color: '#D9A84F', fontStyle: 'italic', fontWeight: 700 }}>RiseWithJeet</span>{' '}
+                  </>
+                )}
               </h1>
             </div>
             <p
@@ -870,7 +925,7 @@ function LoginPageContent() {
                   color: '#0A0A0A',
                 }}
               >
-                Continue with Google
+                Sign in with Google
               </span>
             </button>
 
@@ -1177,3 +1232,4 @@ export default function LoginPage() {
     </Suspense>
   );
 }
+

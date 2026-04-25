@@ -6,16 +6,34 @@ import Link from 'next/link';
 import { useCmsContent } from '@/hooks/useCmsContent';
 
 const defaultFooterLinks = {
-  company: ['Built by an Aspirant, for Every Aspirant', 'Blog and Articles', 'Pricing', 'Frequently Asked Questions'],
-  courses: ['Categories', 'Online Course', 'Video Course'],
-  support: ['Terms of Service', 'Privacy Policy', 'Cookie Policy', 'Refund and Cancellation'],
+  company: ['About Us', 'How it works', 'Popular Course', 'Services'],
+  courses: ['Categories', 'Offline Course', 'Video Course'],
+  support: ['FAQ', 'Help Center', 'Career', 'Privacy Policy'],
 };
 
 const defaultContactInfo = {
-  phone: '+0913-705-3875',
-  email: 'ElizabethJ@jourrapide.com',
-  address: '4808 Skinner Hollow Road\nDays Creek, OR 97429',
-  telegram: 'https://t.me/risewithjeet',
+  whatsapp: '+91 83570 56891',
+  whatsapp_link: 'https://wa.me/918357056891',
+  telegram_handle: '@togetherrisewithjeet',
+  telegram_link: 'https://t.me/togetherrisewithjeet',
+};
+
+const footerLinkClass = 'footer-nav-link font-roboto font-normal text-white text-sm md:text-lg lg:text-[25px] leading-[100%] inline-block';
+
+const normalizeFooterLabel = (label: string) => {
+  const map: Record<string, string> = {
+    'Our Story': 'About Us',
+    'How to work?': 'How it works',
+    'Populer Course': 'Popular Course',
+    'Service': 'Services',
+    'Ofline Course': 'Offline Course',
+    'Vidio Course': 'Video Course',
+    'Your Privacy Matters': 'Privacy Policy',
+    'Built by an Aspirant, for Every Aspirant': 'About Us',
+    'Frequently Asked Questions': 'FAQ',
+    'Refund and Cancellation': 'Refund Policy',
+  };
+  return map[label] || label;
 };
 
 const defaults = {
@@ -233,7 +251,7 @@ const Footer = () => {
           </div>
 
           {/* Links Container */}
-          <div className="flex-grow flex flex-col sm:flex-row flex-wrap justify-end gap-10 md:gap-16 xl:gap-32 w-full lg:w-auto">
+          <div className="flex-grow grid w-full lg:w-auto grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-10 md:gap-14 xl:gap-20">
 
             {/* Company Column */}
             <div className="flex flex-col gap-4 md:gap-6">
@@ -241,12 +259,18 @@ const Footer = () => {
               <ul className="flex flex-col gap-3 md:gap-5">
                 {(footerLinks.company || defaultFooterLinks.company).map((link: string, i: number) => (
                   <li key={i}>
+                    {(() => {
+                      const fixedLink = normalizeFooterLabel(link);
+                      const href = fixedLink === 'About Us' ? '/our-story' : fixedLink === 'FAQ' ? '/faq' : fixedLink === 'Pricing' ? '/pricing' : '#';
+                      return (
                     <a
-                      href={link === 'Built by an Aspirant, for Every Aspirant' ? '/our-story' : link === 'Blog and Articles' ? '/blog' : link === 'Pricing' ? '/pricing' : link === 'Frequently Asked Questions' ? '/faq' : '#'}
-                      className="font-roboto font-normal text-white hover:text-[#FFD170] text-sm md:text-lg lg:text-[25px] leading-[100%]"
+                      href={href}
+                      className={footerLinkClass}
                     >
-                      {link}
+                      {fixedLink}
                     </a>
+                      );
+                    })()}
                   </li>
                 ))}
               </ul>
@@ -254,7 +278,7 @@ const Footer = () => {
               {/* Telegram QR Code */}
               <div className="mt-2 md:mt-4">
                 <a
-                  href={contactInfo.telegram || defaultContactInfo.telegram}
+                  href={contactInfo.telegram_link || defaultContactInfo.telegram_link}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-20 h-20 md:w-[100px] md:h-[100px] rounded-lg overflow-hidden hover:scale-105 transition-transform"
@@ -275,7 +299,7 @@ const Footer = () => {
               <h3 className="font-roboto font-semibold text-white text-xl md:text-2xl lg:text-[30px] leading-[100%]">Courses</h3>
               <ul className="flex flex-col gap-3 md:gap-5">
                 {(footerLinks.courses || defaultFooterLinks.courses).map((link: string, i: number) => (
-                  <li key={i}><a href="#" className="font-roboto font-normal text-white hover:text-[#FFD170] text-sm md:text-lg lg:text-[25px] leading-[100%]">{link}</a></li>
+                  <li key={i}><a href="#" className={footerLinkClass}>{normalizeFooterLabel(link)}</a></li>
                 ))}
               </ul>
             </div>
@@ -286,12 +310,18 @@ const Footer = () => {
               <ul className="flex flex-col gap-3 md:gap-5">
                 {(footerLinks.support || defaultFooterLinks.support).map((link: string, i: number) => (
                   <li key={i}>
+                    {(() => {
+                      const fixedLink = normalizeFooterLabel(link);
+                      const href = fixedLink === 'Privacy Policy' ? '/privacy' : fixedLink === 'Terms of Service' ? '/terms' : fixedLink === 'Cookie Policy' ? '/cookies' : fixedLink === 'Refund Policy' ? '/refund' : fixedLink === 'FAQ' ? '/faq' : '#';
+                      return (
                     <Link
-                      href={link === 'Privacy Policy' ? '/privacy' : link === 'Terms of Service' ? '/terms' : link === 'Cookie Policy' ? '/cookies' : link === 'Refund and Cancellation' ? '/refund' : link === 'Frequently Asked Questions' ? '/faq' : '#'}
-                      className="font-roboto font-normal text-white hover:text-[#FFD170] text-sm md:text-lg lg:text-[25px] leading-[100%]"
+                      href={href}
+                      className={footerLinkClass}
                     >
-                      {link}
+                      {fixedLink}
                     </Link>
+                      );
+                    })()}
                   </li>
                 ))}
               </ul>
@@ -299,24 +329,122 @@ const Footer = () => {
 
             {/* Contact Us Column */}
             <div className="flex flex-col gap-4 md:gap-6">
-              <a href="/contact" className="font-roboto font-semibold text-white text-xl md:text-2xl lg:text-[30px] leading-[100%] hover:text-[#FFD170] transition-colors">Contact Us</a>
-              <ul className="flex flex-col gap-3 md:gap-5">
-                <li className="font-roboto font-normal text-white text-sm md:text-lg lg:text-[25px] leading-[100%]">{contactInfo.phone}</li>
-                <li className="font-roboto font-normal text-white text-sm md:text-lg lg:text-[25px] leading-[100%] break-all">{contactInfo.email}</li>
-                <li className="font-roboto font-normal text-white text-sm md:text-lg lg:text-[25px] leading-[140%]">
-                  {(contactInfo.address || defaultContactInfo.address).split('\n').map((line: string, i: number) => (
-                    <React.Fragment key={i}>
-                      {i > 0 && <br />}
-                      {line}
-                    </React.Fragment>
-                  ))}
-                </li>
-              </ul>
+              <a href="/contact" className="font-roboto font-semibold text-white text-xl md:text-2xl lg:text-[30px] leading-[100%] inline-block transition-all duration-200 hover:text-[#FFD170] hover:-translate-y-0.5 hover:scale-[1.03]">Contact Us</a>
+              <div className="flex flex-col gap-5">
+                <div>
+                  <div className="contact-label">WHATSAPP</div>
+                  <a href={contactInfo.whatsapp_link || defaultContactInfo.whatsapp_link} target="_blank" rel="noopener noreferrer" className="contact-value">
+                    <span>💬</span>
+                    <span>{contactInfo.whatsapp || defaultContactInfo.whatsapp}</span>
+                  </a>
+                  <a href={contactInfo.whatsapp_link || defaultContactInfo.whatsapp_link} target="_blank" rel="noopener noreferrer" className="contact-pill contact-pill-wa">
+                    <span>🟢</span>
+                    <span>Text on WhatsApp</span>
+                  </a>
+                </div>
+                <div>
+                  <div className="contact-label">TELEGRAM SUPPORT</div>
+                  <a href={contactInfo.telegram_link || defaultContactInfo.telegram_link} target="_blank" rel="noopener noreferrer" className="contact-value">
+                    <span>📨</span>
+                    <span>{contactInfo.telegram_handle || defaultContactInfo.telegram_handle}</span>
+                  </a>
+                  <a href={contactInfo.telegram_link || defaultContactInfo.telegram_link} target="_blank" rel="noopener noreferrer" className="contact-pill contact-pill-tg">
+                    <span>🔵</span>
+                    <span>Join Telegram Community</span>
+                  </a>
+                </div>
+              </div>
             </div>
 
           </div>
         </div>
       </div>
+      <style jsx>{`
+        .footer-nav-link {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          transition: color 0.13s ease, padding-left 0.15s ease, transform 0.15s ease;
+        }
+        .footer-nav-link::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 50%;
+          transform: translateY(-50%) scale(0.7);
+          width: 0;
+          height: 0;
+          border-left: 3.5px solid #ffd170;
+          border-top: 2.5px solid transparent;
+          border-bottom: 2.5px solid transparent;
+          opacity: 0;
+          transition: opacity 0.13s ease, transform 0.15s ease;
+        }
+        .footer-nav-link:hover {
+          color: #ffd170;
+          padding-left: 11px;
+          transform: translateY(-1px);
+        }
+        .footer-nav-link:hover::before {
+          opacity: 1;
+          transform: translateY(-50%) scale(1);
+        }
+        .contact-label {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          color: rgba(255, 255, 255, 0.5);
+          margin-bottom: 8px;
+        }
+        .contact-value {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: clamp(18px, 1.5vw, 32px);
+          font-weight: 700;
+          color: rgba(255, 255, 255, 0.88);
+          text-decoration: none;
+          transition: color 0.15s ease;
+          margin-bottom: 8px;
+          width: fit-content;
+        }
+        .contact-value:hover {
+          color: #ffd170;
+        }
+        .contact-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 9999px;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 14px;
+          font-weight: 700;
+          text-decoration: none;
+          border: 1px solid transparent;
+          transition: all 0.15s ease;
+        }
+        .contact-pill-wa {
+          color: #4ade80;
+          background: rgba(37, 211, 102, 0.12);
+          border-color: rgba(37, 211, 102, 0.28);
+        }
+        .contact-pill-wa:hover {
+          background: rgba(37, 211, 102, 0.2);
+          border-color: rgba(37, 211, 102, 0.45);
+        }
+        .contact-pill-tg {
+          color: #7dd3fc;
+          background: rgba(41, 182, 246, 0.12);
+          border-color: rgba(41, 182, 246, 0.28);
+        }
+        .contact-pill-tg:hover {
+          background: rgba(41, 182, 246, 0.2);
+          border-color: rgba(41, 182, 246, 0.45);
+        }
+      `}</style>
     </footer>
   );
 };

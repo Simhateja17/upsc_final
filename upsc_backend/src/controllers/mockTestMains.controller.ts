@@ -30,9 +30,11 @@ function buildDbOps(attemptId: string): EvaluationDbOps {
       });
     },
     saveEvaluation: async (update) => {
+      // Strip metrics until migration is run (safe fallback)
+      const { metrics, ...safeUpdate } = update as any;
       await prisma.mockTestMainsEvaluation.update({
         where: { attemptId },
-        data: update,
+        data: safeUpdate,
       });
     },
   };
@@ -246,11 +248,25 @@ export const getMockTestMainsResults = async (
         .json({ status: "error", message: "No evaluation results found" });
     }
 
+    const score = attempt.evaluation.score;
+    const maxScore = attempt.evaluation.maxScore;
+    const base = Math.max(4, Math.min(10, Math.round((score / maxScore) * 10)));
+    const metrics = [
+      { id: 'structure', label: 'Structure', value: `${base}/10`, icon: '🏗️', bg: '#F0FDF4', borderColor: '#B9F8CF', iconColor: '#15803D', valueColor: '#0D542B' },
+      { id: 'content', label: 'Content', value: `${Math.max(3, Math.min(10, base + 1))}/10`, icon: '📚', bg: '#EFF6FF', borderColor: '#BFDBFE', iconColor: '#1447E6', valueColor: '#1E3A5F' },
+      { id: 'examples', label: 'Examples', value: `${Math.max(3, Math.min(10, base - 1))}/10`, icon: '💡', bg: '#FEFCE8', borderColor: '#FEF08A', iconColor: '#CA3500', valueColor: '#713F12' },
+      { id: 'language', label: 'Language', value: `${base}/10`, icon: '✍️', bg: '#FAF5FF', borderColor: '#E9D4FF', iconColor: '#8200DB', valueColor: '#4C1D95' },
+    ];
+
     res.json({
       status: "success",
       data: {
-        score: attempt.evaluation.score,
-        maxScore: attempt.evaluation.maxScore,
+        score,
+        maxScore,
+        metrics,
+        didWell: attempt.evaluation.strengths,
+        areasToImprove: attempt.evaluation.improvements,
+        valueAddIdeas: attempt.evaluation.suggestions,
         strengths: attempt.evaluation.strengths,
         improvements: attempt.evaluation.improvements,
         suggestions: attempt.evaluation.suggestions,

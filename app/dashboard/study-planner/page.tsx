@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { studyPlannerService } from '@/lib/services';
+import { SYLLABUS_DATA } from '@/data/syllabus/syllabusData';
 
 function fmtTimer(secs: number): string {
   const s = Math.max(0, secs);
@@ -71,8 +72,15 @@ export default function StudyPlannerPage() {
   const [justCompleted, setJustCompleted] = useState(false);
   const focusTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const fmtDateStr = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   useEffect(() => {
-    studyPlannerService.getTodayTasks()
+    studyPlannerService.getTodayTasks(fmtDateStr(currentDate))
       .then(res => { if (res.data) setTasks(res.data); })
       .catch(() => {});
     studyPlannerService.getStreak()
@@ -85,15 +93,35 @@ export default function StudyPlannerPage() {
         }
       })
       .catch(() => {});
-    studyPlannerService.getSyllabusCoverage()
-      .then(res => {
-        if (res.data && Array.isArray(res.data)) {
-          setSyllabusCoverage(res.data);
-        } else if (res.data?.subjects && Array.isArray(res.data.subjects)) {
-          setSyllabusCoverage(res.data.subjects);
-        }
-      })
-      .catch(() => {});
+    // Compute syllabus coverage from tracker state (same as dashboard)
+    const computeSyllabusCoverage = () => {
+      const coverage: { subject: string; percentage: number }[] = [];
+      const allSubjects = [
+        ...(SYLLABUS_DATA.prelims || []),
+        ...(SYLLABUS_DATA.mains || []),
+        ...(SYLLABUS_DATA.optional || []),
+      ];
+      const saved = localStorage.getItem('syllabusTrackerState');
+      let states: Record<string, { status?: string }> = {};
+      if (saved) { try { states = JSON.parse(saved); } catch {} }
+      allSubjects.forEach((subject: any) => {
+        let total = 0;
+        let done = 0;
+        (subject.topics || []).forEach((topic: any, ti: number) => {
+          (topic.subs || []).forEach((_sub: any, si: number) => {
+            total++;
+            const key = `${subject.id}__${ti}__${si}`;
+            if (states[key]?.status === 'done') done++;
+          });
+        });
+        coverage.push({
+          subject: subject.short || subject.name,
+          percentage: total > 0 ? Math.round((done / total) * 100) : 0,
+        });
+      });
+      setSyllabusCoverage(coverage);
+    };
+    computeSyllabusCoverage();
     studyPlannerService.getWeeklyGoals()
       .then(res => {
         if (res.data && Array.isArray(res.data)) {
@@ -104,6 +132,12 @@ export default function StudyPlannerPage() {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    studyPlannerService.getTodayTasks(fmtDateStr(currentDate))
+      .then(res => { if (res.data) setTasks(res.data); })
+      .catch(() => {});
+  }, [currentDate]);
 
   useEffect(() => {
     studyPlannerService.getMonthlyActivity(currentDate.getFullYear(), currentDate.getMonth() + 1)
@@ -260,12 +294,42 @@ export default function StudyPlannerPage() {
   // Items that map to a subject in the dropdown — fills both title and subject
   const subjectItems = new Set(['Polity', 'History', 'Science & Technology', 'Economics', 'Geography', 'Environment', 'Ethics']);
 
+  // Map quick-add items to proper subjects
+  const itemToSubject: Record<string, string> = {
+    'GS1': 'History',
+    'GS2': 'Polity',
+    'GS3': 'Economics',
+    'GS4': 'Ethics',
+    'Mock Test': 'Current Affairs',
+    'Answer Writing': 'Current Affairs',
+    'Revision': 'History',
+  };
+
+  // Map quick-add items to study types
+  const itemToStudyType: Record<string, string> = {
+    'Video Lectures': 'video',
+    'Reading': 'reading',
+    'Practice': 'practice',
+    'Revision': 'revision',
+    'Mock Test': 'test',
+    'Answer Writing': 'answer',
+    'Test': 'test',
+    'Notes': 'notes',
+  };
+
   const handleQuickAdd = (item: string) => {
     if (subjectItems.has(item)) {
       setTaskTitle(`${item} Study Session`);
       setTaskSubject(item);
+      setStudyType(itemToStudyType[item] || 'study');
+    } else if (itemToSubject[item]) {
+      setTaskTitle(`${item} Session`);
+      setTaskSubject(itemToSubject[item]);
+      setStudyType(itemToStudyType[item] || 'study');
     } else {
       setTaskTitle(item);
+      setTaskSubject('');
+      setStudyType(itemToStudyType[item] || 'study');
     }
   };
 

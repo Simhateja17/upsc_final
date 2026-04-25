@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { dailyMcqService } from '@/lib/services';
 
-interface Question {
+interface PracticeQuestion {
   id: string;
   questionNum: number;
   questionText: string;
@@ -16,72 +16,41 @@ interface Question {
   explanation: string | null;
 }
 
-export default function DailyMcqChallengePage() {
+export default function PracticePage() {
   const router = useRouter();
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [mcqId, setMcqId] = useState('');
-  const [timeLimit, setTimeLimit] = useState(15);
+  const searchParams = useSearchParams();
+  const topicsParam = searchParams.get('topics');
+  const topics = topicsParam ? topicsParam.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+  const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number>(Date.now());
 
   useEffect(() => {
-    dailyMcqService.getQuestions()
+    dailyMcqService.getPractice(topics, 10)
       .then(res => {
-        setQuestions(res.data.questions);
-        setMcqId(res.data.mcqId);
-        setTimeLimit(res.data.timeLimit);
-        setTimeLeft(res.data.timeLimit * 60);
-        startTimeRef.current = Date.now();
+        const qs = (res.data?.questions || []).map((q: any, idx: number) => ({ ...q, questionNum: idx + 1 }));
+        setQuestions(qs);
       })
-      .catch(() => router.push('/dashboard/daily-mcq'))
+      .catch(err => setError(err.message))
       .finally(() => setLoading(false));
-  }, [router]);
+  }, [topicsParam]);
 
-  useEffect(() => {
-    if (timeLeft <= 0 || loading) return;
-    timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          handleSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [loading]);
-
-  const handleSelectAnswer = (questionId: string, optionId: string) => {
+  const handleSelect = (qid: string, opt: string) => {
     if (submitted) return;
-    setAnswers(prev => ({ ...prev, [questionId]: optionId }));
+    setAnswers(prev => ({ ...prev, [qid]: opt }));
   };
 
-  const handleSubmit = async () => {
-    if (submitting || submitted) return;
-    setSubmitting(true);
-    if (timerRef.current) clearInterval(timerRef.current);
-
-    const timeTaken = Math.round((Date.now() - startTimeRef.current) / 1000);
-    const answerArray = questions.map(q => ({
-      questionId: q.id,
-      selectedOption: answers[q.id] || null,
-    }));
-
-    try {
-      await dailyMcqService.submit(answerArray, timeTaken);
-      setSubmitted(true);
-      setSubmitting(false);
-    } catch {
-      setSubmitting(false);
-    }
+  const handleSubmit = () => {
+    setSubmitted(true);
   };
+
+  const correctCount = questions.filter(q => answers[q.id] === q.correctOption).length;
+  const wrongCount = questions.filter(q => answers[q.id] && answers[q.id] !== q.correctOption).length;
+  const skipped = questions.length - Object.keys(answers).length;
 
   if (loading) {
     return (
@@ -91,23 +60,19 @@ export default function DailyMcqChallengePage() {
     );
   }
 
+  if (error || questions.length === 0) {
+    return (
+      <div className="flex flex-col min-h-screen items-center justify-center p-6">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">No Practice Questions</h2>
+          <p className="text-gray-500 mb-4">{error || 'No questions found for the selected topics.'}</p>
+          <Link href="/dashboard/daily-mcq" className="text-blue-600 hover:underline">Back to Daily MCQ</Link>
+        </div>
+      </div>
+    );
+  }
+
   const q = questions[currentQuestion];
-  if (!q) return null;
-
-  // Format question text: put numbered statements on new lines, replace em-dashes
-  const formatQuestionText = (text: string) => {
-    return text
-      .replace(/\u2014/g, '-')
-      .replace(/(\d+)\.\s+/g, '\n$1. ')
-      .trim();
-  };
-
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-  // Stats for submitted state
-  const totalAnswered = Object.keys(answers).length;
-  const correctCount = questions.filter(qu => answers[qu.id] && answers[qu.id] === qu.correctOption).length;
-  const wrongCount = questions.filter(qu => answers[qu.id] && answers[qu.id] !== qu.correctOption).length;
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: '#FFFFFF' }}>
@@ -124,23 +89,16 @@ export default function DailyMcqChallengePage() {
                 <div className="flex items-center gap-2">
                   <img src="/daily-challenge-icon.png" alt="MCQ" className="w-10 h-10" />
                   <h1 className="font-arimo font-bold text-black text-[26px] leading-[28px] whitespace-nowrap">
-                    Daily MCQ Challenge
-                    <span className="font-arimo font-normal text-[#94A3B8] text-[18px] leading-[28px]"> · ({new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })})</span>
+                    Weak Area Practice
+                    <span className="font-arimo font-normal text-[#94A3B8] text-[18px] leading-[28px]"> · {topics.join(', ')}</span>
                   </h1>
                 </div>
-                <div className="flex items-center">
-                  {submitted ? (
-                    <span className="text-xs font-bold text-[#00A63E] flex items-center gap-2 px-4 py-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-full whitespace-nowrap">
-                      <span className="w-1.5 h-1.5 bg-[#00A63E] rounded-full"></span>
-                      Submitted — {correctCount}/{questions.length} Correct
-                    </span>
-                  ) : (
-                    <span className="text-xs font-bold text-[#E7000B] flex items-center gap-2 px-4 py-2 bg-[#FEF2F2] border border-[#FFC9C9] rounded-full whitespace-nowrap">
-                      <span className="w-1.5 h-1.5 bg-[#E7000B] rounded-full"></span>
-                      Todays Challenge is LIVE
-                    </span>
-                  )}
-                </div>
+                {submitted && (
+                  <span className="text-xs font-bold text-[#00A63E] flex items-center gap-2 px-4 py-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-full whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 bg-[#00A63E] rounded-full"></span>
+                    {correctCount}/{questions.length} Correct
+                  </span>
+                )}
               </div>
 
               <div className="w-full border-t border-[#99A1AFE5] mb-4"></div>
@@ -150,23 +108,12 @@ export default function DailyMcqChallengePage() {
                   <img src="/tag-one.png" alt="Tag" className="w-4 h-4" />
                   <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px]">{q.category} • {q.difficulty}</span>
                 </div>
-                {!submitted && (
-                  <div className="flex items-center gap-2">
-                    <img src="/timer-icon.png" alt="Timer" className="w-10 h-10" />
-                    <div className="flex flex-col items-end">
-                      <span className={`font-arimo font-bold text-xl leading-none ${timeLeft < 60 ? 'text-red-600' : 'text-[#101828]'}`}>
-                        {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-                      </span>
-                      <span className="text-[10px] text-gray-500 uppercase tracking-wide">TIME LEFT</span>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
             <div className="mb-6">
-              <p className="font-arimo font-bold text-[#101828] text-sm mb-6 whitespace-pre-line">
-                <span className="font-bold">Question {q.questionNum}:</span> {formatQuestionText(q.questionText)}
+              <p className="font-arimo font-bold text-[#101828] text-sm mb-6">
+                <span className="font-bold">Question {q.questionNum}:</span> {q.questionText}
               </p>
 
               <div className="space-y-3">
@@ -217,7 +164,7 @@ export default function DailyMcqChallengePage() {
                   return (
                     <button
                       key={optKey}
-                      onClick={() => handleSelectAnswer(q.id, optKey)}
+                      onClick={() => handleSelect(q.id, optKey)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -256,7 +203,6 @@ export default function DailyMcqChallengePage() {
                 })}
               </div>
 
-              {/* Explanation — shown after submission only */}
               {submitted && q.explanation && (
                 <div style={{
                   marginTop: '20px',
@@ -336,9 +282,8 @@ export default function DailyMcqChallengePage() {
                 <button
                   className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                   onClick={handleSubmit}
-                  disabled={submitting}
                 >
-                  <span className="font-arimo font-bold text-sm">{submitting ? 'Submitting...' : 'Submit'}</span>
+                  <span className="font-arimo font-bold text-sm">Submit</span>
                 </button>
               ) : (
                 <button

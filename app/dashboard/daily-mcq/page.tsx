@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { dailyMcqService } from '@/lib/services';
 
 interface MCQData {
@@ -16,9 +17,11 @@ interface MCQData {
 }
 
 export default function DailyMcqIntroPage() {
+  const router = useRouter();
   const [mcq, setMcq] = useState<MCQData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [autoStart, setAutoStart] = useState(15);
 
   useEffect(() => {
     dailyMcqService.getToday()
@@ -26,6 +29,18 @@ export default function DailyMcqIntroPage() {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (loading || !mcq || mcq.attempted) return;
+    if (autoStart <= 0) {
+      router.push('/dashboard/daily-mcq/challenge');
+      return;
+    }
+    const timer = setInterval(() => {
+      setAutoStart(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [loading, mcq, autoStart, router]);
 
   if (loading) {
     return (
@@ -74,7 +89,7 @@ export default function DailyMcqIntroPage() {
             Sharpen your knowledge with focused practice questions
           </p>
 
-          <div className="flex flex-nowrap items-center justify-center gap-2 mb-8 overflow-x-auto">
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
             {mcq.tags.map((tag) => (
               <span key={tag} className="px-3 py-1 bg-[#EFF6FF] text-[#101828] rounded-full font-arimo text-[14px] leading-[20px] whitespace-nowrap">
                 {tag}
@@ -82,7 +97,7 @@ export default function DailyMcqIntroPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-3 w-full max-w-[300px] mx-auto mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 w-full max-w-[420px] mx-auto mb-6 gap-y-4">
             <div className="flex flex-col items-center">
               <div className="font-arimo font-bold text-[#101828] text-[32px] leading-tight max-md:text-[24px]">{mcq.questionCount}</div>
               <div className="font-arimo text-[#667085] text-[12px] mt-1">Questions</div>
@@ -94,6 +109,10 @@ export default function DailyMcqIntroPage() {
             <div className="flex flex-col items-center">
               <div className="font-arimo font-bold text-[#101828] text-[32px] leading-tight max-md:text-[24px]">{mcq.totalMarks}</div>
               <div className="font-arimo text-[#667085] text-[12px] mt-1">Marks</div>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="font-arimo font-bold text-[#101828] text-[32px] leading-tight max-md:text-[24px]">+2/-0.66</div>
+              <div className="font-arimo text-[#667085] text-[12px] mt-1">Marking</div>
             </div>
           </div>
 
@@ -115,9 +134,11 @@ export default function DailyMcqIntroPage() {
             </Link>
           )}
 
-          <p className="font-arimo text-[#9CA3AF] text-[12px] mt-4 cursor-pointer hover:text-gray-600">
-            Skip intro (auto-start in 5s)
-          </p>
+          {!mcq.attempted && (
+            <p className="font-arimo text-[#9CA3AF] text-[12px] mt-4 cursor-pointer hover:text-gray-600">
+              Skip intro (auto-start in {autoStart}s)
+            </p>
+          )}
         </div>
       </main>
     </div>

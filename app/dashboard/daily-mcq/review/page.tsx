@@ -79,25 +79,69 @@ export default function QuestionReviewPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(1.25rem,1.5vw,2rem)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(1.25rem,1.5vw,2rem)]">
                 {(q.options as any[]).map((option: any) => {
                   const isCorrect = option.id === q.correctOption;
                   const isSelected = option.id === q.selectedOption;
-                  let bg = 'bg-[#F9FAFB] border border-[#E5E7EB] text-[#364153]';
-                  if (isCorrect) bg = 'text-white';
-                  else if (isSelected && !isCorrect) bg = 'text-white';
+                  const label = option.id?.toUpperCase?.() || option.id;
+
+                  let bg = '#FFFFFF';
+                  let border = '2px solid #E2E8F0';
+                  let circleColor = '#CBD5E1';
+                  let circleBg = 'transparent';
+                  let circleText = '#64748B';
+                  let circleIcon = label;
+                  let textColor = '#1E293B';
+                  let fontWeight = 400;
+
+                  if (isCorrect) {
+                    bg = '#F0FDF4';
+                    border = '2px solid #00C950';
+                    circleColor = '#00C950';
+                    circleBg = '#DCFCE7';
+                    circleText = '#00C950';
+                    circleIcon = '✓';
+                    textColor = '#14532D';
+                    fontWeight = 600;
+                  } else if (isSelected && !isCorrect) {
+                    bg = '#FEF2F2';
+                    border = '2px solid #FB2C36';
+                    circleColor = '#FB2C36';
+                    circleBg = '#FEE2E2';
+                    circleText = '#FB2C36';
+                    circleIcon = '✕';
+                    textColor = '#7F1D1D';
+                    fontWeight = 600;
+                  }
 
                   return (
                     <div key={option.id}
-                      className={`text-left rounded-[clamp(8px,0.52vw,10px)] ${bg}`}
+                      className="text-left rounded-[clamp(8px,0.52vw,10px)] flex items-center gap-3"
                       style={{
                         padding: 'clamp(0.75rem,1vw,1.25rem)',
-                        background: isCorrect ? '#00BBA7' : (isSelected && !isCorrect) ? '#FF3961' : undefined,
+                        background: bg,
+                        border,
                       }}>
-                      <div className="font-arimo" style={{ fontSize: 'clamp(13px,0.73vw,14px)', lineHeight: 'clamp(18px,1.19vw,22.75px)' }}>
-                        <span className="font-bold">{option.id}</span> {option.text}
-                        {isSelected && !isCorrect && ' (Your answer)'}
-                        {isCorrect && ' (Correct)'}
+                      <span style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        border: `2px solid ${circleColor}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        fontSize: '14px',
+                        color: circleText,
+                        flexShrink: 0,
+                        background: circleBg,
+                      }}>
+                        {circleIcon}
+                      </span>
+                      <div className="font-arimo" style={{ fontSize: 'clamp(13px,0.73vw,14px)', lineHeight: 'clamp(18px,1.19vw,22.75px)', color: textColor, fontWeight }}>
+                        {option.text}
+                        {isCorrect && <span className="ml-2 text-[#00C950] font-bold">(Correct)</span>}
+                        {isSelected && !isCorrect && <span className="ml-2 text-[#FB2C36] font-bold">(Your answer)</span>}
                       </div>
                     </div>
                   );

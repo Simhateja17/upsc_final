@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface SidebarProps {
   forceShow?: boolean;
@@ -65,21 +66,24 @@ const navigationSections = [
   },
 ];
 
-const NavContent = ({ pathname, onClose }: { pathname: string; onClose?: () => void }) => (
-  <nav className="pt-5 pb-8 px-4">
+const NavContent = ({ pathname, onClose, collapsed = false }: { pathname: string; onClose?: () => void; collapsed?: boolean }) => (
+  <nav className={`${collapsed ? 'px-3' : 'px-4'} pt-5 pb-8 transition-all duration-300`}>
     {navigationSections.map((section, sectionIndex) => (
       <div key={sectionIndex} className="mb-5">
-        <h3 className="text-[#999999] font-inter font-semibold text-[10px] uppercase tracking-[0.08em] mb-2 px-3">
-          {section.title}
-        </h3>
+        {!collapsed && (
+          <h3 className="text-[#999999] font-inter font-semibold text-[10px] uppercase tracking-[0.08em] mb-2 px-3">
+            {section.title}
+          </h3>
+        )}
         <ul className="space-y-0.5">
           {section.items.map((item) => (
             <li key={item.id}>
               <Link
                 href={item.path}
                 onClick={onClose}
+                title={collapsed ? item.label : undefined}
                 className={`
-                  flex items-center gap-[10px]
+                  flex items-center ${collapsed ? 'justify-center gap-0' : 'gap-[10px]'}
                   px-3 py-[9px]
                   rounded-[6px]
                   transition-all duration-200
@@ -96,9 +100,11 @@ const NavContent = ({ pathname, onClose }: { pathname: string; onClose?: () => v
                   alt={item.label}
                   className="w-[18px] h-[18px] flex-shrink-0 object-contain"
                 />
-                <span className="font-inter font-medium text-[13px] leading-none whitespace-nowrap">
-                  {item.label}
-                </span>
+                {!collapsed && (
+                  <span className="font-inter font-medium text-[13px] leading-none whitespace-nowrap">
+                    {item.label}
+                  </span>
+                )}
               </Link>
             </li>
           ))}
@@ -108,8 +114,19 @@ const NavContent = ({ pathname, onClose }: { pathname: string; onClose?: () => v
   </nav>
 );
 
+const AUTO_COLLAPSE_ROUTES = [
+  '/dashboard/daily-mcq/challenge',
+  '/dashboard/daily-answer/challenge',
+];
+
 const Sidebar = ({ forceShow = false, isOpen = false, onClose }: SidebarProps) => {
   const pathname = usePathname();
+  const shouldAutoCollapse = AUTO_COLLAPSE_ROUTES.some(r => pathname?.startsWith(r));
+  const [collapsed, setCollapsed] = useState(shouldAutoCollapse);
+
+  useEffect(() => {
+    setCollapsed(shouldAutoCollapse);
+  }, [shouldAutoCollapse]);
 
   // Hide dashboard sidebar on Jeet AI — it has its own sidebar (unless explicitly forced)
   if (!forceShow && pathname === '/dashboard/jeet-gpt') return null;
@@ -118,11 +135,24 @@ const Sidebar = ({ forceShow = false, isOpen = false, onClose }: SidebarProps) =
     <>
       {/* ── Desktop sidebar: always visible on lg+ ── */}
       <aside
-        className="hidden lg:flex w-[260px] min-w-[260px] h-full bg-white overflow-y-auto flex-shrink-0"
+        className={`hidden lg:flex ${collapsed ? 'w-[76px] min-w-[76px]' : 'w-[260px] min-w-[260px]'} h-full bg-white overflow-y-auto flex-shrink-0 transition-all duration-300`}
         style={{ boxShadow: '3px 0 12px rgba(0,0,0,0.06), 1px 0 3px rgba(0,0,0,0.04)', zIndex: 1 }}
       >
         <div className="w-full">
-          <NavContent pathname={pathname} />
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-end'} px-3 pt-3`}>
+            <button
+              type="button"
+              onClick={() => setCollapsed(prev => !prev)}
+              className="w-8 h-8 rounded-lg border border-[#E5E7EB] bg-white text-[#17223E] hover:bg-[#0E182D] hover:text-[#FFD170] transition-all duration-200 flex items-center justify-center"
+              aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+              title={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+            >
+              <svg className={`w-4 h-4 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none">
+                <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          <NavContent pathname={pathname} collapsed={collapsed} />
         </div>
       </aside>
 

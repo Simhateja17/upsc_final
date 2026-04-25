@@ -4,10 +4,43 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { faqService } from '@/lib/services';
 
-// ── FAQ DATA ──────────────────────────────────────────────────────────────────
+// ── ICON MAP FOR API CATEGORIES ───────────────────────────────────────────────
 
-const FAQ_CATEGORIES = [
+function getCategoryMeta(name: string) {
+  const map: Record<string, { icon: string; iconBg: string }> = {
+    'General': { icon: '⚡', iconBg: 'rgba(232,184,75,0.15)' },
+    'Study Planner': { icon: '📅', iconBg: 'rgba(8,145,178,0.12)' },
+    'Jeet GPT': { icon: '🤖', iconBg: 'rgba(20,184,166,0.12)' },
+    'Syllabus': { icon: '📋', iconBg: 'rgba(26,48,96,0.1)' },
+    'Syllabus Tracker': { icon: '📋', iconBg: 'rgba(26,48,96,0.1)' },
+    'Video Lectures': { icon: '🎬', iconBg: 'rgba(220,60,60,0.1)' },
+    'Videos': { icon: '🎬', iconBg: 'rgba(220,60,60,0.1)' },
+    'Study Material': { icon: '📚', iconBg: 'rgba(29,164,92,0.1)' },
+    'Current Affairs': { icon: '🌐', iconBg: 'rgba(20,184,166,0.12)' },
+    'Test Series': { icon: '📝', iconBg: 'rgba(232,184,75,0.12)' },
+    'Personal Mentorship': { icon: '🎓', iconBg: 'rgba(26,48,96,0.1)' },
+    'Mentorship': { icon: '🎓', iconBg: 'rgba(26,48,96,0.1)' },
+    'Daily MCQ': { icon: '✏️', iconBg: 'rgba(232,184,75,0.12)' },
+    'MCQ': { icon: '✏️', iconBg: 'rgba(232,184,75,0.12)' },
+    'Answer Writing': { icon: '✍️', iconBg: 'rgba(29,164,92,0.1)' },
+    'Mock Tests': { icon: '🎯', iconBg: 'rgba(220,60,60,0.1)' },
+    'Previous Year Questions': { icon: '🗂️', iconBg: 'rgba(20,184,166,0.12)' },
+    'PYQ': { icon: '🗂️', iconBg: 'rgba(20,184,166,0.12)' },
+    'Performance Analytics': { icon: '📈', iconBg: 'rgba(8,145,178,0.12)' },
+    'Analytics': { icon: '📈', iconBg: 'rgba(8,145,178,0.12)' },
+    'Revision Tools': { icon: '🔁', iconBg: 'rgba(29,164,92,0.1)' },
+    'Flashcards': { icon: '🔁', iconBg: 'rgba(29,164,92,0.1)' },
+    'Pricing': { icon: '💳', iconBg: 'rgba(26,48,96,0.1)' },
+    'Technical': { icon: '🔧', iconBg: 'rgba(100,100,100,0.1)' },
+  };
+  return map[name] || { icon: '❓', iconBg: 'rgba(100,100,100,0.1)' };
+}
+
+// ── FALLBACK FAQ DATA ─────────────────────────────────────────────────────────
+
+const FALLBACK_CATEGORIES = [
   {
     id: 'cat-general',
     icon: '⚡',
@@ -374,10 +407,18 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   );
 }
 
+interface FaqCategory {
+  id: string;
+  icon: string;
+  title: string;
+  iconBg: string;
+  questions: { q: string; a: string }[];
+}
+
 function FAQSection({
   category,
 }: {
-  category: (typeof FAQ_CATEGORIES)[0];
+  category: FaqCategory;
 }) {
   return (
     <div id={category.id} className="mb-12 scroll-mt-24">
@@ -407,11 +448,36 @@ function FAQSection({
 export default function FAQPage() {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('cat-general');
+  const [apiCategories, setApiCategories] = useState<FaqCategory[]>([]);
+  const [loading, setLoading] = useState(true);
   const mainRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    faqService.getPublicFaqs()
+      .then((res) => {
+        const grouped = res.data || {};
+        const mapped: FaqCategory[] = Object.entries(grouped).map(([category, questions]: [string, any]) => {
+          const meta = getCategoryMeta(category);
+          const id = 'cat-' + category.toLowerCase().replace(/\s+/g, '-');
+          return {
+            id,
+            icon: meta.icon,
+            title: category,
+            iconBg: meta.iconBg,
+            questions: (questions as any[]).map((q: any) => ({ q: q.question, a: q.answer })),
+          };
+        });
+        setApiCategories(mapped);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const displayCategories = apiCategories.length > 0 ? apiCategories : FALLBACK_CATEGORIES;
 
   // Filter categories/questions by search
   const filtered = search.trim()
-    ? FAQ_CATEGORIES.map((cat) => ({
+    ? displayCategories.map((cat) => ({
         ...cat,
         questions: cat.questions.filter(
           (q) =>
@@ -419,7 +485,7 @@ export default function FAQPage() {
             q.a.toLowerCase().includes(search.toLowerCase())
         ),
       })).filter((cat) => cat.questions.length > 0)
-    : FAQ_CATEGORIES;
+    : displayCategories;
 
   const totalFiltered = filtered.reduce((sum, c) => sum + c.questions.length, 0);
 
@@ -440,6 +506,13 @@ export default function FAQPage() {
     sections.forEach((s) => observer.observe(s));
     return () => observer.disconnect();
   }, [filtered]);
+
+  // Set first category active once loaded
+  useEffect(() => {
+    if (displayCategories.length > 0 && activeCategory === 'cat-general') {
+      setActiveCategory(displayCategories[0].id);
+    }
+  }, [displayCategories]);
 
   function jumpTo(id: string) {
     const el = document.getElementById(id);
@@ -503,7 +576,7 @@ export default function FAQPage() {
               Modules
             </p>
             <nav className="flex flex-col gap-0.5">
-              {FAQ_CATEGORIES.map((cat) => (
+              {displayCategories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => jumpTo(cat.id)}

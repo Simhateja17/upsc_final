@@ -27,6 +27,7 @@ export interface EvaluationUpdate {
   improvements: string[];
   suggestions: string[];
   detailedFeedback: string;
+  metrics?: any[] | null;
   evaluatedAt: Date | null;
 }
 
@@ -185,6 +186,7 @@ export async function evaluateAnswerGeneric(params: {
       improvements: result.improvements || [],
       suggestions: result.suggestions || [],
       detailedFeedback: result.detailedFeedback || "",
+      metrics: result.metrics || null,
       evaluatedAt: new Date(),
     });
     console.log(`[eval] attempt ${attemptId} → evaluation saved ✓`);
@@ -204,6 +206,7 @@ export async function evaluateAnswerGeneric(params: {
         suggestions: ["Try resubmitting for a fresh evaluation"],
         detailedFeedback:
           `Evaluation failed: ${errMsg}. Your answer has been scored with a baseline estimate. Please try resubmitting.`,
+        metrics: null,
         evaluatedAt: new Date(),
       });
     } catch (updateError) {
@@ -245,9 +248,11 @@ export async function evaluateAnswer(
       });
     },
     saveEvaluation: async (update) => {
+      // Strip metrics until migration is run (safe fallback)
+      const { metrics, ...safeUpdate } = update as any;
       await prisma.mainsEvaluation.update({
         where: { attemptId },
-        data: update,
+        data: safeUpdate,
       });
     },
   };

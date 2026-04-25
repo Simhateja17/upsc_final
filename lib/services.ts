@@ -99,6 +99,13 @@ export const dailyMcqService = {
   getResults: () => api.get<any>('/daily-mcq/today/results', authConfig()),
   getReview: () => api.get<any>('/daily-mcq/today/review', authConfig()),
   getRecommendations: () => api.get<any>('/daily-mcq/today/recommendations', authConfig()),
+  getPractice: (topics?: string[], limit?: number) => {
+    const params = new URLSearchParams();
+    if (topics && topics.length) params.set('topics', topics.join(','));
+    if (limit) params.set('limit', String(limit));
+    const qs = params.toString();
+    return api.get<any>(`/daily-mcq/practice${qs ? `?${qs}` : ''}`, authConfig());
+  },
 };
 
 // ==================== Daily Answer ====================
@@ -203,7 +210,8 @@ export const mockTestService = {
 // ==================== Study Planner ====================
 
 export const studyPlannerService = {
-  getTodayTasks: () => api.get<any>('/study-plan/today', authConfig()),
+  getTodayTasks: (date?: string) =>
+    api.get<any>(`/study-plan/today${date ? `?date=${encodeURIComponent(date)}` : ''}`, authConfig()),
   createTask: (task: { title: string; description?: string; subject?: string; type?: string; date?: string; startTime?: string; endTime?: string; duration?: number }) =>
     api.post<any>('/study-plan/tasks', task, authConfig()),
   updateTask: (id: string, updates: any) =>
@@ -244,8 +252,15 @@ export const libraryService = {
 export const pricingService = {
   getPlans: () => api.get<any>('/pricing/plans'),
   bookCall: (data: { name: string; email: string; phone?: string; message?: string }) =>
-    api.post<any>('/mentorship/book-call', data, authConfig()),
-  getTestimonials: () => api.get<any>('/mentorship/testimonials'),
+    api.post<any>('/pricing/book-call', data, authConfig()),
+  getTestimonials: () => api.get<any>('/pricing/testimonials'),
+  createOrder: (data: { itemType: string; itemId: string; itemName: string; amount: number }) =>
+    api.post<any>('/pricing/orders', data, authConfig()),
+  getOrders: () => api.get<any>('/pricing/orders', authConfig()),
+};
+
+export const faqService = {
+  getPublicFaqs: () => api.get<any>('/faqs'),
 };
 
 // ==================== Jeet AI Chat ====================
@@ -565,6 +580,13 @@ export const adminService = {
   updateSpacedRepSeed: (id: string, data: any) =>
     api.put<any>(`/admin/spaced-rep/seeds/${id}`, data, authConfig()),
   deleteSpacedRepSeed: (id: string) => api.delete<any>(`/admin/spaced-rep/seeds/${id}`, authConfig()),
+
+  // FAQ Management
+  getFaqs: () => api.get<any>('/admin/faqs', authConfig()),
+  createFaq: (data: { category: string; question: string; answer: string; order?: number }) =>
+    api.post<any>('/admin/faqs', data, authConfig()),
+  updateFaq: (id: string, data: any) => api.put<any>(`/admin/faqs/${id}`, data, authConfig()),
+  deleteFaq: (id: string) => api.delete<any>(`/admin/faqs/${id}`, authConfig()),
 
   // Library
   createSubject: (data: any) => api.post<any>('/admin/library/subjects', data, authConfig()),

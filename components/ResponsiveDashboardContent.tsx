@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { dashboardService, studyPlannerService } from '@/lib/services';
+import { dashboardService, studyPlannerService, syllabusService } from '@/lib/services';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -31,6 +31,7 @@ interface StudyTask {
   endTime?: string;
   duration?: number;
   completed?: boolean;
+  isCompleted?: boolean;
   priority?: string;
 }
 
@@ -300,6 +301,15 @@ const ResponsiveDashboardContent = () => {
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(25 * 60);
   const [isBreak, setIsBreak] = useState(false);
+  const [showLoginToast, setShowLoginToast] = useState(false);
+
+  // Syllabus coverage from tracker
+  const [syllabusCoverage, setSyllabusCoverage] = useState<{ subject: string; percentage: number; color: string }[]>([]);
+  const [syllabusLoading, setSyllabusLoading] = useState(true);
+
+  // Calendar date navigation
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [calendarTasks, setCalendarTasks] = useState<StudyTask[]>([]);
 
   const userName = user?.firstName || '';
   const greeting = getGreeting();
@@ -338,6 +348,80 @@ const ResponsiveDashboardContent = () => {
     return () => { mounted = false; };
   }, []);
 
+  // Fetch syllabus coverage from syllabus tracker
+  useEffect(() => {
+    let mounted = true;
+    async function fetchSyllabusCoverage() {
+      try {
+        const res = await syllabusService.getSyllabus();
+        if (mounted && res?.data) {
+          const data = res.data;
+          const coverage: { subject: string; percentage: number; color: string }[] = [];
+          const allSubjects = [
+            ...(data.prelims || []),
+            ...(data.mains || []),
+            ...(data.optional || []),
+          ];
+          allSubjects.forEach((subject: any) => {
+            let total = 0;
+            let done = 0;
+            (subject.topics || []).forEach((topic: any) => {
+              (topic.subs || []).forEach(() => {
+                total++;
+              });
+            });
+            // For now, calculate from localStorage tracker states if available
+            const saved = localStorage.getItem('syllabusTrackerState');
+            if (saved) {
+              try {
+                const states = JSON.parse(saved);
+                (subject.topics || []).forEach((topic: any, ti: number) => {
+                  (topic.subs || []).forEach((_sub: any, si: number) => {
+                    const key = `${subject.id}__${ti}__${si}`;
+                    if (states[key]?.status === 'done') done++;
+                  });
+                });
+              } catch {}
+            }
+            coverage.push({
+              subject: subject.short || subject.name,
+              percentage: total > 0 ? Math.round((done / total) * 100) : 0,
+              color: subject.color || '#1E2875',
+            });
+          });
+          if (mounted) setSyllabusCoverage(coverage);
+        }
+      } catch {
+      } finally {
+        if (mounted) setSyllabusLoading(false);
+      }
+    }
+    fetchSyllabusCoverage();
+    return () => { mounted = false; };
+  }, []);
+
+  // Fetch tasks for selected calendar date
+  useEffect(() => {
+    let mounted = true;
+    async function fetchCalendarTasks() {
+      try {
+        // Format date as YYYY-MM-DD in local timezone
+        const y = selectedDate.getFullYear();
+        const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const d = String(selectedDate.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${d}`;
+        const res = await studyPlannerService.getTodayTasks(dateStr);
+        if (mounted && res?.data) {
+          const allTasks = Array.isArray(res.data) ? res.data : res.data.tasks || [];
+          setCalendarTasks(allTasks);
+        }
+      } catch {
+      }
+    }
+    fetchCalendarTasks();
+    return () => { mounted = false; };
+  }, [selectedDate]);
+
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
     if (timerRunning && timerSeconds > 0) {
@@ -355,8 +439,19 @@ const ResponsiveDashboardContent = () => {
     return () => { if (interval) clearInterval(interval); };
   }, [timerRunning, timerSeconds, isBreak]);
 
+  useEffect(() => {
+    const shouldShowToast = sessionStorage.getItem('rwj_login_success') === '1';
+    if (!shouldShowToast) return;
+
+    sessionStorage.removeItem('rwj_login_success');
+    setShowLoginToast(true);
+    const timer = setTimeout(() => setShowLoginToast(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const trio = dashboardData?.trio;
-  const daysRemaining = dashboardData?.daysRemaining ?? null;
+  const prelimsDate = new Date(2026, 4, 24);
+  const daysRemaining = Math.max(0, Math.ceil((prelimsDate.getTime() - Date.now()) / 86400000));
 
   const mcqStatus = trio?.mcq?.status || null;
   const mcqTopic = trio?.mcq?.topic || null;
@@ -367,10 +462,41 @@ const ResponsiveDashboardContent = () => {
   const mainsTopic = trio?.mains?.topic || null;
 
   const isMcqCompleted = mcqStatus?.toLowerCase() === 'completed';
+  const isEditorialCompleted = editorialStatus?.toLowerCase() === 'completed';
+  const isMainsCompleted = mainsStatus?.toLowerCase() === 'completed';
 
   const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const isToday = selectedDate.toDateString() === new Date().toDateString();
 
-  const displayTasks = tasks;
+  const displayTasks = isToday ? tasks : calendarTasks;
+
+  function formatStatus(status?: string | null) {
+    if (!status || status === 'available') return 'Pending';
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
+  function isTaskComplete(task: StudyTask) {
+    return Boolean(task.completed ?? task.isCompleted);
+  }
+
+  async function handleToggleTask(task: StudyTask, index: number) {
+    const taskId = task._id || task.id;
+    const nextCompleted = !isTaskComplete(task);
+
+    setTasks(prev => prev.map((item, itemIndex) =>
+      itemIndex === index ? { ...item, completed: nextCompleted, isCompleted: nextCompleted } : item
+    ));
+
+    if (!taskId) return;
+
+    try {
+      await studyPlannerService.updateTask(taskId, { isCompleted: nextCompleted, completed: nextCompleted });
+    } catch {
+      setTasks(prev => prev.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, completed: !nextCompleted, isCompleted: !nextCompleted } : item
+      ));
+    }
+  }
 
   function formatTimerTime(totalSeconds: number) {
     const m = Math.floor(totalSeconds / 60);
@@ -404,8 +530,66 @@ const ResponsiveDashboardContent = () => {
     return `(${m}m)`;
   }
 
+  // Calendar navigation
+  const prevDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 1);
+    setSelectedDate(d);
+  };
+  const nextDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 1);
+    setSelectedDate(d);
+  };
+  const selectedDateStr = selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  // Pie chart helper
+  function pieSlicePath(cx: number, cy: number, r: number, startAngle: number, endAngle: number): string {
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle);
+    const y2 = cy + r * Math.sin(endAngle);
+    const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+    return `M ${cx} ${cy} L ${x1.toFixed(3)} ${y1.toFixed(3)} A ${r} ${r} 0 ${largeArc} 1 ${x2.toFixed(3)} ${y2.toFixed(3)} Z`;
+  }
+
+  // Time distribution data (mock based on task types)
+  const timeDistributionData = [
+    { label: 'Video Lectures', minutes: 210, color: '#FF6B6B' },
+    { label: 'Reading', minutes: 120, color: '#2DD4BF' },
+    { label: 'Practice', minutes: 90, color: '#FBBF24' },
+    { label: 'Answer Writing', minutes: 60, color: '#34D399' },
+  ].filter(d => d.minutes > 0);
+  const totalTimeMins = timeDistributionData.reduce((s, d) => s + d.minutes, 0);
+  const fmtHours = (m: number) => (m / 60 % 1 === 0 ? (m / 60).toFixed(0) : (m / 60).toFixed(1)) + 'h';
+
   return (
     <>
+    {showLoginToast && (
+      <div className="fixed right-6 top-6 z-[70] w-[min(390px,calc(100vw-32px))] rounded-2xl border border-white/10 bg-[#101827] p-4 text-white shadow-2xl">
+        <button
+          type="button"
+          onClick={() => setShowLoginToast(false)}
+          className="absolute right-3 top-3 text-white/45 hover:text-white transition-colors"
+          aria-label="Dismiss login message"
+        >
+          x
+        </button>
+        <div className="flex gap-3 pr-6">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#22C55E] text-white">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+              <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <p className="font-inter text-sm font-bold">Success</p>
+            <p className="mt-1 font-inter text-sm leading-5 text-white/70">
+              Welcome back{userName ? `, ${userName}` : ''}. Keep your streak going.
+            </p>
+          </div>
+        </div>
+      </div>
+    )}
     <div className="w-full min-h-screen py-[clamp(0.5rem,1vw,1rem)] px-[clamp(0.5rem,1vw,1rem)]" style={{ background: '#E9EEF5' }}>
       <div className="max-w-[1400px] mx-auto">
 
@@ -513,7 +697,7 @@ const ResponsiveDashboardContent = () => {
             </svg>
             <input
               type="text"
-              placeholder="Ask jeet AI: 'Explain currant affairs'"
+              placeholder="Ask Jeet AI: 'Explain current affairs'"
               className="flex-1 bg-transparent outline-none font-inter text-black placeholder:text-black"
               style={{
                 fontSize: 'clamp(12px,0.73vw,14px)',
@@ -575,7 +759,7 @@ const ResponsiveDashboardContent = () => {
             <button
               className="px-[clamp(1rem,1.25vw,1.5rem)] rounded-[20px] font-inter font-medium text-white border-2 flex items-center gap-2 hover:opacity-90 transition-opacity"
               style={{
-                height: 'clamp(32px,1.8vw,36px)',
+                height: 'clamp(40px,2.4vw,48px)',
                 fontSize: 'clamp(12px,0.68vw,14px)',
                 background: 'linear-gradient(135deg, #FDC700 0%, #FF8904 100%)',
                 borderColor: '#FDC700',
@@ -646,7 +830,7 @@ const ResponsiveDashboardContent = () => {
                 </div>
 
                 <p className="font-inter text-[clamp(12px,0.75vw,14px)] text-gray-600 mb-1">
-                  <span className={`font-medium ${isMcqCompleted ? 'text-[#22C55E]' : ''}`}>Status: {mcqStatus === 'available' ? 'Pending' : (mcqStatus || '—')}</span>
+                  <span className={`font-medium ${isMcqCompleted ? 'text-[#22C55E]' : ''}`}>Status: {formatStatus(mcqStatus)}</span>
                 </p>
                 <p className="font-inter text-[clamp(12px,0.75vw,14px)] text-[#1A1A1A] font-medium mb-3 flex-grow">
                   {mcqCount} Questions{mcqTopic ? ` - ${mcqTopic}` : ''}
@@ -688,10 +872,18 @@ const ResponsiveDashboardContent = () => {
                 className="rounded-[14px] p-[clamp(0.75rem,1.25vw,1.5rem)] h-full flex flex-col transition-all hover:shadow-md relative"
                 style={{
                   background: COLD_BLUE,
-                  border: '1.5px solid #F59E0B',
+                  border: `1.5px solid ${isEditorialCompleted ? '#22C55E' : '#F59E0B'}`,
                 }}
               >
-                <div className="absolute top-0 left-0 right-0 h-1 bg-[#F59E0B] rounded-t-[14px]" />
+                <div className={`absolute top-0 left-0 right-0 h-1 ${isEditorialCompleted ? 'bg-[#22C55E]' : 'bg-[#F59E0B]'} rounded-t-[14px]`} />
+
+                {isEditorialCompleted && (
+                  <div className="absolute top-4 right-4 w-7 h-7 bg-[#22C55E] rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+                      <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                )}
 
                 <div className="mb-2 py-1 text-[clamp(11px,0.65vw,12px)] invisible">AI Evaluation</div>
 
@@ -703,7 +895,7 @@ const ResponsiveDashboardContent = () => {
                 </div>
 
                 <p className="font-inter text-[clamp(12px,0.75vw,14px)] text-gray-600 mb-1">
-                  <span className="font-medium">Status: {editorialStatus === 'available' ? 'Pending' : (editorialStatus || '—')}</span>
+                  <span className={`font-medium ${isEditorialCompleted ? 'text-[#22C55E]' : ''}`}>Status: {formatStatus(editorialStatus)}</span>
                 </p>
                 <p className="font-inter text-[clamp(12px,0.75vw,14px)] text-[#1A1A1A] font-medium mb-3 flex-grow">
                   {editorialTopic || '—'}
@@ -711,16 +903,30 @@ const ResponsiveDashboardContent = () => {
 
                 <div
                   className="w-full rounded-[8px] py-2.5 px-4 font-inter font-medium text-[clamp(12px,0.75vw,14px)] flex items-center justify-center gap-2 transition-colors"
-                  style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #F59E0B' }}
+                  style={isEditorialCompleted
+                    ? { background: '#17223E', color: '#FFFFFF' }
+                    : { background: '#FEF3C7', color: '#92400E', border: '1px solid #F59E0B' }
+                  }
                   role="button"
                 >
-                  <img src="/TrioCard.png" alt="Read" className="w-4 h-4" />
-                  Read Now
+                  {isEditorialCompleted ? (
+                    <>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Completed · Review
+                    </>
+                  ) : (
+                    <>
+                      <img src="/TrioCard.png" alt="Read" className="w-4 h-4" />
+                      Read Now
+                    </>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-1 mt-3">
                   {[0,1,2,3,4,5].map(i => (
-                    <div key={i} className={`w-2 h-2 rounded-full ${i < 3 ? 'bg-[#F59E0B]' : 'bg-[#D1D5DB]'}`} />
+                    <div key={i} className={`w-2 h-2 rounded-full ${i < (isEditorialCompleted ? 5 : 3) ? (isEditorialCompleted ? 'bg-[#22C55E]' : 'bg-[#F59E0B]') : 'bg-[#D1D5DB]'}`} />
                   ))}
                 </div>
               </div>
@@ -732,10 +938,20 @@ const ResponsiveDashboardContent = () => {
                 className="rounded-[14px] p-[clamp(0.75rem,1.25vw,1.5rem)] h-full flex flex-col transition-all hover:shadow-md relative"
                 style={{
                   background: COLD_BLUE,
-                  border: '1.5px solid #22C55E',
+                  border: `1.5px solid ${isMainsCompleted ? '#22C55E' : COLD_BLUE_DARK}`,
                 }}
               >
-                <div className="absolute top-0 left-0 right-0 h-1 bg-[#22C55E] rounded-t-[14px]" />
+                {isMainsCompleted && (
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-[#22C55E] rounded-t-[14px]" />
+                )}
+
+                {isMainsCompleted && (
+                  <div className="absolute top-4 right-4 w-7 h-7 bg-[#22C55E] rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+                      <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                )}
 
                 <div className="mb-2 px-3 py-1 bg-teal-50 text-teal-600 rounded-full text-[clamp(11px,0.65vw,12px)] font-medium w-fit">
                   AI Evaluation
@@ -749,23 +965,38 @@ const ResponsiveDashboardContent = () => {
                 </div>
 
                 <p className="font-inter text-[clamp(12px,0.75vw,14px)] text-gray-600 mb-1">
-                  <span className="font-medium">Status: {mainsStatus === 'available' ? 'Pending' : (mainsStatus || '—')}</span>
+                  <span className={`font-medium ${isMainsCompleted ? 'text-[#22C55E]' : ''}`}>Status: {formatStatus(mainsStatus)}</span>
                 </p>
                 <p className="font-inter text-[clamp(12px,0.75vw,14px)] text-[#1A1A1A] font-medium mb-3 flex-grow">
                   {mainsTopic || '—'}
                 </p>
 
-                <button
+                <div
                   className="w-full rounded-[8px] py-2.5 px-4 font-inter font-medium text-[clamp(12px,0.75vw,14px)] flex items-center justify-center gap-2 transition-colors"
-                  style={{ background: '#D1FAE5', color: '#065F46', border: '1px solid #22C55E' }}
+                  style={isMainsCompleted
+                    ? { background: '#17223E', color: '#FFFFFF' }
+                    : { background: '#D1FAE5', color: '#065F46', border: '1px solid #22C55E' }
+                  }
+                  role="button"
                 >
-                  <img src="/TrioCard (1).png" alt="Attempt" className="w-4 h-4" />
-                  Attempt Now
-                </button>
+                  {isMainsCompleted ? (
+                    <>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Completed · Review
+                    </>
+                  ) : (
+                    <>
+                      <img src="/TrioCard (1).png" alt="Attempt" className="w-4 h-4" />
+                      Attempt Now
+                    </>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-1 mt-3">
                   {[0,1,2,3,4,5].map(i => (
-                    <div key={i} className={`w-2 h-2 rounded-full ${i < 3 ? 'bg-[#22C55E]' : 'bg-[#D1D5DB]'}`} />
+                    <div key={i} className={`w-2 h-2 rounded-full ${i < (isMainsCompleted ? 5 : 3) ? 'bg-[#22C55E]' : 'bg-[#D1D5DB]'}`} />
                   ))}
                 </div>
               </div>
@@ -803,35 +1034,45 @@ const ResponsiveDashboardContent = () => {
             </div>
 
             <div className="flex-1 flex flex-col items-center justify-center">
-              <div className="text-center mb-[clamp(1rem,1.25vw,1.5rem)]">
-                <p className="font-outfit font-bold text-[clamp(28px,1.8vw,36px)] text-[#17223E] leading-none">
-                  3.5h
-                </p>
-                <p className="font-arimo text-[clamp(11px,0.68vw,13px)] text-[#6B7280] mt-1">total</p>
+              {/* SVG Pie Chart */}
+              <div className="flex items-center justify-center mb-4">
+                {totalTimeMins === 0 ? (
+                  <div className="flex items-center justify-center font-inter text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
+                    No study data yet
+                  </div>
+                ) : (
+                  <svg viewBox="0 0 220 220" width="140" height="140">
+                    {(() => {
+                      const cx = 110, cy = 110, r = 85;
+                      let angle = -Math.PI / 2;
+                      return timeDistributionData.map((slice) => {
+                        const sliceAngle = (slice.minutes / totalTimeMins) * 2 * Math.PI;
+                        const path = pieSlicePath(cx, cy, r, angle, angle + sliceAngle);
+                        angle += sliceAngle;
+                        return <path key={slice.label} d={path} fill={slice.color} stroke="#fff" strokeWidth="2" />;
+                      });
+                    })()}
+                    {/* Center label */}
+                    <text x="110" y="105" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="22" fontFamily="Inter, sans-serif">
+                      {fmtHours(totalTimeMins)}
+                    </text>
+                    <text x="110" y="128" textAnchor="middle" dominantBaseline="middle" fill="#6B7280" fontSize="11" fontFamily="Inter, sans-serif">
+                      total
+                    </text>
+                  </svg>
+                )}
               </div>
 
               <div className="w-full space-y-[clamp(8px,0.63vw,12px)]">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#FF6B6B' }} />
-                    <span className="font-arimo text-[clamp(12px,0.73vw,14px)] text-[#4A5565]">Video Lectures</span>
+                {timeDistributionData.map((item) => (
+                  <div key={item.label} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
+                      <span className="font-arimo text-[clamp(12px,0.73vw,14px)] text-[#4A5565]">{item.label}</span>
+                    </div>
+                    <span className="font-inter font-semibold text-[clamp(12px,0.73vw,14px)] text-[#17223E]">{fmtHours(item.minutes)}</span>
                   </div>
-                  <span className="font-inter font-semibold text-[clamp(12px,0.73vw,14px)] text-[#17223E]">3.5h</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#FFD93D' }} />
-                    <span className="font-arimo text-[clamp(12px,0.73vw,14px)] text-[#4A5565]">Self Study</span>
-                  </div>
-                  <span className="font-inter font-semibold text-[clamp(12px,0.73vw,14px)] text-[#17223E]">0h</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#6BCB77' }} />
-                    <span className="font-arimo text-[clamp(12px,0.73vw,14px)] text-[#4A5565]">Answer Writing</span>
-                  </div>
-                  <span className="font-inter font-semibold text-[clamp(12px,0.73vw,14px)] text-[#17223E]">0h</span>
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -854,28 +1095,40 @@ const ResponsiveDashboardContent = () => {
               <h2 className="font-inter font-bold text-[clamp(16px,1.1vw,18px)] text-[#1A1A1A]">
                 Syllabus Coverage
               </h2>
+              <Link href="/dashboard/syllabus-tracker" className="ml-auto font-inter text-[13px] text-[#6366F1] font-medium hover:text-[#4F46E5] transition-colors no-underline">
+                View Tracker →
+              </Link>
             </div>
 
-            <div className="space-y-[clamp(8px,0.63vw,12px)]">
-              {['Polity', 'History', 'Geography', 'Economics', 'Science & Technology', 'Environment', 'Ethics', 'Current Affairs'].map((subject, i) => {
-                const pct = i === 0 ? 100 : 0;
-                const colors = ['#1E2875', '#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF', '#A855F7', '#F97316', '#EC4899'];
-                return (
-                  <div key={subject}>
+            {syllabusLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#17223E]"></div>
+              </div>
+            ) : (
+              <div className="space-y-[clamp(8px,0.63vw,12px)] max-h-[280px] overflow-y-auto pr-1">
+                {syllabusCoverage.length > 0 ? syllabusCoverage.map((item, i) => (
+                  <div key={item.subject}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-arimo text-[clamp(11px,0.68vw,13px)] text-[#4A5565]">{subject}</span>
-                      <span className="font-arimo font-bold text-[clamp(11px,0.68vw,13px)] text-[#0A1172]">{pct}%</span>
+                      <span className="font-arimo text-[clamp(11px,0.68vw,13px)] text-[#4A5565]">{item.subject}</span>
+                      <span className="font-arimo font-bold text-[clamp(11px,0.68vw,13px)] text-[#0A1172]">{item.percentage}%</span>
                     </div>
                     <div className="w-full rounded-full overflow-hidden" style={{ height: 'clamp(6px,0.42vw,8px)', background: '#E5E7EB' }}>
                       <div
                         className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%`, background: colors[i] }}
+                        style={{ width: `${item.percentage}%`, background: item.color }}
                       />
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                )) : (
+                  <div className="text-center py-4 text-gray-400">
+                    <p className="font-inter text-[13px]">No syllabus data available.</p>
+                    <Link href="/dashboard/syllabus-tracker" className="font-inter text-[12px] text-[#6366F1] mt-1 inline-block no-underline">
+                      Go to Syllabus Tracker
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -895,15 +1148,15 @@ const ResponsiveDashboardContent = () => {
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              <button className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+              <button onClick={prevDay} className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                   <path d="M15 18l-6-6 6-6" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
               <span className="font-inter text-[clamp(12px,0.65vw,13px)] text-gray-400 px-3">
-                Today {'\u2022'} {todayStr}
+                {isToday ? 'Today' : selectedDateStr} {'\u2022'} {selectedDateStr}
               </span>
-              <button className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
+              <button onClick={nextDay} className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                   <path d="M9 18l6-6-6-6" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -932,15 +1185,16 @@ const ResponsiveDashboardContent = () => {
                 const timeLabel = task.startTime && task.endTime
                   ? `${task.startTime} - ${task.endTime} ${formatDuration(task.duration)}`
                   : task.duration ? formatDuration(task.duration) : '';
+                const taskComplete = isTaskComplete(task);
 
                 return (
                   <div
                     key={task._id || task.id || index}
-                    className="rounded-lg border border-[#E5E7EB] border-l-4 p-[clamp(0.5rem,0.75vw,1rem)] mb-[clamp(0.5rem,0.75vw,0.75rem)] flex items-start justify-between bg-[#F9FAFB]"
-                    style={{ boxShadow: '0 1px 1px rgba(16, 24, 40, 0.04)', borderLeftColor: leftBorderColor }}
+                    className={`rounded-lg border border-[#E5E7EB] border-l-4 p-[clamp(0.5rem,0.75vw,1rem)] mb-[clamp(0.5rem,0.75vw,0.75rem)] flex items-start justify-between ${taskComplete ? 'bg-green-50' : 'bg-[#F9FAFB]'}`}
+                    style={{ boxShadow: '0 1px 1px rgba(16, 24, 40, 0.04)', borderLeftColor: taskComplete ? '#22C55E' : leftBorderColor }}
                   >
                     <div className="flex-1">
-                      <h3 className="font-inter font-semibold text-[clamp(13px,0.83vw,15px)] text-[#1A1A1A] mb-1.5">
+                      <h3 className={`font-inter font-semibold text-[clamp(13px,0.83vw,15px)] mb-1.5 ${taskComplete ? 'text-[#15803D] line-through' : 'text-[#1A1A1A]'}`}>
                         {task.title}
                       </h3>
                       <div className="flex items-center gap-2 flex-wrap">
@@ -962,8 +1216,13 @@ const ResponsiveDashboardContent = () => {
                         </span>
                       </div>
                     </div>
-                    <button className="ml-3 w-4 h-4 rounded border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 transition-colors flex items-center justify-center flex-shrink-0">
-                      <svg className="w-2.5 h-2.5 text-green-600" viewBox="0 0 24 24" fill="none">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTask(task, index)}
+                      className={`ml-3 w-5 h-5 rounded-full border-2 transition-colors flex items-center justify-center flex-shrink-0 ${taskComplete ? 'border-green-500 bg-green-500' : 'border-gray-300 hover:border-green-500 hover:bg-green-50'}`}
+                      aria-label={taskComplete ? 'Mark task incomplete' : 'Mark task complete'}
+                    >
+                      <svg className={`w-3 h-3 ${taskComplete ? 'text-white' : 'text-green-600 opacity-0'}`} viewBox="0 0 24 24" fill="none">
                         <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </button>
@@ -1101,3 +1360,4 @@ const ResponsiveDashboardContent = () => {
 };
 
 export default ResponsiveDashboardContent;
+
