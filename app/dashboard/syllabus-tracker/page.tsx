@@ -259,7 +259,7 @@ export default function SyllabusTrackerPage() {
       {/* Page Content - scrollable */}
       <div className="flex-1 overflow-y-auto">
         {/* Hero Section */}
-        <HeroSection states={states} syllabusData={syllabusData} userName={user?.firstName} />
+        <HeroSection mode={mode} states={states} syllabusData={syllabusData} userName={user?.firstName} />
 
         {/* Stage Tabs */}
         <div className="px-[18px] pt-[14px] pb-0">

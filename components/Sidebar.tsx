@@ -11,7 +11,13 @@ const COLLAPSED_ROUTE_PREFIXES = [
   '/dashboard/test-series/attempt',
 ];
 
-const Sidebar = ({ forceShow = false }: { forceShow?: boolean }) => {
+interface SidebarProps {
+  forceShow?: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+const Sidebar = ({ forceShow = false, isOpen, onClose }: SidebarProps) => {
   const pathname = usePathname();
   const isCollapsed = COLLAPSED_ROUTE_PREFIXES.some((p) => pathname?.startsWith(p));
 
