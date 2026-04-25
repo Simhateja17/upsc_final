@@ -166,7 +166,6 @@ export const chat = async (req: Request, res: Response, next: NextFunction) => {
     console.log(`[AI Chat] Sending ${claudeMessages.length} messages to Claude, RAG context: ${ragContext ? "yes" : "none"}`);
     const aiReply = await invokeModel(claudeMessages, {
       maxTokens: 2048,
-      temperature: 0.5,
       system: systemPrompt,
     });
 

@@ -285,6 +285,8 @@ export const pyqService = {
   getQuestions: (params?: {
     mode?: 'prelims' | 'mains';
     year?: number;
+    yearFrom?: number;
+    yearTo?: number;
     subject?: string;
     paper?: string;
     page?: number;
@@ -293,6 +295,8 @@ export const pyqService = {
     const query = new URLSearchParams();
     if (params?.mode) query.set('mode', params.mode);
     if (params?.year) query.set('year', String(params.year));
+    if (params?.yearFrom) query.set('yearFrom', String(params.yearFrom));
+    if (params?.yearTo) query.set('yearTo', String(params.yearTo));
     if (params?.subject) query.set('subject', params.subject);
     if (params?.paper) query.set('paper', params.paper);
     if (params?.page) query.set('page', String(params.page));
@@ -368,9 +372,13 @@ export const spacedRepService = {
     source?: string;
     sourceType?: string;
     scheduleDay?: number;
+    scheduleDays?: number[];
     remindEnabled?: boolean;
   }) => api.post<any>('/spaced-repetition', data, authConfig()),
-  updateItem: (id: string, data: { scheduleDay?: number; remindEnabled?: boolean; addedToFlashcard?: boolean }) =>
+  updateItem: (
+    id: string,
+    data: { scheduleDay?: number; scheduleDays?: number[]; remindEnabled?: boolean; addedToFlashcard?: boolean }
+  ) =>
     api.patch<any>(`/spaced-repetition/${id}`, data, authConfig()),
   deleteItem: (id: string) => api.delete<any>(`/spaced-repetition/${id}`, authConfig()),
 };

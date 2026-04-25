@@ -17,6 +17,11 @@ type DeckMeta = {
   icon: string;
 };
 
+function displaySubjectName(subject: string) {
+  if (subject === 'Modern History') return 'History';
+  return subject;
+}
+
 function getMasteryColor(mastery: number): { barColor: string; textColor: string } {
   if (mastery >= 80) return { barColor: '#00C950', textColor: '#00A63E' };
   if (mastery >= 50) return { barColor: '#F0AE00', textColor: '#D08700' };
@@ -73,7 +78,7 @@ export default function FlashcardsSubjectPage({ params }: { params: { subjectId:
               <span className="text-4xl flex-shrink-0" aria-hidden>{meta.icon}</span>
               <div>
                 <h1 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: '#101828' }}>
-                  {meta.subject}
+                  {displaySubjectName(meta.subject)}
                 </h1>
                 <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>
                   {topics.reduce((s, t) => s + t.cards, 0)} cards · {topics.length} topics

@@ -51,12 +51,12 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
     else { setCurrentIndex((i) => i + 1); setRevealed(false); }
   };
 
-  const handleReveal = () => {
-    setRevealed(true);
-    if (card && !card.mastered) {
-      // Mark as seen (not mastered yet, user must explicitly mark)
+  const handleFlip = () => {
+    if (!revealed && card && !card.mastered) {
+      // Mark as seen when the back is revealed for the first time.
       flashcardService.updateProgress(card.id, false).catch(() => {});
     }
+    setRevealed((value) => !value);
   };
 
   const handleMastered = () => {
@@ -92,7 +92,7 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
   return (
     <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: '100%' }}>
       <div className="flex-1 overflow-y-auto" style={{ background: '#FFFFFF' }}>
-        <div className="w-full max-w-[1180px] mx-auto px-6 py-6">
+        <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 py-5 sm:py-6">
           {/* Back to Topics */}
           <Link
             href={`/dashboard/flashcards/${subjectId}`}
@@ -109,26 +109,26 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
 
           {/* Breadcrumb bar */}
           <div
-            className="w-full rounded-[10px] px-4 py-4 flex flex-wrap items-center justify-between gap-3 mb-6"
-            style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF', minHeight: 71.2 }}
+            className="w-full rounded-[10px] px-4 py-3 flex flex-wrap items-center justify-between gap-3 mb-4"
+            style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF', minHeight: 60 }}
           >
             <div className="flex items-center gap-3 flex-wrap">
-              <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px', color: '#155DFC' }}>
+              <span className="inline-flex items-center rounded-full px-3 py-1" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#155DFC', background: '#EFF6FF' }}>
                 {subjectId}
               </span>
               <span style={{ width: 1, height: 16, background: '#E5E7EB' }} aria-hidden />
-              <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px', color: '#101828' }}>
+              <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#101828' }}>
                 {topicId.replace(/-/g, ' ')}
               </span>
               <span style={{ width: 1, height: 16, background: '#E5E7EB' }} aria-hidden />
-              <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>
-                Card {currentIndex + 1} of {totalCards}
+              <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, lineHeight: '20px', color: '#6A7282' }}>
+                Card {currentIndex + 1} / {totalCards}
               </span>
             </div>
           </div>
 
           {/* Step row */}
-          <div className="flex flex-wrap items-center gap-4 mb-6">
+          <div className="flex flex-wrap items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#00C950', color: '#FFFFFF', fontSize: 16 }}>✓</div>
               <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>Subject</span>
@@ -146,7 +146,7 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
               </div>
               <div>
                 <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 18, lineHeight: '28px', color: '#101828' }}>Flashcards</p>
-                <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, lineHeight: '16px', color: '#6A7282' }}>Click card to reveal answer</p>
+                <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, lineHeight: '16px', color: '#6A7282' }}>Click the card to flip</p>
               </div>
             </div>
           </div>
@@ -154,49 +154,88 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
           {/* Main flashcard */}
           {card && (
             <div
-              className="w-full rounded-[24px] border p-8 mb-8 min-h-[388px] flex flex-col"
-              style={
-                revealed
-                  ? { background: '#FFFFFF', border: '0.8px solid #E5E7EB', boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.08)' }
-                  : { background: 'linear-gradient(180deg, #0F1419 0%, #1A2332 50%, #0D1218 100%)', border: '0.8px solid rgba(30,41,59,0.5)' }
-              }
+              className="w-full rounded-[24px] border mb-6 min-h-[340px]"
+              style={{ perspective: '1400px' }}
             >
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <span className="uppercase tracking-[2px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: revealed ? '#101828' : '#6A7282' }}>
-                  {revealed ? 'Answer' : 'Question'}
-                </span>
-                <span className="uppercase tracking-[1.5px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: revealed ? '#6A7282' : '#F0B100' }}>
-                  {card.difficulty}
-                </span>
-              </div>
-              <div className="flex-1 flex flex-col justify-center">
-                {!revealed ? (
-                  <>
-                    <p className="mb-6" style={{ fontFamily: 'Georgia', fontWeight: 400, fontSize: 30, lineHeight: '48.75px', color: '#FFFFFF' }}>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={handleFlip}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleFlip();
+                  }
+                }}
+                className="relative h-full min-h-[340px] cursor-pointer outline-none"
+                style={{
+                  transformStyle: 'preserve-3d',
+                  transition: 'transform 520ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  transform: revealed ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                }}
+              >
+                <div
+                  className="absolute inset-0 rounded-[24px] p-6 sm:p-8 flex flex-col"
+                  style={{
+                    backfaceVisibility: 'hidden',
+                    background: 'linear-gradient(180deg, #0F1419 0%, #1A2332 50%, #0D1218 100%)',
+                    border: '0.8px solid rgba(30,41,59,0.5)',
+                    boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.08)',
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-4 mb-3">
+                    <span className="uppercase tracking-[2px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: '#6A7282' }}>
+                      Question
+                    </span>
+                    <span className="uppercase tracking-[1.5px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: '#F0B100' }}>
+                      {card.difficulty}
+                    </span>
+                  </div>
+                  <div className="flex-1 flex flex-col justify-center">
+                    <p className="mb-5 max-w-[980px]" style={{ fontFamily: 'Georgia', fontWeight: 400, fontSize: 28, lineHeight: '44px', color: '#FFFFFF' }}>
                       {card.question}
                     </p>
-                    <div className="h-px w-full mb-6" style={{ background: 'rgba(255,255,255,0.2)' }} />
-                    <button type="button" onClick={handleReveal} className="inline-flex items-center gap-2 self-center" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>
-                      <span aria-hidden>👆</span> Tap to reveal answer
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p className="mb-6" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 16, lineHeight: '24px', color: '#101828' }}>
+                    <div className="h-px w-full mb-4" style={{ background: 'rgba(255,255,255,0.16)' }} />
+                    <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, lineHeight: '18px', color: '#8A94A6' }}>
+                      Click the card to flip
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className="absolute inset-0 rounded-[24px] p-6 sm:p-8 flex flex-col"
+                  style={{
+                    backfaceVisibility: 'hidden',
+                    transform: 'rotateY(180deg)',
+                    background: '#FFFFFF',
+                    border: '0.8px solid #E5E7EB',
+                    boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.08)',
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-4 mb-3">
+                    <span className="uppercase tracking-[2px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: '#6A7282' }}>
+                      Answer
+                    </span>
+                    <span className="uppercase tracking-[1.5px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: '#6A7282' }}>
+                      {card.difficulty}
+                    </span>
+                  </div>
+                  <div className="flex-1 flex flex-col justify-center">
+                    <p className="mb-5 max-w-[980px]" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 16, lineHeight: '24px', color: '#101828' }}>
                       {card.answer}
                     </p>
                     <div className="h-px w-full mb-4" style={{ background: '#E5E7EB' }} />
-                    <button type="button" onClick={() => setRevealed(false)} className="inline-flex items-center gap-2 self-center" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>
-                      <span aria-hidden>👆</span> Tap to hide answer
-                    </button>
-                  </>
-                )}
+                    <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, lineHeight: '18px', color: '#6A7282' }}>
+                      Click the card to flip back
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {/* Pagination dots */}
-          <div className="flex justify-center gap-2 mb-6">
+          <div className="flex justify-center gap-2 mb-5">
             {cards.map((_, i) => (
               <div key={i} className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: i === currentIndex ? '#F1AB01' : '#E5E7EB' }} aria-hidden />
             ))}
@@ -213,6 +252,14 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
             >
               ← Previous
             </button>
+            <button
+              type="button"
+              onClick={handleFlip}
+              className="rounded-[10px] px-5 py-2.5 min-w-[156px]"
+              style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', background: 'linear-gradient(90deg, #F1AB01 0%, #FE6F01 100%)' }}
+            >
+              {revealed ? 'Flip Back' : 'Flip Card'}
+            </button>
             {revealed && !card?.mastered && (
               <button
                 type="button"
@@ -221,25 +268,6 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
                 style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', background: '#00C950' }}
               >
                 ✓ Got it!
-              </button>
-            )}
-            {!revealed ? (
-              <button
-                type="button"
-                onClick={handleReveal}
-                className="rounded-[10px] px-5 py-2.5 min-w-[156px]"
-                style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', background: 'linear-gradient(90deg, #F1AB01 0%, #FE6F01 100%)' }}
-              >
-                Reveal Answer
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setRevealed(false)}
-                className="rounded-[10px] px-5 py-2.5 min-w-[156px]"
-                style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', background: 'linear-gradient(90deg, #F1AB01 0%, #FE6F01 100%)' }}
-              >
-                Hide Answer
               </button>
             )}
             <button

@@ -269,23 +269,21 @@ const pages: PageSeed[] = [
     description: "Jeet AI chat page content",
     sections: [
       { key: "page_title", type: "text", content: "Jeet AI", order: 0 },
-      { key: "sidebar_app_name", type: "text", content: "Rise with Jeet IAS", order: 1 },
-      { key: "sidebar_tagline", type: "text", content: "India's Premier UPSC Platform", order: 2 },
-      { key: "header_title", type: "text", content: "Jeet AI", order: 3 },
-      { key: "header_subtitle", type: "text", content: "Your UPSC Mentor", order: 4 },
-      { key: "header_description", type: "text", content: "Ask anything about UPSC preparation", order: 5 },
-      { key: "welcome_greeting", type: "text", content: "Hi {firstName}, I'm Jeet AI.", order: 6 },
-      { key: "welcome_description", type: "text", content: "I'm Jeet AI, your intelligent UPSC preparation partner — from ancient history to current affairs, revision strategy, or just thinking through a topic together.", order: 7 },
-      { key: "welcome_prompt", type: "text", content: "How can I help you today in your preparation?", order: 8 },
+      { key: "header_title", type: "text", content: "Jeet AI", order: 1 },
+      { key: "header_subtitle", type: "text", content: "Your UPSC Mentor", order: 2 },
+      { key: "header_description", type: "text", content: "Ask anything about UPSC preparation", order: 3 },
+      { key: "welcome_greeting", type: "text", content: "Hi {firstName}, I'm Jeet AI.", order: 4 },
+      { key: "welcome_description", type: "text", content: "I'm Jeet AI, your intelligent UPSC preparation partner — from ancient history to current affairs, revision strategy, or just thinking through a topic together.", order: 5 },
+      { key: "welcome_prompt", type: "text", content: "How can I help you today in your preparation?", order: 6 },
       { key: "suggestion_cards", type: "json", content: JSON.stringify([
         { title: "Explain a UPSC topic", subtitle: "Deep explanation with dimensions, UPSC angle & related questions", prompt: "Explain a UPSC topic in depth with all dimensions that an examiner would reward." },
         { title: "Ethics case study I should know", subtitle: "Real-world ethics + how to frame and structure your answer", prompt: "Give me an important ethics case study for UPSC with stakeholder analysis and answer structure." },
         { title: "Build my study plan", subtitle: "Personalized schedule based on your exam date and syllabus gaps", prompt: "Help me build a personalized UPSC study plan based on my preparation level." },
         { title: "Study strategy & planner", subtitle: "Personalized roadmap, daily schedules + all-topic prioritization", prompt: "Give me a study strategy and daily schedule for UPSC preparation with topic prioritization." },
-      ]), order: 9 },
-      { key: "input_placeholder", type: "text", content: "Ask me anything about your preparation...", order: 10 },
-      { key: "input_placeholder_chat", type: "text", content: "Ask Jeet AI anything about UPSC...", order: 11 },
-      { key: "disclaimer", type: "text", content: "Jeet AI can make mistakes. Verify important facts from NCERT & official sources.", order: 12 },
+      ]), order: 7 },
+      { key: "input_placeholder", type: "text", content: "Ask me anything about your preparation...", order: 8 },
+      { key: "input_placeholder_chat", type: "text", content: "Ask Jeet AI anything about UPSC...", order: 9 },
+      { key: "disclaimer", type: "text", content: "Jeet AI can make mistakes. Verify important facts from NCERT & official sources.", order: 10 },
     ],
   },
   {
@@ -372,6 +370,15 @@ async function seedCms() {
         description: page.description,
       },
     });
+
+    if (page.slug === "dashboard/jeet-gpt") {
+      await prisma.pageSection.deleteMany({
+        where: {
+          pageId: created.id,
+          key: { in: ["sidebar_app_name", "sidebar_tagline"] },
+        },
+      });
+    }
 
     for (const section of page.sections) {
       await prisma.pageSection.upsert({

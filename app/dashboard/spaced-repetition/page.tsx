@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { spacedRepService, userService } from '@/lib/services';
+import { dashboardService, spacedRepService, userService } from '@/lib/services';
 
 const filterOptions = ['All', 'mcq', 'mains', 'pyq', 'custom'];
 const scheduleOptions = [3, 7, 15, 30];
+const heroBackground = 'https://www.figma.com/api/mcp/asset/3b484585-fa2c-4325-8913-de61c1b64a85';
 
 const deckOptions = [
   { id: 'geography', label: 'Geography', icon: '🌍' },
@@ -24,6 +25,7 @@ type SpacedRepItem = {
   sourceType: string;
   subject: string;
   scheduleDay: number;
+  scheduleDays?: number[] | null;
   remindEnabled: boolean;
   addedToFlashcard: boolean;
   nextReviewAt: string;
@@ -46,10 +48,27 @@ function subjectBg(subject: string): string {
   return map[subject] ?? '#F3F4F6';
 }
 
+function isSameLocalDate(left: Date, right: Date) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+}
+
+function normalizeScheduleDays(item: Pick<SpacedRepItem, 'scheduleDay' | 'scheduleDays'>) {
+  const days = Array.isArray(item.scheduleDays) && item.scheduleDays.length > 0
+    ? item.scheduleDays
+    : [item.scheduleDay];
+
+  return Array.from(new Set(days.filter((day): day is number => Number.isFinite(day) && day > 0))).sort((a, b) => a - b);
+}
+
 export default function SpacedRepetitionPage() {
   const [filter, setFilter] = useState('All');
   const [items, setItems] = useState<SpacedRepItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [streakDays, setStreakDays] = useState(0);
   const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -73,6 +92,23 @@ export default function SpacedRepetitionPage() {
   useEffect(() => {
     fetchItems(filter === 'All' ? undefined : filter);
   }, [filter]);
+
+  useEffect(() => {
+    let mounted = true;
+    dashboardService.getStreak()
+      .then((res) => {
+        if (mounted && res?.data) {
+          setStreakDays(Number(res.data.currentStreak ?? 0));
+        }
+      })
+      .catch(() => {
+        if (mounted) setStreakDays(0);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const toggleRemind = (id: string, current: boolean) => {
     spacedRepService.updateItem(id, { remindEnabled: !current })
@@ -117,13 +153,41 @@ export default function SpacedRepetitionPage() {
   };
 
   const toggleSchedule = (id: string, day: number) => {
-    spacedRepService.updateItem(id, { scheduleDay: day })
-      .then((res: { status: string }) => {
-        if (res.status === 'success') {
-          setItems((prev) => prev.map((i) => i.id === id ? { ...i, scheduleDay: day } : i));
+    const targetItem = items.find((item) => item.id === id);
+    if (!targetItem) return;
+
+    const currentDays = normalizeScheduleDays(targetItem);
+    const nextDays = currentDays.includes(day)
+      ? currentDays.filter((value) => value !== day)
+      : [...currentDays, day].sort((a, b) => a - b);
+
+    setItems((prev) => prev.map((item) => (
+      item.id === id
+        ? { ...item, scheduleDay: nextDays[0] ?? item.scheduleDay, scheduleDays: nextDays }
+        : item
+    )));
+
+    spacedRepService.updateItem(id, { scheduleDays: nextDays })
+      .then((res: { status: string; data?: SpacedRepItem }) => {
+        if (res.status === 'success' && res.data) {
+          setItems((prev) => prev.map((item) => (
+            item.id === id
+              ? {
+                  ...item,
+                  scheduleDay: res.data?.scheduleDay ?? nextDays[0] ?? item.scheduleDay,
+                  scheduleDays: res.data?.scheduleDays ?? nextDays,
+                }
+              : item
+          )));
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setItems((prev) => prev.map((item) => (
+          item.id === id
+            ? { ...item, scheduleDay: currentDays[0] ?? item.scheduleDay, scheduleDays: currentDays }
+            : item
+        )));
+      });
   };
 
   const handleAddItem = () => {
@@ -135,6 +199,7 @@ export default function SpacedRepetitionPage() {
       subject: subjectLabel,
       source: 'Custom',
       sourceType: 'custom',
+      scheduleDays: [3],
     })
       .then((res) => {
         if (res.status === 'success') {
@@ -149,24 +214,25 @@ export default function SpacedRepetitionPage() {
   };
 
   // Compute subject health pills from real data
-  const subjectPills = (() => {
+  const heroStats = (() => {
     const now = new Date();
-    const map: Record<string, { overdue: number; total: number }> = {};
-    for (const item of items) {
-      if (!map[item.subject]) map[item.subject] = { overdue: 0, total: 0 };
-      map[item.subject].total++;
-      if (new Date(item.nextReviewAt) <= now) map[item.subject].overdue++;
-    }
-    const subs = Object.values(map);
-    const critical = subs.filter((s) => s.total > 0 && s.overdue / s.total > 0.6).length;
-    const weak = subs.filter((s) => s.total > 0 && s.overdue / s.total > 0.3 && s.overdue / s.total <= 0.6).length;
-    const improving = subs.filter((s) => s.overdue > 0 && s.overdue / s.total <= 0.3).length;
-    const strong = subs.filter((s) => s.overdue === 0 && s.total > 0).length;
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(now);
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const overdue = items.filter((item) => new Date(item.nextReviewAt) < startOfToday).length;
+    const scheduled = items.length;
+    const dueToday = items.filter((item) => {
+      const reviewAt = new Date(item.nextReviewAt);
+      return isSameLocalDate(reviewAt, now) || (reviewAt >= startOfToday && reviewAt <= endOfToday);
+    }).length;
+
     return [
-      { label: 'Critical:', count: `${critical} subjects`, icon: '🔴' },
-      { label: 'Weak:', count: `${weak} subjects`, icon: '🟠' },
-      { label: 'Improving:', count: `${improving} subjects`, icon: '🟡' },
-      { label: 'Strong:', count: `${strong} subjects`, icon: '🟢' },
+      { value: overdue, label: 'OVERDUE', valueColor: '#F5A623' },
+      { value: scheduled, label: 'SCHEDULED', valueColor: '#FF7070' },
+      { value: dueToday, label: 'DUE TODAY', valueColor: '#FFFFFF' },
+      { value: streakDays, label: 'DAYS STREAK', valueColor: '#0E8A56' },
     ];
   })();
 
@@ -177,33 +243,79 @@ export default function SpacedRepetitionPage() {
   return (
     <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
-        <div className="w-full max-w-[1168px] mx-auto px-6 py-6">
+        <div className="w-full max-w-[1168px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Header banner */}
           <div
-            className="w-full rounded-[16px] px-8 pt-8 pb-8 mb-6"
-            style={{ background: 'linear-gradient(180deg, #121B2E 0%, #172032 100%)', minHeight: 256.6 }}
+            className="relative w-full overflow-hidden rounded-[16px] px-6 sm:px-8 pt-8 pb-8 mb-6"
+            style={{
+              minHeight: 236,
+              background: '#161C2D',
+              boxShadow: '0px 1px 0px rgba(255,255,255,0.03) inset',
+            }}
           >
-            <div className="uppercase tracking-[0.5px] mb-2" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, lineHeight: '15px', color: '#FDC700' }}>
-              WEAK SUBJECT TRACKER - AI-POWERED GAP ANALYSIS
+            <div className="pointer-events-none absolute inset-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={heroBackground}
+                alt=""
+                aria-hidden="true"
+                className="absolute left-0 top-[-14%] h-[128%] w-full max-w-none object-cover"
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(18,24,39,0.92) 0%, rgba(18,24,39,0.96) 100%)',
+                }}
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: 'linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)',
+                  backgroundSize: '28px 28px',
+                  opacity: 0.28,
+                }}
+              />
+              <div
+                className="absolute -right-24 bottom-[-48px] h-48 w-96 rounded-full blur-3xl"
+                style={{ background: 'radial-gradient(circle, rgba(255,196,107,0.20) 0%, rgba(255,196,107,0) 70%)' }}
+              />
             </div>
-            <h1 className="font-bold mb-4" style={{ fontFamily: 'Inter', fontSize: 36, lineHeight: '40px', color: '#FFFFFF' }}>
-              Close every <span className="italic">gap</span> before exam day.
-            </h1>
-            <p className="mb-6 max-w-[768px]" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 16, lineHeight: '24px', color: '#D1D5DC' }}>
-              Real-time subject health monitoring — pinpoints exactly which topics need your attention and builds a smart revision plan.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              {subjectPills.map((pill) => (
-                <div
-                  key={pill.label}
-                  className="inline-flex items-center gap-2 rounded-full px-4 py-2.5"
-                  style={{ border: '0.8px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)' }}
-                >
-                  <span aria-hidden>{pill.icon}</span>
-                  <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}>{pill.label}</span>
-                  <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}>{pill.count}</span>
-                </div>
-              ))}
+
+            <div className="relative z-10 max-w-[768px]">
+              <div className="mb-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.5px] text-[#FDC700]" style={{ fontFamily: 'var(--font-jakarta)' }}>
+                WEAK SUBJECT TRACKER - AI-POWERED GAP ANALYSIS
+              </div>
+              <h1 className="mb-4 text-[36px] font-bold leading-[40px] text-white" style={{ fontFamily: 'Inter' }}>
+                Close every <span className="italic text-[#E8B84B]">gap</span> before exam day.
+              </h1>
+              <p className="mb-6 text-[16px] leading-[24px] text-[#CBD1DC]" style={{ fontFamily: 'Inter' }}>
+                Real-time subject health monitoring pinpoints exactly which topics need your attention and builds a smart revision plan by ranking gaps through:
+              </p>
+
+              <div
+                className="grid w-full max-w-[516px] grid-cols-4 overflow-hidden rounded-[20px] border border-white/10 bg-[#161C2D]/90"
+                style={{ boxShadow: '0px 6px 18px rgba(0,0,0,0.18)' }}
+              >
+                {heroStats.map((stat, index) => (
+                  <div
+                    key={stat.label}
+                    className={`flex min-h-[61px] flex-col items-center justify-center px-2 py-3 ${index < heroStats.length - 1 ? 'border-r border-white/10' : ''}`}
+                  >
+                    <div
+                      className="text-[18px] font-extrabold leading-none tracking-[-0.4px]"
+                      style={{ fontFamily: 'var(--font-jakarta)', color: stat.valueColor }}
+                    >
+                      {stat.value}
+                    </div>
+                    <div
+                      className="mt-1 text-[9.5px] font-normal uppercase tracking-[0.6px] text-white/40"
+                      style={{ fontFamily: 'var(--font-jakarta)' }}
+                    >
+                      {stat.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -315,21 +427,28 @@ export default function SpacedRepetitionPage() {
                   <div className="flex flex-col gap-1">
                     <span className="uppercase text-[12px] font-semibold" style={{ fontFamily: 'Inter', color: '#6A7282' }}>Schedule</span>
                     <div className="flex gap-1.5 flex-wrap">
-                      {scheduleOptions.map((day) => (
-                        <button
-                          key={day}
-                          type="button"
-                          onClick={() => toggleSchedule(q.id, day)}
-                          className="rounded px-2 py-1 text-[12px] font-bold"
-                          style={{
-                            fontFamily: 'Inter', lineHeight: '16px',
-                            background: q.scheduleDay === day ? '#101828' : '#E5E7EB',
-                            color: q.scheduleDay === day ? '#FFFFFF' : '#4A5565',
-                          }}
-                        >
-                          {day}d
-                        </button>
-                      ))}
+                      {(() => {
+                        const activeDays = normalizeScheduleDays(q);
+                        return scheduleOptions.map((day) => {
+                          const isActive = activeDays.includes(day);
+
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => toggleSchedule(q.id, day)}
+                              className="rounded px-2 py-1 text-[12px] font-bold transition-colors"
+                              style={{
+                                fontFamily: 'Inter', lineHeight: '16px',
+                                background: isActive ? '#101828' : '#E5E7EB',
+                                color: isActive ? '#FFFFFF' : '#4A5565',
+                              }}
+                            >
+                              {day}d
+                            </button>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
                   <div className="flex items-center">

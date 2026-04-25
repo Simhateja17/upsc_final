@@ -5,6 +5,7 @@ import { flashcardService } from '@/lib/services';
 
 const SUBJECT_TO_ID: Record<string, string> = {
   'Indian Polity': 'polity',
+  'History': 'history',
   'Modern History': 'history',
   'Geography': 'geography',
   'Indian Economy': 'economy',
@@ -17,7 +18,7 @@ const SUBJECT_TO_ID: Record<string, string> = {
 
 const subjectOptions = [
   'Indian Polity',
-  'Modern History',
+  'History',
   'Geography',
   'Indian Economy',
   'Science & Tech',
@@ -29,7 +30,7 @@ const subjectOptions = [
 
 const deckOptions = [
   'Indian Polity',
-  'Modern History',
+  'History',
   'Geography',
   'Indian Economy',
   'Science & Tech',

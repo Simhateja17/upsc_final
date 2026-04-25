@@ -648,6 +648,8 @@ model PYQMainsQuestion {
   subject      String
   topic        String?
   difficulty   String   @default("Medium") // Easy, Medium, Hard
+  explanation  String?  // AI-generated or extracted explanation / model answer approach
+  marks        Int?     // marks allotted per question (e.g. 10, 15, 20)
   sourceFile   String?  @map("source_file")
   status       String   @default("draft") // draft, approved, rejected
   uploadId     String?  @map("upload_id")
@@ -865,6 +867,7 @@ model SpacedRepItem {
   sourceType       String   @map("source_type")
   subject          String
   scheduleDay      Int      @default(3) @map("schedule_day")
+  scheduleDays     Json?    @map("schedule_days")
   remindEnabled    Boolean  @default(false) @map("remind_enabled")
   addedToFlashcard Boolean  @default(false) @map("added_to_flashcard")
   nextReviewAt     DateTime @default(now()) @map("next_review_at")

@@ -1,53 +1,128 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { dashboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 
-type TrendPoint = { label: string; value: number };
 type DayActivity = { questionsAttempted: number; hours: number };
+type SubjectRow = { name: string; accuracy: number; questions: number; tag?: string; color?: string };
+type DistributionItem = { label: string; value: number; color: string };
 
-// ─── Circular Donut Chart ────────────────────────────────────────────────────
-function DonutChart({ percentage, size = 140, stroke = 12, color = '#6366F1' }: {
-  percentage: number;
-  size?: number;
-  stroke?: number;
-  color?: string;
-}) {
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const offset = c - (Math.min(percentage, 100) / 100) * c;
+const orderedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const subjectColors = ['#4A7DFF', '#58BE87', '#F4C33F', '#9B51E0', '#F2742F'];
+
+function clamp(value: number, min = 0, max = 100) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function formatHours(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return '0h';
+
+  const hours = Math.floor(value);
+  const minutes = Math.round((value - hours) * 60);
+
+  if (hours === 0) return `${minutes}m`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h${minutes}m`;
+}
+
+function getDaysToPrelims() {
+  const prelimsDate = new Date('2026-05-24T00:00:00+05:30');
+  const today = new Date();
+  const diff = prelimsDate.getTime() - today.getTime();
+  return Math.max(0, Math.ceil(diff / 86400000));
+}
+
+function ProgressBar({ value, color }: { value: number; color: string }) {
+  return (
+    <div className="h-2 w-full overflow-hidden rounded-full bg-[#F0F1F4]">
+      <div className="h-full rounded-full" style={{ width: `${clamp(value)}%`, background: color }} />
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mb-5 text-center text-[12px] font-semibold uppercase tracking-[1.4px] text-[#6A7282]">
+      {children}
+    </div>
+  );
+}
+
+function AnalyticsCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div
+      className={`rounded-[14px] border border-[#E5E7EB] bg-white shadow-sm ${className}`}
+      style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SubjectList({ rows, weak = false }: { rows: SubjectRow[]; weak?: boolean }) {
+  if (!rows.length) {
+    return (
+      <div className="rounded-[10px] bg-[#F8FAFC] px-4 py-8 text-center text-[13px] text-[#6A7282]">
+        Subject data will appear after attempted tests include topic analytics.
+      </div>
+    );
+  }
 
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E5E7EB" strokeWidth={stroke} />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 800ms ease' }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-[28px] font-bold leading-none" style={{ fontFamily: 'Inter', color: '#101828' }}>
-          {Math.round(percentage)}%
-        </span>
-        <span className="text-[11px] uppercase tracking-[0.4px]" style={{ fontFamily: 'Inter', color: '#6A7282' }}>
-          Accuracy
-        </span>
+    <div className="space-y-5">
+      {rows.map((row, index) => {
+        const color = row.color ?? subjectColors[index % subjectColors.length];
+
+        return (
+          <div key={row.name}>
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="h-2 w-2 flex-none rounded-full" style={{ background: color }} />
+                <span className="truncate text-[16px] font-medium text-[#101828]">{row.name}</span>
+                {row.tag ? (
+                  <span className="rounded-[4px] bg-[#FDECEC] px-2 py-1 text-[10px] font-semibold text-[#E02424]">
+                    {row.tag}
+                  </span>
+                ) : null}
+              </div>
+              <div className="flex flex-none items-center gap-3">
+                <span className="text-[16px] font-bold" style={{ color: weak ? '#E02424' : color }}>
+                  {Math.round(row.accuracy)}%
+                </span>
+                <span className="text-[13px] text-[#6A7282]">{row.questions} Qs</span>
+              </div>
+            </div>
+            <ProgressBar value={row.accuracy} color={color} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DonutChart({ items, centerLabel }: { items: DistributionItem[]; centerLabel: string }) {
+  let cursor = 0;
+  const stops = items.map((item) => {
+    const start = cursor;
+    cursor += item.value;
+    return `${item.color} ${start}% ${cursor}%`;
+  });
+  const hasData = items.some((item) => item.value > 0);
+
+  return (
+    <div
+      className="relative h-[180px] w-[180px] rounded-full"
+      style={{ background: hasData ? `conic-gradient(${stops.join(', ')})` : '#EEF0F3' }}
+    >
+      <div className="absolute inset-[42px] flex flex-col items-center justify-center rounded-full bg-white">
+        <span className="text-[26px] font-bold leading-none text-[#101828]">{centerLabel}</span>
+        <span className="mt-1 text-[12px] uppercase text-[#6A7282]">Total</span>
       </div>
     </div>
   );
 }
 
-// ─── Page ────────────────────────────────────────────────────────────────────
 export default function PerformancePage() {
   const [data, setData] = useState<any>(null);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -82,37 +157,24 @@ export default function PerformancePage() {
   }, []);
 
   const mcq = data?.mcq ?? {};
-  const streak = data?.streak ?? {};
   const mockTests = data?.mockTests ?? {};
   const mains = data?.mains ?? {};
-  const testSeries = data?.testSeries ?? {};
-  const weeklyMcqTrend = analyticsData?.weeklyMcqTrend ?? [];
+  const streak = data?.streak ?? {};
   const dailyActivity = analyticsData?.dailyActivity ?? [];
 
-  const totalTests =
-    data?.testsTaken ??
-    ((mcq.totalAttempts ?? 0) +
-      (mockTests.totalAttempts ?? 0) +
-      (mains.totalAttempts ?? 0) +
-      (testSeries.totalAttempts ?? 0));
-
-  const avgAccuracy = mcq.avgAccuracy ?? 0;
-  const bestPercentile = mcq.bestPercentile ?? 0;
-  const currentStreak = streak.currentStreak ?? 0;
-  const totalQuestions =
-    data?.questionsAttempted ??
-    ((mcq.totalCorrect ?? 0) + (mcq.totalWrong ?? 0) + (mcq.totalSkipped ?? 0));
-
-  // Overall accuracy with negative marking (net)
-  const totalMcqCorrect = mcq.totalCorrect ?? 0;
-  const totalMcqWrong = mcq.totalWrong ?? 0;
-  const totalMcqSkipped = mcq.totalSkipped ?? 0;
+  const totalMcqCorrect = mcq.totalCorrect ?? analyticsData?.summary?.mcqCorrect ?? 0;
+  const totalMcqWrong = mcq.totalWrong ?? analyticsData?.summary?.mcqWrong ?? 0;
+  const totalMcqSkipped = mcq.totalSkipped ?? analyticsData?.summary?.mcqSkipped ?? 0;
   const totalMcqAnswered = totalMcqCorrect + totalMcqWrong;
-  const netAccuracy = totalMcqAnswered > 0
+  const totalQuestions =
+    analyticsData?.summary?.totalQuestions ??
+    data?.questionsAttempted ??
+    (totalMcqCorrect + totalMcqWrong + totalMcqSkipped);
+  const overallAccuracy = totalMcqAnswered > 0
     ? Math.round(((totalMcqCorrect - totalMcqWrong * 0.33) / totalMcqAnswered) * 100)
-    : 0;
+    : Math.round(analyticsData?.summary?.avgAccuracy ?? mcq.avgAccuracy ?? 0);
+  const currentStreak = streak.currentStreak ?? analyticsData?.summary?.currentStreak ?? 0;
 
-  const orderedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const activityMap = new Map<string, DayActivity>(
     dailyActivity.map((entry: any) => [
       String(entry.day),
@@ -129,397 +191,460 @@ export default function PerformancePage() {
     hours: activityMap.get(day)?.hours ?? 0,
   }));
 
-  const maxQuestions = Math.max(...dailyBars.map((d) => d.questions), 1);
-  const highlightedDay = dailyBars.reduce((top, current) => (
-    current.questions > top.questions ? current : top
-  ), dailyBars[0]).day;
+  const weeklyQuestions = dailyBars.reduce((sum, day) => sum + day.questions, 0);
+  const totalStudyHours = dailyBars.reduce((sum, day) => sum + day.hours, 0);
+  const todayHours = dailyBars[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.hours ?? 0;
+  const bestDayHours = Math.max(...dailyBars.map((day) => day.hours), 0);
+  const activeStudyDays = dailyBars.filter((day) => day.hours > 0 || day.questions > 0).length;
+  const dailyAvgHours = activeStudyDays > 0 ? totalStudyHours / activeStudyDays : 0;
+  const maxStudyHours = Math.max(...dailyBars.map((day) => day.hours), 1);
 
-  // Calendar heatmap data (last 28 days)
-  const today = new Date();
-  const calendarDays = Array.from({ length: 28 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() - (27 - i));
-    return d;
-  });
-  const calendarMap = new Map(
-    dailyActivity.map((entry: any) => [
-      String(entry.day),
-      Number(entry.questionsAttempted ?? 0),
-    ]),
+  const subjectAccuracy = analyticsData?.subjectAccuracy ?? [];
+  const apiStrongTopics = (data?.strongTopics ?? []).map((topic: any, index: number) => ({
+    name: topic.name,
+    accuracy: Number(topic.accuracy ?? 0),
+    questions: Number(topic.questions ?? topic.total ?? 0),
+    color: subjectColors[index % subjectColors.length],
+  }));
+  const apiWeakTopics = (data?.weakTopics ?? []).map((topic: any, index: number) => ({
+    name: topic.name,
+    accuracy: Number(topic.accuracy ?? 0),
+    questions: Number(topic.questions ?? topic.total ?? 0),
+    tag: index === 0 ? 'Needs Revision' : undefined,
+    color: ['#E02424', '#F2742F', '#111827', '#E8B84B'][index % 4],
+  }));
+
+  const strongAreas: SubjectRow[] = apiStrongTopics.length > 0
+    ? apiStrongTopics
+    : subjectAccuracy.slice(0, 5).map((subject: any, index: number) => ({
+      name: subject.subject,
+      accuracy: Number(subject.accuracy ?? 0),
+      questions: Number((subject.correct ?? 0) + (subject.wrong ?? 0)),
+      color: subjectColors[index % subjectColors.length],
+    }));
+
+  const weakAreas: SubjectRow[] = apiWeakTopics.length > 0
+    ? apiWeakTopics
+    : [...subjectAccuracy]
+      .sort((a: any, b: any) => Number(a.accuracy ?? 0) - Number(b.accuracy ?? 0))
+      .slice(0, 4)
+      .map((subject: any, index: number) => ({
+        name: subject.subject,
+        accuracy: Number(subject.accuracy ?? 0),
+        questions: Number((subject.correct ?? 0) + (subject.wrong ?? 0)),
+        tag: index === 0 ? 'Needs Revision' : undefined,
+        color: ['#E02424', '#F2742F', '#111827', '#E8B84B'][index % 4],
+      }));
+
+  const subjectQuestionTotal = subjectAccuracy.reduce(
+    (sum: number, subject: any) => sum + Number((subject.correct ?? 0) + (subject.wrong ?? 0)),
+    0,
   );
+  const distribution: DistributionItem[] = subjectAccuracy.length > 0
+    ? subjectAccuracy.slice(0, 6).map((subject: any, index: number) => {
+      const questions = Number((subject.correct ?? 0) + (subject.wrong ?? 0));
+      return {
+        label: subject.subject,
+        value: subjectQuestionTotal > 0 ? Math.round((questions / subjectQuestionTotal) * 100) : 0,
+        color: ['#F4C33F', '#F28C32', '#4A7DFF', '#E24C91', '#9B51E0', '#55B9AA'][index % 6],
+      };
+    })
+    : [
+      { label: 'GS I', value: 0, color: '#F4C33F' },
+      { label: 'GS II', value: 0, color: '#F28C32' },
+      { label: 'GS III', value: 0, color: '#4A7DFF' },
+      { label: 'GS IV', value: 0, color: '#E24C91' },
+      { label: 'Essay', value: 0, color: '#9B51E0' },
+      { label: 'Curr. Affairs', value: 0, color: '#55B9AA' },
+    ];
 
-  const topStripCards = [
-    { label: 'tests taken', value: String(totalTests), valueColor: '#D4AF37' },
-    { label: 'avg accuracy', value: `${avgAccuracy}%`, valueColor: '#00D492' },
-    { label: 'questions', value: totalQuestions.toLocaleString('en-IN'), valueColor: '#FFFFFF' },
-    { label: 'best rank', value: bestPercentile > 0 ? `${bestPercentile}th %ile` : 'N/A', valueColor: '#FF8904' },
-    { label: 'day\nstreak', value: String(currentStreak), valueColor: '#FFFFFF' },
+  const earnedBadges = [
+    { icon: '🔥', title: '30-Day Streak', earned: currentStreak >= 30, note: `${currentStreak} day streak` },
+    { icon: '⚡', title: 'Quick Learner', earned: totalQuestions >= 100, note: `${totalQuestions.toLocaleString('en-IN')} Qs done` },
+    { icon: '🧠', title: '1000 Qs Club', earned: totalQuestions >= 1000, note: `${totalQuestions.toLocaleString('en-IN')} Qs done` },
+    { icon: '📚', title: 'Polity Master', earned: strongAreas.some((area) => /polity/i.test(area.name)), note: 'Subject mastery' },
+    { icon: '🎯', title: '95% Accuracy', earned: overallAccuracy >= 95, note: `${overallAccuracy}% now` },
+    { icon: '👑', title: 'Top 100 Rank', earned: Boolean(data?.rank && data.rank <= 100), note: data?.rank ? `#${data.rank} now` : 'Rank pending' },
+    { icon: '🎓', title: 'Syllabus Master', earned: (data?.syllabusCoverage ?? 0) >= 90, note: `${data?.syllabusCoverage ?? 0}% covered` },
+    { icon: '🧑‍💻', title: 'Mock Test King', earned: (mockTests.totalAttempts ?? 0) >= 50, note: `${mockTests.totalAttempts ?? 0}/50 done` },
   ];
-
-  const moduleBreakdown = [
-    {
-      title: 'Daily MCQ',
-      color: '#15803D',
-      bg: '#F0FDF4',
-      border: '#B9F8CF',
-      stats: [
-        { label: 'Tests', value: mcq.totalAttempts ?? 0 },
-        { label: 'Questions', value: totalMcqCorrect + totalMcqWrong + totalMcqSkipped },
-        { label: 'Accuracy', value: `${mcq.avgAccuracy ?? 0}%`, accent: '#15803D' },
-      ],
-    },
-    {
-      title: 'Daily Answer Writing',
-      color: '#8200DB',
-      bg: '#FAF5FF',
-      border: '#E9D4FF',
-      stats: [
-        { label: 'Answers', value: mains.dailyAnswerAttempts ?? 0 },
-        { label: 'Evaluated', value: mains.dailyAnswerAttempts ?? 0 },
-      ],
-    },
-    {
-      title: 'Mock Tests',
-      color: '#1447E6',
-      bg: '#EFF6FF',
-      border: '#BFDBFE',
-      stats: [
-        { label: 'Tests', value: mockTests.totalAttempts ?? 0 },
-        { label: 'Mains', value: mains.mockTestMainsAttempts ?? 0 },
-      ],
-    },
-    {
-      title: 'Previous Year Questions',
-      color: '#CA3500',
-      bg: '#FEFCE8',
-      border: '#FEF08A',
-      stats: [
-        { label: 'Mains', value: mains.pyqMainsAttempts ?? 0 },
-        { label: 'Evaluated', value: mains.pyqMainsAttempts ?? 0 },
-      ],
-    },
-  ];
+  const earnedBadgeCount = earnedBadges.filter((badge) => badge.earned).length;
 
   const summaryCards = [
     {
-      title: 'Overall Percentile Score',
-      value: bestPercentile > 0 ? String(bestPercentile) : 'N/A',
-      accentColor: '#00BBA7',
-      subtitle: 'Outperforming aspirants',
+      title: 'Day Streak',
+      icon: '🔥',
+      value: String(currentStreak),
+      valueColor: '#F2742F',
+      subtitle: `${activeStudyDays} days this week`,
     },
     {
-      title: 'Tests Attempted',
-      value: String(totalTests),
-      accentColor: '#FF6900',
-      subtitle: 'Full length + sectional mock tests',
-    },
-    {
-      title: 'Questions Attempted',
+      title: 'Qs Attempted',
+      icon: '📝',
       value: totalQuestions.toLocaleString('en-IN'),
-      accentColor: '#155DFC',
-      subtitle: 'Across MCQs, PYQs and mock tests',
+      valueColor: '#4A7DFF',
+      subtitle: `${weeklyQuestions.toLocaleString('en-IN')} this week`,
     },
     {
-      title: 'Overall Accuracy',
-      value: `${netAccuracy}%`,
-      accentColor: '#22C55E',
-      subtitle: 'Net accuracy after negative marking',
+      title: 'Avg Accuracy',
+      icon: '🎯',
+      value: `${overallAccuracy}%`,
+      valueColor: '#55C96D',
+      subtitle: `${Math.round(analyticsData?.summary?.avgAccuracy ?? overallAccuracy)}% current avg`,
+    },
+    {
+      title: 'Study Time',
+      icon: '⏱️',
+      value: formatHours(totalStudyHours),
+      valueColor: '#9B51E0',
+      subtitle: `${formatHours(totalStudyHours)} this week`,
+    },
+    {
+      title: 'Mock Tests',
+      icon: '📊',
+      value: String(mockTests.totalAttempts ?? analyticsData?.summary?.totalTests ?? 0),
+      valueColor: '#5B5CF6',
+      subtitle: 'Full length + sectional',
+    },
+    {
+      title: 'Badges Earned',
+      icon: '🏆',
+      value: String(earnedBadgeCount),
+      valueColor: '#C9821F',
+      subtitle: `${earnedBadges.length - earnedBadgeCount} still locked`,
     },
   ];
+
+  const userFirstName = user?.firstName || 'Arjun';
+  const daysToPrelims = useMemo(getDaysToPrelims, []);
 
   return (
     <div
       className="flex overflow-hidden"
-      style={{ background: '#FFFFFF', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
+      style={{ background: '#F4F6FA', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
     >
       <div className="flex-1 overflow-y-auto">
-        <div className={`w-full max-w-[1180px] mx-auto px-6 py-8 ${loading ? 'opacity-50 animate-pulse' : ''}`}>
+        <div className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6">
+          <div className="relative mb-10 w-full overflow-hidden rounded-[16px] px-8 py-8 sm:px-10 lg:px-12">
+            <div className="absolute inset-0">
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90"
+                style={{ backgroundImage: 'url(/hero-bg.jpg)' }}
+              />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_88%_78%,rgba(93,84,69,0.55)_0%,rgba(15,23,43,0.08)_30%,rgba(7,12,28,0.82)_76%)]" />
+              <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,rgba(255,255,255,0.035)_0,rgba(255,255,255,0.035)_1px,transparent_1px,transparent_34px),repeating-linear-gradient(90deg,rgba(255,255,255,0.035)_0,rgba(255,255,255,0.035)_1px,transparent_1px,transparent_34px)] opacity-60" />
+            </div>
 
-          {/* ── Hero ── */}
-          <div
-            className="w-full rounded-[16px] px-10 pt-8 pb-6 mb-6 flex flex-col gap-6"
-            style={{ background: 'linear-gradient(135deg, #0F172B 0%, #1E2939 100%)' }}
-          >
-            <div className="flex flex-col gap-3">
-              <span
-                className="inline-flex items-center justify-center rounded-full px-3 py-1 uppercase tracking-[0.12em]"
-                style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', letterSpacing: '1.2px', color: '#0B1120', background: '#00D5BE', alignSelf: 'flex-start' }}
-              >
-                Performance Tracker
+            <div className="relative z-10 max-w-[740px]">
+              <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[12px] font-bold uppercase leading-4 tracking-[1.2px] text-[#E8B84B]">
+                Analytics - Performance Dashboard
               </span>
-              <h1
-                className="text-[40px] sm:text-[48px] leading-[48px] font-bold"
-                style={{ color: '#FFFFFF', fontFamily: 'Inter, system-ui' }}
-              >
-                {user?.firstName ?? 'Your'}&apos;s{' '}
-                <span style={{ fontFamily: 'Georgia, ui-serif', fontWeight: 700, fontStyle: 'italic' }}>
+
+              <h1 className="mt-6 text-[40px] font-bold leading-[48px] text-white sm:text-[48px]">
+                {userFirstName}&apos;s{' '}
+                <span className="font-serif italic text-[#E8B84B]">
                   Progress.
                 </span>
               </h1>
-              <p
-                className="max-w-[660px]"
-                style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '22.75px', color: '#D1D5DC' }}
-              >
-                Your complete UPSC test analytics — score trends, subject mastery, rank history, time
-                management and AI-powered next steps. For test-by-test score deep-dives, head to{' '}
-                <a href="/dashboard/test-analytics" style={{ color: '#00D5BE', textDecoration: 'underline' }}>
-                  Test Analytics
-                </a>
-                .
-              </p>
-            </div>
 
-            {/* Stats strip */}
-            <div className="flex flex-wrap gap-0 rounded-[14px] overflow-hidden mt-2">
-              {topStripCards.map((card, index) => {
-                const isFirst = index === 0;
-                const isLast = index === topStripCards.length - 1;
-                return (
-                  <div
-                    key={index}
-                    className="flex-1 min-w-[140px] flex flex-col items-center justify-center px-8 py-5"
-                    style={{
-                      background: '#1C273B',
-                      borderTop: '0.8px solid #364153',
-                      borderBottom: '0.8px solid #364153',
-                      borderLeft: index > 0 ? '0.8px solid #364153' : undefined,
-                      borderRight: index < topStripCards.length - 1 ? '0.8px solid #364153' : undefined,
-                      borderTopLeftRadius: isFirst ? 14 : 0,
-                      borderBottomLeftRadius: isFirst ? 14 : 0,
-                      borderTopRightRadius: isLast ? 14 : 0,
-                      borderBottomRightRadius: isLast ? 14 : 0,
-                    }}
-                  >
-                    <div className="mb-1 text-[30px] font-bold leading-[36px]"
-                      style={{ fontFamily: 'Inter', color: card.valueColor, whiteSpace: 'pre-line' }}>
-                      {card.value}
-                    </div>
-                    <div className="uppercase text-[12px] tracking-[0.3px] text-center"
-                      style={{ fontFamily: 'Inter', fontWeight: 400, lineHeight: '16px', color: '#6A7282', whiteSpace: 'pre-line' }}>
-                      {card.label}
-                    </div>
-                  </div>
-                );
-              })}
+              <p className="mt-5 max-w-[650px] text-[16px] leading-[26px] text-[#6A7282]">
+                Your complete UPSC preparation analytics streaks, subject mastery, weak areas,
+                spaced repetition &amp; smart notes.
+              </p>
+
+              <div className="mt-8 inline-flex items-center rounded-full border border-[#E8B84B]/35 bg-white/[0.07] px-5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                <span className="mr-3 text-[18px]" aria-hidden>
+                  🔥
+                </span>
+                <span className="text-[16px] font-bold leading-[22px] text-[#FFD43B]">
+                  {daysToPrelims} days to UPSC Prelims 2026 - Keep going, you&apos;re on track!
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* ── Summary Cards ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {summaryCards.map((card) => (
-              <div
-                key={card.title}
-                className="rounded-[14px] bg-white shadow-sm flex flex-col justify-between"
-                style={{
-                  borderTop: `4px solid ${card.accentColor}`,
-                  boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)',
-                  minHeight: 168,
-                }}
-              >
-                <div className="px-6 pt-7 pb-5">
-                  <div className="mb-3 text-[36px] leading-[40px] font-bold" style={{ fontFamily: 'Inter', color: '#101828' }}>
-                    {card.value}
-                  </div>
-                  <div className="uppercase text-[12px] tracking-[0.6px] mb-1" style={{ fontFamily: 'Inter', fontWeight: 600, lineHeight: '16px', color: '#6A7282' }}>
+              <AnalyticsCard key={card.title} className="min-h-[142px] px-5 py-6">
+                <div className="mb-5 flex items-center justify-between gap-4">
+                  <span className="text-[12px] font-semibold uppercase tracking-[0.9px] text-[#99A1AF]">
                     {card.title}
-                  </div>
-                  <p className="text-[12px]" style={{ fontFamily: 'Inter', fontWeight: 400, lineHeight: '16px', color: '#6A7282' }}>
-                    {card.subtitle}
-                  </p>
+                  </span>
+                  <span className="text-[20px]" aria-hidden>{card.icon}</span>
                 </div>
-              </div>
+                <div className="text-[36px] font-bold leading-[40px]" style={{ color: card.valueColor }}>
+                  {card.value}
+                </div>
+                <div className="mt-3 flex items-center gap-2 text-[13px] text-[#4B5563]">
+                  <span className="text-[#22C55E]">↗</span>
+                  <span>{card.subtitle}</span>
+                </div>
+              </AnalyticsCard>
             ))}
           </div>
 
-          {/* ── Row 1: Circular Chart + Practice Module Breakdown ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-            {/* Overall Accuracy — Circular Donut */}
-            <div className="rounded-[14px] bg-white" style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}>
-              <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
-                  Overall Accuracy
-                </h2>
-
-                <div className="flex items-center gap-8">
-                  <DonutChart percentage={netAccuracy} size={160} stroke={14} color="#6366F1" />
-                  <div className="flex flex-col gap-3">
-                    {[
-                      { label: 'Correct', value: totalMcqCorrect, color: '#22C55E' },
-                      { label: 'Wrong', value: totalMcqWrong, color: '#EF4444' },
-                      { label: 'Skipped', value: totalMcqSkipped, color: '#6B7280' },
-                    ].map((item) => (
-                      <div key={item.label} className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
-                        <span className="text-[13px] font-medium" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
-                          {item.value.toLocaleString('en-IN')} {item.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Practice Module Breakdown */}
-            <div className="rounded-[14px] bg-white" style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}>
-              <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
-                  Practice Module Breakdown
-                </h2>
-                <div className="grid grid-cols-2 gap-4">
-                  {moduleBreakdown.map((mod) => (
-                    <div key={mod.title} className="rounded-[10px] p-4" style={{ background: mod.bg, border: `1px solid ${mod.border}` }}>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-2" style={{ color: mod.color }}>{mod.title}</div>
-                      <div className="flex gap-4">
-                        {mod.stats.map((s: any) => (
-                          <div key={s.label}>
-                            <div className="text-[22px] font-bold" style={{ color: s.accent ?? '#101828' }}>{s.value}</div>
-                            <div className="text-[11px]" style={{ color: '#6A7282' }}>{s.label}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Row 2: Weekly Study Activity + Calendar Heatmap ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-            {/* Weekly Study Activity */}
-            <div className="rounded-[14px] bg-white" style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}>
-              <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
-                  Weekly Study Activity
-                </h2>
-
-                <div className="flex flex-wrap gap-5 mb-6">
-                  {[
-                    { label: 'Correct', value: totalMcqCorrect, color: '#101828' },
-                    { label: 'Wrong', value: totalMcqWrong, color: '#FB2C36' },
-                    { label: 'Skipped', value: totalMcqSkipped, color: '#D1D5DC' },
-                    { label: 'Net Accuracy', value: `${netAccuracy}%`, color: '#FF6900' },
-                  ].map((item) => (
-                    <div key={item.label}>
-                      <div className="text-[28px] leading-[34px] font-bold" style={{ fontFamily: 'Inter', color: item.color }}>
-                        {typeof item.value === 'number' ? item.value.toLocaleString('en-IN') : item.value}
-                      </div>
-                      <div className="uppercase text-[11px] tracking-[0.6px]" style={{ fontFamily: 'Inter', fontWeight: 600, color: '#99A1AF' }}>
-                        {item.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="text-[11px] uppercase tracking-[0.6px] mb-3" style={{ color: '#6A7282', fontFamily: 'Inter' }}>
-                  Questions attempted this week
-                </div>
-                <div className="flex items-end gap-2 h-[64px]">
-                  {dailyBars.map((item) => {
-                    const barHeight = item.questions > 0
-                      ? Math.max((item.questions / maxQuestions) * 46, 8)
-                      : 4;
-                    const barColor = item.questions === 0
-                      ? '#C7CDD7'
-                      : item.day === highlightedDay
-                        ? '#F4BC34'
-                        : '#0E1830';
-                    return (
-                      <div key={item.day} className="flex-1 flex flex-col items-center gap-1">
-                        <div className="w-full rounded-[4px]" style={{ height: barHeight, background: barColor }} />
-                        <span className="text-[10px] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>{item.day}</span>
-                        <span className="text-[10px] text-[#99A1AF]" style={{ fontFamily: 'Inter' }}>
-                          {item.hours > 0 ? `${item.hours.toFixed(1)}h` : '0h'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Weekly Calendar Heatmap */}
-            <div className="rounded-[14px] bg-white" style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}>
-              <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
-                  Weekly Calendar Heatmap
-                </h2>
-                <div className="grid grid-cols-7 gap-2">
-                  {calendarDays.map((date, i) => {
-                    const dayLabel = date.toLocaleDateString('en-US', { weekday: 'narrow' });
-                    const monthLabel = i === 0 || date.getDate() === 1
-                      ? date.toLocaleDateString('en-US', { month: 'short' })
-                      : '';
-                    const q = Number(calendarMap.get(dayLabel) ?? 0);
-                    const intensity = q === 0 ? 0 : Math.min(q / 20, 1);
-                    const bg = q === 0 ? '#F3F4F6' : `rgba(34, 197, 94, ${0.15 + intensity * 0.85})`;
-                    return (
-                      <div key={i} className="flex flex-col items-center gap-1">
-                        <div
-                          className="w-full aspect-square rounded-[6px]"
-                          style={{ background: bg }}
-                          title={`${date.toDateString()}: ${q} questions`}
-                        />
-                        <span className="text-[9px] text-[#99A1AF]" style={{ fontFamily: 'Inter' }}>{dayLabel}</span>
-                        {monthLabel && (
-                          <span className="text-[8px] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>{monthLabel}</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center gap-3 mt-4">
-                  <span className="text-[10px] text-[#99A1AF]" style={{ fontFamily: 'Inter' }}>Less</span>
-                  <div className="flex gap-1">
-                    {['#F3F4F6', '#BBF7D0', '#86EFAC', '#4ADE80', '#22C55E'].map((c) => (
-                      <div key={c} className="w-3 h-3 rounded-[3px]" style={{ background: c }} />
-                    ))}
-                  </div>
-                  <span className="text-[10px] text-[#99A1AF]" style={{ fontFamily: 'Inter' }}>More</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Row 3: Daily Goals ── */}
-          <div className="rounded-[14px] bg-white mb-8" style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}>
-            <div className="px-8 pt-8 pb-6">
-              <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
-                Daily Goals
+          <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <AnalyticsCard className="px-6 py-7">
+              <h2 className="mb-8 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
+                <span className="h-2 w-2 rounded-full bg-[#8B35F6]" />
+                Study Time — This Week
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+              <div className="mb-16 grid grid-cols-2 gap-5 sm:grid-cols-4">
                 {[
-                  { label: 'Complete Daily MCQ', done: (mcq.totalAttempts ?? 0) > 0 },
-                  { label: 'Write Daily Answer', done: (mains.dailyAnswerAttempts ?? 0) > 0 },
-                  { label: 'Read Current Affairs', done: currentStreak > 0 },
-                  { label: 'Revise Flashcards', done: currentStreak > 1 },
-                  { label: 'Attempt Mock Test', done: (mockTests.totalAttempts ?? 0) > 0 },
-                  { label: 'Study 2+ Hours', done: dailyBars.reduce((s, d) => s + d.hours, 0) >= 2 },
-                  { label: 'Watch Video Lecture', done: false },
-                  { label: 'Update Syllabus Tracker', done: false },
-                ].map((goal) => (
-                  <div key={goal.label} className="flex items-center gap-3 rounded-[10px] border px-4 py-3"
-                    style={{ borderColor: goal.done ? '#BBF7D0' : '#E5E7EB', background: goal.done ? '#F0FDF4' : '#FFFFFF' }}>
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: goal.done ? '#22C55E' : '#E5E7EB' }}>
-                      {goal.done && (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className="text-[13px] font-medium" style={{ fontFamily: 'Inter', color: goal.done ? '#15803D' : '#6B7280' }}>
-                      {goal.label}
-                    </span>
+                  ['Today', formatHours(todayHours), '#101828'],
+                  ['Best Day', formatHours(bestDayHours), '#C9821F'],
+                  ['Daily Avg', formatHours(dailyAvgHours), '#245CEB'],
+                  ['Total Study Hours', formatHours(totalStudyHours), '#245CEB'],
+                ].map(([label, value, color]) => (
+                  <div key={label}>
+                    <div className="text-[26px] font-bold leading-8" style={{ color }}>{value}</div>
+                    <div className="mt-2 text-[11px] uppercase tracking-[0.8px] text-[#99A1AF]">{label}</div>
                   </div>
                 ))}
               </div>
-            </div>
+
+              <div className="flex h-[132px] items-end gap-3">
+                {dailyBars.map((item) => {
+                  const isToday = item.day === orderedDays[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+                  const height = item.hours > 0 ? Math.max((item.hours / maxStudyHours) * 86, 18) : 56;
+                  const color = item.hours <= 0 ? '#CDD2DA' : isToday ? '#F5C84B' : '#0E1830';
+
+                  return (
+                    <div key={item.day} className="flex flex-1 flex-col items-center">
+                      <div className="w-full rounded-[6px]" style={{ height, background: color }} />
+                      <span className="mt-3 text-[13px] text-[#99A1AF]">{item.day}</span>
+                      <span className="mt-2 text-[12px] text-[#99A1AF]">{formatHours(item.hours)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </AnalyticsCard>
+
+            <AnalyticsCard className="px-6 py-7">
+              <h2 className="mb-9 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
+                <span className="h-2 w-2 rounded-full bg-[#F28C32]" />
+                Time Distribution — This Week
+              </h2>
+
+              <div className="grid items-center gap-8 sm:grid-cols-[220px_1fr]">
+                <div className="flex justify-center">
+                  <DonutChart items={distribution} centerLabel={formatHours(totalStudyHours)} />
+                </div>
+                <div className="space-y-4">
+                  {distribution.map((item) => (
+                    <div key={item.label} className="flex items-center justify-between gap-6">
+                      <div className="flex items-center gap-3">
+                        <span className="h-3 w-3 rounded-full" style={{ background: item.color }} />
+                        <span className="text-[16px] text-[#4B5563]">{item.label}</span>
+                      </div>
+                      <span className="text-[16px] font-bold text-[#101828]">{item.value}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </AnalyticsCard>
           </div>
 
+          <SectionLabel>Strong &amp; Weak Areas</SectionLabel>
+          <div className="mb-9 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <AnalyticsCard className="px-6 py-7">
+              <div className="mb-8 flex items-center justify-between gap-4">
+                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
+                  <span className="text-[24px]" aria-hidden>💪</span>
+                  Strong Areas
+                </h2>
+                <div className="hidden items-center gap-3 text-[13px] text-[#6A7282] sm:flex">
+                  <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#4A7DFF]" />Accuracy</span>
+                  <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#D1D5DB]" />Qs attempted</span>
+                </div>
+              </div>
+              <SubjectList rows={strongAreas} />
+            </AnalyticsCard>
+
+            <AnalyticsCard className="px-6 py-7">
+              <div className="mb-8 flex items-center justify-between gap-4">
+                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
+                  <span className="text-[24px]" aria-hidden>⚠</span>
+                  Weak Areas
+                </h2>
+                <a href="/dashboard/syllabus" className="text-[16px] font-medium text-[#155DFC]">
+                  View Tracker +
+                </a>
+              </div>
+              <SubjectList rows={weakAreas} weak />
+            </AnalyticsCard>
+          </div>
+
+          <SectionLabel>Study Streak &amp; Daily Trio Progress</SectionLabel>
+          <div className="mb-9 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <AnalyticsCard className="px-6 py-7">
+              <div className="mb-7 flex items-center justify-between gap-4">
+                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
+                  <span aria-hidden>📅</span>
+                  Study Streak — April 2026
+                </h2>
+                <span className="font-bold text-[#F2742F]">🔥 {currentStreak} Days!</span>
+              </div>
+
+              <div className="mb-5 flex flex-wrap items-center gap-2 text-[10px] uppercase text-[#6A7282]">
+                <span>Intensity</span>
+                {['None', 'Light', 'Medium', 'Intense'].map((label, index) => (
+                  <span key={label} className="flex items-center gap-1">
+                    <span
+                      className="h-3 w-3 rounded-[3px]"
+                      style={{ background: ['#EEF0F3', '#D7F8E4', '#A8EBC7', '#58BE87'][index] }}
+                    />
+                    {label}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mb-6 grid grid-cols-7 gap-2 text-center text-[12px] text-[#6A7282]">
+                {orderedDays.map((day) => <span key={day}>{day}</span>)}
+                {Array.from({ length: 30 }, (_, index) => {
+                  const day = index + 1;
+                  const active = day <= Math.min(currentStreak, 30);
+                  const highlighted = day === 23;
+
+                  return (
+                    <div
+                      key={day}
+                      className="flex aspect-square items-center justify-center rounded-[8px] text-[14px] font-semibold"
+                      style={{
+                        background: highlighted ? '#FFF7CC' : active ? '#58BE87' : '#EEF0F3',
+                        border: highlighted ? '1px solid #E8B84B' : '1px solid transparent',
+                        color: active ? '#FFFFFF' : '#101828',
+                      }}
+                    >
+                      {day}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-3 border-t border-[#EEF0F3] pt-4 text-center">
+                <div>
+                  <div className="text-[22px] font-bold text-[#101828]">{formatHours(dailyAvgHours)}</div>
+                  <div className="mt-1 text-[10px] uppercase text-[#6A7282]">Avg Daily Study</div>
+                </div>
+                <div>
+                  <div className="text-[22px] font-bold text-[#E8B84B]">{activeStudyDays}/7</div>
+                  <div className="mt-1 text-[10px] uppercase text-[#6A7282]">Active Days Week</div>
+                </div>
+                <div>
+                  <div className="text-[22px] font-bold text-[#55B9AA]">{formatHours(totalStudyHours)}</div>
+                  <div className="mt-1 text-[10px] uppercase text-[#6A7282]">Total Week Hours</div>
+                </div>
+              </div>
+            </AnalyticsCard>
+
+            <AnalyticsCard className="px-6 py-7">
+              <h2 className="mb-7 flex items-center gap-3 text-[20px] font-bold text-[#101828]">
+                <span aria-hidden>⚡</span>
+                Daily Trio — This Week
+              </h2>
+
+              {[
+                { icon: '📚', title: 'Daily MCQ Challenge', subtitle: 'Polity, Economy, Geography', value: Math.min(activeStudyDays, 7), color: '#58BE87' },
+                { icon: '✍️', title: 'Daily Mains Challenge', subtitle: 'Answer Writing, AI Evaluated', value: Math.min(mains.totalAttempts ?? 0, 7), color: '#0E1830' },
+                { icon: '📰', title: 'Daily News Analysis', subtitle: 'The Hindu, Indian Express', value: 0, color: '#E8B84B' },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="mb-8 rounded-[10px] border border-[#E5E7EB] bg-white px-5 py-4 shadow-sm last:mb-0"
+                  style={{ boxShadow: '0px 2px 4px rgba(0,0,0,0.12)' }}
+                >
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[20px]" aria-hidden>{item.icon}</span>
+                      <div>
+                        <div className="text-[16px] font-bold text-[#101828]">{item.title}</div>
+                        <div className="mt-1 text-[12px] text-[#6A7282]">{item.subtitle}</div>
+                      </div>
+                    </div>
+                    <span className="text-[18px] text-[#99A1AF]">→</span>
+                  </div>
+                  <div className="grid grid-cols-[1fr_auto] items-center gap-6">
+                    <ProgressBar value={(item.value / 7) * 100} color={item.color} />
+                    <span className="text-[14px] font-bold text-[#101828]">{item.value}/7 days</span>
+                  </div>
+                </div>
+              ))}
+            </AnalyticsCard>
+          </div>
+
+          <SectionLabel>Recent Tests &amp; Achievements</SectionLabel>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <AnalyticsCard className="px-6 py-7">
+              <div className="mb-7 flex items-center justify-between gap-4">
+                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
+                  <span aria-hidden>🏆</span>
+                  Achievement Badges
+                </h2>
+                <div className="flex items-center gap-3">
+                  <span className="rounded-[4px] bg-[#E8B84B] px-2 py-1 text-[12px] font-semibold text-white">
+                    {earnedBadgeCount} Earned
+                  </span>
+                  <span className="text-[14px] text-[#4B5563]">All →</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {earnedBadges.map((badge) => (
+                  <div
+                    key={badge.title}
+                    className="rounded-[10px] border px-3 py-5 text-center"
+                    style={{
+                      borderColor: badge.earned ? '#F4D85A' : '#DDE8FF',
+                      background: badge.earned ? 'linear-gradient(180deg,#FFFCEA,#FFFFFF)' : '#F7F9FF',
+                      opacity: badge.earned ? 1 : 0.72,
+                    }}
+                  >
+                    <div className="mb-4 text-[26px]" aria-hidden>{badge.icon}</div>
+                    <div className="text-[12px] font-bold text-[#101828]">{badge.title}</div>
+                    <div className="mt-3 text-[10px]" style={{ color: badge.earned ? '#C9821F' : '#6A7282' }}>
+                      {badge.earned ? '✓ Earned' : 'Locked'}
+                    </div>
+                    <div className="mt-2 text-[10px] text-[#99A1AF]">{badge.note}</div>
+                  </div>
+                ))}
+              </div>
+            </AnalyticsCard>
+
+            <AnalyticsCard className="px-6 py-7">
+              <div className="mb-7 flex items-center justify-between gap-4">
+                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
+                  <span aria-hidden>🏅</span>
+                  Weekly Leaderboard
+                </h2>
+                <span className="text-[13px] font-semibold text-[#258F7D]">View All →</span>
+              </div>
+
+              {analyticsData?.leaderboard?.length ? (
+                <div className="space-y-3">
+                  {analyticsData.leaderboard.slice(0, 8).map((entry: any, index: number) => (
+                    <div key={entry.id ?? entry.name ?? index} className="flex items-center justify-between rounded-[8px] bg-[#F8FAFC] px-4 py-3">
+                      <div className="flex items-center gap-4">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4A7DFF] font-bold text-white">
+                          {index + 1}
+                        </span>
+                        <span className="font-semibold text-[#101828]">{entry.name}</span>
+                      </div>
+                      <span className="font-bold text-[#258F7D]">{entry.score}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-[10px] bg-[#F8FAFC] px-5 py-10 text-center">
+                  <div className="text-[15px] font-semibold text-[#101828]">No leaderboard API data yet</div>
+                  <p className="mx-auto mt-2 max-w-[360px] text-[13px] leading-5 text-[#6A7282]">
+                    This section is wired to `analyticsData.leaderboard` and will populate once the backend exposes weekly ranks.
+                  </p>
+                </div>
+              )}
+            </AnalyticsCard>
+          </div>
         </div>
       </div>
     </div>

@@ -24,7 +24,14 @@
       "Bash(choco:*)",
       "Bash(export PATH=\"/c/Program Files/nodejs:$PATH\")",
       "Bash(grep -r \"firstName\\\\|lastName\\\\|User interface\" /c/Users/mg875/Desktop/upsc_final/lib --include=*.ts --include=*.tsx)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(git pull:*)",
+      "Bash(git checkout:*)",
+      "Bash(git stash:*)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }
