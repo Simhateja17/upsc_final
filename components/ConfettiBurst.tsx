@@ -56,6 +56,7 @@ export default function ConfettiBurst({ active }: { active: boolean }) {
     const friction = 0.99;
 
     function animate() {
+      if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const elapsed = Date.now() - startTimeRef.current;

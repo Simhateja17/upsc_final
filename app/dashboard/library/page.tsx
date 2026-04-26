@@ -49,10 +49,10 @@ const features = [
 ];
 
 const heroStats = [
-  { number: '360', suffix: '+', label: 'Free PDFs' },
-  { number: '25', suffix: '+', label: 'PYQ-Backed Notes' },
-  { number: '1L', suffix: '+', label: 'Downloads' },
-  { number: '\u221E', suffix: '', label: 'Always Free' },
+  { number: '100', suffix: '+', label: 'FREE PDFs', numberColor: '#F5C75D' },
+  { number: '25', suffix: '+', label: 'PYQ-BACKED NOTES', numberColor: '#FF6B6B' },
+  { number: '1L', suffix: '+', label: 'DOWNLOADS', numberColor: '#10B981' },
+  { number: '\u221E', suffix: '', label: 'ALWAYS FREE', numberColor: '#FFFFFF' },
 ];
 
 const bottomStats = [
@@ -154,151 +154,171 @@ export default function LibraryPage() {
       {/* ============================================================ */}
       {/*  SECTION 1: HERO - Dark Navy with Grid Texture                 */}
       {/* ============================================================ */}
-      <div
-        className="flex flex-col items-center relative"
-        style={{
-          background: 'linear-gradient(180deg, #0E182D 0%, #17223E 100%)',
-          paddingTop: 'clamp(40px, 4vw, 64px)',
-          paddingBottom: 'clamp(40px, 4vw, 64px)',
-          marginBottom: 'clamp(40px, 4vw, 60px)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Grid texture overlay */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="flex flex-col items-center relative"
           style={{
-            opacity: 0.06,
-            backgroundImage:
-              'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
+            background: '#060C1C',
+            minHeight: 'clamp(320px, 28vw, 379px)',
+            paddingTop: 'clamp(24px, 2.5vw, 32px)',
+            paddingBottom: 'clamp(24px, 2.5vw, 32px)',
+            marginBottom: 'clamp(40px, 4vw, 60px)',
+            position: 'relative',
+            overflow: 'hidden',
           }}
-        />
-
-        {/* Decorative glow */}
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            width: '600px',
-            height: '600px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)',
-            top: '-200px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-          }}
-        />
-
-        <div className="relative z-10" style={{ maxWidth: 'clamp(960px, 75vw, 1200px)', padding: '0 clamp(16px, 2vw, 30px)', width: '100%' }}>
-          {/* Back to Dashboard */}
-          <button
-            onClick={() => window.history.back()}
-            className="font-arimo font-medium"
-            style={{
-              fontSize: 'clamp(12px, 1vw, 14px)',
-              color: '#94A3B8',
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              padding: '8px 16px',
-              cursor: 'pointer',
-              marginBottom: 'clamp(24px, 2.5vw, 36px)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            ← Back to Dashboard
-          </button>
-
-          {/* Badge pill */}
+        >
+          {/* Grid texture overlay */}
           <div
-            className="flex items-center gap-2 font-arimo font-semibold"
+            className="absolute inset-0 pointer-events-none"
             style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '26843500px',
-              padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.5vw, 20px)',
-              fontSize: 'clamp(11px, 0.9vw, 13px)',
-              color: '#F5C75D',
-              letterSpacing: '0.5px',
-              marginBottom: 'clamp(16px, 1.5vw, 24px)',
-              width: 'fit-content',
+              opacity: 0.06,
+              backgroundImage:
+                'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)',
+              backgroundSize: '40px 40px',
             }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#F5C75D" stroke="#F5C75D" strokeWidth="1" />
-            </svg>
-            SIMPLIFIED STUDY MATERIAL
-          </div>
+          />
 
-          {/* Main heading */}
-          <h1
-            className="font-arimo font-bold text-center"
-            style={{
-              fontSize: 'clamp(32px, 3.59vw, 48px)',
-              lineHeight: 'clamp(38px, 4.2vw, 56px)',
-              color: '#FFFFFF',
-              marginBottom: 'clamp(12px, 1vw, 16px)',
-            }}
-          >
-            Your Complete{' '}
-            <span className="font-tinos italic" style={{ color: '#F5C75D' }}>Library</span>
-            <br />
-            for UPSC Preparation
-          </h1>
-
-          {/* Description */}
-          <p
-            className="font-arimo text-center"
-            style={{
-              fontSize: 'clamp(14px, 1.2vw, 16px)',
-              lineHeight: 'clamp(22px, 2.1vw, 26px)',
-              color: '#94A3B8',
-              maxWidth: 'clamp(420px, 40vw, 560px)',
-              marginBottom: 'clamp(24px, 2.5vw, 32px)',
-              margin: '0 auto clamp(24px, 2.5vw, 32px)',
-            }}
-          >
-            Video lectures, PDFs, Data &amp; Stats PDFs, assignments &amp; MCQ collections. Best of teaches on YouTube, beautifully organized and simplified.
-          </p>
-
-          {/* Stats card */}
+          {/* Decorative glow */}
           <div
+            className="absolute pointer-events-none"
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '16px',
-              padding: 'clamp(16px, 1.5vw, 22px) clamp(12px, 1.2vw, 18px)',
-              width: '100%',
-              maxWidth: 'clamp(480px, 48vw, 580px)',
-              margin: '0 auto',
-              backdropFilter: 'blur(10px)',
+              width: '600px',
+              height: '600px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)',
+              top: '-200px',
+              left: '50%',
+              transform: 'translateX(-50%)',
             }}
-          >
-            <div className="flex items-center justify-between">
-              {heroStats.map((stat, idx) => (
-                <React.Fragment key={stat.label}>
-                  <div className="flex flex-col items-center">
-                    <div className="font-arimo font-bold" style={{ fontSize: 'clamp(18px, 1.8vw, 24px)', color: stat.label === 'Always Free' ? '#F5C75D' : '#FFFFFF', lineHeight: 1.2 }}>
-                      {stat.number}
-                      {stat.suffix && <span style={{ color: '#F5C75D' }}>{stat.suffix}</span>}
+          />
+
+          <div className="relative z-10 flex flex-col items-center" style={{ maxWidth: 'clamp(960px, 75vw, 1200px)', padding: '0 clamp(16px, 2vw, 30px)', width: '100%' }}>
+            {/* Back to Dashboard */}
+            <button
+              onClick={() => window.history.back()}
+              className="font-arimo font-medium"
+              style={{
+                fontSize: 'clamp(12px, 1vw, 14px)',
+                color: '#94A3B8',
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                marginBottom: 'clamp(16px, 1.5vw, 24px)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease',
+                alignSelf: 'flex-start',
+              }}
+            >
+              ← Back to Dashboard
+            </button>
+
+            {/* Badge pill */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: '26843500px',
+                padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.5vw, 20px)',
+                fontSize: 'clamp(11px, 0.9vw, 13px)',
+                color: '#F5C75D',
+                letterSpacing: '0.5px',
+                marginBottom: 'clamp(12px, 1vw, 16px)',
+                width: 'fit-content',
+              }}
+            >
+              <span style={{ fontSize: 'clamp(14px, 1.2vw, 16px)', marginRight: '6px' }}>{'\uD83D\uDCDA'}</span>
+              <span style={{ color: '#F5C75D', fontWeight: 600 }}>SIMPLIFIED</span>
+              <span
+                style={{
+                  background: '#F5A623',
+                  color: '#0E182D',
+                  borderRadius: '4px',
+                  padding: '2px 6px',
+                  fontSize: 'clamp(11px, 0.9vw, 13px)',
+                  fontWeight: 700,
+                  letterSpacing: '0.3px',
+                  margin: '0 6px',
+                }}
+              >
+                STUDY
+              </span>
+              <span style={{ color: '#F5C75D', fontWeight: 600 }}>MATERIAL</span>
+            </div>
+
+            {/* Main heading */}
+            <h1
+              className="text-center"
+              style={{
+                fontFamily: 'Tinos, serif',
+                fontWeight: 400,
+                fontSize: 'clamp(32px, 3.59vw, 48px)',
+                lineHeight: 'clamp(38px, 4.2vw, 56px)',
+                color: '#FFFFFF',
+                marginBottom: 'clamp(8px, 0.8vw, 12px)',
+              }}
+            >
+              Your Complete{' '}
+              <span style={{ fontFamily: 'Tinos, serif', fontStyle: 'italic', fontWeight: 400, color: '#F5C75D' }}>Library</span>
+              <br />
+              for UPSC Preparation
+            </h1>
+
+            {/* Description */}
+            <p
+              className="text-center"
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 400,
+                fontSize: 'clamp(13px, 1.1vw, 15px)',
+                lineHeight: 'clamp(20px, 1.9vw, 24px)',
+                color: '#64748B',
+                maxWidth: 'clamp(420px, 40vw, 560px)',
+                marginBottom: 'clamp(16px, 1.5vw, 24px)',
+              }}
+            >
+              Video lectures PDFs, Data &amp; Stats PDFs, assignments &amp; MCQ collections. Best of teaches on YouTube, beautifully organized and simplified.
+            </p>
+
+            {/* Stats card */}
+            <div
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '16px',
+                padding: 'clamp(12px, 1.2vw, 16px) clamp(10px, 1vw, 14px)',
+                width: '100%',
+                maxWidth: 'clamp(480px, 48vw, 580px)',
+                margin: '0 auto',
+                backdropFilter: 'blur(10px)',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                {heroStats.map((stat, idx) => (
+                  <React.Fragment key={stat.label}>
+                    <div className="flex flex-col items-center">
+                      <div className="font-arimo font-bold" style={{ fontSize: 'clamp(18px, 1.8vw, 24px)', color: stat.numberColor, lineHeight: 1.2 }}>
+                        {stat.number}
+                        {stat.suffix && <span style={{ color: stat.numberColor }}>{stat.suffix}</span>}
+                      </div>
+                      <div className="font-arimo" style={{ fontSize: 'clamp(8px, 0.65vw, 10px)', color: '#94A3B8', marginTop: '4px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                        {stat.label}
+                      </div>
                     </div>
-                    <div className="font-arimo" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: '#94A3B8', marginTop: '4px' }}>
-                      {stat.label}
-                    </div>
-                  </div>
-                  {idx < heroStats.length - 1 && (
-                    <div style={{ width: '1px', height: 'clamp(32px, 3vw, 44px)', background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
-                  )}
-                </React.Fragment>
-              ))}
+                    {idx < heroStats.length - 1 && (
+                      <div style={{ width: '1px', height: 'clamp(28px, 2.5vw, 36px)', background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
       {/* Centered content wrapper for bottom sections */}
       <div
@@ -842,12 +862,12 @@ export default function LibraryPage() {
         </div>
 
         {/* ============================================================ */}
-        {/*  SECTION 3: WHY RISE WITH JEET IAS BANNER                     */}
+        {/*  SECTION 3: WHY RISE WITH JEET BANNER                         */}
         {/* ============================================================ */}
         <div
           style={{
             borderRadius: '24px',
-            background: 'linear-gradient(90deg, #0F192F 0%, #17223F 100%)',
+            background: '#060C1C',
             padding: 'clamp(28px, 3vw, 40px) clamp(28px, 3vw, 44px)',
             display: 'flex',
             alignItems: 'center',
@@ -855,10 +875,17 @@ export default function LibraryPage() {
             gap: 'clamp(24px, 3vw, 40px)',
             marginBottom: 'clamp(40px, 4vw, 60px)',
             flexWrap: 'wrap' as const,
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
+          {/* Books stack image - top right */}
+          <div style={{ position: 'absolute', top: 'clamp(20px, 2vw, 28px)', right: 'clamp(140px, 15vw, 200px)', width: 'clamp(80px, 8vw, 120px)', height: 'clamp(60px, 6vw, 90px)', zIndex: 1 }}>
+            <img src="/books-stack.svg" alt="books" style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: 0.9 }} />
+          </div>
+
           {/* Left side */}
-          <div style={{ flex: 1, minWidth: 'clamp(280px, 40vw, 400px)' }}>
+          <div style={{ flex: 1, minWidth: 'clamp(280px, 40vw, 400px)', position: 'relative', zIndex: 1 }}>
             <div
               className="flex items-center gap-2 font-arimo font-bold"
               style={{
@@ -872,7 +899,7 @@ export default function LibraryPage() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#DBAC49" stroke="#DBAC49" strokeWidth="1" />
               </svg>
-              WHY RISE WITH JEET IAS
+              WHY RISE WITH JEET
             </div>
             <h3
               className="font-arimo font-bold"
@@ -894,7 +921,7 @@ export default function LibraryPage() {
                 marginBottom: 'clamp(12px, 1.2vw, 16px)',
               }}
             >
-              A <span style={{ color: '#FDC700' }}>system built to crack UPSC.</span>
+              A <span style={{ color: '#F5C75D' }}>system built to crack UPSC.</span>
             </h3>
             <p
               className="font-arimo"
@@ -905,42 +932,56 @@ export default function LibraryPage() {
                 maxWidth: 'clamp(360px, 36vw, 480px)',
               }}
             >
-              Every PDF is designed with one obsession &mdash; your selection. Here&apos;s what makes us different from every other resource out there.
+              Every PDF is designed with one obsession — your selection. Here&apos;s what makes us different from every other resource out there.
             </p>
           </div>
 
-          {/* Right side */}
-          <div className="flex flex-col items-center" style={{ flexShrink: 0 }}>
-            <div
-              className="font-arimo font-bold"
-              style={{
-                fontSize: 'clamp(36px, 3.6vw, 48px)',
-                color: '#C68A0B',
-                lineHeight: 1.1,
-              }}
-            >
-              94K+
+          {/* Right side - Stats */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(20px, 2vw, 28px)', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+            {/* Stats */}
+            <div className="flex flex-col items-center">
+              <div
+                className="font-arimo font-bold"
+                style={{
+                  fontSize: 'clamp(36px, 3.6vw, 48px)',
+                  color: '#F5C75D',
+                  lineHeight: 1.1,
+                }}
+              >
+                15K+
+              </div>
+              <div
+                className="font-arimo"
+                style={{
+                  fontSize: 'clamp(11px, 0.9vw, 13px)',
+                  color: '#94A3B8',
+                  textAlign: 'center',
+                  marginTop: 'clamp(4px, 0.4vw, 6px)',
+                  lineHeight: '1.4',
+                }}
+              >
+                Aspirants trust
+                <br />
+                Rise with Jeet
+              </div>
             </div>
-            <div
-              className="font-arimo"
-              style={{
-                fontSize: 'clamp(13px, 1.12vw, 15px)',
-                color: '#FFFFFF',
-                textAlign: 'center',
-                marginTop: 'clamp(4px, 0.4vw, 6px)',
-              }}
-            >
-              Aspirants trust
+          </div>
+
+          {/* Play button icon - bottom right */}
+          <div style={{ position: 'absolute', bottom: 'clamp(16px, 2vw, 24px)', right: 'clamp(16px, 2vw, 24px)', zIndex: 1 }}>
+            <div style={{ width: 'clamp(32px, 3vw, 40px)', height: 'clamp(32px, 3vw, 40px)', borderRadius: '50%', background: 'rgba(245, 199, 93, 0.15)', border: '1px solid rgba(245, 199, 93, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M8 5V19L19 12L8 5Z" fill="#F5C75D" />
+              </svg>
             </div>
-            <div
-              className="font-arimo font-bold"
-              style={{
-                fontSize: 'clamp(13px, 1.12vw, 15px)',
-                color: '#FFFFFF',
-                textAlign: 'center',
-              }}
-            >
-              Rise with Jeet IAS
+          </div>
+          
+          {/* Play button icon */}
+          <div style={{ position: 'absolute', bottom: 'clamp(16px, 2vw, 24px)', right: 'clamp(16px, 2vw, 24px)', zIndex: 1 }}>
+            <div style={{ width: 'clamp(32px, 3vw, 40px)', height: 'clamp(32px, 3vw, 40px)', borderRadius: '50%', background: 'rgba(245, 166, 35, 0.15)', border: '1px solid rgba(245, 166, 35, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M8 5v14l11-7z" fill="#F5A623" />
+              </svg>
             </div>
           </div>
         </div>
@@ -1259,6 +1300,5 @@ export default function LibraryPage() {
         </div>
         </div>
       </div>
-    </div>
   );
 }

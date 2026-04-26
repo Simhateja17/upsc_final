@@ -65,43 +65,6 @@ interface EnrolledItem {
   series: SeriesItem;
 }
 
-interface HeroActiveSeriesCard {
-  id: string;
-  title: string;
-  subtitle: string;
-  icon: string;
-  iconBg: string;
-  href: string;
-}
-
-const HERO_ICON_BG = ['#E9D4FF', '#B9F8CF', '#FCCEE8'];
-const HERO_FALLBACK_CARDS: HeroActiveSeriesCard[] = [
-  {
-    id: 'prelims-fallback',
-    title: 'Prelims Assault 2026',
-    subtitle: '0/20 tests done',
-    icon: '🏛️',
-    iconBg: '#E9D4FF',
-    href: '/dashboard/test-series',
-  },
-  {
-    id: 'current-affairs-fallback',
-    title: 'Current Affairs Radar',
-    subtitle: '0/16 tests done',
-    icon: '📰',
-    iconBg: '#B9F8CF',
-    href: '/dashboard/test-series',
-  },
-  {
-    id: 'mains-fallback',
-    title: 'Ink & Insight Series',
-    subtitle: '0/1 started',
-    icon: '✍️',
-    iconBg: '#FCCEE8',
-    href: '/dashboard/test-series',
-  },
-];
-
 export default function TestSeriesPage() {
   const [allSeries, setAllSeries] = useState<SeriesItem[]>([]);
   const [enrollments, setEnrollments] = useState<EnrolledItem[]>([]);
@@ -164,26 +127,6 @@ export default function TestSeriesPage() {
   // Non-enrolled series
   const exploreSeries = allSeries.filter((s) => !enrolledIds.has(s.id));
 
-  const heroActiveSeries: HeroActiveSeriesCard[] = (enrolledSeries.length > 0
-    ? enrolledSeries.slice(0, 3).map((s, index) => ({
-        id: s.id,
-        title: s.title,
-        subtitle: s.progress || `0/${s.totalTests} tests done`,
-        icon: seriesIcon(s.examMode, s.subject),
-        iconBg: HERO_ICON_BG[index % HERO_ICON_BG.length],
-        href: `/dashboard/test-series/${s.id}`,
-      }))
-    : allSeries.slice(0, 3).map((s, index) => ({
-        id: s.id,
-        title: s.title,
-        subtitle: `0/${s.totalTests} tests done`,
-        icon: seriesIcon(s.examMode, s.subject),
-        iconBg: HERO_ICON_BG[index % HERO_ICON_BG.length],
-        href: `/dashboard/test-series/${s.id}`,
-      })));
-
-  const activeSeriesCards = heroActiveSeries.length > 0 ? heroActiveSeries : HERO_FALLBACK_CARDS;
-
   return (
     <div
       style={{
@@ -198,99 +141,134 @@ export default function TestSeriesPage() {
           <div
             style={{
               width: '100%',
-              maxWidth: 1687,
-              margin: '0 auto',
-              padding: '35px 24px 48px',
+              maxWidth: '100%',
+              margin: 0,
+              padding: '0 0 48px',
               boxSizing: 'border-box',
             }}
           >
             {/* Hero */}
             <div
               style={{
+                position: 'relative',
                 width: '100%',
-                maxWidth: 1478,
-                minHeight: 252,
+                marginLeft: 0,
+                marginRight: 0,
+                marginTop: 0,
+                minHeight: 320,
                 marginBottom: 32,
-                borderRadius: 16,
-                background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
-                display: 'flex',
-                gap: 24,
-                padding: 24,
+                background: '#060C1C',
+                padding: '24px 24px 42px',
                 boxSizing: 'border-box',
-                marginLeft: 'auto',
-                marginRight: 'auto',
                 overflow: 'hidden',
               }}
             >
-              {/* Left */}
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
-                <div>
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundImage:
+                    'linear-gradient(rgba(66, 88, 128, 0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(66, 88, 128, 0.18) 1px, transparent 1px)',
+                  backgroundSize: '40px 40px',
+                  pointerEvents: 'none',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  pointerEvents: 'none',
+                  background:
+                    'radial-gradient(circle at 12% 38%, rgba(253, 199, 0, 0.16) 0%, transparent 36%), radial-gradient(circle at 92% 78%, rgba(59, 130, 246, 0.24) 0%, transparent 30%)',
+                }}
+              />
+              <div style={{ position: 'relative', zIndex: 1, maxWidth: 920, margin: '0 auto', textAlign: 'center', paddingTop: 8 }}>
+                {/* Badge pill */}
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '100px',
+                    padding: '6px 14px',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <img src="/lightning.png" alt="lightning" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
                   <span
-                    style={{
-                      display: 'inline-block',
-                      fontFamily: 'Inter',
-                      fontWeight: 600,
-                      fontSize: 14,
-                      lineHeight: '20px',
-                      color: '#FDC700',
-                      marginBottom: 8,
-                    }}
-                  >
-                    ⚡ TEST SERIES · ALL PROGRAMS
-                  </span>
-                  <h1
                     style={{
                       fontFamily: 'Inter',
                       fontWeight: 700,
-                      fontSize: 48,
-                      lineHeight: '48px',
-                      color: '#FFFFFF',
-                      margin: 0,
-                      marginBottom: 8,
+                      fontSize: '12px',
+                      lineHeight: '16px',
+                      color: '#081228',
+                      background: '#FDC700',
+                      padding: '4px 12px',
+                      borderRadius: '6px',
+                      letterSpacing: '0.3px',
                     }}
                   >
-                    Choose Your <span style={{ color: '#FDC700', fontStyle: 'italic' }}>Battle Plan.</span>
-                  </h1>
-                  <p
-                    style={{
-                      fontFamily: 'Inter',
-                      fontWeight: 400,
-                      fontSize: 14,
-                      lineHeight: '20px',
-                      color: '#D1D5DC',
-                      maxWidth: 655,
-                      margin: 0,
-                      marginBottom: 14,
-                    }}
-                  >
-                    From NCERT foundations to full Prelims war-room simulations — each series is crafted to mirror real UPSC patterns. Rise every day. Rise with Jeet.
-                  </p>
+                    TEST SERIES
+                  </span>
+                  <span style={{ color: '#FDC700', fontWeight: 700, fontSize: '12px', lineHeight: '16px', letterSpacing: '0.3px' }}>
+                    ALL PROGRAMS
+                  </span>
                 </div>
-                {/* Stats strip */}
+                <h1
+                  style={{
+                    fontFamily: 'Inter',
+                    fontWeight: 700,
+                    fontSize: '48px',
+                    lineHeight: '48px',
+                    color: '#FFFFFF',
+                    margin: 0,
+                    marginBottom: 14,
+                  }}
+                >
+                  Choose Your <span style={{ color: '#E8B84B', fontStyle: 'italic', fontWeight: 700 }}>Battle Plan.</span>
+                </h1>
+                <p
+                  style={{
+                    fontFamily: 'Inter',
+                    fontWeight: 500,
+                    fontSize: 14,
+                    lineHeight: '20px',
+                    color: '#6A7282',
+                    maxWidth: 1080,
+                    margin: '0 auto 30px',
+                  }}
+                >
+                  From NCERT foundations to full Prelims war-room simulations each series is crafted to mirror real UPSC patterns. Rise every day. Rise with Jeet.
+                </p>
                 {(() => {
                   const statCards = [
-                    { value: heroStats ? String(heroStats.activeSeries) : '847', label: 'Active', valueColor: '#D4AF37', width: 117.375 },
-                    { value: heroStats ? heroStats.totalStudents.toLocaleString('en-IN') : '1.2L+', label: 'Students', valueColor: '#00D492', width: 144.8 },
-                    { value: heroStats ? heroStats.testsTaken.toLocaleString('en-IN') + (heroStats.testsTaken > 0 ? '+' : '') : '42,980+', label: 'Tests Taken', valueColor: '#FFFFFF', width: 181.225 },
-                    { value: heroStats ? `${heroStats.successRate}%` : '68%', label: 'Success Rate', valueColor: '#FF8904', width: 160 },
-                    { value: '10', label: 'TESTS', valueColor: '#FFFFFF', labelWeight: 600, width: 107 },
+                    { value: heroStats ? String(heroStats.activeSeries) : '847', label: 'ACTIVE', valueColor: '#F5A623' },
+                    { value: heroStats ? heroStats.totalStudents.toLocaleString('en-IN') : '1.2L+', label: 'STUDENTS', valueColor: '#FB7185' },
+                    { value: heroStats ? heroStats.testsTaken.toLocaleString('en-IN') + (heroStats.testsTaken > 0 ? '+' : '') : '42,980+', label: 'TESTS TAKEN', valueColor: '#FFFFFF' },
+                    { value: heroStats ? `${heroStats.successRate}%` : '68%', label: 'SUCCESS RATE', valueColor: '#22C55E' },
                   ];
                   return (
-                    <div style={{ display: 'inline-flex', width: 'fit-content', maxWidth: '100%', borderRadius: 14, overflow: 'hidden', border: '0.8px solid #364153', flexShrink: 0 }}>
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        width: 'min(100%, 760px)',
+                        borderRadius: 16,
+                        overflow: 'hidden',
+                        border: '0.8px solid #2E3B55',
+                        background: 'rgba(21, 32, 54, 0.92)',
+                        flexWrap: 'wrap',
+                      }}
+                    >
                       {statCards.map((card, index) => (
                         <div
                           key={card.label}
                           style={{
-                            width: card.width,
-                            height: 101.5875,
-                            background: '#1C273B',
-                            borderTop: '0.8px solid #364153',
-                            padding: '24.8px 32.8px 0.8px',
-                            borderLeft: index === 0 ? undefined : '0.8px solid #364153',
-                            borderTopLeftRadius: index === 0 ? 14 : 0,
-                            borderBottomLeftRadius: index === 0 ? 14 : 0,
-                            borderTopRightRadius: index === statCards.length - 1 ? 14 : 0,
-                            borderBottomRightRadius: index === statCards.length - 1 ? 14 : 0,
+                            flex: '1 1 170px',
+                            minHeight: 88,
+                            padding: '14px 16px',
+                            borderLeft: index === 0 ? undefined : '0.8px solid #2E3B55',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
@@ -303,8 +281,8 @@ export default function TestSeriesPage() {
                             style={{
                               fontFamily: 'Inter',
                               fontWeight: 700,
-                              fontSize: index === statCards.length - 1 ? 36 : 30,
-                              lineHeight: index === statCards.length - 1 ? '40px' : '36px',
+                              fontSize: 40,
+                              lineHeight: '36px',
                               color: card.valueColor,
                             }}
                           >
@@ -313,13 +291,12 @@ export default function TestSeriesPage() {
                           <span
                             style={{
                               fontFamily: 'Inter',
-                              fontWeight: (card as { labelWeight?: number }).labelWeight ?? 400,
+                              fontWeight: 600,
                               fontSize: 12,
                               lineHeight: '16px',
-                              color: index === statCards.length - 1 ? '#99A1AF' : '#6A7282',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.3px',
-                              marginTop: 4,
+                              color: '#6A7282',
+                              letterSpacing: '0.5px',
+                              marginTop: 8,
                             }}
                           >
                             {card.label}
@@ -329,74 +306,6 @@ export default function TestSeriesPage() {
                     </div>
                   );
                 })()}
-              </div>
-              {/* Your Active Series */}
-              <div
-                style={{
-                  width: 256,
-                  minWidth: 256,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 16,
-                  marginTop: 2,
-                  paddingLeft: 16,
-                  borderLeft: '0.8px solid rgba(255,255,255,0.16)',
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: 'Inter',
-                    fontWeight: 600,
-                    fontSize: 12,
-                    lineHeight: '16px',
-                    color: '#FF8904',
-                    width: 'fit-content',
-                  }}
-                >
-                  YOUR ACTIVE SERIES
-                </span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {activeSeriesCards.map((s) => (
-                    <Link
-                      key={s.id}
-                      href={s.href}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        padding: '12px',
-                        borderRadius: 10,
-                        border: '0.8px solid rgba(255,255,255,0.2)',
-                        background: 'rgba(255,255,255,0.1)',
-                        borderTop: '0.8px solid rgba(255,255,255,0.2)',
-                        textDecoration: 'none',
-                        color: 'inherit',
-                        height: 61.5875,
-                        boxSizing: 'border-box',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 4,
-                          background: s.iconBg,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 18,
-                        }}
-                      >
-                        {s.icon}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</div>
-                        <div style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, lineHeight: '16px', color: '#99A1AF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.subtitle}</div>
-                      </div>
-                      <span style={{ fontFamily: 'Inter', fontSize: 16, lineHeight: '24px', color: '#99A1AF' }}>→</span>
-                    </Link>
-                  ))}
-                </div>
               </div>
             </div>
 
@@ -456,29 +365,6 @@ export default function TestSeriesPage() {
                     fontWeight: 600,
                     fontSize: 14,
                     lineHeight: '20px',
-                    color: '#364153',
-                    background: '#FFFFFF',
-                    border: '0.8px solid #E5E7EB',
-                    textDecoration: 'none',
-                  }}
-                >
-                  📊 My Progress
-                </Link>
-                <Link
-                  href="/dashboard/test-analytics"
-                  style={{
-                    height: 38,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    borderRadius: 10,
-                    padding: '8px 16px',
-                    boxSizing: 'border-box',
-                    fontFamily: 'Inter',
-                    fontWeight: 600,
-                    fontSize: 14,
-                    lineHeight: '20px',
                     color: '#0B1120',
                     background: 'linear-gradient(89.92deg, #F1A901 0.07%, #FD7302 99.93%)',
                     border: '0.8px solid #E5E7EB',
@@ -510,32 +396,6 @@ export default function TestSeriesPage() {
                 </div>
               ) : (
                 <>
-                  {/* Your Enrolled Series */}
-                  {enrolledSeries.length > 0 && (
-                    <div style={{ marginBottom: 32 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8, width: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                          <span aria-hidden="true" style={{ width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#F97316', fontSize: 18, lineHeight: '18px', flexShrink: 0 }}>🧡</span>
-                          <h2 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: '#101828', margin: 0, whiteSpace: 'nowrap' }}>
-                            Your Enrolled Series
-                          </h2>
-                        </div>
-                        <Link href="/dashboard/test-series" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px', color: '#155DFC', textDecoration: 'none' }}>View all →</Link>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 24, width: '100%' }}>
-                        {enrolledSeries.map((s) => (
-                          <ProgramCard
-                            key={s.id}
-                            series={s}
-                            isEnrolled
-                            enrolling={enrolling === s.id}
-                            onEnroll={() => handleEnroll(s.id)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Explore All Programs */}
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>

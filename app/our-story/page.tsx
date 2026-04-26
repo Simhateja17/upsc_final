@@ -18,7 +18,7 @@ export default function OurStoryPage() {
   // Extract all <style> blocks from <head>
   const styleMatches = html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi);
   let styles = '';
-  for (const match of styleMatches) {
+  for (const match of Array.from(styleMatches)) {
     styles += match[1];
   }
 

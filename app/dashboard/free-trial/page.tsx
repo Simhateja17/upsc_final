@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { pricingService } from '@/lib/services';
@@ -7,96 +7,142 @@ import { pricingService } from '@/lib/services';
 /*  Data                                                               */
 /* ------------------------------------------------------------------ */
 
-const heroPills = [
-  { label: 'End-to-End Guidance', emoji: '✅' },
-  { label: 'WhatsApp Access', emoji: '💬' },
-  { label: 'Personalized Strategy', emoji: '🎯' },
-  { label: "Mentees' Sample Plans", emoji: '👥' },
-  { label: 'Limited Seats', emoji: '🔒' },
-];
-
 const heroStats = [
-  { value: '94K+', label: 'Community' },
-  { value: '400+', label: 'Mentees' },
-  { value: '4.9', label: 'Rating' },
-  { value: 'Free', label: 'First Call', highlight: true },
+  { value: '15K+', label: 'COMMUNITY', color: '#F5C75D' },
+  { value: '400+', label: 'MENTEES', color: '#FB7185' },
+  { value: '4.9+', label: 'RATING', color: '#10B981' },
+  { value: '∞', label: 'ALWAYS FREE', color: '#FFFFFF' },
 ];
 
 const mentorTags = [
   { label: '✦ Solo Mentor', gold: true },
-  { label: 'UPSC Strategy' },
+  { label: 'Strategy & Planning' },
   { label: 'Answer Writing' },
+  { label: 'Prelims Optimisation' },
   { label: 'Interview Prep' },
-  { label: 'Mains GS I–IV' },
 ];
 
 const mentorStats = [
-  { value: '94K+', label: 'FOLLOWERS' },
+  { value: '15K+', label: 'FOLLOWERS' },
   { value: '280+', label: 'FREE PDFS' },
   { value: '3 yrs', label: 'TEACHING' },
 ];
 
-const PLAN_EMOJIS = ['🚀', '🔥', '🏆'];
+const PLAN_ICONS = ['🌱', '🔥', '🏆'];
 const PLAN_STYLES = [
-  { tagColor: '#155DFC', tagBg: '#DBEAFE', ctaStyle: 'dark' as const },
-  { tagColor: '#C68A0B', tagBg: '#FEF3C7', ctaStyle: 'gold' as const },
-  { tagColor: '#155DFC', tagBg: '#DBEAFE', ctaStyle: 'dark' as const },
+  { tagColor: '#155DFC', tagBg: '#DBEAFE', badgeBg: '#F1F5F9', badgeColor: '#64748B', ctaStyle: 'dark' as const },
+  { tagColor: '#C68A0B', tagBg: '#FEF3C7', badgeBg: '#FEF3C7', badgeColor: '#C68A0B', ctaStyle: 'gold' as const },
+  { tagColor: '#8B5CF6', tagBg: '#EDE9FE', badgeBg: '#F3F4F6', badgeColor: '#64748B', ctaStyle: 'dark' as const },
 ];
 
 function transformPlan(plan: any, index: number) {
   const style = PLAN_STYLES[index] ?? PLAN_STYLES[0];
   const priceNum = Number(plan.price);
+  
+  const planNames = ['Foundation Plan', 'Serious Attempt', 'Final Mile'];
+  const planSubtitles = [
+    "If your test is 12+ months away",
+    "If test is 6–12 months away",
+    "Interview & revision — highest intensity"
+  ];
+  
+  const planFeatures = [
+    [
+      { text: '4 sessions / month', badge: 'Core', subtext: 'One per week' },
+      { text: 'WhatsApp access', badge: 'Core', subtext: '48hr response' },
+      { text: 'Monthly study plan', badge: 'Core', subtext: 'Tailored to you' },
+      { text: 'Full resource access', badge: 'Core', subtext: 'PDFs & guides' },
+      { text: 'Monthly progress review', badge: null, subtext: null },
+    ],
+    [
+      { text: '8 sessions / month', badge: 'Core', subtext: 'Twice each week' },
+      { text: 'Answer writing reviews', badge: '2x/wk', subtext: 'Detailed, fast' },
+      { text: 'Mock test debriefs', badge: '2x/mo', subtext: 'After each mock' },
+      { text: 'Priority WhatsApp', badge: null, subtext: '24hr max reply' },
+      { text: 'Fortnightly study plans', badge: 'Core', subtext: null },
+      { text: 'Full resource access', badge: 'Done', subtext: null },
+    ],
+    [
+      { text: '12 sessions / month', badge: '3x/wk', subtext: '3 per week' },
+      { text: 'Unlimited answer reviews', badge: '24-48h', subtext: 'Fast' },
+      { text: 'Mock interview sessions', badge: '2x/mo', subtext: 'Tailored' },
+      { text: 'DAF analysis', badge: null, subtext: '+ topic cards' },
+      { text: '24/7 WhatsApp access', badge: 'Instant', subtext: null },
+      { text: 'Confidence coaching', badge: 'Daily', subtext: 'Mental' },
+    ],
+  ];
+  
+  const planTags = [
+    ['All materials', 'Flexible Pace', 'No Coaching'],
+    ['Answer + Mocks', 'Answer Writing', 'Mock Feedback'],
+    ['DAF Analysis', 'Mock Interview', '24/7 Access'],
+  ];
+  
+  const ctas = [
+    `Get Started → ₹${priceNum.toLocaleString('en-IN')}/mo →`,
+    `Enrol Now → ₹${priceNum.toLocaleString('en-IN')}/mo →`,
+    `Enrol Now → ₹${priceNum.toLocaleString('en-IN')}/mo →`,
+  ];
+  
+  const bottomNotes = [
+    null,
+    'Limited to 8 slots @ June batch',
+    'Spots close in free-call queue',
+  ];
+  
   return {
-    name: plan.name,
-    emoji: PLAN_EMOJIS[index] ?? '✨',
-    subtitle: plan.duration,
+    name: planNames[index] ?? plan.name,
+    icon: PLAN_ICONS[index] ?? '✨',
+    subtitle: planSubtitles[index] ?? plan.duration,
     price: `₹${priceNum.toLocaleString('en-IN')}`,
     period: '/per month',
     tagColor: plan.isPopular ? '#C68A0B' : style.tagColor,
     tagBg: plan.isPopular ? '#FEF3C7' : style.tagBg,
-    tags: (plan.features ?? []).slice(0, 3),
-    features: (plan.features ?? []).map((f: string) => ({ text: f, subtext: null, badge: null })),
-    cta: `Get Started → ₹${priceNum.toLocaleString('en-IN')} →`,
+    badgeBg: style.badgeBg,
+    badgeColor: style.badgeColor,
+    tags: planTags[index] ?? [],
+    features: planFeatures[index] ?? [],
+    cta: ctas[index] ?? `Get Started → ₹${priceNum.toLocaleString('en-IN')}/mo →`,
     ctaStyle: plan.isPopular ? 'gold' as const : style.ctaStyle,
     highlight: plan.isPopular ?? false,
-    note: null,
+    bottomNote: bottomNotes[index] ?? null,
   };
 }
 
 const whyFeatures = [
   {
-    emoji: '🗺️',
+    icon: '🎯',
     title: 'A Real Roadmap',
-    description: 'Not a generic PDF — a living plan built around your weak areas, your schedule, and your target year.',
+    description: 'A specific, tailored plan built on your stage, background, and timeline — not generic advice.',
   },
   {
-    emoji: '✍️',
+    icon: '✍️',
     title: 'Answer Writing That Improves',
-    description: 'Get line-by-line feedback on your Mains answers from someone who knows what examiners look for.',
+    description: "Jeet Sir's actual line-by-line reviews — not AI-generated nonsense. Real feedback, real improvement.",
   },
   {
-    emoji: '🎤',
+    icon: '🎤',
     title: 'Interview Stage Support',
-    description: 'Mock interviews, DAF analysis, and confidence-building — so you walk in ready, not nervous.',
+    description: 'DAF analysis, mock interviews, and confidence coaching — the stage most aspirants ignore.',
   },
   {
-    emoji: '💬',
+    icon: '💬',
     title: 'No Question Too Small',
-    description: 'WhatsApp access means you never stay stuck. Ask about sources, schedules, or strategy anytime.',
+    description: 'WhatsApp access means doubts don\'t pile up. A quick answer, prevents a derailed day.',
   },
   {
-    emoji: '📊',
+    icon: '📊',
     title: 'Accountability That Works',
-    description: 'Weekly check-ins, monthly reviews, and honest progress tracking that keeps you on course.',
+    description: 'Weekly check-ins and honest review. Knowing someone is watching makes you show up.',
   },
   {
-    emoji: '🔍',
+    icon: '🧠',
     title: 'Someone Spots Your Gaps',
-    description: 'A mentor who reads your answers and watches your pattern catches blind spots you can\'t see yourself.',
+    description: 'The biggest UPSC mistakes are invisible to the aspirant. Jeet Sir sees them — and fixes them.',
   },
 ];
 
-const TESTIMONIAL_COLORS = ['#155DFC', '#C68A0B', '#16A34A', '#8B5CF6', '#EF4444'];
+const TESTIMONIAL_COLORS = ['#16A34A', '#EA580C', '#2563EB'];
 
 function transformTestimonial(t: any, index: number) {
   const initials = t.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
@@ -138,12 +184,8 @@ const faqItems = [
 
 export default function FreeTrialPage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-
-  /* ---- API-backed state ---- */
   const [apiPlans, setApiPlans] = useState<any[] | null>(null);
   const [apiTestimonials, setApiTestimonials] = useState<any[] | null>(null);
-
-  /* ---- Booking modal state ---- */
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingName, setBookingName] = useState('');
   const [bookingEmail, setBookingEmail] = useState('');
@@ -153,7 +195,6 @@ export default function FreeTrialPage() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState('');
 
-  /* ---- Fetch plans & testimonials on mount ---- */
   useEffect(() => {
     pricingService.getPlans()
       .then((res: any) => {
@@ -170,7 +211,6 @@ export default function FreeTrialPage() {
       .catch(() => setApiTestimonials([]));
   }, []);
 
-  /* ---- Booking handler ---- */
   const handleBookCall = async () => {
     if (!bookingName.trim() || !bookingEmail.trim()) {
       setBookingError('Please provide your name and email.');
@@ -197,1441 +237,392 @@ export default function FreeTrialPage() {
   const displayTestimonials = (apiTestimonials ?? []).map(transformTestimonial);
 
   return (
-    <div style={{ background: '#F9FAFB', minHeight: '100vh' }}>
-      <div
-        style={{
-          maxWidth: 'clamp(960px, 75vw, 1200px)',
-          margin: '0 auto',
-          padding: 'clamp(32px, 4vw, 60px) clamp(16px, 2vw, 30px)',
-        }}
-      >
+    <div style={{ background: '#FFFFFF', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+      {/* ================================================================ */}
+      {/*  SECTION 1: HERO                                                  */}
+      {/* ================================================================ */}
+      <section style={{ background: '#070F24', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', left: '-10%', top: '-30%', width: '520px', height: '520px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(252,186,72,0.2) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', right: '-10%', bottom: '-30%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(23,91,226,0.2) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }} />
 
-        {/* ================================================================ */}
-        {/*  SECTION 1: HERO                                                  */}
-        {/* ================================================================ */}
-        <section style={{ textAlign: 'center', marginBottom: 'clamp(48px, 5vw, 80px)' }}>
-          {/* Gold label */}
-          <div
-            style={{
-              display: 'inline-block',
-              background: 'rgba(198, 138, 11, 0.08)',
-              border: '1px solid rgba(198, 138, 11, 0.25)',
-              borderRadius: '26843500px',
-              padding: 'clamp(6px, 0.5vw, 8px) clamp(14px, 1.2vw, 20px)',
-              fontSize: 'clamp(10px, 0.8vw, 12px)',
-              fontWeight: 700,
-              letterSpacing: '1.5px',
-              color: '#C68A0B',
-              textTransform: 'uppercase' as const,
-              marginBottom: 'clamp(16px, 1.5vw, 24px)',
-            }}
-            className="font-arimo"
-          >
-            ⚡ JEET · PERSONALIZED MENTORSHIP
+        <div style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 10 }}>
+          <button onClick={() => window.history.back()} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '999px', padding: '8px 16px', color: '#CBD5E1', fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', backdropFilter: 'blur(10px)', transition: 'all 0.2s ease', fontFamily: 'Inter, sans-serif' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#FFFFFF'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#CBD5E1'; }}>
+            ← Back to Dashboard
+          </button>
+        </div>
+
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '60px 24px 40px', position: 'relative', zIndex: 1, textAlign: 'center' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '100px', padding: '4px 6px 4px 14px', marginBottom: '24px' }}>
+            <img src="/lightning.png" alt="" style={{ width: '14px', height: '14px', objectFit: 'contain', marginRight: '8px' }} />
+            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', color: '#F5C75D', letterSpacing: '0.5px', textTransform: 'uppercase', paddingRight: '4px' }}>PERSONALIZED</span>
+            <span style={{ color: '#070F24', background: '#F5C75D', fontWeight: 700, fontSize: '11px', letterSpacing: '0.5px', textTransform: 'uppercase', padding: '3px 10px', borderRadius: '6px' }}>MENTORSHIP</span>
           </div>
 
-          {/* Heading */}
-          <h1
-            style={{
-              fontSize: 'clamp(32px, 3.5vw, 52px)',
-              fontWeight: 700,
-              color: '#101828',
-              lineHeight: 1.15,
-              marginBottom: 'clamp(16px, 1.5vw, 24px)',
-            }}
-            className="font-arimo"
-          >
+          <h1 style={{ fontFamily: 'Tinos, serif', fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: 400, color: '#FFFFFF', lineHeight: 1.1, marginBottom: '16px', letterSpacing: '-0.01em' }}>
             The guidance that turns<br />
-            <span className="font-tinos italic" style={{ color: '#C68A0B' }}>aspirants</span>{' '}
-            into officers.
+            <span style={{ fontFamily: 'Tinos, serif', fontStyle: 'italic', fontWeight: 400, color: '#F5C75D' }}>aspirants</span>{' '}into officers.
           </h1>
 
-          {/* Description */}
-          <p
-            style={{
-              fontSize: 'clamp(15px, 1.1vw, 18px)',
-              color: '#4A5565',
-              lineHeight: 1.7,
-              maxWidth: '560px',
-              margin: '0 auto',
-              marginBottom: 'clamp(24px, 2vw, 36px)',
-            }}
-            className="font-arimo"
-          >
-            1-on-1 sessions for 3–12 months — tailored to your stage &amp; your timeline.<br />
-            Mentored by Jeet Singh.
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 'clamp(14px, 1.2vw, 17px)', color: '#94A3B8', lineHeight: 1.6, maxWidth: '560px', margin: '0 auto 32px' }}>
+            1-on-1 sessions for 3-12 students, tailored to your stage &amp; your timeline.<br />Mentored by Abhijeet.
           </p>
 
-          {/* Feature pills */}
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap' as const,
-              justifyContent: 'center',
-              gap: 'clamp(8px, 0.7vw, 12px)',
-              marginBottom: 'clamp(28px, 2.5vw, 40px)',
-            }}
-          >
-            {heroPills.map((pill) => (
-              <div
-                key={pill.label}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: '#FFFFFF',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '26843500px',
-                  padding: 'clamp(8px, 0.6vw, 10px) clamp(14px, 1vw, 18px)',
-                  fontSize: 'clamp(12px, 0.85vw, 14px)',
-                  fontWeight: 500,
-                  color: '#374151',
-                }}
-                className="font-arimo"
-              >
-                <span>{pill.emoji}</span> {pill.label}
-              </div>
-            ))}
-          </div>
-
-          {/* Stats card */}
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'clamp(20px, 2.5vw, 40px)',
-              background: '#FFFFFF',
-              border: '1px solid #E5E7EB',
-              borderRadius: '16px',
-              padding: 'clamp(16px, 1.5vw, 24px) clamp(24px, 2.5vw, 40px)',
-              boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.06)',
-              flexWrap: 'wrap' as const,
-              justifyContent: 'center',
-            }}
-          >
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', overflow: 'hidden' }}>
             {heroStats.map((stat, i) => (
               <React.Fragment key={stat.label}>
-                {i > 0 && (
-                  <div style={{ width: '1px', height: '32px', background: '#E5E7EB' }} />
-                )}
-                <div style={{ textAlign: 'center' }}>
-                  <div
-                    style={{
-                      fontSize: 'clamp(20px, 1.6vw, 26px)',
-                      fontWeight: 700,
-                      color: stat.highlight ? '#C68A0B' : '#101828',
-                    }}
-                    className="font-arimo"
-                  >
-                    {stat.value}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 'clamp(11px, 0.75vw, 13px)',
-                      color: '#6A7282',
-                      fontWeight: 500,
-                      marginTop: '2px',
-                    }}
-                    className="font-arimo"
-                  >
-                    {stat.label}
-                  </div>
+                {i > 0 && <div style={{ width: '1px', height: '48px', background: 'rgba(255,255,255,0.08)' }} />}
+                <div style={{ textAlign: 'center', minWidth: 'clamp(90px, 12vw, 140px)', padding: '16px 20px' }}>
+                  <div style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', fontWeight: 700, color: stat.color, lineHeight: 1.1 }}>{stat.value}</div>
+                  <div style={{ fontSize: '10px', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '6px' }}>{stat.label}</div>
                 </div>
               </React.Fragment>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ================================================================ */}
-        {/*  SECTION 2: JEET SIR MENTOR CARD                                  */}
-        {/* ================================================================ */}
-        <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
-          <div
-            style={{
-              background: 'linear-gradient(135deg, #162456 0%, #0F172B 50%, #030712 100%)',
-              borderRadius: '24px',
-              padding: 'clamp(28px, 3vw, 44px)',
-              color: '#FFFFFF',
-            }}
-          >
-            {/* Top row */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                flexWrap: 'wrap' as const,
-                gap: 'clamp(20px, 2vw, 32px)',
-                marginBottom: 'clamp(24px, 2vw, 36px)',
-              }}
-            >
-              {/* Left: Avatar + info */}
-              <div style={{ flex: '1 1 400px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 1vw, 16px)', marginBottom: 'clamp(12px, 1vw, 16px)' }}>
-                  {/* Yellow "J" avatar */}
-                  <div
-                    style={{
-                      width: 'clamp(48px, 3.5vw, 56px)',
-                      height: 'clamp(48px, 3.5vw, 56px)',
-                      background: '#FDC700',
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 'clamp(22px, 1.8vw, 28px)',
-                      fontWeight: 700,
-                      color: '#101828',
-                    }}
-                    className="font-arimo"
-                  >
-                    J
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 'clamp(20px, 1.6vw, 26px)',
-                        fontWeight: 700,
-                      }}
-                      className="font-arimo"
-                    >
-                      Jeet Sir
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 'clamp(13px, 0.9vw, 15px)',
-                        color: '#94A3B8',
-                        marginTop: '2px',
-                      }}
-                      className="font-arimo"
-                    >
-                      UPSC Educator · YouTuber · Mentor
-                    </div>
-                  </div>
-                </div>
-
-                {/* Skill tags */}
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 'clamp(6px, 0.5vw, 8px)' }}>
-                  {mentorTags.map((tag) => (
-                    <span
-                      key={tag.label}
-                      style={{
-                        display: 'inline-block',
-                        padding: 'clamp(5px, 0.4vw, 7px) clamp(10px, 0.8vw, 14px)',
-                        borderRadius: '26843500px',
-                        fontSize: 'clamp(11px, 0.75vw, 13px)',
-                        fontWeight: 600,
-                        ...(tag.gold
-                          ? { background: 'rgba(253, 199, 0, 0.15)', color: '#FDC700', border: '1px solid rgba(253, 199, 0, 0.3)' }
-                          : { background: 'transparent', color: '#94A3B8', border: '1px solid #4A5565' }),
-                      }}
-                      className="font-arimo"
-                    >
-                      {tag.label}
-                    </span>
-                  ))}
+      {/* ================================================================ */}
+      {/*  SECTION 2: MENTOR CARD                                           */}
+      {/* ================================================================ */}
+      <section style={{ maxWidth: '1000px', margin: '24px auto 0', padding: '0 24px', position: 'relative', zIndex: 2 }}>
+        <div style={{ background: '#0A1128', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', padding: '24px', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+            <div style={{ flex: '1 1 400px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '14px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: 'linear-gradient(135deg, #FDC700 0%, #FF8A00 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0A1128', fontWeight: 700, fontSize: '22px', flexShrink: 0 }}>J</div>
+                <div>
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.2, marginBottom: '6px' }}>Abhijeet Sir</div>
+                  <div style={{ fontSize: '13px', color: '#97A6BE', lineHeight: 1.5, maxWidth: '460px' }}>UPSC educator &amp; full-time mentor. 15K+ follow his free YouTube content, a select few get direct, personalized guidance.</div>
                 </div>
               </div>
-
-              {/* Right: Stats panel */}
-              <div
-                style={{
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '16px',
-                  padding: 'clamp(16px, 1.5vw, 24px) clamp(20px, 2vw, 32px)',
-                  display: 'flex',
-                  gap: 'clamp(20px, 2.5vw, 40px)',
-                  flexWrap: 'wrap' as const,
-                }}
-              >
-                {mentorStats.map((stat, i) => (
-                  <React.Fragment key={stat.label}>
-                    {i > 0 && (
-                      <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }} />
-                    )}
-                    <div style={{ textAlign: 'center' }}>
-                      <div
-                        style={{
-                          fontSize: 'clamp(20px, 1.6vw, 26px)',
-                          fontWeight: 700,
-                          color: '#C68A0B',
-                        }}
-                        className="font-arimo"
-                      >
-                        {stat.value}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 'clamp(10px, 0.7vw, 12px)',
-                          fontWeight: 600,
-                          letterSpacing: '1px',
-                          color: '#94A3B8',
-                          marginTop: '4px',
-                        }}
-                        className="font-arimo"
-                      >
-                        {stat.label}
-                      </div>
-                    </div>
-                  </React.Fragment>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {mentorTags.map((tag) => (
+                  <span key={tag.label} style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, border: tag.gold ? '1px solid rgba(245,199,93,0.3)' : '1px solid rgba(255,255,255,0.1)', color: tag.gold ? '#F5C75D' : '#9AA8BE', background: tag.gold ? 'rgba(245,199,93,0.1)' : 'rgba(255,255,255,0.04)' }}>{tag.label}</span>
                 ))}
               </div>
             </div>
-
-            {/* Bottom bar */}
-            <div
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '14px',
-                padding: 'clamp(12px, 1vw, 16px) clamp(16px, 1.5vw, 24px)',
-                display: 'flex',
-                alignItems: 'center',
-                flexWrap: 'wrap' as const,
-                gap: 'clamp(12px, 1vw, 16px)',
-              }}
-            >
-              {/* Green dot + text */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 auto' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16A34A', flexShrink: 0 }} />
-                <span
-                  style={{
-                    fontSize: 'clamp(12px, 0.85vw, 14px)',
-                    color: '#FFFFFF',
-                    fontWeight: 500,
-                  }}
-                  className="font-arimo"
-                >
-                  Accepting mentees · Limited seats for June 2025 batch
-                </span>
-              </div>
-
-              {/* Pills */}
-              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 'clamp(6px, 0.5vw, 8px)' }}>
-                <span
-                  style={{
-                    padding: 'clamp(4px, 0.3vw, 6px) clamp(10px, 0.8vw, 14px)',
-                    borderRadius: '26843500px',
-                    fontSize: 'clamp(11px, 0.7vw, 12px)',
-                    fontWeight: 600,
-                    color: '#FDC700',
-                    border: '1px solid rgba(253, 199, 0, 0.3)',
-                  }}
-                  className="font-arimo"
-                >
-                  ✦ Only 4 seats left
-                </span>
-                <span
-                  style={{
-                    padding: 'clamp(4px, 0.3vw, 6px) clamp(10px, 0.8vw, 14px)',
-                    borderRadius: '26843500px',
-                    fontSize: 'clamp(11px, 0.7vw, 12px)',
-                    fontWeight: 500,
-                    color: '#94A3B8',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                  }}
-                  className="font-arimo"
-                >
-                  Next batch: June 1
-                </span>
-                <span
-                  style={{
-                    padding: 'clamp(4px, 0.3vw, 6px) clamp(10px, 0.8vw, 14px)',
-                    borderRadius: '26843500px',
-                    fontSize: 'clamp(11px, 0.7vw, 12px)',
-                    fontWeight: 500,
-                    color: '#94A3B8',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                  }}
-                  className="font-arimo"
-                >
-                  Sat &amp; Sun sessions
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ================================================================ */}
-        {/*  SECTION 3: PRICING                                               */}
-        {/* ================================================================ */}
-        <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
-          {/* Label */}
-          <div
-            style={{
-              textAlign: 'center',
-              marginBottom: 'clamp(12px, 1vw, 16px)',
-              fontSize: 'clamp(10px, 0.8vw, 12px)',
-              fontWeight: 700,
-              letterSpacing: '1.5px',
-              color: '#C68A0B',
-              textTransform: 'uppercase' as const,
-            }}
-            className="font-arimo"
-          >
-            🏆 CHOOSE YOUR PLAN
-          </div>
-
-          {/* Heading */}
-          <h2
-            style={{
-              textAlign: 'center',
-              fontSize: 'clamp(26px, 2.8vw, 40px)',
-              fontWeight: 700,
-              color: '#101828',
-              marginBottom: 'clamp(10px, 0.8vw, 14px)',
-            }}
-            className="font-arimo"
-          >
-            One program. Your entire journey.
-          </h2>
-
-          {/* Subheading */}
-          <p
-            style={{
-              textAlign: 'center',
-              fontSize: 'clamp(14px, 1vw, 16px)',
-              color: '#6A7282',
-              lineHeight: 1.6,
-              marginBottom: 'clamp(32px, 3vw, 48px)',
-            }}
-            className="font-arimo"
-          >
-            Pick the plan that matches your stage — or book a free call and let Jeet Sir recommend the right fit.
-          </p>
-
-          {/* 3-col flex */}
-          {apiPlans === null ? (
-            <div style={{ display: 'flex', gap: 'clamp(16px, 1.5vw, 24px)', justifyContent: 'center' }}>
-              {[0, 1, 2].map(i => (
-                <div key={i} style={{ flex: '1 1 280px', height: '480px', background: '#F3F4F6', borderRadius: '24px', animation: 'pulse 1.5s infinite' }} />
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+              {mentorStats.map((stat, i) => (
+                <React.Fragment key={stat.label}>
+                  {i > 0 && <div style={{ width: '1px', background: 'rgba(255,255,255,0.08)' }} />}
+                  <div style={{ minWidth: '100px', padding: '12px 16px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#F5C75D', lineHeight: 1.1 }}>{stat.value}</div>
+                    <div style={{ marginTop: '4px', fontSize: '10px', fontWeight: 600, color: '#7E8DA8', letterSpacing: '0.5px', textTransform: 'uppercase' }}>{stat.label}</div>
+                  </div>
+                </React.Fragment>
               ))}
             </div>
-          ) : displayPlans.length === 0 ? (
-            <p className="font-arimo text-center text-[#6B7280] py-12">No pricing plans available yet.</p>
-          ) : (
-          <div
-            style={{
-              display: 'flex',
-              gap: 'clamp(16px, 1.5vw, 24px)',
-              justifyContent: 'center',
-              alignItems: 'stretch',
-            }}
-          >
-            {displayPlans.map((plan) => (
-              <div
-                key={plan.name}
-                style={{
-                  background: '#FFFFFF',
-                  borderRadius: 'clamp(20px, 1.8vw, 24px)',
-                  border: plan.highlight ? '1.6px solid #C68A0B' : '1.6px solid #E5E7EB',
-                  padding: 'clamp(20px, 1.8vw, 28px)',
-                  display: 'flex',
-                  flexDirection: 'column' as const,
-                  flex: '1 1 clamp(280px, 25.6vw, 342px)',
-                  boxShadow: plan.highlight
-                    ? '0px 8px 10px -6px #FFEDD4, 0px 20px 25px -5px #FFEDD4'
-                    : '0px 1px 3px 0px rgba(0,0,0,0.06)',
-                  position: 'relative' as const,
-                }}
-              >
-                {/* Emoji */}
-                <div
-                  style={{
-                    fontSize: 'clamp(24px, 1.8vw, 30px)',
-                    marginBottom: 'clamp(8px, 0.6vw, 10px)',
-                  }}
-                >
-                  {plan.emoji}
-                </div>
-
-                {/* Plan name */}
-                <div
-                  style={{
-                    fontSize: 'clamp(18px, 1.4vw, 22px)',
-                    fontWeight: 700,
-                    color: '#101828',
-                    marginBottom: 'clamp(2px, 0.2vw, 4px)',
-                  }}
-                  className="font-arimo"
-                >
-                  {plan.name}
-                </div>
-
-                {/* Subtitle */}
-                <div
-                  style={{
-                    fontSize: 'clamp(12px, 0.85vw, 14px)',
-                    color: '#6A7282',
-                    marginBottom: 'clamp(14px, 1.2vw, 20px)',
-                  }}
-                  className="font-arimo"
-                >
-                  {plan.subtitle}
-                </div>
-
-                {/* Price */}
-                <div style={{ marginBottom: 'clamp(16px, 1.2vw, 20px)' }}>
-                  <span
-                    style={{
-                      fontSize: 'clamp(28px, 2.2vw, 36px)',
-                      fontWeight: 700,
-                      color: '#101828',
-                    }}
-                    className="font-arimo"
-                  >
-                    {plan.price}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 'clamp(13px, 0.9vw, 15px)',
-                      color: '#6A7282',
-                      fontWeight: 500,
-                      marginLeft: '4px',
-                    }}
-                    className="font-arimo"
-                  >
-                    {plan.period}
-                  </span>
-                </div>
-
-                {/* Tags */}
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '6px', marginBottom: 'clamp(18px, 1.4vw, 24px)' }}>
-                  {plan.tags.map((tag: string) => (
-                    <span
-                      key={tag}
-                      style={{
-                        padding: 'clamp(3px, 0.25vw, 5px) clamp(8px, 0.7vw, 12px)',
-                        borderRadius: '26843500px',
-                        fontSize: 'clamp(10px, 0.7vw, 12px)',
-                        fontWeight: 600,
-                        color: plan.tagColor,
-                        background: plan.tagBg,
-                      }}
-                      className="font-arimo"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Divider */}
-                <div style={{ height: '1px', background: '#E5E7EB', marginBottom: 'clamp(18px, 1.4vw, 24px)' }} />
-
-                {/* Features */}
-                <div style={{ flex: 1, marginBottom: 'clamp(20px, 1.5vw, 28px)' }}>
-                  {plan.features.map((feat: any) => (
-                    <div
-                      key={feat.text}
-                      style={{
-                        marginBottom: 'clamp(12px, 1vw, 16px)',
-                      }}
-                      className="font-arimo"
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          fontSize: 'clamp(13px, 0.9vw, 15px)',
-                          color: '#374151',
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        <span style={{ color: '#16A34A', fontWeight: 700, flexShrink: 0 }}>✓</span>
-                        <span style={{ flex: 1 }}>{feat.text}</span>
-                        {feat.badge && (
-                          <span
-                            style={{
-                              padding: '1px 8px',
-                              borderRadius: '26843500px',
-                              fontSize: 'clamp(9px, 0.6vw, 10px)',
-                              fontWeight: 700,
-                              color: plan.tagColor,
-                              background: plan.tagBg,
-                              whiteSpace: 'nowrap' as const,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {feat.badge}
-                          </span>
-                        )}
-                      </div>
-                      {feat.subtext && (
-                        <div
-                          style={{
-                            fontSize: 'clamp(11px, 0.75vw, 12px)',
-                            color: '#9CA3AF',
-                            marginLeft: 'calc(8px + clamp(13px, 0.9vw, 15px))',
-                            marginTop: '2px',
-                          }}
-                        >
-                          {feat.subtext}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* CTA */}
-                <button
-                  style={{
-                    width: '100%',
-                    padding: 'clamp(12px, 1vw, 16px)',
-                    borderRadius: 'clamp(10px, 0.9vw, 12px)',
-                    border: 'none',
-                    fontSize: 'clamp(14px, 1vw, 16px)',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    ...(plan.ctaStyle === 'gold'
-                      ? { background: '#FDC700', color: '#101828' }
-                      : { background: '#101828', color: '#FFFFFF' }),
-                  }}
-                  className="font-arimo"
-                >
-                  {plan.cta}
-                </button>
-
-                {/* Note */}
-                {plan.note && (
-                  <div
-                    style={{
-                      textAlign: 'center',
-                      fontSize: 'clamp(11px, 0.7vw, 12px)',
-                      color: plan.highlight ? '#C68A0B' : '#155DFC',
-                      marginTop: 'clamp(8px, 0.6vw, 12px)',
-                      fontWeight: 500,
-                    }}
-                    className="font-arimo"
-                  >
-                    {plan.note}
-                  </div>
-                )}
-              </div>
-            ))}
           </div>
-          )}
+          <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981' }} />
+              <span style={{ fontSize: '12px', color: '#B5C0D2', fontWeight: 500 }}>Accepting mentees · Limited seats for June 2025 batch</span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <span style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, color: '#F5C75D', background: 'rgba(245,199,93,0.1)', border: '1px solid rgba(245,199,93,0.2)' }}>✦ Only 4 seats left</span>
+              <span style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 500, color: '#9AA8BE', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>Next batch: June 1</span>
+              <span style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 500, color: '#9AA8BE', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>Sat &amp; Sun sessions</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          {/* Below pricing: links */}
-          <div
-            style={{
-              textAlign: 'center',
-              marginTop: 'clamp(24px, 2vw, 36px)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              flexWrap: 'wrap' as const,
-              gap: 'clamp(12px, 1.5vw, 24px)',
-            }}
-          >
-            <span
-              style={{
-                fontSize: 'clamp(13px, 0.9vw, 15px)',
-                color: '#6A7282',
-              }}
-              className="font-arimo"
-            >
-              Still deciding?
-            </span>
-            <button
-              style={{
-                padding: 'clamp(8px, 0.6vw, 10px) clamp(16px, 1.2vw, 22px)',
-                borderRadius: '10px',
-                border: 'none',
-                background: '#101828',
-                color: '#FFFFFF',
-                fontSize: 'clamp(13px, 0.9vw, 15px)',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-              className="font-arimo"
-            >
-              Compare All Plans →
-            </button>
-            <button
-              onClick={() => { setBookingSuccess(false); setBookingError(''); setShowBookingModal(true); }}
-              style={{
-                padding: 'clamp(8px, 0.6vw, 10px) clamp(16px, 1.2vw, 22px)',
-                borderRadius: '10px',
-                border: '1.5px solid #C68A0B',
-                background: 'transparent',
-                color: '#C68A0B',
-                fontSize: 'clamp(13px, 0.9vw, 15px)',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-              className="font-arimo"
-            >
-              🤙 Free Discovery Call
+      {/* ================================================================ */}
+      {/*  SECTION 3: PRICING                                               */}
+      {/* ================================================================ */}
+      <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '48px 24px 32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', color: '#C68A0B', textTransform: 'uppercase', marginBottom: '12px' }}>💡 CHOOSE YOUR PLAN</div>
+          <h2 style={{ fontSize: 'clamp(24px, 3vw, 36px)', fontWeight: 700, color: '#0F172B', marginBottom: '12px' }}>One program. Your entire journey.</h2>
+          <p style={{ fontSize: '15px', color: '#64748B', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto' }}>Pick the plan that matches your stage — or book a free call and let Abhijeet Sir recommend the right fit.</p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          {/* Foundation Plan */}
+          <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E5E7EB', padding: '28px', display: 'flex', flexDirection: 'column', flex: '1 1 300px', maxWidth: '360px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '20px' }}>🌱</span>
+              <div style={{ fontSize: '18px', fontWeight: 700, color: '#0F172B' }}>Foundation Plan</div>
+            </div>
+            <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '16px' }}>If your test is 12+ months away</div>
+            <div style={{ marginBottom: '16px' }}>
+              <span style={{ fontSize: '36px', fontWeight: 700, color: '#0F172B' }}>₹4,999</span>
+              <span style={{ fontSize: '14px', color: '#94A3B8', fontWeight: 500, marginLeft: '4px' }}>/per month</span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '20px' }}>
+              <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, color: '#155DFC', background: '#DBEAFE' }}>All materials</span>
+              <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, color: '#155DFC', background: '#DBEAFE' }}>Flexible Pace</span>
+              <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, color: '#155DFC', background: '#DBEAFE' }}>No Coaching</span>
+            </div>
+            <div style={{ height: '1px', background: '#F1F5F9', marginBottom: '20px' }} />
+            <div style={{ flex: 1, marginBottom: '24px' }}>
+              {[
+                { text: '4 sessions / month', badge: 'Core', subtext: 'One per week' },
+                { text: 'WhatsApp access', badge: 'Core', subtext: '48hr response' },
+                { text: 'Monthly study plan', badge: 'Core', subtext: 'Tailored to you' },
+                { text: 'Full resource access', badge: 'Core', subtext: 'PDFs & guides' },
+                { text: 'Monthly progress review', badge: null, subtext: null },
+              ].map((feat, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '12px' }}>
+                  <span style={{ color: '#CBD5E1', fontWeight: 700, flexShrink: 0, fontSize: '14px', marginTop: '1px' }}>✓</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '2px' }}>
+                      <span style={{ fontSize: '13px', color: '#334155', lineHeight: 1.5, fontWeight: 500 }}>{feat.text}</span>
+                      {feat.badge && <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, color: '#64748B', background: '#F1F5F9' }}>{feat.badge}</span>}
+                    </div>
+                    {feat.subtext && <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: 1.4 }}>{feat.subtext}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '14px', fontWeight: 700, cursor: 'pointer', background: '#0F172B', color: '#FFFFFF' }}>Get Started → ₹4,999/mo →</button>
+          </div>
+
+          {/* Serious Attempt */}
+          <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '2px solid #FDC700', padding: '28px', display: 'flex', flexDirection: 'column', flex: '1 1 300px', maxWidth: '360px', boxShadow: '0 4px 24px rgba(253,199,0,0.12)', position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '20px' }}>🔥</span>
+              <div style={{ fontSize: '18px', fontWeight: 700, color: '#0F172B' }}>Serious Attempt</div>
+            </div>
+            <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '16px' }}>If test is 6–12 months away</div>
+            <div style={{ marginBottom: '16px' }}>
+              <span style={{ fontSize: '36px', fontWeight: 700, color: '#0F172B' }}>₹8,999</span>
+              <span style={{ fontSize: '14px', color: '#94A3B8', fontWeight: 500, marginLeft: '4px' }}>/per month</span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '20px' }}>
+              <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, color: '#C68A0B', background: '#FEF3C7' }}>Answer + Mocks</span>
+              <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, color: '#C68A0B', background: '#FEF3C7' }}>Answer Writing</span>
+              <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, color: '#C68A0B', background: '#FEF3C7' }}>Mock Feedback</span>
+            </div>
+            <div style={{ height: '1px', background: '#F1F5F9', marginBottom: '20px' }} />
+            <div style={{ flex: 1, marginBottom: '24px' }}>
+              {[
+                { text: '8 sessions / month', badge: 'Core', subtext: 'Twice each week' },
+                { text: 'Answer writing reviews', badge: '2x/wk', subtext: 'Detailed, fast' },
+                { text: 'Mock test debriefs', badge: '2x/mo', subtext: 'After each mock' },
+                { text: 'Priority WhatsApp', badge: null, subtext: '24hr max reply' },
+                { text: 'Fortnightly study plans', badge: 'Core', subtext: null },
+                { text: 'Full resource access', badge: 'Done', subtext: null },
+              ].map((feat, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '12px' }}>
+                  <span style={{ color: '#F5C75D', fontWeight: 700, flexShrink: 0, fontSize: '14px', marginTop: '1px' }}>✓</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '2px' }}>
+                      <span style={{ fontSize: '13px', color: '#334155', lineHeight: 1.5, fontWeight: 500 }}>{feat.text}</span>
+                      {feat.badge && <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, color: '#C68A0B', background: '#FEF3C7' }}>{feat.badge}</span>}
+                    </div>
+                    {feat.subtext && <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: 1.4 }}>{feat.subtext}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '14px', fontWeight: 700, cursor: 'pointer', background: 'linear-gradient(135deg, #FDC700 0%, #EAB308 100%)', color: '#070F24' }}>Enrol Now → ₹8,999/mo →</button>
+            <div style={{ textAlign: 'center', fontSize: '11px', color: '#C68A0B', marginTop: '10px', fontWeight: 500 }}>Limited to 8 slots @ June batch</div>
+          </div>
+
+          {/* Final Mile */}
+          <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E5E7EB', padding: '28px', display: 'flex', flexDirection: 'column', flex: '1 1 300px', maxWidth: '360px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '20px' }}>🏆</span>
+              <div style={{ fontSize: '18px', fontWeight: 700, color: '#0F172B' }}>Final Mile</div>
+            </div>
+            <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '16px' }}>Interview & revision - highest intensity</div>
+            <div style={{ marginBottom: '16px' }}>
+              <span style={{ fontSize: '36px', fontWeight: 700, color: '#0F172B' }}>₹14,999</span>
+              <span style={{ fontSize: '14px', color: '#94A3B8', fontWeight: 500, marginLeft: '4px' }}>/per month</span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '20px' }}>
+              <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, color: '#8B5CF6', background: '#EDE9FE' }}>DAF Analysis</span>
+              <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, color: '#8B5CF6', background: '#EDE9FE' }}>Mock Interview</span>
+              <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, color: '#8B5CF6', background: '#EDE9FE' }}>24/7 Access</span>
+            </div>
+            <div style={{ height: '1px', background: '#F1F5F9', marginBottom: '20px' }} />
+            <div style={{ flex: 1, marginBottom: '24px' }}>
+              {[
+                { text: '12 sessions / month', badge: '3x/wk', subtext: '3 per week' },
+                { text: 'Unlimited answer reviews', badge: '24-48h', subtext: 'Fast' },
+                { text: 'Mock interview sessions', badge: '2x/mo', subtext: 'Tailored' },
+                { text: 'DAF analysis', badge: null, subtext: '+ topic cards' },
+                { text: '24/7 WhatsApp access', badge: 'Instant', subtext: null },
+                { text: 'Confidence coaching', badge: 'Daily', subtext: 'Mental' },
+              ].map((feat, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '12px' }}>
+                  <span style={{ color: '#CBD5E1', fontWeight: 700, flexShrink: 0, fontSize: '14px', marginTop: '1px' }}>✓</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '2px' }}>
+                      <span style={{ fontSize: '13px', color: '#334155', lineHeight: 1.5, fontWeight: 500 }}>{feat.text}</span>
+                      {feat.badge && <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, color: '#64748B', background: '#F1F5F9' }}>{feat.badge}</span>}
+                    </div>
+                    {feat.subtext && <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: 1.4 }}>{feat.subtext}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '14px', fontWeight: 700, cursor: 'pointer', background: '#0F172B', color: '#FFFFFF' }}>Enrol Now → ₹14,999/mo →</button>
+            <div style={{ textAlign: 'center', fontSize: '11px', color: '#8B5CF6', marginTop: '10px', fontWeight: 500 }}>Spots close in free-call queue</div>
+          </div>
+        </div>
+
+        {/* Still deciding */}
+        <div style={{ textAlign: 'center', marginTop: '32px' }}>
+          <div style={{ fontSize: '14px', color: '#64748B', marginBottom: '16px' }}>Still deciding?</div>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button style={{ padding: '12px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#0F172B', color: '#FFFFFF', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Compare All Plans →</button>
+            <button onClick={() => { setBookingSuccess(false); setBookingError(''); setShowBookingModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#FFFFFF', color: '#0F172B', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontSize: '10px', fontWeight: 700 }}>P</div>
+              Free Discovery Call
             </button>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ================================================================ */}
-        {/*  SECTION 4: WHY MENTORSHIP WORKS + FEATURE CARDS                  */}
-        {/* ================================================================ */}
-        <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
-          {/* Dark banner */}
-          <div
-            style={{
-              background: 'linear-gradient(135deg, #162456 0%, #0F172B 50%, #030712 100%)',
-              borderRadius: '24px',
-              padding: 'clamp(28px, 3vw, 44px)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap' as const,
-              gap: 'clamp(20px, 2vw, 32px)',
-              marginBottom: 'clamp(28px, 2.5vw, 40px)',
-            }}
-          >
-            <div style={{ flex: '1 1 500px' }}>
-              {/* Gold label */}
-              <div
-                style={{
-                  fontSize: 'clamp(10px, 0.8vw, 12px)',
-                  fontWeight: 700,
-                  letterSpacing: '1.5px',
-                  color: '#C68A0B',
-                  textTransform: 'uppercase' as const,
-                  marginBottom: 'clamp(12px, 1vw, 16px)',
-                }}
-                className="font-arimo"
-              >
-                ★ WHY{' '}
-                <span style={{ background: '#C68A0B', color: '#0F172B', padding: '1px 5px', borderRadius: '3px' }}>MENTORSHIP</span>
-                {' '}WORKS
-              </div>
+      {/* ================================================================ */}
+      {/*  SECTION 4: WHY MENTORSHIP WORKS                                  */}
+      {/* ================================================================ */}
+      <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px 48px' }}>
+        <div style={{ background: '#0A1128', borderRadius: '20px', padding: '36px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px', marginBottom: '32px' }}>
+          <div style={{ flex: '1 1 400px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', color: '#F5C75D', textTransform: 'uppercase', marginBottom: '12px' }}>★ WHY MENTORSHIP WORKS</div>
+            <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 32px)', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.3, marginBottom: '12px' }}>A coach who knows you<br />beats a <span style={{ color: '#F5C75D' }}>course that doesn't.</span></h2>
+            <p style={{ fontSize: '14px', color: '#94A3B8', lineHeight: 1.6, maxWidth: '440px' }}>UPSC prep is personal. Abhijeet Sir mentorship is built around you, not a batch schedule.</p>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 'clamp(48px, 5vw, 64px)', fontWeight: 700, color: '#F5C75D', lineHeight: 1 }}>1-on-1</div>
+            <div style={{ fontSize: '13px', color: '#94A3B8', fontWeight: 500, marginTop: '8px' }}>Utterly personal.<br />Never generic.</div>
+          </div>
+        </div>
 
-              {/* Heading */}
-              <h2
-                style={{
-                  fontSize: 'clamp(24px, 2.4vw, 36px)',
-                  fontWeight: 700,
-                  color: '#FFFFFF',
-                  lineHeight: 1.25,
-                  marginBottom: 'clamp(12px, 1vw, 16px)',
-                }}
-                className="font-arimo"
-              >
-                A coach who knows you<br />beats a{' '}
-                <span style={{ color: '#C68A0B' }}>
-                  course that doesn&apos;t.
-                </span>
-              </h2>
-
-              {/* Description */}
-              <p
-                style={{
-                  fontSize: 'clamp(14px, 1vw, 16px)',
-                  color: '#94A3B8',
-                  lineHeight: 1.7,
-                  maxWidth: '480px',
-                }}
-                className="font-arimo"
-              >
-                UPSC prep is personal. Jeet Sir&apos;s{' '}
-                <span style={{ background: '#C68A0B', color: '#0F172B', padding: '1px 5px', borderRadius: '3px', fontWeight: 600 }}>mentorship</span>
-                {' '}is built around you — not a batch schedule.
-              </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+          {whyFeatures.map((feat) => (
+            <div key={feat.title} style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div style={{ fontSize: '28px', marginBottom: '12px' }}>{feat.icon}</div>
+              <div style={{ fontSize: '16px', fontWeight: 700, color: '#0F172B', marginBottom: '8px' }}>{feat.title}</div>
+              <div style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.6 }}>{feat.description}</div>
             </div>
+          ))}
+        </div>
+      </section>
 
-            {/* Right side: large 1-on-1 text */}
-            <div style={{ textAlign: 'center', flex: '0 0 auto' }}>
-              <div
-                style={{
-                  fontSize: 'clamp(48px, 5vw, 72px)',
-                  fontWeight: 700,
-                  color: '#C68A0B',
-                  lineHeight: 1,
-                }}
-                className="font-arimo"
-              >
-                1-on-1
-              </div>
-              <div
-                style={{
-                  fontSize: 'clamp(13px, 0.9vw, 15px)',
-                  color: '#94A3B8',
-                  fontWeight: 500,
-                  marginTop: '8px',
-                }}
-                className="font-arimo"
-              >
-                Utterly personal.<br />Never generic.
+      {/* ================================================================ */}
+      {/*  SECTION 5: TESTIMONIALS                                          */}
+      {/* ================================================================ */}
+      <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px 48px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 32px)', fontWeight: 700, color: '#0F172B', marginBottom: '8px' }}>What UPSC Aspirants Say</h2>
+          <p style={{ fontSize: '14px', color: '#64748B' }}>From Jeet Sir's Mentees</p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+          {/* Hardcoded testimonials matching Figma */}
+          {[
+            {
+              initials: 'PR',
+              name: 'Priya Rajan',
+              credential: 'UPSC Prelims 2024 Cleared · Delhi · Foundation',
+              quote: "I was stuck for 2 years going in circles. One month with Jeet Sir made me study with a plan that actually made sense for my situation. Cleared Prelims 2024.",
+              color: '#16A34A',
+            },
+            {
+              initials: 'AK',
+              name: 'Ankit Kumar',
+              credential: 'UPSC Mains 2024 · Bihar · Serious Attempt Plan',
+              quote: "The answer writing feedback was the game-changer. My GS-II score jumped significantly. Jeet Sir marks exactly where you're losing marks — not vaguely.",
+              color: '#EA580C',
+            },
+            {
+              initials: 'SM',
+              name: 'Sneha Mishra',
+              credential: 'UPSC Interview Stage 2024 · MP · Final Mile Plan',
+              quote: "The mock interview sessions gave me confidence I didn't have. Jeet Sir's DAF analysis was so thorough — half the board questions I'd already answered in our mocks.",
+              color: '#2563EB',
+            },
+          ].map((t, idx) => (
+            <div key={idx} style={{ background: '#FEFCE8', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '28px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div style={{ fontSize: '16px', marginBottom: '14px', color: '#FDC700', letterSpacing: '2px' }}>{'★'.repeat(5)}</div>
+              <p style={{ fontSize: '13px', color: '#374151', lineHeight: 1.7, marginBottom: '20px', minHeight: '80px' }}>&ldquo;{t.quote}&rdquo;</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: t.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#FFFFFF', flexShrink: 0 }}>{t.initials}</div>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172B' }}>{t.name}</div>
+                  <div style={{ fontSize: '11px', color: '#64748B', lineHeight: 1.4 }}>{t.credential}</div>
+                </div>
               </div>
             </div>
-          </div>
+          ))}
+        </div>
+      </section>
 
-          {/* 6 feature cards (3x2 grid) */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 'clamp(16px, 1.5vw, 24px)',
-            }}
-          >
-            {whyFeatures.map((feat) => (
-              <div
-                key={feat.title}
-                style={{
-                  background: '#FFFFFF',
-                  borderRadius: '16px',
-                  border: '0.8px solid #E5E7EB',
-                  padding: 'clamp(20px, 1.8vw, 28px)',
-                  boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.06)',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 'clamp(28px, 2.2vw, 36px)',
-                    marginBottom: 'clamp(10px, 0.8vw, 14px)',
-                  }}
-                >
-                  {feat.emoji}
-                </div>
-                <div
-                  style={{
-                    fontSize: 'clamp(15px, 1.1vw, 18px)',
-                    fontWeight: 700,
-                    color: '#101828',
-                    marginBottom: 'clamp(6px, 0.5vw, 8px)',
-                  }}
-                  className="font-arimo"
-                >
-                  {feat.title}
-                </div>
-                <div
-                  style={{
-                    fontSize: 'clamp(13px, 0.85vw, 14px)',
-                    color: '#4A5565',
-                    lineHeight: 1.65,
-                  }}
-                  className="font-arimo"
-                >
-                  {feat.description}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ================================================================ */}
-        {/*  SECTION 5: TESTIMONIALS                                          */}
-        {/* ================================================================ */}
-        <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
-          <div style={{ textAlign: 'center', marginBottom: 'clamp(28px, 2.5vw, 40px)' }}>
-            <h2
-              style={{
-                fontSize: 'clamp(26px, 2.8vw, 40px)',
-                fontWeight: 700,
-                color: '#101828',
-                marginBottom: 'clamp(6px, 0.5vw, 8px)',
-              }}
-              className="font-arimo"
-            >
-              What UPSC Aspirants Say
-            </h2>
-            <p
-              style={{
-                fontSize: 'clamp(14px, 1vw, 16px)',
-                color: '#6A7282',
-              }}
-              className="font-arimo"
-            >
-              From Jeet Sir&apos;s Mentees
-            </p>
-          </div>
-
-          {/* 3-col grid */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 'clamp(16px, 1.5vw, 24px)',
-            }}
-          >
-            {displayTestimonials.map((t) => (
-              <div
-                key={t.initials}
-                style={{
-                  background: '#FFFFFF',
-                  borderRadius: '16px',
-                  border: '0.8px solid #E5E7EB',
-                  padding: 'clamp(24px, 2vw, 32px)',
-                  boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.06)',
-                  display: 'flex',
-                  flexDirection: 'column' as const,
-                }}
-              >
-                {/* 5 gold stars */}
-                <div style={{ fontSize: 'clamp(14px, 1vw, 18px)', marginBottom: 'clamp(12px, 1vw, 16px)' }}>
-                  {'★'.repeat(5).split('').map((s, i) => (
-                    <span key={i} style={{ color: '#FDC700' }}>{s}</span>
-                  ))}
-                </div>
-
-                {/* Quote */}
-                <p
-                  style={{
-                    fontSize: 'clamp(13px, 0.9vw, 15px)',
-                    color: '#374151',
-                    lineHeight: 1.7,
-                    fontStyle: 'italic',
-                    flex: 1,
-                    marginBottom: 'clamp(16px, 1.5vw, 24px)',
-                  }}
-                  className="font-arimo"
-                >
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-
-                {/* Avatar + name */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px, 0.8vw, 12px)' }}>
-                  <div
-                    style={{
-                      width: 'clamp(36px, 2.8vw, 44px)',
-                      height: 'clamp(36px, 2.8vw, 44px)',
-                      borderRadius: '50%',
-                      background: t.color,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 'clamp(12px, 0.9vw, 14px)',
-                      fontWeight: 700,
-                      color: '#FFFFFF',
-                      flexShrink: 0,
-                    }}
-                    className="font-arimo"
-                  >
-                    {t.initials}
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 'clamp(13px, 0.9vw, 15px)',
-                        fontWeight: 600,
-                        color: '#101828',
-                      }}
-                      className="font-arimo"
-                    >
-                      {t.name}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 'clamp(11px, 0.75vw, 13px)',
-                        color: '#6A7282',
-                      }}
-                      className="font-arimo"
-                    >
-                      {t.credential}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ================================================================ */}
-        {/*  SECTION 6: CTA BANNER                                            */}
-        {/* ================================================================ */}
-        <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
-          <div
-            style={{
-              background: 'linear-gradient(90deg, #FF8904 0%, #FFAA30 100%)',
-              borderRadius: '24px',
-              padding: 'clamp(28px, 3vw, 44px) clamp(32px, 3.5vw, 52px)',
-              display: 'flex',
-              alignItems: 'center',
-              overflow: 'hidden',
-              position: 'relative' as const,
-            }}
-          >
-            {/* Left content */}
-            <div style={{ flex: '1 1 400px', position: 'relative' as const, zIndex: 1 }}>
-              <h2
-                style={{
-                  fontSize: 'clamp(22px, 2.2vw, 32px)',
-                  fontWeight: 700,
-                  color: '#101828',
-                  lineHeight: 1.25,
-                  marginBottom: 'clamp(10px, 0.8vw, 14px)',
-                }}
-                className="font-arimo"
-              >
-                Limited seats. Real results.<br />
-                Start with a free call.
-              </h2>
-
-              {/* Description */}
-              <p
-                style={{
-                  fontSize: 'clamp(13px, 0.9vw, 15px)',
-                  color: '#1C1C1C',
-                  lineHeight: 1.6,
-                  marginBottom: 'clamp(16px, 1.5vw, 24px)',
-                  maxWidth: '420px',
-                }}
-                className="font-arimo"
-              >
-                Book a free 15-minute discovery call with Jeet Sir — no pressure, no sales pitch.
-                Just an honest conversation about your prep and what you actually need.
-              </p>
-
-              {/* Buttons */}
-              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 'clamp(8px, 0.8vw, 12px)' }}>
-                <button
-                  onClick={() => { setBookingSuccess(false); setBookingError(''); setShowBookingModal(true); }}
-                  style={{
-                    padding: 'clamp(12px, 1vw, 16px) clamp(20px, 1.8vw, 28px)',
-                    borderRadius: '12px',
-                    border: 'none',
-                    background: '#101828',
-                    color: '#FFFFFF',
-                    fontSize: 'clamp(14px, 1vw, 16px)',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}
-                  className="font-arimo"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.26h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.81-1.81a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                  Book Free Discovery Call
-                </button>
-                <button
-                  style={{
-                    padding: 'clamp(12px, 1vw, 16px) clamp(20px, 1.8vw, 28px)',
-                    borderRadius: '12px',
-                    border: 'none',
-                    background: '#FFFFFF',
-                    color: '#101828',
-                    fontSize: 'clamp(14px, 1vw, 16px)',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}
-                  className="font-arimo"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
-                  Watch on YouTube First
-                </button>
-              </div>
+      {/* ================================================================ */}
+      {/*  SECTION 6: CTA BANNER                                            */}
+      {/* ================================================================ */}
+      <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px 48px' }}>
+        <div style={{ background: 'linear-gradient(90deg, #FDC700 0%, #FF8904 100%)', borderRadius: '20px', padding: '40px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '24px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', right: '-40px', top: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', right: '60px', bottom: '-60px', width: '160px', height: '160px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', pointerEvents: 'none' }} />
+          <div style={{ flex: '1 1 400px', position: 'relative', zIndex: 1 }}>
+            <h2 style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 700, color: '#0F172B', lineHeight: 1.3, marginBottom: '12px' }}>Limited seats. Real results.<br />Start with a free call.</h2>
+            <p style={{ fontSize: '14px', color: '#1C1C1C', lineHeight: 1.6, marginBottom: '20px', maxWidth: '400px' }}>Book a free 15-minute discovery call with Jeet Sir — no pressure, no sales pitch. Just an honest conversation about your prep and what you actually need.</p>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <button onClick={() => { setBookingSuccess(false); setBookingError(''); setShowBookingModal(true); }} style={{ padding: '12px 24px', borderRadius: '10px', border: 'none', background: '#0F172B', color: '#FFFFFF', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>📞 Book Free Discovery Call</button>
+              <button style={{ padding: '12px 24px', borderRadius: '10px', border: '2px solid #0F172B', background: '#FFFFFF', color: '#0F172B', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>▶ Watch on YouTube First</button>
             </div>
-
-            {/* Decorative circles — absolutely positioned on the right */}
-            <div
-              style={{
-                position: 'absolute' as const,
-                right: '-40px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '260px',
-                height: '260px',
-                borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.18)',
-                zIndex: 0,
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute' as const,
-                right: '60px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '180px',
-                height: '180px',
-                borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.13)',
-                zIndex: 0,
-              }}
-            />
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ================================================================ */}
-        {/*  SECTION 7: FAQ                                                   */}
-        {/* ================================================================ */}
-        <section style={{ marginBottom: 'clamp(48px, 5vw, 80px)' }}>
-          {/* Label */}
-          <div
-            style={{
-              textAlign: 'center',
-              fontSize: 'clamp(10px, 0.8vw, 12px)',
-              fontWeight: 700,
-              letterSpacing: '1.5px',
-              color: '#C68A0B',
-              textTransform: 'uppercase' as const,
-              marginBottom: 'clamp(8px, 0.6vw, 12px)',
-            }}
-            className="font-arimo"
-          >
-            BEFORE YOU DECIDE
-          </div>
-
-          {/* Heading */}
-          <h2
-            style={{
-              textAlign: 'center',
-              fontSize: 'clamp(26px, 2.8vw, 40px)',
-              fontWeight: 700,
-              color: '#101828',
-              marginBottom: 'clamp(32px, 3vw, 48px)',
-            }}
-            className="font-arimo"
-          >
-            The questions you&apos;re actually thinking
-          </h2>
-
-          {/* Accordion */}
-          <div
-            style={{
-              maxWidth: '800px',
-              margin: '0 auto',
-              display: 'flex',
-              flexDirection: 'column' as const,
-              gap: 'clamp(10px, 0.8vw, 14px)',
-            }}
-          >
-            {faqItems.map((item, index) => (
-              <div
-                key={index}
-                style={{
-                  background: '#FFFFFF',
-                  borderRadius: '14px',
-                  border: '0.8px solid #E5E7EB',
-                  overflow: 'hidden',
-                  boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.04)',
-                }}
-              >
-                {/* Question row */}
-                <button
-                  onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
-                  style={{
-                    width: '100%',
-                    padding: 'clamp(16px, 1.3vw, 22px) clamp(20px, 1.8vw, 28px)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: '12px',
-                    textAlign: 'left' as const,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 'clamp(14px, 1vw, 16px)',
-                      fontWeight: 600,
-                      color: '#101828',
-                      lineHeight: 1.5,
-                    }}
-                    className="font-arimo"
-                  >
-                    {item.question}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 'clamp(18px, 1.3vw, 22px)',
-                      color: '#6A7282',
-                      flexShrink: 0,
-                      transform: expandedFaq === index ? 'rotate(45deg)' : 'rotate(0deg)',
-                      transition: 'transform 0.2s ease',
-                      lineHeight: 1,
-                    }}
-                  >
-                    +
-                  </span>
-                </button>
-
-                {/* Answer */}
-                {expandedFaq === index && (
-                  <div
-                    style={{
-                      padding: '0 clamp(20px, 1.8vw, 28px) clamp(16px, 1.3vw, 22px)',
-                      fontSize: 'clamp(13px, 0.9vw, 15px)',
-                      color: '#4A5565',
-                      lineHeight: 1.75,
-                    }}
-                    className="font-arimo"
-                  >
-                    {item.answer}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
-      </div>
+      {/* ================================================================ */}
+      {/*  SECTION 7: FAQ                                                   */}
+      {/* ================================================================ */}
+      <section style={{ maxWidth: '800px', margin: '0 auto', padding: '0 24px 80px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1px', color: '#94A3B8', textTransform: 'uppercase', marginBottom: '8px' }}>BEFORE YOU DECIDE</div>
+          <h2 style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 700, color: '#0F172B', marginBottom: '8px' }}>The questions you're actually thinking</h2>
+          <p style={{ fontSize: '14px', color: '#64748B' }}>No marketing fluff — just direct answers to the real objections.</p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {faqItems.map((faq, idx) => (
+            <div key={idx} style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+              <button onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)} style={{ width: '100%', padding: '18px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: '#0F172B' }}>{faq.question}</span>
+                <span style={{ fontSize: '18px', color: '#94A3B8', transition: 'transform 0.2s', transform: expandedFaq === idx ? 'rotate(45deg)' : 'rotate(0)' }}>+</span>
+              </button>
+              {expandedFaq === idx && (
+                <div style={{ padding: '0 20px 18px', fontSize: '14px', color: '#64748B', lineHeight: 1.7 }}>{faq.answer}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ================================================================ */}
       {/*  BOOKING MODAL                                                    */}
       {/* ================================================================ */}
       {showBookingModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(0,0,0,0.5)',
-            backdropFilter: 'blur(4px)',
-          }}
-          onClick={() => setShowBookingModal(false)}
-        >
-          <div
-            style={{
-              background: '#FFFFFF',
-              borderRadius: '20px',
-              padding: 'clamp(28px, 3vw, 40px)',
-              width: '100%',
-              maxWidth: '460px',
-              margin: '16px',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-              position: 'relative',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => setShowBookingModal(false)}
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                background: 'none',
-                border: 'none',
-                fontSize: '20px',
-                color: '#6A7282',
-                cursor: 'pointer',
-                lineHeight: 1,
-              }}
-            >
-              ×
-            </button>
-
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
+          <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '32px', maxWidth: '440px', width: '100%', position: 'relative' }}>
+            <button onClick={() => setShowBookingModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748B' }}>✕</button>
             {bookingSuccess ? (
-              /* ---- Success state ---- */
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
-                <h3
-                  style={{ fontSize: '22px', fontWeight: 700, color: '#101828', marginBottom: '8px' }}
-                  className="font-arimo"
-                >
-                  Call Booked!
-                </h3>
-                <p
-                  style={{ fontSize: '15px', color: '#4A5565', lineHeight: 1.6, marginBottom: '24px' }}
-                  className="font-arimo"
-                >
-                  We&apos;ll reach out to you shortly to confirm your free discovery call with Jeet Sir.
-                </p>
-                <button
-                  onClick={() => setShowBookingModal(false)}
-                  style={{
-                    padding: '12px 32px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    background: '#101828',
-                    color: '#FFFFFF',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                  className="font-arimo"
-                >
-                  Done
-                </button>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
+                <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172B', marginBottom: '8px' }}>Call Booked!</h3>
+                <p style={{ fontSize: '14px', color: '#64748B' }}>We'll reach out shortly to confirm your discovery call.</p>
               </div>
             ) : (
-              /* ---- Form state ---- */
               <>
-                <h3
-                  style={{
-                    fontSize: 'clamp(20px, 1.6vw, 24px)',
-                    fontWeight: 700,
-                    color: '#101828',
-                    marginBottom: '4px',
-                  }}
-                  className="font-arimo"
-                >
-                  🤙 Book Your Free Discovery Call
-                </h3>
-                <p
-                  style={{
-                    fontSize: '14px',
-                    color: '#6A7282',
-                    marginBottom: 'clamp(20px, 2vw, 28px)',
-                    lineHeight: 1.5,
-                  }}
-                  className="font-arimo"
-                >
-                  20-minute call with Jeet Sir — no commitment, no hard sell.
-                </p>
-
-                {/* Name */}
-                <label
-                  style={{ display: 'block', marginBottom: '14px' }}
-                  className="font-arimo"
-                >
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
-                    Full Name <span style={{ color: '#EF4444' }}>*</span>
-                  </span>
-                  <input
-                    type="text"
-                    value={bookingName}
-                    onChange={(e) => setBookingName(e.target.value)}
-                    placeholder="e.g. Priya Rajan"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      border: '1.5px solid #E5E7EB',
-                      fontSize: '14px',
-                      color: '#101828',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </label>
-
-                {/* Email */}
-                <label
-                  style={{ display: 'block', marginBottom: '14px' }}
-                  className="font-arimo"
-                >
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
-                    Email <span style={{ color: '#EF4444' }}>*</span>
-                  </span>
-                  <input
-                    type="email"
-                    value={bookingEmail}
-                    onChange={(e) => setBookingEmail(e.target.value)}
-                    placeholder="e.g. priya@gmail.com"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      border: '1.5px solid #E5E7EB',
-                      fontSize: '14px',
-                      color: '#101828',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </label>
-
-                {/* Phone (optional) */}
-                <label
-                  style={{ display: 'block', marginBottom: '14px' }}
-                  className="font-arimo"
-                >
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
-                    Phone <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400 }}>(optional)</span>
-                  </span>
-                  <input
-                    type="tel"
-                    value={bookingPhone}
-                    onChange={(e) => setBookingPhone(e.target.value)}
-                    placeholder="e.g. 9876543210"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      border: '1.5px solid #E5E7EB',
-                      fontSize: '14px',
-                      color: '#101828',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </label>
-
-                {/* Message (optional) */}
-                <label
-                  style={{ display: 'block', marginBottom: '20px' }}
-                  className="font-arimo"
-                >
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
-                    Message <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400 }}>(optional)</span>
-                  </span>
-                  <textarea
-                    value={bookingMessage}
-                    onChange={(e) => setBookingMessage(e.target.value)}
-                    placeholder="Any specific questions or your current preparation stage..."
-                    rows={3}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      border: '1.5px solid #E5E7EB',
-                      fontSize: '14px',
-                      color: '#101828',
-                      outline: 'none',
-                      resize: 'vertical',
-                      boxSizing: 'border-box',
-                      fontFamily: 'inherit',
-                    }}
-                  />
-                </label>
-
-                {/* Error message */}
-                {bookingError && (
-                  <div
-                    style={{
-                      background: '#FEF2F2',
-                      border: '1px solid #FECACA',
-                      borderRadius: '10px',
-                      padding: '10px 14px',
-                      fontSize: '13px',
-                      color: '#DC2626',
-                      marginBottom: '16px',
-                    }}
-                    className="font-arimo"
-                  >
-                    {bookingError}
-                  </div>
-                )}
-
-                {/* Submit button */}
-                <button
-                  onClick={handleBookCall}
-                  disabled={bookingSubmitting}
-                  style={{
-                    width: '100%',
-                    padding: '14px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    background: bookingSubmitting ? '#9CA3AF' : '#101828',
-                    color: '#FFFFFF',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    cursor: bookingSubmitting ? 'not-allowed' : 'pointer',
-                    transition: 'background 0.2s ease',
-                  }}
-                  className="font-arimo"
-                >
-                  {bookingSubmitting ? 'Booking...' : 'Book Free Call'}
-                </button>
-
-                <p
-                  style={{
-                    textAlign: 'center',
-                    fontSize: '12px',
-                    color: '#9CA3AF',
-                    marginTop: '12px',
-                  }}
-                  className="font-arimo"
-                >
-                  100% free · No commitment · We&apos;ll confirm via email
-                </p>
+                <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172B', marginBottom: '8px' }}>Book Free Discovery Call</h3>
+                <p style={{ fontSize: '14px', color: '#64748B', marginBottom: '24px' }}>15 minutes. No pressure. Just honest guidance.</p>
+                {bookingError && <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>{bookingError}</div>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <input type="text" placeholder="Your name" value={bookingName} onChange={(e) => setBookingName(e.target.value)} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '14px', outline: 'none' }} />
+                  <input type="email" placeholder="Email address" value={bookingEmail} onChange={(e) => setBookingEmail(e.target.value)} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '14px', outline: 'none' }} />
+                  <input type="tel" placeholder="Phone (optional)" value={bookingPhone} onChange={(e) => setBookingPhone(e.target.value)} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '14px', outline: 'none' }} />
+                  <textarea placeholder="Tell us about your prep stage (optional)" value={bookingMessage} onChange={(e) => setBookingMessage(e.target.value)} rows={3} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '14px', outline: 'none', resize: 'vertical' }} />
+                  <button onClick={handleBookCall} disabled={bookingSubmitting} style={{ padding: '14px', borderRadius: '10px', border: 'none', background: '#0F172B', color: '#FFFFFF', fontSize: '15px', fontWeight: 700, cursor: bookingSubmitting ? 'not-allowed' : 'pointer', opacity: bookingSubmitting ? 0.7 : 1 }}>
+                    {bookingSubmitting ? 'Booking...' : 'Book My Free Call'}
+                  </button>
+                </div>
               </>
             )}
           </div>
