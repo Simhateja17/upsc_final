@@ -1,17 +1,17 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, type CSSProperties } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 
 const featureCards = [
-  { label: 'Daily Mains Challenge', icon: '/icons/dashboard/mains.png' },
-  { label: '1-on-1 Mentorship',     icon: '/icon-mentorship.png' },
+  { label: 'AI Mains Evaluation',   icon: '/icon-ai-mains.png' },
+  { label: 'Personal Mentorship',   icon: '/icon-mentorship.png' },
   { label: 'Study Planner',         icon: '/icon-study-planner.png' },
-  { label: 'Mock Tests',            icon: '/icon-mock-test.png' },
+  { label: 'Mock Test Generator',   icon: '/icon-mock-test.png' },
   { label: 'Performance Analytics', icon: '/icon-analytics.png' },
-  { label: 'Smart Revision Tools',  icon: '/icons/dashboard/brain.png' },
+  { label: 'Study Group Forum',     icon: '/icon-forum.png' },
 ];
 
 const avatarColors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444'];
@@ -41,83 +41,7 @@ function LoginPageContent() {
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-
-  // Email autocomplete state
-  const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
-  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
-  const [loginEmailSuggestions, setLoginEmailSuggestions] = useState<string[]>([]);
-  const [showLoginEmailSuggestions, setShowLoginEmailSuggestions] = useState(false);
-  const commonDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'];
-
-  const handleSignupEmailChange = (value: string) => {
-    setSignupEmail(value);
-    
-    // Show suggestions only if user has typed something and doesn't already have @
-    if (value && !value.includes('@')) {
-      const suggestions = commonDomains.map(domain => `${value}@${domain}`);
-      setEmailSuggestions(suggestions);
-      setShowEmailSuggestions(true);
-    } else if (value.includes('@')) {
-      const [localPart, domainPart] = value.split('@');
-      if (domainPart && localPart) {
-        // Filter domains that match what user is typing
-        const matchingDomains = commonDomains.filter(domain => 
-          domain.toLowerCase().startsWith(domainPart.toLowerCase())
-        );
-        if (matchingDomains.length > 0) {
-          const suggestions = matchingDomains.map(domain => `${localPart}@${domain}`);
-          setEmailSuggestions(suggestions);
-          setShowEmailSuggestions(true);
-        } else {
-          setShowEmailSuggestions(false);
-        }
-      } else {
-        setShowEmailSuggestions(false);
-      }
-    } else {
-      setShowEmailSuggestions(false);
-    }
-  };
-
-  const selectEmailSuggestion = (suggestion: string) => {
-    setSignupEmail(suggestion);
-    setShowEmailSuggestions(false);
-  };
-
-  const handleLoginEmailChange = (value: string) => {
-    setLoginEmail(value);
-    
-    // Show suggestions only if user has typed something and doesn't already have @
-    if (value && !value.includes('@')) {
-      const suggestions = commonDomains.map(domain => `${value}@${domain}`);
-      setLoginEmailSuggestions(suggestions);
-      setShowLoginEmailSuggestions(true);
-    } else if (value.includes('@')) {
-      const [localPart, domainPart] = value.split('@');
-      if (domainPart && localPart) {
-        // Filter domains that match what user is typing
-        const matchingDomains = commonDomains.filter(domain => 
-          domain.toLowerCase().startsWith(domainPart.toLowerCase())
-        );
-        if (matchingDomains.length > 0) {
-          const suggestions = matchingDomains.map(domain => `${localPart}@${domain}`);
-          setLoginEmailSuggestions(suggestions);
-          setShowLoginEmailSuggestions(true);
-        } else {
-          setShowLoginEmailSuggestions(false);
-        }
-      } else {
-        setShowLoginEmailSuggestions(false);
-      }
-    } else {
-      setShowLoginEmailSuggestions(false);
-    }
-  };
-
-  const selectLoginEmailSuggestion = (suggestion: string) => {
-    setLoginEmail(suggestion);
-    setShowLoginEmailSuggestions(false);
-  };
+  const [showWelcomeBack, setShowWelcomeBack] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -135,6 +59,11 @@ function LoginPageContent() {
     }
   }, [tabParam]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setShowWelcomeBack(localStorage.getItem('rwj_has_logged_in') === '1');
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -142,7 +71,10 @@ function LoginPageContent() {
 
     try {
       await login({ email: loginEmail, password: loginPassword });
-      localStorage.setItem('justLoggedIn', 'true');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('rwj_has_logged_in', '1');
+        sessionStorage.setItem('rwj_login_success', '1');
+      }
       // Redirect immediately after login succeeds — don't wait for useEffect
       router.replace('/dashboard');
     } catch (err) {
@@ -218,41 +150,39 @@ function LoginPageContent() {
   return (
     <div className="flex w-full min-h-screen" style={{ fontFamily: 'Inter, sans-serif' }}>
       <style>{`
-        .login-left-panel { width: 478px; flex-shrink: 0; }
-        .login-right-panel { padding-top: 72px; }
-        .login-form-container { width: 448px; }
-        @media (max-width: 1023px) {
-          .login-left-panel { display: none !important; }
-          .login-right-panel {
-            padding-top: 40px;
-            padding-bottom: 40px;
-            padding-left: 24px;
-            padding-right: 24px;
-            align-items: center;
-            overflow-y: auto;
-          }
-          .login-form-container {
-            width: 100% !important;
-            max-width: 480px;
-          }
+        .success-burst {
+          position: absolute;
+          left: 50%;
+          top: 44px;
+          width: 170px;
+          height: 110px;
+          transform: translateX(-50%);
+          pointer-events: none;
         }
-        @media (max-width: 479px) {
-          .login-right-panel {
-            padding-top: 24px;
-            padding-bottom: 24px;
-            padding-left: 16px;
-            padding-right: 16px;
-          }
-          .login-form-container {
-            max-width: 100%;
-          }
+        .success-burst span {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 8px;
+          height: 18px;
+          border-radius: 999px;
+          background: var(--burst-color);
+          transform: translate(-50%, -50%) rotate(var(--burst-rotate)) translateY(0);
+          animation: burst-pop 900ms ease-out both;
+          animation-delay: var(--burst-delay);
+        }
+        @keyframes burst-pop {
+          0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--burst-rotate)) translateY(0) scale(0.2); }
+          18% { opacity: 1; }
+          100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--burst-rotate)) translateY(-58px) scale(1); }
         }
       `}</style>
       {/* ── LEFT PANEL ── */}
       <div
-        className="relative flex-shrink-0 overflow-hidden login-left-panel"
+        className="relative flex-shrink-0 overflow-hidden"
         style={{
-          minHeight: '100vh',
+          width: 478,
+          minHeight: 787,
           background: '#0F1C2E',
         }}
       >
@@ -273,8 +203,8 @@ function LoginPageContent() {
           style={{ position: 'absolute', top: 31, left: 26 }}
         >
           <Image
-            src="/footer-logo.png"
-            alt="RiseWithJeet"
+            src="/logo-jeet.png"
+            alt="Rise with Jeet IAS"
             width={42}
             height={48}
             style={{ objectFit: 'contain' }}
@@ -290,7 +220,9 @@ function LoginPageContent() {
                 color: '#FFFFFF',
               }}
             >
-              Rise<span style={{ color: '#D9A84F' }}>WithJeet</span>
+              Rise with{' '}
+              <span style={{ color: '#D9A84F' }}>Jeet</span>{' '}
+              IAS
             </div>
             <div
               style={{
@@ -325,7 +257,7 @@ function LoginPageContent() {
                 color: '#99A1AF',
               }}
             >
-              Trusted by 15,000+ Aspirants
+              Trusted by 2,400+ Aspirants
             </span>
           </div>
 
@@ -340,7 +272,7 @@ function LoginPageContent() {
                 color: '#FFFFFF',
               }}
             >
-              Your UPSC Journey
+              Your UPSC journey
             </div>
             <div
               style={{
@@ -355,7 +287,7 @@ function LoginPageContent() {
               <span
                 style={{
                   fontStyle: 'italic',
-                  color: '#D9A84F',
+                  color: '#FF6900',
                 }}
               >
                 right here.
@@ -366,13 +298,9 @@ function LoginPageContent() {
           {/* Subtitle */}
           <div style={{ marginBottom: 36 }}>
             {[
-              'A comprehensive platform offering all resources',
-              'necessary to excel in the UPSC exam. Including Daily',
-              'Mains Challenge, Syllabus Tracker, Study Planner,',
-              'Smart Revision Tools, Simplified Video Lectures,',
-              'Mock Tests, detailed Performance Analytics,',
-              '1-on-1 Mentorship and structured Previous Year',
-              'Questions.',
+              'Structured PYQs, AI-powered Mains evaluation,',
+              'and personal mentorship from IAS toppers —',
+              'everything you need to crack UPSC in one place.',
             ].map((line, i) => (
               <div
                 key={i}
@@ -461,7 +389,7 @@ function LoginPageContent() {
                     color: '#fff',
                   }}
                 >
-                  {i < 4 ? ['AK', 'PS', 'RV', 'MF'][i] : '+15k'}
+                  {i < 4 ? ['AK', 'PS', 'RV', 'MF'][i] : '+2k'}
                 </div>
               ))}
             </div>
@@ -471,10 +399,20 @@ function LoginPageContent() {
                   fontFamily: 'Inter',
                   fontWeight: 700,
                   fontSize: 14,
-                  color: '#D9A84F',
+                  color: '#FF6900',
                 }}
               >
-                15,000+ Aspirants
+                2,400+{' '}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'Inter',
+                  fontWeight: 400,
+                  fontSize: 12,
+                  color: '#99A1AF',
+                }}
+              >
+                aspirants
               </span>
               <div
                 style={{
@@ -493,11 +431,81 @@ function LoginPageContent() {
 
       {/* ── RIGHT PANEL ── */}
       <div
-        className="flex-1 flex flex-col items-center login-right-panel"
-        style={{ background: '#F9FAFB', minHeight: '100vh' }}
+        className="flex-1 flex flex-col items-center"
+        style={{ background: '#F9FAFB', minHeight: 787, paddingTop: 72 }}
       >
         {/* Single centered container for tab + form */}
-        <div className="login-form-container">
+        <div style={{ width: 448 }}>
+
+        {/* Tab row */}
+        <div
+          style={{ visibility: activeTab === 'success' ? 'hidden' : 'visible', marginBottom: 32 }}
+        >
+          {/* Tab container */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              width: '100%',
+              height: 54,
+              borderRadius: 10,
+              border: '1px solid #D1D5DC',
+              background: '#EFF6FF',
+              padding: '4px',
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Log In — active tab */}
+            <button
+              onClick={() => { setActiveTab('login'); setError(null); }}
+              style={{
+                flex: 1,
+                height: 45.6,
+                fontFamily: 'Inter',
+                fontWeight: 600,
+                fontSize: 14,
+                lineHeight: '20px',
+                textAlign: 'center',
+                background: activeTab === 'login' ? '#101828' : 'transparent',
+                color: activeTab === 'login' ? '#FFFFFF' : '#4A5565',
+                border: activeTab === 'login' ? '0.8px solid #101828' : 'none',
+                cursor: 'pointer',
+                borderRadius: 10,
+                boxShadow: activeTab === 'login'
+                  ? '0px 1px 3px 0px rgba(0,0,0,0.10), 0px 1px 2px -1px rgba(0,0,0,0.10)'
+                  : 'none',
+                transition: 'all 0.2s',
+              }}
+            >
+              Log In
+            </button>
+
+            {/* Sign Up Free — inactive tab */}
+            <button
+              onClick={() => { setActiveTab('signup'); setError(null); }}
+              style={{
+                flex: 1,
+                height: 45.6,
+                fontFamily: 'Inter',
+                fontWeight: 600,
+                fontSize: 14,
+                lineHeight: '20px',
+                textAlign: 'center',
+                background: activeTab === 'signup' ? '#101828' : 'transparent',
+                color: activeTab === 'signup' ? '#FFFFFF' : '#4A5565',
+                border: activeTab === 'signup' ? '0.8px solid #101828' : 'none',
+                cursor: 'pointer',
+                borderRadius: 10,
+                boxShadow: activeTab === 'signup'
+                  ? '0px 1px 3px 0px rgba(0,0,0,0.10), 0px 1px 2px -1px rgba(0,0,0,0.10)'
+                  : 'none',
+                transition: 'all 0.2s',
+              }}
+            >
+              Sign Up Free
+            </button>
+          </div>
+        </div>
 
         {/* Form area */}
         <div
@@ -524,7 +532,19 @@ function LoginPageContent() {
 
         {/* ── SUCCESS SCREEN ── */}
         {activeTab === 'success' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+            <div className="success-burst" aria-hidden="true">
+              {[
+                ['#F59E0B', '-70deg', '0ms'],
+                ['#10B981', '-38deg', '70ms'],
+                ['#155DFC', '-10deg', '120ms'],
+                ['#EF4444', '18deg', '40ms'],
+                ['#D9A84F', '44deg', '100ms'],
+                ['#8B5CF6', '72deg', '150ms'],
+              ].map(([color, rotate, delay]) => (
+                <span key={`${color}-${rotate}`} style={{ '--burst-color': color, '--burst-rotate': rotate, '--burst-delay': delay } as CSSProperties} />
+              ))}
+            </div>
             {/* Celebration image */}
             <Image src="/success-celebration.png" alt="You're in!" width={100} height={100} style={{ objectFit: 'contain', marginBottom: 16 }} />
 
@@ -602,10 +622,10 @@ function LoginPageContent() {
               {/* Feature list */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
-                  { icon: '/icon-pyq.png', text: 'Daily Mains Challenge and Instant Evaluation' },
-                  { icon: '/icon-mentorship.png', text: '10,000+ PYQ questions' },
-                  { icon: '/icon-dashboard.png', text: 'Personal Performance dashboard' },
-                  { icon: '/icon-streak.png', text: 'Daily streak, Syllabus and Study Planner tracking' },
+                  { icon: '/icon-pyq.png', text: '2,400+ PYQ questions · All years' },
+                  { icon: '/icon-mentorship.png', text: 'AI Mains answer evaluation' },
+                  { icon: '/icon-dashboard.png', text: 'Personal progress dashboard' },
+                  { icon: '/icon-streak.png', text: 'Daily streak & accuracy tracking' },
                 ].map((item) => (
                   <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <Image src={item.icon} alt="" width={28} height={28} style={{ objectFit: 'contain', flexShrink: 0 }} />
@@ -666,7 +686,7 @@ function LoginPageContent() {
                 letterSpacing: 0,
               }}
             >
-              Welcome to <span style={{ color: '#D9A84F' }}>RiseWithJeet!</span>
+              Join the <span style={{ color: '#D9A84F' }}>mission</span> <span style={{ color: '#D9A84F' }}>✦</span>
             </h1>
             <p
               style={{
@@ -674,12 +694,12 @@ function LoginPageContent() {
                 fontWeight: 400,
                 fontSize: 14,
                 lineHeight: '20px',
-                color: '#99A1AF',
+                color: '#6A7282',
                 margin: 0,
                 marginBottom: 20,
               }}
             >
-              Join the mission
+              Create your free account and start practicing with 2,400+ PYQs today.
             </p>
 
             {/* Sign up with Google */}
@@ -758,7 +778,7 @@ function LoginPageContent() {
             </div>
 
             {/* Email Address */}
-            <div style={{ marginBottom: 12, position: 'relative' }}>
+            <div style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
                 Email Address
               </label>
@@ -770,59 +790,18 @@ function LoginPageContent() {
                   type="email" 
                   placeholder="yourname@gmail.com" 
                   value={signupEmail}
-                  onChange={(e) => handleSignupEmailChange(e.target.value)}
-                  onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 200)}
-                  onFocus={() => signupEmail && !signupEmail.includes('@') && setShowEmailSuggestions(true)}
+                  onChange={(e) => setSignupEmail(e.target.value)}
                   required
                   style={{ width: '100%', height: 45.6, paddingLeft: 40, paddingRight: 16, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }} 
                 />
-                {/* Email Suggestions Dropdown */}
-                {showEmailSuggestions && emailSuggestions.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    marginTop: 4,
-                    background: '#FFFFFF',
-                    border: '0.8px solid #D1D5DC',
-                    borderRadius: 10,
-                    boxShadow: '0px 4px 12px rgba(0,0,0,0.15)',
-                    zIndex: 100,
-                    overflow: 'hidden',
-                  }}>
-                    {emailSuggestions.map((suggestion, index) => (
-                      <div
-                        key={index}
-                        onClick={() => selectEmailSuggestion(suggestion)}
-                        style={{
-                          padding: '12px 16px',
-                          cursor: 'pointer',
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          color: '#0A0A0A',
-                          borderBottom: index < emailSuggestions.length - 1 ? '1px solid #F0F0F0' : 'none',
-                          transition: 'background 0.2s',
-                        }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLDivElement).style.background = '#F9FAFB';
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLDivElement).style.background = '#FFFFFF';
-                        }}
-                      >
-                        {suggestion}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Mobile Number */}
+            {/* Mobile Number (optional) */}
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
-                Mobile Number
+                Mobile Number{' '}
+                <span style={{ fontWeight: 400, textTransform: 'none', color: '#99A1AF', fontSize: 11 }}>(optional)</span>
               </label>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex' }}>
@@ -876,11 +855,11 @@ function LoginPageContent() {
               />
               <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, lineHeight: '19.5px', color: '#4A5565' }}>
                 I agree to the{' '}
-                <Link href="#" style={{ fontWeight: 600, color: '#155DFC', textDecoration: 'none' }}>Terms of Service</Link>
+                <Link href="/terms" style={{ fontWeight: 600, color: '#155DFC', textDecoration: 'none' }}>Terms of Service</Link>
                 {' '}and{' '}
-                <Link href="#" style={{ fontWeight: 600, color: '#155DFC', textDecoration: 'none' }}>Privacy Policy.</Link>
+                <Link href="/privacy" style={{ fontWeight: 600, color: '#155DFC', textDecoration: 'none' }}>Privacy Policy.</Link>
                 <br />
-                I consent to receive UPSC preparation updates from Rise with Jeet.
+                I consent to receive UPSC preparation updates from Rise with Jeet IAS.
               </span>
             </div>
 
@@ -938,8 +917,17 @@ function LoginPageContent() {
                   letterSpacing: 0,
                 }}
               >
-                Welcome{' '}
-                <span style={{ color: '#D9A84F', fontStyle: 'italic', fontWeight: 700 }}>back</span>{' '}
+                {showWelcomeBack ? (
+                  <>
+                    Welcome{' '}
+                    <span style={{ color: '#D97706', fontStyle: 'italic', fontWeight: 700 }}>back</span>{' '}
+                  </>
+                ) : (
+                  <>
+                    Sign in to{' '}
+                    <span style={{ color: '#D9A84F', fontStyle: 'italic', fontWeight: 700 }}>RiseWithJeet</span>{' '}
+                  </>
+                )}
               </h1>
             </div>
             <p
@@ -1022,7 +1010,7 @@ function LoginPageContent() {
             </div>
 
             {/* Email field */}
-            <div style={{ marginBottom: 16, position: 'relative' }}>
+            <div style={{ marginBottom: 16 }}>
               <label
                 style={{
                   display: 'block',
@@ -1062,9 +1050,7 @@ function LoginPageContent() {
                   type="email"
                   placeholder="yourname@gmail.com"
                   value={loginEmail}
-                  onChange={(e) => handleLoginEmailChange(e.target.value)}
-                  onBlur={() => setTimeout(() => setShowLoginEmailSuggestions(false), 200)}
-                  onFocus={() => loginEmail && !loginEmail.includes('@') && setShowLoginEmailSuggestions(true)}
+                  onChange={(e) => setLoginEmail(e.target.value)}
                   required
                   style={{
                     width: '100%',
@@ -1084,46 +1070,6 @@ function LoginPageContent() {
                     boxSizing: 'border-box',
                   }}
                 />
-                {/* Email Suggestions Dropdown */}
-                {showLoginEmailSuggestions && loginEmailSuggestions.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    marginTop: 4,
-                    background: '#FFFFFF',
-                    border: '0.8px solid #D1D5DC',
-                    borderRadius: 10,
-                    boxShadow: '0px 4px 12px rgba(0,0,0,0.15)',
-                    zIndex: 100,
-                    overflow: 'hidden',
-                  }}>
-                    {loginEmailSuggestions.map((suggestion, index) => (
-                      <div
-                        key={index}
-                        onClick={() => selectLoginEmailSuggestion(suggestion)}
-                        style={{
-                          padding: '12px 16px',
-                          cursor: 'pointer',
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          color: '#0A0A0A',
-                          borderBottom: index < loginEmailSuggestions.length - 1 ? '1px solid #F0F0F0' : 'none',
-                          transition: 'background 0.2s',
-                        }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLDivElement).style.background = '#F9FAFB';
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLDivElement).style.background = '#FFFFFF';
-                        }}
-                      >
-                        {suggestion}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
 
@@ -1252,7 +1198,7 @@ function LoginPageContent() {
               {!isLoading && <Image src="/icon-login-arrow.png" alt="" width={18} height={18} style={{ objectFit: 'contain' }} />}
             </button>
 
-            {/* New Here — CTA button */}
+            {/* New Here — gradient CTA button */}
             <button
               type="button"
               onClick={() => { setActiveTab('signup'); setError(null); }}
@@ -1260,7 +1206,7 @@ function LoginPageContent() {
                 width: '100%',
                 height: 44,
                 borderRadius: 14,
-                background: '#D9A84F',
+                background: 'linear-gradient(90deg, #FF6900 0%, #F0B100 100%)',
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex',
@@ -1270,6 +1216,7 @@ function LoginPageContent() {
                 marginBottom: 14,
               }}
             >
+              <Image src="/icon-sparkle.png" alt="" width={20} height={20} style={{ objectFit: 'contain' }} />
               <span
                 style={{
                   fontFamily: 'Inter',
@@ -1281,7 +1228,7 @@ function LoginPageContent() {
                   color: '#101828',
                 }}
               >
-                New Here Create A Free Account →
+                New Here Create A Free Account
               </span>
             </button>
 
@@ -1339,3 +1286,4 @@ export default function LoginPage() {
     </Suspense>
   );
 }
+

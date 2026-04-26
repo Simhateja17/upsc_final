@@ -8,13 +8,26 @@ import { dailyAnswerService } from '@/lib/services';
 export default function DailyAnswerAttemptPage() {
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes
+    const [durationSeconds, setDurationSeconds] = useState(11 * 60);
+    const [timeLeft, setTimeLeft] = useState(11 * 60);
     const [isActive, setIsActive] = useState(false);
     const [answerText, setAnswerText] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
+
+    useEffect(() => {
+        dailyAnswerService.getToday()
+            .then((res) => {
+                const marks = Number(res?.data?.marks ?? 15);
+                const mins = marks >= 15 ? 11 : 7;
+                const secs = mins * 60;
+                setDurationSeconds(secs);
+                setTimeLeft(secs);
+            })
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         let interval: NodeJS.Timeout | null = null;
@@ -34,7 +47,7 @@ export default function DailyAnswerAttemptPage() {
     const toggleTimer = () => setIsActive(!isActive);
     const resetTimer = () => {
         setIsActive(false);
-        setTimeLeft(15 * 60);
+        setTimeLeft(durationSeconds);
     };
 
     const formatTime = (seconds: number) => {
@@ -55,8 +68,13 @@ export default function DailyAnswerAttemptPage() {
         }
     };
 
-    const handleBrowseClick = () => {
-        fileInputRef.current?.click();
+    const handleBrowseClick = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        // Reset so selecting the same file twice still fires onChange
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+            fileInputRef.current.click();
+        }
     };
 
     const handleDragOver = (e: React.DragEvent) => {
@@ -108,7 +126,7 @@ export default function DailyAnswerAttemptPage() {
                 res = await dailyAnswerService.submitText(answerText);
             }
             console.log('Submit response:', res);
-            const attemptId = res.data?.attemptId || res.data?.data?.attemptId;
+            const attemptId = (res as any).attemptId || (res as any).data?.attemptId || (res as any).data?.data?.attemptId;
             console.log('AttemptId:', attemptId);
             if (attemptId) {
                 // Store attemptId for the evaluating page to use
@@ -139,7 +157,7 @@ export default function DailyAnswerAttemptPage() {
                         <div
                             className="bg-white rounded-[16px] flex flex-col items-center justify-center mb-6"
                             style={{
-                                width: '100%', maxWidth: '909px',
+                                width: '909px',
                                 minHeight: '263px',
                                 boxShadow: '0px 1px 3px 0px #0000001A, 0px 1px 2px -1px #0000001A',
                                 padding: '30px'
@@ -228,7 +246,7 @@ export default function DailyAnswerAttemptPage() {
                         <div
                             className="bg-white rounded-[16px] flex flex-col items-center pt-[68px] pb-8 mb-8"
                             style={{
-                                width: '100%', maxWidth: '909px',
+                                width: '909px',
                                 minHeight: '600px',
                                 boxShadow: '0px 1px 3px 0px #0000001A, 0px 1px 2px -1px #0000001A'
                             }}
@@ -343,63 +361,63 @@ export default function DailyAnswerAttemptPage() {
                                     // Show upload prompt
                                     <>
                                         {/* Upload Icon */}
-                                <div className="mb-4">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src="/upload-icon.png" alt="Upload" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
-                                </div>
+                                        <div className="mb-4">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src="/upload-icon.png" alt="Upload" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
+                                        </div>
 
-                                {/* Drop Text */}
-                                <h3 style={{
-                                    fontFamily: 'Arimo',
-                                    fontWeight: 700,
-                                    fontSize: '20px',
-                                    textAlign: 'center',
-                                    color: '#101828',
-                                    marginBottom: '8px'
-                                }}>
-                                    Drop your answer script here
-                                </h3>
+                                        {/* Drop Text */}
+                                        <h3 style={{
+                                            fontFamily: 'Arimo',
+                                            fontWeight: 700,
+                                            fontSize: '20px',
+                                            textAlign: 'center',
+                                            color: '#101828',
+                                            marginBottom: '8px'
+                                        }}>
+                                            Drop your answer script here
+                                        </h3>
 
-                                <p style={{
-                                    fontFamily: 'Arimo',
-                                    fontWeight: 400,
-                                    fontSize: '14px',
-                                    textAlign: 'center',
-                                    color: '#4A5565',
-                                    marginBottom: '24px'
-                                }}>
-                                    Upload handwritten answers for AI evaluation
-                                </p>
+                                        <p style={{
+                                            fontFamily: 'Arimo',
+                                            fontWeight: 400,
+                                            fontSize: '14px',
+                                            textAlign: 'center',
+                                            color: '#4A5565',
+                                            marginBottom: '24px'
+                                        }}>
+                                            Upload handwritten answers for AI evaluation
+                                        </p>
 
-                                {/* File Format Chips */}
-                                <div className="flex gap-3 mb-8">
-                                    {['JPG', 'PNG', 'PDF', 'DOCX'].map((fmt) => (
-                                        <span key={fmt} className="px-3 py-1 bg-[#E5E7EB] rounded text-[#374151] font-arimo" style={{ fontSize: '14px' }}>
-                                            {fmt}
-                                        </span>
-                                    ))}
-                                    <span className="px-3 py-1 bg-[#E5E7EB] rounded text-[#374151] font-arimo" style={{ fontSize: '14px' }}>Max 10MB</span>
-                                </div>
+                                        {/* File Format Chips */}
+                                        <div className="flex gap-3 mb-8">
+                                            {['JPG', 'PNG', 'PDF', 'DOCX'].map((fmt) => (
+                                                <span key={fmt} className="px-3 py-1 bg-[#E5E7EB] rounded text-[#374151] font-arimo" style={{ fontSize: '14px' }}>
+                                                    {fmt}
+                                                </span>
+                                            ))}
+                                            <span className="px-3 py-1 bg-[#E5E7EB] rounded text-[#374151] font-arimo" style={{ fontSize: '14px' }}>Max 10MB</span>
+                                        </div>
 
-                                {/* Browse Files Button */}
-                                <button
-                                    onClick={handleBrowseClick}
-                                    className="bg-white border border-[#D1D5DB] text-[#111827] font-bold rounded-[10px] hover:bg-gray-50 transition-colors"
-                                    style={{
-                                        width: '156px',
-                                        height: '48px',
-                                        fontSize: '16px'
-                                    }}
-                                >
-                                    Browse Files
-                                </button>
+                                        {/* Browse Files Button */}
+                                        <button
+                                            onClick={handleBrowseClick}
+                                            className="bg-white border border-[#D1D5DB] text-[#111827] font-bold rounded-[10px] hover:bg-gray-50 transition-colors"
+                                            style={{
+                                                width: '156px',
+                                                height: '48px',
+                                                fontSize: '16px'
+                                            }}
+                                        >
+                                            Browse Files
+                                        </button>
                                     </>
                                 )}
                             </div>
 
                             {/* Error Message */}
                             {submitError && (
-                                <div className="mb-4 px-6 py-3 bg-red-50 border border-red-200 rounded-[10px] text-red-700 font-arimo" style={{ width: '100%', maxWidth: '640px', fontSize: '14px' }}>
+                                <div className="mb-4 px-6 py-3 bg-red-50 border border-red-200 rounded-[10px] text-red-700 font-arimo" style={{ width: '640px', fontSize: '14px' }}>
                                     {submitError}
                                 </div>
                             )}
@@ -410,7 +428,7 @@ export default function DailyAnswerAttemptPage() {
                                 disabled={submitting}
                                 className="flex items-center justify-center gap-2 text-white font-bold transition-transform hover:scale-105 mb-4 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 style={{
-                                    width: '100%', maxWidth: '640px',
+                                    width: '640px',
                                     height: '56px',
                                     background: '#17223E',
                                     borderRadius: '14px',

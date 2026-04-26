@@ -4,84 +4,45 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { dashboardService, userService } from '@/lib/services';
-import Toast from '@/components/Toast';
-
-const INDIAN_STATES = [
-  'Andhra Pradesh',
-  'Arunachal Pradesh',
-  'Assam',
-  'Bihar',
-  'Chhattisgarh',
-  'Goa',
-  'Gujarat',
-  'Haryana',
-  'Himachal Pradesh',
-  'Jharkhand',
-  'Karnataka',
-  'Kerala',
-  'Madhya Pradesh',
-  'Maharashtra',
-  'Manipur',
-  'Meghalaya',
-  'Mizoram',
-  'Nagaland',
-  'Odisha',
-  'Punjab',
-  'Rajasthan',
-  'Sikkim',
-  'Tamil Nadu',
-  'Telangana',
-  'Tripura',
-  'Uttar Pradesh',
-  'Uttarakhand',
-  'West Bengal',
-  'Delhi',
-  'Jammu and Kashmir',
-  'Ladakh',
-  'Puducherry',
-];
-
-const TARGET_YEAR_OPTIONS = ['2026', '2027', '2028', 'Later'];
-
-const OPTIONAL_SUBJECTS = [
-  'Anthropology',
-  'Commerce and Accountancy',
-  'Geography',
-  'History',
-  'Mathematics',
-  'Philosophy',
-  'Political Science',
-  'Public Administration',
-  'Psychology',
-  'Sociology',
-  'Tamil Literature',
-];
-
-const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
 
 export default function ProfilePage() {
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
-  const [gender, setGender] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState('');
   const [state, setState] = useState('');
   const [targetYear, setTargetYear] = useState('');
   const [optionalSubject, setOptionalSubject] = useState('');
   const [saving, setSaving] = useState(false);
   const [stats, setStats] = useState<any>(null);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null);
 
   useEffect(() => {
     if (user) {
       setFirstName(user.firstName || '');
       setLastName(user.lastName || '');
       setPhone(user.phone || '');
-      setGender('');
-      setDateOfBirth('');
+      const extra = (user as any).profile || {};
+      setState(extra.state || '');
+      setTargetYear(extra.targetYear || '');
+      setOptionalSubject(extra.optionalSubject || '');
     }
   }, [user]);
+
+  // Load full profile from backend to get extra fields
+  useEffect(() => {
+    userService.getProfile().then((res) => {
+      const d = res.data;
+      if (d) {
+        setFirstName(d.firstName || '');
+        setLastName(d.lastName || '');
+        setPhone(d.phone || '');
+        setState(d.state || '');
+        setTargetYear(d.targetYear || '');
+        setOptionalSubject(d.optionalSubject || '');
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     dashboardService.getDashboard().then((res) => {
@@ -93,47 +54,73 @@ export default function ProfilePage() {
   const displayName = `${firstName} ${lastName}`.trim() || user?.email?.split('@')[0] || 'User';
 
   const handleDiscard = () => {
-    if (user) {
-      setFirstName(user.firstName || '');
-      setLastName(user.lastName || '');
-      setPhone(user.phone || '');
-      setGender('');
-      setDateOfBirth('');
-      setState('');
-      setTargetYear('');
-      setOptionalSubject('');
-    }
+    userService.getProfile().then((res) => {
+      const d = res.data;
+      if (d) {
+        setFirstName(d.firstName || '');
+        setLastName(d.lastName || '');
+        setPhone(d.phone || '');
+        setState(d.state || '');
+        setTargetYear(d.targetYear || '');
+        setOptionalSubject(d.optionalSubject || '');
+      }
+    }).catch(() => {});
   };
 
   const handleSave = async () => {
     setSaving(true);
+    setToast(null);
     try {
       await userService.updateProfile({
-        firstName,
-        lastName,
-        phone,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone.trim(),
+        state: state.trim(),
+        targetYear: targetYear.trim(),
+        optionalSubject: optionalSubject.trim(),
       });
-      setToast({ message: 'Profile updated successfully!', type: 'success' });
-      await refreshUser();
-    } catch (err) {
+      setToast({ kind: 'success', msg: 'Profile updated successfully!' });
+    } catch (err: any) {
       console.error('Failed to save profile:', err);
-      setToast({
-        message: err instanceof Error ? err.message : 'Failed to update profile',
-        type: 'error',
-      });
+      setToast({ kind: 'error', msg: err?.message || 'Could not save profile. Please try again.' });
     } finally {
       setSaving(false);
+      setTimeout(() => setToast(null), 3500);
     }
+  };
+
+  const handlePhoneChange = (raw: string) => {
+    // Allow only digits, cap at 10. Strip a leading +91 silently.
+    const cleaned = raw.replace(/\D/g, '').replace(/^91/, '').slice(0, 10);
+    setPhone(cleaned);
   };
 
   const daysOnPlatform = user?.createdAt
     ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24))
     : 0;
 
-  const selectClassName = "w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent";
-
   return (
-    <div className="min-h-screen bg-[#f1f5f9] px-4 sm:px-6 py-6 md:py-8" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-[#f1f5f9] px-6 py-8 relative" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* Toast */}
+      {toast && (
+        <div
+          className="fixed top-6 right-6 z-50 rounded-[12px] px-5 py-4 flex items-start gap-3 shadow-lg"
+          style={{
+            background: toast.kind === 'success' ? '#0F172B' : '#7F1D1D',
+            color: '#FFFFFF',
+            border: `1px solid ${toast.kind === 'success' ? '#22C55E' : '#FCA5A5'}`,
+            minWidth: 280,
+          }}
+        >
+          <span style={{ fontSize: 18 }}>{toast.kind === 'success' ? '✅' : '⚠️'}</span>
+          <div className="flex-1">
+            <div className="font-semibold text-[14px]">{toast.kind === 'success' ? 'Success' : 'Could not save'}</div>
+            <div className="text-[13px] opacity-90">{toast.msg}</div>
+          </div>
+          <button onClick={() => setToast(null)} className="opacity-70 hover:opacity-100">×</button>
+        </div>
+      )}
+
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 mb-4">
         <Link href="/dashboard" className="font-normal text-[14px] leading-[20px] text-[#62748e] hover:text-[#314158]">
@@ -144,7 +131,7 @@ export default function ProfilePage() {
       </nav>
 
       {/* Page Title */}
-      <h1 className="text-xl md:text-2xl lg:text-[30px] leading-[36px] text-[#0f172b] mb-6 md:mb-8" style={{ fontFamily: "'Georgia', serif" }}>
+      <h1 className="text-[30px] leading-[36px] text-[#0f172b] mb-8" style={{ fontFamily: "'Georgia', serif" }}>
         My Profile
       </h1>
 
@@ -202,89 +189,48 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Email / Gender / Date of Birth */}
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-[1.35] flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">
-                    Email{' '}
-                    {user?.emailVerified === true && (
-                      <span className="text-[12px] leading-[16px] text-[#00a63e]">✓ Verified</span>
-                    )}
-                  </label>
-                  <input
-                    type="email"
-                    value={user?.email || ''}
-                    disabled
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-[#f8fafc] font-normal text-[16px] leading-[24px] text-[#62748e] cursor-not-allowed"
-                  />
-                </div>
-                <div className="flex-1 flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Gender</label>
-                  <select
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    className={selectClassName}
-                  >
-                    <option value="">Select gender</option>
-                    {GENDER_OPTIONS.map((genderOption) => (
-                      <option key={genderOption} value={genderOption}>
-                        {genderOption}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1 flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Date of Birth</label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={dateOfBirth}
-                      onChange={(e) => setDateOfBirth(e.target.value)}
-                      max={new Date().toISOString().split('T')[0]}
-                      className={`${selectClassName} pr-11 [color-scheme:light]`}
-                    />
-                    <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#90a1b9]">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
+              {/* Email */}
+              <div className="flex flex-col gap-2">
+                <label className="font-medium text-[14px] leading-[20px] text-[#314158]">
+                  Email{' '}
+                  {user?.emailVerified !== false && (
+                    <span className="text-[12px] leading-[16px] text-[#00a63e]">✓ Verified</span>
+                  )}
+                </label>
+                <input
+                  type="email"
+                  value={user?.email || ''}
+                  disabled
+                  className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-[#f8fafc] font-normal text-[16px] leading-[24px] text-[#62748e] cursor-not-allowed"
+                />
               </div>
 
               {/* Phone / State */}
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">
-                    Phone{' '}
-                    {user?.phoneVerified === true && (
-                      <span className="text-[12px] leading-[16px] text-[#00a63e]">✓ Verified</span>
-                    )}
-                  </label>
+                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Phone</label>
                   <input
                     type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    placeholder="9876543210"
                     inputMode="numeric"
+                    pattern="[0-9]{10}"
                     maxLength={10}
+                    value={phone}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    placeholder="9876543210"
                     className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
                   />
+                  {phone && phone.length !== 10 && (
+                    <span className="text-[12px] text-[#DC2626]">Enter exactly 10 digits</span>
+                  )}
                 </div>
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">State</label>
-                  <select
+                  <input
+                    type="text"
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    className={selectClassName}
-                  >
-                    <option value="">Select state</option>
-                    {INDIAN_STATES.map((stateOption) => (
-                      <option key={stateOption} value={stateOption}>
-                        {stateOption}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
+                  />
                 </div>
               </div>
 
@@ -292,33 +238,21 @@ export default function ProfilePage() {
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Target year</label>
-                  <select
+                  <input
+                    type="text"
                     value={targetYear}
                     onChange={(e) => setTargetYear(e.target.value)}
-                    className={selectClassName}
-                  >
-                    <option value="">Select target year</option>
-                    {TARGET_YEAR_OPTIONS.map((yearOption) => (
-                      <option key={yearOption} value={yearOption}>
-                        {yearOption}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
+                  />
                 </div>
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Optional subject</label>
-                  <select
+                  <input
+                    type="text"
                     value={optionalSubject}
                     onChange={(e) => setOptionalSubject(e.target.value)}
-                    className={selectClassName}
-                  >
-                    <option value="">Select optional subject</option>
-                    {OPTIONAL_SUBJECTS.map((subjectOption) => (
-                      <option key={subjectOption} value={subjectOption}>
-                        {subjectOption}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
+                  />
                 </div>
               </div>
 
@@ -373,10 +307,6 @@ export default function ProfilePage() {
                 <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Mock tests taken</span>
                 <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{stats?.mockTestsTaken?.toLocaleString() || '0'}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Current streak</span>
-                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{stats?.streak?.toLocaleString() || '0'} days</span>
-              </div>
               <div className="flex items-center justify-between border-t border-[#f1f5f9] pt-2">
                 <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Current rank</span>
                 <span className="font-semibold text-[14px] leading-[20px] text-[#d08700]">
@@ -397,55 +327,54 @@ export default function ProfilePage() {
               <h3 className="font-semibold text-[18px] leading-[28px] text-[#0f172b]">Achievements</h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { icon: '/icons/fire.png', label: `${stats?.streak || 0}-day streak` },
-                { icon: '/icons/target.png', label: `${stats?.mcqsAttempted ? '1000' : '0'} MCQs` },
-                { icon: '/icons/pencil.png', label: `${stats?.answersEvaluated || 0} Answers` },
-                { icon: '/icons/trophy2.png', label: stats?.rank ? `Top ${stats.rank}` : 'Top 10' },
-              ].map((achievement) => (
-                <div
-                  key={achievement.label}
-                  className="flex flex-col items-center bg-[#f8fafc] rounded-[10px] pt-4 pb-4"
-                >
-                  <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center mb-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={achievement.icon} alt="" width={36} height={36} className="w-9 h-9 object-contain" />
-                  </div>
-                  <span className="font-normal text-[12px] leading-[16px] text-[#45556c] text-center">{achievement.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+            {(() => {
+              // Only render badges for milestones the user has actually
+              // hit. Empty state encourages action and avoids the
+              // hardcoded "Top 10" / "1000 MCQs" lie when nothing is done.
+              const earned: { icon: string; label: string }[] = [];
+              if ((stats?.streak ?? 0) >= 3) earned.push({ icon: '/icons/fire.png', label: `${stats.streak}-day streak` });
+              const mcqs = stats?.mcqsAttempted ?? 0;
+              if (mcqs >= 100) earned.push({ icon: '/icons/target.png', label: `${mcqs.toLocaleString()} MCQs` });
+              const answers = stats?.answersEvaluated ?? 0;
+              if (answers >= 10) earned.push({ icon: '/icons/pencil.png', label: `${answers} Answers` });
+              const mocks = stats?.mockTestsTaken ?? 0;
+              if (mocks >= 5) earned.push({ icon: '/icons/trophy2.png', label: `${mocks} Mock Tests` });
+              if (stats?.rank && stats?.totalUsers && stats.rank / stats.totalUsers <= 0.1) {
+                earned.push({ icon: '/icons/trophy2.png', label: `Top 10% rank` });
+              }
 
-          {/* Saved Notes Card */}
-          <Link href="/dashboard/saved-notes">
-            <div
-              className="bg-white rounded-[14px] pt-6 px-6 pb-6 flex flex-col gap-4 cursor-pointer hover:shadow-md transition-shadow"
-              style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
-            >
-              <div className="flex items-center gap-2">
-                <span style={{ fontSize: '28px' }}>📌</span>
-                <h3 className="font-semibold text-[18px] leading-[28px] text-[#0f172b]">Saved Notes & Bookmarks</h3>
-              </div>
-              <p className="font-normal text-[14px] leading-[20px] text-[#62748e]">
-                View all your saved editorials and bookmarked articles in one place.
-              </p>
-              <div className="flex items-center gap-1 text-[#155DFC] font-medium text-[14px]">
-                View all <span>→</span>
-              </div>
-            </div>
-          </Link>
+              if (earned.length === 0) {
+                return (
+                  <div className="text-center py-4 px-2">
+                    <div className="text-[28px] mb-2">🌱</div>
+                    <p className="font-medium text-[14px] text-[#0f172b] mb-1">No badges yet</p>
+                    <p className="text-[12px] text-[#62748e]">
+                      Maintain a 3-day streak, attempt 100 MCQs, or evaluate 10 answers to earn your first badge.
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-2 gap-3">
+                  {earned.map((achievement) => (
+                    <div
+                      key={achievement.label}
+                      className="flex flex-col items-center bg-[#f8fafc] rounded-[10px] pt-4 pb-4"
+                    >
+                      <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center mb-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={achievement.icon} alt="" width={36} height={36} className="w-9 h-9 object-contain" />
+                      </div>
+                      <span className="font-normal text-[12px] leading-[16px] text-[#45556c] text-center">{achievement.label}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
         </div>
       </div>
-
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }

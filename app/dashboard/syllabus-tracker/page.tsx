@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { userService, syllabusService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
+import { SYLLABUS_DATA } from '@/data/syllabus/syllabusData';
 import HeroSection from './components/HeroSection';
 import StageTabs from './components/StageTabs';
 import SubjectList from './components/SubjectList';
@@ -61,19 +62,61 @@ export default function SyllabusTrackerPage() {
 
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
 
+  const normalizeSyllabusData = useCallback((raw: SyllabusData): SyllabusData => {
+    const mains = [...(raw.mains || [])];
+    const essayIndex = mains.findIndex((subject) =>
+      subject.short.toLowerCase().includes('essay') || subject.name.toLowerCase().includes('essay')
+    );
+
+    if (essayIndex > -1 && essayIndex !== mains.length - 1) {
+      const [essay] = mains.splice(essayIndex, 1);
+      mains.push(essay);
+    }
+
+    return {
+      prelims: raw.prelims || [],
+      mains,
+      optional: raw.optional || [],
+    };
+  }, []);
+
   // Load syllabus structure from API
   useEffect(() => {
+    let mounted = true;
+    const cacheKey = 'rwj_syllabus_cache_v1';
+
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached) as SyllabusData;
+          setSyllabusData(normalizeSyllabusData(parsed));
+          setSyllabusLoading(false);
+        } catch {}
+      }
+    }
+
     syllabusService.getSyllabus()
       .then(res => {
-        if (res.data) {
-          setSyllabusData(res.data);
+        if (!mounted || !res.data) return;
+        const normalized = normalizeSyllabusData(res.data);
+        setSyllabusData(normalized);
+        setSyllabusLoading(false);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(cacheKey, JSON.stringify(normalized));
         }
       })
       .catch(err => {
+        if (!mounted) return;
         console.error('Failed to load syllabus data:', err);
-      })
-      .finally(() => setSyllabusLoading(false));
-  }, []);
+        setSyllabusData(prev => prev ?? normalizeSyllabusData(SYLLABUS_DATA));
+        setSyllabusLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [normalizeSyllabusData]);
 
   // Load tracker state from API on mount, fall back to localStorage
   useEffect(() => {
@@ -216,7 +259,7 @@ export default function SyllabusTrackerPage() {
       {/* Page Content - scrollable */}
       <div className="flex-1 overflow-y-auto">
         {/* Hero Section */}
-        <HeroSection states={states} syllabusData={syllabusData} userName={user?.firstName} />
+        <HeroSection mode={mode} states={states} syllabusData={syllabusData} userName={user?.firstName} />
 
         {/* Stage Tabs */}
         <div className="px-[18px] pt-[14px] pb-0">
@@ -268,8 +311,10 @@ export default function SyllabusTrackerPage() {
 
           {/* Right Panel */}
           <RightPanel 
+            mode={mode}
             subjects={currentSubjects}
             states={states}
+            syllabusData={syllabusData}
           />
         </div>
       </div>

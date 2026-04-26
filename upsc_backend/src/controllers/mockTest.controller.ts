@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { randomUUID } from "crypto";
 import { supabaseAdmin } from "../config/supabase";
-import { generateMCQQuestions } from "../services/questionGenerator";
+import { generateMCQQuestions, generateMainsQuestions } from "../services/questionGenerator";
 import { generateMockTestFromRAG, hasStudyMaterial } from "../services/mockTestRag.service";
 
 /**
@@ -126,8 +126,11 @@ export const generateTest = async (req: Request, res: Response, next: NextFuncti
     console.log(`[Mock Test] Generate: user=${userId}, subject=${subject}, count=${questionCount}, difficulty=${difficulty}`);
 
     const count = Math.min(questionCount || 10, 100);
-    const duration = Math.round(count * 1.6);
-    const totalMarks = count * 2;
+    const isMainsMode = (examMode || "prelims") === "mains";
+    // Prelims: 1 minute per question. Mains: ~8 minutes per question.
+    const duration = isMainsMode ? Math.max(10, count * 8) : count;
+    // Mains: 15 marks per question by UPSC convention. Prelims: 2 marks.
+    const totalMarks = isMainsMode ? count * 15 : count * 2;
 
     const { data: mockTest, error: createErr } = await supabaseAdmin
       .from("mock_tests")
@@ -156,76 +159,203 @@ export const generateTest = async (req: Request, res: Response, next: NextFuncti
 
     let finalQuestions: any[] = [];
 
-    // ── RAG Path: use uploaded study material if available ──────────
-    const ragAvailable = await hasStudyMaterial(targetSubject);
+    // ── MAINS PATH: pull from admin-seeded PYQ Mains bank (approved only) ──
+    if (isMainsMode) {
+      let mainsQuery = supabaseAdmin
+        .from("pyq_mains_questions")
+        .select("id, question_text, subject, paper, year, difficulty, topic")
+        .eq("status", "approved")
+        .limit(Math.max(count * 4, 40));
 
-    if (ragAvailable) {
-      try {
-        console.log(`[MockTest] RAG generation for subject="${targetSubject}" count=${count}`);
-        const ragQuestions = await generateMockTestFromRAG({
-          subject: targetSubject,
-          topic: req.body.topic,
-          difficulty: difficulty || "mixed",
-          questionCount: count,
-          examMode: examMode || "prelims",
-        });
-        finalQuestions = ragQuestions;
-        console.log(`[MockTest] RAG produced ${ragQuestions.length} questions`);
-      } catch (ragErr) {
-        console.warn("[MockTest] RAG failed, falling back to standard generation:", ragErr);
+      if (subject && subject !== "All Subjects") {
+        mainsQuery = mainsQuery.ilike("subject", `%${subject}%`);
       }
-    }
+      if (paperType) {
+        // paperType from UI like "gs1" / "GS Paper I" — match either
+        mainsQuery = mainsQuery.ilike("paper", `%${String(paperType).replace(/[^0-9IVX]/gi, "")}%`);
+      }
 
-    // ── Fallback: PYQ bank + AI generation if RAG didn't produce enough ──
-    let pyqQuestions: any[] = [];
-    let aiQuestions: any[] = [];
-    let pyqCount = 0;
-    let aiCount = 0;
-    if (finalQuestions.length < count) {
-      const remaining = count - finalQuestions.length;
+      const { data: mainsRows, error: mainsErr } = await mainsQuery;
+      if (mainsErr) {
+        console.error("[MockTest] mains query failed:", mainsErr);
+      }
 
-      pyqQuestions = [];
-      if (source === "pyq" || source === "mixed" || finalQuestions.length === 0) {
-        let pyqQuery = supabaseAdmin
-          .from("pyq_questions")
-          .select("*")
-          .eq("status", "approved")
-          .limit(Math.ceil(remaining / 2))
-          .order("created_at", { ascending: false });
+      // Random sample `count` from the pool so repeated clicks give variety.
+      const pool = (mainsRows || []).slice();
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      const picked = pool.slice(0, count);
 
-        if (subject && subject !== "All Subjects") {
-          pyqQuery = pyqQuery.ilike("subject", `%${subject}%`);
+      finalQuestions = picked.map((q: any) => ({
+        questionText: q.question_text,
+        options: [], // mains: no options
+        correctOption: null,
+        subject: q.subject,
+        category: q.subject,
+        difficulty: q.difficulty || difficulty || "Medium",
+        explanation: "",
+      }));
+
+      console.log(
+        `[MockTest] mains: ${finalQuestions.length} admin PYQ mains pulled (need ${count})`
+      );
+
+      // Top up with AI-generated mains questions — subject + difficulty aware,
+      // open-ended style (no options, no model answers). Evaluator grades strictly after submission.
+      if (finalQuestions.length < count) {
+        const remaining = count - finalQuestions.length;
+        try {
+          const aiMains = await generateMainsQuestions({
+            subject: targetSubject,
+            difficulty: difficulty || "medium",
+            count: remaining,
+            paperType,
+            marksPerQuestion: 15,
+          });
+          console.log(`[MockTest] mains: AI generated ${aiMains.length}/${remaining}`);
+          finalQuestions = [
+            ...finalQuestions,
+            ...aiMains.map((q) => ({
+              questionText: q.questionText,
+              options: [],
+              correctOption: null,
+              subject: q.subject || targetSubject,
+              category: q.category || targetSubject,
+              difficulty: q.difficulty || difficulty || "medium",
+              explanation: "",
+            })),
+          ];
+        } catch (aiErr) {
+          console.error("[MockTest] mains AI generation failed:", aiErr);
+        }
+      }
+
+      if (finalQuestions.length === 0) {
+        await supabaseAdmin.from("mock_tests").delete().eq("id", mockTest.id);
+        return res.status(500).json({
+          status: "error",
+          message:
+            "Unable to generate mains questions right now. Please retry in a moment.",
+        });
+      }
+    } else {
+      // ── PRELIMS PATH ──
+      // RAG first if we have uploaded study material, then PYQ bank, then AI fill.
+      const ragAvailable = await hasStudyMaterial(targetSubject);
+
+      if (ragAvailable) {
+        try {
+          console.log(`[MockTest] RAG generation for subject="${targetSubject}" count=${count}`);
+          const ragQuestions = await generateMockTestFromRAG({
+            subject: targetSubject,
+            topic: req.body.topic,
+            difficulty: difficulty || "mixed",
+            questionCount: count,
+            examMode: examMode || "prelims",
+          });
+          finalQuestions = ragQuestions;
+          console.log(`[MockTest] RAG produced ${ragQuestions.length} questions`);
+        } catch (ragErr) {
+          console.warn("[MockTest] RAG failed, falling back to standard generation:", ragErr);
+        }
+      }
+
+      let pyqQuestions: any[] = [];
+      let aiQuestions: any[] = [];
+      let pyqCount = 0;
+      let aiCount = 0;
+      if (finalQuestions.length < count) {
+        const remaining = count - finalQuestions.length;
+
+        if (source === "pyq" || source === "mixed" || finalQuestions.length === 0) {
+          // UPSC-priority subject list — kept in rank order so "All Subjects"
+          // pulls a balanced mix instead of whatever was most recently seeded
+          // (which can otherwise skew toward sports/GK fillers).
+          const PRIORITY_SUBJECTS = [
+            "Polity", "Economy", "Geography", "Environment",
+            "History", "Science", "Current Affairs", "International",
+            "Ethics", "Society", "Agriculture",
+          ];
+          const EXCLUDE_SUBJECTS = ["Sports", "Entertainment", "Lifestyle"];
+
+          let pyqQuery = supabaseAdmin
+            .from("pyq_questions")
+            .select("*")
+            .eq("status", "approved")
+            .limit(Math.max(remaining * 3, 30))
+            .order("year", { ascending: false });
+
+          if (subject && subject !== "All Subjects") {
+            pyqQuery = pyqQuery.ilike("subject", `%${subject}%`);
+          } else {
+            // Drop known non-UPSC categories at the query level.
+            for (const ex of EXCLUDE_SUBJECTS) {
+              pyqQuery = pyqQuery.not("subject", "ilike", `%${ex}%`);
+            }
+          }
+
+          const { data } = await pyqQuery;
+          const pool = data || [];
+
+          // When no subject was specified, round-robin across priority
+          // subjects so results are balanced, not dominated by whichever
+          // category has the most rows.
+          if (!subject || subject === "All Subjects") {
+            const buckets: Record<string, any[]> = {};
+            for (const q of pool) {
+              const subj = (q.subject || "Other") as string;
+              const key = PRIORITY_SUBJECTS.find((p) => subj.toLowerCase().includes(p.toLowerCase())) || "Other";
+              (buckets[key] = buckets[key] || []).push(q);
+            }
+            const ordered: any[] = [];
+            const keys = [...PRIORITY_SUBJECTS, "Other"];
+            let added = true;
+            while (ordered.length < Math.ceil(remaining / 2) && added) {
+              added = false;
+              for (const key of keys) {
+                if (buckets[key] && buckets[key].length > 0) {
+                  ordered.push(buckets[key].shift());
+                  added = true;
+                  if (ordered.length >= Math.ceil(remaining / 2)) break;
+                }
+              }
+            }
+            pyqQuestions = ordered;
+          } else {
+            pyqQuestions = pool.slice(0, Math.ceil(remaining / 2));
+          }
         }
 
-        const { data } = await pyqQuery;
-        pyqQuestions = data || [];
+        pyqCount = pyqQuestions.length;
+        aiCount = remaining - pyqQuestions.length;
+        if (aiCount > 0) {
+          aiQuestions = await generateMCQQuestions({
+            subject: targetSubject,
+            difficulty: difficulty || "medium",
+            count: aiCount,
+            examMode: examMode || "prelims",
+          });
+        }
+        aiCount = aiQuestions.length;
+
+        finalQuestions = [
+          ...finalQuestions,
+          ...pyqQuestions.map((q: any) => ({
+            questionText: q.question_text,
+            options: q.options,
+            correctOption: q.correct_option || "A",
+            subject: q.subject,
+            category: q.subject,
+            difficulty: q.difficulty,
+            explanation: q.explanation || "",
+          })),
+          ...aiQuestions,
+        ];
       }
 
-      pyqCount = pyqQuestions.length;
-      aiCount = remaining - pyqQuestions.length;
-      if (aiCount > 0) {
-        aiQuestions = await generateMCQQuestions({
-          subject: targetSubject,
-          difficulty: difficulty || "medium",
-          count: aiCount,
-          examMode: examMode || "prelims",
-        });
-      }
-      aiCount = aiQuestions.length;
-
-      finalQuestions = [
-        ...finalQuestions,
-        ...pyqQuestions.map((q: any) => ({
-          questionText: q.question_text,
-          options: q.options,
-          correctOption: q.correct_option || "A",
-          subject: q.subject,
-          category: q.subject,
-          difficulty: q.difficulty,
-          explanation: q.explanation || "",
-        })),
-        ...aiQuestions,
-      ];
+      console.log(`[MockTest] prelims: ${pyqCount} PYQ + ${aiCount} AI`);
     }
 
     // ── Save questions ───────────────────────────────────────────────
@@ -238,21 +368,38 @@ export const generateTest = async (req: Request, res: Response, next: NextFuncti
       subject: q.subject || targetSubject,
       category: q.category || q.subject || targetSubject,
       difficulty: q.difficulty || difficulty || "Medium",
-      options: q.options || [
-        { id: "A", text: "Option A" },
-        { id: "B", text: "Option B" },
-        { id: "C", text: "Option C" },
-        { id: "D", text: "Option D" },
-      ],
-      correct_option: q.correctOption || "A",
+      options: isMainsMode
+        ? []
+        : (q.options || [
+            { id: "A", text: "Option A" },
+            { id: "B", text: "Option B" },
+            { id: "C", text: "Option C" },
+            { id: "D", text: "Option D" },
+          ]),
+      // Mains questions are open-ended (no correct option). Column is NOT NULL in schema,
+      // so we store a sentinel — getTestQuestions strips this field for mains clients.
+      correct_option: isMainsMode ? "N/A" : (q.correctOption || "A"),
       explanation: q.explanation || "",
     }));
 
-    if (questionsToInsert.length > 0) {
-      const { error: qInsertErr } = await supabaseAdmin.from("mock_test_questions").insert(questionsToInsert);
-      if (qInsertErr) {
-        console.error("[Mock Test] Failed to insert questions:", qInsertErr.message);
-      }
+    if (questionsToInsert.length === 0) {
+      await supabaseAdmin.from("mock_tests").delete().eq("id", mockTest.id);
+      return res.status(500).json({
+        status: "error",
+        message: "No questions could be generated for your selection. Please retry or change filters.",
+      });
+    }
+
+    const { error: qInsertErr } = await supabaseAdmin
+      .from("mock_test_questions")
+      .insert(questionsToInsert);
+    if (qInsertErr) {
+      console.error("[Mock Test] Failed to insert questions:", qInsertErr.message);
+      await supabaseAdmin.from("mock_tests").delete().eq("id", mockTest.id);
+      return res.status(500).json({
+        status: "error",
+        message: `Failed to save generated questions: ${qInsertErr.message}`,
+      });
     }
 
     await supabaseAdmin.from("user_activities").insert({
@@ -263,7 +410,7 @@ export const generateTest = async (req: Request, res: Response, next: NextFuncti
       description: `${count} questions on ${subject || "Mixed"}`,
     });
 
-    console.log(`[Mock Test] Generated: ${mockTest.id} with ${questionNum - 1} questions (${pyqCount} PYQ + ${aiCount} AI)`);
+    console.log(`[Mock Test] Generated: ${mockTest.id} with ${questionNum - 1} questions (mode=${examMode})`);
     res.json({
       status: "success",
       data: {
@@ -288,13 +435,15 @@ export const getTestQuestions = async (req: Request, res: Response, next: NextFu
 
     const { data: test } = await supabaseAdmin
       .from("mock_tests")
-      .select("id, title, duration, total_marks")
+      .select("id, title, duration, total_marks, exam_mode")
       .eq("id", testId)
       .single();
 
     if (!test) {
       return res.status(404).json({ status: "error", message: "Test not found" });
     }
+
+    const isMains = (test.exam_mode || "").toLowerCase() === "mains";
 
     const { data: questions } = await supabaseAdmin
       .from("mock_test_questions")
@@ -309,6 +458,7 @@ export const getTestQuestions = async (req: Request, res: Response, next: NextFu
         title: test.title,
         duration: test.duration,
         totalMarks: test.total_marks,
+        examMode: test.exam_mode,
         questions: (questions || []).map((q: any) => ({
           id: q.id,
           questionNum: q.question_num,
@@ -316,8 +466,8 @@ export const getTestQuestions = async (req: Request, res: Response, next: NextFu
           subject: q.subject,
           category: q.category,
           difficulty: q.difficulty,
-          correct: q.correct_option,
-          explanation: q.explanation || "",
+          // For mains, never expose correct answer or explanation to the client — answers are AI-evaluated after submission.
+          ...(isMains ? {} : { correct: q.correct_option, explanation: q.explanation || "" }),
           options: (q.options || []).map((o: any) => ({
             label: o.id || o.label,
             text: o.text,

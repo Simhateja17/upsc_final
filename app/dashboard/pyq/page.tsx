@@ -45,6 +45,7 @@ export default function PyqPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedSubject, setSelectedSubject] = useState('All Papers');
+  const yearOptions = Array.from({ length: 8 }, (_, i) => String(new Date().getFullYear() - i));
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
@@ -754,7 +755,7 @@ export default function PyqPage() {
                 className="grid grid-cols-4 gap-2 px-5"
                 style={{ gap: '8px 8px' }}
               >
-                {['2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017'].map((year) => {
+                {yearOptions.map((year) => {
                   const selected = selectedYear === parseInt(year);
                   return (
                     <button

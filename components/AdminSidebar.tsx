@@ -72,7 +72,7 @@ const navigationSections: NavSection[] = [
     items: [
       { id: 'testimonials', label: 'Testimonials', path: '/admin/testimonials', icon: '⭐' },
       { id: 'pricing', label: 'Pricing Plans', path: '/admin/pricing', icon: '💳' },
-      { id: 'billing', label: 'Billing & Subs', path: '/admin/billing', icon: '🧾' },
+      { id: 'faqs', label: 'FAQ Manager', path: '/admin/faqs', icon: '❓' },
     ],
   },
   {

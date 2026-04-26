@@ -32,11 +32,46 @@ function Toggle({ enabled, onChange }: { enabled: boolean; onChange: () => void 
   );
 }
 
+interface SessionEntry {
+  id: string;
+  label: string;
+  lastSeen: string | null;
+  isCurrent: boolean;
+}
+
+function describeUserAgent(ua: string): string {
+  if (!ua) return 'Unknown device';
+  const browser = /Edg\//.test(ua)
+    ? 'Edge'
+    : /Chrome\//.test(ua) && !/Chromium\//.test(ua)
+      ? 'Chrome'
+      : /Safari\//.test(ua) && !/Chrome\//.test(ua)
+        ? 'Safari'
+        : /Firefox\//.test(ua)
+          ? 'Firefox'
+          : 'Browser';
+  const os = /Windows/.test(ua)
+    ? 'Windows'
+    : /Mac OS X/.test(ua)
+      ? 'macOS'
+      : /Android/.test(ua)
+        ? 'Android'
+        : /iPhone|iPad|iPod/.test(ua)
+          ? 'iOS'
+          : /Linux/.test(ua)
+            ? 'Linux'
+            : 'Device';
+  return `${browser} · ${os}`;
+}
+
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [sessions, setSessions] = useState<SessionEntry[]>([]);
+  const [revoking, setRevoking] = useState<string | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   // Profile form state
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -60,11 +95,6 @@ export default function SettingsPage() {
   const [dailyTarget, setDailyTarget] = useState('');
   const [answerReminder, setAnswerReminder] = useState('');
   const [language, setLanguage] = useState('');
-  const [theme, setTheme] = useState('system');
-
-  // Delete Account state
-  const [deleteReason, setDeleteReason] = useState('');
-  const [deleteRetention, setDeleteRetention] = useState('');
 
   // Privacy toggles
   const [privLeaderboard, setPrivLeaderboard] = useState(true);
@@ -73,7 +103,60 @@ export default function SettingsPage() {
 
   // Save state
   const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState('');
+  const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null);
+
+  const showToast = (msg: string, kind: 'success' | 'error' = 'success') => {
+    setToast({ kind, msg });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  // Load active sessions. Falls back to a "this device" entry if the
+  // backend endpoint isn't available.
+  useEffect(() => {
+    let cancelled = false;
+    const loadSessions = async () => {
+      const currentEntry: SessionEntry = {
+        id: 'current',
+        label: typeof navigator !== 'undefined' ? describeUserAgent(navigator.userAgent) : 'This device',
+        lastSeen: null,
+        isCurrent: true,
+      };
+      try {
+        const res = await userService.getSessions();
+        const list = Array.isArray(res?.data) ? res.data : [];
+        if (cancelled) return;
+        if (list.length === 0) {
+          setSessions([currentEntry]);
+          return;
+        }
+        const mapped: SessionEntry[] = list.map((s: any) => ({
+          id: s.id,
+          label: s.userAgent ? describeUserAgent(s.userAgent) : 'Unknown device',
+          lastSeen: s.lastSeenAt || s.updatedAt || null,
+          isCurrent: !!s.isCurrent,
+        }));
+        if (!mapped.some((s) => s.isCurrent)) mapped.unshift(currentEntry);
+        setSessions(mapped);
+      } catch {
+        if (!cancelled) setSessions([currentEntry]);
+      }
+    };
+    loadSessions();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleRevoke = async (sessionId: string) => {
+    setRevoking(sessionId);
+    setSessionError(null);
+    try {
+      await userService.revokeSession(sessionId);
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    } catch (err: any) {
+      setSessionError(err?.message || 'Could not revoke session.');
+    } finally {
+      setRevoking(null);
+    }
+  };
 
   // Load profile & settings from backend
   useEffect(() => {
@@ -103,17 +186,14 @@ export default function SettingsPage() {
     }).catch(() => {});
   }, []);
 
-  const showSaved = (msg = 'Saved!') => {
-    setSaveMsg(msg);
-    setTimeout(() => setSaveMsg(''), 2500);
-  };
-
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
       await userService.updateProfile({ firstName, lastName, bio });
-      showSaved();
-    } catch { setSaveMsg('Error saving'); }
+      showToast('Profile updated successfully!');
+    } catch (err: any) {
+      showToast(err?.message || 'Could not save profile. Please try again.', 'error');
+    }
     setSaving(false);
   };
 
@@ -123,8 +203,10 @@ export default function SettingsPage() {
       await userService.updateSettings({
         notifications: { mcq: notifMcq, answer: notifAnswer, digest: notifDigest, streak: notifStreak, promo: notifPromo },
       });
-      showSaved();
-    } catch { setSaveMsg('Error saving'); }
+      showToast('Notification preferences saved!');
+    } catch (err: any) {
+      showToast(err?.message || 'Error saving notifications.', 'error');
+    }
     setSaving(false);
   };
 
@@ -132,10 +214,12 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await userService.updateSettings({
-        preferences: { dailyTarget, answerReminder, language, theme },
+        preferences: { dailyTarget, answerReminder, language },
       });
-      showSaved();
-    } catch { setSaveMsg('Error saving'); }
+      showToast('Preferences saved!');
+    } catch (err: any) {
+      showToast(err?.message || 'Error saving preferences.', 'error');
+    }
     setSaving(false);
   };
 
@@ -145,8 +229,10 @@ export default function SettingsPage() {
       await userService.updateSettings({
         privacy: { leaderboard: privLeaderboard, studyRoom: privStudyRoom, analytics: privAnalytics },
       });
-      showSaved();
-    } catch { setSaveMsg('Error saving'); }
+      showToast('Privacy settings saved!');
+    } catch (err: any) {
+      showToast(err?.message || 'Error saving privacy settings.', 'error');
+    }
     setSaving(false);
   };
 
@@ -173,7 +259,6 @@ export default function SettingsPage() {
       </div>
       <div className="flex items-center gap-3">
         <button className={btnPrimary} onClick={handleSaveProfile} disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button>
-        {saveMsg && <span className="text-sm text-green-600 font-medium">{saveMsg}</span>}
       </div>
     </div>
   );
@@ -202,22 +287,39 @@ export default function SettingsPage() {
 
       <div className="border-t border-[#e2e8f0] pt-8 mt-4 flex flex-col gap-6">
         <h2 className="font-semibold text-[20px] leading-[28px] text-[#0f172b]">Active Sessions</h2>
+        {sessionError && (
+          <div className="text-[13px] text-[#DC2626]">{sessionError}</div>
+        )}
         <div className="flex flex-col gap-3">
-          <div className="bg-[#f8fafc] border-[0.8px] border-[#e2e8f0] rounded-[10px] px-4 py-4 flex items-center justify-between">
-            <div className="flex flex-col gap-1">
-              <p className="font-medium text-[16px] leading-[24px] text-[#0f172b]">Chrome - macOS - Delhi, IN</p>
-              <p className="font-medium text-[14px] leading-[20px] text-[#00a63e]">● Current session</p>
+          {sessions.length === 0 && (
+            <p className="text-[14px] text-[#62748e]">No active sessions found.</p>
+          )}
+          {sessions.map((s) => (
+            <div
+              key={s.id}
+              className={`${s.isCurrent ? 'bg-[#f8fafc]' : 'bg-white'} border-[0.8px] border-[#e2e8f0] rounded-[10px] px-4 py-4 flex items-center justify-between`}
+            >
+              <div className="flex flex-col gap-1">
+                <p className="font-medium text-[16px] leading-[24px] text-[#0f172b]">{s.label}</p>
+                {s.isCurrent ? (
+                  <p className="font-medium text-[14px] leading-[20px] text-[#00a63e]">● Current session</p>
+                ) : (
+                  <p className="font-normal text-[14px] leading-[20px] text-[#62748e]">
+                    {s.lastSeen ? `Last seen ${new Date(s.lastSeen).toLocaleString()}` : 'Active'}
+                  </p>
+                )}
+              </div>
+              {!s.isCurrent && (
+                <button
+                  onClick={() => handleRevoke(s.id)}
+                  disabled={revoking === s.id}
+                  className="h-[37.6px] px-4 rounded-[10px] border-[0.8px] border-[#ffc9c9] font-medium text-[14px] leading-[20px] text-[#e7000b] hover:bg-[#fef2f2] transition-colors disabled:opacity-50"
+                >
+                  {revoking === s.id ? 'Revoking...' : 'Revoke'}
+                </button>
+              )}
             </div>
-          </div>
-          <div className="bg-white border-[0.8px] border-[#e2e8f0] rounded-[10px] px-4 py-4 flex items-center justify-between">
-            <div className="flex flex-col gap-1">
-              <p className="font-medium text-[16px] leading-[24px] text-[#0f172b]">Safari - iPhone 15</p>
-              <p className="font-normal text-[14px] leading-[20px] text-[#62748e]">Last seen 2d ago</p>
-            </div>
-            <button className="h-[37.6px] px-4 rounded-[10px] border-[0.8px] border-[#ffc9c9] font-medium text-[14px] leading-[20px] text-[#e7000b] hover:bg-[#fef2f2] transition-colors">
-              Revoke
-            </button>
-          </div>
+          ))}
         </div>
       </div>
     </div>
@@ -230,7 +332,7 @@ export default function SettingsPage() {
       {[
         { label: 'Daily MCQ reminder', desc: 'Remind to complete daily practice', enabled: notifMcq, toggle: () => setNotifMcq(!notifMcq) },
         { label: 'Answer evaluation complete', desc: 'When AI finishes evaluating', enabled: notifAnswer, toggle: () => setNotifAnswer(!notifAnswer) },
-        { label: 'Current affairs morning digest', desc: 'Daily at 8 AM', enabled: notifDigest, toggle: () => setNotifDigest(!notifDigest) },
+        { label: 'Current affairs morning digest', desc: 'Daily at 7 AM', enabled: notifDigest, toggle: () => setNotifDigest(!notifDigest) },
         { label: 'Streak at risk', desc: 'Alert before streak breaks', enabled: notifStreak, toggle: () => setNotifStreak(!notifStreak) },
         { label: 'Promotional emails', desc: 'Updates and offers', enabled: notifPromo, toggle: () => setNotifPromo(!notifPromo) },
       ].map((item) => (
@@ -245,12 +347,9 @@ export default function SettingsPage() {
 
       <div className="flex items-center gap-3">
         <button className={btnPrimary} onClick={handleSaveNotifications} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
-        {saveMsg && <span className="text-sm text-green-600 font-medium">{saveMsg}</span>}
       </div>
     </div>
   );
-
-  const selectClass = "w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#cad5e2] bg-white font-normal text-[16px] leading-[24px] text-[#0f172b] focus:outline-none focus:ring-2 focus:ring-[#1d293d] focus:border-transparent cursor-pointer";
 
   const renderPreferencesTab = () => (
     <div className="bg-white border-[0.8px] border-[#e2e8f0] rounded-[10px] p-8 flex flex-col gap-6" style={cardStyle}>
@@ -258,46 +357,19 @@ export default function SettingsPage() {
 
       <div className="flex flex-col gap-2">
         <label className={labelClass}>Daily MCQ target</label>
-        <select value={dailyTarget} onChange={(e) => setDailyTarget(e.target.value)} className={selectClass}>
-          <option value="">Select target</option>
-          <option value="10">10 questions</option>
-          <option value="20">20 questions</option>
-          <option value="50">50 questions</option>
-          <option value="75">75 questions</option>
-          <option value="100">100 questions</option>
-        </select>
+        <input type="text" value={dailyTarget} onChange={(e) => setDailyTarget(e.target.value)} className={inputClass} />
       </div>
-
       <div className="flex flex-col gap-2">
         <label className={labelClass}>Answer writing reminder</label>
-        <select value={answerReminder} onChange={(e) => setAnswerReminder(e.target.value)} className={selectClass}>
-          <option value="">Select preference</option>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
+        <input type="text" value={answerReminder} onChange={(e) => setAnswerReminder(e.target.value)} className={inputClass} />
       </div>
-
       <div className="flex flex-col gap-2">
         <label className={labelClass}>Language</label>
-        <select value={language} onChange={(e) => setLanguage(e.target.value)} className={selectClass}>
-          <option value="">Select language</option>
-          <option value="english">English</option>
-          <option value="hindi">Hindi (Beta)</option>
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className={labelClass}>Theme</label>
-        <select value={theme} onChange={(e) => setTheme(e.target.value)} className={selectClass}>
-          <option value="system">System Default</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-        </select>
+        <input type="text" value={language} onChange={(e) => setLanguage(e.target.value)} className={inputClass} />
       </div>
 
       <div className="flex items-center gap-3">
         <button className={btnPrimary} onClick={handleSavePreferences} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
-        {saveMsg && <span className="text-sm text-green-600 font-medium">{saveMsg}</span>}
       </div>
     </div>
   );
@@ -322,13 +394,39 @@ export default function SettingsPage() {
 
       <div className="flex items-center gap-3">
         <button className={btnPrimary} onClick={handleSavePrivacy} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
-        {saveMsg && <span className="text-sm text-green-600 font-medium">{saveMsg}</span>}
+      </div>
+
+      <div>
+        <button className="h-[44px] px-5 rounded-[10px] border-[0.8px] border-[#155dfc] bg-white font-medium text-[16px] leading-[24px] text-[#155dfc] hover:bg-[#eff6ff] transition-colors flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 12h10" stroke="#155dfc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Export my data (GDPR)
+        </button>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9] px-4 sm:px-6 py-6 md:py-8" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-[#f1f5f9] px-6 py-8" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* Toast */}
+      {toast && (
+        <div
+          className="fixed top-6 right-6 z-50 rounded-[12px] px-5 py-4 flex items-start gap-3 shadow-lg"
+          style={{
+            background: toast.kind === 'success' ? '#0F172B' : '#7F1D1D',
+            color: '#FFFFFF',
+            border: `1px solid ${toast.kind === 'success' ? '#22C55E' : '#FCA5A5'}`,
+            minWidth: 280,
+          }}
+        >
+          <span style={{ fontSize: 18 }}>{toast.kind === 'success' ? '✅' : '⚠️'}</span>
+          <div className="flex-1">
+            <div className="font-semibold text-[14px]">{toast.kind === 'success' ? 'Success' : 'Could not save'}</div>
+            <div className="text-[13px] opacity-90">{toast.msg}</div>
+          </div>
+          <button onClick={() => setToast(null)} className="opacity-70 hover:opacity-100">×</button>
+        </div>
+      )}
+
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 mb-4">
         <Link href="/dashboard" className="font-normal text-[14px] leading-[20px] text-[#62748e] hover:text-[#314158]">
@@ -338,7 +436,7 @@ export default function SettingsPage() {
         <span className="font-medium text-[14px] leading-[20px] text-[#314158]">Account Settings</span>
       </nav>
 
-      <h1 className="font-bold text-xl md:text-2xl lg:text-[30px] leading-[36px] text-[#0f172b] mb-6 md:mb-8">Account Settings</h1>
+      <h1 className="font-bold text-[30px] leading-[36px] text-[#0f172b] mb-8">Account Settings</h1>
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Sidebar */}
@@ -363,15 +461,6 @@ export default function SettingsPage() {
             <Image src="/bin.png" alt="Delete Account" width={20} height={20} />
             Delete Account
           </button>
-          <button
-            onClick={logout}
-            className="w-full flex items-center gap-3 px-4 h-[48px] rounded-[10px] font-medium text-[16px] leading-[24px] text-[#45556c] hover:bg-[#f8fafc] transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
-            </svg>
-            Sign out
-          </button>
         </div>
 
         {/* Right Content */}
@@ -388,109 +477,64 @@ export default function SettingsPage() {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowDeleteModal(false)}>
           <div
-            className="bg-white rounded-[16px] w-full max-w-[500px] mx-4 p-6 md:p-8 flex flex-col gap-6 max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-[16px] w-[474px] p-8 flex flex-col gap-6"
             style={{ boxShadow: '0px 25px 50px 0px rgba(0,0,0,0.25)' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="font-normal text-[12px] leading-[16px] text-[#90a1b9] mb-1">ACCOUNT SETTINGS</p>
-                <h3 className="font-bold text-[24px] leading-[32px] text-[#0f172b]">Delete your account?</h3>
-              </div>
-              <button onClick={() => { setShowDeleteModal(false); setDeleteReason(''); setDeleteRetention(''); }} className="text-[#62748e] hover:text-[#0f172b] transition-colors flex-shrink-0">
+            <div className="flex items-start justify-between">
+              <h3 className="font-bold text-[24px] leading-[32px] text-[#0f172b]">Delete account</h3>
+              <button onClick={() => setShowDeleteModal(false)} className="text-[#62748e] hover:text-[#0f172b] transition-colors">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
 
-            {/* Warning section */}
-            <div className="bg-[#fef2f2] border-[0.8px] border-[#ffc9c9] rounded-[10px] px-4 py-4 flex flex-col gap-3">
-              <p className="font-semibold text-[14px] leading-[20px] text-[#82181a]">You will permanently lose:</p>
-              <ul className="flex flex-col gap-2">
-                <li className="flex items-start gap-2">
-                  <span className="text-[#c10007] flex-shrink-0 mt-0.5">✕</span>
-                  <span className="font-normal text-[14px] leading-[20px] text-[#c10007]">All your progress and scores</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#c10007] flex-shrink-0 mt-0.5">✕</span>
-                  <span className="font-normal text-[14px] leading-[20px] text-[#c10007]">Your saved data and history</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#c10007] flex-shrink-0 mt-0.5">✕</span>
-                  <span className="font-normal text-[14px] leading-[20px] text-[#c10007]">Your preferences and settings</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#c10007] flex-shrink-0 mt-0.5">✕</span>
-                  <span className="font-normal text-[14px] leading-[20px] text-[#c10007]">Access to all premium features</span>
-                </li>
-              </ul>
+            {/* Warning banner */}
+            <div className="bg-[#fef2f2] border-[0.8px] border-[#ffc9c9] rounded-[10px] px-3 py-4 flex items-center gap-2">
+              <Image src="/warning-triangle.png" alt="warning" width={20} height={20} className="flex-shrink-0" />
+              <p className="text-[14px] leading-[20px] whitespace-nowrap">
+                <span className="font-semibold text-[#82181a]">Permanent.</span>
+                <span className="font-normal text-[#c10007]"> All data, scores and progress will be erased.</span>
+              </p>
             </div>
 
-            {/* Feedback section */}
-            <div className="flex flex-col gap-2">
-              <label className="font-medium text-[14px] leading-[20px] text-[#314158]">
-                What's making you leave? <span className="text-[#90a1b9] font-normal">(required)</span>
-              </label>
-              <textarea
-                value={deleteReason}
-                onChange={(e) => setDeleteReason(e.target.value)}
-                placeholder="Share what's not working for you — every word helps us improve..."
-                className="w-full h-[100px] px-4 py-3 rounded-[10px] border-[0.8px] border-[#cad5e2] bg-white font-normal text-[14px] leading-[20px] text-[#0f172b] placeholder:text-[#90a1b9] resize-none focus:outline-none focus:ring-2 focus:ring-[#1d293d] focus:border-transparent"
-              />
-              <p className="font-normal text-[12px] leading-[16px] text-[#90a1b9]">Min. 20 characters</p>
-            </div>
-
-            {/* Retention options */}
-            <div className="flex flex-col gap-3">
-              <p className="font-medium text-[14px] leading-[20px] text-[#314158]">Is there anything we could do to keep you?</p>
-              {[
-                { id: 'pause', label: 'Pause my account for 30 days' },
-                { id: 'downgrade', label: 'Downgrade to a free plan' },
-                { id: 'export', label: 'Export my data first' },
-                { id: 'no', label: "No, I've made my decision" },
-              ].map((option) => (
-                <label key={option.id} className="flex items-center gap-3 cursor-pointer p-3 rounded-[10px] hover:bg-[#f8fafc] transition-colors border-[0.8px] border-[#e2e8f0]">
-                  <input
-                    type="radio"
-                    name="retention"
-                    value={option.id}
-                    checked={deleteRetention === option.id}
-                    onChange={(e) => setDeleteRetention(e.target.value)}
-                    className="w-4 h-4 cursor-pointer"
-                  />
-                  <span className="font-normal text-[14px] leading-[20px] text-[#0f172b]">{option.label}</span>
-                </label>
-              ))}
-            </div>
-
-            {/* Info message */}
-            <div className="bg-[#eff6ff] border-[0.8px] border-[#155dfc] rounded-[10px] px-4 py-3 flex items-start gap-3">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#155dfc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="16" x2="12" y2="12"/>
-                <line x1="12" y1="8" x2="12.01" y2="8"/>
-              </svg>
-              <p className="font-normal text-[12px] leading-[16px] text-[#155dfc]">Your feedback is private and will help us improve the product for everyone.</p>
+            {/* Confirm input */}
+            <div className="flex flex-col gap-[6px]">
+              <label className="font-normal text-[14px] leading-[20px] text-[#45556c]">Type DELETE to confirm</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={deleteConfirm}
+                  onChange={(e) => setDeleteConfirm(e.target.value)}
+                  placeholder="DELETE"
+                  className="w-full h-[51.2px] px-4 py-3 rounded-[10px] border-[1.6px] border-[#2b7fff] bg-white font-normal text-[16px] leading-[24px] text-[#0f172b] placeholder:text-[#cad5e2] focus:outline-none"
+                />
+                <div className="absolute -bottom-4 left-4 translate-y-full w-8 h-8 rounded-full bg-[#2b7fff] flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <rect x="3" y="7" width="10" height="8" rx="1.5" fill="white"/>
+                    <path d="M5 7V5a3 3 0 016 0v2" stroke="white" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                    <circle cx="8" cy="11" r="1" fill="#2b7fff"/>
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* Buttons */}
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 mt-6">
               <button
-                onClick={() => { setShowDeleteModal(false); setDeleteReason(''); setDeleteRetention(''); }}
-                className="flex-1 h-[44px] rounded-[10px] border-[0.8px] border-[#cad5e2] bg-white font-semibold text-[16px] leading-[24px] text-[#314158] hover:bg-[#f8fafc] transition-colors"
+                onClick={() => { setShowDeleteModal(false); setDeleteConfirm(''); }}
+                className="flex-1 h-[49.6px] rounded-[10px] border-[0.8px] border-[#cad5e2] bg-white font-medium text-[16px] leading-[24px] text-[#314158] hover:bg-[#f8fafc] transition-colors"
               >
-                Keep my account
+                Cancel
               </button>
               <button
-                disabled={deleteReason.length < 20 || !deleteRetention}
-                className={`flex-1 h-[44px] rounded-[10px] font-semibold text-[16px] leading-[24px] text-white transition-colors flex items-center justify-center gap-2 ${
-                  deleteReason.length < 20 || !deleteRetention ? 'bg-[#90a1b9] cursor-not-allowed' : 'bg-[#314158] hover:bg-[#2a3a52]'
+                disabled={deleteConfirm !== 'DELETE'}
+                className={`flex-1 rounded-[10px] font-medium text-[16px] leading-[24px] text-white text-center transition-colors ${
+                  deleteConfirm === 'DELETE' ? 'bg-[#e7000b] hover:bg-[#c50a0a]' : 'bg-[#e7000b]/60 cursor-not-allowed'
                 }`}
+                style={{ padding: '10.6px 42.212px 15px 40.763px' }}
               >
-                Send us Feedback
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 8h10M11 5l3 3-3 3"/>
-                </svg>
+                Delete account
               </button>
             </div>
           </div>

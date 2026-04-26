@@ -1257,7 +1257,6 @@ export default function LibraryPage() {
             <span style={{ fontSize: 'clamp(40px, 4vw, 56px)' }}>{'\uD83D\uDE80'}</span>
           </div>
         </div>
-        </div>
       </div>
     </div>
   );

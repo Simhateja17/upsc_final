@@ -128,15 +128,32 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
 
   let text = "";
   try {
-    // Primary extractor path (pdf-parse v2 API)
-    const { PDFParse } = await import("pdf-parse");
+    // Primary extractor path (pdfjs-dist legacy build — works in Node without
+    // the DOMMatrix/browser globals that pdf-parse v2 requires).
+    const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
     const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-    const parser = new (PDFParse as any)(uint8);
-    const result = await (parser as any).getText();
-
-    text = result.pages
-      ? result.pages.map((p: any) => (typeof p === "string" ? p : p.text || "")).join("\n\n")
-      : String(result.text || result);
+    const doc = await pdfjs.getDocument({
+      data: uint8,
+      disableWorker: true,
+      isEvalSupported: false,
+      useSystemFonts: false,
+    }).promise;
+    try {
+      const pages: string[] = [];
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const content = await page.getTextContent();
+        pages.push(
+          content.items
+            .map((it: any) => (typeof it.str === "string" ? it.str : ""))
+            .join(" ")
+        );
+        page.cleanup();
+      }
+      text = pages.join("\n\n");
+    } finally {
+      await doc.destroy().catch(() => {});
+    }
   } catch (primaryError) {
     logError("PDF-EXTRACT", "Primary PDF extraction failed, trying legacy fallback", primaryError);
     try {
