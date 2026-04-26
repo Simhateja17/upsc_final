@@ -46,13 +46,13 @@ model User {
   subscriptions     Subscription[]
   orders            Order[]
   payments          Payment[]
+  notifications     Notification[]
   pyqUploads                PYQUpload[]
   seenMcqQuestions          UserSeenMCQ[]
   chatConversations         ChatConversation[]
   studyMaterialUploads      StudyMaterialUpload[]
   mockTestMaterialUploads   MockTestMaterialUpload[]
   seriesEnrollments         UserSeriesEnrollment[]
-  orders                    Order[]
 
   @@map("users")
 }
@@ -1120,10 +1120,11 @@ model Faq {
 model Order {
   id          String   @id @default(uuid())
   userId      String   @map("user_id")
-  itemType    String   @map("item_type") // plan, test_series
-  itemId      String   @map("item_id")
-  itemName    String   @map("item_name")
-  amount      Int      // in paise (INR)
+  planId      String?  @map("plan_id")
+  itemType    String?  @map("item_type") // plan, test_series
+  itemId      String?  @map("item_id")
+  itemName    String?  @map("item_name")
+  amount      Int      // in INR (rupees)
   status      String   @default("pending") // pending, paid, failed, refunded
   paymentMethod String? @map("payment_method")
   paymentId   String?  @map("payment_id")
@@ -1131,6 +1132,8 @@ model Order {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan PricingPlan? @relation(fields: [planId], references: [id], onDelete: Cascade)
+  payments Payment[]
 
   @@index([userId, status])
   @@map("orders")
@@ -1212,23 +1215,6 @@ model Subscription {
 
   @@index([userId, status])
   @@map("subscriptions")
-}
-
-model Order {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  planId      String   @map("plan_id")
-  amount      Int      // in INR (rupees)
-  status      String   @default("pending") // pending, completed, failed, cancelled
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan PricingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  payments Payment[]
-
-  @@index([userId, status])
-  @@map("orders")
 }
 
 model Payment {
