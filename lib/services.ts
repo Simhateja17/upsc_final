@@ -401,6 +401,19 @@ export const contactService = {
     api.post<any>('/contact', data),
 };
 
+// ==================== Billing & Subscriptions ====================
+
+export const billingService = {
+  getSubscription: () => api.get<any>('/billing/subscription', authConfig()),
+  getHistory: () => api.get<any>('/billing/history', authConfig()),
+  createOrder: (planId: string) => api.post<any>('/billing/order', { planId }, authConfig()),
+  initiatePayment: (orderId: string) => api.post<any>('/billing/payment/initiate', { orderId }, authConfig()),
+  verifyPayment: (data: { paymentId: string; orderId?: string; razorpayOrderId?: string; signature?: string; providerPaymentId?: string; status: string; failureReason?: string }) =>
+    api.post<any>('/billing/payment/verify', data, authConfig()),
+  cancelSubscription: (subscriptionId: string) =>
+    api.post<any>('/billing/subscription/cancel', { subscriptionId }, authConfig()),
+};
+
 // ==================== Admin ====================
 
 export const adminService = {
@@ -498,10 +511,38 @@ export const adminService = {
 
   // Pricing Plans Management
   getPricingPlans: () => api.get<any>('/admin/pricing', authConfig()),
-  createPricingPlan: (data: { name: string; price: number; duration: string; features?: string[]; isPopular?: boolean; order?: number }) =>
+  createPricingPlan: (data: { name: string; description?: string; price: number; originalPrice?: number; duration: string; durationDays?: number; features?: string[]; notIncluded?: string[]; badge?: string; isPopular?: boolean; order?: number }) =>
     api.post<any>('/admin/pricing', data, authConfig()),
   updatePricingPlan: (id: string, data: any) => api.put<any>(`/admin/pricing/${id}`, data, authConfig()),
   deletePricingPlan: (id: string) => api.delete<any>(`/admin/pricing/${id}`, authConfig()),
+
+  // Billing & Subscriptions Management
+  getAdminSubscriptions: (params?: { page?: number; limit?: number; status?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.status) query.set('status', params.status);
+    const qs = query.toString();
+    return api.get<any>(`/billing/admin/subscriptions${qs ? `?${qs}` : ''}`, authConfig());
+  },
+  getAdminOrders: (params?: { page?: number; limit?: number; status?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.status) query.set('status', params.status);
+    const qs = query.toString();
+    return api.get<any>(`/billing/admin/orders${qs ? `?${qs}` : ''}`, authConfig());
+  },
+  getAdminPayments: (params?: { page?: number; limit?: number; status?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.status) query.set('status', params.status);
+    const qs = query.toString();
+    return api.get<any>(`/billing/admin/payments${qs ? `?${qs}` : ''}`, authConfig());
+  },
+  extendSubscription: (id: string, days: number) =>
+    api.post<any>(`/billing/admin/subscriptions/${id}/extend`, { days }, authConfig()),
 
   // CMS
   getCmsPages: () => api.get<any>('/admin/cms/pages', authConfig()),

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardHeaderProps {
@@ -49,9 +49,8 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 ];
 
 const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
-  const router = useRouter();
   const pathname = usePathname();
-  const { user, logout, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
@@ -74,15 +73,6 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
 
   // Get display name
   const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email?.split('@')[0] || 'User';
@@ -185,19 +175,19 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
             <div
               className="absolute right-0 top-full mt-2 z-50"
               style={{
-                width: 'min(448px, calc(100vw - 1rem))',
-                borderRadius: '16px',
+                width: 'min(360px, calc(100vw - 1rem))',
+                borderRadius: '14px',
                 background: '#FFFFFF',
                 borderTop: '0.8px solid #E2E8F0',
                 boxShadow: '0px 4px 6px -4px #0000001A, 0px 10px 15px -3px #0000001A',
               }}
             >
               {/* User Info Section */}
-              <div className="px-6 pt-8 pb-6">
-                <div className="font-inter font-medium text-[18px] leading-[28px] text-[#1E293B]">
+              <div className="px-5 pt-6 pb-5">
+                <div className="font-inter font-medium text-[16px] leading-[24px] text-[#17223E]">
                   {displayName}
                 </div>
-                <div className="font-inter text-[14px] leading-[20px] text-[#94A3B8] mt-0.5">
+                <div className="font-inter text-[13px] leading-[18px] text-[#999999] mt-0.5">
                   {user?.email || ''}
                 </div>
               </div>
@@ -208,48 +198,72 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
               <div className="py-2">
                 <Link
                   href="/dashboard/profile"
-                  className="flex items-center gap-4 px-6 py-3 hover:bg-[#F8FAFC] transition-colors"
+                  className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/human.png" alt="" className="w-6 h-6 object-contain" />
-                  <span className="font-inter font-medium text-[18px] leading-[28px] text-[#45556C]">
+                  <img src="/human.png" alt="" className="w-[18px] h-[18px] object-contain" />
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
                     My Profile
                   </span>
                 </Link>
 
                 <Link
-                  href="/dashboard/settings"
-                  className="flex items-center gap-4 px-6 py-3 hover:bg-[#F8FAFC] transition-colors"
+                  href="/dashboard/billing"
+                  className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/sett.png" alt="" className="w-6 h-6 object-contain" />
-                  <span className="font-inter font-medium text-[18px] leading-[28px] text-[#45556C]">
+                  <img src="/card.png" alt="" className="w-[18px] h-[18px] object-contain" />
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
+                    Billing &amp; Plan
+                  </span>
+                </Link>
+
+                <Link
+                  href="/dashboard/saved-notes"
+                  className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
+                  onClick={() => setShowDropdown(false)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/paper.png" alt="" className="w-[18px] h-[18px] object-contain" />
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
+                    Bookmarks
+                  </span>
+                </Link>
+
+                <Link
+                  href="/dashboard/settings"
+                  className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
+                  onClick={() => setShowDropdown(false)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/sett.png" alt="" className="w-[18px] h-[18px] object-contain" />
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
                     Account Settings
                   </span>
                 </Link>
 
                 <Link
-                  href="/dashboard/billing"
-                  className="flex items-center gap-4 px-6 py-3 hover:bg-[#F8FAFC] transition-colors"
+                  href="/contact"
+                  className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/card.png" alt="" className="w-6 h-6 object-contain" />
-                  <span className="font-inter font-medium text-[18px] leading-[28px] text-[#45556C]">
-                    Billing
+                  <img src="/question-help-message--Streamline-Ultimate.png" alt="" className="w-[18px] h-[18px] object-contain" />
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
+                    Help &amp; Support
                   </span>
                 </Link>
 
                 <Link
                   href="/dashboard/feedback"
-                  className="flex items-center gap-4 px-6 py-3 hover:bg-[#F8FAFC] transition-colors"
+                  className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/tin.png" alt="" className="w-6 h-6 object-contain" />
-                  <span className="font-inter font-medium text-[18px] leading-[28px] text-[#45556C]">
+                  <img src="/tin.png" alt="" className="w-[18px] h-[18px] object-contain" />
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
                     Feedback
                   </span>
                 </Link>
@@ -257,34 +271,17 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 {user?.role === 'admin' && (
                   <Link
                     href="/admin"
-                    className="flex items-center gap-4 px-6 py-3 hover:bg-[#F8FAFC] transition-colors"
+                    className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
                     onClick={() => setShowDropdown(false)}
                   >
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#45556C" strokeWidth={1.5}>
+                    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="#1A1A1A" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
                     </svg>
-                    <span className="font-inter font-medium text-[18px] leading-[28px] text-[#A78BFA]">
+                    <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
                       Admin Panel
                     </span>
                   </Link>
                 )}
-              </div>
-
-              <hr className="border-[#E2E8F0] mx-0" />
-
-              {/* Sign Out */}
-              <div className="py-3 px-6">
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 text-[#EF4444] hover:opacity-80 transition-opacity"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
-                  </svg>
-                  <span className="font-inter font-medium text-[16px] leading-[24px]">
-                    Sign out
-                  </span>
-                </button>
               </div>
             </div>
           )}

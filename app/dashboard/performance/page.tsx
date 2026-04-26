@@ -246,9 +246,10 @@ export default function PerformancePage() {
             className="w-full rounded-[16px] px-10 pt-8 pb-6 mb-6 flex flex-col gap-6"
             style={{
               background: 'linear-gradient(135deg, #0F172B 0%, #1E2939 100%)',
+              minHeight: '260px',
             }}
           >
-            <div className="flex flex-col gap-3">
+            <div className="flex-1 flex flex-col justify-center gap-3">
               <span
                 className="inline-flex items-center justify-center rounded-full px-3 py-1 uppercase tracking-[0.12em]"
                 style={{

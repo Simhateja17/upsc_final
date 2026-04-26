@@ -16,6 +16,10 @@ interface LoginBody {
   password: string;
 }
 
+function getPhoneVerifiedFlag(authUser: { phone_confirmed_at?: string | null } | null | undefined) {
+  return !!authUser?.phone_confirmed_at;
+}
+
 /**
  * Sign up a new user
  * POST /api/auth/signup
@@ -100,7 +104,14 @@ export const signup = async (
         status: "success",
         message: "Account created successfully. Please check your email to verify your account.",
         data: {
-          user: { id: user.id, email: user.email, firstName: user.first_name, lastName: user.last_name },
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            emailVerified: !!authData.user.email_confirmed_at,
+            phoneVerified: getPhoneVerifiedFlag(authData.user as { phone_confirmed_at?: string | null }),
+          },
           session: null,
           requiresEmailVerification: true,
         },
@@ -111,7 +122,15 @@ export const signup = async (
       status: "success",
       message: "Account created successfully",
       data: {
-        user: { id: user.id, email: user.email, firstName: user.first_name, lastName: user.last_name, role: user.role },
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          emailVerified: !!authData.user.email_confirmed_at,
+          phoneVerified: getPhoneVerifiedFlag(authData.user as { phone_confirmed_at?: string | null }),
+          role: user.role,
+        },
         session: {
           accessToken: authData.session.access_token,
           refreshToken: authData.session.refresh_token,
@@ -196,6 +215,8 @@ export const login = async (
           firstName: user!.first_name,
           lastName: user!.last_name,
           avatarUrl: user!.avatar_url,
+          emailVerified: !!authData.user.email_confirmed_at,
+          phoneVerified: getPhoneVerifiedFlag(authData.user as { phone_confirmed_at?: string | null }),
           role: user!.role,
         },
         session: {
@@ -237,6 +258,9 @@ export const getMe = async (
       return res.status(404).json({ status: "error", message: "User not found" });
     }
 
+    const { data: authLookup } = await supabaseAdmin.auth.admin.getUserById(user.supabase_id);
+    const authUser = authLookup?.user;
+
     res.json({
       status: "success",
       data: {
@@ -248,6 +272,7 @@ export const getMe = async (
           phone: user.phone,
           avatarUrl: user.avatar_url,
           emailVerified: user.email_verified,
+          phoneVerified: getPhoneVerifiedFlag(authUser as { phone_confirmed_at?: string | null }),
           role: user.role,
           createdAt: user.created_at,
         },
@@ -419,6 +444,8 @@ export const authCallback = async (
           firstName: user!.first_name,
           lastName: user!.last_name,
           avatarUrl: user!.avatar_url,
+          emailVerified: !!authUser.email_confirmed_at,
+          phoneVerified: getPhoneVerifiedFlag(authUser as { phone_confirmed_at?: string | null }),
           role: user!.role,
         },
         session: { accessToken, refreshToken },

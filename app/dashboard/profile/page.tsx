@@ -3,24 +3,83 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { dashboardService } from '@/lib/services';
+import { dashboardService, userService } from '@/lib/services';
+import Toast from '@/components/Toast';
+
+const INDIAN_STATES = [
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chhattisgarh',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+  'Delhi',
+  'Jammu and Kashmir',
+  'Ladakh',
+  'Puducherry',
+];
+
+const TARGET_YEAR_OPTIONS = ['2026', '2027', '2028', 'Later'];
+
+const OPTIONAL_SUBJECTS = [
+  'Anthropology',
+  'Commerce and Accountancy',
+  'Geography',
+  'History',
+  'Mathematics',
+  'Philosophy',
+  'Political Science',
+  'Public Administration',
+  'Psychology',
+  'Sociology',
+  'Tamil Literature',
+];
+
+const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [state, setState] = useState('');
   const [targetYear, setTargetYear] = useState('');
   const [optionalSubject, setOptionalSubject] = useState('');
   const [saving, setSaving] = useState(false);
   const [stats, setStats] = useState<any>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     if (user) {
       setFirstName(user.firstName || '');
       setLastName(user.lastName || '');
       setPhone(user.phone || '');
+      setGender('');
+      setDateOfBirth('');
     }
   }, [user]);
 
@@ -38,6 +97,8 @@ export default function ProfilePage() {
       setFirstName(user.firstName || '');
       setLastName(user.lastName || '');
       setPhone(user.phone || '');
+      setGender('');
+      setDateOfBirth('');
       setState('');
       setTargetYear('');
       setOptionalSubject('');
@@ -47,9 +108,19 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      await userService.updateProfile({
+        firstName,
+        lastName,
+        phone,
+      });
+      setToast({ message: 'Profile updated successfully!', type: 'success' });
       await refreshUser();
     } catch (err) {
       console.error('Failed to save profile:', err);
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to update profile',
+        type: 'error',
+      });
     } finally {
       setSaving(false);
     }
@@ -58,6 +129,8 @@ export default function ProfilePage() {
   const daysOnPlatform = user?.createdAt
     ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24))
     : 0;
+
+  const selectClassName = "w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent";
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] px-4 sm:px-6 py-6 md:py-8" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -129,42 +202,89 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Email */}
-              <div className="flex flex-col gap-2">
-                <label className="font-medium text-[14px] leading-[20px] text-[#314158]">
-                  Email{' '}
-                  {user?.emailVerified !== false && (
-                    <span className="text-[12px] leading-[16px] text-[#00a63e]">✓ Verified</span>
-                  )}
-                </label>
-                <input
-                  type="email"
-                  value={user?.email || ''}
-                  disabled
-                  className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-[#f8fafc] font-normal text-[16px] leading-[24px] text-[#62748e] cursor-not-allowed"
-                />
+              {/* Email / Gender / Date of Birth */}
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-[1.35] flex flex-col gap-2">
+                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">
+                    Email{' '}
+                    {user?.emailVerified === true && (
+                      <span className="text-[12px] leading-[16px] text-[#00a63e]">✓ Verified</span>
+                    )}
+                  </label>
+                  <input
+                    type="email"
+                    value={user?.email || ''}
+                    disabled
+                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-[#f8fafc] font-normal text-[16px] leading-[24px] text-[#62748e] cursor-not-allowed"
+                  />
+                </div>
+                <div className="flex-1 flex flex-col gap-2">
+                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Gender</label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className={selectClassName}
+                  >
+                    <option value="">Select gender</option>
+                    {GENDER_OPTIONS.map((genderOption) => (
+                      <option key={genderOption} value={genderOption}>
+                        {genderOption}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1 flex flex-col gap-2">
+                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Date of Birth</label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
+                      className={`${selectClassName} pr-11 [color-scheme:light]`}
+                    />
+                    <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#90a1b9]">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Phone / State */}
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Phone</label>
+                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">
+                    Phone{' '}
+                    {user?.phoneVerified === true && (
+                      <span className="text-[12px] leading-[16px] text-[#00a63e]">✓ Verified</span>
+                    )}
+                  </label>
                   <input
-                    type="text"
+                    type="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 9876543210"
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="9876543210"
+                    inputMode="numeric"
+                    maxLength={10}
                     className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
                   />
                 </div>
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">State</label>
-                  <input
-                    type="text"
+                  <select
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
-                  />
+                    className={selectClassName}
+                  >
+                    <option value="">Select state</option>
+                    {INDIAN_STATES.map((stateOption) => (
+                      <option key={stateOption} value={stateOption}>
+                        {stateOption}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -172,21 +292,33 @@ export default function ProfilePage() {
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Target year</label>
-                  <input
-                    type="text"
+                  <select
                     value={targetYear}
                     onChange={(e) => setTargetYear(e.target.value)}
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
-                  />
+                    className={selectClassName}
+                  >
+                    <option value="">Select target year</option>
+                    {TARGET_YEAR_OPTIONS.map((yearOption) => (
+                      <option key={yearOption} value={yearOption}>
+                        {yearOption}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Optional subject</label>
-                  <input
-                    type="text"
+                  <select
                     value={optionalSubject}
                     onChange={(e) => setOptionalSubject(e.target.value)}
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
-                  />
+                    className={selectClassName}
+                  >
+                    <option value="">Select optional subject</option>
+                    {OPTIONAL_SUBJECTS.map((subjectOption) => (
+                      <option key={subjectOption} value={subjectOption}>
+                        {subjectOption}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -240,6 +372,10 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Mock tests taken</span>
                 <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{stats?.mockTestsTaken?.toLocaleString() || '0'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Current streak</span>
+                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{stats?.streak?.toLocaleString() || '0'} days</span>
               </div>
               <div className="flex items-center justify-between border-t border-[#f1f5f9] pt-2">
                 <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Current rank</span>
@@ -302,6 +438,14 @@ export default function ProfilePage() {
           </Link>
         </div>
       </div>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

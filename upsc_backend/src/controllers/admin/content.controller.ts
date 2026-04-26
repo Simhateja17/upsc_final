@@ -649,12 +649,24 @@ export const getPricingPlansAdmin = async (_req: Request, res: Response, next: N
  */
 export const createPricingPlan = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, price, duration, features, isPopular, order } = req.body;
+    const { name, description, price, originalPrice, duration, durationDays, features, notIncluded, badge, isPopular, order } = req.body;
     if (!name || price === undefined || !duration) {
       return res.status(400).json({ status: "error", message: "name, price, and duration are required" });
     }
     const plan = await prisma.pricingPlan.create({
-      data: { name, price, duration, features: features ?? [], isPopular: isPopular ?? false, order: order ?? 0 },
+      data: {
+        name,
+        description,
+        price,
+        originalPrice,
+        duration,
+        durationDays: durationDays ?? 90,
+        features: features ?? [],
+        notIncluded: notIncluded ?? [],
+        badge,
+        isPopular: isPopular ?? false,
+        order: order ?? 0,
+      },
     });
     res.status(201).json({ status: "success", data: plan });
   } catch (error) {
@@ -668,12 +680,17 @@ export const createPricingPlan = async (req: Request, res: Response, next: NextF
 export const updatePricingPlan = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
-    const { name, price, duration, features, isPopular, order, isActive } = req.body;
+    const { name, description, price, originalPrice, duration, durationDays, features, notIncluded, badge, isPopular, order, isActive } = req.body;
     const data: any = {};
     if (name !== undefined) data.name = name;
+    if (description !== undefined) data.description = description;
     if (price !== undefined) data.price = price;
+    if (originalPrice !== undefined) data.originalPrice = originalPrice;
     if (duration !== undefined) data.duration = duration;
+    if (durationDays !== undefined) data.durationDays = durationDays;
     if (features !== undefined) data.features = features;
+    if (notIncluded !== undefined) data.notIncluded = notIncluded;
+    if (badge !== undefined) data.badge = badge;
     if (isPopular !== undefined) data.isPopular = isPopular;
     if (order !== undefined) data.order = order;
     if (isActive !== undefined) data.isActive = isActive;
