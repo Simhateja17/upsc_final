@@ -97,7 +97,6 @@ Return ONLY a JSON object with:
   return invokeModelJSON<EvaluationResult>(messages, {
     system,
     maxTokens: 2048,
-    temperature: 0.3,
     serviceName: "answerEvaluator",
   });
 }

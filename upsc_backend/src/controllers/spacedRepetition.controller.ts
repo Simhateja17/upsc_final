@@ -1,9 +1,35 @@
 import { Request, Response, NextFunction } from "express";
+import { Prisma } from "@prisma/client";
 import prisma from "../config/database";
 
 function param(req: Request, key: string): string {
   const v = req.params[key];
   return Array.isArray(v) ? v[0] : (v ?? "");
+}
+
+function normalizeScheduleDays(scheduleDays: unknown, fallbackDay = 3): number[] {
+  if (Array.isArray(scheduleDays)) {
+    return Array.from(
+      new Set(
+        scheduleDays
+          .map((day) => Number(day))
+          .filter((day) => Number.isFinite(day) && day > 0)
+      )
+    ).sort((a, b) => a - b);
+  }
+
+  if (typeof scheduleDays === "number" && Number.isFinite(scheduleDays) && scheduleDays > 0) {
+    return [scheduleDays];
+  }
+
+  return [fallbackDay];
+}
+
+function getNextReviewAt(scheduleDays: number[]) {
+  const nextReviewAt = new Date();
+  const days = scheduleDays.length > 0 ? Math.min(...scheduleDays) : 3;
+  nextReviewAt.setDate(nextReviewAt.getDate() + days);
+  return nextReviewAt;
 }
 
 /**
@@ -32,7 +58,15 @@ export const getItems = async (
       orderBy: { nextReviewAt: "asc" },
     });
 
-    res.json({ status: "success", data: items });
+    res.json({
+      status: "success",
+      data: items.map((item) => ({
+        ...item,
+        scheduleDays: Array.isArray(item.scheduleDays)
+          ? item.scheduleDays
+          : [item.scheduleDay],
+      })),
+    });
   } catch (error) {
     next(error);
   }
@@ -48,16 +82,16 @@ export const addItem = async (
 ) => {
   try {
     const userId = req.user!.id;
-    const { questionText, source, sourceType, subject, scheduleDay, remindEnabled } = req.body;
+    const { questionText, source, sourceType, subject, scheduleDay, scheduleDays, remindEnabled } = req.body;
 
     if (!questionText || !subject) {
       res.status(400).json({ status: "error", message: "questionText and subject are required" });
       return;
     }
 
-    const days = typeof scheduleDay === "number" ? scheduleDay : 3;
-    const nextReviewAt = new Date();
-    nextReviewAt.setDate(nextReviewAt.getDate() + days);
+    const normalizedScheduleDays = normalizeScheduleDays(scheduleDays, typeof scheduleDay === "number" ? scheduleDay : 3);
+    const primaryScheduleDay = normalizedScheduleDays[0] ?? (typeof scheduleDay === "number" ? scheduleDay : 3);
+    const nextReviewAt = getNextReviewAt(normalizedScheduleDays);
 
     const item = await prisma.spacedRepItem.create({
       data: {
@@ -66,13 +100,20 @@ export const addItem = async (
         source: source || "Custom",
         sourceType: sourceType || "custom",
         subject,
-        scheduleDay: days,
+        scheduleDay: primaryScheduleDay,
+        scheduleDays: normalizedScheduleDays,
         remindEnabled: Boolean(remindEnabled),
         nextReviewAt,
       },
     });
 
-    res.status(201).json({ status: "success", data: item });
+    res.status(201).json({
+      status: "success",
+      data: {
+        ...item,
+        scheduleDays: normalizedScheduleDays,
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -89,7 +130,7 @@ export const updateItem = async (
   try {
     const userId = req.user!.id;
     const id = param(req, "id");
-    const { scheduleDay, remindEnabled, addedToFlashcard } = req.body;
+    const { scheduleDay, scheduleDays, remindEnabled, addedToFlashcard } = req.body;
 
     const existing = await prisma.spacedRepItem.findFirst({ where: { id, userId } });
     if (!existing) {
@@ -99,23 +140,37 @@ export const updateItem = async (
 
     const updateData: {
       scheduleDay?: number;
+      scheduleDays?: Prisma.InputJsonValue;
       nextReviewAt?: Date;
       remindEnabled?: boolean;
       addedToFlashcard?: boolean;
     } = {};
 
+    if (scheduleDays !== undefined) {
+      const normalizedScheduleDays = normalizeScheduleDays(scheduleDays, existing.scheduleDay);
+      updateData.scheduleDays = normalizedScheduleDays as Prisma.InputJsonValue;
+      updateData.scheduleDay = normalizedScheduleDays[0] ?? existing.scheduleDay;
+      updateData.nextReviewAt = getNextReviewAt(normalizedScheduleDays);
+    }
     if (typeof scheduleDay === "number") {
       updateData.scheduleDay = scheduleDay;
-      const nextReviewAt = new Date();
-      nextReviewAt.setDate(nextReviewAt.getDate() + scheduleDay);
-      updateData.nextReviewAt = nextReviewAt;
+      updateData.scheduleDays = [scheduleDay] as Prisma.InputJsonValue;
+      updateData.nextReviewAt = getNextReviewAt([scheduleDay]);
     }
     if (remindEnabled !== undefined) updateData.remindEnabled = Boolean(remindEnabled);
     if (addedToFlashcard !== undefined) updateData.addedToFlashcard = Boolean(addedToFlashcard);
 
     const updated = await prisma.spacedRepItem.update({ where: { id }, data: updateData });
 
-    res.json({ status: "success", data: updated });
+    res.json({
+      status: "success",
+      data: {
+        ...updated,
+        scheduleDays: Array.isArray(updated.scheduleDays)
+          ? updated.scheduleDays
+          : [updated.scheduleDay],
+      },
+    });
   } catch (error) {
     next(error);
   }

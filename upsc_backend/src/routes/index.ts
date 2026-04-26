@@ -21,6 +21,7 @@ import mindmapRoutes from "./mindmap.routes";
 import testSeriesRoutes from "./testSeries.routes";
 import searchRoutes from "./search.routes";
 import userRoutes from "./user.routes";
+import billingRoutes from "./billing.routes";
 import contactRoutes from "./contact.routes";
 import * as cmsPublicCtrl from "../controllers/cms.public.controller";
 import { getSyllabus } from "../controllers/syllabus.controller";
@@ -132,6 +133,9 @@ router.use("/search", searchRoutes);
 // User profile, settings & feedback routes
 router.use("/user", userRoutes);
 
+// Billing & subscription routes
+router.use("/billing", billingRoutes);
+
 // Contact form (public)
 router.use("/contact", contactRoutes);
 
@@ -140,6 +144,9 @@ router.get("/syllabus", getSyllabus);
 
 // Public CMS route (no auth - slug is URL-encoded for nested paths)
 router.get("/cms/:slug", cmsPublicCtrl.getPageContent);
+
+// Public FAQs (no auth)
+router.get("/faqs", cmsPublicCtrl.getFaqsPublic);
 
 // Jeet AI chat routes
 router.use("/ai", aiRoutes);

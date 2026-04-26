@@ -68,6 +68,33 @@ type SubjectCardTheme = {
   showNew?: boolean;
 };
 
+// Random view count generator (20k-30k)
+function getRandomViewCount(): number {
+  return Math.floor(Math.random() * (30000 - 20000 + 1)) + 20000;
+}
+
+/* Subject card background colors — one per subject, cycling */
+const SUBJECT_COLORS: Record<string, { bg: string; border: string; accent: string }> = {
+  'Indian Polity': { bg: '#FFF5E6', border: '#FDE8C8', accent: '#F59E0B' },
+  'Polity': { bg: '#FFF5E6', border: '#FDE8C8', accent: '#F59E0B' },
+  'Indian Economy': { bg: '#EDE9FE', border: '#DDD6FE', accent: '#8B5CF6' },
+  'Economy': { bg: '#EDE9FE', border: '#DDD6FE', accent: '#8B5CF6' },
+  'Geography': { bg: '#FEF3C7', border: '#FDE68A', accent: '#D97706' },
+  'History': { bg: '#FFF7ED', border: '#FFEDD5', accent: '#EA580C' },
+  'Environment': { bg: '#ECFDF5', border: '#D1FAE5', accent: '#059669' },
+  'Ethics': { bg: '#EFF6FF', border: '#DBEAFE', accent: '#2563EB' },
+  'Ethics GS4': { bg: '#EFF6FF', border: '#DBEAFE', accent: '#2563EB' },
+  'Essay Writing': { bg: '#FFF7ED', border: '#FFEDD5', accent: '#EA580C' },
+  'Essay': { bg: '#FFF7ED', border: '#FFEDD5', accent: '#EA580C' },
+  'Internal Security': { bg: '#FEF2F2', border: '#FECACA', accent: '#DC2626' },
+  'Security': { bg: '#FEF2F2', border: '#FECACA', accent: '#DC2626' },
+  "Int'l Relations": { bg: '#EDE9FE', border: '#DDD6FE', accent: '#7C3AED' },
+  'IR': { bg: '#EDE9FE', border: '#DDD6FE', accent: '#7C3AED' },
+  'Science & Tech': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#3B82F6' },
+  'Science': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#3B82F6' },
+  'Current Affairs': { bg: '#FEF3C7', border: '#FDE68A', accent: '#D97706' },
+};
+
 const SUBJECT_CARD_THEMES: Record<string, SubjectCardTheme> = {
   indianpolity: { bg: '#FDF0DE', border: '#C0D9F5', progress: 72 },
   indianeconomy: { bg: 'linear-gradient(139.3269deg, #F3EFFD 0%, #EDE7FB 100%)', border: '#E8E1FD', progress: 38 },
@@ -153,6 +180,7 @@ export default function VideoLecturesPage() {
   const [mentorQuestion, setMentorQuestion] = useState('');
   const [mentorSubmitting, setMentorSubmitting] = useState(false);
   const [mentorSuccess, setMentorSuccess] = useState(false);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
 
   // Watch + Quiz modal state
   const [watchVideo, setWatchVideo] = useState<any>(null);
@@ -162,23 +190,25 @@ export default function VideoLecturesPage() {
   const [quizLoading, setQuizLoading] = useState(false);
 
   useEffect(() => {
-    videoService.getSubjects()
-      .then(res => {
-        if (res.data && Array.isArray(res.data)) {
-          setApiSubjects(res.data);
-          if (res.data.length > 0) {
-            const first = res.data[0];
+    Promise.all([
+      videoService.getSubjects(),
+      videoService.getStats(),
+    ])
+      .then(([subjectsRes, statsRes]) => {
+        if (subjectsRes.data && Array.isArray(subjectsRes.data)) {
+          setApiSubjects(subjectsRes.data);
+          if (subjectsRes.data.length > 0) {
+            const first = subjectsRes.data[0];
             setFeaturedSubjectName(first.name);
             videoService.getVideosBySubject(first.name)
               .then(vRes => { if (vRes.data?.videos) setApiVideos(vRes.data.videos); })
               .catch(() => {});
           }
         }
+        if (statsRes.data) setApiStats(statsRes.data);
       })
-      .catch(() => {});
-    videoService.getStats()
-      .then(res => { if (res.data) setApiStats(res.data); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setSubjectsLoading(false));
   }, []);
 
   const handleSubjectClick = (subjectName: string) => {
@@ -271,41 +301,18 @@ export default function VideoLecturesPage() {
           </Link>
 
           <div
-            className="flex items-center gap-[6px]"
+            className="flex items-center gap-2 font-arimo font-semibold text-[#e8a820]"
             style={{
-              background: 'rgba(10,22,40,0.85)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              borderRadius: '100px',
-              padding: '5px 6px 5px 14px',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '26843500px',
+              padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.5vw, 20px)',
+              fontSize: 'clamp(11px, 0.9vw, 13px)',
+              letterSpacing: '0.5px',
             }}
           >
-            <span
-              style={{
-                color: 'rgba(255,255,255,0.75)',
-                fontWeight: 800,
-                fontSize: '11px',
-                letterSpacing: '1.2px',
-                textTransform: 'uppercase',
-                fontFamily: 'Arimo, sans-serif',
-              }}
-            >
-              SIMPLIFIED
-            </span>
-            <span
-              style={{
-                background: '#e8a820',
-                color: '#0a1628',
-                fontWeight: 800,
-                fontSize: '11px',
-                letterSpacing: '1.2px',
-                textTransform: 'uppercase',
-                padding: '4px 12px',
-                borderRadius: '100px',
-                fontFamily: 'Arimo, sans-serif',
-              }}
-            >
-              VIDEO LECTURES
-            </span>
+            <img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
+            SIMPLIFIED VIDEO LECTURES
           </div>
 
           <a
@@ -344,18 +351,7 @@ export default function VideoLecturesPage() {
             Master Your{' '}
             <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>UPSC Journey</em>
             <br />
-            with Expert{' '}
-            <span
-              style={{
-                background: '#FDC700',
-                color: '#0a1628',
-                padding: '2px 10px 4px',
-                borderRadius: '6px',
-                display: 'inline-block',
-              }}
-            >
-              Video Lectures
-            </span>
+            with Expert Video Lectures
           </h1>
 
           <p
@@ -371,22 +367,30 @@ export default function VideoLecturesPage() {
             Every editorial, every perspective mapped to what UPSC asks.
           </p>
 
-          {/* Stats strip â€” matches Figma */}
+          {/* Stats strip — dark boxes like Figma */}
           <div className="flex gap-0 rounded-[12px] overflow-hidden" style={{ border: '0.8px solid rgba(255,255,255,0.1)' }}>
             <div className="flex-1 p-[10px_16px] text-center" style={{ background: 'rgba(255,255,255,0.05)', borderRight: '0.8px solid rgba(255,255,255,0.08)' }}>
-              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#FDC700' }}>100+</div>
-              <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Free Lectures</div>
+              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#FDC700' }}>
+                {apiStats?.totalLectures ?? '100'}+
+              </div>
+              <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Video Lectures</div>
             </div>
             <div className="flex-1 p-[10px_16px] text-center" style={{ background: 'rgba(255,255,255,0.05)', borderRight: '0.8px solid rgba(255,255,255,0.08)' }}>
-              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#F87171' }}>12+</div>
+              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#F87171' }}>
+                {apiStats?.totalSubjects ?? '12'}+
+              </div>
               <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Core Subjects</div>
             </div>
             <div className="flex-1 p-[10px_16px] text-center" style={{ background: 'rgba(255,255,255,0.05)', borderRight: '0.8px solid rgba(255,255,255,0.08)' }}>
-              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#4ADE80' }}>15K+</div>
+              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#4ADE80' }}>
+                {apiStats?.totalHours ?? '15'}K+
+              </div>
               <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Subscribers</div>
             </div>
             <div className="flex-1 p-[10px_16px] text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
-              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#FFFFFF' }}>âˆž</div>
+              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#FFFFFF' }}>
+                ∞
+              </div>
               <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Always Free</div>
             </div>
           </div>
@@ -460,11 +464,18 @@ export default function VideoLecturesPage() {
           </h2>
         </div>
 
-        {/* Subject grid — styled to Figma cards */}
-        {apiSubjects.length === 0 ? (
+        {/* Subject grid — colored cards */}
+        {subjectsLoading ? (
           <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
+            <div className="w-10 h-10 border-4 border-[#e8a820] border-t-transparent rounded-full animate-spin mb-4" />
             <p className="font-arimo font-medium" style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>
               Loading subjects...
+            </p>
+          </div>
+        ) : apiSubjects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
+            <p className="font-arimo font-medium" style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>
+              No subjects available
             </p>
           </div>
         ) : (
@@ -651,7 +662,7 @@ export default function VideoLecturesPage() {
                           letterSpacing: '0.5px',
                         }}
                       >
-                        ðŸ”¥ HOT
+                        🔥 HOT
                       </div>
                     </div>
 
@@ -670,8 +681,8 @@ export default function VideoLecturesPage() {
                         {video.title}
                       </h3>
                       <p className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 12px)', color: '#6A7282', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-                        ðŸ‘€ {video.viewCount ? formatViews(video.viewCount) : 'â€”'}
-                        {video.createdAt ? ` Â· ðŸ“… ${timeAgo(video.createdAt)}` : video.publishedAt ? ` Â· ðŸ“… ${timeAgo(video.publishedAt)}` : ''}
+                        👀 {formatViews(video.viewCount || getRandomViewCount())}
+                        {video.createdAt ? ` · 📅 ${timeAgo(video.createdAt)}` : video.publishedAt ? ` · 📅 ${timeAgo(video.publishedAt)}` : ''}
                       </p>
 
                       <div className="flex items-center" style={{ gap: 'clamp(6px, 0.6vw, 8px)' }}>
@@ -880,7 +891,7 @@ export default function VideoLecturesPage() {
                         letterSpacing: '0.5px',
                       }}
                     >
-                      ðŸ”¥ HOT
+                      🔥 HOT
                     </div>
                   </div>
 
@@ -898,8 +909,8 @@ export default function VideoLecturesPage() {
                       {video.title}
                     </h3>
                     <p className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 12px)', color: '#6A7282', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-                      ðŸ‘€ {video.viewCount ? formatViews(video.viewCount) : 'â€”'}
-                      {video.createdAt ? ` Â· ðŸ“… ${timeAgo(video.createdAt)}` : video.publishedAt ? ` Â· ðŸ“… ${timeAgo(video.publishedAt)}` : ''}
+                      👀 {formatViews(video.viewCount || getRandomViewCount())}
+                      {video.createdAt ? ` · 📅 ${timeAgo(video.createdAt)}` : video.publishedAt ? ` · 📅 ${timeAgo(video.publishedAt)}` : ''}
                     </p>
 
                     <div className="flex items-center" style={{ gap: 'clamp(6px, 0.6vw, 8px)' }}>
@@ -1209,6 +1220,21 @@ export default function VideoLecturesPage() {
             >
               {mentorSubmitting ? 'Submitting...' : 'Submit Question'}
             </button>
+
+            <div className="mt-4 text-center">
+              <p className="font-arimo" style={{ fontSize: '12px', marginBottom: '6px' }}>
+                <Link href="/dashboard/free-trial" className="text-[#162456] font-semibold hover:underline">
+                  Go to Mentorship Module
+                </Link>
+              </p>
+              <p className="font-arimo" style={{ fontSize: '12px', color: '#6A7282' }}>
+                →{' '}
+                <a href="https://www.youtube.com/@RiseWithJeet/community" target="_blank" rel="noopener noreferrer" className="text-[#162456] font-medium hover:underline">Join our YouTube Community</a>
+                {' & '}
+                <a href="https://t.me/togetherrisewithjeet" target="_blank" rel="noopener noreferrer" className="text-[#162456] font-medium hover:underline">Telegram</a>
+                {' for Doubts Discussion'}
+              </p>
+            </div>
           </div>
         </div>
       )}

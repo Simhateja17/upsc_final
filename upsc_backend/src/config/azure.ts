@@ -25,8 +25,7 @@ export const azureClient =
 
 export async function generateJSON<T>(
   prompt: string,
-  system: string,
-  temperature = 0.7
+  system: string
 ): Promise<T> {
   if (!azureClient) {
     throw new Error(
@@ -40,7 +39,6 @@ export async function generateJSON<T>(
       { role: "system", content: system },
       { role: "user", content: prompt },
     ],
-    temperature,
   });
 
   const text = response.choices[0]?.message?.content ?? "";

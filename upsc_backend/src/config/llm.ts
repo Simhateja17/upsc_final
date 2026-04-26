@@ -48,7 +48,7 @@ export async function invokeModel(
   messages: BedrockMessage[],
   options: {
     maxTokens?: number;
-    temperature?: number;
+
     system?: string;
     serviceName?: string;
   } = {}
@@ -61,7 +61,6 @@ export async function invokeModel(
 
   const {
     maxTokens = 4096,
-    temperature = 0.3,
     system,
     serviceName = "unknown",
   } = options;
@@ -91,7 +90,6 @@ export async function invokeModel(
         model: chatDeployment,
         messages: openaiMessages,
         max_completion_tokens: maxTokens,
-        temperature,
       },
       { signal: AbortSignal.timeout(45000) }
     );
@@ -104,7 +102,6 @@ export async function invokeModel(
           model: chatDeployment,
           messages: openaiMessages,
           max_tokens: maxTokens,
-          temperature,
         },
         { signal: AbortSignal.timeout(45000) }
       );
@@ -125,7 +122,7 @@ export async function invokeModelJSON<T = any>(
   messages: BedrockMessage[],
   options: {
     maxTokens?: number;
-    temperature?: number;
+
     system?: string;
     serviceName?: string;
   } = {}

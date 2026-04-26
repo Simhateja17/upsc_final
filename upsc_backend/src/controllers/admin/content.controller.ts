@@ -649,12 +649,24 @@ export const getPricingPlansAdmin = async (_req: Request, res: Response, next: N
  */
 export const createPricingPlan = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, price, duration, features, isPopular, order } = req.body;
+    const { name, description, price, originalPrice, duration, durationDays, features, notIncluded, badge, isPopular, order } = req.body;
     if (!name || price === undefined || !duration) {
       return res.status(400).json({ status: "error", message: "name, price, and duration are required" });
     }
     const plan = await prisma.pricingPlan.create({
-      data: { name, price, duration, features: features ?? [], isPopular: isPopular ?? false, order: order ?? 0 },
+      data: {
+        name,
+        description,
+        price,
+        originalPrice,
+        duration,
+        durationDays: durationDays ?? 90,
+        features: features ?? [],
+        notIncluded: notIncluded ?? [],
+        badge,
+        isPopular: isPopular ?? false,
+        order: order ?? 0,
+      },
     });
     res.status(201).json({ status: "success", data: plan });
   } catch (error) {
@@ -668,12 +680,17 @@ export const createPricingPlan = async (req: Request, res: Response, next: NextF
 export const updatePricingPlan = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
-    const { name, price, duration, features, isPopular, order, isActive } = req.body;
+    const { name, description, price, originalPrice, duration, durationDays, features, notIncluded, badge, isPopular, order, isActive } = req.body;
     const data: any = {};
     if (name !== undefined) data.name = name;
+    if (description !== undefined) data.description = description;
     if (price !== undefined) data.price = price;
+    if (originalPrice !== undefined) data.originalPrice = originalPrice;
     if (duration !== undefined) data.duration = duration;
+    if (durationDays !== undefined) data.durationDays = durationDays;
     if (features !== undefined) data.features = features;
+    if (notIncluded !== undefined) data.notIncluded = notIncluded;
+    if (badge !== undefined) data.badge = badge;
     if (isPopular !== undefined) data.isPopular = isPopular;
     if (order !== undefined) data.order = order;
     if (isActive !== undefined) data.isActive = isActive;
@@ -692,6 +709,59 @@ export const deletePricingPlan = async (req: Request, res: Response, next: NextF
     const id = req.params.id as string;
     await prisma.pricingPlan.delete({ where: { id } });
     res.json({ status: "success", message: "Pricing plan deleted" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==================== FAQ Management ====================
+
+export const getFaqsAdmin = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const faqs = await prisma.faq.findMany({ orderBy: { order: "asc", createdAt: "desc" } });
+    res.json({ status: "success", data: faqs });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createFaq = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { category, question, answer, order } = req.body;
+    if (!category || !question || !answer) {
+      return res.status(400).json({ status: "error", message: "category, question, and answer are required" });
+    }
+    const faq = await prisma.faq.create({
+      data: { category, question, answer, order: order ?? 0 },
+    });
+    res.status(201).json({ status: "success", data: faq });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateFaq = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { category, question, answer, order, isActive } = req.body;
+    const data: any = {};
+    if (category !== undefined) data.category = category;
+    if (question !== undefined) data.question = question;
+    if (answer !== undefined) data.answer = answer;
+    if (order !== undefined) data.order = order;
+    if (isActive !== undefined) data.isActive = isActive;
+    const faq = await prisma.faq.update({ where: { id }, data });
+    res.json({ status: "success", data: faq });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteFaq = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    await prisma.faq.delete({ where: { id } });
+    res.json({ status: "success", message: "FAQ deleted" });
   } catch (error) {
     next(error);
   }

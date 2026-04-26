@@ -257,7 +257,6 @@ Make it a thought-provoking, analytical question typical of UPSC Mains. Focus on
         system:
           "You are a UPSC question paper setter. Generate exam-quality Mains questions. Return valid JSON only.",
         maxTokens: 512,
-        temperature: 0.7,
         serviceName: "dailyMainsQuestion",
       }
     );

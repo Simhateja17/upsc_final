@@ -43,6 +43,10 @@ model User {
   syllabusCoverage  SyllabusCoverage[]
   mentorQuestions   MentorQuestion[]
   mentorBookings    MentorBooking[]
+  subscriptions     Subscription[]
+  orders            Order[]
+  payments          Payment[]
+  notifications     Notification[]
   pyqUploads                PYQUpload[]
   seenMcqQuestions          UserSeenMCQ[]
   chatConversations         ChatConversation[]
@@ -209,11 +213,12 @@ model MainsEvaluation {
   attemptId       String   @unique @map("attempt_id")
   score           Float
   maxScore        Float    @map("max_score")
-  status          String   @default("pending") // pending, evaluating, completed
+  status          String   @default("pending") // pending, evaluating, completed, failed
   strengths       String[] // things done well
   improvements    String[] // areas to improve
   suggestions     String[] // value-add ideas
   detailedFeedback String? @map("detailed_feedback")
+  metrics         Json?    // AI-generated per-dimension metrics
   evaluatedAt     DateTime? @map("evaluated_at")
   createdAt       DateTime @default(now()) @map("created_at")
 
@@ -554,15 +559,24 @@ model StudyMaterial {
 // ==================== PRICING & MENTORSHIP ====================
 
 model PricingPlan {
-  id          String   @id @default(uuid())
-  name        String
-  price       Int      // in INR (paise or rupees)
-  duration    String   // "3 months", "6 months", "12 months"
-  features    String[]
-  isPopular   Boolean  @default(false) @map("is_popular")
-  order       Int      @default(0)
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  price         Int      // in INR (rupees)
+  originalPrice Int?     @map("original_price") // for strikethrough/discount
+  duration      String   // "3 months", "6 months", "12 months"
+  durationDays  Int      @default(90) @map("duration_days") // actual days for calculation
+  features      String[] // included features
+  notIncluded   String[] @map("not_included") // excluded features
+  badge         String?  // e.g. "Most Popular", "Best Value"
+  isPopular     Boolean  @default(false) @map("is_popular")
+  order         Int      @default(0)
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+  orders        Order[]
 
   @@map("pricing_plans")
 }
@@ -634,6 +648,8 @@ model PYQMainsQuestion {
   subject      String
   topic        String?
   difficulty   String   @default("Medium") // Easy, Medium, Hard
+  explanation  String?  // AI-generated or extracted explanation / model answer approach
+  marks        Int?     // marks allotted per question (e.g. 10, 15, 20)
   sourceFile   String?  @map("source_file")
   status       String   @default("draft") // draft, approved, rejected
   uploadId     String?  @map("upload_id")
@@ -851,6 +867,7 @@ model SpacedRepItem {
   sourceType       String   @map("source_type")
   subject          String
   scheduleDay      Int      @default(3) @map("schedule_day")
+  scheduleDays     Json?    @map("schedule_days")
   remindEnabled    Boolean  @default(false) @map("remind_enabled")
   addedToFlashcard Boolean  @default(false) @map("added_to_flashcard")
   nextReviewAt     DateTime @default(now()) @map("next_review_at")
@@ -1069,17 +1086,72 @@ model PyqMainsEvaluation {
   attemptId        String    @unique @map("attempt_id")
   score            Float
   maxScore         Float     @map("max_score")
-  status           String    @default("pending") // pending, evaluating, completed
+  status           String    @default("pending") // pending, evaluating, completed, failed
   strengths        String[]
   improvements     String[]
   suggestions      String[]
   detailedFeedback String?   @map("detailed_feedback")
+  metrics          Json?     // AI-generated per-dimension metrics
   evaluatedAt      DateTime? @map("evaluated_at")
   createdAt        DateTime  @default(now()) @map("created_at")
 
   attempt PyqMainsAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 
   @@map("pyq_mains_evaluations")
+}
+
+// ==================== FAQ ====================
+
+model Faq {
+  id        String   @id @default(uuid())
+  category  String
+  question  String
+  answer    String
+  order     Int      @default(0)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("faqs")
+}
+
+// ==================== ORDERS ====================
+
+model Order {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  planId      String?  @map("plan_id")
+  itemType    String?  @map("item_type") // plan, test_series
+  itemId      String?  @map("item_id")
+  itemName    String?  @map("item_name")
+  amount      Int      // in INR (rupees)
+  status      String   @default("pending") // pending, paid, failed, refunded
+  paymentMethod String? @map("payment_method")
+  paymentId   String?  @map("payment_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan PricingPlan? @relation(fields: [planId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([userId, status])
+  @@map("orders")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  body      String
+  type      String   @default("general") // general, spaced_rep, mcq, answer, streak
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
+  @@map("notifications")
 }
 
 // ==================== MOCK TEST MAINS EVALUATION ====================
@@ -1109,15 +1181,66 @@ model MockTestMainsEvaluation {
   attemptId        String    @unique @map("attempt_id")
   score            Float
   maxScore         Float     @map("max_score")
-  status           String    @default("pending") // pending, evaluating, completed
+  status           String    @default("pending") // pending, evaluating, completed, failed
   strengths        String[]
   improvements     String[]
   suggestions      String[]
   detailedFeedback String?   @map("detailed_feedback")
+  metrics          Json?     // AI-generated per-dimension metrics
   evaluatedAt      DateTime? @map("evaluated_at")
   createdAt        DateTime  @default(now()) @map("created_at")
 
   attempt MockTestMainsAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 
   @@map("mock_test_mains_evaluations")
+}
+
+// ==================== BILLING & SUBSCRIPTIONS ====================
+
+model Subscription {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  planId      String   @map("plan_id")
+  status      String   @default("active") // active, cancelled, expired, pending
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  autoRenew   Boolean  @default(true) @map("auto_renew")
+  cancelledAt DateTime? @map("cancelled_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan PricingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([userId, status])
+  @@map("subscriptions")
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  orderId       String?  @map("order_id")
+  subscriptionId String? @map("subscription_id")
+  amount        Int      // in INR (rupees)
+  currency      String   @default("INR")
+  status        String   @default("pending") // pending, success, failed, refunded
+  provider      String   @default("razorpay") // razorpay, stripe, etc.
+  providerPaymentId String? @map("provider_payment_id")
+  providerOrderId   String? @map("provider_order_id")
+  receiptUrl    String?  @map("receipt_url")
+  paidAt        DateTime? @map("paid_at")
+  failedAt      DateTime? @map("failed_at")
+  failureReason String?  @map("failure_reason")
+  metadata      Json?    // extra payment data
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order        Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([providerPaymentId])
+  @@map("payments")
 }

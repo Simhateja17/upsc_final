@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Mode, TrackerState, SyllabusData } from '../page';
 
 interface StageTabsProps {
@@ -10,6 +11,8 @@ interface StageTabsProps {
 }
 
 export default function StageTabs({ mode, onModeChange, states, syllabusData }: StageTabsProps) {
+  const [hoveredTab, setHoveredTab] = useState<Mode | null>(null);
+
   const calculateModePct = (modeKey: Mode) => {
     const subjects = syllabusData[modeKey];
     let total = 0;
@@ -38,34 +41,57 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData }: 
     { key: 'optional' as Mode, label: 'Optional', icon: '📖' },
   ];
 
+  const highlightedTab = hoveredTab ?? mode;
+  const highlightedIndex = tabs.findIndex(tab => tab.key === highlightedTab);
+  const thumbLeft =
+    highlightedIndex === 0
+      ? '4px'
+      : highlightedIndex === 1
+        ? 'calc(8px + ((100% - 16px) / 3))'
+        : 'calc(12px + 2 * ((100% - 16px) / 3))';
+
   return (
     <div
-      className="inline-flex items-center w-full"
+      className="relative flex items-center w-full overflow-hidden"
       style={{
         background: '#F1F3F9',
         borderRadius: '26843500px',
         padding: '4px',
-        gap: '4px',
       }}
     >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-[4px] bottom-[4px] z-0"
+        style={{
+          left: thumbLeft,
+          width: 'calc((100% - 16px) / 3)',
+          borderRadius: '26843500px',
+          background: '#0F172B',
+          boxShadow: '0px 4px 12px rgba(15, 23, 43, 0.3)',
+          transition: 'left 220ms ease, width 220ms ease, background 220ms ease, box-shadow 220ms ease',
+        }}
+      />
+
       {tabs.map(tab => {
         const isActive = mode === tab.key;
-        const pct = tab.key === 'prelims' ? prelimsPct : tab.key === 'mains' ? mainsPct : optionalPct;
+        const isHovered = hoveredTab === tab.key;
+        const isHighlighted = isActive || isHovered;
 
         return (
           <button
             key={tab.key}
             onClick={() => onModeChange(tab.key)}
-            className="flex items-center justify-center gap-2 flex-1 transition-all duration-200 whitespace-nowrap"
+            onMouseEnter={() => setHoveredTab(tab.key)}
+            onMouseLeave={() => setHoveredTab(null)}
+            onFocus={() => setHoveredTab(tab.key)}
+            onBlur={() => setHoveredTab(null)}
+            className="relative z-10 flex flex-1 items-center justify-center gap-2 whitespace-nowrap transition-colors duration-200"
             style={{
               padding: '10px 20px',
-              borderRadius: '26843500px',
-              background: isActive ? '#0F172B' : 'transparent',
-              color: isActive ? '#FFFFFF' : '#4A5565',
+              color: isHighlighted ? '#FFFFFF' : '#4A5565',
               fontWeight: 700,
               fontSize: '16px',
               lineHeight: '1',
-              boxShadow: isActive ? '0px 4px 12px rgba(15, 23, 43, 0.3)' : 'none',
             }}
           >
             <span style={{ fontSize: '18px', lineHeight: '1' }}>{tab.icon}</span>

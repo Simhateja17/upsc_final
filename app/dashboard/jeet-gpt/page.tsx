@@ -1,23 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth } from '@/contexts/AuthContext';
 import { jeetAIService } from '@/lib/services';
-
-/* ── Leaf/feather logo ── */
-const LeafLogo = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="flex-shrink-0">
-    <path
-      d="M12 2C8 8 12 14 12 20c0 0 4-6 8-12-4 4-8 8-12 10-2-2-4-4-4-6 0-4 4-8 8-12z"
-      fill="#4ADE80"
-      stroke="#4ADE80"
-      strokeWidth="0.5"
-    />
-  </svg>
-);
 
 /* ── Spinner ── */
 const Spinner = () => (
@@ -352,17 +339,7 @@ export default function JeetGPTPage() {
 
       {/* ── Left Sidebar ── */}
       <aside className="flex-shrink-0 flex flex-col overflow-hidden" style={{ width: '266px', background: '#0A1628' }}>
-        <div className="pt-6 px-4 pb-2">
-          <Link href="/dashboard" className="flex items-start gap-2">
-            <LeafLogo />
-            <div>
-              <div className="font-inter font-bold text-[18px] leading-7 text-white">Rise with Jeet IAS</div>
-              <div className="font-inter text-[10px] leading-[15px] tracking-[0.5px] uppercase mt-0.5" style={{ color: '#99A1AF' }}>India&apos;s Premier UPSC Platform</div>
-            </div>
-          </Link>
-        </div>
-
-        <div className="px-4 pt-4">
+        <div className="px-4 pt-6">
           <button type="button" onClick={startNewConversation} className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-[10px] font-inter font-semibold text-[14px] leading-5 text-white" style={{ background: 'linear-gradient(90deg, #F0B100 0%, #FF6900 100%)' }}>
             ⚡ New Conversation
           </button>
@@ -405,7 +382,7 @@ export default function JeetGPTPage() {
               {queriesExhausted && <span className="text-[10px]" style={{ color: '#FB2C36' }}>Limit reached</span>}
             </div>
             <div className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.2)' }}>
-              <div className="h-full rounded-full transition-all duration-300" style={{ width: ((queriesUsed / DAILY_QUERY_LIMIT) * 100) + '%', background: queriesExhausted ? '#FB2C36' : '#3B82F6' }} />
+              <div className="h-full rounded-full transition-all duration-300" style={{ width: ((queriesUsed / DAILY_QUERY_LIMIT) * 100) + '%', background: queriesExhausted ? '#FB2C36' : 'linear-gradient(90deg, #FDC700 0%, #FF9E1A 100%)' }} />
             </div>
           </div>
           <div className="flex items-center gap-2 p-2 rounded-[10px] hover:bg-white/5 cursor-pointer">
@@ -425,7 +402,7 @@ export default function JeetGPTPage() {
           <div className="flex items-baseline gap-2">
             <span className="font-inter font-bold text-[18px] leading-7" style={{ color: '#101828' }}>Jeet AI</span>
             <span className="font-inter text-[14px] leading-5" style={{ color: '#6A7282' }}>—</span>
-            <span className="font-inter text-[14px] leading-5" style={{ color: '#6A7282' }}>Your UPSC Mentor</span>
+            <span className="font-inter text-[14px] leading-5" style={{ color: '#6A7282' }}>Your UPSC Preparation Partner</span>
           </div>
           <div className="font-inter text-[12px] leading-4" style={{ color: '#99A1AF' }}>Ask anything about UPSC preparation</div>
         </header>
@@ -498,9 +475,8 @@ export default function JeetGPTPage() {
                   <div key={msg.id} className="flex flex-col gap-1">
                     <div className="max-w-[840px] rounded-[16px] p-6 border" style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF', boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1)' }}>
                       <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#1E3A5F' }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F0B100" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
-                        </div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/scholar.png" alt="Jeet AI" className="w-8 h-8 rounded-lg flex-shrink-0 object-contain" />
                         <div className="flex-1 min-w-0"><MarkdownRenderer content={msg.content} /></div>
                       </div>
                       <div className="flex justify-end mt-3">
@@ -515,9 +491,8 @@ export default function JeetGPTPage() {
                 <div className="flex flex-col gap-1">
                   <div className="max-w-[840px] rounded-[16px] p-6 border" style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF' }}>
                     <div className="flex gap-3 items-center">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#1E3A5F' }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F0B100" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
-                      </div>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/scholar.png" alt="Jeet AI" className="w-8 h-8 rounded-lg flex-shrink-0 object-contain" />
                       <div className="flex gap-1.5">
                         <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#D08700', animationDelay: '0ms' }} />
                         <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#D08700', animationDelay: '150ms' }} />

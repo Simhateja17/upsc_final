@@ -187,10 +187,10 @@ export default function TestAnalyticsPage() {
             className="w-full rounded-[16px] px-10 pt-8 pb-6 mb-6 flex flex-col gap-6"
             style={{ background: 'linear-gradient(135deg, #0F172B 0%, #1E2939 100%)' }}
           >
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 items-center text-center">
               <span
                 className="inline-flex items-center justify-center rounded-full px-3 py-1 uppercase tracking-[0.12em]"
-                style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', letterSpacing: '1.2px', color: '#0B1120', background: '#00D5BE', alignSelf: 'flex-start' }}
+                style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', letterSpacing: '1.2px', color: '#0B1120', background: '#00D5BE' }}
               >
                 Analytics - Test Dashboard
               </span>

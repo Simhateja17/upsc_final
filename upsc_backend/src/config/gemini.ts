@@ -2,11 +2,10 @@ import { azureClient, chatDeployment, generateJSON as azureGenerateJSON } from "
 
 export async function generateJSON<T>(
   prompt: string,
-  system: string,
-  temperature = 0.7
+  system: string
 ): Promise<T> {
   // Backwards-compatible wrapper name; uses Azure infrastructure only.
-  return azureGenerateJSON<T>(prompt, system, temperature);
+  return azureGenerateJSON<T>(prompt, system);
 }
 
 const OCR_INSTRUCTION =
@@ -44,7 +43,6 @@ async function extractTextWithAzure(
         },
       ],
       max_completion_tokens: 4096,
-      temperature: 0,
     },
     { signal: AbortSignal.timeout(30000) }
   );

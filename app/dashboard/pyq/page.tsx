@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
+import Link from 'next/link';
 import { pyqService } from '@/lib/services';
 
 const AI_EVAL_STEPS = [
@@ -10,6 +11,19 @@ const AI_EVAL_STEPS = [
   'Preparing detailed markup & feedback',
   'Generating detailed feedback',
 ];
+
+const heroStats = [
+  { value: '12,400', label: 'Questions', valueClassName: 'text-[#f5a623]' },
+  { value: '30 yrs', label: 'Coverage', valueClassName: 'text-[#ff7070]' },
+  { value: '130+', label: 'Sub-topics', valueClassName: 'text-white' },
+  { value: '100%', label: 'Mapped', valueClassName: 'text-[#0e8a56]' },
+];
+const LATEST_EXAM_YEAR = 2025;
+const EARLIEST_EXAM_YEAR = 2011;
+const YEAR_OPTIONS = Array.from(
+  { length: LATEST_EXAM_YEAR - EARLIEST_EXAM_YEAR + 1 },
+  (_, index) => LATEST_EXAM_YEAR - index
+);
 
 export default function PyqPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -31,6 +45,7 @@ export default function PyqPage() {
   const [mainsEvalResults, setMainsEvalResults] = useState<any>(null);
   const [mainsSubmitting, setMainsSubmitting] = useState(false);
   const [mainsSubmitError, setMainsSubmitError] = useState<string | null>(null);
+  const pageRootRef = useRef<HTMLDivElement>(null);
   const mainsFileInputRef = useRef<HTMLInputElement>(null);
   const MAINS_TIME_LIMIT = 9 * 60; // 9 minutes in seconds
   const [mainsTimeLeft, setMainsTimeLeft] = useState(MAINS_TIME_LIMIT);
@@ -44,15 +59,18 @@ export default function PyqPage() {
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedYearRange, setSelectedYearRange] = useState<'all' | 'last5' | 'year'>('all');
   const [selectedSubject, setSelectedSubject] = useState('All Papers');
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      const yearFrom = selectedYearRange === 'last5' ? LATEST_EXAM_YEAR - 4 : undefined;
       const res = await pyqService.getQuestions({
         mode,
-        year: selectedYear || undefined,
+        year: selectedYearRange === 'year' ? selectedYear || undefined : undefined,
+        yearFrom,
         subject: selectedSubject !== 'All Papers' ? selectedSubject : undefined,
         page,
         limit: 20,
@@ -72,12 +90,12 @@ export default function PyqPage() {
     } finally {
       setLoading(false);
     }
-  }, [mode, selectedYear, selectedSubject, page]);
+  }, [mode, selectedYear, selectedYearRange, selectedSubject, page]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [mode, selectedYear, selectedSubject]);
+  }, [mode, selectedYear, selectedYearRange, selectedSubject]);
 
   // Mains writing timer (9-min countdown, auto-submit on expiry)
   useEffect(() => {
@@ -102,6 +120,18 @@ export default function PyqPage() {
   useEffect(() => {
     fetchQuestions();
   }, [fetchQuestions]);
+
+  useLayoutEffect(() => {
+    const scroller = document.querySelector('main');
+    if (scroller) {
+      scroller.scrollTop = 0;
+      scroller.scrollLeft = 0;
+    }
+    if (pageRootRef.current) {
+      pageRootRef.current.scrollTop = 0;
+      pageRootRef.current.scrollLeft = 0;
+    }
+  }, []);
 
   // When AI eval modal opens: poll backend for real evaluation status
   useEffect(() => {
@@ -153,92 +183,126 @@ export default function PyqPage() {
 
   return (
     <div
-      className="flex flex-col items-center overflow-y-auto"
-      style={{ background: '#F9FAFB', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
+      ref={pageRootRef}
+      className="flex min-h-full flex-col items-center"
+      style={{ background: '#F9FAFB' }}
     >
-      <div className="w-full max-w-[1080px] px-6 pt-16 pb-16">
-        {/* Hero copy */}
-        <div className="text-center mb-8">
-          <h1 className="font-[var(--font-geist)] font-bold text-[36px] md:text-[48px] leading-[48px] text-[#101828]">
-            The Complete{' '}
-            <span className="italic font-bold text-[#1452CC]">
-              PYQ
-            </span>{' '}
-            <span className="text-[#D9A84F]">
-              Bank
-            </span>
-          </h1>
-          <h2 className="font-[var(--font-geist)] font-bold text-[36px] md:text-[48px] leading-[48px] text-[#101828] mt-2">
-            for UPSC Success
-          </h2>
-          <p className="mt-4 text-[14px] md:text-[18px] leading-[29px] text-[#6A7282] max-w-[768px] mx-auto">
-            Every UPSC question ever asked — Prelims &amp; Mains — with smart AI-powered Mains evaluation,
-            subject filters, and instant explanations.
-          </p>
+      <section className="relative isolate w-full overflow-hidden bg-[#050914] text-white">
+        <div className="absolute inset-0">
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-80"
+            style={{ backgroundImage: 'url(/hero-bg.jpg)' }}
+          />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(14,29,64,0.55)_0%,rgba(5,9,20,0.15)_38%,rgba(5,9,20,0.92)_100%)]" />
+          <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,rgba(255,255,255,0.035)_0,rgba(255,255,255,0.035)_1px,transparent_1px,transparent_34px),repeating-linear-gradient(90deg,rgba(255,255,255,0.035)_0,rgba(255,255,255,0.035)_1px,transparent_1px,transparent_34px)] opacity-55" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02)_0%,rgba(255,255,255,0)_24%,rgba(255,255,255,0)_76%,rgba(0,0,0,0.2)_100%)]" />
         </div>
 
-        {/* Stats strip */}
-        <div className="w-full max-w-[672px] mx-auto mb-10 rounded-[24px] bg-white shadow-[0_4px_6px_-4px_rgba(0,0,0,0.1),0_10px_15px_-3px_rgba(0,0,0,0.1)] px-8 py-5">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            {/* Questions */}
-            <div className="flex flex-col items-center md:items-start md:pr-8">
-              <div className="text-[28px] md:text-[32px] font-bold text-[#101828] leading-[36px]">
-                12,400
-              </div>
-              <div className="mt-1 text-[11px] tracking-[0.07em] uppercase text-[#99A1AF]">
-                Questions
-              </div>
-            </div>
+        <div className="relative z-10 mx-auto w-full max-w-[1080px] px-4 pt-4 md:px-6 md:pt-6">
+          <div className="flex items-center justify-between gap-4 border-b border-white/6 pb-4 md:pb-5">
+            <Link href="/dashboard" className="flex items-center">
+              <img
+                src="/logo...png"
+                alt="RiseWithJeet Logo"
+                className="h-[52px] w-auto object-contain md:h-[62px]"
+              />
+            </Link>
 
-            {/* Divider */}
-            <div className="hidden md:block w-px self-stretch bg-[#E5E7EB]" />
+            <div className="flex items-center gap-3 md:gap-4">
+              <Link href="/dashboard/free-trial" className="hidden sm:block">
+                <button className="inline-flex items-center gap-1.5 rounded-[12px] border border-[#FFD170]/25 px-4 py-2 text-[13px] font-semibold leading-none text-[#FFD170] transition-colors hover:border-[#FFD170] hover:shadow-[0_0_12px_rgba(255,209,112,0.18)] md:px-5 md:py-3 md:text-[18px]">
+                  Upgrade
+                  <span className="text-[14px] md:text-[20px]">✨</span>
+                </button>
+              </Link>
 
-            {/* Coverage */}
-            <div className="flex flex-col items-center md:items-start md:px-8">
-              <div className="text-[20px] md:text-[24px] font-semibold leading-[32px] text-[#D9A84F]">
-                14yrs
-              </div>
-              <div className="mt-1 text-[11px] tracking-[0.07em] uppercase text-[#99A1AF]">
-                Coverage
-              </div>
-            </div>
+              <button
+                type="button"
+                className="relative flex h-[40px] w-[40px] items-center justify-center rounded-xl bg-[#1a2540] text-white transition-colors hover:bg-[#243050] md:h-[48px] md:w-[48px]"
+                aria-label="Notifications"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21"
+                    fill="currentColor"
+                  />
+                </svg>
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff6b6b]" />
+              </button>
 
-            {/* Divider */}
-            <div className="hidden md:block w-px self-stretch bg-[#E5E7EB]" />
-
-            {/* Mapped */}
-            <div className="flex flex-col items-center md:items-start md:px-8">
-              <div className="text-[20px] md:text-[24px] font-semibold leading-[32px] text-[#D9A84F]">
-                100%
-              </div>
-              <div className="mt-1 text-[11px] tracking-[0.07em] uppercase text-[#99A1AF]">
-                Mapped
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="hidden md:block w-px self-stretch bg-[#E5E7EB]" />
-
-            {/* AI Mains Eval */}
-            <div className="flex flex-col items-center md:items-start md:pl-8">
-              <div className="inline-flex items-center gap-2">
-                <img
-                  src="/ai-mains-eval.png"
-                  alt="AI Mains Eval"
-                  className="w-5 h-5 object-contain"
-                />
-                <span className="text-[14px] font-semibold leading-[20px] tracking-[0.06em] uppercase text-[#364153]">
-                  AI MAINS EVAL
-                </span>
+              <div className="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[#F0B64B] font-[var(--font-tinos)] text-[18px] font-bold text-[#0E182D] md:h-[56px] md:w-[56px] md:text-[22px]">
+                ST
               </div>
             </div>
           </div>
+
+          <div className="pb-10 pt-8 md:pb-14 md:pt-10">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center rounded-full border border-white/12 bg-white/6 px-4 py-2 text-[12px] font-medium text-white/80 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <span className="mr-1.5 text-[13px] leading-none">←</span>
+            Back to Dashboard
+          </Link>
+
+          <div className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 flex-col items-center gap-2 text-white/30 md:flex md:right-6">
+            <span className="inline-block size-4 rotate-45 border-b border-r border-white/25" />
+            <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Scroll</span>
+          </div>
+
+          <div className="flex flex-col items-center pt-12 text-center md:pt-10">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 backdrop-blur-md">
+              <img src="/icon-pyq.png" alt="" className="h-4 w-4 object-contain" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f5a623]">
+                Previous year questions
+              </span>
+            </div>
+
+            <h1 className="mt-6 max-w-[780px] font-[var(--font-cormorant)] text-[clamp(3rem,5vw,4rem)] leading-[1.06] font-semibold text-white md:mt-8">
+              <span className="block">
+                The Complete <span className="italic text-[#e8b84b]">PYQ Bank</span>
+              </span>
+              <span className="block mt-1.5">for UPSC Success</span>
+            </h1>
+
+            <p className="mt-5 max-w-[720px] font-[var(--font-arimo)] text-[14px] leading-[24px] text-[#4a5565] md:mt-6 md:text-[16px] md:leading-[24px]">
+              Every UPSC question ever asked Prelims, Mains with instant Mains evaluation, subject filters,
+              and detailed explanations.
+            </p>
+
+            <div className="mt-7 w-full max-w-[432px] rounded-[18px] border border-white/6 bg-[#161c2d] shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[18px] md:grid-cols-4">
+                {heroStats.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="flex min-h-[66px] flex-col items-center justify-center bg-[#161c2d] px-3 py-3 text-center"
+                  >
+                    <div
+                      className={`font-[var(--font-jakarta)] text-[16px] font-extrabold tracking-[-0.04em] md:text-[18px] ${stat.valueClassName}`}
+                    >
+                      {stat.value}
+                    </div>
+                    <div className="mt-1 font-[var(--font-jakarta)] text-[9px] uppercase tracking-[0.12em] text-white/40 md:text-[9.5px]">
+                      {stat.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          </div>
         </div>
+      </section>
 
         {/* Mode toggle */}
-        <div className="w-full flex justify-center mb-10">
+      <div className="w-full max-w-[1080px] px-6 py-10">
+        <div className="mb-10 flex w-full justify-center">
           <div
-            className="inline-flex items-center bg-white rounded-full shadow-[0_4px_6px_-4px_rgba(0,0,0,0.1),0_10px_15px_-3px_rgba(0,0,0,0.1)]"
+            className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_4px_6px_-4px_rgba(0,0,0,0.1),0_10px_15px_-3px_rgba(0,0,0,0.1)]"
             style={{
               width: '347.3px',
               height: '79.9875px',
@@ -251,14 +315,12 @@ export default function PyqPage() {
             }}
           >
             <button
-              className="flex items-center"
+              className="flex flex-1 items-center justify-center"
               style={{
-                width: '171.5px',
                 height: '63.9875px',
                 paddingLeft: '32px',
                 paddingRight: '32px',
-                borderRadius: '26843500px',
-                background: mode === 'prelims' ? '#0F172B' : 'transparent',
+                background: 'transparent',
                 gap: '12px',
               }}
               onClick={() => setMode('prelims')}
@@ -276,19 +338,16 @@ export default function PyqPage() {
                   lineHeight: '28px',
                   letterSpacing: 0,
                   textAlign: 'center',
-                  color: mode === 'prelims' ? '#FFFFFF' : '#4A5565',
+                  color: '#4A5565',
                 }}
               >
                 Prelims
               </span>
             </button>
             <button
-              className="flex items-center"
+              className="flex flex-1 items-center justify-center"
               style={{
-                paddingLeft: '32px',
-                paddingRight: '32px',
                 height: '63.9875px',
-                borderRadius: '26843500px',
                 background: mode === 'mains' ? '#0F172B' : 'transparent',
                 gap: '12px',
               }}
@@ -325,7 +384,9 @@ export default function PyqPage() {
               {/* Header */}
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
                 <h3 className="font-bold text-[20px] md:text-[24px] text-[#101828]">
-                  Prelims Questions{selectedYear ? ` · ${selectedYear}` : ''}
+                  Prelims Questions
+                  {selectedYearRange === 'year' && selectedYear ? ` · ${selectedYear}` : ''}
+                  {selectedYearRange === 'last5' ? ' · Last 5 yrs' : ''}
                 </h3>
                 <p className="text-[13px] text-[#6A7282]">
                   {loading ? 'Loading...' : `Showing ${questions.length} of ${total} questions`}
@@ -606,7 +667,9 @@ export default function PyqPage() {
                 {/* Mains header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-6">
                   <h3 className="font-bold text-[24px] text-[#101828]">
-                    Mains Questions{selectedYear ? ` · ${selectedYear}` : ' - All Papers'}
+                    Mains Questions
+                    {selectedYearRange === 'year' && selectedYear ? ` · ${selectedYear}` : ''}
+                    {selectedYearRange === 'last5' ? ' · Last 5 yrs' : ' - All Papers'}
                   </h3>
                   <p className="text-[14px] text-[#6A7282]">
                     {loading ? 'Loading...' : `Showing ${questions.length} of ${total} questions`}
@@ -737,7 +800,8 @@ export default function PyqPage() {
               className="rounded-[16px] bg-white flex flex-col"
               style={{
                 width: '307px',
-                height: '198px',
+                position: 'relative',
+                minHeight: '280px',
                 opacity: 1,
                 boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
               }}
@@ -750,47 +814,77 @@ export default function PyqPage() {
                   EXAM YEAR
                 </div>
               </div>
-              <div
-                className="grid grid-cols-4 gap-2 px-5"
-                style={{ gap: '8px 8px' }}
-              >
-                {['2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017'].map((year) => {
-                  const selected = selectedYear === parseInt(year);
-                  return (
-                    <button
-                      key={year}
-                      onClick={() => setSelectedYear(selected ? null : parseInt(year))}
-                      className="rounded-[10px] flex items-center justify-center flex-shrink-0"
-                      style={{
-                        width: '49.25px',
-                        height: '36px',
-                        background: selected ? '#FDBA26' : '#F3F4F6',
-                        fontFamily: 'Inter, sans-serif',
-                        fontWeight: 600,
-                        fontSize: '14px',
-                        lineHeight: '20px',
-                        letterSpacing: 0,
-                        textAlign: 'center',
-                        color: selected ? '#FFFFFF' : '#364153',
-                      }}
-                    >
-                      {year}
-                    </button>
-                  );
-                })}
+              <div className="px-5 pb-5 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedYear(null);
+                      setSelectedYearRange('all');
+                    }}
+                    className="rounded-[10px] flex items-center justify-center"
+                    style={{
+                      height: '40px',
+                      background: selectedYearRange === 'all' ? '#0F172B' : '#F3F4F6',
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                      color: selectedYearRange === 'all' ? '#FFFFFF' : '#364153',
+                    }}
+                  >
+                    All Years
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedYear(null);
+                      setSelectedYearRange('last5');
+                    }}
+                    className="rounded-[10px] flex items-center justify-center"
+                    style={{
+                      height: '40px',
+                      background: selectedYearRange === 'last5' ? '#FDBA26' : '#F3F4F6',
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                      color: selectedYearRange === 'last5' ? '#FFFFFF' : '#364153',
+                    }}
+                  >
+                    Last 5 yrs
+                  </button>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {YEAR_OPTIONS.map((year) => {
+                    const selected = selectedYearRange === 'year' && selectedYear === year;
+                    return (
+                      <button
+                        key={year}
+                        type="button"
+                        onClick={() => {
+                          setSelectedYear(year);
+                          setSelectedYearRange('year');
+                        }}
+                        className="rounded-[10px] flex items-center justify-center"
+                        style={{
+                          height: '36px',
+                          background: selected ? '#FDBA26' : '#F3F4F6',
+                          fontFamily: 'Inter, sans-serif',
+                          fontWeight: 600,
+                          fontSize: '14px',
+                          lineHeight: '20px',
+                          letterSpacing: 0,
+                          textAlign: 'center',
+                          color: selected ? '#FFFFFF' : '#364153',
+                        }}
+                      >
+                        {year}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <button
-                onClick={() => setSelectedYear(null)}
-                className="flex-1 flex items-end justify-center pb-4"
-                style={{
-                  fontFamily: 'Inter, sans-serif',
-                  fontSize: '14px',
-                  fontWeight: selectedYear === null ? 700 : 500,
-                  color: selectedYear === null ? '#FDBA26' : '#364153',
-                }}
-              >
-                All Years
-              </button>
             </div>
 
             {/* Subject Filter panel - 310×826 */}
@@ -1551,4 +1645,3 @@ export default function PyqPage() {
     </div>
   );
 }
-

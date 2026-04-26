@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { pricingService } from '@/lib/services';
+import PurchaseModal from '@/components/PurchaseModal';
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -195,6 +196,26 @@ export default function FreeTrialPage() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState('');
 
+  /* ---- Dynamic seats left ---- */
+  const [seatsLeft, setSeatsLeft] = useState(4);
+  useEffect(() => {
+    // Simulate slowly decreasing seats; in production this should come from API
+    const stored = localStorage.getItem('mentorshipSeatsLeft');
+    const storedTime = localStorage.getItem('mentorshipSeatsTime');
+    const now = Date.now();
+    if (stored && storedTime) {
+      const elapsed = now - parseInt(storedTime, 10);
+      const hoursPassed = Math.floor(elapsed / (1000 * 60 * 60));
+      const decrease = Math.min(hoursPassed, 4); // decrease by up to 4 over time
+      const base = Math.max(1, parseInt(stored, 10) - decrease);
+      setSeatsLeft(base);
+    } else {
+      const initial = 4;
+      localStorage.setItem('mentorshipSeatsLeft', String(initial));
+      localStorage.setItem('mentorshipSeatsTime', String(now));
+      setSeatsLeft(initial);
+    }
+  }, []);
   useEffect(() => {
     pricingService.getPlans()
       .then((res: any) => {
@@ -235,6 +256,11 @@ export default function FreeTrialPage() {
 
   const displayPlans = (apiPlans ?? []).map(transformPlan);
   const displayTestimonials = (apiTestimonials ?? []).map(transformTestimonial);
+
+  const [purchaseModal, setPurchaseModal] = useState<{
+    open: boolean;
+    plan: any;
+  }>({ open: false, plan: null });
 
   return (
     <div style={{ background: '#FFFFFF', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
@@ -315,6 +341,7 @@ export default function FreeTrialPage() {
                 </React.Fragment>
               ))}
             </div>
+            
           </div>
           <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -322,7 +349,7 @@ export default function FreeTrialPage() {
               <span style={{ fontSize: '12px', color: '#B5C0D2', fontWeight: 500 }}>Accepting mentees · Limited seats for June 2025 batch</span>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              <span style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, color: '#F5C75D', background: 'rgba(245,199,93,0.1)', border: '1px solid rgba(245,199,93,0.2)' }}>✦ Only 4 seats left</span>
+              <span style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, color: '#F5C75D', background: 'rgba(245,199,93,0.1)', border: '1px solid rgba(245,199,93,0.2)' }}>✦ Only {seatsLeft} seats left</span>
               <span style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 500, color: '#9AA8BE', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>Next batch: June 1</span>
               <span style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 500, color: '#9AA8BE', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>Sat &amp; Sun sessions</span>
             </div>
@@ -611,23 +638,203 @@ export default function FreeTrialPage() {
               </div>
             ) : (
               <>
-                <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172B', marginBottom: '8px' }}>Book Free Discovery Call</h3>
-                <p style={{ fontSize: '14px', color: '#64748B', marginBottom: '24px' }}>15 minutes. No pressure. Just honest guidance.</p>
-                {bookingError && <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>{bookingError}</div>}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <input type="text" placeholder="Your name" value={bookingName} onChange={(e) => setBookingName(e.target.value)} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '14px', outline: 'none' }} />
-                  <input type="email" placeholder="Email address" value={bookingEmail} onChange={(e) => setBookingEmail(e.target.value)} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '14px', outline: 'none' }} />
-                  <input type="tel" placeholder="Phone (optional)" value={bookingPhone} onChange={(e) => setBookingPhone(e.target.value)} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '14px', outline: 'none' }} />
-                  <textarea placeholder="Tell us about your prep stage (optional)" value={bookingMessage} onChange={(e) => setBookingMessage(e.target.value)} rows={3} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '14px', outline: 'none', resize: 'vertical' }} />
-                  <button onClick={handleBookCall} disabled={bookingSubmitting} style={{ padding: '14px', borderRadius: '10px', border: 'none', background: '#0F172B', color: '#FFFFFF', fontSize: '15px', fontWeight: 700, cursor: bookingSubmitting ? 'not-allowed' : 'pointer', opacity: bookingSubmitting ? 0.7 : 1 }}>
-                    {bookingSubmitting ? 'Booking...' : 'Book My Free Call'}
-                  </button>
-                </div>
+                <h3
+                  style={{
+                    fontSize: 'clamp(20px, 1.6vw, 24px)',
+                    fontWeight: 700,
+                    color: '#101828',
+                    marginBottom: '4px',
+                  }}
+                  className="font-arimo"
+                >
+                  🤙 Book Your Free Discovery Call
+                </h3>
+                <p
+                  style={{
+                    fontSize: '14px',
+                    color: '#6A7282',
+                    marginBottom: 'clamp(20px, 2vw, 28px)',
+                    lineHeight: 1.5,
+                  }}
+                  className="font-arimo"
+                >
+                  20-minute call with Jeet Sir — no commitment, no hard sell.
+                </p>
+
+                {/* Name */}
+                <label
+                  style={{ display: 'block', marginBottom: '14px' }}
+                  className="font-arimo"
+                >
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
+                    Full Name <span style={{ color: '#EF4444' }}>*</span>
+                  </span>
+                  <input
+                    type="text"
+                    value={bookingName}
+                    onChange={(e) => setBookingName(e.target.value)}
+                    placeholder="e.g. Priya Rajan"
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #E5E7EB',
+                      fontSize: '14px',
+                      color: '#101828',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </label>
+
+                {/* Email */}
+                <label
+                  style={{ display: 'block', marginBottom: '14px' }}
+                  className="font-arimo"
+                >
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
+                    Email <span style={{ color: '#EF4444' }}>*</span>
+                  </span>
+                  <input
+                    type="email"
+                    value={bookingEmail}
+                    onChange={(e) => setBookingEmail(e.target.value)}
+                    placeholder="e.g. priya@gmail.com"
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #E5E7EB',
+                      fontSize: '14px',
+                      color: '#101828',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </label>
+
+                {/* Phone (optional) */}
+                <label
+                  style={{ display: 'block', marginBottom: '14px' }}
+                  className="font-arimo"
+                >
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
+                    Phone <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400 }}>(optional)</span>
+                  </span>
+                  <input
+                    type="tel"
+                    value={bookingPhone}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setBookingPhone(val);
+                    }}
+                    maxLength={10}
+                    placeholder="e.g. 9876543210"
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #E5E7EB',
+                      fontSize: '14px',
+                      color: '#101828',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </label>
+
+                {/* Message (optional) */}
+                <label
+                  style={{ display: 'block', marginBottom: '20px' }}
+                  className="font-arimo"
+                >
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
+                    Message <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 400 }}>(optional)</span>
+                  </span>
+                  <textarea
+                    value={bookingMessage}
+                    onChange={(e) => setBookingMessage(e.target.value)}
+                    placeholder="Any specific questions or your current preparation stage..."
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #E5E7EB',
+                      fontSize: '14px',
+                      color: '#101828',
+                      outline: 'none',
+                      resize: 'vertical',
+                      boxSizing: 'border-box',
+                      fontFamily: 'inherit',
+                    }}
+                  />
+                </label>
+
+                {/* Error message */}
+                {bookingError && (
+                  <div
+                    style={{
+                      background: '#FEF2F2',
+                      border: '1px solid #FECACA',
+                      borderRadius: '10px',
+                      padding: '10px 14px',
+                      fontSize: '13px',
+                      color: '#DC2626',
+                      marginBottom: '16px',
+                    }}
+                    className="font-arimo"
+                  >
+                    {bookingError}
+                  </div>
+                )}
+
+                {/* Submit button */}
+                <button
+                  onClick={handleBookCall}
+                  disabled={bookingSubmitting}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: bookingSubmitting ? '#9CA3AF' : '#101828',
+                    color: '#FFFFFF',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    cursor: bookingSubmitting ? 'not-allowed' : 'pointer',
+                    transition: 'background 0.2s ease',
+                  }}
+                  className="font-arimo"
+                >
+                  {bookingSubmitting ? 'Booking...' : 'Book Free Call'}
+                </button>
+
+                <p
+                  style={{
+                    textAlign: 'center',
+                    fontSize: '12px',
+                    color: '#9CA3AF',
+                    marginTop: '12px',
+                  }}
+                  className="font-arimo"
+                >
+                  100% free · No commitment · We&apos;ll confirm via email
+                </p>
               </>
             )}
           </div>
         </div>
       )}
+
+      <PurchaseModal
+        open={purchaseModal.open}
+        onClose={() => setPurchaseModal({ open: false, plan: null })}
+        itemType="plan"
+        itemId={purchaseModal.plan?.name || ''}
+        itemName={purchaseModal.plan?.name || ''}
+        amount={Number(purchaseModal.plan?.price?.replace?.(/[^0-9]/g, '')) || 0}
+      />
     </div>
   );
 }

@@ -20,6 +20,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const didTryRefreshRef = useRef(false);
   const hideSidebar = HIDE_SIDEBAR_ROUTES.includes(pathname);
+  const hideHeader = pathname === '/dashboard/pyq';
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
 
@@ -80,7 +81,7 @@ export default function DashboardLayout({
 
   return (
     <div className="flex flex-col" style={{ height: '100dvh' }}>
-      <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
+      {!hideHeader && <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />}
       <div className="flex flex-1 overflow-hidden">
         {!hideSidebar && (
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />

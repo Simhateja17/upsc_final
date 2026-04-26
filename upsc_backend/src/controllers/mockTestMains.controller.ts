@@ -51,7 +51,6 @@ async function kickoffEvaluation(
   paper: string,
   marks: number
 ) {
-  console.log(`[Mock Test Mains Evaluation] starting for attempt ${attemptId}`);
   evaluateAnswerGeneric({
     attemptId,
     answerText,
@@ -63,7 +62,7 @@ async function kickoffEvaluation(
       marks,
     },
     dbOps: buildDbOps(attemptId),
-  }).catch((err) => console.error("[Mock Test Mains Evaluation] error:", err));
+  });
 }
 
 /**
@@ -202,12 +201,14 @@ export const getMockTestMainsEvaluationStatus = async (
       return res.status(404).json({ status: "error", message: "Attempt not found" });
     }
 
+    const status = attempt.evaluation?.status || "pending";
     res.json({
       status: "success",
       data: {
         attemptId: attempt.id,
-        evaluationStatus: attempt.evaluation?.status || "pending",
-        isComplete: attempt.evaluation?.status === "completed",
+        evaluationStatus: status,
+        // "completed" and "failed" are both terminal — the client should stop polling in either case.
+        isComplete: status === "completed" || status === "failed",
       },
     });
   } catch (error) {

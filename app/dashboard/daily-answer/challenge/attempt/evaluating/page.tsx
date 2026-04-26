@@ -131,11 +131,7 @@ export default function EvaluatingPage() {
       }
     } catch (err: any) {
       console.error('Poll error:', err);
-      // If the backend says the attempt doesn't exist, stop polling
-      if (err.message?.includes('404') || err.message?.includes('not found') || err.message?.includes('No evaluation')) {
-        setError('We could not find your submission. Please submit your answer again.');
-        if (pollRef.current) clearInterval(pollRef.current);
-      }
+      // Don't set error immediately, let it retry
     }
   }, [attemptId, router]);
 
@@ -162,20 +158,28 @@ export default function EvaluatingPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Simulate step progression based on elapsed time if backend doesn't return completedSteps
+  // Simulate step progression in 10-second increments until the
+  // backend confirms completion. Advances past the first step.
   useEffect(() => {
-    if (completedSteps.length === 0 && elapsed > 0) {
-      // Simulate steps completing over time
-      const stepsToComplete = Math.min(
-        STEPS.length,
-        Math.floor(elapsed / 10) // Complete a step every 10 seconds
-      );
-      const simulatedSteps = STEPS.slice(0, stepsToComplete).map(s => s.key);
-      if (simulatedSteps.length > completedSteps.length) {
-        setCompletedSteps(simulatedSteps);
-      }
-    }
-  }, [elapsed, completedSteps.length]);
+    if (status === 'completed' || status === 'done') return;
+    const stepsToComplete = Math.min(STEPS.length, Math.floor(elapsed / 10));
+    setCompletedSteps((prev) => {
+      const simulated = STEPS.slice(0, stepsToComplete).map((s) => s.key);
+      return simulated.length > prev.length ? simulated : prev;
+    });
+  }, [elapsed, status]);
+
+  // Preload step icons so they appear instantly instead of popping in
+  useEffect(() => {
+    STEPS.forEach((s) => {
+      const img = new Image();
+      img.src = s.icon;
+    });
+    ['/eval-header.png', '/eval-timer.png'].forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
 
   const ESTIMATED_SECONDS = 60;
   const secondsRemaining = Math.max(0, ESTIMATED_SECONDS - elapsed);
@@ -220,7 +224,7 @@ export default function EvaluatingPage() {
       <div
         className="relative flex flex-col"
         style={{
-          width: '100%', maxWidth: '768px',
+          width: '768px',
           borderRadius: '16px',
           background: '#FFFFFF',
           boxShadow: '0px 8px 10px -6px #0000001A, 0px 20px 25px -5px #0000001A',
@@ -399,7 +403,7 @@ export default function EvaluatingPage() {
           <div
             className="mx-auto mb-3"
             style={{
-              width: '100%', maxWidth: '362px',
+              width: '362px',
               height: '5px',
               borderRadius: '10px',
               background: '#D9D9D9',

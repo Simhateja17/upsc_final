@@ -1,9 +1,10 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { testSeriesService } from '@/lib/services';
+import PurchaseModal from '@/components/PurchaseModal';
 
 interface HeroStats {
   activeSeries: number;
@@ -13,27 +14,27 @@ interface HeroStats {
 }
 
 const filters = [
-  { key: 'all', label: '📚 All Series' },
-  { key: 'prelims', label: '🏛️ Prelims' },
-  { key: 'mains', label: '✍️ Mains' },
-  { key: 'current-affairs', label: '📰 Current Affairs' },
-  { key: 'pyq', label: '📋 PYQ' },
-  { key: 'csat', label: '📊 CSAT' },
-  { key: 'foundation', label: '🏁 Foundation' },
-  { key: 'gs-papers', label: '📑 GS Papers' },
-  { key: 'optional', label: '🎓 Optional' },
-  { key: 'free', label: '🎁 Free' },
+  { key: 'all', label: 'ðŸ“š All Series' },
+  { key: 'prelims', label: 'ðŸ›ï¸ Prelims' },
+  { key: 'mains', label: 'âœï¸ Mains' },
+  { key: 'current-affairs', label: 'ðŸ“° Current Affairs' },
+  { key: 'pyq', label: 'ðŸ“‹ PYQ' },
+  { key: 'csat', label: 'ðŸ“Š CSAT' },
+  { key: 'foundation', label: 'ðŸ Foundation' },
+  { key: 'gs-papers', label: 'ðŸ“‘ GS Papers' },
+  { key: 'optional', label: 'ðŸŽ“ Optional' },
+  { key: 'free', label: 'ðŸŽ Free' },
 ];
 
 // Map examMode/subject to an emoji icon
 function seriesIcon(examMode: string, subject?: string | null): string {
-  if (subject?.toLowerCase().includes('polity')) return '🏛️';
-  if (subject?.toLowerCase().includes('history')) return '📜';
-  if (subject?.toLowerCase().includes('geography')) return '🌍';
-  if (subject?.toLowerCase().includes('economy')) return '📈';
-  if (subject?.toLowerCase().includes('science')) return '🔬';
-  if (examMode === 'mains') return '✍️';
-  return '📄';
+  if (subject?.toLowerCase().includes('polity')) return 'ðŸ›ï¸';
+  if (subject?.toLowerCase().includes('history')) return 'ðŸ“œ';
+  if (subject?.toLowerCase().includes('geography')) return 'ðŸŒ';
+  if (subject?.toLowerCase().includes('economy')) return 'ðŸ“ˆ';
+  if (subject?.toLowerCase().includes('science')) return 'ðŸ”¬';
+  if (examMode === 'mains') return 'âœï¸';
+  return 'ðŸ“„';
 }
 
 interface SeriesItem {
@@ -72,6 +73,7 @@ export default function TestSeriesPage() {
   const [enrolling, setEnrolling] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [heroStats, setHeroStats] = useState<HeroStats | null>(null);
+  const [purchaseModal, setPurchaseModal] = useState<{ open: boolean; series: SeriesItem | null }>({ open: false, series: null });
 
   useEffect(() => {
     async function load() {
@@ -104,6 +106,11 @@ export default function TestSeriesPage() {
   }, []);
 
   const handleEnroll = async (seriesId: string) => {
+    const series = allSeries.find(s => s.id === seriesId);
+    if (series && series.price > 0) {
+      setPurchaseModal({ open: true, series });
+      return;
+    }
     if (enrolling) return;
     setEnrolling(seriesId);
     try {
@@ -306,8 +313,7 @@ export default function TestSeriesPage() {
                     </div>
                   );
                 })()}
-              </div>
-            </div>
+              </div>`r`n            </div>
 
             {/* Filter bar */}
             <div
@@ -373,7 +379,7 @@ export default function TestSeriesPage() {
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  📊&nbsp; Analytics
+                  ðŸ“Š&nbsp; Analytics
                 </Link>
               </div>
             </div>
@@ -399,7 +405,7 @@ export default function TestSeriesPage() {
                   {/* Explore All Programs */}
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                      <span aria-hidden="true" style={{ fontSize: 18, lineHeight: '18px' }}>🧭</span>
+                      <span aria-hidden="true" style={{ fontSize: 18, lineHeight: '18px' }}>ðŸ§­</span>
                       <h2 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, lineHeight: '28px', color: '#101828', margin: 0 }}>Explore All Programs</h2>
                     </div>
                     {exploreSeries.length === 0 ? (
@@ -426,6 +432,20 @@ export default function TestSeriesPage() {
           </div>
         </div>
       </div>
+
+      <PurchaseModal
+        open={purchaseModal.open}
+        onClose={() => setPurchaseModal({ open: false, series: null })}
+        itemType="test_series"
+        itemId={purchaseModal.series?.id || ''}
+        itemName={purchaseModal.series?.title || ''}
+        amount={purchaseModal.series?.price || 0}
+        onSuccess={() => {
+          if (purchaseModal.series) {
+            handleEnroll(purchaseModal.series.id);
+          }
+        }}
+      />
     </div>
   );
 }
@@ -438,7 +458,7 @@ const statusTagStyles: Record<string, { bg: string; color: string }> = {
 };
 
 function formatEnrolled(n: number | undefined) {
-  if (n == null) return '—';
+  if (n == null) return 'â€”';
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
   return String(n);
 }
@@ -460,7 +480,7 @@ function ProgramCard({
   const statusStyle = statusTagStyles[series.examMode] ?? statusTagStyles.default;
   const icon = seriesIcon(series.examMode, series.subject);
   const isFree = series.price === 0;
-  const priceDisplay = isFree ? 'Free' : `₹${series.price.toLocaleString('en-IN')}`;
+  const priceDisplay = isFree ? 'Free' : `â‚¹${series.price.toLocaleString('en-IN')}`;
   const statusLabel = series.examMode.charAt(0).toUpperCase() + series.examMode.slice(1);
   const showLive = series.listingStatus === 'open' && series.published !== false;
   const duration = series.durationLabel ?? 'Ongoing';
@@ -547,7 +567,7 @@ function ProgramCard({
             </h3>
             <div style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, lineHeight: '16px', color: '#99A1AF', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
               {(series.categoryLabel ?? series.examMode).toUpperCase()}
-              {series.subject ? ` · ${series.subject}` : ''}
+              {series.subject ? ` Â· ${series.subject}` : ''}
             </div>
           </div>
         </div>
@@ -572,10 +592,10 @@ function ProgramCard({
       {/* Body */}
       <div style={{ padding: '24px 24px 0px', boxSizing: 'border-box', flex: 1 }}>
         <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#364153', marginBottom: 12 }}>
-          <span style={{ color: '#7C3AED' }}>👤 {formatEnrolled(series.enrollmentCount)}</span>
-          <span style={{ color: '#EA580C' }}>📄 {series.totalTests} Tests</span>
-          <span style={{ color: '#2563EB' }}>🕐 {duration}</span>
-          <span style={{ color: '#CA8A04' }}>⭐ {rating.toFixed(1)}</span>
+          <span style={{ color: '#7C3AED' }}>ðŸ‘¤ {formatEnrolled(series.enrollmentCount)}</span>
+          <span style={{ color: '#EA580C' }}>ðŸ“„ {series.totalTests} Tests</span>
+          <span style={{ color: '#2563EB' }}>ðŸ• {duration}</span>
+          <span style={{ color: '#CA8A04' }}>â­ {rating.toFixed(1)}</span>
         </div>
         <p
           style={{
@@ -605,7 +625,7 @@ function ProgramCard({
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'var(--font-playfair), "Playfair Display", serif', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: '#101828' }}>{priceDisplay}</span>
           {compare != null && compare > series.price && (
-            <span style={{ fontFamily: 'Inter', fontSize: 14, color: '#9CA3AF', textDecoration: 'line-through' }}>₹{compare.toLocaleString('en-IN')}</span>
+            <span style={{ fontFamily: 'Inter', fontSize: 14, color: '#9CA3AF', textDecoration: 'line-through' }}>â‚¹{compare.toLocaleString('en-IN')}</span>
           )}
           {series.discountPercent != null && series.discountPercent > 0 && (
             <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, color: '#DC2626', background: '#FEE2E2', padding: '4px 8px', borderRadius: 8 }}>
@@ -621,7 +641,7 @@ function ProgramCard({
                 onClick={openAnalytics}
                 style={{ minWidth: 101, height: 40, fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#4A5565', background: '#F3F4F6', border: 'none', borderRadius: 10, cursor: 'pointer' }}
               >
-                📊 Analytics
+                ðŸ“Š Analytics
               </button>
               <button
                 type="button"
@@ -641,7 +661,7 @@ function ProgramCard({
                   opacity: starting ? 0.8 : 1,
                 }}
               >
-                ▶ {starting ? 'Starting…' : 'Resume'}
+                â–¶ {starting ? 'Startingâ€¦' : 'Resume'}
               </button>
             </>
           ) : (
@@ -659,7 +679,7 @@ function ProgramCard({
                 disabled={enrolling}
                 style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: isFree ? '#065F46' : '#FFFFFF', background: enrolling ? '#9CA3AF' : (isFree ? '#D1FAE5' : '#101828'), border: 'none', borderRadius: 8, padding: '8px 16px', cursor: enrolling ? 'not-allowed' : 'pointer' }}
               >
-                {enrolling ? '...' : (isFree ? '► Start Free' : '► Enroll Now')}
+                {enrolling ? '...' : (isFree ? 'â–º Start Free' : 'â–º Enroll Now')}
               </button>
             </>
           )}
@@ -668,4 +688,5 @@ function ProgramCard({
     </div>
   );
 }
+
 

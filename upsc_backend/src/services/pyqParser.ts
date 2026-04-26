@@ -26,6 +26,8 @@ interface ParsedMainsQuestion {
   subject: string;
   topic: string;
   difficulty: string;
+  explanation: string | null;
+  marks: number | null;
   year: number | null;
   paper: string | null;
 }
@@ -128,15 +130,32 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
 
   let text = "";
   try {
-    // Primary extractor path (pdf-parse v2 API)
-    const { PDFParse } = await import("pdf-parse");
+    // Primary extractor path (pdfjs-dist legacy build — works in Node without
+    // the DOMMatrix/browser globals that pdf-parse v2 requires).
+    const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
     const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-    const parser = new (PDFParse as any)(uint8);
-    const result = await (parser as any).getText();
-
-    text = result.pages
-      ? result.pages.map((p: any) => (typeof p === "string" ? p : p.text || "")).join("\n\n")
-      : String(result.text || result);
+    const doc = await pdfjs.getDocument({
+      data: uint8,
+      disableWorker: true,
+      isEvalSupported: false,
+      useSystemFonts: false,
+    }).promise;
+    try {
+      const pages: string[] = [];
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const content = await page.getTextContent();
+        pages.push(
+          content.items
+            .map((it: any) => (typeof it.str === "string" ? it.str : ""))
+            .join(" ")
+        );
+        page.cleanup();
+      }
+      text = pages.join("\n\n");
+    } finally {
+      await doc.destroy().catch(() => {});
+    }
   } catch (primaryError) {
     logError("PDF-EXTRACT", "Primary PDF extraction failed, trying legacy fallback", primaryError);
     try {
@@ -271,19 +290,22 @@ function buildPrompt(
   if (mode === "mains") {
     return {
       system:
-        "You are a UPSC Mains question extractor. Extract only descriptive/written questions. Return strict JSON only.",
+        "You are a UPSC Mains question extractor and answer writer. Extract descriptive questions and produce high-quality model answer explanations. Return strict JSON only.",
       prompt: `Extract all descriptive/written UPSC Mains questions from this text. For each question return:
 - questionText: full descriptive question text
 - subject: one of [${UPSC_SUBJECTS.join(", ")}]
 - topic: specific topic within the subject
 - difficulty: "Easy", "Medium", or "Hard"
+- marks: integer marks allotted to this question (look for patterns like "(10 marks)", "10 Marks", "[15]", "20 marks" near the question; null if not found)
+- explanation: if the PDF contains an answer/explanation for this question, extract and rephrase it into a clear model answer approach (do NOT copy verbatim). If no explanation is present, generate a concise, high-quality model answer approach covering: key points to address, relevant examples, and structure hints — suitable for a UPSC aspirant. Never leave this null.
 - year: 4-digit year for this question, or null if unknown
 - paper: one of "GS-I", "GS-II", "GS-III", "GS-IV", "Essay", or null if unknown
 
 IMPORTANT:
 - Extract only descriptive/written mains questions
-- Do NOT include options or answer keys
-- Detect year and paper per question
+- Do NOT include MCQ options or answer keys
+- Detect year, paper, and marks per question from surrounding context
+- Always provide a non-null explanation
 
 Text to parse:
 ${chunk}
@@ -336,7 +358,7 @@ async function parseChunkWithAI(
       () =>
         invokeModelJSON<Array<ParsedPrelimsQuestion | ParsedMainsQuestion>>(
           [{ role: "user", content: prompt }],
-          { system, maxTokens: 4096, temperature: 0.1, serviceName: "pyqParser" }
+          { system, maxTokens: 4096, serviceName: "pyqParser" }
         ),
       `chunk-${chunkIndex + 1}`
     );
@@ -501,14 +523,17 @@ export async function parsePYQPdf(
             },
           });
         } else {
+          const mq = q as ParsedMainsQuestion;
           await prisma.pYQMainsQuestion.create({
             data: {
               year: qYear,
               paper: qPaper,
-              questionText: q.questionText,
-              subject: q.subject || "Current Affairs",
-              topic: q.topic || null,
-              difficulty: q.difficulty || "Medium",
+              questionText: mq.questionText,
+              subject: mq.subject || "Current Affairs",
+              topic: mq.topic || null,
+              difficulty: mq.difficulty || "Medium",
+              explanation: mq.explanation || null,
+              marks: mq.marks || null,
               status: "approved",
               uploadId,
             },
