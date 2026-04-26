@@ -38,11 +38,13 @@ export function parseMatchListQuestion(text: string): ParsedMatchList {
   const leftItemRe = /([A-D])\.\s*(.*?)(?=(?:\s+[A-D]\.\s)|(?:\s+\d\.\s)|(?:\s+Codes\s*:)|$)/g;
   const rightItemRe = /(\d)\.\s*(.*?)(?=(?:\s+\d\.\s)|(?:\s+Codes\s*:)|$)/g;
 
-  for (const match of leftSection.matchAll(leftItemRe)) {
-    lefts.push({ key: match[1], text: match[2].trim() });
+  let leftMatch: RegExpExecArray | null;
+  while ((leftMatch = leftItemRe.exec(leftSection)) !== null) {
+    lefts.push({ key: leftMatch[1], text: leftMatch[2].trim() });
   }
-  for (const match of rightSection.matchAll(rightItemRe)) {
-    rights.push({ key: match[1], text: match[2].trim() });
+  let rightMatch: RegExpExecArray | null;
+  while ((rightMatch = rightItemRe.exec(rightSection)) !== null) {
+    rights.push({ key: rightMatch[1], text: rightMatch[2].trim() });
   }
 
   if (lefts.length < 2 || rights.length < 2) {

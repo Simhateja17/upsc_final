@@ -16,6 +16,19 @@ interface QuestionData {
   attemptCount: number;
 }
 
+type DailyAnswerSubmitResponse = {
+  attemptId?: string;
+  status?: string;
+  message?: string;
+  data?: {
+    attemptId?: string;
+    status?: string;
+    data?: {
+      attemptId?: string;
+    };
+  };
+};
+
 export default function DailyMainsChallengeContextPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,13 +113,10 @@ export default function DailyMainsChallengeContextPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      let res;
-      if (selectedFile) {
-        res = await dailyAnswerService.uploadFile(selectedFile);
-      } else {
-        res = await dailyAnswerService.submitText(answerText);
-      }
-      const attemptId = res.data?.attemptId || res.data?.data?.attemptId;
+      const res = (selectedFile
+        ? await dailyAnswerService.uploadFile(selectedFile)
+        : await dailyAnswerService.submitText(answerText)) as DailyAnswerSubmitResponse;
+      const attemptId = res.attemptId || res.data?.attemptId || res.data?.data?.attemptId;
       if (attemptId && typeof window !== 'undefined') {
         sessionStorage.setItem('dailyAnswerAttemptId', attemptId);
       }

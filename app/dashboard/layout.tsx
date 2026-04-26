@@ -35,6 +35,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const didTryRefreshRef = useRef(false);
   const hideSidebar = HIDE_SIDEBAR_ROUTES.includes(pathname);
+  const userId = user?.id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
   const [milestoneValue, setMilestoneValue] = useState<number | null>(null);
@@ -43,7 +44,7 @@ export default function DashboardLayout({
 
   // Show a streak milestone when the current streak crosses one of the supported thresholds.
   useEffect(() => {
-    if (!isAuthenticated || !user?.id) {
+    if (!isAuthenticated || !userId) {
       setShowMilestone(false);
       return;
     }
@@ -55,7 +56,7 @@ export default function DashboardLayout({
       try {
         const { data } = await dashboardService.getStreak();
         const currentStreak = Number(data?.currentStreak ?? 0);
-        const storageKey = `rwj_streak_milestone_shown:${user.id}`;
+        const storageKey = `rwj_streak_milestone_shown:${userId}`;
         const lastShownRaw = typeof window !== 'undefined' ? window.localStorage.getItem(storageKey) : null;
         const lastShownMilestone = lastShownRaw ? Number(lastShownRaw) : null;
         const nextMilestone = getNextEligibleStreakMilestone(currentStreak, Number.isFinite(lastShownMilestone ?? NaN) ? lastShownMilestone : null);
@@ -82,7 +83,7 @@ export default function DashboardLayout({
       active = false;
       if (timer) clearTimeout(timer);
     };
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, userId]);
 
   // Close mobile sidebar on route change
   useEffect(() => {
