@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { dailyMcqService } from '@/lib/services';
 
@@ -95,7 +94,7 @@ export default function DailyMcqChallengePage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen items-center justify-center">
+      <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#E8EDF5' }}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
@@ -110,17 +109,9 @@ export default function DailyMcqChallengePage() {
   const correctCount = questions.filter((qu) => answers[qu.id] && answers[qu.id] === qu.correctOption).length;
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: '#FFFFFF' }}>
-      <main className="flex-1 px-[clamp(3rem,6.25vw,8rem)] py-8">
+    <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#E8EDF5' }}>
+      <main className="flex-1 px-[clamp(1rem,4vw,5rem)] py-4 flex items-center justify-center">
         <div className="max-w-[900px] mx-auto">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center justify-center gap-2 mb-6 hover:opacity-70 transition-opacity"
-            style={{ width: '237px', height: '51px', borderRadius: '20px', background: '#1C50D40D', fontFamily: 'Outfit, sans-serif', fontWeight: 600, fontSize: '22px', color: '#17223E' }}
-          >
-            {'<-'} Back to dashboard
-          </Link>
-
           <div style={{ maxWidth: '1050px', borderRadius: '10px', background: '#EAECEF40', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '24px' }}>
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
@@ -151,7 +142,10 @@ export default function DailyMcqChallengePage() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[38px]">
                   <img src="/tag-one.png" alt="Tag" className="w-4 h-4" />
-                  <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px]">{q.category} | {q.difficulty}</span>
+                  <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px]">{q.category}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-[#FFF7ED] px-4 rounded-full h-[38px]">
+                  <span className="font-arimo font-bold text-[#C2410C] text-[14px] leading-[16px]">{q.difficulty}</span>
                 </div>
                 {!submitted && (
                   <div className="flex items-center gap-2">

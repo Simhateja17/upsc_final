@@ -33,6 +33,17 @@ const SUBJECT_COLORS: Record<string, string> = {
   'current-affairs': '#14B8A6',
 };
 
+const SUBJECT_CARD_STYLES: Record<string, { bg: string; border: string; bar: string }> = {
+  'indian-polity': { bg: '#FFF7E6', border: '#FED7AA', bar: '#F0AE00' },
+  'modern-history': { bg: '#FFF7ED', border: '#FDBA74', bar: '#D08700' },
+  geography: { bg: '#ECFDF5', border: '#A7F3D0', bar: '#14B8A6' },
+  'indian-economy': { bg: '#F5F3FF', border: '#DDD6FE', bar: '#8B5CF6' },
+  environment: { bg: '#E8FFF3', border: '#BBF7D0', bar: '#22C55E' },
+  'gs-iv-ethics': { bg: '#EEF2FF', border: '#C7D2FE', bar: '#6366F1' },
+  'current-affairs': { bg: '#FEF2F2', border: '#FECACA', bar: '#EF4444' },
+  'science-and-tech': { bg: '#EAF4FF', border: '#BFDBFE', bar: '#3B82F6' },
+};
+
 type SubjectData = {
   id: string;
   name: string;
@@ -61,10 +72,11 @@ export default function MindmapPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] font-inter">
-      <div
-        className="w-full h-[281px] relative overflow-hidden p-8 rounded-[16px] mb-8"
-        style={{ background: 'linear-gradient(90.14deg, #10182D 1.9%, #0F172B 97.25%)', margin: '32px', width: 'calc(100% - 64px)' }}
-      >
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 pt-8">
+        <div
+          className="w-full min-h-[281px] relative overflow-hidden p-8 rounded-[16px] mb-8"
+          style={{ background: 'linear-gradient(90.14deg, #10182D 1.9%, #0F172B 97.25%)' }}
+        >
         <div className="relative z-10 text-white">
           <div className="mb-2">
             <span className="text-[#FDC700] text-[11px] font-medium tracking-[0.05em] uppercase">REVISION — VISUAL LEARNING</span>
@@ -90,9 +102,10 @@ export default function MindmapPage() {
             </div>
           </div>
         </div>
+        </div>
       </div>
 
-      <div className="px-8 pb-12" style={{ margin: '0 32px' }}>
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 pb-12">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-8 h-8 rounded-full bg-[#10182D] text-white flex items-center justify-center font-semibold text-[14px]">1</div>
           <h2 className="text-[36px] font-bold text-[#10182D] font-serif">
@@ -102,7 +115,7 @@ export default function MindmapPage() {
         <p className="text-[#6A7282] text-[14px] mb-8 ml-11">Select the subject whose mindmaps you want to study today</p>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ml-11">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="bg-white rounded-[16px] h-[180px] animate-pulse" />
             ))}
@@ -113,17 +126,18 @@ export default function MindmapPage() {
             <p className="text-sm">Ask an admin to seed some mindmaps to get started.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ml-11">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
             {subjects.map((subject) => {
               const color = SUBJECT_COLORS[subject.slug] ?? '#6B7280';
+              const cardStyle = SUBJECT_CARD_STYLES[subject.slug] ?? { bg: '#FFFFFF', border: '#E5E7EB', bar: color };
               return (
                 <Link key={subject.slug} href={`/dashboard/mindmap/${subject.slug}`} className="block">
-                  <div className="bg-white rounded-[16px] overflow-hidden shadow-sm border border-gray-100 flex flex-col h-[180px] relative group hover:shadow-md transition-shadow">
-                    <div className="h-[4px] w-full" style={{ backgroundColor: color }} />
-                    <div className="p-6 flex flex-col justify-between h-full">
+                  <div className="rounded-[16px] overflow-hidden shadow-sm flex flex-col h-[172px] relative group hover:-translate-y-0.5 hover:shadow-md transition-all" style={{ background: cardStyle.bg, border: `1px solid ${cardStyle.border}` }}>
+                    <div className="h-[4px] w-full" style={{ backgroundColor: cardStyle.bar }} />
+                    <div className="p-5 flex flex-col justify-between h-full">
                       <div>
                         <div className="flex justify-between items-start mb-2">
-                          <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-xl">
+                          <div className="w-10 h-10 rounded-full bg-white/70 flex items-center justify-center text-xl">
                             {subject.icon}
                           </div>
                         </div>
@@ -138,7 +152,7 @@ export default function MindmapPage() {
                           </span>
                         </div>
                         <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full transition-all duration-300" style={{ width: `${subject.progress}%`, backgroundColor: color }} />
+                          <div className="h-full rounded-full transition-all duration-300" style={{ width: `${subject.progress}%`, backgroundColor: cardStyle.bar }} />
                         </div>
                       </div>
                     </div>

@@ -4,9 +4,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { authService } from '@/lib/auth';
 
 const featureCards = [
-  { label: 'AI Mains Evaluation',   icon: '/icon-ai-mains.png' },
+  { label: 'Daily Mains Challenge', icon: '/sidebar-daily-answer-new.png' },
   { label: 'Personal Mentorship',   icon: '/icon-mentorship.png' },
   { label: 'Study Planner',         icon: '/icon-study-planner.png' },
   { label: 'Mock Test Generator',   icon: '/icon-mock-test.png' },
@@ -25,7 +26,7 @@ function LoginPageContent() {
   const tabParam = searchParams.get('tab');
   const initialTab = tabParam === 'signup' ? 'signup' : 'login';
 
-  const [activeTab, setActiveTab] = useState<'login' | 'signup' | 'success'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'login' | 'signup' | 'success' | 'forgot' | 'resetSent'>(initialTab);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +34,9 @@ function LoginPageContent() {
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSentEmail, setResetSentEmail] = useState('');
 
   // Signup form state
   const [signupFirstName, setSignupFirstName] = useState('');
@@ -143,6 +147,22 @@ function LoginPageContent() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setResetLoading(true);
+
+    try {
+      await authService.resetPassword(forgotEmail);
+      setResetSentEmail(forgotEmail);
+      setActiveTab('resetSent');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send reset link. Please try again.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   const goToDashboard = () => {
     router.push(user?.role === 'admin' ? '/admin' : '/dashboard');
   };
@@ -204,31 +224,29 @@ function LoginPageContent() {
         >
           <Image
             src="/logo-jeet.png"
-            alt="Rise with Jeet IAS"
-            width={42}
-            height={48}
-            style={{ objectFit: 'contain' }}
+            alt="RiseWithJeet"
+            width={52}
+            height={34}
+            style={{ objectFit: 'contain', width: 52, height: 34 }}
           />
           <div>
             <div
               style={{
                 fontFamily: 'Inter',
                 fontWeight: 700,
-                fontSize: 18,
+                fontSize: 22,
                 lineHeight: '28px',
                 letterSpacing: 0,
                 color: '#FFFFFF',
               }}
             >
-              Rise with{' '}
-              <span style={{ color: '#D9A84F' }}>Jeet</span>{' '}
-              IAS
+              Rise<span style={{ color: '#D9A84F' }}>WithJeet</span>
             </div>
             <div
               style={{
                 fontFamily: 'Inter',
                 fontWeight: 400,
-                fontSize: 10,
+                fontSize: 9,
                 lineHeight: '15px',
                 letterSpacing: '0.5px',
                 textTransform: 'uppercase',
@@ -439,7 +457,7 @@ function LoginPageContent() {
 
         {/* Tab row */}
         <div
-          style={{ visibility: activeTab === 'success' ? 'hidden' : 'visible', marginBottom: 32 }}
+          style={{ visibility: ['success', 'forgot', 'resetSent'].includes(activeTab) ? 'hidden' : 'visible', marginBottom: 32 }}
         >
           {/* Tab container */}
           <div
@@ -859,7 +877,7 @@ function LoginPageContent() {
                 {' '}and{' '}
                 <Link href="/privacy" style={{ fontWeight: 600, color: '#155DFC', textDecoration: 'none' }}>Privacy Policy.</Link>
                 <br />
-                I consent to receive UPSC preparation updates from Rise with Jeet IAS.
+                I consent to receive UPSC preparation updates from Rise with Jeet.
               </span>
             </div>
 
@@ -898,6 +916,164 @@ function LoginPageContent() {
               </button>
             </div>
           </form>
+        )}
+
+        {/* ── FORGOT PASSWORD FORM ── */}
+        {activeTab === 'forgot' && (
+          <form onSubmit={handleForgotPassword} style={{ paddingTop: 54 }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div
+                style={{
+                  width: 54,
+                  height: 54,
+                  borderRadius: '50%',
+                  background: '#364153',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 18,
+                }}
+              >
+                <svg width="22" height="22" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M2 4l6 5 6-5M2 4h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" stroke="#FFFFFF" strokeWidth="1.4" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <h1 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828', margin: 0, marginBottom: 8 }}>
+                Forgot your password?
+              </h1>
+              <p style={{ fontFamily: 'Inter', fontSize: 12, lineHeight: '18px', color: '#6A7282', margin: '0 auto', maxWidth: 300 }}>
+                No worries, enter your email and we&apos;ll send you a secure reset link.
+              </p>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#364153', marginBottom: 8 }}>
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                placeholder="yourname@gmail.com"
+                required
+                style={{
+                  width: '100%',
+                  height: 45.6,
+                  padding: '12px 16px',
+                  borderRadius: 10,
+                  border: '0.8px solid #D1D5DC',
+                  background: '#FFFFFF',
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  color: '#0A0A0A',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={resetLoading}
+              style={{
+                width: '100%',
+                height: 44,
+                borderRadius: 10,
+                background: resetLoading ? '#9CA3AF' : 'linear-gradient(90deg, #F0B100 0%, #FF6900 100%)',
+                border: 'none',
+                cursor: resetLoading ? 'not-allowed' : 'pointer',
+                fontFamily: 'Inter',
+                fontWeight: 700,
+                fontSize: 14,
+                lineHeight: '20px',
+                color: '#101828',
+                marginBottom: 14,
+              }}
+            >
+              {resetLoading ? 'Sending...' : 'Send reset link'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setActiveTab('login'); setError(null); }}
+              style={{
+                width: '100%',
+                height: 42,
+                borderRadius: 10,
+                border: '0.8px solid #D1D5DC',
+                background: '#FFFFFF',
+                fontFamily: 'Inter',
+                fontWeight: 600,
+                fontSize: 13,
+                color: '#364153',
+                cursor: 'pointer',
+              }}
+            >
+              ← Back to login
+            </button>
+          </form>
+        )}
+
+        {/* ── RESET SENT SCREEN ── */}
+        {activeTab === 'resetSent' && (
+          <div style={{ paddingTop: 54, textAlign: 'center' }}>
+            <div
+              style={{
+                width: 54,
+                height: 54,
+                borderRadius: '50%',
+                background: '#364153',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 18,
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M2 4l6 5 6-5M2 4h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" stroke="#FFFFFF" strokeWidth="1.4" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <h1 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828', margin: 0, marginBottom: 8 }}>
+              Check your inbox
+            </h1>
+            <p style={{ fontFamily: 'Inter', fontSize: 12, lineHeight: '18px', color: '#6A7282', margin: '0 auto 18px', maxWidth: 320 }}>
+              We sent a secure reset link to <strong>{resetSentEmail}</strong>.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 18 }}>
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} style={{ width: 28, height: 36, borderRadius: 8, border: '0.8px solid #99A1AF', background: i === 0 ? '#FEF3C7' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: i === 0 ? '#D08700' : '#99A1AF', fontWeight: 700 }}>
+                  {i === 0 ? '✓' : ''}
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('login'); setError(null); }}
+              style={{
+                width: '100%',
+                height: 44,
+                borderRadius: 10,
+                background: 'linear-gradient(90deg, #F0B100 0%, #FF6900 100%)',
+                border: 'none',
+                fontFamily: 'Inter',
+                fontWeight: 700,
+                fontSize: 14,
+                lineHeight: '20px',
+                color: '#101828',
+                cursor: 'pointer',
+                marginBottom: 14,
+              }}
+            >
+              Back to login
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('forgot'); setForgotEmail(resetSentEmail); }}
+              style={{ background: 'none', border: 'none', color: '#155DFC', fontFamily: 'Inter', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Didn&apos;t get it? Resend code
+            </button>
+          </div>
         )}
 
         {/* ── LOGIN FORM ── */}
@@ -1156,8 +1332,13 @@ function LoginPageContent() {
 
             {/* Forgot password */}
             <div style={{ textAlign: 'right', marginBottom: 20 }}>
-              <Link
-                href="#"
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotEmail(loginEmail);
+                  setError(null);
+                  setActiveTab('forgot');
+                }}
                 style={{
                   fontFamily: 'Inter',
                   fontWeight: 600,
@@ -1165,10 +1346,14 @@ function LoginPageContent() {
                   lineHeight: '16px',
                   color: '#155DFC',
                   textDecoration: 'none',
+                  border: 'none',
+                  background: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
                 }}
               >
                 Forgot password?
-              </Link>
+              </button>
             </div>
 
             {/* Log In button */}
@@ -1286,4 +1471,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-

@@ -47,6 +47,7 @@ export default function MindmapViewPage({ params }: PageParams) {
   const [loading, setLoading] = useState(true);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   // Pricing/features pulled from admin pricing API (falls back to defaults).
@@ -135,7 +136,7 @@ export default function MindmapViewPage({ params }: PageParams) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B1020] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F6FA] text-[#101828] flex items-center justify-center">
         <div className="text-gray-400 animate-pulse">Loading mindmap...</div>
       </div>
     );
@@ -143,7 +144,7 @@ export default function MindmapViewPage({ params }: PageParams) {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-[#0B1020] text-white flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-[#F5F6FA] text-[#101828] flex flex-col items-center justify-center gap-4">
         <p className="text-gray-400">Mindmap not found.</p>
         <Link href={`/dashboard/mindmap/${subjectId}`} className="text-blue-400 underline text-sm">
           ← Back to subject
@@ -156,9 +157,10 @@ export default function MindmapViewPage({ params }: PageParams) {
   const nodes: NodeData = data.nodes as NodeData;
   const quizQuestions: QuizQuestion[] = data.quizData ?? [];
   const currentQuestion = quizQuestions[currentQuestionIndex];
+  const exploredBranches = Math.min(branches.length, Math.round((branches.length * data.mastery) / 100));
 
   return (
-    <div className="min-h-screen bg-[#0B1020] text-white font-inter">
+    <div className="min-h-screen bg-[#F5F6FA] text-[#101828] font-inter">
       {showProModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 font-inter">
           <div className="absolute inset-0 bg-[#0A0F1C]/80 backdrop-blur-sm" />
@@ -215,7 +217,7 @@ export default function MindmapViewPage({ params }: PageParams) {
       )}
 
       <div className="max-w-[1200px] mx-auto py-6 px-8">
-        <Link href={`/dashboard/mindmap/${subjectId}`} className="inline-flex items-center text-[#9CA3AF] text-[13px] hover:text-white mb-4">
+        <Link href={`/dashboard/mindmap/${subjectId}`} className="inline-flex items-center text-[#6B7280] text-[13px] hover:text-[#111827] mb-4">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-1">
             <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -225,33 +227,39 @@ export default function MindmapViewPage({ params }: PageParams) {
 
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-[24px] font-bold text-white mb-1">{data.title}</h1>
-            <p className="text-[#9CA3AF] text-[13px]">
+            <h1 className="text-[24px] font-bold text-[#101828] mb-1">{data.title}</h1>
+            <p className="text-[#6B7280] text-[13px]">
               {data.subject} · {branches.length} branches
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0F172A] border border-[#1F2937]">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#DCFCE7] shadow-sm">
               <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
                 <CheckmarkIcon />
               </div>
-              <span className="text-[12px] text-[#D1FAE5] font-medium">{data.mastery}% mastered</span>
+              <span className="text-[12px] text-[#047857] font-medium">{data.mastery}% mastered</span>
             </div>
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F97316]/10 text-[#FDBA74] border border-[#FB923C]/40 text-[12px] font-medium">
-              <TrophyIcon />
-              <span>Jeet Score {Math.round(data.mastery * 0.92)}</span>
-            </button>
+            {quizQuestions.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowQuiz((value) => !value)}
+                className="rounded-full px-4 py-2 text-[12px] font-bold text-white"
+                style={{ background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)' }}
+              >
+                {showQuiz ? 'Hide Quiz' : 'Quiz'}
+              </button>
+            )}
           </div>
         </div>
 
         <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)] gap-6 items-start">
           <div>
             {/* Mindmap visualization */}
-            <div className="bg-[#0F172A] rounded-[20px] p-6 shadow-xl border border-[#111827] relative overflow-hidden">
+            <div className="bg-white rounded-[20px] p-6 shadow-sm border border-gray-100 relative overflow-hidden">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-[16px]">🧠</span>
-                  <h2 className="text-[14px] font-semibold text-white">Mindmap View</h2>
+                  <h2 className="text-[14px] font-semibold text-[#101828]">Mindmap View</h2>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-[#9CA3AF]">
                   <span className="w-2 h-2 rounded-full bg-emerald-400" />
@@ -259,7 +267,7 @@ export default function MindmapViewPage({ params }: PageParams) {
                 </div>
               </div>
 
-              <div className="relative bg-[#020617] rounded-[16px] border border-[#1F2937] overflow-hidden h-[360px] flex items-center justify-center">
+              <div className="relative bg-[#F8FAFC] rounded-[16px] border border-[#E5E7EB] overflow-hidden h-[360px] flex items-center justify-center">
                 {/* Center node */}
                 <div className="z-20 bg-[#10182D] text-white flex items-center justify-center font-bold shadow-lg border-[#1E2939] text-[12px] text-center px-2" style={{ width: 159, height: 47, borderRadius: 16, borderWidth: 1.6, position: 'relative' }}>
                   {data.title.length > 18 ? data.title.slice(0, 16) + '...' : data.title}
@@ -315,15 +323,15 @@ export default function MindmapViewPage({ params }: PageParams) {
 
               <div className="mt-4 flex items-center justify-between text-[12px] font-medium text-[#9CA3AF]">
                 <span>Branches explored</span>
-                <span className="text-[#22C55E]">{branches.length} / {branches.length}</span>
+                <span className="text-[#22C55E]">{exploredBranches} / {branches.length}</span>
               </div>
-              <div className="mt-2 w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div className="mt-2 w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full bg-[#22C55E] rounded-full" style={{ width: `${data.mastery}%` }} />
               </div>
             </div>
 
             {/* Quick Quiz */}
-            {quizQuestions.length > 0 && (
+            {showQuiz && quizQuestions.length > 0 && (
               <div className="bg-white rounded-[16px] p-6 shadow-sm border border-gray-100 mt-6">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-[16px]">🧩</span>

@@ -191,7 +191,7 @@ export default function LibraryPage() {
             }}
           />
 
-          <div className="relative z-10 flex flex-col items-center" style={{ maxWidth: 'clamp(960px, 75vw, 1200px)', padding: '0 clamp(16px, 2vw, 30px)', width: '100%' }}>
+          <div className="relative z-10 flex flex-col items-center" style={{ maxWidth: 'min(94vw, 1400px)', padding: '0 clamp(16px, 2vw, 30px)', width: '100%' }}>
             {/* Back to Dashboard */}
             <button
               onClick={() => window.history.back()}
@@ -324,7 +324,7 @@ export default function LibraryPage() {
       <div
         className="w-full mx-auto"
         style={{
-          maxWidth: 'clamp(960px, 75vw, 1200px)',
+          maxWidth: 'min(94vw, 1400px)',
           padding: '0 clamp(16px, 2vw, 30px)',
         }}
       >
@@ -632,7 +632,7 @@ export default function LibraryPage() {
                     <div style={{ width: '1px', height: 'clamp(24px, 2.5vw, 36px)', background: '#E5E7EB' }} />
                     <div className="flex flex-col items-center">
                       <div className="font-arimo font-bold" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#C68A0B', lineHeight: 1.2 }}>
-                        {selectedApiSubject?.chapterCount ?? 0}
+                        {selectedApiSubject?.pageCount ?? selectedApiSubject?.pages ?? selectedApiSubject?.chapterCount ?? 0}
                       </div>
                       <div className="font-arimo" style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', color: '#6A7282' }}>
                         Pages
@@ -967,15 +967,6 @@ export default function LibraryPage() {
             </div>
           </div>
 
-          {/* Play button icon - bottom right */}
-          <div style={{ position: 'absolute', bottom: 'clamp(16px, 2vw, 24px)', right: 'clamp(16px, 2vw, 24px)', zIndex: 1 }}>
-            <div style={{ width: 'clamp(32px, 3vw, 40px)', height: 'clamp(32px, 3vw, 40px)', borderRadius: '50%', background: 'rgba(245, 199, 93, 0.15)', border: '1px solid rgba(245, 199, 93, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M8 5V19L19 12L8 5Z" fill="#F5C75D" />
-              </svg>
-            </div>
-          </div>
-          
           {/* Play button icon */}
           <div style={{ position: 'absolute', bottom: 'clamp(16px, 2vw, 24px)', right: 'clamp(16px, 2vw, 24px)', zIndex: 1 }}>
             <div style={{ width: 'clamp(32px, 3vw, 40px)', height: 'clamp(32px, 3vw, 40px)', borderRadius: '50%', background: 'rgba(245, 166, 35, 0.15)', border: '1px solid rgba(245, 166, 35, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1299,5 +1290,6 @@ export default function LibraryPage() {
           </div>
         </div>
       </div>
+    </div>
   );
 }

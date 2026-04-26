@@ -36,9 +36,9 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData }: 
   const optionalPct = calculateModePct('optional');
 
   const tabs = [
-    { key: 'prelims' as Mode, label: 'Prelims', icon: '🎯' },
-    { key: 'mains' as Mode, label: 'Mains', icon: '✍️' },
-    { key: 'optional' as Mode, label: 'Optional', icon: '📖' },
+    { key: 'prelims' as Mode, label: 'Prelims', icon: '🎯', pct: prelimsPct },
+    { key: 'mains' as Mode, label: 'Mains', icon: '✍️', pct: mainsPct },
+    { key: 'optional' as Mode, label: 'Optional', icon: '📖', pct: optionalPct },
   ];
 
   const highlightedTab = hoveredTab ?? mode;
@@ -96,6 +96,16 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData }: 
           >
             <span style={{ fontSize: '18px', lineHeight: '1' }}>{tab.icon}</span>
             <span>{tab.label}</span>
+            <span
+              className="rounded-full px-2 py-[2px] text-[12px] font-extrabold"
+              style={{
+                background: isHighlighted ? 'rgba(255,255,255,0.18)' : '#FFFFFF',
+                color: isHighlighted ? '#FFFFFF' : '#17223E',
+                boxShadow: isHighlighted ? 'none' : '0 1px 3px rgba(15, 23, 43, 0.08)',
+              }}
+            >
+              {tab.pct}%
+            </span>
           </button>
         );
       })}

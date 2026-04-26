@@ -94,14 +94,11 @@ export default function HeroSection({ mode, states, syllabusData, userName }: He
               what&apos;s pending, and what to conquer next.
             </p>
 
-            <div className="mt-[22px] grid max-w-[560px] grid-cols-2 overflow-hidden rounded-[10px] border border-white/[0.08] bg-white/[0.06] sm:inline-grid sm:grid-cols-4">
-              {summaryStats.map((stat, index) => (
+            <div className="mt-[22px] grid max-w-[600px] grid-cols-2 gap-[10px] sm:inline-grid sm:grid-cols-4">
+              {summaryStats.map((stat) => (
                 <div
                   key={stat.label}
-                  className={`min-w-[124px] px-[18px] py-[10px] text-center ${
-                    index < summaryStats.length - 1 ? 'border-b border-white/[0.08] sm:border-b-0 sm:border-r' : ''
-                  } ${index === 1 ? 'sm:border-r' : ''}`}
-                  style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+                  className="min-w-[124px] rounded-[10px] border border-white/80 bg-white/[0.08] px-[18px] py-[10px] text-center shadow-[0_10px_24px_rgba(0,0,0,0.12)]"
                 >
                   <div className="font-jakarta text-[16px] font-extrabold leading-[20px]" style={{ color: stat.color }}>
                     {stat.value}

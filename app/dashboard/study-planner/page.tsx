@@ -617,7 +617,7 @@ export default function StudyPlannerPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between" style={{ marginBottom: '18px' }}>
                   <div className="flex items-center" style={{ gap: '6px' }}>
-                    <img src="/build.png" alt="Build" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+                    <img src="/build.png" alt="Build" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
                     <h2 className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
                       Build Your Study Plan
                     </h2>
@@ -716,7 +716,7 @@ export default function StudyPlannerPage() {
                             gap: '4px',
                           }}
                         >
-                          <img src={type.icon} alt={type.label} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+                          <img src={type.icon} alt={type.label} style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
                           <span
                             className="font-arimo text-center"
                             style={{
@@ -888,11 +888,11 @@ export default function StudyPlannerPage() {
             </div>
 
             {/* ── Bottom Row: Time Distribution + Syllabus Coverage + Weekly Goals + Planner Sync ── */}
-            <div className="flex gap-4 mt-4">
+            <div className="grid grid-cols-1 gap-4 mt-4 xl:grid-cols-[1.2fr_1.2fr_1fr_360px]">
 
               {/* Card 0: Time Distribution */}
               <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] flex-1"
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
               >
                 <div className="flex items-center gap-2 mb-6">
                   <div style={{ position: 'relative', width: '28px', height: '28px' }}>
@@ -910,7 +910,7 @@ export default function StudyPlannerPage() {
                       No timed tasks today
                     </div>
                   ) : (
-                    <svg viewBox="0 0 220 220" width="180" height="180">
+                    <svg viewBox="0 0 220 220" width="200" height="200">
                       {(() => {
                         const cx = 110, cy = 110, r = 85;
                         let angle = -Math.PI / 2;
@@ -960,7 +960,7 @@ export default function StudyPlannerPage() {
 
               {/* Card 1: Syllabus Coverage */}
               <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] flex-1"
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
               >
                 <div className="flex items-center gap-2 mb-4">
                   <img src="/image-removebg-preview%20(60)%201.png" alt="Syllabus" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
@@ -986,7 +986,7 @@ export default function StudyPlannerPage() {
 
               {/* Card 2: Weekly Goals */}
               <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] flex-1"
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
@@ -1042,7 +1042,7 @@ export default function StudyPlannerPage() {
               {/* Card 3: Planner Sync — fixed width matches "Your Plan is Empty" above */}
               <div
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] flex flex-col justify-between"
-                style={{ width: '100%', maxWidth: '360px', flexShrink: 0, padding: '24px' }}
+                style={{ width: '100%', padding: '24px' }}
               >
                 <div>
                     <div className="flex items-center gap-2 mb-4">
@@ -1169,7 +1169,7 @@ export default function StudyPlannerPage() {
             >
               {/* Header */}
               <div className="flex items-center" style={{ marginBottom: '16px', gap: '8px' }}>
-                <img src="/plus.png" alt="Plus" style={{ width: '28px', height: '28px', objectFit: 'contain', flexShrink: 0 }} />
+                <img src="/plus.png" alt="Plus" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
                 <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
                   Quick Add to Plan
                 </span>

@@ -401,8 +401,9 @@ export default function JeetGPTPage() {
       <main className="flex-1 flex flex-col overflow-hidden" style={{ background: '#FFFFFF' }}>
         <header className="flex-shrink-0 flex flex-col gap-0.5 py-3 px-6" style={{ borderBottom: '0.8px solid #E5E7EB' }}>
           <div className="flex items-baseline gap-2">
-            <span className="font-inter font-bold text-[18px] leading-7" style={{ color: '#101828' }}>Jeet AI</span>
-            <span className="font-inter text-[14px] leading-5" style={{ color: '#6A7282' }}>—</span>
+            <span className="font-inter font-bold text-[18px] leading-7" style={{ color: '#101828' }}>
+              Jeet <span style={{ color: '#D08700' }}>AI</span>
+            </span>
             <span className="font-inter text-[14px] leading-5" style={{ color: '#6A7282' }}>Your UPSC Preparation Partner</span>
           </div>
           <div className="font-inter text-[12px] leading-4" style={{ color: '#99A1AF' }}>Ask anything about UPSC preparation</div>

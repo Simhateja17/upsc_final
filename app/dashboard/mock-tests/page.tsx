@@ -56,10 +56,10 @@ const fallbackOptionalSubjects = [
 ];
 
 const fallbackDifficulties = [
-  { id: 'easy', emoji: '🌱', label: 'Easy', description: 'Foundation level' },
-  { id: 'medium', emoji: '⚡', label: 'Medium', description: 'Exam standard' },
-  { id: 'hard', emoji: '🔥', label: 'Hard', description: 'Advanced level' },
-  { id: 'mixed', emoji: '🎯', label: 'Mixed', description: 'All difficulty levels' },
+  { id: 'easy', emoji: '🌱', label: 'Foundation level', description: 'Build concepts' },
+  { id: 'medium', emoji: '⚡', label: 'Exam standard', description: 'UPSC pattern' },
+  { id: 'hard', emoji: '🔥', label: 'Advanced', description: 'High difficulty' },
+  { id: 'mixed', emoji: '🎯', label: 'All levels', description: 'Balanced mix' },
 ];
 const fallbackUpgradePlans = [
   { name: 'Monthly Pro', price: 299, duration: 'month', features: ['Unlimited tests, all subjects, PYQ, analytics'], isPopular: false },
@@ -129,6 +129,23 @@ function MockTestsPageInner() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pricingPlans, setPricingPlans] = useState<any[]>([]);
+  const questionPresets = selectedExamMode === 'mains'
+    ? [
+        { value: 1, label: 'Starter 1', icon: '/90.png', pro: false },
+        { value: 2, label: 'Free 2', icon: '/90.png', pro: false },
+        { value: 5, label: 'Practice 5', icon: '/text7.png', pro: true },
+        { value: 10, label: 'Deep 10', icon: '/text8.png', pro: true },
+        { value: 20, label: 'Full 20', icon: '/text8.png', pro: true },
+      ]
+    : [
+        { value: 5, label: 'Quick 5', icon: '/90.png', pro: false },
+        { value: 10, label: 'Standard 10', icon: '/text7.png', pro: false },
+        { value: 25, label: '25 Q', icon: '/text8.png', pro: true },
+        { value: 50, label: '50 Q', icon: '/text8.png', pro: true },
+        { value: 75, label: '75 Q', icon: '/text8.png', pro: true },
+        { value: 100, label: 'Full 100', icon: '/text8.png', pro: true },
+      ];
+  const maxQuestionCount = selectedExamMode === 'mains' ? 20 : 100;
 
   /* ─── Load all data from API ─── */
   useEffect(() => {
@@ -197,12 +214,20 @@ function MockTestsPageInner() {
     if (difficulty) setSelectedDifficulty(difficulty);
   }, [searchParams]);
 
+  useEffect(() => {
+    setQuestionCount((count) => {
+      if (selectedExamMode === 'mains') return Math.min(Math.max(count, 2), 20);
+      return Math.min(Math.max(count, 5), 100);
+    });
+  }, [selectedExamMode]);
+
   /* ─── Generate Test Handler ─── */
   const handleGenerateTest = async () => {
     // Gate: free tier is capped at 10 questions / test. Send users
     // above the cap to the pricing page instead of silently failing.
     const isPro = typeof window !== 'undefined' && localStorage.getItem('userPlan') === 'pro';
-    if (questionCount > 10 && !isPro) {
+    const freeCap = selectedExamMode === 'mains' ? 2 : 10;
+    if (questionCount > freeCap && !isPro) {
       router.push('/dashboard/free-trial?plan=pro&reason=question-cap');
       return;
     }
@@ -371,23 +396,43 @@ function MockTestsPageInner() {
       )}
 
       {/* Main scrollable content */}
-      <main className="flex-1 overflow-y-auto" style={{ background: '#F9FAFB' }}>
+      <main className="flex-1 overflow-y-auto" style={{ background: '#E8EDF5' }}>
 
         {/* ── Hero Area (Full Width) ── */}
-        <div style={{ textAlign: 'center', padding: 'clamp(28px, 2.5vw, 40px) clamp(16px, 1.5vw, 24px) clamp(14px, 1.2vw, 20px)', maxWidth: '1320px', margin: '0 auto' }}>
+        <div style={{
+          textAlign: 'center',
+          padding: 'clamp(28px, 2.5vw, 40px) clamp(16px, 1.5vw, 24px) clamp(28px, 2.4vw, 40px)',
+          maxWidth: '1320px',
+          margin: '0 auto clamp(18px, 1.7vw, 28px)',
+          background: 'radial-gradient(circle at top left, rgba(255,210,115,0.18), transparent 34%), linear-gradient(135deg, #070F24 0%, #101A33 55%, #17223E 100%)',
+          borderRadius: '0 0 28px 28px',
+          boxShadow: '0 20px 50px rgba(8,15,36,0.18)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
+              backgroundSize: '34px 34px',
+            }}
+          />
+          <div style={{ position: 'relative', zIndex: 1 }}>
 
             {/* Badge pill */}
             <div style={{
               display: 'inline-block',
-              background: '#0F172B',
-              color: '#FFFFFF',
+              background: 'rgba(255,210,115,0.12)',
+              color: '#FFD273',
               fontFamily: 'Inter, sans-serif',
               fontWeight: 600,
               fontSize: '12px',
               padding: '4px 14px',
               borderRadius: '999px',
               marginBottom: '14px',
-              border: '1px solid #0F172B',
+              border: '1px solid rgba(255,210,115,0.24)',
             }}>
               📊 India&apos;s #1 UPSC Mock Test Platform
             </div>
@@ -398,11 +443,11 @@ function MockTestsPageInner() {
               fontWeight: 700,
               fontSize: '42px',
               lineHeight: '50px',
-              color: '#101828',
+              color: '#FFFFFF',
               marginBottom: '8px',
             }}>
               Build Your{' '}
-              <span style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontStyle: 'italic', fontSize: '42px', lineHeight: '50px', color: '#C68A0B' }}>Perfect</span>{' '}
+              <span style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontStyle: 'italic', fontSize: '42px', lineHeight: '50px', color: '#FFD273' }}>Perfect</span>{' '}
               Mock Test
             </h1>
 
@@ -412,18 +457,18 @@ function MockTestsPageInner() {
               fontWeight: 400,
               fontSize: '15px',
               lineHeight: '22px',
-              color: '#4A5565',
+              color: '#B7C2D8',
               marginBottom: '20px',
             }}>
-              Adaptive questions · Real exam environment · Detailed analytics. Everything free.
+              Adaptive questions · Real exam environment · Detailed analytics. Add as much as it takes to improve.
             </p>
 
             {/* Stats Container */}
             <div style={{
-              background: '#FFFFFF',
+              background: 'rgba(255,255,255,0.08)',
               borderRadius: '16px',
-              border: '0.8px solid #E5E7EB',
-              boxShadow: '0px 1px 3px 0px #0000001A',
+              border: '0.8px solid rgba(255,255,255,0.12)',
+              boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.10)',
               padding: '20px 36px',
               display: 'flex',
               alignItems: 'center',
@@ -432,10 +477,10 @@ function MockTestsPageInner() {
               margin: '0 auto',
             }}>
               {[
-                { value: platformStats ? `${platformStats.questionsCount.toLocaleString('en-IN')}+` : '—', label: 'Questions', color: '#101828' },
-                { value: platformStats ? `${platformStats.testsCount.toLocaleString('en-IN')}+` : '—', label: 'Tests Taken', color: '#101828' },
-                { value: platformStats ? `${platformStats.usersCount.toLocaleString('en-IN')}+` : '—', label: 'Community', color: '#101828' },
-                { value: '\u221E', label: 'Always Growing', color: '#DBAC49' },
+                { value: platformStats ? `${platformStats.questionsCount.toLocaleString('en-IN')}+` : '—', label: 'Questions', color: '#FFD273' },
+                { value: platformStats ? `${platformStats.testsCount.toLocaleString('en-IN')}+` : '—', label: 'Tests Taken', color: '#F97316' },
+                { value: platformStats ? `${platformStats.usersCount.toLocaleString('en-IN')}+` : '—', label: 'Community', color: '#22C55E' },
+                { value: '86%', label: 'Success Rate', color: '#FFFFFF' },
               ].map((stat, idx, arr) => (
                 <div key={stat.label} style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
                   <div style={{ textAlign: 'center' }}>
@@ -456,14 +501,14 @@ function MockTestsPageInner() {
                       fontWeight: 400,
                       fontSize: '11px',
                       lineHeight: '16px',
-                      color: '#6A7282',
+                      color: '#B7C2D8',
                       textAlign: 'center',
                     }}>
                       {stat.label}
                     </div>
                   </div>
                   {idx < arr.length - 1 && (
-                    <div style={{ width: '1px', height: '40px', background: '#E5E7EB', margin: '0 24px' }} />
+                    <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.12)', margin: '0 24px' }} />
                   )}
                 </div>
               ))}
@@ -475,8 +520,8 @@ function MockTestsPageInner() {
               alignItems: 'center',
               borderRadius: '999px',
               padding: '5px',
-              background: '#FFFFFF',
-              border: '0.8px solid #E5E7EB',
+              background: 'rgba(255,255,255,0.08)',
+              border: '0.8px solid rgba(255,255,255,0.12)',
               boxShadow: '0px 1px 3px 0px #0000001A',
               marginTop: '22px',
             }}>
@@ -530,6 +575,7 @@ function MockTestsPageInner() {
                   <>Start practicing to track your daily progress.</>
                 )}
               </p>
+          </div>
           </div>
 
         {/* ── Two Column Layout: Steps + Test Summary ── */}
@@ -862,7 +908,7 @@ function MockTestsPageInner() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(4px, 0.4vw, 8px)', marginBottom: 'clamp(16px, 1.2vw, 22px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(18px, 1.5vw, 28px)' }}>
                 <button
-                  onClick={() => setQuestionCount(c => Math.max(1, c - 1))}
+                  onClick={() => setQuestionCount(c => Math.max(selectedExamMode === 'mains' ? 1 : 5, c - 1))}
                   style={{
                     width: '64px',
                     height: '64px',
@@ -910,11 +956,11 @@ function MockTestsPageInner() {
                     lineHeight: '16px',
                     color: '#99A1AF',
                   }}>
-                    ~{Math.ceil(questionCount * 2)} min · Free tier
+                    ~{estimatedMinutes} min · Free tier
                   </div>
                 </div>
                 <button
-                  onClick={() => setQuestionCount(c => Math.min(100, c + 1))}
+                  onClick={() => setQuestionCount(c => Math.min(maxQuestionCount, c + 1))}
                   style={{
                     width: '64px',
                     height: '64px',
@@ -943,22 +989,22 @@ function MockTestsPageInner() {
               <div style={{ position: 'relative', marginBottom: '8px' }}>
                 <input
                   type="range"
-                  min="1"
-                  max="100"
+                  min={selectedExamMode === 'mains' ? 1 : 5}
+                  max={maxQuestionCount}
                   value={questionCount}
                   onChange={(e) => setQuestionCount(Number(e.target.value))}
                   style={{
                     width: '100%',
                     height: '8px',
                     borderRadius: '26843500px',
-                    background: `linear-gradient(90deg, #0F172A 0%, #0F172A ${questionCount}%, #E5E7EB ${questionCount}%, #E5E7EB 100%)`,
+                    background: `linear-gradient(90deg, #0F172A 0%, #0F172A ${(questionCount / maxQuestionCount) * 100}%, #E5E7EB ${(questionCount / maxQuestionCount) * 100}%, #E5E7EB 100%)`,
                     appearance: 'none',
                     cursor: 'pointer',
                   }}
                 />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                {[1, 25, 50, 75, 100].map(val => (
+                {(selectedExamMode === 'mains' ? [1, 2, 5, 10, 20] : [1, 25, 50, 75, 100]).map(val => (
                   <span
                     key={val}
                     onClick={() => setQuestionCount(val)}
@@ -979,13 +1025,7 @@ function MockTestsPageInner() {
 
             {/* Preset Buttons */}
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '12px', marginBottom: '24px' }}>
-              {[
-                { value: 5, label: 'Quick 5', icon: '/90.png', active: true },
-                { value: 10, label: 'Standard 10', icon: '/text7.png', active: false },
-                { value: 25, label: '25 Q', icon: '/text8.png', active: false },
-                { value: 50, label: '50 Q', icon: '/text8.png', active: false },
-                { value: 75, label: '75 Q', icon: '/text8.png', active: false },
-              ].map(preset => {
+              {questionPresets.map(preset => {
                 const isActive = questionCount === preset.value;
                 return (
                   <button
@@ -1013,38 +1053,12 @@ function MockTestsPageInner() {
                       lineHeight: '20px',
                       color: isActive ? '#FFFFFF' : '#364153',
                     }}>
-                      {preset.label}
-                    </span>
+	                      {preset.label}
+                      {preset.pro && <span style={{ marginLeft: 6, color: isActive ? '#FDC700' : '#9CA3AF', fontSize: 12 }}>🔒</span>}
+	                    </span>
                   </button>
                 );
               })}
-              <button
-                onClick={() => setQuestionCount(100)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  paddingLeft: '20px',
-                  paddingRight: '20px',
-                  height: '40px',
-                  borderRadius: '26843500px',
-                  border: questionCount === 100 ? 'none' : '1px solid #E5E7EB',
-                  background: questionCount === 100 ? '#0F172B' : '#FFFFFF',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <img src="/text8.png" alt="" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-                <span style={{
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  color: questionCount === 100 ? '#FFFFFF' : '#364153',
-                }}>
-                  Full 100
-                </span>
-              </button>
             </div>
 
             {/* Guideline Banner */}
@@ -1071,7 +1085,7 @@ function MockTestsPageInner() {
                   lineHeight: '20px',
                   margin: 0,
                 }}>
-                  <strong>Guideline:</strong> You&apos;re setting <strong>{questionCount} questions</strong>. Free users have <strong>10 questions daily</strong>. This generates from <strong>PYQ, questions bank</strong>.
+                  <strong>Guideline:</strong> You&apos;re setting <strong>{questionCount} questions</strong>. Free users have <strong>{selectedExamMode === 'mains' ? 2 : 10} questions daily</strong>. This is generated from <strong>PYQ, questions bank</strong>.
                 </p>
               </div>
               <button
@@ -1153,7 +1167,7 @@ function MockTestsPageInner() {
                   color: '#FDC700',
                   textTransform: 'uppercase' as const,
                 }}>
-                  Test Summary — Ready to Begin?
+                  Test Summary - Ready to Begin?
                 </span>
               </div>
 
@@ -1330,6 +1344,3 @@ export default function MockTestsPage() {
     </Suspense>
   );
 }
-
-
-

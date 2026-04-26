@@ -367,7 +367,7 @@ const PerformanceStatsWidget = () => {
         <div className="grid grid-cols-2 gap-[clamp(12px,0.83vw,16px)]">
           <Link
             href="/dashboard/flashcards"
-            className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:shadow-md transition-shadow flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
+            className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:border-[#17223E] hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
             style={{
               padding: 'clamp(12px,0.83vw,16px)',
             }}
@@ -382,7 +382,7 @@ const PerformanceStatsWidget = () => {
           </Link>
           <Link
             href="/dashboard/performance"
-            className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:shadow-md transition-shadow flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
+            className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:border-[#17223E] hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
             style={{
               padding: 'clamp(12px,0.83vw,16px)',
             }}
@@ -397,7 +397,7 @@ const PerformanceStatsWidget = () => {
           </Link>
           <Link
             href="/dashboard/mindmap"
-            className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:shadow-md transition-shadow flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
+            className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:border-[#17223E] hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
             style={{
               padding: 'clamp(12px,0.83vw,16px)',
             }}
@@ -412,7 +412,7 @@ const PerformanceStatsWidget = () => {
           </Link>
           <Link
             href="/dashboard/daily-editorial"
-            className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:shadow-md transition-shadow flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
+            className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:border-[#17223E] hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
             style={{
               padding: 'clamp(12px,0.83vw,16px)',
             }}
@@ -602,4 +602,3 @@ const PerformanceStatsWidget = () => {
 };
 
 export default PerformanceStatsWidget;
-

@@ -8,6 +8,8 @@ const STEPS = [
   {
     id: 1,
     icon: '/eval-structural.png',
+    emoji: '📝',
+    bg: '#FEF3C7',
     title: 'Structural Analysis',
     subtitle: 'Checking introduction-body-conclusion flow',
     key: 'structural',
@@ -15,6 +17,8 @@ const STEPS = [
   {
     id: 2,
     icon: '/eval-content.png',
+    emoji: '📚',
+    bg: '#DBEAFE',
     title: 'Content Depth Assessment',
     subtitle: 'Evaluating conceptual clarity and dimensions',
     key: 'content',
@@ -22,6 +26,8 @@ const STEPS = [
   {
     id: 3,
     icon: '/eval-balance.png',
+    emoji: '⚖️',
+    bg: '#FCE7F3',
     title: 'Balance & Perspective Check',
     subtitle: 'Ensuring multi-dimensional viewpoint',
     key: 'balance',
@@ -29,6 +35,8 @@ const STEPS = [
   {
     id: 4,
     icon: '/eval-fact.png',
+    emoji: '📊',
+    bg: '#DCFCE7',
     title: 'Fact & Example Validation',
     subtitle: 'Cross-referencing with latest data',
     key: 'fact',
@@ -36,6 +44,8 @@ const STEPS = [
   {
     id: 5,
     icon: '/eval-pillar.png',
+    emoji: '🎯',
+    bg: '#EDE9FE',
     title: '6-Pillar Rubric Scoring',
     subtitle: 'Direct   Demand   Structure   Substantiation',
     key: 'scoring',
@@ -304,17 +314,23 @@ export default function EvaluatingPage() {
                 <div className="flex items-center justify-between py-3">
                   {/* Left: icon + text */}
                   <div className="flex items-center gap-3">
-                    <img
-                      src={step.icon}
-                      alt={step.title}
+                    <span
+                      aria-hidden="true"
                       style={{
                         width: '36px',
                         height: '36px',
-                        objectFit: 'contain',
+                        borderRadius: '10px',
+                        background: step.bg,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '20px',
                         opacity: done || active ? 1 : 0.4,
                         transition: 'opacity 0.4s',
                       }}
-                    />
+                    >
+                      {step.emoji}
+                    </span>
                     <div>
                       <p
                         style={{

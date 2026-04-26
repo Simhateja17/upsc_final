@@ -46,7 +46,7 @@ export default function DailyMcqIntroPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen panel-recessed">
+      <div className="flex flex-col min-h-screen" style={{ background: '#E8EDF5' }}>
         <main className="flex-1 flex items-center justify-center p-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </main>
@@ -56,7 +56,7 @@ export default function DailyMcqIntroPage() {
 
   if (error || !mcq) {
     return (
-      <div className="flex flex-col min-h-screen panel-recessed">
+      <div className="flex flex-col min-h-screen" style={{ background: '#E8EDF5' }}>
         <main className="flex-1 flex items-center justify-center p-4">
           <div className="text-center">
             <h2 className="text-xl font-bold text-gray-800 mb-2">No MCQ Challenge Today</h2>
@@ -73,14 +73,14 @@ export default function DailyMcqIntroPage() {
     .trim();
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#ffffff' }}>
+    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#E8EDF5' }}>
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-4">
         {/* Intro Card */}
-        <div className="card-elevated rounded-[16px] p-8 text-center" style={{ width: '605px', height: '630px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="card-elevated rounded-[16px] p-8 text-center" style={{ width: '605px', minHeight: '630px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           {/* Icon */}
           <div className="flex justify-center mb-6">
-            <img src="/icons/dashboard/daily-mcq.png" alt="Target Icon" className="w-[51px] h-[44px] object-contain" />
+            <img src="/icons/dashboard/daily-mcq.png" alt="Target Icon" className="w-[44px] h-[44px] object-contain" />
           </div>
 
           <h1 className="font-arimo font-bold text-[#101828] text-[24px] leading-[32px] mb-2">
@@ -91,26 +91,40 @@ export default function DailyMcqIntroPage() {
             Sharpen your knowledge with focused practice questions
           </p>
 
-          <div className="flex flex-nowrap items-center justify-center gap-2 mb-8 overflow-x-auto">
-            {mcq.tags.map((tag) => (
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+            {mcq.tags.flatMap((tag) => tag.split(/[|•]/).map((part) => part.trim()).filter(Boolean)).map((tag) => (
               <span key={tag} className="px-3 py-1 bg-[#EFF6FF] text-[#101828] rounded-full font-arimo text-[14px] leading-[20px] whitespace-nowrap">
                 {tag}
               </span>
             ))}
           </div>
 
-          <div className="grid grid-cols-3 w-[300px] mx-auto mb-8">
-            <div className="flex flex-col items-center">
+          <div className="grid grid-cols-3 gap-3 w-[360px] mx-auto mb-6">
+            <div className="flex flex-col items-center rounded-[12px] bg-[#F9FAFB] border border-[#E5E7EB] py-4">
               <div className="font-arimo font-bold text-[#101828] text-[32px] leading-tight max-md:text-[24px]">{FIXED_QUESTION_COUNT}</div>
               <div className="font-arimo text-[#667085] text-[12px] mt-1">Questions</div>
             </div>
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center rounded-[12px] bg-[#F9FAFB] border border-[#E5E7EB] py-4">
               <div className="font-arimo font-bold text-[#101828] text-[32px] leading-tight max-md:text-[24px]">{FIXED_TIME_LIMIT}</div>
               <div className="font-arimo text-[#667085] text-[12px] mt-1">Minutes</div>
             </div>
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center rounded-[12px] bg-[#F9FAFB] border border-[#E5E7EB] py-4">
               <div className="font-arimo font-bold text-[#101828] text-[32px] leading-tight max-md:text-[24px]">{FIXED_TOTAL_MARKS}</div>
-              <div className="font-arimo text-[#667085] text-[12px] mt-1">Marks</div>
+              <div className="font-arimo text-[#667085] text-[12px] mt-1">Max Marks</div>
+            </div>
+          </div>
+
+          <div className="w-[380px] rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] p-4 mb-6 text-left">
+            <div className="font-arimo font-bold text-[#15803D] text-[12px] uppercase tracking-[0.5px] mb-3">
+              Marking Pattern
+            </div>
+            <div className="flex items-center justify-between font-arimo text-[13px] mb-2">
+              <span className="text-[#166534]">Correct answer</span>
+              <span className="font-bold text-[#166534]">+2 marks</span>
+            </div>
+            <div className="flex items-center justify-between font-arimo text-[13px]">
+              <span className="text-[#B91C1C]">Wrong answer</span>
+              <span className="font-bold text-[#B91C1C]">-0.66 marks</span>
             </div>
           </div>
 

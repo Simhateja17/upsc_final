@@ -327,7 +327,7 @@ export default function ResultsPage() {
               Color-coded notes directly on your answer — just like a real examiner would.
             </p>
             {markupSegments.length > 0 ? (
-              <div className="bg-[#F9FAFB] rounded-[10px] p-6 leading-relaxed text-[#101828]" style={{ fontSize: '15px', lineHeight: '26px' }}>
+              <div className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] p-6 leading-relaxed text-[#101828]" style={{ fontSize: '15px', lineHeight: '26px' }}>
                 {markupSegments.map((seg, i) => (
                   <span
                     key={i}
@@ -343,8 +343,16 @@ export default function ResultsPage() {
                 ))}
               </div>
             ) : (
-              <div className="bg-[#F9FAFB] rounded-[10px] p-6 text-[#4A5565]" style={{ fontSize: '14px' }}>
-                {data.answerText || 'Examiner markup will appear here once the AI finishes highlighting introductions, factual claims, analytical depth, and conclusions.'}
+              <div className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] p-6 text-[#101828]" style={{ fontSize: '15px', lineHeight: '26px' }}>
+                <span style={{ background: '#BBF7D0', padding: '2px 4px', borderRadius: '3px' }}>
+                  {data.answerText || 'Your answer structure and relevant facts will be highlighted here.'}
+                </span>{' '}
+                <span style={{ background: '#FEF08A', padding: '2px 4px', borderRadius: '3px' }}>
+                  Areas needing sharper analysis will be marked in yellow.
+                </span>{' '}
+                <span style={{ background: '#FECACA', padding: '2px 4px', borderRadius: '3px' }}>
+                  Missing dimensions or unsupported claims will be marked in red.
+                </span>
               </div>
             )}
             <div className="mt-4 flex items-center gap-4 text-xs text-[#4A5565]">
@@ -404,21 +412,31 @@ export default function ResultsPage() {
             <h2 className="font-bold text-[#101828] mb-6" style={{ fontSize: '22px' }}>
               What would you like to do next?
             </h2>
-            <div className="grid grid-cols-3 gap-4">
-              <button onClick={() => router.push('/dashboard/daily-answer')} className="rounded-[10px] border border-[#E5E7EB] p-6 text-left hover:bg-gray-50 transition-colors">
-                <div className="text-2xl mb-2">📝</div>
-                <div className="font-bold text-[#101828] mb-1">Tomorrow&apos;s Challenge</div>
-                <div className="text-sm text-[#4A5565]">Keep your writing streak going.</div>
+            <div className="grid grid-cols-3 gap-5">
+              <button onClick={() => setSlide('feedback')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#EDE9FE] text-2xl">🎯</div>
+                <div className="font-bold text-[#101828] mb-1">Rewrite with Feedback</div>
+                <div className="text-sm text-[#4A5565]">Apply suggestions immediately</div>
               </button>
-              <button onClick={() => router.push('/dashboard/pyq')} className="rounded-[10px] border border-[#E5E7EB] p-6 text-left hover:bg-gray-50 transition-colors">
-                <div className="text-2xl mb-2">📚</div>
-                <div className="font-bold text-[#101828] mb-1">Practice PYQs</div>
-                <div className="text-sm text-[#4A5565]">Attempt similar past-year questions.</div>
+              <button onClick={() => router.push('/dashboard/saved-notes')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#FEF3C7] text-2xl">📝</div>
+                <div className="font-bold text-[#101828] mb-1">Save to Notes</div>
+                <div className="text-sm text-[#4A5565]">Add to personalized revision</div>
               </button>
-              <button onClick={() => router.push('/dashboard/mock-tests')} className="rounded-[10px] border border-[#E5E7EB] p-6 text-left hover:bg-gray-50 transition-colors">
-                <div className="text-2xl mb-2">🎯</div>
-                <div className="font-bold text-[#101828] mb-1">Generate a Mock Test</div>
-                <div className="text-sm text-[#4A5565]">Convert weak areas into a quick quiz.</div>
+              <button onClick={() => router.push('/dashboard/free-trial')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#DBEAFE] text-2xl">🧑‍🏫</div>
+                <div className="font-bold text-[#101828] mb-1">Discuss with Mentor</div>
+                <div className="text-sm text-[#4A5565]">Get expert guidance</div>
+              </button>
+              <button onClick={() => router.push('/dashboard/daily-answer')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#DCFCE7] text-2xl">📋</div>
+                <div className="font-bold text-[#101828] mb-1">Practice Similar Question</div>
+                <div className="text-sm text-[#4A5565]">Continue your streak</div>
+              </button>
+              <button onClick={() => router.push('/dashboard/library')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#FEE2E2] text-2xl">📚</div>
+                <div className="font-bold text-[#101828] mb-1">View Model Answer</div>
+                <div className="text-sm text-[#4A5565]">Learn structure and content</div>
               </button>
             </div>
           </div>

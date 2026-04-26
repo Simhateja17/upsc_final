@@ -41,10 +41,10 @@ const subjects = UPSC_SUBJECTS.map((s) => ({
 
 const defaultLearningStats = [
   { icon: '/dark.png', label: 'Editorials read', value: '0', color: '#047857' },
-  { icon: '/tatal.png', label: 'Total reading time', value: '0 hrs', color: '#1D4ED8' },
-  { icon: '/light.png', label: "This week's target", value: '0%', color: '#16A34A' },
-  { icon: '/longeset.png', label: 'Longest streak', value: '0 days', color: '#7C3AED' },
+  { icon: '/tatal.png', label: 'Total saved', value: '0', color: '#1D4ED8' },
 ];
+
+const normalizeSubjectValue = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 /* ------------------------------------------------------------------ */
 /*  Calendar helper                                                    */
@@ -64,6 +64,7 @@ function getCalendarDays(year: number, month: number) {
 export default function DailyEditorialPage() {
   const router = useRouter();
   const [activeNewspaper, setActiveNewspaper] = useState<'hindu' | 'express'>('hindu');
+  const [activeExamMode, setActiveExamMode] = useState<'prelims' | 'mains'>('prelims');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
   const [calYear, setCalYear] = useState(() => new Date().getFullYear());
@@ -129,8 +130,6 @@ export default function DailyEditorialPage() {
           setLearningStats([
             { icon: '/dark.png', label: 'Editorials read', value: `${d.totalRead || 0}`, color: '#047857' },
             { icon: '/tatal.png', label: 'Total saved', value: `${d.totalSaved || 0}`, color: '#1D4ED8' },
-            { icon: '/light.png', label: "This week's target", value: `${d.weeklyTarget ? Math.round((d.weeklyRead / d.weeklyTarget) * 100) : 0}%`, color: '#16A34A' },
-            { icon: '/longeset.png', label: 'Current streak', value: `${d.streak || 0} days`, color: '#7C3AED' },
           ]);
           // Derive 7-day checklist: fill from the left for each day read in current streak
           const streakLen = d.streak || 0;
@@ -145,6 +144,15 @@ export default function DailyEditorialPage() {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    setGlanceStats(prev => ({
+      ...prev,
+      [activeNewspaper]: editorials.length,
+      read: editorials.filter(e => e.isRead).length,
+      ai: editorials.filter(e => e.aiSummary || e.summary).length,
+    }));
+  }, [activeNewspaper, editorials]);
 
   const handleSave = async (id: string) => {
     try {
@@ -211,90 +219,132 @@ export default function DailyEditorialPage() {
   return (
     <div
       className="font-arimo w-full min-h-screen"
-      style={{ background: '#F9FAFB' }}
+      style={{ background: '#E8EDF5' }}
     >
-      {/* ============================================================ */}
-      {/*  BACK TO DASHBOARD BUTTON                                     */}
-      {/* ============================================================ */}
-      <div style={{ padding: 'clamp(12px, 1.27vw, 17px) clamp(20px, 2.25vw, 30px)' }}>
-        <Link href="/dashboard">
-          <button
-            className="flex items-center gap-2 font-arimo font-semibold"
-            style={{
-              height: 'clamp(40px, 3.81vw, 51px)',
-              borderRadius: '20px',
-              background: 'rgba(255,255,255,0.05)',
-              boxShadow: '0px 4px 4px 0px rgba(0,0,0,0.25)',
-              border: '1px solid #E5E7EB',
-              padding: '0 clamp(16px, 1.5vw, 20px)',
-              fontSize: 'clamp(13px, 1.05vw, 14px)',
-              color: '#17223E',
-              backgroundColor: '#FFFFFF',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {/* Arrow left */}
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="#17223E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back to dashboard
-          </button>
-        </Link>
-      </div>
-
-      {/* ============================================================ */}
-      {/*  HERO SECTION                                                 */}
-      {/* ============================================================ */}
-      <div className="flex flex-col items-center" style={{ paddingTop: 'clamp(8px, 1vw, 16px)', paddingBottom: 'clamp(24px, 2.5vw, 40px)' }}>
-        {/* Tag pill */}
+      <div style={{ padding: 'clamp(16px, 2vw, 28px) clamp(16px, 3vw, 42px) clamp(22px, 3vw, 38px)' }}>
         <div
-          className="flex items-center gap-2 font-arimo font-semibold text-white"
+          className="mx-auto"
           style={{
-            background: '#101828',
-            borderRadius: '26843500px',
-            padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.5vw, 20px)',
-            fontSize: 'clamp(11px, 0.9vw, 13px)',
-            letterSpacing: '0.5px',
-            marginBottom: 'clamp(14px, 1.5vw, 20px)',
+            maxWidth: 'min(94vw, 1400px)',
+            borderRadius: '28px',
+            background: 'radial-gradient(circle at top left, rgba(255,210,115,0.18), transparent 32%), linear-gradient(135deg, #070F24 0%, #101A33 58%, #17223E 100%)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            boxShadow: '0 24px 60px rgba(8,15,36,0.22)',
+            padding: 'clamp(18px, 3vw, 38px)',
+            overflow: 'hidden',
+            position: 'relative',
           }}
         >
-          {/* Sparkle icon */}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#FFD273" stroke="#FFD273" strokeWidth="1"/>
-          </svg>
-          DAILY NEWS ANALYSIS
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
+              backgroundSize: '34px 34px',
+              maskImage: 'linear-gradient(90deg, black, transparent 92%)',
+            }}
+          />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <Link href="/dashboard">
+              <button
+                className="flex items-center gap-2 font-arimo font-semibold"
+                style={{
+                  height: '40px',
+                  borderRadius: '999px',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  padding: '0 16px',
+                  fontSize: '13px',
+                  color: '#FFFFFF',
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  whiteSpace: 'nowrap',
+                  marginBottom: 'clamp(22px, 3vw, 36px)',
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Back to dashboard
+              </button>
+            </Link>
+
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between" style={{ gap: '28px' }}>
+              <div>
+                <div
+                  className="inline-flex items-center gap-2 font-arimo font-semibold"
+                  style={{
+                    background: 'rgba(255,210,115,0.12)',
+                    border: '1px solid rgba(255,210,115,0.24)',
+                    borderRadius: '999px',
+                    padding: '8px 16px',
+                    fontSize: '12px',
+                    color: '#FFD273',
+                    letterSpacing: '0.7px',
+                    marginBottom: '18px',
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#FFD273" stroke="#FFD273" strokeWidth="1"/>
+                  </svg>
+                  DAILY NEWS ANALYSIS
+                </div>
+
+                <h1
+                  className="font-tinos italic"
+                  style={{
+                    fontSize: 'clamp(36px, 5vw, 72px)',
+                    lineHeight: '0.95',
+                    color: '#FFFFFF',
+                    marginBottom: '18px',
+                    maxWidth: '760px',
+                  }}
+                >
+                  Where <span style={{ color: '#FFD273' }}>news</span> meets
+                  <br />
+                  the <span style={{ color: '#FFD273' }}>syllabus</span>
+                </h1>
+
+                <p
+                  className="font-arimo"
+                  style={{
+                    fontSize: 'clamp(15px, 1.35vw, 18px)',
+                    lineHeight: '1.7',
+                    color: '#B7C2D8',
+                    maxWidth: '560px',
+                  }}
+                >
+                  Every editorial, every perspective, mapped to what UPSC asks.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2" style={{ gap: '12px', width: 'min(100%, 430px)' }}>
+                {[
+                  { num: glanceStats.hindu, label: 'The Hindu' },
+                  { num: glanceStats.express, label: 'Indian Express' },
+                  { num: glanceStats.read, label: 'Read so far' },
+                  { num: glanceStats.ai, label: 'AI summaries' },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    style={{
+                      background: 'rgba(255,255,255,0.08)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: '18px',
+                      padding: '16px',
+                    }}
+                  >
+                    <div className="font-arimo font-bold" style={{ fontSize: 'clamp(24px, 3vw, 36px)', color: '#FFFFFF' }}>
+                      {item.num}
+                    </div>
+                    <div className="font-arimo" style={{ fontSize: '13px', color: '#B7C2D8' }}>
+                      {item.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-
-        {/* Main heading */}
-        <h1
-          className="font-tinos italic text-center"
-          style={{
-            fontSize: 'clamp(32px, 3.59vw, 48px)',
-            lineHeight: 'clamp(36px, 3.59vw, 48px)',
-            color: '#17223E',
-            marginBottom: 'clamp(10px, 1vw, 16px)',
-          }}
-        >
-          Where{' '}
-          <span style={{ color: '#FFD273' }}>news</span>{' '}
-          meets
-          <br />
-          the{' '}
-          <span style={{ color: '#FFD273' }}>syllabus</span>
-        </h1>
-
-        {/* Description */}
-        <p
-          className="font-arimo text-center"
-          style={{
-            fontSize: 'clamp(14px, 1.35vw, 18px)',
-            lineHeight: 'clamp(22px, 2.1vw, 28px)',
-            color: '#4A5565',
-            maxWidth: '524px',
-          }}
-        >
-          Every editorial, every perspective &mdash; mapped to what UPSC asks.
-        </p>
       </div>
 
       {/* ============================================================ */}
@@ -303,10 +353,10 @@ export default function DailyEditorialPage() {
       <div
         className="w-full mx-auto"
         style={{
-          maxWidth: 'clamp(960px, 75vw, 1020px)',
+          maxWidth: 'min(94vw, 1400px)',
           padding: '0 clamp(16px, 2vw, 30px)',
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) clamp(260px, 23.05vw, 308px)',
+          gridTemplateColumns: 'minmax(0, 1fr) clamp(280px, 24vw, 340px)',
           gap: 'clamp(16px, 2vw, 28px)',
           paddingBottom: 'clamp(40px, 5vw, 80px)',
         }}
@@ -316,52 +366,65 @@ export default function DailyEditorialPage() {
         {/* ========================================================== */}
         <div>
           {/* Top controls row */}
-          <div className="flex items-center justify-between" style={{ marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
+          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between" style={{ gap: '12px', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
             {/* Newspaper toggles */}
-            <div className="flex items-center" style={{ gap: 'clamp(6px, 0.6vw, 8px)' }}>
-              <button
-                onClick={() => setActiveNewspaper('hindu')}
-                className="flex items-center gap-2 font-fahkwang"
-                style={{
-                  height: 'clamp(32px, 2.77vw, 37px)',
-                  padding: '0 clamp(12px, 1.2vw, 16px)',
-                  borderRadius: '20px',
-                  border: '0.8px solid #E5E7EB',
-                  background: activeNewspaper === 'hindu' ? '#101828' : '#FFFFFF',
-                  color: activeNewspaper === 'hindu' ? '#FFFFFF' : '#101828',
-                  fontSize: 'clamp(12px, 1.05vw, 14px)',
-                  fontWeight: 400,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <img src="/hindu.png" alt="Hindu" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-                The Hindu
-              </button>
+            <div className="flex flex-col sm:flex-row sm:items-center" style={{ gap: '10px' }}>
+              <div className="flex items-center" style={{ background: '#FFFFFF', border: '1px solid #D7DEEA', borderRadius: '999px', padding: '4px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+                {[
+                  { id: 'hindu' as const, label: 'The Hindu', icon: '/hindu.png' },
+                  { id: 'express' as const, label: 'Indian Express', icon: '/indian.png' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveNewspaper(item.id)}
+                    className="flex items-center justify-center gap-2 font-fahkwang"
+                    style={{
+                      minWidth: 'clamp(140px, 12vw, 174px)',
+                      height: '38px',
+                      padding: '0 16px',
+                      borderRadius: '999px',
+                      background: activeNewspaper === item.id ? '#101828' : 'transparent',
+                      color: activeNewspaper === item.id ? '#FFFFFF' : '#101828',
+                      fontSize: 'clamp(12px, 1.05vw, 14px)',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <img src={item.icon} alt={item.label} style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
 
-              <button
-                onClick={() => setActiveNewspaper('express')}
-                className="flex items-center gap-2 font-fahkwang"
-                style={{
-                  height: 'clamp(32px, 2.77vw, 37px)',
-                  padding: '0 clamp(12px, 1.2vw, 16px)',
-                  borderRadius: '20px',
-                  border: '0.8px solid #E5E7EB',
-                  background: activeNewspaper === 'express' ? '#101828' : '#FFFFFF',
-                  color: activeNewspaper === 'express' ? '#FFFFFF' : '#101828',
-                  fontSize: 'clamp(12px, 1.05vw, 14px)',
-                  fontWeight: 400,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <img src="/indian.png" alt="Indian Express" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-                Indian Express
-              </button>
+              <div className="flex items-center" style={{ background: '#FFFFFF', border: '1px solid #D7DEEA', borderRadius: '999px', padding: '4px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+                {[
+                  { id: 'prelims' as const, label: 'Prelims' },
+                  { id: 'mains' as const, label: 'Mains' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveExamMode(item.id)}
+                    className="font-arimo font-semibold"
+                    style={{
+                      minWidth: '92px',
+                      height: '38px',
+                      padding: '0 16px',
+                      borderRadius: '999px',
+                      background: activeExamMode === item.id ? '#17223E' : 'transparent',
+                      color: activeExamMode === item.id ? '#FFD273' : '#4A5565',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* View mode toggles */}
-            <div className="flex items-center" style={{ gap: '0' }}>
+            <div className="flex items-center self-start xl:self-auto" style={{ background: '#FFFFFF', border: '1px solid #D7DEEA', borderRadius: '14px', padding: '4px' }}>
               <button
                 onClick={() => setViewMode('list')}
                 className="flex items-center gap-2 font-arimo font-medium"
@@ -415,16 +478,25 @@ export default function DailyEditorialPage() {
           )}
 
           {/* News cards */}
-          <div className="flex flex-col" style={{ gap: 'clamp(14px, 1.5vw, 20px)' }}>
+          <div
+            style={{
+              display: loading ? 'block' : 'grid',
+              gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr',
+              gap: 'clamp(14px, 1.5vw, 20px)',
+            }}
+          >
             {loading ? (
               <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900"></div></div>
             ) : (() => {
               const filtered = selectedSubject
                 ? editorials.filter((e) => {
-                    const cat = (e.category || '').toLowerCase();
-                    const tags = (e.tags || []).map((t) => t.toLowerCase());
-                    const needle = selectedSubject.toLowerCase();
-                    return cat.includes(needle) || tags.some((t) => t.includes(needle));
+                    const subjectMeta = subjects.find((subject) => subject.id === selectedSubject);
+                    const needles = [selectedSubject, subjectMeta?.label]
+                      .filter(Boolean)
+                      .map((value) => normalizeSubjectValue(value as string));
+                    const category = normalizeSubjectValue(e.category || '');
+                    const tags = (e.tags || []).map((tag) => normalizeSubjectValue(tag));
+                    return needles.some((needle) => category.includes(needle) || tags.some((tag) => tag.includes(needle)));
                   })
                 : editorials;
               if (filtered.length === 0) {
@@ -520,9 +592,9 @@ export default function DailyEditorialPage() {
                       style={{
                         padding: 'clamp(6px, 0.75vw, 10px) clamp(12px, 1.2vw, 16px)',
                         borderRadius: '26843500px',
-                        border: '0.8px solid #DBEAFE',
-                        background: card.isSaved ? '#DBEAFE' : '#EFF6FF',
-                        color: '#1C398E',
+                        border: `0.8px solid ${card.isSaved ? '#86EFAC' : '#DBEAFE'}`,
+                        background: card.isSaved ? '#DCFCE7' : '#EFF6FF',
+                        color: card.isSaved ? '#166534' : '#1C398E',
                         fontSize: 'clamp(12px, 1.05vw, 14px)',
                         cursor: 'pointer',
                       }}
@@ -782,138 +854,6 @@ export default function DailyEditorialPage() {
           </div>
 
           {/* -------------------------------------------------------- */}
-          {/*  Today at a Glance                                        */}
-          {/* -------------------------------------------------------- */}
-          <div
-            style={{
-              background: '#FFFFFF',
-              borderRadius: '16px',
-              border: '0.8px solid #E5E7EB',
-              padding: 'clamp(16px, 1.86vw, 24px)',
-              boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1)',
-            }}
-          >
-            <div className="flex items-center gap-2" style={{ marginBottom: 'clamp(12px, 1.5vw, 20px)' }}>
-              <span style={{ fontSize: '16px' }}>&#x1F4CA;</span>
-              <span className="font-arimo font-bold" style={{ fontSize: 'clamp(14px, 1.2vw, 16px)', color: '#101828' }}>
-                Today at a Glance
-              </span>
-            </div>
-
-            {/* 2x2 stats grid */}
-            <div className="grid grid-cols-2" style={{ gap: 'clamp(8px, 0.9vw, 12px)', marginBottom: 'clamp(12px, 1.5vw, 20px)' }}>
-              {[
-                { num: '8', label: 'The Hindu' },
-                { num: '6', label: 'Indian Express' },
-                { num: '4', label: 'Read so far' },
-                { num: '2', label: 'AI Summaries' },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  style={{
-                    background: '#EFF6FF',
-                    borderRadius: '12px',
-                    padding: 'clamp(10px, 1.2vw, 16px)',
-                  }}
-                >
-                  <div className="font-arimo font-bold" style={{ fontSize: 'clamp(22px, 2.25vw, 30px)', color: '#101828' }}>
-                    {item.num}
-                  </div>
-                  <div className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 13px)', color: '#4A5565' }}>
-                    {item.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Reading progress circle */}
-            <div
-              className="flex flex-col items-center"
-              style={{
-                background: '#EFF6FF',
-                borderRadius: '12px',
-                padding: 'clamp(14px, 1.5vw, 20px)',
-              }}
-            >
-              {/* SVG circular progress */}
-              <div style={{ position: 'relative', width: '60px', height: '60px', marginBottom: '8px' }}>
-                <svg width="60" height="60" viewBox="0 0 60 60">
-                  <circle cx="30" cy="30" r="26" fill="none" stroke="#E5E7EB" strokeWidth="4"/>
-                  <circle
-                    cx="30" cy="30" r="26"
-                    fill="none" stroke="#16A34A" strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 26 * 0.29} ${2 * Math.PI * 26 * 0.71}`}
-                    transform="rotate(-90 30 30)"
-                  />
-                </svg>
-                <div
-                  className="absolute inset-0 flex items-center justify-center font-arimo font-bold"
-                  style={{ fontSize: '11px', color: '#101828' }}
-                >
-                  29%
-                </div>
-              </div>
-              <span className="font-arimo font-bold" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#101828' }}>
-                Reading complete
-              </span>
-              <span className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 13px)', color: '#4A5565' }}>
-                4 / 14 articles
-              </span>
-            </div>
-          </div>
-
-          {/* -------------------------------------------------------- */}
-          {/*  14-Day Streak                                            */}
-          {/* -------------------------------------------------------- */}
-          <div
-            style={{
-              background: '#0E182D',
-              borderRadius: '16px',
-              border: '1.6px solid #193CB8',
-              padding: 'clamp(16px, 1.86vw, 24px)',
-              boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1), 0px 4px 6px -4px rgba(0,0,0,0.1)',
-            }}
-          >
-            {/* Header */}
-            <div className="flex items-center gap-2" style={{ marginBottom: 'clamp(6px, 0.6vw, 8px)' }}>
-              <span style={{ fontSize: '20px' }}>&#x1F525;</span>
-              <span className="font-arimo font-bold" style={{ fontSize: 'clamp(16px, 1.5vw, 20px)', color: '#FFD273' }}>
-                {streakData.streak}-Day Streak
-              </span>
-            </div>
-
-            <p className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#9CA3AF', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-              Keep it up! Read {streakData.readToday} today
-            </p>
-
-            {/* Check boxes row */}
-            <div className="flex items-center" style={{ gap: 'clamp(6px, 0.6vw, 8px)', marginBottom: 'clamp(10px, 1vw, 14px)' }}>
-              {streakData.weekChecks.map((checked, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-center"
-                  style={{
-                    width: 'clamp(32px, 3vw, 40px)',
-                    height: 'clamp(32px, 3vw, 40px)',
-                    borderRadius: '10px',
-                    background: checked ? '#F3BB4B' : 'rgba(255,255,255,0.08)',
-                    border: checked ? 'none' : '1px solid rgba(255,255,255,0.12)',
-                  }}
-                >
-                  {checked && (
-                    <img src="/blue tick.png" alt="tick" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <p className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 13px)', color: '#6B7280' }}>
-              {streakData.readToday} of {streakData.targetToday} articles read today
-            </p>
-          </div>
-
-          {/* -------------------------------------------------------- */}
           {/*  Your Learning Streak                                     */}
           {/* -------------------------------------------------------- */}
           <div
@@ -934,28 +874,50 @@ export default function DailyEditorialPage() {
 
             {/* Streak banner */}
             <div
-              className="flex items-center justify-between"
               style={{
-                background: 'linear-gradient(90deg, #FF6900 0%, #FB2C36 100%)',
-                borderRadius: '12px',
-                padding: 'clamp(12px, 1.2vw, 16px) clamp(14px, 1.5vw, 20px)',
+                background: '#0E182D',
+                borderRadius: '16px',
+                border: '1.6px solid #193CB8',
+                padding: 'clamp(16px, 1.7vw, 22px)',
                 marginBottom: 'clamp(14px, 1.5vw, 20px)',
+                boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1), 0px 4px 6px -4px rgba(0,0,0,0.1)',
               }}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
                 <span style={{ fontSize: '20px' }}>&#x1F525;</span>
                 <span className="font-arimo font-bold" style={{ fontSize: 'clamp(20px, 1.95vw, 26px)', color: '#FFFFFF' }}>
-                  12 days
-                </span>
-                <span className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: 'rgba(255,255,255,0.8)' }}>
-                  &middot; current streak
+                  {streakData.streak}-Day Streak
                 </span>
               </div>
-              <span style={{ fontSize: '20px' }}>&#x1F525;</span>
+              <p className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#9CA3AF', marginBottom: '14px' }}>
+                Keep it up. Read {streakData.readToday} today.
+              </p>
+              <div className="flex items-center" style={{ gap: 'clamp(6px, 0.6vw, 8px)', marginBottom: '12px' }}>
+                {streakData.weekChecks.map((checked, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-center"
+                    style={{
+                      width: 'clamp(30px, 2.7vw, 36px)',
+                      height: 'clamp(30px, 2.7vw, 36px)',
+                      borderRadius: '10px',
+                      background: checked ? '#F3BB4B' : 'rgba(255,255,255,0.08)',
+                      border: checked ? 'none' : '1px solid rgba(255,255,255,0.12)',
+                    }}
+                  >
+                    {checked && (
+                      <img src="/blue tick.png" alt="tick" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 13px)', color: '#6B7280' }}>
+                {streakData.readToday} of {streakData.targetToday} articles read today
+              </p>
             </div>
 
             {/* Stats list */}
-            <div className="flex flex-col" style={{ gap: 'clamp(10px, 1.1vw, 14px)', marginBottom: 'clamp(14px, 1.5vw, 20px)' }}>
+            <div className="flex flex-col" style={{ gap: 'clamp(10px, 1.1vw, 14px)' }}>
               {learningStats.map((stat) => (
                 <div key={stat.label} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -969,22 +931,6 @@ export default function DailyEditorialPage() {
                   </span>
                 </div>
               ))}
-            </div>
-
-            {/* Divider */}
-            <div style={{ borderBottom: '1px solid #E5E7EB', marginBottom: 'clamp(10px, 1.1vw, 14px)' }} />
-
-            {/* Footer */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span style={{ fontSize: '14px' }}>&#x1F4C5;</span>
-                <span className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#4A5565' }}>
-                  Next: 16 Oct
-                </span>
-              </div>
-              <span className="font-arimo font-bold" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#DC2626' }}>
-                +3 articles
-              </span>
             </div>
           </div>
         </div>

@@ -170,6 +170,19 @@ export const authService = {
     // Browser redirects to Google — no return value
   },
 
+  resetPassword: async (email: string): Promise<void> => {
+    const redirectTo =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/login`
+        : 'http://localhost:3000/login';
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+
+    if (error) throw new Error(error.message);
+  },
+
   logout: async (): Promise<void> => {
     const { accessToken } = getStoredTokens();
     if (accessToken) {

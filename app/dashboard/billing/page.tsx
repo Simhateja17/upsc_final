@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { userService } from '@/lib/services';
+import { pricingService, userService } from '@/lib/services';
 
 const cardStyle = {
   boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)',
@@ -26,6 +26,46 @@ interface Subscription {
   amount?: string;
 }
 
+interface Plan {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  duration: string;
+  features: string[];
+  isPopular?: boolean;
+  badge?: string;
+}
+
+const fallbackPlans: Plan[] = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    price: 0,
+    duration: 'Free',
+    description: 'Basic access for daily consistency.',
+    features: ['Daily MCQ practice', 'Daily editorial summaries', 'Limited mock access'],
+  },
+  {
+    id: 'pro',
+    name: 'Pro Aspirant',
+    price: 499,
+    duration: 'month',
+    description: 'Full self-study toolkit for serious preparation.',
+    features: ['Unlimited mock tests', 'AI mains evaluation', 'Flashcards, mindmaps and spaced repetition'],
+    isPopular: true,
+    badge: 'Best value',
+  },
+  {
+    id: 'mentor',
+    name: 'Mentorship Pro',
+    price: 1499,
+    duration: 'month',
+    description: 'Everything in Pro plus structured mentorship.',
+    features: ['1-on-1 mentorship', 'Priority answer review', 'Personal roadmap support'],
+  },
+];
+
 export default function BillingPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -34,6 +74,7 @@ export default function BillingPage() {
 
   const [sub, setSub] = useState<Subscription | null>(null);
   const [orders, setOrders] = useState<OrderItem[]>([]);
+  const [plans, setPlans] = useState<Plan[]>(fallbackPlans);
   const [loading, setLoading] = useState(true);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
 
@@ -63,6 +104,15 @@ export default function BillingPage() {
     };
     fetchData();
   }, [user]);
+
+  useEffect(() => {
+    pricingService.getPlans()
+      .then((res) => {
+        const data = Array.isArray(res?.data) ? res.data : [];
+        if (data.length > 0) setPlans(data);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleUpgrade = () => {
     setActionMsg(null);
@@ -113,6 +163,21 @@ export default function BillingPage() {
         Billing & Subscription
       </h1>
 
+      <section className="mb-8 overflow-hidden rounded-[18px] bg-[#0B1220] text-white">
+        <div className="px-6 py-8 md:px-8 md:py-10" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+        }}>
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-[1.5px] text-[#F0B100]">Billing & Plans</p>
+          <h2 className="mb-3 max-w-[760px] text-[34px] font-bold leading-tight md:text-[44px]" style={{ fontFamily: 'Georgia, serif' }}>
+            Your IAS journey deserves a smarter foundation.
+          </h2>
+          <p className="max-w-[640px] text-[15px] leading-6 text-[#A9B4C6]">
+            Manage your plan, purchases and invoices from one place. Pricing and feature lists are pulled from the admin pricing setup when available.
+          </p>
+        </div>
+      </section>
+
       {trialJustStarted && (
         <div className="mb-6 rounded-[10px] border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-[#15803D] text-[14px]">
           🎉 Your 7-day free trial is active. Enjoy full Pro access until {new Date(sub?.trialEndsOn || Date.now()).toLocaleDateString()}.
@@ -127,7 +192,56 @@ export default function BillingPage() {
 
       {/* Free user — show upsell, NOT a fake purchased state */}
       {!isPaid && (
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            {plans.map((plan) => (
+              <div
+                key={plan.id}
+                className="relative rounded-[18px] border bg-white p-6 shadow-sm"
+                style={{ borderColor: plan.isPopular ? '#F0B100' : '#E2E8F0' }}
+              >
+                {(plan.badge || plan.isPopular) && (
+                  <div className="absolute -top-3 left-6 rounded-full bg-[#F0B100] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.5px] text-[#101828]">
+                    {plan.badge || 'Popular'}
+                  </div>
+                )}
+                <h3 className="mb-2 text-[20px] font-bold text-[#0F172B]">{plan.name}</h3>
+                <p className="mb-5 min-h-[40px] text-[14px] leading-5 text-[#62748E]">{plan.description}</p>
+                <div className="mb-5">
+                  {plan.price === 0 ? (
+                    <span className="text-[34px] font-bold text-[#0F172B]">Free</span>
+                  ) : (
+                    <>
+                      <span className="text-[34px] font-bold text-[#0F172B]">₹{plan.price.toLocaleString('en-IN')}</span>
+                      <span className="text-[14px] text-[#62748E]">/{plan.duration}</span>
+                    </>
+                  )}
+                </div>
+                <ul className="mb-6 space-y-3">
+                  {(plan.features || []).slice(0, 5).map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-[14px] text-[#314158]">
+                      <span className="mt-0.5 text-[#16A34A]">✓</span>
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  onClick={plan.price === 0 ? () => router.push('/dashboard') : handleUpgrade}
+                  className="w-full rounded-[10px] px-4 py-3 text-[14px] font-bold"
+                  style={{
+                    background: plan.isPopular || plan.price > 0 ? 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)' : '#F8FAFC',
+                    color: plan.price === 0 && !plan.isPopular ? '#0F172B' : '#FFFFFF',
+                    border: plan.price === 0 && !plan.isPopular ? '1px solid #E2E8F0' : 'none',
+                  }}
+                >
+                  {plan.price === 0 ? 'Current free access' : 'Purchase Plan'}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col lg:flex-row gap-6">
           <div className="w-full lg:w-[340px] flex flex-col gap-6 flex-shrink-0">
             <div
               className="bg-white rounded-[14px] border-[0.8px] border-[#e2e8f0] pt-[24.8px] px-[24.8px] pb-[24.8px] flex flex-col gap-4"
@@ -170,6 +284,7 @@ export default function BillingPage() {
                 No payment history while on the free plan.
               </p>
             </div>
+          </div>
           </div>
         </div>
       )}

@@ -44,10 +44,22 @@ function LineChart({ data, width = 400, height = 120, color = '#00D5BE' }: {
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
+      {[0, 1, 2, 3].map((line) => (
+        <line
+          key={line}
+          x1={pad.left}
+          x2={width - pad.right}
+          y1={pad.top + (line / 3) * innerH}
+          y2={pad.top + (line / 3) * innerH}
+          stroke="#E5E7EB"
+          strokeWidth="0.8"
+          opacity="0.7"
+        />
+      ))}
       <path d={areaD} fill={`url(#${gradId})`} />
-      <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={pathD} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
       {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="3" fill={color} stroke="#fff" strokeWidth="1.5" />
+        <circle key={i} cx={p.x} cy={p.y} r="4" fill={color} stroke="#fff" strokeWidth="2" />
       ))}
       {data.map((d, i) => (
         <text key={i} x={pts[i].x} y={height - 4} textAnchor="middle"
@@ -74,13 +86,15 @@ function timeColor(s: number): string {
   return '#EF4444';
 }
 
-const SUBJECT_COLORS = ['#00BBA7', '#8B5CF6', '#14B8A6', '#F97316', '#155DFC', '#EF4444', '#D97706', '#EC4899'];
+const SUBJECT_COLORS = ['#00BBA7', '#A855F7', '#14B8A6', '#F97316', '#155DFC', '#EF4444', '#D97706', '#EC4899'];
+const WEEK_BAR_COLORS = ['#111827', '#111827', '#111827', '#111827', '#FDC700', '#D1D5DB', '#D1D5DB'];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function TestAnalyticsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedReport, setSelectedReport] = useState<any | null>(null);
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
@@ -146,11 +160,11 @@ export default function TestAnalyticsPage() {
   ];
 
   const summaryCards = [
-    { title: 'Overall Percentile', value: bestPercentile > 0 ? String(bestPercentile) : 'N/A', accent: '#00BBA7', sub: 'Best percentile achieved' },
-    { title: 'Tests Attempted', value: String(totalTests), accent: '#FF6900', sub: 'Full length & sectional mocks' },
-    { title: 'Questions Attempted', value: totalQuestions.toLocaleString('en-IN'), accent: '#155DFC', sub: 'MCQs, PYQs and mock tests' },
-    { title: 'Overall Accuracy', value: `${avgAccuracy}%`, accent: '#22C55E', sub: 'Net accuracy after negatives' },
-    { title: 'Best Rank', value: 'N/A', accent: '#8B5CF6', sub: 'Across all mock test series' },
+    { title: 'Overall Percentile', value: bestPercentile > 0 ? String(bestPercentile) : 'N/A', accent: '#00BBA7', icon: '📊', sub: 'Best percentile achieved' },
+    { title: 'Tests Attempted', value: String(totalTests), accent: '#FF6900', icon: '📝', sub: 'Full length & sectional mocks' },
+    { title: 'Questions Attempted', value: totalQuestions.toLocaleString('en-IN'), accent: '#155DFC', icon: '✍️', sub: 'MCQs, PYQs and mock tests' },
+    { title: 'Overall Accuracy', value: `${avgAccuracy}%`, accent: '#22C55E', icon: '🎯', sub: 'Net accuracy after negatives' },
+    { title: 'Best Rank', value: 'N/A', accent: '#8B5CF6', icon: '🏆', sub: 'Across all mock test series' },
   ];
 
   const weeklyChartData = weeklyMcqTrend.map(w => ({ label: w.week, value: w.score }));
@@ -164,7 +178,7 @@ export default function TestAnalyticsPage() {
       style={{ background: '#FFFFFF', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
     >
       <div className="flex-1 overflow-y-auto">
-        <div className="w-full max-w-[1180px] mx-auto px-6 py-8 relative">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8 relative">
           {loading && !error && (
             <div
               className="absolute right-6 top-4 rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.08em]"
@@ -184,10 +198,13 @@ export default function TestAnalyticsPage() {
 
           {/* ── Hero ── */}
           <div
-            className="w-full rounded-[16px] px-10 pt-8 pb-6 mb-6 flex flex-col gap-6"
-            style={{ background: 'linear-gradient(135deg, #0F172B 0%, #1E2939 100%)' }}
+            className="w-full max-w-[980px] rounded-[18px] px-10 pt-8 pb-6 mb-6 flex flex-col gap-6"
+            style={{
+              background: 'radial-gradient(circle at top left, rgba(255,210,115,0.12), transparent 34%), linear-gradient(135deg, #0F172B 0%, #1E2939 100%)',
+              boxShadow: '0 18px 50px rgba(15,23,43,0.16)',
+            }}
           >
-            <div className="flex flex-col gap-3 items-center text-center">
+            <div className="flex flex-col gap-3 items-start text-left">
               <span
                 className="inline-flex items-center justify-center rounded-full px-3 py-1 uppercase tracking-[0.12em]"
                 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', letterSpacing: '1.2px', color: '#0B1120', background: '#00D5BE' }}
@@ -255,11 +272,17 @@ export default function TestAnalyticsPage() {
                 className="rounded-[14px] bg-white flex flex-col justify-between"
                 style={{
                   borderTop: `4px solid ${card.accent}`,
-                  boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)',
+                  boxShadow: '0px 10px 24px -16px rgba(15,23,42,0.35), 0px 1px 3px rgba(0,0,0,0.1)',
                   minHeight: 148,
                 }}
               >
                 <div className="px-5 pt-6 pb-5">
+                  <div
+                    className="mb-4 flex h-11 w-11 items-center justify-center rounded-[12px] text-[22px]"
+                    style={{ background: `${card.accent}18`, border: `1px solid ${card.accent}2E` }}
+                  >
+                    {card.icon}
+                  </div>
                   <div className="mb-2 text-[32px] leading-[38px] font-bold" style={{ fontFamily: 'Inter', color: '#101828' }}>
                     {card.value}
                   </div>
@@ -278,10 +301,10 @@ export default function TestAnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
             {/* MCQ Performance Trend */}
-            <div className="rounded-[14px] bg-white" style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}>
+            <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
               <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
-                  MCQ Performance Trend
+                <h2 className="text-[18px] leading-[26px] font-bold mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
+                  <span aria-hidden>📊</span> MCQ Performance Trend
                 </h2>
 
                 <div className="flex flex-wrap gap-5 mb-6">
@@ -303,11 +326,11 @@ export default function TestAnalyticsPage() {
                 </div>
 
                 {/* Weekly line chart */}
-                <div className="rounded-[12px] overflow-hidden bg-[#0E182D] px-4 pt-4 pb-2 mb-5">
+                <div className="rounded-[14px] overflow-hidden bg-[#F8F5FF] px-4 pt-4 pb-2 mb-5" style={{ border: '1px solid #E9D5FF' }}>
                   <div className="text-[11px] uppercase tracking-[0.6px] mb-2" style={{ color: '#6A7282', fontFamily: 'Inter' }}>
                     Weekly Accuracy Trend
                   </div>
-                  <LineChart data={weeklyChartData} color="#00D5BE" height={110} />
+                  <LineChart data={weeklyChartData} color="#A855F7" height={140} />
                 </div>
 
                 {/* Daily bar chart */}
@@ -315,8 +338,8 @@ export default function TestAnalyticsPage() {
                   <div className="text-[11px] uppercase tracking-[0.6px] mb-3" style={{ color: '#6A7282', fontFamily: 'Inter' }}>
                     Questions attempted this week
                   </div>
-                  <div className="flex items-end gap-2 h-[64px]">
-                    {dailyActivity.map((d) => {
+                  <div className="flex items-end gap-2 h-[92px] rounded-[12px] bg-[#F9FAFB] px-4 pt-4 pb-2">
+                    {dailyActivity.map((d, i) => {
                       const pct = (d.questionsAttempted / maxQuestions) * 100;
                       return (
                         <div key={d.day} className="flex flex-col items-center flex-1 gap-1">
@@ -327,7 +350,7 @@ export default function TestAnalyticsPage() {
                             className="w-full rounded-t-[4px]"
                             style={{
                               height: Math.max(pct * 0.36, pct > 0 ? 4 : 0),
-                              background: pct > 0 ? '#00BBA7' : '#E5E7EB',
+                              background: pct > 0 ? WEEK_BAR_COLORS[i % WEEK_BAR_COLORS.length] : '#E5E7EB',
                               minHeight: pct > 0 ? 4 : 2,
                             }}
                           />
@@ -341,11 +364,12 @@ export default function TestAnalyticsPage() {
             </div>
 
             {/* Subject Accuracy */}
-            <div className="rounded-[14px] bg-white" style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}>
+            <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
               <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
-                  Subject Accuracy
+                <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
+                  <span aria-hidden>🎯</span> Subject Accuracy
                 </h2>
+                <div className="mb-6 text-[12px] text-[#99A1AF]" style={{ fontFamily: 'Inter' }}>Across all attempted MCQs</div>
 
                 {subjectAccuracy.length === 0 ? (
                   <div className="flex items-center justify-center h-[200px] text-[13px] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>
@@ -384,11 +408,12 @@ export default function TestAnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
             {/* Mains Answer Writing Trend */}
-            <div className="rounded-[14px] bg-white" style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}>
+            <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
               <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-5" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
-                  Mains Answer Writing Trend
+                <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
+                  <span aria-hidden>📝</span> Mains Answer Writing Trend
                 </h2>
+                <div className="mb-5 text-[12px] text-[#99A1AF]" style={{ fontFamily: 'Inter' }}>Answer scoring performance</div>
 
                 <div className="flex flex-wrap gap-5 mb-5">
                   {[
@@ -414,21 +439,22 @@ export default function TestAnalyticsPage() {
                   ))}
                 </div>
 
-                <div className="rounded-[12px] overflow-hidden bg-[#0E182D] px-4 pt-4 pb-2">
+                <div className="rounded-[14px] overflow-hidden bg-[#FFF7ED] px-4 pt-4 pb-2" style={{ border: '1px solid #FED7AA' }}>
                   <div className="text-[11px] uppercase tracking-[0.6px] mb-2" style={{ color: '#6A7282', fontFamily: 'Inter' }}>
                     Score progression
                   </div>
-                  <LineChart data={mainsChartData} color="#8B5CF6" height={110} />
+                  <LineChart data={mainsChartData} color="#FB923C" height={140} />
                 </div>
               </div>
             </div>
 
             {/* Time Spent per Question — Daily */}
-            <div className="rounded-[14px] bg-white" style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}>
+            <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
               <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-5" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
-                  Time Spent per Question — Daily
+                <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
+                  <span aria-hidden>⏱️</span> Time Spent per Question - Daily
                 </h2>
+                <div className="mb-5 text-[12px] text-[#99A1AF]" style={{ fontFamily: 'Inter' }}>Average seconds per question</div>
 
                 <div className="grid grid-cols-7 gap-2 mb-6">
                   {timePerQuestion.map((d) => (
@@ -540,30 +566,14 @@ export default function TestAnalyticsPage() {
                           </td>
                           <td className="px-6 py-4 text-[13px]" style={{ fontFamily: 'Inter', color: '#6A7282' }}>{row.rank ?? 'N/A'}</td>
                           <td className="px-6 py-4">
-                            <a
-                              href={(() => {
-                                switch (row.type) {
-                                  case 'daily-mcq':
-                                    return '/dashboard/daily-mcq/results';
-                                  case 'daily-answer':
-                                    return `/dashboard/daily-answer/challenge/attempt/results?attemptId=${row.routeParams?.attemptId || ''}`;
-                                  case 'mock-prelims':
-                                    return `/dashboard/mock-tests/attempt/results?testId=${row.routeParams?.testId || ''}`;
-                                  case 'mock-mains':
-                                    return `/dashboard/mock-tests/attempt/results?testId=${row.routeParams?.testId || ''}&examMode=mains`;
-                                  case 'pyq-mains':
-                                    return `/dashboard/pyq`;
-                                  case 'test-series':
-                                    return `/dashboard/test-series/${row.routeParams?.seriesId || ''}/results/${row.routeParams?.testId || ''}`;
-                                  default:
-                                    return '#';
-                                }
-                              })()}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedReport(row)}
                               className="text-[13px] font-medium hover:underline"
                               style={{ fontFamily: 'Inter', color: '#155DFC' }}
                             >
-                              View →
-                            </a>
+                              View report →
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -581,6 +591,78 @@ export default function TestAnalyticsPage() {
 
         </div>
       </div>
+
+      {selectedReport && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(15,23,42,0.55)' }}
+          onClick={() => setSelectedReport(null)}
+        >
+          <div
+            className="w-full max-w-[840px] rounded-[24px] bg-white p-7"
+            style={{ boxShadow: '0 25px 60px rgba(15,23,42,0.28)' }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <div className="mb-2 inline-flex rounded-full bg-[#ECFDF5] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#047857]">
+                  Detailed Test Report
+                </div>
+                <h2 className="m-0 text-[26px] font-bold text-[#101828]" style={{ fontFamily: 'Inter' }}>
+                  {selectedReport.name || 'Test Report'}
+                </h2>
+                <p className="mt-1 text-[13px] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>
+                  {selectedReport.series || 'Practice'} · {selectedReport.date || 'Recent attempt'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedReport(null)}
+                className="h-10 w-10 rounded-full bg-[#101828] text-white"
+                aria-label="Close report"
+              >
+                x
+              </button>
+            </div>
+
+            <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+              {[
+                { label: 'Score', value: selectedReport.score ?? 'N/A', color: '#155DFC' },
+                { label: 'Accuracy', value: selectedReport.accuracy != null ? `${selectedReport.accuracy}%` : 'N/A', color: '#22C55E' },
+                { label: 'Rank', value: selectedReport.rank ?? 'N/A', color: '#FF8904' },
+                { label: 'Type', value: selectedReport.type ? String(selectedReport.type).replace(/-/g, ' ') : 'Practice', color: '#8B5CF6' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-[16px] border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                  <div className="text-[24px] font-bold capitalize" style={{ fontFamily: 'Inter', color: item.color }}>
+                    {item.value}
+                  </div>
+                  <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>
+                    {item.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-[16px] border border-[#E5E7EB] p-5">
+                <h3 className="mb-3 text-[15px] font-bold text-[#101828]" style={{ fontFamily: 'Inter' }}>Performance Summary</h3>
+                <p className="text-[13px] leading-[22px] text-[#4A5565]" style={{ fontFamily: 'Inter' }}>
+                  This report summarizes the selected attempt without redirecting away from analytics. Use it to review score,
+                  accuracy, rank and test context before opening the original module for a deeper question-by-question review.
+                </p>
+              </div>
+              <div className="rounded-[16px] border border-[#E5E7EB] p-5">
+                <h3 className="mb-3 text-[15px] font-bold text-[#101828]" style={{ fontFamily: 'Inter' }}>Next Actions</h3>
+                <ul className="m-0 list-none space-y-2 p-0 text-[13px] text-[#4A5565]" style={{ fontFamily: 'Inter' }}>
+                  <li>Review weak subjects from the subject accuracy panel.</li>
+                  <li>Retake a similar mock if accuracy is below 60%.</li>
+                  <li>Add recurring weak areas to Smart Revision Tools.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

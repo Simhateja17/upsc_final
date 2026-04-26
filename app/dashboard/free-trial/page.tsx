@@ -262,6 +262,13 @@ export default function FreeTrialPage() {
     plan: any;
   }>({ open: false, plan: null });
 
+  const openPurchasePlan = (name: string, price: string) => {
+    setPurchaseModal({
+      open: true,
+      plan: { name, price },
+    });
+  };
+
   return (
     <div style={{ background: '#FFFFFF', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
       {/* ================================================================ */}
@@ -405,7 +412,7 @@ export default function FreeTrialPage() {
                 </div>
               ))}
             </div>
-            <button style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '14px', fontWeight: 700, cursor: 'pointer', background: '#0F172B', color: '#FFFFFF' }}>Get Started → ₹4,999/mo →</button>
+            <button onClick={() => openPurchasePlan('Foundation Plan', '₹4,999')} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '14px', fontWeight: 700, cursor: 'pointer', background: '#0F172B', color: '#FFFFFF' }}>Get Started → ₹4,999/mo →</button>
           </div>
 
           {/* Serious Attempt */}
@@ -446,7 +453,7 @@ export default function FreeTrialPage() {
                 </div>
               ))}
             </div>
-            <button style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '14px', fontWeight: 700, cursor: 'pointer', background: 'linear-gradient(135deg, #FDC700 0%, #EAB308 100%)', color: '#070F24' }}>Enrol Now → ₹8,999/mo →</button>
+            <button onClick={() => openPurchasePlan('Serious Attempt', '₹8,999')} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '14px', fontWeight: 700, cursor: 'pointer', background: 'linear-gradient(135deg, #FDC700 0%, #EAB308 100%)', color: '#070F24' }}>Enrol Now → ₹8,999/mo →</button>
             <div style={{ textAlign: 'center', fontSize: '11px', color: '#C68A0B', marginTop: '10px', fontWeight: 500 }}>Limited to 8 slots @ June batch</div>
           </div>
 
@@ -488,7 +495,7 @@ export default function FreeTrialPage() {
                 </div>
               ))}
             </div>
-            <button style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '14px', fontWeight: 700, cursor: 'pointer', background: '#0F172B', color: '#FFFFFF' }}>Enrol Now → ₹14,999/mo →</button>
+            <button onClick={() => openPurchasePlan('Final Mile', '₹14,999')} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '14px', fontWeight: 700, cursor: 'pointer', background: '#0F172B', color: '#FFFFFF' }}>Enrol Now → ₹14,999/mo →</button>
             <div style={{ textAlign: 'center', fontSize: '11px', color: '#8B5CF6', marginTop: '10px', fontWeight: 500 }}>Spots close in free-call queue</div>
           </div>
         </div>
@@ -593,7 +600,12 @@ export default function FreeTrialPage() {
             <p style={{ fontSize: '14px', color: '#1C1C1C', lineHeight: 1.6, marginBottom: '20px', maxWidth: '400px' }}>Book a free 15-minute discovery call with Jeet Sir — no pressure, no sales pitch. Just an honest conversation about your prep and what you actually need.</p>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <button onClick={() => { setBookingSuccess(false); setBookingError(''); setShowBookingModal(true); }} style={{ padding: '12px 24px', borderRadius: '10px', border: 'none', background: '#0F172B', color: '#FFFFFF', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>📞 Book Free Discovery Call</button>
-              <button style={{ padding: '12px 24px', borderRadius: '10px', border: '2px solid #0F172B', background: '#FFFFFF', color: '#0F172B', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>▶ Watch on YouTube First</button>
+              <a href="https://www.youtube.com/@RiseWithJeet" target="_blank" rel="noopener noreferrer" style={{ padding: '12px 24px', borderRadius: '10px', border: '2px solid #DC2626', background: '#DC2626', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+                <span style={{ display: 'inline-flex', width: '20px', height: '14px', borderRadius: '4px', background: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ width: 0, height: 0, borderTop: '4px solid transparent', borderBottom: '4px solid transparent', borderLeft: '7px solid #DC2626', marginLeft: '2px' }} />
+                </span>
+                Watch on YouTube First
+              </a>
             </div>
           </div>
         </div>

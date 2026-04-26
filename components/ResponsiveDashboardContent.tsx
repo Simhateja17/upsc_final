@@ -489,8 +489,9 @@ const ResponsiveDashboardContent = () => {
             </svg>
             <input
               type="text"
-              placeholder="Ask jeet AI: 'Explain currant affairs'"
+              placeholder="Ask Jeet AI: 'Explain current affairs'"
               value={searchInput}
+              onFocus={() => router.push('/dashboard/jeet-gpt')}
               onChange={e => setSearchInput(e.target.value)}
               onKeyDown={e => {
                 if (e.key === 'Enter') routeSearch();
@@ -569,7 +570,7 @@ const ResponsiveDashboardContent = () => {
                 aria-hidden="true"
                 className="w-[clamp(14px,0.83vw,16px)] h-[clamp(14px,0.83vw,16px)] object-contain"
               />
-              <span>Generate Test</span>
+              <span>Practice Test</span>
             </button>
           </Link>
         </div>
@@ -643,6 +644,53 @@ const ResponsiveDashboardContent = () => {
                 </div>
               </Link>
 
+              {/* Mains Question Card */}
+              <Link href="/dashboard/daily-answer" className="block h-full">
+              <div
+                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(1.25rem,1.75vw,2rem)] h-full flex flex-col transition-colors cursor-pointer relative"
+                style={{ borderColor: isMainsCompleted ? '#22C55E' : '#E5E7EB' }}
+              >
+                {isMainsCompleted && (
+                  <div className="absolute top-4 right-4 w-8 h-8 bg-[#22C55E] rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+                      <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                )}
+                <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">Status</div>
+
+                <div className="flex items-center gap-3 mb-4">
+                  <img src="/sidebar-daily-answer-new.png" alt="Mains" className="w-7 h-7 object-contain" />
+                  <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
+                    Mains Question
+                  </h3>
+                </div>
+
+                <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-gray-600 mb-2">
+                  <span className={`font-medium ${isMainsCompleted ? 'text-green-600' : ''}`}>Status: {normalizeStatus(mainsStatus)}</span>
+                </p>
+                <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-6 flex-grow">
+                  {mainsTopic || '—'}
+                </p>
+
+                <div className="w-full bg-[#17223E] text-white rounded-[8px] py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                  {isMainsCompleted ? (
+                    <>
+                      <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      Completed
+                    </>
+                  ) : (
+                    <>
+                      <img src="/TrioCard (1).png" alt="Attempt" className="w-5 h-5" />
+                      Attempt Now
+                    </>
+                  )}
+                </div>
+              </div>
+              </Link>
+
               {/* Daily Editorial Card */}
               <Link href="/dashboard/daily-editorial" className="block h-full">
               <div
@@ -656,7 +704,7 @@ const ResponsiveDashboardContent = () => {
                     </svg>
                   </div>
                 )}
-                <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">AI Evaluation</div>
+                <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">Status</div>
 
                 <div className="flex items-center gap-3 mb-4">
                   <img src="/icons/dashboard/editorial.png" alt="Editorial" className="w-7 h-7" />
@@ -687,55 +735,6 @@ const ResponsiveDashboardContent = () => {
                     </>
                   )}
                 </div>
-              </div>
-              </Link>
-
-              {/* Mains Question Card */}
-              <Link href="/dashboard/daily-answer" className="block h-full">
-              <div
-                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(1.25rem,1.75vw,2rem)] h-full flex flex-col transition-colors cursor-pointer relative"
-                style={{ borderColor: isMainsCompleted ? '#22C55E' : '#E5E7EB' }}
-              >
-                {isMainsCompleted && (
-                  <div className="absolute top-4 right-4 w-8 h-8 bg-[#22C55E] rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
-                      <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                )}
-                <div className="mb-4 px-3 py-1 bg-teal-50 text-teal-600 rounded-full text-[clamp(12px,0.73vw,13px)] font-medium w-fit">
-                  AI Evaluation
-                </div>
-
-                <div className="flex items-center gap-3 mb-4">
-                  <img src="/icons/dashboard/mains.png" alt="Mains" className="w-7 h-7" />
-                  <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
-                    Mains Question
-                  </h3>
-                </div>
-
-                <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-gray-600 mb-2">
-                  <span className={`font-medium ${isMainsCompleted ? 'text-green-600' : ''}`}>Status: {normalizeStatus(mainsStatus)}</span>
-                </p>
-                <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-6 flex-grow">
-                  {mainsTopic || '—'}
-                </p>
-
-                <button className="w-full bg-[#17223E] text-white rounded-[8px] py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2">
-                  {isMainsCompleted ? (
-                    <>
-                      <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
-                        <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      Completed
-                    </>
-                  ) : (
-                    <>
-                      <img src="/TrioCard (1).png" alt="Attempt" className="w-5 h-5" />
-                      Attempt Now
-                    </>
-                  )}
-                </button>
               </div>
               </Link>
             </div>
@@ -874,7 +873,7 @@ const ResponsiveDashboardContent = () => {
           )}
 
           {/* Add Custom Task */}
-          <div className="rounded-lg p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-center justify-between">
+          <div className="rounded-lg border border-[#D1D5DC] p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-[clamp(40px,2.6vw,48px)] h-[clamp(40px,2.6vw,48px)] bg-[#17223E] rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">

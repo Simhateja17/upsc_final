@@ -13,6 +13,11 @@ const deckOptions = [
   { id: 'economy', label: 'Economy', icon: '💰' },
   { id: 'environment', label: 'Environment', icon: '🌿' },
   { id: 'history', label: 'History', icon: '📚' },
+  { id: 'science-tech', label: 'Science & Tech', icon: '🔬' },
+  { id: 'ethics', label: 'Ethics GS4', icon: '🤝' },
+  { id: 'essay', label: 'Essay Writing', icon: '✍️' },
+  { id: 'internal-security', label: 'Internal Security', icon: '🛡️' },
+  { id: 'international-relations', label: 'Int’l Relations', icon: '🌐' },
   { id: 'current-affairs', label: 'Current Affairs', icon: '📰' },
 ];
 
@@ -44,6 +49,12 @@ function subjectBg(subject: string): string {
     Environment: '#84FAB0',
     Geography: '#FEF9C3',
     History: '#FEF3C7',
+    'Science & Tech': '#DBEAFE',
+    'Ethics GS4': '#EDE9FE',
+    'Essay Writing': '#FFEDD5',
+    'Internal Security': '#FEE2E2',
+    'Int’l Relations': '#F3E8FF',
+    'Current Affairs': '#CCFBF1',
   };
   return map[subject] ?? '#F3F4F6';
 }

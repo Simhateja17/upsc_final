@@ -68,9 +68,12 @@ type SubjectCardTheme = {
   showNew?: boolean;
 };
 
-// Random view count generator (20k-30k)
-function getRandomViewCount(): number {
-  return Math.floor(Math.random() * (30000 - 20000 + 1)) + 20000;
+function getFallbackViewCount(seed: string): number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 100000;
+  }
+  return 20000 + (hash % 10001);
 }
 
 /* Subject card background colors — one per subject, cycling */
@@ -147,20 +150,8 @@ function formatViews(count: number): string {
   return formatCardViews(count);
 }
 
-function timeAgo(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (days < 1) return 'Today';
-  if (days === 1) return '1 day ago';
-  if (days < 7) return `${days} days ago`;
-  const weeks = Math.floor(days / 7);
-  if (weeks === 1) return '1 week ago';
-  if (weeks < 5) return `${weeks} weeks ago`;
-  const months = Math.floor(days / 30);
-  if (months === 1) return '1 month ago';
-  return `${months} months ago`;
+function getVideoViewCount(video: any): number {
+  return video.viewCount || getFallbackViewCount(String(video.id || video.title || 'video'));
 }
 
 /* ------------------------------------------------------------------ */
@@ -403,7 +394,7 @@ export default function VideoLecturesPage() {
       <div
         className="w-full mx-auto"
         style={{
-          maxWidth: 'clamp(960px, 80vw, 1200px)',
+          maxWidth: 'min(94vw, 1400px)',
           padding: 'clamp(32px, 4vw, 56px) clamp(16px, 2vw, 30px)',
         }}
       >
@@ -648,22 +639,6 @@ export default function VideoLecturesPage() {
                       ) : (
                         <span style={{ fontSize: 'clamp(48px, 5vw, 64px)' }}>{subjectEmoji(selectedSubject)}</span>
                       )}
-                      <div
-                        className="font-arimo font-bold"
-                        style={{
-                          position: 'absolute',
-                          top: '10px',
-                          left: '10px',
-                          background: '#DC2626',
-                          color: '#FFFFFF',
-                          fontSize: '10px',
-                          padding: '3px 10px',
-                          borderRadius: '6px',
-                          letterSpacing: '0.5px',
-                        }}
-                      >
-                        🔥 HOT
-                      </div>
                     </div>
 
                     {/* Card content */}
@@ -681,8 +656,7 @@ export default function VideoLecturesPage() {
                         {video.title}
                       </h3>
                       <p className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 12px)', color: '#6A7282', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-                        👀 {formatViews(video.viewCount || getRandomViewCount())}
-                        {video.createdAt ? ` · 📅 ${timeAgo(video.createdAt)}` : video.publishedAt ? ` · 📅 ${timeAgo(video.publishedAt)}` : ''}
+                        👀 {formatViews(getVideoViewCount(video))} views
                       </p>
 
                       <div className="flex items-center" style={{ gap: 'clamp(6px, 0.6vw, 8px)' }}>
@@ -699,8 +673,8 @@ export default function VideoLecturesPage() {
                           className="flex items-center gap-1 font-arimo font-medium"
                           style={{ padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)', borderRadius: '10px', background: '#F3F4F6', border: '1px solid #E5E7EB', color: '#374151', fontSize: 'clamp(11px, 0.9vw, 13px)', cursor: 'pointer' }}
                         >
-                          <img src="/think.png" alt="ask mentor" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
-                          Ask Mentor
+                          <img src="/think.png" alt="ask our team" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                          Ask Our Team
                         </button>
                         <button
                           onClick={() => { const u = video.youtubeUrl || video.url || ''; window.open(u.startsWith('http') ? u : `https://${u}`, '_blank'); }}
@@ -793,7 +767,7 @@ export default function VideoLecturesPage() {
                     </a>
 
                     <p className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#FFFFFF' }}>
-                      15,000+ Join our YouTube Family
+                      Join 15K+ in our YouTube family
                     </p>
                   </div>
 
@@ -877,22 +851,6 @@ export default function VideoLecturesPage() {
                     ) : (
                       <span style={{ fontSize: 'clamp(48px, 5vw, 64px)' }}>{subjectEmoji(featuredSubjectName)}</span>
                     )}
-                    <div
-                      className="font-arimo font-bold"
-                      style={{
-                        position: 'absolute',
-                        top: '10px',
-                        left: '10px',
-                        background: '#DC2626',
-                        color: '#FFFFFF',
-                        fontSize: '10px',
-                        padding: '3px 10px',
-                        borderRadius: '6px',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      🔥 HOT
-                    </div>
                   </div>
 
                   <div style={{ padding: 'clamp(14px, 1.5vw, 20px)' }}>
@@ -909,8 +867,7 @@ export default function VideoLecturesPage() {
                       {video.title}
                     </h3>
                     <p className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 12px)', color: '#6A7282', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-                      👀 {formatViews(video.viewCount || getRandomViewCount())}
-                      {video.createdAt ? ` · 📅 ${timeAgo(video.createdAt)}` : video.publishedAt ? ` · 📅 ${timeAgo(video.publishedAt)}` : ''}
+                      👀 {formatViews(getVideoViewCount(video))} views
                     </p>
 
                     <div className="flex items-center" style={{ gap: 'clamp(6px, 0.6vw, 8px)' }}>
@@ -927,8 +884,8 @@ export default function VideoLecturesPage() {
                         className="flex items-center gap-1 font-arimo font-medium"
                         style={{ padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)', borderRadius: '10px', background: '#F3F4F6', border: '1px solid #E5E7EB', color: '#374151', fontSize: 'clamp(11px, 0.9vw, 13px)', cursor: 'pointer' }}
                       >
-                        <img src="/think.png" alt="ask mentor" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
-                        Ask Mentor
+                        <img src="/think.png" alt="ask our team" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                        Ask Our Team
                       </button>
                       {video.videoUrl ? (
                         <a
@@ -1147,7 +1104,7 @@ export default function VideoLecturesPage() {
         </div>
       )}
 
-      {/* â”€â”€ Ask the Mentor Modal â”€â”€ */}
+      {/* â”€â”€ Ask Our Team Modal â”€â”€ */}
       {showMentorModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
@@ -1160,7 +1117,7 @@ export default function VideoLecturesPage() {
           >
             <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/mentor-icon.png" alt="Ask Mentor" style={{ width: '56px', height: '56px', objectFit: 'contain' }} />
+              <img src="/mentor-icon.png" alt="Ask Our Team" style={{ width: '56px', height: '56px', objectFit: 'contain' }} />
               <button onClick={() => setShowMentorModal(false)}
                 className="flex items-center justify-center"
                 style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#F3F4F6', border: 'none', cursor: 'pointer' }}
@@ -1172,10 +1129,10 @@ export default function VideoLecturesPage() {
             </div>
 
             <h3 className="font-arimo font-bold" style={{ fontSize: '20px', color: '#101828', marginBottom: '8px' }}>
-              Ask the Mentor
+              Ask Our Team
             </h3>
             <p className="font-arimo" style={{ fontSize: '14px', color: '#6A7282', marginBottom: '20px' }}>
-              Got a doubt? Ask our AI mentor and get instant answers.
+              Got a doubt? Ask our team and get a clear answer.
             </p>
 
             {mentorSuccess && (
@@ -1270,7 +1227,6 @@ export default function VideoLecturesPage() {
     </div>
   );
 }
-
 
 
 

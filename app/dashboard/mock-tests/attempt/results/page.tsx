@@ -548,9 +548,36 @@ function MockTestResultsInner() {
 
   const { total, correct, wrong, skipped, scorePct } = results!;
   const sample = (results as any)._sample as any | undefined;
+  const showConfetti = scorePct > 50;
 
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif' }}>
+      {showConfetti && (
+        <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 10 }}>
+          {Array.from({ length: 36 }, (_, i) => (
+            <span
+              key={i}
+              style={{
+                position: 'absolute',
+                top: -20,
+                left: `${(i * 37) % 100}%`,
+                width: 8,
+                height: 14,
+                borderRadius: 3,
+                background: ['#FDC700', '#22C55E', '#2B7FFF', '#FB2C36', '#F97316'][i % 5],
+                transform: `rotate(${i * 17}deg)`,
+                animation: `mockConfetti ${2.4 + (i % 6) * 0.24}s ease-out ${i * 0.035}s forwards`,
+              }}
+            />
+          ))}
+          <style>{`
+            @keyframes mockConfetti {
+              0% { transform: translate3d(0,-24px,0) rotate(0deg); opacity: 1; }
+              100% { transform: translate3d(${scorePct % 2 === 0 ? 28 : -28}px,110vh,0) rotate(720deg); opacity: 0; }
+            }
+          `}</style>
+        </div>
+      )}
       <div
         style={{
           width: 1024,
@@ -562,10 +589,10 @@ function MockTestResultsInner() {
       >
         <button
           type="button"
-          onClick={() => router.push('/dashboard/test-series')}
+          onClick={() => router.push('/dashboard')}
           style={{ background: 'transparent', border: 'none', color: '#374151', fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}
         >
-          ← Back to Series
+          ← Back to Dashboard
         </button>
 
         <div
@@ -585,7 +612,7 @@ function MockTestResultsInner() {
             </div>
           </div>
 
-          <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Keep Going — Every Attempt Makes You Better!</div>
+          <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Keep Going, Every Attempt Makes You Better!</div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 14 }}>
             {title} · Mock Test · {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
           </div>

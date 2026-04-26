@@ -27,6 +27,18 @@ const YEAR_OPTIONS = Array.from(
   (_, index) => LATEST_EXAM_YEAR - index
 );
 
+const PYQ_SUBTOPICS: Record<string, string[]> = {
+  History: ['Ancient India', 'Medieval India', 'Modern India', 'Art & Culture', 'Post Independence'],
+  Geography: ['Physical Geography', 'Indian Geography', 'World Geography', 'Mapping'],
+  Polity: ['Constitution', 'Parliament', 'Judiciary', 'Governance', 'Rights'],
+  Economy: ['Growth', 'Fiscal Policy', 'Banking', 'External Sector', 'Agriculture'],
+  Environment: ['Ecology', 'Biodiversity', 'Climate Change', 'Conservation'],
+  'Science & Tech': ['Biotech', 'Space', 'Defence Tech', 'IT & Computers'],
+  'International Relations': ['Neighbourhood', 'Global Institutions', 'Bilateral Relations'],
+  'Art & Culture': ['Architecture', 'Literature', 'Paintings', 'Performing Arts'],
+  'Current Affairs': ['Schemes', 'Reports', 'Places in News', 'Awards'],
+};
+
 export default function PyqPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAttemptModal, setShowAttemptModal] = useState(false);
@@ -34,6 +46,7 @@ export default function PyqPage() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showMainsWriteModal, setShowMainsWriteModal] = useState(false);
+  const [showModelAnswerModal, setShowModelAnswerModal] = useState(false);
   const [showAiEvalModal, setShowAiEvalModal] = useState(false);
   const [showAiEvalCompleteModal, setShowAiEvalCompleteModal] = useState(false);
   const [aiEvalProgress, setAiEvalProgress] = useState(0);
@@ -63,6 +76,7 @@ export default function PyqPage() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedYearRange, setSelectedYearRange] = useState<'all' | 'last5' | 'year'>('all');
   const [selectedSubject, setSelectedSubject] = useState('All Papers');
+  const [selectedSubtopic, setSelectedSubtopic] = useState<string | null>(null);
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
@@ -97,7 +111,7 @@ export default function PyqPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [mode, selectedYear, selectedYearRange, selectedSubject]);
+  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic]);
 
   // Mains writing timer (9-min countdown, auto-submit on expiry)
   useEffect(() => {
@@ -122,6 +136,10 @@ export default function PyqPage() {
   useEffect(() => {
     fetchQuestions();
   }, [fetchQuestions]);
+
+  const visibleQuestions = selectedSubtopic
+    ? questions.filter((q) => String(q.topic || q.subtopic || '').toLowerCase().includes(selectedSubtopic.toLowerCase()))
+    : questions;
 
   useLayoutEffect(() => {
     const scroller = document.querySelector('main');
@@ -259,7 +277,7 @@ export default function PyqPage() {
         </div>
       </section>
 
-      <div className="w-full max-w-[1080px] px-6 py-10">
+      <div className="w-full max-w-[1400px] px-6 py-10">
         <div className="mb-10 flex w-full justify-center">
           <div
             className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_4px_6px_-4px_rgba(0,0,0,0.1),0_10px_15px_-3px_rgba(0,0,0,0.1)]"
@@ -337,7 +355,7 @@ export default function PyqPage() {
         </div>
 
         {/* Content area: filters (left on desktop) + questions */}
-        <div className="flex flex-col lg:flex-row-reverse gap-6">
+        <div className="flex flex-col lg:flex-row-reverse gap-8">
           {/* Questions list */}
           <section className="flex-1 min-w-0">
             {mode === 'prelims' ? (
@@ -350,7 +368,7 @@ export default function PyqPage() {
                   {selectedYearRange === 'last5' ? ' · Last 5 yrs' : ''}
                 </h3>
                 <p className="text-[13px] text-[#6A7282]">
-                  {loading ? 'Loading...' : `Showing ${questions.length} of ${total} questions`}
+                  {loading ? 'Loading...' : `Showing ${visibleQuestions.length} of ${total} questions`}
                 </p>
               </div>
 
@@ -369,7 +387,7 @@ export default function PyqPage() {
               )}
 
               {/* Dynamic question cards */}
-              {!loading && questions.map((q, idx) => {
+              {!loading && visibleQuestions.map((q, idx) => {
                 const opts: { label: string; text: string }[] = Array.isArray(q.options) ? q.options : [];
                 const diffColor = q.difficulty === 'Hard'
                   ? { bg: '#FFE2E2', color: '#C10007' }
@@ -391,6 +409,11 @@ export default function PyqPage() {
                       {q.subject && (
                         <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#E0E7FF', color: '#432DD7' }}>
                           {q.subject.toUpperCase()}
+                        </span>
+                      )}
+                      {q.topic && (
+                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#F3E8FF', color: '#7E22CE' }}>
+                          {q.topic.toUpperCase()}
                         </span>
                       )}
                       <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={diffColor}>
@@ -462,7 +485,7 @@ export default function PyqPage() {
                 </div>
               )}
 
-              {!loading && !error && questions.length === 0 && (
+              {!loading && !error && visibleQuestions.length === 0 && (
                 <div className="rounded-[16px] bg-white p-10 text-center text-[#6A7282]">
                   No questions found for the selected filters.
                 </div>
@@ -635,7 +658,7 @@ export default function PyqPage() {
                     {selectedYearRange === 'last5' ? ' · Last 5 yrs' : ' - All Papers'}
                   </h3>
                   <p className="text-[14px] text-[#6A7282]">
-                    {loading ? 'Loading...' : `Showing ${questions.length} of ${total} questions`}
+                    {loading ? 'Loading...' : `Showing ${visibleQuestions.length} of ${total} questions`}
                   </p>
                 </div>
 
@@ -653,12 +676,12 @@ export default function PyqPage() {
                 )}
 
                 {/* Dynamic mains cards */}
-                {!loading && questions.map((q, idx) => (
+                {!loading && visibleQuestions.map((q, idx) => (
                   <div
                     key={q.id}
                     className="mb-6"
                     style={{
-                      width: '540px',
+                      width: '100%',
                       maxWidth: '100%',
                       borderRadius: '16px',
                       border: '0.8px solid #E5E7EB',
@@ -670,27 +693,35 @@ export default function PyqPage() {
                     {/* Tag row */}
                     <div className="flex flex-wrap gap-2 mb-4">
                       {q.year > 0 && (
-                        <span className="px-3 py-1 rounded-[8px] text-[12px] font-bold" style={{ background: '#1E40AF', color: '#FFFFFF' }}>
-                          UPSC MAINS {q.year}
+                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#1E40AF', color: '#FFFFFF' }}>
+                          {q.year}
                         </span>
                       )}
                       {q.paper && (
-                        <span className="px-3 py-1 rounded-[8px] text-[12px] font-bold" style={{ background: '#DBEAFE', color: '#1447E6' }}>
+                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#DBEAFE', color: '#1447E6' }}>
                           {q.paper.toUpperCase()}
                         </span>
                       )}
                       {q.subject && (
-                        <span className="px-3 py-1 rounded-[8px] text-[12px] font-bold" style={{ background: '#FFEDD4', color: '#CA3500' }}>
+                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#FEE2E2', color: '#DC2626' }}>
                           {q.subject.toUpperCase()}
                         </span>
                       )}
+                      {q.topic && (
+                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#EDE9FE', color: '#7E22CE' }}>
+                          {q.topic.toUpperCase()}
+                        </span>
+                      )}
+                      <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#F3E8FF', color: '#7E22CE' }}>
+                        {q.marks || 15} marks
+                      </span>
                     </div>
 
                     {/* AI Evaluation pill */}
                     <div className="inline-flex items-center mb-4" style={{ borderRadius: '8px', background: '#17223E', padding: '4px 16px' }}>
                       <span style={{ fontSize: '14px', marginRight: '8px' }} aria-hidden>✨</span>
                       <span style={{ fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: '14px', lineHeight: '20px', color: '#FFD272' }}>
-                        AI Evaluation
+                        Write &amp; Evaluate
                       </span>
                     </div>
 
@@ -730,10 +761,15 @@ export default function PyqPage() {
                         className="flex items-center justify-center"
                         style={{ height: '59px', borderRadius: '14px', background: '#101828', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
-                        <span aria-hidden style={{ marginRight: '8px' }}>🔥</span>
-                        <span>Write &amp; AI Evaluate</span>
+                        <span aria-hidden style={{ marginRight: '8px' }}>✨</span>
+                        <span>Write &amp; Evaluate</span>
                       </button>
                       <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedQuestion(q);
+                          setShowModelAnswerModal(true);
+                        }}
                         className="flex items-center justify-center"
                         style={{ height: '59px', borderRadius: '14px', background: '#0F172A', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
@@ -741,15 +777,10 @@ export default function PyqPage() {
                       </button>
                     </div>
 
-                    {/* Footnote */}
-                    <div className="flex items-center gap-2 justify-end text-[14px] text-[#6A7282]">
-                      <img src="/icon-21-lock.png" alt="Locked" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
-                      <span>Full model answer on login</span>
-                    </div>
                   </div>
                 ))}
 
-                {!loading && questions.length === 0 && (
+                {!loading && visibleQuestions.length === 0 && (
                   <div className="rounded-[16px] bg-white p-10 text-center text-[#6A7282]" style={{ border: '0.8px solid #E5E7EB' }}>
                     No mains questions found for the selected filters.
                   </div>
@@ -759,12 +790,12 @@ export default function PyqPage() {
           </section>
 
           {/* Right: filters */}
-          <aside className="w-full lg:w-[320px] xl:w-[358px] flex-shrink-0 space-y-4">
+          <aside className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4">
             {/* Exam year card - 307×198, exact shadow & year buttons */}
             <div
               className="rounded-[16px] bg-white flex flex-col"
               style={{
-                width: '307px',
+                width: '100%',
                 position: 'relative',
                 minHeight: '280px',
                 opacity: 1,
@@ -856,8 +887,8 @@ export default function PyqPage() {
             <div
               className="rounded-[16px] bg-white flex flex-col overflow-hidden"
               style={{
-                width: '310px',
-                minHeight: '826px',
+                width: '100%',
+                minHeight: 'auto',
                 opacity: 1,
                 borderTop: '0.8px solid #E5E7EB',
                 boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
@@ -897,12 +928,15 @@ export default function PyqPage() {
                   { label: 'International Relations', icon: '🌐' },
                   { label: 'Art & Culture', icon: '🎨' },
                   { label: 'Current Affairs', icon: '📰' },
-                ].map(({ label, icon }) => {
-                  const selected = selectedSubject === label;
-                  return (
-                    <button
-                      key={label}
-                      onClick={() => setSelectedSubject(label)}
+	                ].map(({ label, icon }) => {
+	                  const selected = selectedSubject === label;
+	                  return (
+                      <React.Fragment key={label}>
+	                    <button
+	                      onClick={() => {
+	                        setSelectedSubject(label);
+	                        setSelectedSubtopic(null);
+                      }}
                       className="w-full flex items-center justify-between rounded-[14px] px-4 py-3 text-left transition-colors"
                       style={{
                         minHeight: '59.99px',
@@ -927,10 +961,36 @@ export default function PyqPage() {
                         >
                           {label}
                         </span>
-                      </div>
-                    </button>
-                  );
-                })}
+	                      </div>
+	                    </button>
+	                    {selected && PYQ_SUBTOPICS[label]?.length > 0 && (
+                      <div className="ml-9 mt-2 flex flex-col gap-2">
+                        {PYQ_SUBTOPICS[label].map((subtopic) => {
+                          const subtopicSelected = selectedSubtopic === subtopic;
+                          return (
+                            <button
+                              key={subtopic}
+                              type="button"
+                              onClick={() => setSelectedSubtopic(subtopicSelected ? null : subtopic)}
+                              className="rounded-[12px] px-3 py-2 text-left transition-colors"
+                              style={{
+                                background: subtopicSelected ? '#E0F2FE' : '#FFFFFF',
+                                border: `1px solid ${subtopicSelected ? '#38BDF8' : '#E5E7EB'}`,
+                                color: subtopicSelected ? '#075985' : '#4A5565',
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                              }}
+                            >
+                              {subtopic}
+                            </button>
+                          );
+                        })}
+	                      </div>
+	                    )}
+                      </React.Fragment>
+	                  );
+	                })}
               </div>
             </div>
           </aside>
@@ -1065,7 +1125,43 @@ export default function PyqPage() {
         </div>
       )}
 
-      {/* Mains Write & AI Evaluate modal - opens from Write & AI Evaluate on Mains tab */}
+      {showModelAnswerModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(15,23,42,0.55)' }}
+          onClick={() => setShowModelAnswerModal(false)}
+        >
+          <div
+            className="rounded-[24px] bg-white p-8"
+            style={{ width: 720, maxWidth: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <h2 className="m-0 text-[24px] font-bold text-[#101828]">Model Answer</h2>
+              <button
+                type="button"
+                onClick={() => setShowModelAnswerModal(false)}
+                className="h-10 w-10 rounded-full bg-[#101828] text-white"
+                aria-label="Close model answer"
+              >
+                x
+              </button>
+            </div>
+            <QuestionTextRenderer
+              text={
+                selectedQuestion?.modelAnswer ||
+                selectedQuestion?.answer ||
+                selectedQuestion?.explanation ||
+                'Model answer is being prepared for this question.'
+              }
+              className="rounded-[16px] border border-[#E5E7EB] bg-[#F9FAFB] p-5"
+              textClassName="text-[16px] leading-[28px] text-[#1E2939]"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Mains Write & AI Evaluate modal - opens from Write & Evaluate on Mains tab */}
       {showMainsWriteModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
@@ -1211,7 +1307,7 @@ export default function PyqPage() {
                   {mainsFile ? mainsFile.name : 'Photograph your handwritten answer & upload'}
                 </p>
                 <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, lineHeight: '20px', color: '#6A7282' }}>
-                  {mainsFile ? 'Click to change file' : 'Take a clear photo. Good lighting = better AI evaluation. JPG / PNG / PDF'}
+                  {mainsFile ? 'Click to change file' : 'Take a clear photo. Good lighting = better evaluation. JPG / PNG / PDF'}
                 </p>
               </div>
 
@@ -1242,7 +1338,7 @@ export default function PyqPage() {
                 className="w-full flex items-center justify-center gap-2 rounded-[16px] py-4 mt-4 disabled:opacity-50"
                 style={{ width: 832, maxWidth: '100%', height: 60, background: '#0F172B', fontFamily: 'Inter', fontWeight: 700, fontSize: 18, lineHeight: '28px', color: '#F9FAFB' }}
               >
-                <span aria-hidden>📤</span>{mainsSubmitting ? 'Submitting...' : 'Submit for AI Evaluation'}
+                <span aria-hidden>📤</span>{mainsSubmitting ? 'Submitting...' : 'Submit for Evaluation'}
               </button>
 
               {mainsSubmitError && (
@@ -1254,11 +1350,18 @@ export default function PyqPage() {
               {/* Footer: views, evals, avg | Save, Get AI Eval */}
               <div className="flex items-center justify-between flex-wrap gap-4" style={{ width: 832, maxWidth: '100%', marginTop: 24, paddingTop: 16, minHeight: 45.6 }}>
                 <div className="flex items-center gap-6">
-                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}><span aria-hidden>🎯</span>Submit for AI-powered evaluation</span>
+                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}><span aria-hidden>🎯</span>Submit for evaluation</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <button type="button" className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5" style={{ border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 600, fontSize: 16, lineHeight: '24px', color: '#364153' }}><span aria-hidden>💾</span>Save</button>
-                  <button type="button" className="flex items-center justify-center rounded-[14px] px-5 py-2.5" style={{ background: 'linear-gradient(90deg, #FF8904 0%, #FF6900 100%)', boxShadow: '0px 2px 4px -2px #0000001A, 0px 4px 6px -1px #0000001A', fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '24px', color: '#FFFFFF' }}>Get AI Eval</button>
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('pyq-mains-submit-btn')?.click()}
+                    className="flex items-center justify-center rounded-[14px] px-5 py-2.5"
+                    style={{ background: 'linear-gradient(90deg, #FF8904 0%, #FF6900 100%)', boxShadow: '0px 2px 4px -2px #0000001A, 0px 4px 6px -1px #0000001A', fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '24px', color: '#FFFFFF' }}
+                  >
+                    Submit for Evaluation
+                  </button>
                 </div>
               </div>
             </div>

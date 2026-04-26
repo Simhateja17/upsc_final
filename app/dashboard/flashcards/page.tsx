@@ -31,6 +31,18 @@ const DECK_ICONS: Record<string, string> = {
   weak: '⚠️',
 };
 
+const DECK_CARD_STYLES: Record<string, { bg: string; border: string; bar: string }> = {
+  polity: { bg: '#FFF7E6', border: '#FED7AA', bar: '#F0AE00' },
+  history: { bg: '#FFF7ED', border: '#FDBA74', bar: '#D08700' },
+  geography: { bg: '#ECFDF5', border: '#A7F3D0', bar: '#14B8A6' },
+  economy: { bg: '#F5F3FF', border: '#DDD6FE', bar: '#8B5CF6' },
+  environment: { bg: '#E8FFF3', border: '#BBF7D0', bar: '#22C55E' },
+  ethics: { bg: '#EEF2FF', border: '#C7D2FE', bar: '#6366F1' },
+  'current-affairs': { bg: '#FEF2F2', border: '#FECACA', bar: '#EF4444' },
+  science: { bg: '#EAF4FF', border: '#BFDBFE', bar: '#3B82F6' },
+  weak: { bg: '#F8FAFC', border: '#CBD5E1', bar: '#64748B' },
+};
+
 type Deck = {
   id: string;
   subject: string;
@@ -222,7 +234,7 @@ export default function FlashcardsPage() {
 
           {/* Subject cards grid */}
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 xl:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 xl:gap-5">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="rounded-[10px] border animate-pulse" style={{ border: '0.8px solid #E5E7EB', background: '#F9FAFB', minHeight: 201 }} />
               ))}
@@ -233,17 +245,18 @@ export default function FlashcardsPage() {
               <p className="text-sm">Create your first flashcard to get started.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 xl:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 xl:gap-5">
               {decks.map((deck) => {
                 const progressColor = DECK_COLORS[deck.id] ?? '#155DFC';
+                const cardStyle = DECK_CARD_STYLES[deck.id] ?? { bg: '#FFFFFF', border: '#E5E7EB', bar: progressColor };
                 const icon = DECK_ICONS[deck.id] ?? deck.icon;
                 const due = deck.totalCards - deck.masteredCards;
                 return (
                   <Link
                     key={deck.id}
                     href={`/dashboard/flashcards/${deck.id}`}
-                    className="block rounded-[10px] p-6 border transition-shadow hover:shadow-md"
-                    style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF', minHeight: 201.57 }}
+                    className="block rounded-[16px] p-5 border transition-all hover:-translate-y-0.5 hover:shadow-md"
+                    style={{ border: `1px solid ${cardStyle.border}`, background: cardStyle.bg, minHeight: 172 }}
                   >
                     <div className="flex items-start justify-between">
                       <span className="text-3xl" aria-hidden>{icon}</span>
@@ -263,7 +276,7 @@ export default function FlashcardsPage() {
                     <div className="w-full h-1 rounded-full mb-3" style={{ background: '#F3F4F6' }}>
                       <div
                         className="h-full rounded-full transition-all"
-                        style={{ width: `${deck.mastery}%`, background: progressColor, maxWidth: '100%' }}
+                        style={{ width: `${deck.mastery}%`, background: cardStyle.bar, maxWidth: '100%' }}
                       />
                     </div>
                     <div className="flex items-center justify-between">
