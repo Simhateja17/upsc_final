@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
 import Link from 'next/link';
 import { pyqService } from '@/lib/services';
+import QuestionTextRenderer from '@/components/QuestionTextRenderer';
 
 const AI_EVAL_STEPS = [
   'Reading your answer',
@@ -18,6 +19,7 @@ const heroStats = [
   { value: '130+', label: 'Sub-topics', valueClassName: 'text-white' },
   { value: '100%', label: 'Mapped', valueClassName: 'text-[#0e8a56]' },
 ];
+
 const LATEST_EXAM_YEAR = 2025;
 const EARLIEST_EXAM_YEAR = 2011;
 const YEAR_OPTIONS = Array.from(
@@ -199,106 +201,64 @@ export default function PyqPage() {
         </div>
 
         <div className="relative z-10 mx-auto w-full max-w-[1080px] px-4 pt-4 md:px-6 md:pt-6">
-          <div className="flex items-center justify-between gap-4 border-b border-white/6 pb-4 md:pb-5">
-            <Link href="/dashboard" className="flex items-center">
-              <img
-                src="/logo...png"
-                alt="RiseWithJeet Logo"
-                className="h-[52px] w-auto object-contain md:h-[62px]"
-              />
+          <div className="pb-10 pt-8 md:pb-14 md:pt-10">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center rounded-full border border-white/12 bg-white/6 px-4 py-2 text-[12px] font-medium text-white/80 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <span className="mr-1.5 text-[13px] leading-none">←</span>
+              Back to Dashboard
             </Link>
 
-            <div className="flex items-center gap-3 md:gap-4">
-              <Link href="/dashboard/free-trial" className="hidden sm:block">
-                <button className="inline-flex items-center gap-1.5 rounded-[12px] border border-[#FFD170]/25 px-4 py-2 text-[13px] font-semibold leading-none text-[#FFD170] transition-colors hover:border-[#FFD170] hover:shadow-[0_0_12px_rgba(255,209,112,0.18)] md:px-5 md:py-3 md:text-[18px]">
-                  Upgrade
-                  <span className="text-[14px] md:text-[20px]">✨</span>
-                </button>
-              </Link>
+            <div className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 flex-col items-center gap-2 text-white/30 md:flex md:right-6">
+              <span className="inline-block size-4 rotate-45 border-b border-r border-white/25" />
+              <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Scroll</span>
+            </div>
 
-              <button
-                type="button"
-                className="relative flex h-[40px] w-[40px] items-center justify-center rounded-xl bg-[#1a2540] text-white transition-colors hover:bg-[#243050] md:h-[48px] md:w-[48px]"
-                aria-label="Notifications"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"
-                    fill="currentColor"
-                  />
-                  <path
-                    d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21"
-                    fill="currentColor"
-                  />
-                </svg>
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff6b6b]" />
-              </button>
-
-              <div className="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[#F0B64B] font-[var(--font-tinos)] text-[18px] font-bold text-[#0E182D] md:h-[56px] md:w-[56px] md:text-[22px]">
-                ST
+            <div className="flex flex-col items-center pt-12 text-center md:pt-10">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 backdrop-blur-md">
+                <img src="/icon-pyq.png" alt="" className="h-4 w-4 object-contain" />
+                <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f5a623]">
+                  Previous year questions
+                </span>
               </div>
-            </div>
-          </div>
 
-          <div className="pb-10 pt-8 md:pb-14 md:pt-10">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center rounded-full border border-white/12 bg-white/6 px-4 py-2 text-[12px] font-medium text-white/80 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white"
-          >
-            <span className="mr-1.5 text-[13px] leading-none">←</span>
-            Back to Dashboard
-          </Link>
+              <h1 className="mt-6 max-w-[780px] font-[var(--font-cormorant)] text-[clamp(3rem,5vw,4rem)] leading-[1.06] font-semibold text-white md:mt-8">
+                <span className="block">
+                  The Complete <span className="italic text-[#e8b84b]">PYQ Bank</span>
+                </span>
+                <span className="block mt-1.5">for UPSC Success</span>
+              </h1>
 
-          <div className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 flex-col items-center gap-2 text-white/30 md:flex md:right-6">
-            <span className="inline-block size-4 rotate-45 border-b border-r border-white/25" />
-            <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Scroll</span>
-          </div>
+              <p className="mt-5 max-w-[720px] font-[var(--font-arimo)] text-[14px] leading-[24px] text-[#4a5565] md:mt-6 md:text-[16px] md:leading-[24px]">
+                Every UPSC question ever asked Prelims, Mains with instant Mains evaluation, subject filters,
+                and detailed explanations.
+              </p>
 
-          <div className="flex flex-col items-center pt-12 text-center md:pt-10">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 backdrop-blur-md">
-              <img src="/icon-pyq.png" alt="" className="h-4 w-4 object-contain" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#f5a623]">
-                Previous year questions
-              </span>
-            </div>
-
-            <h1 className="mt-6 max-w-[780px] font-[var(--font-cormorant)] text-[clamp(3rem,5vw,4rem)] leading-[1.06] font-semibold text-white md:mt-8">
-              <span className="block">
-                The Complete <span className="italic text-[#e8b84b]">PYQ Bank</span>
-              </span>
-              <span className="block mt-1.5">for UPSC Success</span>
-            </h1>
-
-            <p className="mt-5 max-w-[720px] font-[var(--font-arimo)] text-[14px] leading-[24px] text-[#4a5565] md:mt-6 md:text-[16px] md:leading-[24px]">
-              Every UPSC question ever asked Prelims, Mains with instant Mains evaluation, subject filters,
-              and detailed explanations.
-            </p>
-
-            <div className="mt-7 w-full max-w-[432px] rounded-[18px] border border-white/6 bg-[#161c2d] shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
-              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[18px] md:grid-cols-4">
-                {heroStats.map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="flex min-h-[66px] flex-col items-center justify-center bg-[#161c2d] px-3 py-3 text-center"
-                  >
+              <div className="mt-7 w-full max-w-[432px] rounded-[18px] border border-white/6 bg-[#161c2d] shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+                <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[18px] md:grid-cols-4">
+                  {heroStats.map((stat) => (
                     <div
-                      className={`font-[var(--font-jakarta)] text-[16px] font-extrabold tracking-[-0.04em] md:text-[18px] ${stat.valueClassName}`}
+                      key={stat.label}
+                      className="flex min-h-[66px] flex-col items-center justify-center bg-[#161c2d] px-3 py-3 text-center"
                     >
-                      {stat.value}
+                      <div
+                        className={`font-[var(--font-jakarta)] text-[16px] font-extrabold tracking-[-0.04em] md:text-[18px] ${stat.valueClassName}`}
+                      >
+                        {stat.value}
+                      </div>
+                      <div className="mt-1 font-[var(--font-jakarta)] text-[9px] uppercase tracking-[0.12em] text-white/40 md:text-[9.5px]">
+                        {stat.label}
+                      </div>
                     </div>
-                    <div className="mt-1 font-[var(--font-jakarta)] text-[9px] uppercase tracking-[0.12em] text-white/40 md:text-[9.5px]">
-                      {stat.label}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
           </div>
         </div>
       </section>
 
-        {/* Mode toggle */}
       <div className="w-full max-w-[1080px] px-6 py-10">
         <div className="mb-10 flex w-full justify-center">
           <div
@@ -306,10 +266,7 @@ export default function PyqPage() {
             style={{
               width: '347.3px',
               height: '79.9875px',
-              paddingTop: '8px',
-              paddingBottom: '8px',
-              paddingLeft: '8px',
-              paddingRight: '8px',
+              padding: 0,
               borderRadius: '26843500px',
               gap: 0,
             }}
@@ -317,11 +274,12 @@ export default function PyqPage() {
             <button
               className="flex flex-1 items-center justify-center"
               style={{
-                height: '63.9875px',
+                alignSelf: 'stretch',
                 paddingLeft: '32px',
                 paddingRight: '32px',
-                background: 'transparent',
+                background: mode === 'prelims' ? '#0F172B' : 'transparent',
                 gap: '12px',
+                borderRadius: mode === 'prelims' ? '9999px' : '0',
               }}
               onClick={() => setMode('prelims')}
             >
@@ -338,7 +296,7 @@ export default function PyqPage() {
                   lineHeight: '28px',
                   letterSpacing: 0,
                   textAlign: 'center',
-                  color: '#4A5565',
+                  color: mode === 'prelims' ? '#FFFFFF' : '#4A5565',
                 }}
               >
                 Prelims
@@ -347,9 +305,12 @@ export default function PyqPage() {
             <button
               className="flex flex-1 items-center justify-center"
               style={{
-                height: '63.9875px',
+                alignSelf: 'stretch',
+                paddingLeft: '32px',
+                paddingRight: '32px',
                 background: mode === 'mains' ? '#0F172B' : 'transparent',
                 gap: '12px',
+                borderRadius: mode === 'mains' ? '9999px' : '0',
               }}
               onClick={() => setMode('mains')}
             >
@@ -443,9 +404,11 @@ export default function PyqPage() {
                     </div>
 
                     {/* Question text */}
-                    <p className="mb-5 text-[18px] font-[500] leading-[1.5] text-[#111827]">
-                      {q.questionText}
-                    </p>
+                    <QuestionTextRenderer
+                      text={q.questionText}
+                      className="mb-5 text-[18px] font-[500] leading-[1.5] text-[#111827]"
+                      textClassName="text-[18px] font-[500] leading-[1.5] text-[#111827]"
+                    />
 
                     {/* Options */}
                     {opts.length > 0 && (
@@ -737,9 +700,11 @@ export default function PyqPage() {
                     </div>
 
                     {/* Question text */}
-                    <p className="mb-4 text-[16px] font-[500] leading-[26px] text-[#101828]">
-                      {q.questionText}
-                    </p>
+                    <QuestionTextRenderer
+                      text={q.questionText}
+                      className="mb-4 text-[16px] font-[500] leading-[26px] text-[#101828]"
+                      textClassName="text-[16px] font-[500] leading-[26px] text-[#101828]"
+                    />
 
                     {/* Stats row */}
                     <div className="flex flex-wrap items-center gap-6 mb-6">
@@ -1159,20 +1124,12 @@ export default function PyqPage() {
               </div>
 
               {/* Question text */}
-              <p
-                style={{
-                  width: 832,
-                  maxWidth: '100%',
-                  marginTop: 24,
-                  fontFamily: 'Inter',
-                  fontWeight: 400,
-                  fontSize: 16,
-                  lineHeight: '26px',
-                  color: '#1E2939',
-                }}
-              >
-                {selectedQuestion?.questionText || 'Loading question...'}
-              </p>
+              <QuestionTextRenderer
+                text={selectedQuestion?.questionText || 'Loading question...'}
+                className="mt-6"
+                style={{ width: 832, maxWidth: '100%' }}
+                textClassName="font-[Inter] font-normal text-[16px] leading-[26px] text-[#1E2939]"
+              />
 
               {/* Steps: 1 Write, 2 Upload, 3 AI Eval */}
               <div className="flex items-center gap-3" style={{ width: 832, maxWidth: '100%', marginTop: 24, height: 32 }}>
@@ -1429,9 +1386,10 @@ export default function PyqPage() {
             <div className="flex-1 px-8 py-6 space-y-6 overflow-y-auto">
               {/* Score card */}
               <div className="rounded-[16px] p-6 space-y-4" style={{ background: '#F1F5F9' }}>
-                <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 15, lineHeight: 1.5, color: '#334155' }}>
-                  {mainsEvalResults.question?.questionText}
-                </p>
+                <QuestionTextRenderer
+                  text={mainsEvalResults.question?.questionText}
+                  textClassName="font-[Inter] font-normal text-[15px] leading-[1.5] text-[#334155]"
+                />
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="font-bold" style={{ fontFamily: 'Inter', fontSize: 28, lineHeight: 1.2, color: '#1E3A5F' }}>{mainsEvalResults.score}/{mainsEvalResults.maxScore}</span>
                 </div>
@@ -1549,9 +1507,11 @@ export default function PyqPage() {
             </div>
 
             {/* Question text */}
-            <p style={{ width: '824px', maxWidth: '100%', fontFamily: 'Inter', fontWeight: 400, fontSize: '18px', lineHeight: '29.25px', color: '#1E2939' }}>
-              {selectedQuestion?.questionText}
-            </p>
+            <QuestionTextRenderer
+              text={selectedQuestion?.questionText}
+              style={{ width: '824px', maxWidth: '100%' }}
+              textClassName="font-[Inter] font-normal text-[18px] leading-[29.25px] text-[#1E2939]"
+            />
 
             {/* Options */}
             <div style={{ width: '824px', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>

@@ -554,14 +554,22 @@ const ResponsiveDashboardContent = () => {
             <button
               className="px-[clamp(1.25rem,1.46vw,1.75rem)] rounded-[20px] font-inter font-medium text-white border-2 flex items-center gap-2 hover:opacity-90 transition-opacity"
               style={{
-                height: 'clamp(38px,2.03vw,39px)',
+                height: 'clamp(48px,2.8vw,56px)',
                 fontSize: 'clamp(14px,0.78vw,15px)',
                 background: 'linear-gradient(135deg, #FDC700 0%, #FF8904 100%)',
                 borderColor: '#FDC700',
                 boxShadow: '0px 4px 17.1px 0px rgba(253, 199, 0, 0.3) inset',
               }}
+              aria-label="Generate Test"
             >
-              
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/rocket.png"
+                alt=""
+                aria-hidden="true"
+                className="w-[clamp(14px,0.83vw,16px)] h-[clamp(14px,0.83vw,16px)] object-contain"
+              />
+              <span>Generate Test</span>
             </button>
           </Link>
         </div>
@@ -957,5 +965,3 @@ const ResponsiveDashboardContent = () => {
 };
 
 export default ResponsiveDashboardContent;
-
-

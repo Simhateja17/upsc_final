@@ -3,6 +3,7 @@
 
 export interface ParsedMatchList {
   isMatchList: boolean;
+  intro?: string;
   heading?: string;
   listAHeader?: string;
   listBHeader?: string;
@@ -15,39 +16,33 @@ const HEAD_REGEX = /Match\s+List[\s-]*I[\s-]*with\s+List[\s-]*II/i;
 export function parseMatchListQuestion(text: string): ParsedMatchList {
   if (!text || !HEAD_REGEX.test(text)) return { isMatchList: false };
 
+  const normalized = text.replace(/\s+/g, ' ').trim();
+
   // Try to capture two parenthesized list captions like
   // "(Cricketers)" / "(Country)" or "(Sport/Game)".
-  const captionMatches = text.match(/\(([^)]+)\)\s+and\s+List[\s-]*II\s*\(([^)]+)\)/i);
+  const captionMatches = normalized.match(/List[\s-]*I\s*\(([^)]+)\).*?List[\s-]*II\s*\(([^)]+)\)/i);
   const listAHeader = captionMatches?.[1];
   const listBHeader = captionMatches?.[2];
 
-  // Find pairs like "1. Foo  A. Bar" or "A. Foo  1. Bar".
-  // We look for sequences of "letter. text" then "digit. text" within the same chunk.
-  const lines = text.split(/\n|;\s*/).map((l) => l.trim()).filter(Boolean);
+  const headingMatch = normalized.match(/^(.*?)(?=List[\s-]*I\b)/i);
+  const intro = headingMatch?.[1]?.replace(/:\s*$/, '').trim();
 
   const lefts: { key: string; text: string }[] = [];
   const rights: { key: string; text: string }[] = [];
 
-  for (const line of lines) {
-    // Inline "A. Foo  1. Bar"
-    const inline = line.match(/^([A-D])\.\s+([^.]+?)\s+(\d)\.\s+(.+)$/);
-    if (inline) {
-      lefts.push({ key: inline[1], text: inline[2].trim() });
-      rights.push({ key: inline[3], text: inline[4].trim() });
-      continue;
-    }
-    // Standalone "A. Barry Richards"
-    const left = line.match(/^([A-D])\.\s+(.+)$/);
-    if (left && lefts.length < 4) {
-      lefts.push({ key: left[1], text: left[2].trim() });
-      continue;
-    }
-    // Standalone "1. England"
-    const right = line.match(/^(\d)\.\s+(.+)$/);
-    if (right && rights.length < 4) {
-      rights.push({ key: right[1], text: right[2].trim() });
-      continue;
-    }
+  const leftSectionMatch = normalized.match(/List[\s-]*I\b.*?(?=List[\s-]*II\b|Codes\s*:|$)/i);
+  const rightSectionMatch = normalized.match(/List[\s-]*II\b.*?(?=Codes\s*:|$)/i);
+  const leftSection = leftSectionMatch?.[0] ?? normalized;
+  const rightSection = rightSectionMatch?.[0] ?? normalized;
+
+  const leftItemRe = /([A-D])\.\s*(.*?)(?=(?:\s+[A-D]\.\s)|(?:\s+\d\.\s)|(?:\s+Codes\s*:)|$)/g;
+  const rightItemRe = /(\d)\.\s*(.*?)(?=(?:\s+\d\.\s)|(?:\s+Codes\s*:)|$)/g;
+
+  for (const match of leftSection.matchAll(leftItemRe)) {
+    lefts.push({ key: match[1], text: match[2].trim() });
+  }
+  for (const match of rightSection.matchAll(rightItemRe)) {
+    rights.push({ key: match[1], text: match[2].trim() });
   }
 
   if (lefts.length < 2 || rights.length < 2) {
@@ -65,6 +60,7 @@ export function parseMatchListQuestion(text: string): ParsedMatchList {
 
   return {
     isMatchList: true,
+    intro,
     heading: 'Match List I with List II and select the correct answer:',
     listAHeader: listAHeader || 'List I',
     listBHeader: listBHeader || 'List II',

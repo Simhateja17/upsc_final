@@ -535,6 +535,31 @@ export const adminService = {
   updatePricingPlan: (id: string, data: any) => api.put<any>(`/admin/pricing/${id}`, data, authConfig()),
   deletePricingPlan: (id: string) => api.delete<any>(`/admin/pricing/${id}`, authConfig()),
 
+  // Billing Management
+  getAdminSubscriptions: (params?: { page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    const qs = query.toString();
+    return api.get<any>(`/billing/admin/subscriptions${qs ? `?${qs}` : ''}`, authConfig());
+  },
+  getAdminOrders: (params?: { page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    const qs = query.toString();
+    return api.get<any>(`/billing/admin/orders${qs ? `?${qs}` : ''}`, authConfig());
+  },
+  getAdminPayments: (params?: { page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    const qs = query.toString();
+    return api.get<any>(`/billing/admin/payments${qs ? `?${qs}` : ''}`, authConfig());
+  },
+  extendSubscription: (id: string, days: number) =>
+    api.post<any>(`/billing/admin/subscriptions/${id}/extend`, { days }, authConfig()),
+
   // FAQ Management
   getFaqs: () => api.get<any>('/admin/faqs', authConfig()),
   createFaq: (data: { category: string; question: string; answer: string; order?: number; isActive?: boolean }) =>

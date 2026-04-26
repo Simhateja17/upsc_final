@@ -273,8 +273,8 @@ export default function SyllabusTrackerPage() {
 
         {/* Tracker Area */}
         <div className="flex gap-[13px] p-[18px] pt-[12px] min-h-0">
-          {/* Left section - 3 columns */}
-          <div className="flex gap-[11px] flex-1 min-w-0">
+          {/* Left section - stacked navigation */}
+          <div className="flex flex-col gap-[11px] flex-1 min-w-0">
             {/* Column A - Subjects */}
             <SubjectList
               subjects={currentSubjects}

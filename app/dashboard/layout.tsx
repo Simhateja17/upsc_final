@@ -3,36 +3,86 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { dashboardService } from '@/lib/services';
 import { supabase } from '@/lib/supabase';
 import DashboardHeader from '@/components/DashboardHeader';
 import Sidebar from '@/components/Sidebar';
 import MilestonePopup from '@/components/MilestonePopup';
 
 const HIDE_SIDEBAR_ROUTES = ['/dashboard/profile', '/dashboard/settings', '/dashboard/billing', '/dashboard/feedback'];
+const STREAK_MILESTONES = [3, 7, 10, 14, 21, 30] as const;
+
+function getNextEligibleStreakMilestone(currentStreak: number, lastShownMilestone: number | null) {
+  return [...STREAK_MILESTONES]
+    .reverse()
+    .find((milestone) => currentStreak >= milestone && milestone > (lastShownMilestone ?? 0)) ?? null;
+}
+
+function getStreakMilestoneCopy(streak: number) {
+  return {
+    title: `${streak}-day streak!`,
+    description: `You've studied for ${streak} days in a row. Keep the streak alive and aim for the next checkpoint.`,
+  };
+}
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading, refreshUser } = useAuth();
+  const { user, isAuthenticated, isLoading, refreshUser } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const didTryRefreshRef = useRef(false);
   const hideSidebar = HIDE_SIDEBAR_ROUTES.includes(pathname);
-  const hideHeader = pathname === '/dashboard/pyq';
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
+  const [milestoneValue, setMilestoneValue] = useState<number | null>(null);
+  const [milestoneTitle, setMilestoneTitle] = useState<string | undefined>(undefined);
+  const [milestoneDescription, setMilestoneDescription] = useState<string | undefined>(undefined);
 
-  // Show milestone popup placeholder on dashboard mount
+  // Show a streak milestone when the current streak crosses one of the supported thresholds.
   useEffect(() => {
-    if (isAuthenticated) {
-      // Placeholder: always show on login for demo purposes
-      // TODO: wire to actual milestone checks (streak, tests completed, etc.)
-      const timer = setTimeout(() => setShowMilestone(true), 800);
-      return () => clearTimeout(timer);
+    if (!isAuthenticated || !user?.id) {
+      setShowMilestone(false);
+      return;
     }
-  }, [isAuthenticated]);
+
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    async function loadMilestone() {
+      try {
+        const { data } = await dashboardService.getStreak();
+        const currentStreak = Number(data?.currentStreak ?? 0);
+        const storageKey = `rwj_streak_milestone_shown:${user.id}`;
+        const lastShownRaw = typeof window !== 'undefined' ? window.localStorage.getItem(storageKey) : null;
+        const lastShownMilestone = lastShownRaw ? Number(lastShownRaw) : null;
+        const nextMilestone = getNextEligibleStreakMilestone(currentStreak, Number.isFinite(lastShownMilestone ?? NaN) ? lastShownMilestone : null);
+
+        if (!active || nextMilestone === null) return;
+
+        const copy = getStreakMilestoneCopy(nextMilestone);
+        timer = setTimeout(() => {
+          if (!active) return;
+          setMilestoneValue(nextMilestone);
+          setMilestoneTitle(copy.title);
+          setMilestoneDescription(copy.description);
+          setShowMilestone(true);
+          window.localStorage.setItem(storageKey, String(nextMilestone));
+        }, 800);
+      } catch {
+        // Ignore streak fetch failures; the dashboard should still load normally.
+      }
+    }
+
+    loadMilestone();
+
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, [isAuthenticated, user?.id]);
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -81,7 +131,7 @@ export default function DashboardLayout({
 
   return (
     <div className="flex flex-col" style={{ height: '100dvh' }}>
-      {!hideHeader && <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />}
+      <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
       <div className="flex flex-1 overflow-hidden">
         {!hideSidebar && (
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -96,9 +146,9 @@ export default function DashboardLayout({
         isOpen={showMilestone}
         onClose={() => setShowMilestone(false)}
         type="streak"
-        value={30}
-        title="Streak milestone!"
-        description="You've studied for 30 days in a row. You're in the top 5% of aspirants on the platform."
+        value={milestoneValue ?? 30}
+        title={milestoneTitle}
+        description={milestoneDescription}
       />
     </div>
   );

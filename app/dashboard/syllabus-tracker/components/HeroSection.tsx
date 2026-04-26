@@ -2,6 +2,8 @@
 
 import { Mode, TrackerState, SyllabusData } from '../page';
 
+const heroBackground = 'https://www.figma.com/api/mcp/asset/2647baef-a909-4b4e-9b8d-4a96da466239';
+
 interface HeroSectionProps {
   mode: Mode;
   states: TrackerState;
@@ -10,10 +12,6 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ mode, states, syllabusData, userName }: HeroSectionProps) {
-  const prelimsDate = new Date(2026, 5, 2); // June 2, 2026
-  const daysRemaining = Math.max(0, Math.ceil((prelimsDate.getTime() - Date.now()) / 86400000));
-
-  // Calculate overall stats across all modes
   const calculateModeStats = (modeKey: Mode) => {
     const subjects = syllabusData[modeKey];
     let total = 0;
@@ -21,7 +19,7 @@ export default function HeroSection({ mode, states, syllabusData, userName }: He
     let reading = 0;
     let revision = 0;
 
-    subjects.forEach(subject => {
+    subjects.forEach((subject) => {
       subject.topics.forEach((topic, ti) => {
         topic.subs.forEach((_, si) => {
           total++;
@@ -43,130 +41,123 @@ export default function HeroSection({ mode, states, syllabusData, userName }: He
 
   const allTotal = prelimsStats.total + mainsStats.total + optionalStats.total;
   const allDone = prelimsStats.done + mainsStats.done + optionalStats.done;
-  const allReading = prelimsStats.reading + mainsStats.reading + optionalStats.reading;
   const allRevision = prelimsStats.revision + mainsStats.revision + optionalStats.revision;
   const overallPct = allTotal > 0 ? Math.round((allDone / allTotal) * 100) : 0;
 
   const stageCards = [
-    { id: 'prelims', label: 'Prelims GS', icon: '🏛', stats: prelimsStats, cls: 'hrc-prelims', color: '#e8a820' },
-    { id: 'mains', label: 'Mains', icon: '✍️', stats: mainsStats, cls: 'hrc-mains', color: '#60a5fa' },
-    { id: 'optional', label: 'Optional', icon: '🎯', stats: optionalStats, cls: 'hrc-opt', color: '#c4b5fd' },
+    { id: 'prelims' as const, label: 'Prelims GS', icon: '🏛️', stats: prelimsStats, color: '#05DF72', bar: '#05DF72' },
+    { id: 'mains' as const, label: 'Mains', icon: '📚', stats: mainsStats, color: '#51A2FF', bar: '#51A2FF' },
+    { id: 'optional' as const, label: 'Optional', icon: '🎓', stats: optionalStats, color: '#C27AFF', bar: '#C27AFF' },
+  ];
+
+  const summaryStats = [
+    { label: 'Overall', value: `${overallPct}%`, color: '#F5A623' },
+    { label: 'Done', value: String(allDone), color: '#FF7070' },
+    { label: 'Revising', value: String(allRevision), color: '#FFFFFF' },
+    { label: 'Remaining', value: String(Math.max(allTotal - allDone, 0)), color: '#0E8A56' },
   ];
 
   return (
-    <div className="mx-[18px] mt-[14px] rounded-[16px] border border-white/5 overflow-hidden relative" 
-         style={{
-           background: 'linear-gradient(115deg, #0a1628 0%, #0d1e38 40%, #112347 70%, #0d1d3a 100%)',
-           padding: '22px 24px 20px',
-         }}>
-      {/* Background pattern */}
-      <div className="absolute inset-0 pointer-events-none" 
-           style={{
-             backgroundImage: 'radial-gradient(rgba(255,255,255,.028) 1px, transparent 1px)',
-             backgroundSize: '22px 22px',
-           }} />
-      
-      {/* Glow effect */}
-      <div className="absolute left-[35%] -top-[40px] w-[280px] h-[280px] rounded-full pointer-events-none"
-           style={{
-             background: 'radial-gradient(circle, rgba(201,168,76,.10) 0%, transparent 65%)',
-           }} />
+    <section className="mx-[18px] mt-[14px] overflow-hidden rounded-[16px] border border-white/[0.06] bg-[#050A18]">
+      <div className="relative min-h-[256px] px-[26px] py-[26px] md:px-[26px] md:py-[26px]">
+        <img
+          src={heroBackground}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(90deg, rgba(5,10,24,0.18) 0%, rgba(5,10,24,0.04) 48%, rgba(5,10,24,0.10) 100%)',
+          }}
+        />
 
-      <div className="flex gap-[28px] items-stretch relative z-10">
-        {/* Left Section */}
-        <div className="flex-1 flex flex-col justify-between min-w-0">
-          <div>
-            <div className="flex items-center gap-[7px] mb-[8px]">
-              <div className="w-[6px] h-[6px] rounded-full bg-[#c9921a]" />
-              <div className="text-[9px] font-extrabold tracking-[2.8px] text-[#e8a820] uppercase">
-                UPSC 2026 · Personalized Syllabus Command Center
-              </div>
+        <div className="relative z-10 flex min-h-[204px] flex-col justify-between gap-8 lg:flex-row lg:items-start">
+          <div className="max-w-[660px] pt-0">
+            <div className="mb-[10px] inline-flex rounded-[20px] border border-white/[0.12] bg-white/[0.06] px-[11px] py-[5px] text-[8px] font-extrabold uppercase leading-[10px] tracking-[0.7px] text-[#FDC700]">
+              Personalized Syllabus Tracker
             </div>
-            
-            <h1 className="font-playfair text-[27px] text-white mb-[7px] leading-tight font-bold">
-              Know Exactly Where<br />You Stand, <em className="italic text-[#e8a820]">{userName || 'Aspirant'}.</em>
+
+            <h1 className="max-w-[640px] text-[32px] font-bold leading-[40px] text-white sm:text-[42px] sm:leading-[48px] lg:text-[48px]">
+              Know Exactly Where
+              <br />
+              You Stand,{' '}
+              <em className="font-playfair font-bold italic text-[#E8B84B]">
+                {userName || 'Aspirant'}
+              </em>
+              .
             </h1>
-            
-            <p className="text-[11.5px] text-white/40 max-w-[400px] leading-relaxed mb-[14px]">
-              Your UPSC syllabus, fully mapped. Track every topic across Prelims, Mains and Optional — see what's done, what's pending, and what to conquer next.
+
+            <p className="mt-[14px] max-w-[650px] text-[13px] leading-[20px] text-[#4A5565] sm:text-[16px] sm:leading-[26px]">
+              Your UPSC syllabus, fully mapped. Track every topic across Prelims, Mains and Optional see what&apos;s done,
+              what&apos;s pending, and what to conquer next.
             </p>
-            
-            <div className="inline-flex items-center gap-[8px] bg-white/7 border border-white/10 rounded-[8px] px-[13px] py-[7px] text-[11.5px] font-semibold text-white/70 mb-[14px]">
-              📅 UPSC Prelims 2026 — {daysRemaining} days remaining. Stay consistent.
+
+            <div className="mt-[22px] grid max-w-[560px] grid-cols-2 overflow-hidden rounded-[10px] border border-white/[0.08] bg-white/[0.06] sm:inline-grid sm:grid-cols-4">
+              {summaryStats.map((stat, index) => (
+                <div
+                  key={stat.label}
+                  className={`min-w-[124px] px-[18px] py-[10px] text-center ${
+                    index < summaryStats.length - 1 ? 'border-b border-white/[0.08] sm:border-b-0 sm:border-r' : ''
+                  } ${index === 1 ? 'sm:border-r' : ''}`}
+                  style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+                >
+                  <div className="font-jakarta text-[16px] font-extrabold leading-[20px]" style={{ color: stat.color }}>
+                    {stat.value}
+                  </div>
+                  <div className="mt-[3px] font-jakarta text-[9.5px] uppercase leading-[12px] tracking-[0.6px] text-white/40">
+                    {stat.label}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Stats Strip */}
-          <div className="flex gap-0 bg-white/5 border border-white/8 rounded-[10px] overflow-hidden">
-            <div className="flex-1 p-[8px_12px] text-center border-r border-white/7">
-              <div className="font-playfair text-[18px] font-bold text-white leading-none">{overallPct}%</div>
-              <div className="text-[9px] font-bold tracking-[0.8px] text-white/30 uppercase mt-[2px]">Overall</div>
-            </div>
-            <div className="flex-1 p-[8px_12px] text-center border-r border-white/7">
-              <div className="font-playfair text-[18px] font-bold leading-none" style={{ color: '#4ade80' }}>{allDone}</div>
-              <div className="text-[9px] font-bold tracking-[0.8px] text-white/30 uppercase mt-[2px]">Done</div>
-            </div>
-            <div className="flex-1 p-[8px_12px] text-center border-r border-white/7">
-              <div className="font-playfair text-[18px] font-bold leading-none" style={{ color: '#e8a820' }}>{allReading}</div>
-              <div className="text-[9px] font-bold tracking-[0.8px] text-white/30 uppercase mt-[2px]">Reading</div>
-            </div>
-            <div className="flex-1 p-[8px_12px] text-center border-r border-white/7">
-              <div className="font-playfair text-[18px] font-bold leading-none" style={{ color: '#60a5fa' }}>{allRevision}</div>
-              <div className="text-[9px] font-bold tracking-[0.8px] text-white/30 uppercase mt-[2px]">Revision</div>
-            </div>
-            <div className="flex-1 p-[8px_12px] text-center">
-              <div className="font-playfair text-[18px] font-bold text-white/40 leading-none">{allTotal - allDone}</div>
-              <div className="text-[9px] font-bold tracking-[0.8px] text-white/30 uppercase mt-[2px]">Remaining</div>
-            </div>
-          </div>
-        </div>
+          <div className="flex w-full flex-col gap-[10px] lg:mt-0 lg:w-[246px] lg:min-w-[246px]">
+            {stageCards.map((card) => {
+              const isActive = mode === card.id;
 
-        {/* Right Section - Stage Cards */}
-        <div className="w-[300px] min-w-[300px] flex flex-col gap-[8px] justify-center">
-          {stageCards.map(card => {
-            const isActive = mode === card.id;
-            return (
-              <div
-                key={card.id}
-                className={`bg-white/6 border border-white/9 rounded-[12px] p-[11px_13px] cursor-pointer transition-all duration-200 relative overflow-hidden ${
-                  isActive ? 'bg-white/8 border-white/14' : 'hover:bg-white/9 hover:border-white/15 hover:translate-x-[2px]'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-[7px]">
-                  <div className="flex items-center gap-[9px]">
-                    <span className="text-[16px]">{card.icon}</span>
-                    <span className="text-[13px] font-bold text-white">{card.label}</span>
-                    {isActive && (
-                      <span className="text-[9px] font-extrabold px-[8px] py-[2px] rounded-[20px] tracking-[0.4px] uppercase bg-green-400/20 text-green-400 border border-green-400/30">
-                        Active
-                      </span>
-                    )}
+              return (
+                <div
+                  key={card.id}
+                  className="rounded-[8px] border border-white/[0.1] bg-white/[0.1] px-[11px] py-[10px]"
+                  style={{ backdropFilter: 'blur(6px)' }}
+                >
+                  <div className="mb-[5px] flex items-start justify-between gap-4">
+                    <div className="flex min-w-0 items-start gap-[8px]">
+                      <span className="mt-[1px] text-[13px] leading-[18px]">{card.icon}</span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-[7px]">
+                          <span className="truncate text-[12px] font-bold leading-[16px] text-white">{card.label}</span>
+                          {isActive ? (
+                            <span className="rounded-[4px] bg-[#FF6900]/30 px-[5px] py-[1px] text-[7px] font-bold uppercase leading-[10px] text-[#FFB86A]">
+                              Active
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="mt-[1px] text-[10px] leading-[13px] text-[#99A1AF]">
+                          {card.stats.done} of {card.stats.total} topics done
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-[16px] font-bold leading-[20px]" style={{ color: card.color }}>
+                      {card.stats.pct}%
+                    </div>
                   </div>
-                  <div className="font-playfair text-[20px] font-bold leading-none" style={{ color: card.color }}>
-                    {card.stats.pct}%
+
+                  <div className="h-[6px] overflow-hidden rounded-full bg-white/[0.1]">
+                    <div
+                      className="h-full rounded-full transition-[width] duration-700"
+                      style={{ width: `${card.stats.pct}%`, background: card.bar }}
+                    />
                   </div>
                 </div>
-                <div className="text-[10.5px] text-white/40 mb-[7px]">
-                  {card.stats.done} of {card.stats.total} topics done
-                </div>
-                <div className="h-[3px] bg-white/8 rounded-[3px] overflow-hidden">
-                  <div
-                    className="h-full rounded-[3px] transition-all duration-900"
-                    style={{
-                      width: `${card.stats.pct}%`,
-                      background: card.id === 'prelims' 
-                        ? 'linear-gradient(90deg, #c9921a, #e8a820)' 
-                        : card.id === 'mains'
-                        ? 'linear-gradient(90deg, #3b82f6, #60a5fa)'
-                        : 'linear-gradient(90deg, #8b5cf6, #c4b5fd)'
-                    }}
-                  />
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
