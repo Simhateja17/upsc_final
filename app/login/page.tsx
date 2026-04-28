@@ -219,47 +219,21 @@ function LoginPageContent() {
 
         {/* Logo / Branding — absolutely positioned */}
         <div
-          className="relative z-10 flex items-center gap-3"
-          style={{ position: 'absolute', top: 31, left: 26 }}
+          className="relative z-10"
+          style={{ position: 'absolute', top: 24, left: 26 }}
         >
           <Image
-            src="/logo-jeet.png"
+            src="/header-logo-footer.png"
             alt="RiseWithJeet"
-            width={52}
-            height={34}
-            style={{ objectFit: 'contain', width: 52, height: 34 }}
+            width={218}
+            height={73}
+            style={{ objectFit: 'contain', width: 218, height: 73 }}
+            priority
           />
-          <div>
-            <div
-              style={{
-                fontFamily: 'Inter',
-                fontWeight: 700,
-                fontSize: 22,
-                lineHeight: '28px',
-                letterSpacing: 0,
-                color: '#FFFFFF',
-              }}
-            >
-              Rise<span style={{ color: '#D9A84F' }}>WithJeet</span>
-            </div>
-            <div
-              style={{
-                fontFamily: 'Inter',
-                fontWeight: 400,
-                fontSize: 9,
-                lineHeight: '15px',
-                letterSpacing: '0.5px',
-                textTransform: 'uppercase',
-                color: '#99A1AF',
-              }}
-            >
-              India&apos;s Premier UPSC Platform
-            </div>
-          </div>
         </div>
 
         {/* Main content */}
-        <div className="relative z-10" style={{ width: 382, top: 120, left: 48, position: 'absolute' }}>
+        <div className="relative z-10" style={{ width: 382, top: 188, left: 48, position: 'absolute' }}>
 
           {/* Trusted by badge */}
           <div className="flex items-center gap-2" style={{ marginBottom: 20 }}>
@@ -1007,10 +981,20 @@ function LoginPageContent() {
                 fontSize: 13,
                 color: '#364153',
                 cursor: 'pointer',
+                marginBottom: 16,
               }}
             >
               ← Back to login
             </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M11.667 3.5L5.25 9.917L2.333 7" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span style={{ fontFamily: 'Inter', fontSize: 12, lineHeight: '18px', color: '#6A7282' }}>
+                Check your spam folder if you don&apos;t see the email within 2 minutes.
+              </span>
+            </div>
           </form>
         )}
 

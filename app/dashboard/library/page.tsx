@@ -879,10 +879,6 @@ export default function LibraryPage() {
             overflow: 'hidden',
           }}
         >
-          {/* Books stack image - top right */}
-          <div style={{ position: 'absolute', top: 'clamp(20px, 2vw, 28px)', right: 'clamp(140px, 15vw, 200px)', width: 'clamp(80px, 8vw, 120px)', height: 'clamp(60px, 6vw, 90px)', zIndex: 1 }}>
-            <img src="/books-stack.svg" alt="books" style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: 0.9 }} />
-          </div>
 
           {/* Left side */}
           <div style={{ flex: 1, minWidth: 'clamp(280px, 40vw, 400px)', position: 'relative', zIndex: 1 }}>
@@ -936,45 +932,43 @@ export default function LibraryPage() {
             </p>
           </div>
 
-          {/* Right side - Stats */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(20px, 2vw, 28px)', flexShrink: 0, position: 'relative', zIndex: 1 }}>
-            {/* Stats */}
-            <div className="flex flex-col items-center">
-              <div
-                className="font-arimo font-bold"
-                style={{
-                  fontSize: 'clamp(36px, 3.6vw, 48px)',
-                  color: '#F5C75D',
-                  lineHeight: 1.1,
-                }}
-              >
-                15K+
-              </div>
-              <div
-                className="font-arimo"
-                style={{
-                  fontSize: 'clamp(11px, 0.9vw, 13px)',
-                  color: '#94A3B8',
-                  textAlign: 'center',
-                  marginTop: 'clamp(4px, 0.4vw, 6px)',
-                  lineHeight: '1.4',
-                }}
-              >
-                Aspirants trust
-                <br />
-                Rise with Jeet
-              </div>
+          {/* Books image — absolute, center-top of banner, bleeds from top */}
+          <img
+            src="/books-stack.png"
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              top: '-20px',
+              left: '65%',
+              transform: 'translateX(-50%)',
+              width: 'clamp(140px, 14vw, 200px)',
+              height: 'auto',
+              objectFit: 'contain',
+              opacity: 0.45,
+              zIndex: 0,
+              pointerEvents: 'none',
+            }}
+          />
+
+          {/* Right side — Stats only */}
+          <div style={{ flexShrink: 0, zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div
+              className="font-arimo font-bold"
+              style={{ fontSize: 'clamp(40px, 4.5vw, 64px)', color: '#F5C75D', lineHeight: 1.1 }}
+            >
+              15K+
+            </div>
+            <div
+              className="font-arimo"
+              style={{ fontSize: 'clamp(12px, 1vw, 14px)', color: '#94A3B8', textAlign: 'center', marginTop: '8px', lineHeight: '1.5' }}
+            >
+              Aspirants trust
+              <br />
+              Rise with Jeet
             </div>
           </div>
 
-          {/* Play button icon */}
-          <div style={{ position: 'absolute', bottom: 'clamp(16px, 2vw, 24px)', right: 'clamp(16px, 2vw, 24px)', zIndex: 1 }}>
-            <div style={{ width: 'clamp(32px, 3vw, 40px)', height: 'clamp(32px, 3vw, 40px)', borderRadius: '50%', background: 'rgba(245, 166, 35, 0.15)', border: '1px solid rgba(245, 166, 35, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M8 5v14l11-7z" fill="#F5A623" />
-              </svg>
-            </div>
-          </div>
         </div>
 
         {/* ============================================================ */}

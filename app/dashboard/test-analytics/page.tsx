@@ -152,11 +152,10 @@ export default function TestAnalyticsPage() {
   const mcqSkipped = summary.mcqSkipped ?? 0;
 
   const topStripCards = [
-    { label: 'tests taken', value: String(totalTests), valueColor: '#D4AF37' },
-    { label: 'avg accuracy', value: `${avgAccuracy}%`, valueColor: '#00D492' },
-    { label: 'questions', value: totalQuestions.toLocaleString('en-IN'), valueColor: '#FFFFFF' },
-    { label: 'best percentile', value: bestPercentile > 0 ? `${bestPercentile}th` : 'N/A', valueColor: '#FF8904' },
-    { label: 'day\nstreak', value: String(currentStreak), valueColor: '#FFFFFF' },
+    { label: 'TEST TAKEN', value: String(totalTests), valueColor: '#f5a623' },
+    { label: 'AVG SCORE', value: String(summary.avgScore ?? 0), valueColor: '#ff7070' },
+    { label: 'ACCURACY', value: `${avgAccuracy}%`, valueColor: '#FFFFFF' },
+    { label: 'DAY STREAK', value: String(currentStreak), valueColor: '#0e8a56' },
   ];
 
   const summaryCards = [
@@ -198,69 +197,67 @@ export default function TestAnalyticsPage() {
 
           {/* ── Hero ── */}
           <div
-            className="w-full max-w-[980px] rounded-[18px] px-10 pt-8 pb-6 mb-6 flex flex-col gap-6"
+            className="w-full rounded-[16px] border border-white/5 overflow-hidden flex flex-col gap-5"
             style={{
-              background: 'radial-gradient(circle at top left, rgba(255,210,115,0.12), transparent 34%), linear-gradient(135deg, #0F172B 0%, #1E2939 100%)',
+              background: 'linear-gradient(135deg, #0B1120 0%, #111827 60%, #0D1117 100%)',
               boxShadow: '0 18px 50px rgba(15,23,43,0.16)',
+              padding: '24px 26px 22px',
+              marginBottom: 16,
             }}
           >
-            <div className="flex flex-col gap-3 items-start text-left">
-              <span
-                className="inline-flex items-center justify-center rounded-full px-3 py-1 uppercase tracking-[0.12em]"
-                style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', letterSpacing: '1.2px', color: '#0B1120', background: '#00D5BE' }}
-              >
-                Analytics - Test Dashboard
-              </span>
+            {/* Badge top-left */}
+            <span
+              className="inline-flex items-center justify-center self-start rounded-full px-3 py-1 uppercase tracking-[0.12em]"
+              style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', letterSpacing: '1.2px', color: '#00D5BE', background: 'transparent', border: '1px solid #00D5BE' }}
+            >
+              Analytics - Performance Dashboard
+            </span>
+
+            <div className="flex flex-col gap-2 items-start text-left">
               <h1
                 className="text-[40px] sm:text-[48px] leading-[48px] font-bold"
-                style={{ color: '#FFFFFF', fontFamily: 'Inter, system-ui' }}
+                style={{ color: '#FFFFFF', fontFamily: 'Inter, system-ui', margin: 0 }}
               >
                 {user?.firstName ?? 'Your'}&apos;s{' '}
-                <span style={{ fontFamily: 'Georgia, ui-serif', fontWeight: 700, fontStyle: 'italic' }}>
+                <span style={{ fontFamily: 'Georgia, ui-serif', fontWeight: 700, fontStyle: 'italic', color: '#e8b84b' }}>
                   Progress.
                 </span>
               </h1>
               <p
                 className="max-w-[660px]"
-                style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '22.75px', color: '#D1D5DC' }}
+                style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '22.75px', color: '#4a5565' }}
               >
-                Detailed analytics for every test — MCQ trends, subject accuracy, mains writing scores,
-                time management insights and complete test history.
+                Your complete UPSC test analytics, score trends, subject mastery, rank history, time management and AI-powered next steps.
               </p>
             </div>
 
             {/* Stats strip */}
-            <div className="flex flex-wrap gap-0 rounded-[14px] overflow-hidden mt-2">
-              {topStripCards.map((card, index) => {
-                const isFirst = index === 0;
-                const isLast = index === topStripCards.length - 1;
-                return (
+            <div
+              className="flex overflow-hidden"
+              style={{ background: '#161c2d', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16 }}
+            >
+              {topStripCards.map((card, index) => (
+                <div
+                  key={index}
+                  className="flex-1 flex flex-col items-center justify-center py-3"
+                  style={{
+                    borderRight: index < topStripCards.length - 1 ? '1px solid rgba(255,255,255,0.08)' : undefined,
+                    minWidth: 0,
+                  }}
+                >
                   <div
-                    key={index}
-                    className="flex-1 min-w-[130px] flex flex-col items-center justify-center px-6 py-5"
-                    style={{
-                      background: '#1C273B',
-                      borderTop: '0.8px solid #364153',
-                      borderBottom: '0.8px solid #364153',
-                      borderLeft: index > 0 ? '0.8px solid #364153' : undefined,
-                      borderRight: index < topStripCards.length - 1 ? '0.8px solid #364153' : undefined,
-                      borderTopLeftRadius: isFirst ? 14 : 0,
-                      borderBottomLeftRadius: isFirst ? 14 : 0,
-                      borderTopRightRadius: isLast ? 14 : 0,
-                      borderBottomRightRadius: isLast ? 14 : 0,
-                    }}
+                    style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 18, letterSpacing: '-0.4px', color: card.valueColor, lineHeight: '1.2' }}
                   >
-                    <div className="mb-1 text-[28px] font-bold leading-[34px]"
-                      style={{ fontFamily: 'Inter', color: card.valueColor, whiteSpace: 'pre-line' }}>
-                      {card.value}
-                    </div>
-                    <div className="uppercase text-[11px] tracking-[0.3px] text-center"
-                      style={{ fontFamily: 'Inter', fontWeight: 400, lineHeight: '16px', color: '#6A7282', whiteSpace: 'pre-line' }}>
-                      {card.label}
-                    </div>
+                    {card.value}
                   </div>
-                );
-              })}
+                  <div
+                    className="uppercase text-center mt-1"
+                    style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 9.5, letterSpacing: '0.6px', color: 'rgba(255,255,255,0.4)' }}
+                  >
+                    {card.label}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -539,9 +536,9 @@ export default function TestAnalyticsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {testHistory.map((row, i) => (
+                      {testHistory.filter(Boolean).map((row, i) => (
                         <tr
-                          key={row.id}
+                          key={row.id ?? i}
                           style={{ borderBottom: i < testHistory.length - 1 ? '1px solid #F9FAFB' : undefined }}
                           className="hover:bg-[#FAFAFA] transition-colors"
                         >

@@ -64,6 +64,7 @@ export default function PyqPage() {
   const mainsFileInputRef = useRef<HTMLInputElement>(null);
   const MAINS_TIME_LIMIT = 9 * 60; // 9 minutes in seconds
   const [mainsTimeLeft, setMainsTimeLeft] = useState(MAINS_TIME_LIMIT);
+  const [mainsTimerPaused, setMainsTimerPaused] = useState(false);
   const mainsAutoSubmitRef = useRef(false);
 
   // Data state
@@ -115,12 +116,11 @@ export default function PyqPage() {
 
   // Mains writing timer (9-min countdown, auto-submit on expiry)
   useEffect(() => {
-    if (!showMainsWriteModal) return;
+    if (!showMainsWriteModal || mainsTimerPaused) return;
     const id = setInterval(() => {
       setMainsTimeLeft((t) => {
         if (t <= 1) {
           clearInterval(id);
-          // Auto-submit when time runs out
           if (!mainsAutoSubmitRef.current) {
             mainsAutoSubmitRef.current = true;
             document.getElementById('pyq-mains-submit-btn')?.click();
@@ -131,7 +131,7 @@ export default function PyqPage() {
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [showMainsWriteModal]);
+  }, [showMainsWriteModal, mainsTimerPaused]);
 
   useEffect(() => {
     fetchQuestions();
@@ -757,7 +757,7 @@ export default function PyqPage() {
                     <div className="flex items-center gap-3 mb-4">
                       <button
                         type="button"
-                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); setMainsTimerPaused(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
                         className="flex items-center justify-center"
                         style={{ height: '59px', borderRadius: '14px', background: '#101828', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
@@ -774,6 +774,15 @@ export default function PyqPage() {
                         style={{ height: '59px', borderRadius: '14px', background: '#0F172A', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
                         <span>Model Answer</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="flex items-center justify-center"
+                        style={{ width: '59px', height: '59px', borderRadius: '14px', background: '#FFFFFF', border: '1.6px solid #FFC9C9', fontSize: '20px', cursor: 'pointer', flexShrink: 0 }}
+                        aria-label="Write answer"
+                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); setMainsTimerPaused(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                      >
+                        ✏️
                       </button>
                     </div>
 
@@ -1249,19 +1258,40 @@ export default function PyqPage() {
                 </div>
               </div>
 
-              {/* Specs bar: 7–9 min, ~100 words, 15 marks | 0:00, Resume */}
+              {/* Specs bar */}
               <div
-                className="flex items-center justify-between flex-wrap gap-4 rounded-[14px] px-4 py-3"
-                style={{ width: 832, maxWidth: '100%', marginTop: 24, minHeight: 69.6, border: '0.8px solid #E5E7EB', background: '#F9FAFB' }}
+                className="flex items-center justify-between rounded-[14px]"
+                style={{ width: 832, maxWidth: '100%', marginTop: 24, height: 69.6, padding: '0 16px', border: '0.8px solid #E5E7EB', background: '#F9FAFB' }}
               >
-                <div className="flex items-center gap-6">
-                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#4A5565' }}><span aria-hidden>🕐</span>Recommended: 7–9 min</span>
-                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#4A5565' }}><span aria-hidden>✏️</span>Target: ~150–250 words</span>
+                <div className="flex items-center" style={{ gap: 24 }}>
+                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#4A5565' }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4A5565" strokeWidth="1"/><path d="M8 5V8.5L10 10" stroke="#4A5565" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                    7–9 min
+                  </span>
+                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#4A5565' }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10.5 2.5L13.5 5.5L5.5 13.5L2 14L2.5 10.5L10.5 2.5Z" stroke="#16A34A" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    ~100 words
+                  </span>
+                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#4A5565' }}>
+                    <span style={{ color: '#FF6900' }}>🏆</span>
+                    {selectedQuestion?.marks || selectedQuestion?.maxMarks || 15} marks
+                  </span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: mainsTimeLeft <= 60 ? '#DC2626' : '#1E2939' }}>
+                <div className="flex items-center" style={{ gap: 16 }}>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, color: mainsTimeLeft <= 60 ? '#DC2626' : '#1E2939' }}>
                     {Math.floor(mainsTimeLeft / 60)}:{String(mainsTimeLeft % 60).padStart(2, '0')}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => setMainsTimerPaused(p => !p)}
+                    className="flex items-center justify-center gap-2"
+                    style={{ height: 36, padding: '0 16px', borderRadius: 10, background: '#F3F4F6', border: 'none', cursor: 'pointer', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#364153', whiteSpace: 'nowrap' }}
+                  >
+                    {mainsTimerPaused
+                      ? <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2L10 6L3 10V2Z" fill="#364153"/></svg> Resume</>
+                      : <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="2" width="3" height="8" rx="1" fill="#364153"/><rect x="7" y="2" width="3" height="8" rx="1" fill="#364153"/></svg> Pause</>
+                    }
+                  </button>
                   {mainsTimeLeft <= 60 && mainsTimeLeft > 0 && (
                     <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: '#DC2626' }}>Hurry up!</span>
                   )}
@@ -1294,21 +1324,44 @@ export default function PyqPage() {
                 ref={mainsFileInputRef}
                 type="file"
                 accept="image/jpeg,image/png,application/pdf"
-                className="hidden"
+                style={{ display: 'none' }}
                 onChange={(e) => setMainsFile(e.target.files?.[0] || null)}
               />
               <div
-                className="rounded-[16px] flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-400 transition-colors"
-                style={{ width: 832, maxWidth: '100%', marginTop: 16, minHeight: 180, padding: '32px', border: mainsFile ? '1.6px solid #3B52D4' : '1.6px solid #D1D5DC', background: mainsFile ? '#EFF6FF' : '#FFF' }}
+                className="rounded-[16px] flex flex-col items-center justify-center text-center cursor-pointer"
+                style={{ width: 832, maxWidth: '100%', marginTop: 16, padding: '50px 50px', border: mainsFile ? '1.6px solid #3B52D4' : '1.6px solid #D1D5DC', background: mainsFile ? '#EFF6FF' : '#FFF' }}
                 onClick={() => mainsFileInputRef.current?.click()}
               >
-                <div className="mb-3" style={{ fontSize: 40 }} aria-hidden>{mainsFile ? '✅' : '📷'}</div>
-                <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '24px', color: '#1E2939', marginBottom: 6 }}>
+                {/* Camera icon in gray square */}
+                <div style={{ width: 64, height: 64, borderRadius: 16, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                  {mainsFile
+                    ? <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M5 27L27 5" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"/><circle cx="16" cy="16" r="10" stroke="#22C55E" strokeWidth="2"/></svg>
+                    : <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M12 8H20L22 11H27C27.55 11 28 11.45 28 12V24C28 24.55 27.55 25 27 25H5C4.45 25 4 24.55 4 24V12C4 11.45 4.45 11 5 11H10L12 8Z" stroke="#9CA3AF" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="16" cy="18" r="4" stroke="#9CA3AF" strokeWidth="1.5"/></svg>
+                  }
+                </div>
+                <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 18, lineHeight: '28px', color: '#1E2939', marginBottom: 8 }}>
                   {mainsFile ? mainsFile.name : 'Photograph your handwritten answer & upload'}
                 </p>
-                <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, lineHeight: '20px', color: '#6A7282' }}>
-                  {mainsFile ? 'Click to change file' : 'Take a clear photo. Good lighting = better evaluation. JPG / PNG / PDF'}
-                </p>
+                {!mainsFile && (
+                  <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282', marginBottom: 16 }}>
+                    Take a clear photo of each page. Good lighting = better AI evaluation.
+                  </p>
+                )}
+                {mainsFile
+                  ? <span style={{ fontFamily: 'Inter', fontSize: 13, color: '#6A7282' }}>Click to change file</span>
+                  : (
+                    <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                      {['JPG', 'PNG', 'PDF'].map((fmt) => (
+                        <button
+                          key={fmt}
+                          type="button"
+                          onClick={() => mainsFileInputRef.current?.click()}
+                          style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#155DFC', background: '#EFF6FF', border: '0.8px solid #BEDBFF', borderRadius: 10, height: 37.6, padding: '0 18px', cursor: 'pointer' }}
+                        >{fmt}</button>
+                      ))}
+                    </div>
+                  )
+                }
               </div>
 
               {/* Submit for AI Evaluation */}
@@ -1338,7 +1391,7 @@ export default function PyqPage() {
                 className="w-full flex items-center justify-center gap-2 rounded-[16px] py-4 mt-4 disabled:opacity-50"
                 style={{ width: 832, maxWidth: '100%', height: 60, background: '#0F172B', fontFamily: 'Inter', fontWeight: 700, fontSize: 18, lineHeight: '28px', color: '#F9FAFB' }}
               >
-                <span aria-hidden>📤</span>{mainsSubmitting ? 'Submitting...' : 'Submit for Evaluation'}
+                <span aria-hidden>📤</span>{mainsSubmitting ? 'Submitting...' : 'Submit for AI Evaluation'}
               </button>
 
               {mainsSubmitError && (
@@ -1347,20 +1400,34 @@ export default function PyqPage() {
                 </div>
               )}
 
-              {/* Footer: views, evals, avg | Save, Get AI Eval */}
-              <div className="flex items-center justify-between flex-wrap gap-4" style={{ width: 832, maxWidth: '100%', marginTop: 24, paddingTop: 16, minHeight: 45.6 }}>
-                <div className="flex items-center gap-6">
-                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}><span aria-hidden>🎯</span>Submit for evaluation</span>
+              {/* Footer: views/evals stats | Save + Get AI Eval */}
+              <div className="flex items-center justify-between flex-wrap gap-3" style={{ width: 832, maxWidth: '100%', marginTop: 16, paddingTop: 16, borderTop: '0.8px solid #E5E7EB' }}>
+                <div className="flex items-center" style={{ gap: 24 }}>
+                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#6A7282' }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="7" ry="4.5" stroke="#6A7282" strokeWidth="1"/><circle cx="8" cy="8" r="2" stroke="#6A7282" strokeWidth="1"/></svg>
+                    {(selectedQuestion as any)?.views || 120} views
+                  </span>
+                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#6A7282' }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#16A34A" strokeWidth="1"/><path d="M5 8L7 10.5L11 5.5" stroke="#16A34A" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    {(selectedQuestion as any)?.aiEvalsDone || 34} AI evals done
+                  </span>
+                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#6A7282' }}>
+                    <span>⭐</span>
+                    {(selectedQuestion as any)?.avgRating || '3.9'}/5 avg
+                  </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button type="button" className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5" style={{ border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 600, fontSize: 16, lineHeight: '24px', color: '#364153' }}><span aria-hidden>💾</span>Save</button>
+                  <button type="button" className="flex items-center justify-center gap-2 rounded-[14px]" style={{ height: 45.6, padding: '0 20px', border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 600, fontSize: 16, color: '#364153' }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 14V11L11 2L14 5L5 14H2Z" stroke="#364153" strokeWidth="1.2" strokeLinejoin="round"/><path d="M9 4L12 7" stroke="#364153" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                    Save
+                  </button>
                   <button
                     type="button"
                     onClick={() => document.getElementById('pyq-mains-submit-btn')?.click()}
-                    className="flex items-center justify-center rounded-[14px] px-5 py-2.5"
-                    style={{ background: 'linear-gradient(90deg, #FF8904 0%, #FF6900 100%)', boxShadow: '0px 2px 4px -2px #0000001A, 0px 4px 6px -1px #0000001A', fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '24px', color: '#FFFFFF' }}
+                    className="flex items-center justify-center rounded-[14px]"
+                    style={{ height: 45.6, padding: '0 20px', background: 'linear-gradient(90deg, #FF8904 0%, #FF6900 100%)', boxShadow: '0px 4px 6px 0px rgba(0,0,0,0.1), 0px 2px 4px 0px rgba(0,0,0,0.1)', fontFamily: 'Inter', fontWeight: 700, fontSize: 16, color: '#FFFFFF' }}
                   >
-                    Submit for Evaluation
+                    Get AI Eval
                   </button>
                 </div>
               </div>

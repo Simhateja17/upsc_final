@@ -410,20 +410,20 @@ const ResponsiveDashboardContent = () => {
         </div>
       </div>
     )}
-    <div className="w-full min-h-screen py-[clamp(1.5rem,3vw,4rem)] px-[clamp(1rem,2vw,3rem)]" style={{ background: '#FAFBFE' }}>
+    <div className="w-full min-h-screen py-[clamp(1rem,1.5vw,2rem)] px-[clamp(1rem,2vw,3rem)]" style={{ background: '#FAFBFE' }}>
       <div className="max-w-[1400px] mx-auto">
 
         {/* Greeting Card */}
         <div
-          className="w-full rounded-[16px] p-[clamp(1.5rem,2.08vw,2rem)] mb-[clamp(1.5rem,2vw,2.5rem)]"
+          className="w-full rounded-[16px] p-[clamp(1rem,1.5vw,1.5rem)] mb-[clamp(0.75rem,1vw,1rem)]"
           style={{
             background: 'linear-gradient(180deg, #0E182D 0%, #17223E 100%)',
           }}
         >
           {/* Greeting Section */}
-          <div className="mb-[clamp(0.5rem,0.75vw,0.75rem)]">
+          <div className="mb-[clamp(0.25rem,0.4vw,0.5rem)]">
             <h1
-              className="font-arimo font-bold text-white mb-[clamp(1rem,1.56vw,1.5rem)]"
+              className="font-arimo font-bold text-white mb-[clamp(0.4rem,0.6vw,0.6rem)]"
               style={{
                 fontSize: 'clamp(24px,1.56vw,30px)',
                 lineHeight: '1.2',
@@ -470,7 +470,7 @@ const ResponsiveDashboardContent = () => {
         </div>
 
         {/* Search Bar & Action Buttons */}
-        <div className="flex flex-wrap gap-[clamp(0.75rem,1.04vw,1.25rem)] items-center mb-[clamp(2rem,3vw,3.5rem)]">
+        <div className="flex flex-wrap gap-[clamp(0.75rem,1.04vw,1.25rem)] items-center mb-[clamp(0.75rem,1vw,1.25rem)]">
           {/* Search Bar */}
           <div
             className="flex-1 min-w-[280px] flex items-center gap-[clamp(0.5rem,0.68vw,0.75rem)] px-[clamp(1.25rem,1.56vw,1.75rem)] rounded-[40px] bg-[#DAE2FF]"
@@ -577,13 +577,13 @@ const ResponsiveDashboardContent = () => {
 
         {/* Today's Trio Section */}
         <div
-          className="mb-[clamp(2rem,2.5vw,3rem)] rounded-[14px] p-[clamp(1.25rem,1.5vw,1.75rem)]"
+          className="mb-[clamp(1rem,1.25vw,1.5rem)] rounded-[14px] p-[clamp(0.75rem,1vw,1.25rem)]"
           style={{
             background: '#FFFFFF',
             border: '0.8px solid #E5E7EB',
           }}
         >
-          <div className="flex items-center gap-2 mb-[clamp(1rem,1.25vw,1.5rem)]">
+          <div className="flex items-center gap-2 mb-[clamp(0.5rem,0.75vw,0.75rem)]">
             <img src="/icons/dashboard/trio-header.png" alt="Today's Trio" className="w-[clamp(18px,1.25vw,22px)] h-[clamp(18px,1.25vw,22px)]" />
             <h2 className="font-inter font-bold text-[clamp(18px,1.2vw,20px)] text-[#1A1A1A]">
               Today's Trio
@@ -595,12 +595,12 @@ const ResponsiveDashboardContent = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#17223E]"></div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-[clamp(1rem,1.25vw,1.5rem)]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-[clamp(0.75rem,1vw,1rem)]">
               {/* Daily MCQ Card */}
               <Link
                 href="/dashboard/daily-mcq"
                 aria-label="Open Daily MCQ"
-                className="block bg-[#F9FAFB] rounded-[14px] border p-[clamp(1.25rem,1.75vw,2rem)] relative cursor-pointer h-full flex flex-col transition-colors"
+                className="block bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] relative cursor-pointer h-full flex flex-col transition-colors"
                 style={{ borderColor: isMcqCompleted ? '#22C55E' : '#E5E7EB' }}
               >
                 {isMcqCompleted && (
@@ -611,9 +611,9 @@ const ResponsiveDashboardContent = () => {
                   </div>
                 )}
 
-                <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">AI Evaluation</div>
+                <div className="mb-1 py-0 text-[clamp(12px,0.73vw,13px)] invisible">AI Evaluation</div>
 
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-2">
                   <img src="/icons/dashboard/daily-mcq.png" alt="MCQ" className="w-7 h-7" />
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                     Daily MCQ
@@ -623,11 +623,11 @@ const ResponsiveDashboardContent = () => {
                 <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-gray-600 mb-2">
                   <span className={`font-medium ${isMcqCompleted ? 'text-green-600' : ''}`}>Status: {normalizeStatus(mcqStatus)}</span>
                 </p>
-                <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-6 flex-grow">
+                <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-3 flex-grow">
                   {mcqCount} Questions{mcqTopic ? ` - ${mcqTopic}` : ''}
                 </p>
 
-                <div className="w-full bg-[#17223E] text-white rounded-[8px] py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
                   {isMcqCompleted ? (
                     <>
                       <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
@@ -647,7 +647,7 @@ const ResponsiveDashboardContent = () => {
               {/* Mains Question Card */}
               <Link href="/dashboard/daily-answer" className="block h-full">
               <div
-                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(1.25rem,1.75vw,2rem)] h-full flex flex-col transition-colors cursor-pointer relative"
+                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-colors cursor-pointer relative"
                 style={{ borderColor: isMainsCompleted ? '#22C55E' : '#E5E7EB' }}
               >
                 {isMainsCompleted && (
@@ -657,10 +657,10 @@ const ResponsiveDashboardContent = () => {
                     </svg>
                   </div>
                 )}
-                <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">Status</div>
+                <div className="mb-1 py-0 text-[clamp(12px,0.73vw,13px)] invisible">Status</div>
 
-                <div className="flex items-center gap-3 mb-4">
-                  <img src="/sidebar-daily-answer-new.png" alt="Mains" className="w-7 h-7 object-contain" />
+                <div className="flex items-center gap-3 mb-2">
+                  <img src="/mains-question-icon.png" alt="Mains" className="w-7 h-7 object-contain" />
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                     Mains Question
                   </h3>
@@ -669,11 +669,11 @@ const ResponsiveDashboardContent = () => {
                 <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-gray-600 mb-2">
                   <span className={`font-medium ${isMainsCompleted ? 'text-green-600' : ''}`}>Status: {normalizeStatus(mainsStatus)}</span>
                 </p>
-                <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-6 flex-grow">
+                <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-3 flex-grow">
                   {mainsTopic || '—'}
                 </p>
 
-                <div className="w-full bg-[#17223E] text-white rounded-[8px] py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
                   {isMainsCompleted ? (
                     <>
                       <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
@@ -694,7 +694,7 @@ const ResponsiveDashboardContent = () => {
               {/* Daily Editorial Card */}
               <Link href="/dashboard/daily-editorial" className="block h-full">
               <div
-                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(1.25rem,1.75vw,2rem)] h-full flex flex-col transition-colors cursor-pointer relative"
+                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-colors cursor-pointer relative"
                 style={{ borderColor: isEditorialCompleted ? '#22C55E' : '#E5E7EB' }}
               >
                 {isEditorialCompleted && (
@@ -704,9 +704,9 @@ const ResponsiveDashboardContent = () => {
                     </svg>
                   </div>
                 )}
-                <div className="mb-4 py-1 text-[clamp(12px,0.73vw,13px)] invisible">Status</div>
+                <div className="mb-1 py-0 text-[clamp(12px,0.73vw,13px)] invisible">Status</div>
 
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-2">
                   <img src="/icons/dashboard/editorial.png" alt="Editorial" className="w-7 h-7" />
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                     Daily Editorial
@@ -716,11 +716,11 @@ const ResponsiveDashboardContent = () => {
                 <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-gray-600 mb-2">
                   <span className={`font-medium ${isEditorialCompleted ? 'text-green-600' : ''}`}>Status: {normalizeStatus(editorialStatus)}</span>
                 </p>
-                <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-6 flex-grow">
+                <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-3 flex-grow">
                   {editorialTopic || '—'}
                 </p>
 
-                <div className="w-full bg-[#17223E] text-white rounded-[8px] py-3 px-4 font-inter font-medium text-[clamp(14px,0.83vw,15px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
                   {isEditorialCompleted ? (
                     <>
                       <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">

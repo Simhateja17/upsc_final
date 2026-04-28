@@ -98,6 +98,32 @@ const SUBJECT_COLORS: Record<string, { bg: string; border: string; accent: strin
   'Current Affairs': { bg: '#FEF3C7', border: '#FDE68A', accent: '#D97706' },
 };
 
+const SUBJECT_ICON_GRADIENTS: Record<string, string> = {
+  indianpolity:      'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)',
+  polity:            'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)',
+  indianeconomy:     'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+  economy:           'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+  geography:         'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+  history:           'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
+  environment:       'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+  ethicsgs4:         'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+  ethics:            'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+  essaywriting:      'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+  essay:             'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+  internalsecurity:  'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+  security:          'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+  intlrelations:     'linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)',
+  ir:                'linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)',
+  scienceandtech:    'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)',
+  science:           'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)',
+  currentaffairs:    'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+};
+
+function getSubjectIconGradient(name: string): string {
+  const key = normalizeSubjectKey(name);
+  return SUBJECT_ICON_GRADIENTS[key] || 'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)';
+}
+
 const SUBJECT_CARD_THEMES: Record<string, SubjectCardTheme> = {
   indianpolity: { bg: '#FDF0DE', border: '#C0D9F5', progress: 72 },
   indianeconomy: { bg: 'linear-gradient(139.3269deg, #F3EFFD 0%, #EDE7FB 100%)', border: '#E8E1FD', progress: 38 },
@@ -267,7 +293,10 @@ export default function VideoLecturesPage() {
         className="relative overflow-hidden"
         style={{
           background: '#0F131F',
-          padding: 'clamp(24px, 3vw, 40px) clamp(20px, 4vw, 60px) clamp(40px, 5vw, 64px)',
+          padding: '24px 26px 22px',
+          borderRadius: 16,
+          border: '1px solid rgba(255,255,255,0.05)',
+          marginBottom: 16,
         }}
       >
         {/* Background grid pattern */}
@@ -556,31 +585,31 @@ export default function VideoLecturesPage() {
           <div style={{ marginTop: 'clamp(24px, 2.5vw, 36px)' }}>
             {/* Subject header */}
             <div style={{ marginBottom: 'clamp(20px, 2vw, 28px)' }}>
-              <div className="flex items-center" style={{ marginBottom: 'clamp(4px, 0.4vw, 6px)' }}>
+              <div className="flex items-center" style={{ gap: '12px', marginBottom: '4px' }}>
                 <div
                   className="flex items-center justify-center"
                   style={{
-                    background: 'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)',
-                    borderRadius: '12px',
-                    width: 'clamp(40px, 3.5vw, 48px)',
-                    height: 'clamp(40px, 3.5vw, 48px)',
+                    background: getSubjectIconGradient(selectedSubject),
+                    borderRadius: '14px',
+                    width: '48px',
+                    height: '48px',
                     flexShrink: 0,
                   }}
                 >
-                  <span style={{ fontSize: 'clamp(22px, 2vw, 26px)' }}>{subjectEmoji(selectedSubject)}</span>
+                  <span style={{ fontSize: '24px', lineHeight: '32px' }}>{subjectEmoji(selectedSubject)}</span>
                 </div>
                 <div>
                   <h2
                     className="font-arimo font-bold"
-                    style={{ fontSize: 'clamp(20px, 1.88vw, 26px)', color: '#101828', lineHeight: 1.2 }}
+                    style={{ fontSize: '24px', color: '#101828', lineHeight: '32px' }}
                   >
                     {selectedSubject} Simplified
                   </h2>
-                  <p className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#4A5565' }}>
-                    ðŸ“º {subjectVideos.length} Video{subjectVideos.length !== 1 ? 's' : ''}
+                  <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', color: '#4A5565' }}>
+                    {'📺'} {subjectVideos.length} Video{subjectVideos.length !== 1 ? 's' : ''}
                     {(() => {
                       const matched = apiSubjects.find(s => s.name === selectedSubject);
-                      return matched?.totalDuration ? ` Â· ${matched.totalDuration}` : '';
+                      return matched?.totalDuration ? ` · ${matched.totalDuration}` : '';
                     })()}
                   </p>
                 </div>
@@ -659,29 +688,39 @@ export default function VideoLecturesPage() {
                         👀 {formatViews(getVideoViewCount(video))} views
                       </p>
 
-                      <div className="flex items-center" style={{ gap: 'clamp(6px, 0.6vw, 8px)' }}>
+                      <div className="flex items-center" style={{ gap: '4px', flexWrap: 'nowrap', minWidth: 0 }}>
+                        {/* PDF button */}
                         <button
                           onClick={() => setShowLoginModal(true)}
-                          className="flex items-center gap-1 font-arimo font-medium"
-                          style={{ padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)', borderRadius: '10px', background: '#F3F4F6', border: '1px solid #E5E7EB', color: '#374151', fontSize: 'clamp(11px, 0.9vw, 13px)', cursor: 'pointer' }}
+                          className="flex items-center gap-1 font-arimo font-bold"
+                          style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                         >
-                          <img src="/pdf.png" alt="pdf" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M7 11l5 5 5-5" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M12 4v12" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
                           PDF
                         </button>
+                        {/* Ask Mentor button */}
                         <button
                           onClick={() => setShowMentorModal(true)}
-                          className="flex items-center gap-1 font-arimo font-medium"
-                          style={{ padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)', borderRadius: '10px', background: '#F3F4F6', border: '1px solid #E5E7EB', color: '#374151', fontSize: 'clamp(11px, 0.9vw, 13px)', cursor: 'pointer' }}
+                          className="flex items-center gap-1 font-arimo font-bold"
+                          style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                         >
-                          <img src="/think.png" alt="ask our team" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
-                          Ask Our Team
+                          <span style={{ fontSize: '14px' }}>🧑‍🏫</span>
+                          Ask Mentor
                         </button>
+                        {/* Watch button */}
                         <button
                           onClick={() => { const u = video.youtubeUrl || video.url || ''; window.open(u.startsWith('http') ? u : `https://${u}`, '_blank'); }}
                           className="flex items-center gap-1 font-arimo font-bold text-white"
-                          style={{ padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)', borderRadius: '10px', background: '#162456', border: 'none', fontSize: 'clamp(11px, 0.9vw, 13px)', cursor: 'pointer' }}
+                          style={{ padding: '5px 8px', borderRadius: '10px', background: '#17223E', border: '1.5px solid #17223E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                         >
-                          <img src="/yt.png" alt="watch" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="24" height="24" rx="5" fill="#FF0000"/>
+                            <path d="M10 8l6 4-6 4V8z" fill="white"/>
+                          </svg>
                           Watch
                         </button>
                       </div>
@@ -870,41 +909,54 @@ export default function VideoLecturesPage() {
                       👀 {formatViews(getVideoViewCount(video))} views
                     </p>
 
-                    <div className="flex items-center" style={{ gap: 'clamp(6px, 0.6vw, 8px)' }}>
+                    <div className="flex items-center" style={{ gap: '4px', flexWrap: 'nowrap', minWidth: 0 }}>
+                      {/* PDF button */}
                       <button
                         onClick={() => setShowLoginModal(true)}
-                        className="flex items-center gap-1 font-arimo font-medium"
-                        style={{ padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)', borderRadius: '10px', background: '#F3F4F6', border: '1px solid #E5E7EB', color: '#374151', fontSize: 'clamp(11px, 0.9vw, 13px)', cursor: 'pointer' }}
+                        className="flex items-center gap-1.5 font-arimo font-bold"
+                        style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                       >
-                        <img src="/pdf.png" alt="pdf" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M7 11l5 5 5-5" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M12 4v12" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
                         PDF
                       </button>
+                      {/* Ask Mentor button */}
                       <button
                         onClick={() => setShowMentorModal(true)}
-                        className="flex items-center gap-1 font-arimo font-medium"
-                        style={{ padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)', borderRadius: '10px', background: '#F3F4F6', border: '1px solid #E5E7EB', color: '#374151', fontSize: 'clamp(11px, 0.9vw, 13px)', cursor: 'pointer' }}
+                        className="flex items-center gap-1.5 font-arimo font-bold"
+                        style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                       >
-                        <img src="/think.png" alt="ask our team" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
-                        Ask Our Team
+                        <span style={{ fontSize: '14px' }}>🧑‍🏫</span>
+                        Ask Mentor
                       </button>
+                      {/* Watch button */}
                       {video.videoUrl ? (
                         <a
                           href={video.videoUrl.startsWith('http') ? video.videoUrl : `https://${video.videoUrl}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 font-arimo font-bold text-white"
-                          style={{ padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)', borderRadius: '10px', background: '#162456', fontSize: 'clamp(11px, 0.9vw, 13px)', textDecoration: 'none' }}
+                          style={{ padding: '5px 8px', borderRadius: '10px', background: '#17223E', border: '1.5px solid #17223E', fontSize: '12px', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
                         >
-                          <img src="/yt.png" alt="watch" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="24" height="24" rx="5" fill="#FF0000"/>
+                            <path d="M10 8l6 4-6 4V8z" fill="white"/>
+                          </svg>
                           Watch
                         </a>
                       ) : (
                         <button
                           onClick={() => { const u = video.youtubeUrl || video.url || ''; window.open(u.startsWith('http') ? u : `https://${u}`, '_blank'); }}
                           className="flex items-center gap-1 font-arimo font-bold text-white"
-                          style={{ padding: 'clamp(6px, 0.6vw, 8px) clamp(10px, 1vw, 14px)', borderRadius: '10px', background: '#162456', border: 'none', fontSize: 'clamp(11px, 0.9vw, 13px)', cursor: 'pointer' }}
+                          style={{ padding: '5px 8px', borderRadius: '10px', background: '#17223E', border: '1.5px solid #17223E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                         >
-                          <img src="/yt.png" alt="watch" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="24" height="24" rx="5" fill="#FF0000"/>
+                            <path d="M10 8l6 4-6 4V8z" fill="white"/>
+                          </svg>
                           Watch
                         </button>
                       )}

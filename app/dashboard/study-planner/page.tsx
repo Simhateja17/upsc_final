@@ -887,78 +887,10 @@ export default function StudyPlannerPage() {
             </div>
             </div>
 
-            {/* ── Bottom Row: Time Distribution + Syllabus Coverage + Weekly Goals + Planner Sync ── */}
-            <div className="grid grid-cols-1 gap-4 mt-4 xl:grid-cols-[1.2fr_1.2fr_1fr_360px]">
+            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals + Planner Sync ── */}
+            <div className="grid grid-cols-1 gap-4 mt-4 xl:grid-cols-[1fr_1fr_360px]">
 
-              {/* Card 0: Time Distribution */}
-              <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
-              >
-                <div className="flex items-center gap-2 mb-6">
-                  <div style={{ position: 'relative', width: '28px', height: '28px' }}>
-                    <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
-                  </div>
-                  <h2 className="font-arimo font-bold text-[#17223E]" style={{ fontSize: '20px', lineHeight: '28px' }}>
-                    Time Distribution
-                  </h2>
-                </div>
-
-                {/* SVG Pie Chart */}
-                <div className="flex items-center justify-center mb-4">
-                  {totalTypeMins === 0 ? (
-                    <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '180px' }}>
-                      No timed tasks today
-                    </div>
-                  ) : (
-                    <svg viewBox="0 0 220 220" width="200" height="200">
-                      {(() => {
-                        const cx = 110, cy = 110, r = 85;
-                        let angle = -Math.PI / 2;
-                        return timeByType.map((slice) => {
-                          const sliceAngle = (slice.minutes / totalTypeMins) * 2 * Math.PI;
-                          const path = pieSlicePath(cx, cy, r, angle, angle + sliceAngle);
-                          angle += sliceAngle;
-                          return <path key={slice.id} d={path} fill={slice.color} stroke="#fff" strokeWidth="2" />;
-                        });
-                      })()}
-                      {/* Center label */}
-                      <text x="110" y="105" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="22" fontFamily="Arimo, sans-serif">
-                        {fmtHours(totalTypeMins)}
-                      </text>
-                      <text x="110" y="128" textAnchor="middle" dominantBaseline="middle" fill="#6B7280" fontSize="11" fontFamily="Arimo, sans-serif">
-                        total
-                      </text>
-                    </svg>
-                  )}
-                </div>
-
-                {/* Legend */}
-                <div className="space-y-3 px-2">
-                  {totalTypeMins === 0 ? (
-                    typeConfig.slice(0, 3).map(tc => (
-                      <div key={tc.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="w-3 h-3 rounded-full" style={{ background: tc.color }}></span>
-                          <span className="font-arimo text-[#374151] text-sm font-medium">{tc.label}</span>
-                        </div>
-                        <span className="font-arimo font-bold text-[#9CA3AF] text-sm">—</span>
-                      </div>
-                    ))
-                  ) : (
-                    timeByType.map(slice => (
-                      <div key={slice.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="w-3 h-3 rounded-full" style={{ background: slice.color }}></span>
-                          <span className="font-arimo text-[#374151] text-sm font-medium">{slice.label}</span>
-                        </div>
-                        <span className="font-arimo font-bold text-[#111827] text-sm">{fmtHours(slice.minutes)}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Card 1: Syllabus Coverage */}
+              {/* Card 0: Syllabus Coverage */}
               <div
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
               >
@@ -984,7 +916,7 @@ export default function StudyPlannerPage() {
                 </div>
               </div>
 
-              {/* Card 2: Weekly Goals */}
+              {/* Card 1: Weekly Goals */}
               <div
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
               >
@@ -1039,7 +971,7 @@ export default function StudyPlannerPage() {
                 </div>
               </div>
 
-              {/* Card 3: Planner Sync — fixed width matches "Your Plan is Empty" above */}
+              {/* Card 2: Planner Sync — fixed width matches "Your Plan is Empty" above */}
               <div
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] flex flex-col justify-between"
                 style={{ width: '100%', padding: '24px' }}
@@ -1208,6 +1140,79 @@ export default function StudyPlannerPage() {
                     ))}
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Time Distribution */}
+            <div
+              style={{
+                width: '290px',
+                borderRadius: '16px',
+                border: '0.8px solid #E5E7EB',
+                background: '#FFFFFF',
+                padding: '20px 16px',
+              }}
+            >
+              <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
+                <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>
+                  <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
+                </div>
+                <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
+                  Time Distribution
+                </span>
+              </div>
+
+              {/* SVG Pie Chart */}
+              <div className="flex items-center justify-center" style={{ marginBottom: '12px' }}>
+                {totalTypeMins === 0 ? (
+                  <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
+                    No timed tasks today
+                  </div>
+                ) : (
+                  <svg viewBox="0 0 220 220" width="160" height="160">
+                    {(() => {
+                      const cx = 110, cy = 110, r = 85;
+                      let angle = -Math.PI / 2;
+                      return timeByType.map((slice) => {
+                        const sliceAngle = (slice.minutes / totalTypeMins) * 2 * Math.PI;
+                        const path = pieSlicePath(cx, cy, r, angle, angle + sliceAngle);
+                        angle += sliceAngle;
+                        return <path key={slice.id} d={path} fill={slice.color} stroke="#fff" strokeWidth="2" />;
+                      });
+                    })()}
+                    <text x="110" y="105" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="22" fontFamily="Arimo, sans-serif">
+                      {fmtHours(totalTypeMins)}
+                    </text>
+                    <text x="110" y="128" textAnchor="middle" dominantBaseline="middle" fill="#6B7280" fontSize="11" fontFamily="Arimo, sans-serif">
+                      total
+                    </text>
+                  </svg>
+                )}
+              </div>
+
+              {/* Legend */}
+              <div className="space-y-2">
+                {totalTypeMins === 0 ? (
+                  typeConfig.slice(0, 3).map(tc => (
+                    <div key={tc.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: tc.color }}></span>
+                        <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{tc.label}</span>
+                      </div>
+                      <span className="font-arimo font-bold text-[#9CA3AF]" style={{ fontSize: '13px' }}>—</span>
+                    </div>
+                  ))
+                ) : (
+                  timeByType.map(slice => (
+                    <div key={slice.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: slice.color }}></span>
+                        <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{slice.label}</span>
+                      </div>
+                      <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtHours(slice.minutes)}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

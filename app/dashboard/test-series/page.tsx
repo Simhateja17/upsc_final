@@ -159,15 +159,13 @@ export default function TestSeriesPage() {
               style={{
                 position: 'relative',
                 width: '100%',
-                marginLeft: 0,
-                marginRight: 0,
-                marginTop: 0,
-                minHeight: 320,
-                marginBottom: 32,
                 background: '#060C1C',
-                padding: '24px 24px 42px',
+                padding: '24px 26px 22px',
                 boxSizing: 'border-box',
                 overflow: 'hidden',
+                borderRadius: 16,
+                border: '1px solid rgba(255,255,255,0.05)',
+                marginBottom: 16,
               }}
             >
               <div

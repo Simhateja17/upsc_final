@@ -398,17 +398,17 @@ function MockTestsPageInner() {
       {/* Main scrollable content */}
       <main className="flex-1 overflow-y-auto" style={{ background: '#E8EDF5' }}>
 
-        {/* ── Hero Area (Full Width) ── */}
+        {/* ── Hero Area ── */}
         <div style={{
           textAlign: 'center',
-          padding: 'clamp(28px, 2.5vw, 40px) clamp(16px, 1.5vw, 24px) clamp(28px, 2.4vw, 40px)',
-          maxWidth: '1320px',
-          margin: '0 auto clamp(18px, 1.7vw, 28px)',
+          padding: '24px 26px 22px',
           background: 'radial-gradient(circle at top left, rgba(255,210,115,0.18), transparent 34%), linear-gradient(135deg, #070F24 0%, #101A33 55%, #17223E 100%)',
-          borderRadius: '0 0 28px 28px',
+          borderRadius: 16,
+          border: '1px solid rgba(255,255,255,0.05)',
           boxShadow: '0 20px 50px rgba(8,15,36,0.18)',
           position: 'relative',
           overflow: 'hidden',
+          marginBottom: 16,
         }}>
           <div
             aria-hidden="true"
@@ -514,69 +514,60 @@ function MockTestsPageInner() {
               ))}
             </div>
 
-            {/* Prelims / Mains Toggle */}
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              borderRadius: '999px',
-              padding: '5px',
-              background: 'rgba(255,255,255,0.08)',
-              border: '0.8px solid rgba(255,255,255,0.12)',
-              boxShadow: '0px 1px 3px 0px #0000001A',
-              marginTop: '22px',
-            }}>
-              <button
-                onClick={() => setSelectedExamMode('prelims')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  paddingLeft: '30px',
-                  paddingRight: '30px',
-                  height: '58px',
-                  borderRadius: '999px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: selectedExamMode === 'prelims' ? '#0F172B' : 'transparent',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <img src="/9k.png" alt="Prelims" style={{ width: '22px', height: '22px', objectFit: 'contain', flexShrink: 0 }} />
-                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '17px', color: selectedExamMode === 'prelims' ? '#FFFFFF' : '#4A5565' }}>Prelims</span>
-              </button>
-              <button
-                onClick={() => setSelectedExamMode('mains')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  paddingLeft: '30px',
-                  paddingRight: '30px',
-                  height: '58px',
-                  borderRadius: '999px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: selectedExamMode === 'mains' ? '#0F172B' : 'transparent',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <img src="/8k.png" alt="Mains" style={{ width: '22px', height: '22px', objectFit: 'contain', flexShrink: 0 }} />
-                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '17px', color: selectedExamMode === 'mains' ? '#FFFFFF' : '#4A5565' }}>Mains</span>
-              </button>
-            </div>
+          </div>
+          </div>
 
-              <p style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 'clamp(13px, 0.85vw, 15px)', lineHeight: 1.6, color: '#CBD5E1' }}>
-                {practiceStats ? (
-                  <>
-                    You&apos;ve taken <span style={{ color: '#16A34A', fontWeight: 700 }}>{practiceStats.todayCount} test{practiceStats.todayCount !== 1 ? 's' : ''}</span> today
-                    {practiceStats.streak > 0 && <> · <span style={{ color: '#F97316', fontWeight: 700 }}>{practiceStats.streak} day streak</span></>}
-                  </>
-                ) : (
-                  <>Start practicing to track your daily progress.</>
-                )}
-              </p>
+        {/* ── Prelims / Mains Toggle (below hero, on light bg) ── */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 'clamp(16px, 1.8vw, 24px) 0' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            borderRadius: '999px',
+            padding: '5px',
+            background: '#FFFFFF',
+            border: '1px solid #E5E7EB',
+            boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.10)',
+          }}>
+            <button
+              onClick={() => setSelectedExamMode('prelims')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                paddingLeft: '30px',
+                paddingRight: '30px',
+                height: '58px',
+                borderRadius: '999px',
+                border: 'none',
+                cursor: 'pointer',
+                background: selectedExamMode === 'prelims' ? '#0F172B' : 'transparent',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <img src="/9k.png" alt="Prelims" style={{ width: '22px', height: '22px', objectFit: 'contain', flexShrink: 0 }} />
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '17px', color: selectedExamMode === 'prelims' ? '#FFFFFF' : '#4A5565' }}>Prelims</span>
+            </button>
+            <button
+              onClick={() => setSelectedExamMode('mains')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                paddingLeft: '30px',
+                paddingRight: '30px',
+                height: '58px',
+                borderRadius: '999px',
+                border: 'none',
+                cursor: 'pointer',
+                background: selectedExamMode === 'mains' ? '#0F172B' : 'transparent',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <img src="/8k.png" alt="Mains" style={{ width: '22px', height: '22px', objectFit: 'contain', flexShrink: 0 }} />
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '17px', color: selectedExamMode === 'mains' ? '#FFFFFF' : '#4A5565' }}>Mains</span>
+            </button>
           </div>
-          </div>
+        </div>
 
         {/* ── Two Column Layout: Steps + Test Summary ── */}
         <div style={{ display: 'flex', gap: 'clamp(10px, 1vw, 16px)', padding: '0 clamp(12px, 1.2vw, 20px) clamp(12px, 1.2vw, 20px)', maxWidth: '1320px', margin: '0 auto' }}>
