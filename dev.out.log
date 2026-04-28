@@ -8,3 +8,7 @@
    - Environments: .env
 
  ✓ Ready in 2.5s
+ ○ Compiling /dashboard/flashcards ...
+ ✓ Compiled /dashboard/flashcards in 3.9s (625 modules)
+ ✓ Compiled in 448ms (324 modules)
+ ✓ Compiled /not-found in 460ms (614 modules)

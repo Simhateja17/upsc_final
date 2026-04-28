@@ -223,7 +223,7 @@ function LoginPageContent() {
           style={{ position: 'absolute', top: 24, left: 26 }}
         >
           <Image
-            src="/header-logo-footer.png"
+            src="/auth-logo.png"
             alt="RiseWithJeet"
             width={218}
             height={73}
@@ -233,7 +233,7 @@ function LoginPageContent() {
         </div>
 
         {/* Main content */}
-        <div className="relative z-10" style={{ width: 382, top: 188, left: 48, position: 'absolute' }}>
+        <div className="relative z-10" style={{ width: 382, top: 124, left: 48, position: 'absolute' }}>
 
           {/* Trusted by badge */}
           <div className="flex items-center gap-2" style={{ marginBottom: 20 }}>
