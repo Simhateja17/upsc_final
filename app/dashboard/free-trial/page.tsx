@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import React, { useState, useEffect } from 'react';
+import DashboardPageHero from '@/components/DashboardPageHero';
 import { pricingService } from '@/lib/services';
 import PurchaseModal from '@/components/PurchaseModal';
 
@@ -272,52 +273,29 @@ export default function FreeTrialPage() {
   return (
     <div style={{ background: '#FFFFFF', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
       {/* ================================================================ */}
+      {/* ================================================================ */}
       {/*  SECTION 1: HERO                                                  */}
       {/* ================================================================ */}
-      <section style={{ background: '#070F24', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', left: '-10%', top: '-30%', width: '520px', height: '520px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(252,186,72,0.2) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', right: '-10%', bottom: '-30%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(23,91,226,0.2) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }} />
+      <DashboardPageHero
+        badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeText="PERSONALIZED MENTORSHIP"
+        title={
+          <>
+            The guidance that turns{' '}
+            <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>aspirants</em>
+            <br />
+            into officers
+          </>
+        }
+        subtitle="1-on-1 sessions tailored to your stage and timeline. Mentored by Abhijeet Sir."
+        stats={[
+          { value: '200+', label: 'Mentees', color: '#FDC700' },
+          { value: '94%',  label: 'Success Rate', color: '#F87171' },
+          { value: '15',   label: 'Selections', color: '#4ADE80' },
+          { value: '5+',   label: 'Yrs Exp', color: '#FFFFFF' },
+        ]}
+      />
 
-        <div style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 10 }}>
-          <button onClick={() => window.history.back()} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '999px', padding: '8px 16px', color: '#CBD5E1', fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', backdropFilter: 'blur(10px)', transition: 'all 0.2s ease', fontFamily: 'Inter, sans-serif' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#FFFFFF'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#CBD5E1'; }}>
-            ← Back to Dashboard
-          </button>
-        </div>
-
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '60px 24px 40px', position: 'relative', zIndex: 1, textAlign: 'center' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '100px', padding: '4px 6px 4px 14px', marginBottom: '24px' }}>
-            <img src="/lightning.png" alt="" style={{ width: '14px', height: '14px', objectFit: 'contain', marginRight: '8px' }} />
-            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '11px', color: '#F5C75D', letterSpacing: '0.5px', textTransform: 'uppercase', paddingRight: '4px' }}>PERSONALIZED</span>
-            <span style={{ color: '#070F24', background: '#F5C75D', fontWeight: 700, fontSize: '11px', letterSpacing: '0.5px', textTransform: 'uppercase', padding: '3px 10px', borderRadius: '6px' }}>MENTORSHIP</span>
-          </div>
-
-          <h1 style={{ fontFamily: 'Tinos, serif', fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: 400, color: '#FFFFFF', lineHeight: 1.1, marginBottom: '16px', letterSpacing: '-0.01em' }}>
-            The guidance that turns<br />
-            <span style={{ fontFamily: 'Tinos, serif', fontStyle: 'italic', fontWeight: 400, color: '#F5C75D' }}>aspirants</span>{' '}into officers.
-          </h1>
-
-          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 'clamp(14px, 1.2vw, 17px)', color: '#94A3B8', lineHeight: 1.6, maxWidth: '560px', margin: '0 auto 32px' }}>
-            1-on-1 sessions for 3-12 students, tailored to your stage &amp; your timeline.<br />Mentored by Abhijeet.
-          </p>
-
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', overflow: 'hidden' }}>
-            {heroStats.map((stat, i) => (
-              <React.Fragment key={stat.label}>
-                {i > 0 && <div style={{ width: '1px', height: '48px', background: 'rgba(255,255,255,0.08)' }} />}
-                <div style={{ textAlign: 'center', minWidth: 'clamp(90px, 12vw, 140px)', padding: '16px 20px' }}>
-                  <div style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', fontWeight: 700, color: stat.color, lineHeight: 1.1 }}>{stat.value}</div>
-                  <div style={{ fontSize: '10px', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '6px' }}>{stat.label}</div>
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================ */}
       {/*  SECTION 2: MENTOR CARD                                           */}
       {/* ================================================================ */}
       <section style={{ maxWidth: '1000px', margin: '24px auto 0', padding: '0 24px', position: 'relative', zIndex: 2 }}>

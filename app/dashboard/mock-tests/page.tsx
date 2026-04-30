@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService, dashboardService, pricingService } from '@/lib/services';
+import DashboardPageHero from '@/components/DashboardPageHero';
 import { liveStudentCount } from '@/lib/liveCount';
 import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
 
@@ -398,126 +399,26 @@ function MockTestsPageInner() {
       {/* Main scrollable content */}
       <main className="flex-1 overflow-y-auto" style={{ background: '#E8EDF5' }}>
 
-        {/* ── Hero Area ── */}
-        <div style={{
-          textAlign: 'center',
-          padding: '24px 26px 22px',
-          background: 'radial-gradient(circle at top left, rgba(255,210,115,0.18), transparent 34%), linear-gradient(135deg, #070F24 0%, #101A33 55%, #17223E 100%)',
-          borderRadius: 16,
-          border: '1px solid rgba(255,255,255,0.05)',
-          boxShadow: '0 20px 50px rgba(8,15,36,0.18)',
-          position: 'relative',
-          overflow: 'hidden',
-          marginBottom: 16,
-        }}>
-          <div
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
-              backgroundSize: '34px 34px',
-            }}
-          />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-
-            {/* Badge pill */}
-            <div style={{
-              display: 'inline-block',
-              background: 'rgba(255,210,115,0.12)',
-              color: '#FFD273',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 600,
-              fontSize: '12px',
-              padding: '4px 14px',
-              borderRadius: '999px',
-              marginBottom: '14px',
-              border: '1px solid rgba(255,210,115,0.24)',
-            }}>
-              📊 India&apos;s #1 UPSC Mock Test Platform
-            </div>
-
-            {/* Heading */}
-            <h1 style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 700,
-              fontSize: '42px',
-              lineHeight: '50px',
-              color: '#FFFFFF',
-              marginBottom: '8px',
-            }}>
+        <DashboardPageHero
+          badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+          badgeText="MOCK TEST PLATFORM"
+          title={
+            <>
               Build Your{' '}
-              <span style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontStyle: 'italic', fontSize: '42px', lineHeight: '50px', color: '#FFD273' }}>Perfect</span>{' '}
+              <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Perfect</em>{' '}
               Mock Test
-            </h1>
+            </>
+          }
+          subtitle="Adaptive questions · Real exam environment · Detailed analytics."
+          stats={[
+            { value: platformStats ? platformStats.questionsCount.toLocaleString('en-IN') + '+' : '5000+', label: 'Questions', color: '#FDC700' },
+            { value: platformStats ? platformStats.testsCount.toLocaleString('en-IN') + '+' : '12K+', label: 'Tests Taken', color: '#F97316' },
+            { value: platformStats ? platformStats.usersCount.toLocaleString('en-IN') + '+' : '50K+', label: 'Community', color: '#22C55E' },
+            { value: '86%', label: 'Success Rate', color: '#FFFFFF' },
+          ]}
+        />
 
-            {/* Subtitle */}
-            <p style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 400,
-              fontSize: '15px',
-              lineHeight: '22px',
-              color: '#B7C2D8',
-              marginBottom: '20px',
-            }}>
-              Adaptive questions · Real exam environment · Detailed analytics. Add as much as it takes to improve.
-            </p>
-
-            {/* Stats Container */}
-            <div style={{
-              background: 'rgba(255,255,255,0.08)',
-              borderRadius: '16px',
-              border: '0.8px solid rgba(255,255,255,0.12)',
-              boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.10)',
-              padding: '20px 36px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              maxWidth: '600px',
-              margin: '0 auto',
-            }}>
-              {[
-                { value: platformStats ? `${platformStats.questionsCount.toLocaleString('en-IN')}+` : '—', label: 'Questions', color: '#FFD273' },
-                { value: platformStats ? `${platformStats.testsCount.toLocaleString('en-IN')}+` : '—', label: 'Tests Taken', color: '#F97316' },
-                { value: platformStats ? `${platformStats.usersCount.toLocaleString('en-IN')}+` : '—', label: 'Community', color: '#22C55E' },
-                { value: '86%', label: 'Success Rate', color: '#FFFFFF' },
-              ].map((stat, idx, arr) => (
-                <div key={stat.label} style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                      fontFamily: 'Arimo, sans-serif',
-                      fontWeight: 700,
-                      fontSize: '32px',
-                      lineHeight: '40px',
-                      color: stat.color,
-                      fontVariantEmoji: 'text' as React.CSSProperties['fontVariantEmoji'],
-                    }}>
-                      {stat.value.includes('+')
-                        ? <>{stat.value.replace('+', '')}<span style={{ color: '#DBAC49' }}>+</span></>
-                        : stat.value}
-                    </div>
-                    <div style={{
-                      fontFamily: 'Arimo, sans-serif',
-                      fontWeight: 400,
-                      fontSize: '11px',
-                      lineHeight: '16px',
-                      color: '#B7C2D8',
-                      textAlign: 'center',
-                    }}>
-                      {stat.label}
-                    </div>
-                  </div>
-                  {idx < arr.length - 1 && (
-                    <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.12)', margin: '0 24px' }} />
-                  )}
-                </div>
-              ))}
-            </div>
-
-          </div>
-          </div>
-
-        {/* ── Prelims / Mains Toggle (below hero, on light bg) ── */}
+                {/* ── Prelims / Mains Toggle (below hero, on light bg) ── */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: 'clamp(16px, 1.8vw, 24px) 0' }}>
           <div style={{
             display: 'inline-flex',

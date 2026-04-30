@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { mindmapService } from '@/lib/services';
+import DashboardPageHero from '@/components/DashboardPageHero';
 
 const Icons = {
   Polity: () => (
@@ -75,158 +76,26 @@ export default function MindmapPage() {
   const needReview = Math.max(0, totalMaps - totalExplored);
 
   return (
-    <div className="min-h-screen font-inter" style={{ background: '#070F24' }}>
+    <div className="min-h-screen font-inter" style={{ background: '#F5F6FA' }}>
 
-      {/* ── Hero: full-width, centered, matching Daily Editorial pattern ── */}
-      <div
-        style={{
-          position: 'relative',
-          overflow: 'hidden',
-          padding: 'clamp(28px, 3vw, 44px) clamp(16px, 3vw, 42px) clamp(36px, 4vw, 56px)',
-        }}
-      >
-        {/* Subtle grid overlay */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-            pointerEvents: 'none',
-          }}
-        />
-        {/* Gold radial glow top-center */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: '-80px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '600px',
-            height: '400px',
-            background: 'radial-gradient(ellipse at center, rgba(253,199,0,0.09) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Back to Dashboard — top left */}
-          <Link href="/dashboard">
-            <button
-              className="flex items-center gap-2 font-inter font-semibold"
-              style={{
-                height: '36px',
-                borderRadius: '999px',
-                border: '1px solid rgba(255,255,255,0.18)',
-                padding: '0 14px',
-                fontSize: '13px',
-                color: '#FFFFFF',
-                backgroundColor: 'rgba(255,255,255,0.08)',
-                whiteSpace: 'nowrap',
-                marginBottom: 'clamp(24px, 3vw, 40px)',
-                cursor: 'pointer',
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              ← Back to Dashboard
-            </button>
-          </Link>
-
-          {/* Centered content */}
-          <div className="flex flex-col items-center text-center">
-            {/* Badge */}
-            <div
-              className="inline-flex items-center gap-2 font-inter font-bold"
-              style={{
-                background: '#FDC700',
-                borderRadius: '999px',
-                padding: '6px 16px',
-                fontSize: '11px',
-                color: '#101828',
-                letterSpacing: '0.8px',
-                textTransform: 'uppercase',
-                marginBottom: '24px',
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="3" fill="#101828"/>
-                <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="#101828" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              REVISION — VISUAL LEARNING
-            </div>
-
-            {/* Heading */}
-            <h1
-              className="font-inter font-bold"
-              style={{
-                fontSize: 'clamp(36px, 5vw, 64px)',
-                lineHeight: '1.05',
-                color: '#FFFFFF',
-                marginBottom: '16px',
-              }}
-            >
-              Your <span style={{ color: '#FDC700', fontStyle: 'italic' }}>Mindmap</span> Library.
-            </h1>
-
-            {/* Subtitle */}
-            <p
-              className="font-inter"
-              style={{
-                fontSize: 'clamp(14px, 1.2vw, 16px)',
-                lineHeight: '1.6',
-                color: '#B7C2D8',
-                marginBottom: 'clamp(28px, 3vw, 40px)',
-              }}
-            >
-              See the big picture. Every topic structured as a visual tree — revise faster, remember longer.
-            </p>
-
-            {/* Stats strip — horizontal with dividers */}
-            <div
-              style={{
-                display: 'inline-flex',
-                background: 'rgba(255,255,255,0.07)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '16px',
-                overflow: 'hidden',
-              }}
-            >
-              {[
-                { num: totalMaps,   label: 'TOTAL CARDS',  color: '#46ECD5' },
-                { num: mastered,    label: 'MASTERED',     color: '#DAB2FF' },
-                { num: `${coverage}%`, label: 'COVERAGE',  color: '#4ADE80' },
-                { num: needReview,  label: 'NEED REVIEW',  color: '#FF6B6B' },
-              ].map((item, i, arr) => (
-                <div
-                  key={item.label}
-                  style={{
-                    padding: 'clamp(14px, 1.5vw, 20px) clamp(20px, 2.5vw, 36px)',
-                    textAlign: 'center',
-                    borderRight: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.10)' : 'none',
-                  }}
-                >
-                  <div
-                    className="font-inter font-bold"
-                    style={{ fontSize: 'clamp(22px, 2.5vw, 32px)', color: item.color, lineHeight: 1 }}
-                  >
-                    {item.num}
-                  </div>
-                  <div
-                    className="font-inter font-semibold"
-                    style={{ fontSize: '10px', color: '#6B7A9A', letterSpacing: '0.8px', marginTop: '6px', textTransform: 'uppercase' }}
-                  >
-                    {item.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      <DashboardPageHero
+        badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeText="VISUAL LEARNING"
+        title={
+          <>
+            Map Your <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Knowledge</em>
+            <br />
+            with Mindmaps
+          </>
+        }
+        subtitle="See the big picture. Every topic structured as a visual tree — revise faster, remember longer."
+        stats={[
+          { value: String(totalMaps),      label: 'Total Maps',   color: '#FDC700' },
+          { value: String(mastered),        label: 'Mastered',     color: '#4ADE80' },
+          { value: coverage + '%',          label: 'Coverage',     color: '#F87171' },
+          { value: String(needReview),      label: 'Need Review',  color: '#FFFFFF' },
+        ]}
+      />
 
       {/* ── Content section: light background ── */}
       <div

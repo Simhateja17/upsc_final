@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { libraryService, pricingService } from '@/lib/services';
+import DashboardPageHero from '@/components/DashboardPageHero';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -151,175 +152,24 @@ export default function LibraryPage() {
       className="font-arimo w-full min-h-screen"
       style={{ background: '#F9FAFB' }}
     >
-      {/* ============================================================ */}
-      {/*  SECTION 1: HERO - Dark Navy with Grid Texture                 */}
-      {/* ============================================================ */}
-        <div
-          className="flex flex-col items-center relative"
-          style={{
-            background: '#060C1C',
-            minHeight: 'clamp(320px, 28vw, 379px)',
-            paddingTop: 'clamp(24px, 2.5vw, 32px)',
-            paddingBottom: 'clamp(24px, 2.5vw, 32px)',
-            marginBottom: 'clamp(40px, 4vw, 60px)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Grid texture overlay */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              opacity: 0.06,
-              backgroundImage:
-                'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)',
-              backgroundSize: '40px 40px',
-            }}
-          />
-
-          {/* Decorative glow */}
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              width: '600px',
-              height: '600px',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)',
-              top: '-200px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }}
-          />
-
-          <div className="relative z-10 flex flex-col items-center" style={{ maxWidth: 'min(94vw, 1400px)', padding: '0 clamp(16px, 2vw, 30px)', width: '100%' }}>
-            {/* Back to Dashboard */}
-            <button
-              onClick={() => window.history.back()}
-              className="font-arimo font-medium"
-              style={{
-                fontSize: 'clamp(12px, 1vw, 14px)',
-                color: '#94A3B8',
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                padding: '8px 16px',
-                cursor: 'pointer',
-                marginBottom: 'clamp(16px, 1.5vw, 24px)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s ease',
-                alignSelf: 'flex-start',
-              }}
-            >
-              ← Back to Dashboard
-            </button>
-
-            {/* Badge pill */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '26843500px',
-                padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.5vw, 20px)',
-                fontSize: 'clamp(11px, 0.9vw, 13px)',
-                color: '#F5C75D',
-                letterSpacing: '0.5px',
-                marginBottom: 'clamp(12px, 1vw, 16px)',
-                width: 'fit-content',
-              }}
-            >
-              <span style={{ fontSize: 'clamp(14px, 1.2vw, 16px)', marginRight: '6px' }}>{'\uD83D\uDCDA'}</span>
-              <span style={{ color: '#F5C75D', fontWeight: 600 }}>SIMPLIFIED</span>
-              <span
-                style={{
-                  background: '#F5A623',
-                  color: '#0E182D',
-                  borderRadius: '4px',
-                  padding: '2px 6px',
-                  fontSize: 'clamp(11px, 0.9vw, 13px)',
-                  fontWeight: 700,
-                  letterSpacing: '0.3px',
-                  margin: '0 6px',
-                }}
-              >
-                STUDY
-              </span>
-              <span style={{ color: '#F5C75D', fontWeight: 600 }}>MATERIAL</span>
-            </div>
-
-            {/* Main heading */}
-            <h1
-              className="text-center"
-              style={{
-                fontFamily: 'Tinos, serif',
-                fontWeight: 400,
-                fontSize: 'clamp(32px, 3.59vw, 48px)',
-                lineHeight: 'clamp(38px, 4.2vw, 56px)',
-                color: '#FFFFFF',
-                marginBottom: 'clamp(8px, 0.8vw, 12px)',
-              }}
-            >
-              Your Complete{' '}
-              <span style={{ fontFamily: 'Tinos, serif', fontStyle: 'italic', fontWeight: 400, color: '#F5C75D' }}>Library</span>
-              <br />
-              for UPSC Preparation
-            </h1>
-
-            {/* Description */}
-            <p
-              className="text-center"
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 400,
-                fontSize: 'clamp(13px, 1.1vw, 15px)',
-                lineHeight: 'clamp(20px, 1.9vw, 24px)',
-                color: '#64748B',
-                maxWidth: 'clamp(420px, 40vw, 560px)',
-                marginBottom: 'clamp(16px, 1.5vw, 24px)',
-              }}
-            >
-              Video lectures PDFs, Data &amp; Stats PDFs, assignments &amp; MCQ collections. Best of teaches on YouTube, beautifully organized and simplified.
-            </p>
-
-            {/* Stats card */}
-            <div
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '16px',
-                padding: 'clamp(12px, 1.2vw, 16px) clamp(10px, 1vw, 14px)',
-                width: '100%',
-                maxWidth: 'clamp(480px, 48vw, 580px)',
-                margin: '0 auto',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <div className="flex items-center justify-between">
-                {heroStats.map((stat, idx) => (
-                  <React.Fragment key={stat.label}>
-                    <div className="flex flex-col items-center">
-                      <div className="font-arimo font-bold" style={{ fontSize: 'clamp(18px, 1.8vw, 24px)', color: stat.numberColor, lineHeight: 1.2 }}>
-                        {stat.number}
-                        {stat.suffix && <span style={{ color: stat.numberColor }}>{stat.suffix}</span>}
-                      </div>
-                      <div className="font-arimo" style={{ fontSize: 'clamp(8px, 0.65vw, 10px)', color: '#94A3B8', marginTop: '4px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                        {stat.label}
-                      </div>
-                    </div>
-                    {idx < heroStats.length - 1 && (
-                      <div style={{ width: '1px', height: 'clamp(28px, 2.5vw, 36px)', background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <DashboardPageHero
+        badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeText="FREE STUDY MATERIALS"
+        title={
+          <>
+            Master UPSC with{' '}
+            <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Expert Notes</em>
+            {' '}and Free Resources
+          </>
+        }
+        subtitle="From PYQ-backed notes to concise summaries — everything you need, free."
+        stats={[
+          { value: '100+', label: 'Free PDFs', color: '#FDC700' },
+          { value: '25+', label: 'PYQ-Backed Notes', color: '#F87171' },
+          { value: '1L+', label: 'Downloads', color: '#4ADE80' },
+          { value: '∞', label: 'Always Free', color: '#FFFFFF' },
+        ]}
+      />
       {/* Centered content wrapper for bottom sections */}
       <div
         className="w-full mx-auto"

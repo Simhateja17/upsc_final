@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { testSeriesService } from '@/lib/services';
 import PurchaseModal from '@/components/PurchaseModal';
+import DashboardPageHero from '@/components/DashboardPageHero';
 
 interface HeroStats {
   activeSeries: number;
@@ -150,168 +151,26 @@ export default function TestSeriesPage() {
               width: '100%',
               maxWidth: '100%',
               margin: 0,
-              padding: '0 0 48px',
+              padding: 'clamp(12px, 1.6vw, 20px) clamp(16px, 2vw, 32px) 48px',
               boxSizing: 'border-box',
             }}
           >
             {/* Hero */}
-            <div
-              style={{
-                position: 'relative',
-                width: '100%',
-                background: '#060C1C',
-                padding: '24px 26px 22px',
-                boxSizing: 'border-box',
-                overflow: 'hidden',
-                borderRadius: 16,
-                border: '1px solid rgba(255,255,255,0.05)',
-                marginBottom: 16,
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  backgroundImage:
-                    'linear-gradient(rgba(66, 88, 128, 0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(66, 88, 128, 0.18) 1px, transparent 1px)',
-                  backgroundSize: '40px 40px',
-                  pointerEvents: 'none',
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  pointerEvents: 'none',
-                  background:
-                    'radial-gradient(circle at 12% 38%, rgba(253, 199, 0, 0.16) 0%, transparent 36%), radial-gradient(circle at 92% 78%, rgba(59, 130, 246, 0.24) 0%, transparent 30%)',
-                }}
-              />
-              <div style={{ position: 'relative', zIndex: 1, maxWidth: 920, margin: '0 auto', textAlign: 'center', paddingTop: 8 }}>
-                {/* Badge pill */}
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: '100px',
-                    padding: '6px 14px',
-                    marginBottom: '16px',
-                  }}
-                >
-                  <img src="/lightning.png" alt="lightning" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-                  <span
-                    style={{
-                      fontFamily: 'Inter',
-                      fontWeight: 700,
-                      fontSize: '12px',
-                      lineHeight: '16px',
-                      color: '#081228',
-                      background: '#FDC700',
-                      padding: '4px 12px',
-                      borderRadius: '6px',
-                      letterSpacing: '0.3px',
-                    }}
-                  >
-                    TEST SERIES
-                  </span>
-                  <span style={{ color: '#FDC700', fontWeight: 700, fontSize: '12px', lineHeight: '16px', letterSpacing: '0.3px' }}>
-                    ALL PROGRAMS
-                  </span>
-                </div>
-                <h1
-                  style={{
-                    fontFamily: 'Inter',
-                    fontWeight: 700,
-                    fontSize: '48px',
-                    lineHeight: '48px',
-                    color: '#FFFFFF',
-                    margin: 0,
-                    marginBottom: 14,
-                  }}
-                >
-                  Choose Your <span style={{ color: '#E8B84B', fontStyle: 'italic', fontWeight: 700 }}>Battle Plan.</span>
-                </h1>
-                <p
-                  style={{
-                    fontFamily: 'Inter',
-                    fontWeight: 500,
-                    fontSize: 14,
-                    lineHeight: '20px',
-                    color: '#6A7282',
-                    maxWidth: 1080,
-                    margin: '0 auto 30px',
-                  }}
-                >
-                  From NCERT foundations to full Prelims war-room simulations each series is crafted to mirror real UPSC patterns. Rise every day. Rise with Jeet.
-                </p>
-                {(() => {
-                  const statCards = [
-                    { value: heroStats ? String(heroStats.activeSeries) : '847', label: 'ACTIVE', valueColor: '#F5A623' },
-                    { value: heroStats ? heroStats.totalStudents.toLocaleString('en-IN') : '1.2L+', label: 'STUDENTS', valueColor: '#FB7185' },
-                    { value: heroStats ? heroStats.testsTaken.toLocaleString('en-IN') + (heroStats.testsTaken > 0 ? '+' : '') : '42,980+', label: 'TESTS TAKEN', valueColor: '#FFFFFF' },
-                    { value: heroStats ? `${heroStats.successRate}%` : '68%', label: 'SUCCESS RATE', valueColor: '#22C55E' },
-                  ];
-                  return (
-                    <div
-                      style={{
-                        display: 'inline-flex',
-                        width: 'min(100%, 760px)',
-                        borderRadius: 16,
-                        overflow: 'hidden',
-                        border: '0.8px solid #2E3B55',
-                        background: 'rgba(21, 32, 54, 0.92)',
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      {statCards.map((card, index) => (
-                        <div
-                          key={card.label}
-                          style={{
-                            flex: '1 1 170px',
-                            minHeight: 88,
-                            padding: '14px 16px',
-                            borderLeft: index === 0 ? undefined : '0.8px solid #2E3B55',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            textAlign: 'center',
-                            boxSizing: 'border-box',
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontFamily: 'Inter',
-                              fontWeight: 700,
-                              fontSize: 40,
-                              lineHeight: '36px',
-                              color: card.valueColor,
-                            }}
-                          >
-                            {card.value}
-                          </span>
-                          <span
-                            style={{
-                              fontFamily: 'Inter',
-                              fontWeight: 600,
-                              fontSize: 12,
-                              lineHeight: '16px',
-                              color: '#6A7282',
-                              letterSpacing: '0.5px',
-                              marginTop: 8,
-                            }}
-                          >
-                            {card.label}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>`r`n            </div>
+            <DashboardPageHero
+              badgeIcon={<img src="/lightning.png" alt="lightning" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+              badgeText="TEST SERIES"
+              heroBorderRadius={16}
+              heroHeight="auto"
+              heroMarginInline={0}
+              title={<>Choose Your <em style={{ color: '#e8a820', fontStyle: 'italic' }}>Battle Plan.</em></>}
+              subtitle="From NCERT foundations to full Prelims war-room simulations — each series is crafted to mirror real UPSC patterns. Rise every day. Rise with Jeet."
+              stats={[
+                { value: heroStats ? String(heroStats.activeSeries) : '847', label: 'Active Series', color: '#F5A623' },
+                { value: heroStats ? heroStats.totalStudents.toLocaleString('en-IN') : '1.2L+', label: 'Students', color: '#FB7185' },
+                { value: heroStats ? heroStats.testsTaken.toLocaleString('en-IN') + (heroStats.testsTaken > 0 ? '+' : '') : '42,980+', label: 'Tests Taken', color: '#FFFFFF' },
+                { value: heroStats ? `${heroStats.successRate}%` : '68%', label: 'Success Rate', color: '#22C55E' },
+              ]}
+            />
 
             {/* Filter bar */}
             <div

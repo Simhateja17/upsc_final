@@ -45,7 +45,7 @@ export default function SubjectList({
   );
 
   return (
-    <div className="w-full min-w-0 bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm">
+    <div className="w-full min-w-0 flex-1 bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm">
       {/* Header */}
       <div className="p-[11px_13px_9px] border-b-[1.5px] border-[#e0e8f4] flex-shrink-0">
         <div className="text-[9px] font-extrabold tracking-[1.6px] text-[#8795ae] uppercase mb-[8px]">

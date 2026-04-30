@@ -5,7 +5,7 @@ import { dashboardService, spacedRepService, userService } from '@/lib/services'
 
 const filterOptions = ['All', 'mcq', 'mains', 'pyq', 'custom'];
 const scheduleOptions = [3, 7, 15, 30];
-const heroBackground = 'https://www.figma.com/api/mcp/asset/3b484585-fa2c-4325-8913-de61c1b64a85';
+const heroBackground = 'https://www.figma.com/api/mcp/asset/131a2ecc-394d-42c2-a39f-8268ada9d3f0';
 
 const deckOptions = [
   { id: 'geography', label: 'Geography', icon: '🌍' },
@@ -240,10 +240,10 @@ export default function SpacedRepetitionPage() {
     }).length;
 
     return [
-      { value: overdue, label: 'OVERDUE', valueColor: '#F5A623' },
-      { value: scheduled, label: 'SCHEDULED', valueColor: '#FF7070' },
-      { value: dueToday, label: 'DUE TODAY', valueColor: '#FFFFFF' },
-      { value: streakDays, label: 'DAYS STREAK', valueColor: '#0E8A56' },
+      { value: overdue, label: 'OVERDUE', valueColor: '#F5A623', valueSize: 16 },
+      { value: scheduled, label: 'SCHEDULED', valueColor: '#FF7070', valueSize: 18 },
+      { value: dueToday, label: 'DUE TODAY', valueColor: '#FFFFFF', valueSize: 18 },
+      { value: streakDays, label: 'DAYS STREAK', valueColor: '#0E8A56', valueSize: 18 },
     ];
   })();
 
@@ -254,14 +254,15 @@ export default function SpacedRepetitionPage() {
   return (
     <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
-        <div className="w-full max-w-[1168px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {/* Header banner */}
           <div
-            className="relative w-full overflow-hidden rounded-[16px] px-6 sm:px-8 pt-8 pb-8 mb-6"
+            className="relative w-full overflow-hidden rounded-[16px]"
             style={{
-              minHeight: 236,
               background: '#161C2D',
               boxShadow: '0px 1px 0px rgba(255,255,255,0.03) inset',
+              padding: '24px 26px 22px',
+              marginBottom: 16,
             }}
           >
             <div className="pointer-events-none absolute inset-0">
@@ -275,51 +276,50 @@ export default function SpacedRepetitionPage() {
               <div
                 className="absolute inset-0"
                 style={{
-                  background: 'linear-gradient(180deg, rgba(18,24,39,0.92) 0%, rgba(18,24,39,0.96) 100%)',
-                }}
-              />
-              <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: 'linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)',
-                  backgroundSize: '28px 28px',
-                  opacity: 0.28,
+                  background: 'linear-gradient(180deg, rgba(12,18,33,0.76) 0%, rgba(12,18,33,0.84) 100%)',
                 }}
               />
               <div
                 className="absolute -right-24 bottom-[-48px] h-48 w-96 rounded-full blur-3xl"
-                style={{ background: 'radial-gradient(circle, rgba(255,196,107,0.20) 0%, rgba(255,196,107,0) 70%)' }}
+                style={{ background: 'radial-gradient(circle, rgba(255,210,140,0.28) 0%, rgba(255,210,140,0) 70%)' }}
               />
             </div>
 
             <div className="relative z-10 max-w-[768px]">
-              <div className="mb-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.5px] text-[#FDC700]" style={{ fontFamily: 'var(--font-jakarta)' }}>
-                WEAK SUBJECT TRACKER - AI-POWERED GAP ANALYSIS
+              <div
+                className="mb-[10px] inline-flex h-7 items-center rounded-[20px] border px-4 text-[10px] font-semibold uppercase tracking-[0.5px] text-[#FDC700]"
+                style={{
+                  fontFamily: 'Inter',
+                  background: 'rgba(255,255,255,0.06)',
+                  borderColor: 'rgba(255,255,255,0.12)',
+                }}
+              >
+                WEAK SUBJECT TRACKER - SPACED REPETITION
               </div>
-              <h1 className="mb-4 text-[36px] font-bold leading-[40px] text-white" style={{ fontFamily: 'Inter' }}>
+              <h1 className="mb-[14px] text-[36px] font-bold leading-[40px] text-white" style={{ fontFamily: 'Inter' }}>
                 Close every <span className="italic text-[#E8B84B]">gap</span> before exam day.
               </h1>
-              <p className="mb-6 text-[16px] leading-[24px] text-[#CBD1DC]" style={{ fontFamily: 'Inter' }}>
+              <p className="mb-5 max-w-[768px] text-[16px] leading-[24px] text-[#4A5565]" style={{ fontFamily: 'Inter' }}>
                 Real-time subject health monitoring pinpoints exactly which topics need your attention and builds a smart revision plan by ranking gaps through:
               </p>
 
               <div
-                className="grid w-full max-w-[516px] grid-cols-4 overflow-hidden rounded-[20px] border border-white/10 bg-[#161C2D]/90"
-                style={{ boxShadow: '0px 6px 18px rgba(0,0,0,0.18)' }}
+                className="grid w-full max-w-[508px] grid-cols-4 overflow-hidden rounded-[16px] bg-[#161c2d]"
+                style={{ border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0px 6px 18px rgba(0,0,0,0.18)' }}
               >
                 {heroStats.map((stat, index) => (
                   <div
                     key={stat.label}
-                    className={`flex min-h-[61px] flex-col items-center justify-center px-2 py-3 ${index < heroStats.length - 1 ? 'border-r border-white/10' : ''}`}
+                    className={`flex min-h-[61px] flex-col items-center justify-center px-2 py-[12px] ${index < heroStats.length - 1 ? 'border-r border-[rgba(255,255,255,0.08)]' : ''}`}
                   >
                     <div
-                      className="text-[18px] font-extrabold leading-none tracking-[-0.4px]"
+                      className="font-extrabold leading-none tracking-[-0.4px]"
                       style={{ fontFamily: 'var(--font-jakarta)', color: stat.valueColor }}
                     >
-                      {stat.value}
+                      <span style={{ fontSize: stat.valueSize }}>{stat.value}</span>
                     </div>
                     <div
-                      className="mt-1 text-[9.5px] font-normal uppercase tracking-[0.6px] text-white/40"
+                      className="mt-[3px] text-[9.5px] font-normal uppercase tracking-[0.6px] text-white/40"
                       style={{ fontFamily: 'var(--font-jakarta)' }}
                     >
                       {stat.label}

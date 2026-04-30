@@ -1,0 +1,97 @@
+
+> upsc-platform@0.1.0 predev
+> npm run clean
+
+
+> upsc-platform@0.1.0 clean
+> node -e "require('node:fs').rmSync('.next', { recursive: true, force: true })"
+
+
+> upsc-platform@0.1.0 dev
+> next dev --port 3000 --hostname 127.0.0.1
+
+   ▲ Next.js 14.1.0
+   - Local:        http://127.0.0.1:3000
+   - Network:      http://127.0.0.1:3000
+   - Environments: .env
+
+ ✓ Ready in 2.5s
+ ○ Compiling / ...
+ ✓ Compiled / in 5.2s (570 modules)
+ ✓ Compiled in 459ms (291 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1206ms (591 modules)
+ ○ Compiling /dashboard/video-lectures ...
+ ✓ Compiled /dashboard/video-lectures in 584ms (597 modules)
+ ✓ Compiled /dashboard/library in 489ms (605 modules)
+ ○ Compiling /dashboard/test-series ...
+ ✓ Compiled /dashboard/test-series in 531ms (613 modules)
+ ○ Compiling /api/test-series/stats ...
+ ✓ Compiled /api/test-series/stats in 879ms (376 modules)
+ ✓ Compiled (380 modules)
+ ○ Compiling /dashboard/free-trial ...
+ ✓ Compiled /dashboard/free-trial in 555ms (687 modules)
+ ✓ Compiled /dashboard/daily-mcq in 463ms (693 modules)
+ ○ Compiling /dashboard/performance ...
+ ✓ Compiled /dashboard/performance in 523ms (699 modules)
+ ○ Compiling /dashboard/test-analytics ...
+ ✓ Compiled /dashboard/test-analytics in 856ms (708 modules)
+ ○ Compiling /dashboard/flashcards ...
+ ✓ Compiled /dashboard/flashcards in 670ms (716 modules)
+ ○ Compiling /dashboard/spaced-repetition ...
+ ✓ Compiled /dashboard/spaced-repetition in 649ms (722 modules)
+ ○ Compiling /dashboard/mindmap ...
+ ✓ Compiled /dashboard/mindmap in 511ms (728 modules)
+ ○ Compiling /dashboard/study-groups ...
+ ✓ Compiled /dashboard/study-groups in 567ms (734 modules)
+ ○ Compiling /dashboard/leaderboard ...
+ ✓ Compiled /dashboard/leaderboard in 786ms (740 modules)
+ ○ Compiling /dashboard/discussion ...
+ ✓ Compiled /dashboard/discussion in 680ms (747 modules)
+ ○ Compiling /dashboard/qa-forum ...
+ ✓ Compiled /dashboard/qa-forum in 517ms (748 modules)
+ ○ Compiling /dashboard/mental-health ...
+ ✓ Compiled /dashboard/mental-health in 963ms (754 modules)
+ ✓ Compiled in 1270ms (648 modules)
+ ✓ Compiled /dashboard/video-lectures in 384ms (313 modules)
+ ✓ Compiled in 1498ms (647 modules)
+ ✓ Compiled /dashboard/library in 99ms (312 modules)
+ ○ Compiling /dashboard/daily-editorial ...
+ ✓ Compiled /dashboard/free-trial in 10.7s (1179 modules)
+ ○ Compiling /api/test-series/stats ...
+ ✓ Compiled /api/test-series/stats in 524ms (658 modules)
+ ✓ Compiled (662 modules)
+ ○ Compiling /dashboard/study-planner ...
+ ✓ Compiled /dashboard/study-planner in 774ms (900 modules)
+ ✓ Compiled in 1215ms (914 modules)
+ ○ Compiling /dashboard/jeet-gpt ...
+ ✓ Compiled /dashboard/jeet-gpt in 709ms (1174 modules)
+ ✓ Compiled /dashboard/syllabus-tracker in 450ms (1196 modules)
+ ✓ Compiled in 751ms (930 modules)
+ ✓ Compiled in 481ms (930 modules)
+ ✓ Compiled in 512ms (930 modules)
+ ✓ Compiled in 418ms (930 modules)
+ ✓ Compiled in 917ms (930 modules)
+ ✓ Compiled in 742ms (930 modules)
+ ✓ Compiled in 2.4s (930 modules)
+ ✓ Compiled in 2.6s (930 modules)
+ ✓ Compiled in 647ms (930 modules)
+ ✓ Compiled /api/test-series/stats in 347ms (381 modules)
+ ✓ Compiled (385 modules)
+ ○ Compiling /dashboard/daily-editorial ...
+ ✓ Compiled /dashboard/daily-editorial in 602ms (658 modules)
+ ✓ Compiled /dashboard/video-lectures in 256ms (662 modules)
+ ✓ Compiled in 986ms (1199 modules)
+ ✓ Compiled in 737ms (1199 modules)
+ ✓ Compiled in 652ms (1199 modules)
+ ○ Compiling /dashboard/video-lectures ...
+ ✓ Compiled /dashboard/video-lectures in 610ms (590 modules)
+ ○ Compiling /api/test-series/enrolled ...
+ ✓ Compiled /api/test-series/stats in 936ms (654 modules)
+ ✓ Compiled (658 modules)
+ ✓ Compiled in 1747ms (1199 modules)
+ ✓ Compiled in 553ms (1199 modules)
+ ✓ Compiled in 907ms (1199 modules)
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 2.1s (1362 modules)
+ ✓ Compiled /not-found in 157ms (629 modules)

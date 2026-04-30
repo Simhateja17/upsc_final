@@ -78,22 +78,24 @@ export default function FlashcardsPage() {
   const needReview = decks.reduce((s, d) => s + (d.totalCards - d.masteredCards), 0);
 
   const bannerMetrics = [
-    { label: 'TOTAL CARDS', value: String(totalCards), valueColor: '#7D96B3' },
-    { label: 'MASTERED', value: String(totalMastered), valueColor: '#4ADE80' },
-    { label: 'COVERAGE', value: `${coverage}%`, valueColor: '#FBBF24' },
-    { label: 'NEED REVIEW', value: String(needReview), valueColor: '#FB7185' },
+    { label: 'TOTAL CARDS', value: String(totalCards), valueColor: '#F5A623', valueSize: 18 },
+    { label: 'MASTERED', value: String(totalMastered), valueColor: '#FF7070', valueSize: 18 },
+    { label: 'COVERAGE', value: `${coverage}%`, valueColor: '#FFFFFF', valueSize: 18 },
+    { label: 'NEED REVIEW', value: String(needReview), valueColor: '#0E8A56', valueSize: 18 },
   ];
 
   return (
     <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
-        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {/* Flashcard Vault banner */}
           <div
-            className="relative w-full overflow-hidden rounded-[16px] px-4 sm:px-8 pt-8 sm:pt-10 pb-8 mb-8"
+            className="relative w-full overflow-hidden rounded-[16px]"
             style={{
               background: '#161C2D',
-              minHeight: 277,
+              padding: '24px 26px 22px',
+              marginBottom: 16,
+              boxShadow: '0px 1px 0px rgba(255,255,255,0.03) inset',
             }}
           >
             <div className="pointer-events-none absolute inset-0">
@@ -124,77 +126,53 @@ export default function FlashcardsPage() {
               />
             </div>
 
-            <div className="relative z-10">
-              <div className="mb-2 inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.55px] text-[#FFCB47]" style={{ fontFamily: 'Inter' }}>
-                Revision — Smart Learning System
+            <div className="relative z-10 max-w-[768px]">
+              <div
+                className="mb-[10px] inline-flex h-7 items-center rounded-[20px] border px-4 text-[10px] font-semibold uppercase tracking-[0.5px] text-[#FDC700]"
+                style={{
+                  fontFamily: 'Inter',
+                  background: 'rgba(255,255,255,0.06)',
+                  borderColor: 'rgba(255,255,255,0.12)',
+                }}
+              >
+                Revision - Smart Learning System
               </div>
 
-              <div className="relative max-w-[920px]">
-                <h1 className="max-w-[680px] text-white" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 48, lineHeight: '48px', letterSpacing: 0 }}>
-                  Your <span style={{ color: '#FFCB47', fontStyle: 'italic' }}>Flashcard</span> <span style={{ fontStyle: 'italic', color: '#FFFFFF' }}>Vault.</span>
-                </h1>
+              <h1 className="text-[36px] font-bold leading-[40px] text-white sm:text-[48px] sm:leading-[48px]" style={{ fontFamily: 'Inter' }}>
+                Your <span style={{ color: '#FFCB47', fontStyle: 'italic' }}>Flashcard</span>{' '}
+                <span style={{ fontStyle: 'italic', color: '#FFFFFF' }}>Vault.</span>
+              </h1>
 
-                <p
-                  className="mt-5 max-w-[574px]"
-                  style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', letterSpacing: 0, color: '#4A5565' }}
-                >
-                  Powered by spaced repetition science. Study smarter each card surfaces exactly when your brain is about to forget it.
-                </p>
-              </div>
+              <p
+                className="mb-5 mt-5 max-w-[700px] text-[16px] leading-[24px] text-[#4A5565]"
+                style={{ fontFamily: 'Inter' }}
+              >
+                Powered by spaced repetition science. Study smarter each card surfaces exactly when your brain is about to forget it.
+              </p>
 
-              <div className="mt-12 flex items-start">
-                <div
-                  className="grid w-full max-w-[690px] grid-cols-4 overflow-hidden rounded-[20px] bg-[#1A2134]"
-                  style={{ boxShadow: '0px 6px 18px rgba(0,0,0,0.18)' }}
-                >
-                  {bannerMetrics.map((m, index) => (
+              <div
+                className="grid w-full max-w-[508px] grid-cols-4 overflow-hidden rounded-[16px] bg-[#161c2d]"
+                style={{ border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0px 6px 18px rgba(0,0,0,0.18)' }}
+              >
+                {bannerMetrics.map((m, index) => (
+                  <div
+                    key={m.label}
+                    className={`flex min-h-[61px] flex-col items-center justify-center px-2 py-[12px] ${index < bannerMetrics.length - 1 ? 'border-r border-[rgba(255,255,255,0.08)]' : ''}`}
+                  >
                     <div
-                      key={m.label}
-                      className={`flex min-h-[63px] flex-col items-center justify-center px-3 py-3 ${index < bannerMetrics.length - 1 ? 'border-r border-white/8' : ''}`}
+                      className="font-extrabold leading-none tracking-[-0.4px]"
+                      style={{ fontFamily: 'var(--font-jakarta)', color: m.valueColor }}
                     >
-                      <div
-                        className="text-[18px] font-extrabold leading-none tracking-[-0.4px]"
-                        style={{ fontFamily: 'var(--font-jakarta)', color: m.valueColor }}
-                      >
-                        {m.value}
-                      </div>
-                      <div
-                        className="mt-1 text-[9.5px] font-normal uppercase tracking-[0.6px] text-white/40"
-                        style={{ fontFamily: 'var(--font-jakarta)' }}
-                      >
-                        {m.label}
-                      </div>
+                      <span style={{ fontSize: m.valueSize }}>{m.value}</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="pointer-events-none absolute right-4 top-4 hidden sm:block">
-              <div className="relative h-[187px] w-[310px]">
-                <div className="absolute left-[82px] top-[7px] h-[126px] w-[181px] -rotate-6 rounded-[16px] border border-[rgba(61,90,127,0.3)] bg-[rgba(30,58,95,0.4)]" />
-                <div className="absolute left-[95px] top-[2px] h-[129px] w-[181px] -rotate-3 rounded-[16px] border border-[rgba(61,95,130,0.4)] bg-[rgba(35,69,103,0.5)]" />
-                <div className="absolute left-[107px] top-0 h-[129px] w-[181px] rounded-[16px] border-[1.6px] border-[rgba(90,122,159,0.4)] bg-gradient-to-b from-[#3d5f82] to-[#2a4562] p-[1.6px] shadow-[0px_25px_50px_0px_rgba(0,0,0,0.25)]">
-                  <div className="flex h-full w-full flex-col gap-4 px-6 pt-6">
-                    <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, lineHeight: '16px', letterSpacing: '1.8px', textTransform: 'uppercase', color: 'rgba(122,154,184,0.6)' }}>
-                      Question
-                    </div>
-                    <div className="relative h-[26px] w-full">
-                      <div className="absolute left-[0.4px] top-[0.41px] h-[6px] w-[129px] rounded-full bg-[rgba(90,122,159,0.25)]" />
-                      <div className="absolute left-[0.4px] top-[13.41px] h-[5px] w-[129px] rounded-full bg-[rgba(90,122,159,0.25)]" />
+                    <div
+                      className="mt-[3px] text-[9.5px] font-normal uppercase tracking-[0.6px] text-white/40"
+                      style={{ fontFamily: 'var(--font-jakarta)' }}
+                    >
+                      {m.label}
                     </div>
                   </div>
-                </div>
-                <div className="absolute left-[-20px] top-[-34px] h-[254px] w-[397px]">
-                  <div className="absolute left-[20.9px] top-[42px] size-[10px] rounded-full bg-[rgba(0,212,146,0.5)]" />
-                  <div className="absolute left-[8.35px] top-[98px] size-[8px] rounded-full bg-[rgba(0,187,167,0.4)]" />
-                  <div className="absolute left-[33.44px] top-[190px] size-[6px] rounded-full bg-[rgba(106,114,130,0.3)]" />
-                  <div className="absolute left-[50.15px] top-[216px] size-[8px] rounded-full bg-[rgba(81,162,255,0.4)]" />
-                  <div className="absolute left-[249.16px] top-[247.6px] size-[10px] rounded-full bg-[rgba(43,127,255,0.5)]" />
-                  <div className="absolute left-[332.76px] top-[22.4px] size-[10px] rounded-full bg-[rgba(240,177,0,0.6)]" />
-                  <div className="absolute left-[359.85px] top-[50.4px] size-[8px] rounded-full bg-[rgba(254,154,0,0.5)]" />
-                  <div className="absolute left-[294.96px] top-[33.6px] size-[6px] rounded-full bg-[rgba(153,161,175,0.3)]" />
-                </div>
+                ))}
               </div>
             </div>
           </div>

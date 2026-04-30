@@ -294,9 +294,8 @@ export default function VideoLecturesPage() {
         style={{
           background: '#0F131F',
           padding: '24px 26px 22px',
-          borderRadius: 16,
-          border: '1px solid rgba(255,255,255,0.05)',
           marginBottom: 16,
+          height: '352px',
         }}
       >
         {/* Background grid pattern */}
@@ -308,7 +307,7 @@ export default function VideoLecturesPage() {
         />
 
         {/* Top bar: Back to Dashboard + Badge + @RiseWithJeet */}
-        <div className="relative z-10 flex items-center justify-between" style={{ marginBottom: 'clamp(28px, 3.5vw, 48px)' }}>
+        <div className="relative z-10 flex items-center justify-between" style={{ marginBottom: '12px' }}>
           <Link
             href="/dashboard"
             className="flex items-center gap-2 font-arimo font-medium text-white/60 hover:text-white transition-colors"

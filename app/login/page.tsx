@@ -78,8 +78,10 @@ function LoginPageContent() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('rwj_has_logged_in', '1');
         sessionStorage.setItem('rwj_login_success', '1');
+        window.location.replace('/dashboard');
+        return;
       }
-      // Redirect immediately after login succeeds — don't wait for useEffect
+      // Redirect immediately after login succeeds - don't wait for useEffect
       router.replace('/dashboard');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed. Please try again.';
@@ -164,7 +166,11 @@ function LoginPageContent() {
   };
 
   const goToDashboard = () => {
-    router.push(user?.role === 'admin' ? '/admin' : '/dashboard');
+    if (typeof window !== 'undefined') {
+      window.location.replace(user?.role === 'admin' ? '/admin' : '/dashboard');
+      return;
+    }
+    router.replace(user?.role === 'admin' ? '/admin' : '/dashboard');
   };
 
   return (
@@ -1455,3 +1461,4 @@ export default function LoginPage() {
     </Suspense>
   );
 }
+

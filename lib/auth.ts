@@ -41,6 +41,7 @@ export interface LoginData {
 // Token storage — used by services.ts to attach Bearer tokens to API calls
 const ACCESS_TOKEN_KEY = 'accessToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 
 export const getStoredTokens = (): { accessToken: string | null; refreshToken: string | null } => {
   if (typeof window === 'undefined') return { accessToken: null, refreshToken: null };
@@ -156,6 +157,27 @@ export const authService = {
   },
 
   loginWithGoogle: async (): Promise<void> => {
+    if (typeof window !== 'undefined' && SUPABASE_URL) {
+      // Fast network preflight: avoids redirecting users to a browser timeout page
+      // when the Supabase project host is unreachable from their network.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 7000);
+      try {
+        await fetch(`${SUPABASE_URL}/auth/v1/health`, {
+          method: 'GET',
+          mode: 'no-cors',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+      } catch {
+        throw new Error(
+          'Cannot reach Supabase right now. Check your internet/VPN or Supabase project status, then try again.'
+        );
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
     const redirectTo =
       typeof window !== 'undefined'
         ? `${window.location.origin}/auth/callback`

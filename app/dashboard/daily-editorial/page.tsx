@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { editorialService } from '@/lib/services';
+import DashboardPageHero from '@/components/DashboardPageHero';
 import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
 
 interface EditorialCard {
@@ -218,162 +219,26 @@ export default function DailyEditorialPage() {
   return (
     <div
       className="font-arimo w-full min-h-screen"
-      style={{ background: '#070F24' }}
+      style={{ background: '#FFFFFF' }}
     >
-      {/* Hero — matching study planner card style */}
-      <div
-        style={{
-          position: 'relative',
-          overflow: 'hidden',
-          padding: '24px 26px 22px',
-          borderRadius: 16,
-          border: '1px solid rgba(255,255,255,0.05)',
-          marginBottom: 16,
-        }}
-      >
-        {/* Subtle grid overlay */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-            pointerEvents: 'none',
-          }}
-        />
-        {/* Gold radial glow top-center */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: '-80px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '600px',
-            height: '400px',
-            background: 'radial-gradient(ellipse at center, rgba(255,210,115,0.10) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Back to Dashboard — top left */}
-          <Link href="/dashboard">
-            <button
-              className="flex items-center gap-2 font-arimo font-semibold"
-              style={{
-                height: '36px',
-                borderRadius: '999px',
-                border: '1px solid rgba(255,255,255,0.18)',
-                padding: '0 14px',
-                fontSize: '13px',
-                color: '#FFFFFF',
-                backgroundColor: 'rgba(255,255,255,0.08)',
-                whiteSpace: 'nowrap',
-                marginBottom: 'clamp(24px, 3vw, 40px)',
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              ← Back to Dashboard
-            </button>
-          </Link>
-
-          {/* Centered content */}
-          <div className="flex flex-col items-center text-center">
-            {/* Badge */}
-            <div
-              className="inline-flex items-center gap-2 font-arimo font-bold"
-              style={{
-                background: '#FFD273',
-                borderRadius: '999px',
-                padding: '6px 16px',
-                fontSize: '11px',
-                color: '#101828',
-                letterSpacing: '0.8px',
-                textTransform: 'uppercase',
-                marginBottom: '24px',
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#101828" stroke="#101828" strokeWidth="1"/>
-              </svg>
-              DAILY NEWS ANALYSIS
-            </div>
-
-            {/* Heading */}
-            <h1
-              className="font-tinos italic"
-              style={{
-                fontSize: 'clamp(36px, 5vw, 64px)',
-                lineHeight: '1.05',
-                color: '#FFFFFF',
-                marginBottom: '16px',
-              }}
-            >
-              Where <span style={{ color: '#FFD273' }}>news</span> meets
-              <br />
-              the <span style={{ color: '#FFD273' }}>syllabus</span>
-            </h1>
-
-            {/* Subtitle */}
-            <p
-              className="font-arimo"
-              style={{
-                fontSize: 'clamp(14px, 1.2vw, 16px)',
-                lineHeight: '1.6',
-                color: '#B7C2D8',
-                marginBottom: 'clamp(28px, 3vw, 40px)',
-              }}
-            >
-              Every editorial, every perspective mapped to what UPSC asks.
-            </p>
-
-            {/* Stats strip — horizontal with dividers */}
-            <div
-              style={{
-                display: 'inline-flex',
-                background: 'rgba(255,255,255,0.07)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '16px',
-                overflow: 'hidden',
-              }}
-            >
-              {[
-                { num: glanceStats.hindu,   label: 'THE HINDU',       color: '#FF6B6B' },
-                { num: glanceStats.express, label: 'INDIAN EXPRESS',  color: '#FFD273' },
-                { num: glanceStats.read,    label: 'READ SO FAR',     color: '#4ADE80' },
-                { num: glanceStats.ai,      label: 'SUMMARIES',       color: '#FFFFFF' },
-              ].map((item, i, arr) => (
-                <div
-                  key={item.label}
-                  style={{
-                    padding: 'clamp(14px, 1.5vw, 20px) clamp(20px, 2.5vw, 36px)',
-                    textAlign: 'center',
-                    borderRight: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.10)' : 'none',
-                  }}
-                >
-                  <div
-                    className="font-arimo font-bold"
-                    style={{ fontSize: 'clamp(22px, 2.5vw, 32px)', color: item.color, lineHeight: 1 }}
-                  >
-                    {item.num}
-                  </div>
-                  <div
-                    className="font-arimo font-semibold"
-                    style={{ fontSize: '10px', color: '#6B7A9A', letterSpacing: '0.8px', marginTop: '6px', textTransform: 'uppercase' }}
-                  >
-                    {item.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <DashboardPageHero
+        badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeText="DAILY NEWS ANALYSIS"
+        title={
+          <>
+            Where <em style={{ color: '#e8a820', fontStyle: 'italic' }}>news</em> meets
+            <br />
+            the <em style={{ color: '#e8a820', fontStyle: 'italic' }}>syllabus</em>
+          </>
+        }
+        subtitle="Every editorial, every perspective mapped to what UPSC asks."
+        stats={[
+          { value: String(glanceStats.hindu || 0),   label: 'The Hindu',      color: '#F87171' },
+          { value: String(glanceStats.express || 0), label: 'Indian Express', color: '#FDC700' },
+          { value: String(glanceStats.read || 0),    label: 'Read So Far',    color: '#4ADE80' },
+          { value: String(glanceStats.ai || 0),      label: 'AI Summaries',   color: '#FFFFFF' },
+        ]}
+      />
       {/* ============================================================ */}
       {/*  MAIN TWO-COLUMN LAYOUT                                      */}
       {/* ============================================================ */}

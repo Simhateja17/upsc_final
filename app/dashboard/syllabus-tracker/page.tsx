@@ -259,7 +259,9 @@ export default function SyllabusTrackerPage() {
       {/* Page Content - scrollable */}
       <div className="flex-1 overflow-y-auto">
         {/* Hero Section */}
-        <HeroSection mode={mode} states={states} syllabusData={syllabusData} userName={user?.firstName} />
+        <div className="px-4 sm:px-6 lg:px-8 pt-[clamp(12px,1.6vw,20px)]">
+          <HeroSection states={states} syllabusData={syllabusData} userName={user?.firstName} />
+        </div>
 
         {/* Stage Tabs */}
         <div className="px-[18px] pt-[14px] pb-0">
@@ -271,11 +273,10 @@ export default function SyllabusTrackerPage() {
           />
         </div>
 
-        {/* Tracker Area */}
-        <div className="flex gap-[13px] p-[18px] pt-[12px] min-h-0">
-          {/* Left section - stacked navigation */}
-          <div className="flex flex-col gap-[11px] flex-1 min-w-0">
-            {/* Column A - Subjects */}
+        {/* Tracker Area — four side-by-side columns */}
+        <div className="flex items-stretch gap-[13px] p-[18px] pt-[12px]">
+          {/* Column A - Subjects */}
+          <div className="w-[210px] shrink-0 flex flex-col">
             <SubjectList
               subjects={currentSubjects}
               activeSubject={activeSubject}
@@ -285,8 +286,10 @@ export default function SyllabusTrackerPage() {
               states={states}
               mode={mode}
             />
+          </div>
 
-            {/* Column B - Topics */}
+          {/* Column B - Topics */}
+          <div className="w-[210px] shrink-0 flex flex-col">
             <TopicList
               subject={currentSubject}
               openTopics={openTopics}
@@ -294,8 +297,10 @@ export default function SyllabusTrackerPage() {
               onToggleTopic={handleTopicToggle}
               states={states}
             />
+          </div>
 
-            {/* Column C - Sub-topics */}
+          {/* Column C - Sub-topics */}
+          <div className="flex-1 min-w-0 flex flex-col">
             <SubTopicsList
               subject={currentSubject}
               selectedTopic={selectedTopic}
@@ -310,7 +315,7 @@ export default function SyllabusTrackerPage() {
           </div>
 
           {/* Right Panel */}
-          <RightPanel 
+          <RightPanel
             mode={mode}
             subjects={currentSubjects}
             states={states}

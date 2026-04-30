@@ -324,8 +324,11 @@ export default function PerformancePage() {
       style={{ background: '#F4F6FA', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
     >
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6">
-          <div className="relative mb-10 w-full overflow-hidden rounded-[16px] px-8 py-8 sm:px-10 lg:px-12">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+          <div
+            className="relative mb-4 w-full overflow-hidden rounded-[16px]"
+            style={{ padding: '24px 26px 22px' }}
+          >
             <div className="absolute inset-0">
               <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90"

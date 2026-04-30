@@ -12,23 +12,18 @@ export default function Home() {
     if (isLoading) return;
     if (isAuthenticated) {
       router.replace(user?.role === 'admin' ? '/admin' : '/dashboard');
+      return;
     }
+    // Avoid iframe-based landing rendering issues by navigating directly.
+    window.location.replace('/riswithjeet-landing.html');
   }, [isAuthenticated, isLoading, user, router]);
 
   return (
-    <iframe
-      src="/riswithjeet-landing.html"
-      title="RiseWithJeet Landing"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        border: 'none',
-        display: 'block',
-        zIndex: 1,
-      }}
-    />
+    <div
+      className="flex items-center justify-center"
+      style={{ minHeight: '100dvh', background: '#FAFBFE', color: '#6B7280' }}
+    >
+      Loading...
+    </div>
   );
 }

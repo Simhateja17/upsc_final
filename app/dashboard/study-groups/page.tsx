@@ -1,3 +1,7 @@
+'use client';
+
+import DashboardPageHero from '@/components/DashboardPageHero';
+
 const imgSectionHero = 'https://www.figma.com/api/mcp/asset/e8222ec8-fa48-4325-9caf-dc8a813db837';
 
 const rooms = [
@@ -19,41 +23,24 @@ const features = [
 export default function StudyGroupsPage() {
   return (
     <div className="min-h-screen bg-[#F4F6FA] font-inter text-[#0C1424]">
-      <section className="relative min-h-[495px] overflow-hidden bg-[#071022] text-center text-white">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imgSectionHero} alt="" className="absolute left-0 top-[-14%] h-[128%] w-full object-cover opacity-95" />
-        <div className="absolute inset-0 bg-[#071022]/35" />
-        <div className="relative mx-auto flex max-w-[1244px] flex-col items-center px-4 pt-[58px]">
-          <div className="mb-7 flex items-center gap-3">
-            <span className="h-px w-11 bg-[#E8B84B]" />
-            <span className="text-[11px] font-bold uppercase tracking-[1.98px] text-[#E8B84B]">Study Together</span>
-            <span className="h-px w-11 bg-[#E8B84B]" />
-          </div>
-          <h1 className="mb-6 text-[46px] leading-[1.1] md:text-[58px]" style={{ fontFamily: 'Georgia, serif' }}>
-            Your Digital <span className="italic text-[#E8B84B]">Study Library</span><br />Open 24/7
-          </h1>
-          <p className="mb-8 max-w-[520px] text-[15px] leading-[26px] text-white/45">
-            Join 15,000+ aspirants. Study with accountability, focus deep, and rise together.
-          </p>
-          <div className="mb-7 flex gap-3">
-            <button className="rounded-[10px] bg-[#E8B84B] px-7 py-3 text-[14px] font-bold text-[#090E1C]">🚀 Create a Room</button>
-            <button className="rounded-[10px] border border-white/15 bg-white/7 px-7 py-3 text-[14px] font-semibold text-white/80">🎧 Solo Focus Session</button>
-          </div>
-          <div className="grid grid-cols-4 overflow-hidden rounded-[14px] border border-white/10 bg-white/5">
-            {[
-              ['547', 'Online Now', '#0E8A56'],
-              ['38', 'Live Rooms', 'rgba(255,255,255,0.35)'],
-              ['2.4h', 'Avg. Session', 'rgba(255,255,255,0.35)'],
-              ['15K+', 'Aspirants', 'rgba(255,255,255,0.35)'],
-            ].map(([value, label, color]) => (
-              <div key={label} className="border-r border-white/10 px-8 py-4 last:border-r-0">
-                <div className="text-[28px] font-bold text-[#E8B84B]" style={{ fontFamily: 'Georgia, serif' }}>{value}</div>
-                <div className="text-[11px] tracking-[0.44px]" style={{ color }}>{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <DashboardPageHero
+        badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeText="STUDY TOGETHER"
+        title={
+          <>
+            Your Digital <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Study Library</em>
+            <br />
+            Open 24/7
+          </>
+        }
+        subtitle="Join 15,000+ aspirants. Study with accountability, focus deep, and rise together."
+        stats={[
+          { value: '547',  label: 'Online Now',   color: '#4ADE80' },
+          { value: '38',   label: 'Live Rooms',   color: '#FDC700' },
+          { value: '2.4h', label: 'Avg. Session', color: '#F87171' },
+          { value: '15K+', label: 'Aspirants',    color: '#FFFFFF' },
+        ]}
+      />
 
       <main className="mx-auto max-w-[1244px] px-4 pb-16">
         <div className="flex h-14 items-center justify-between border-b border-[#E1E6EF] bg-white px-8">

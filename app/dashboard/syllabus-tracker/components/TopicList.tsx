@@ -33,7 +33,7 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
 
   if (!subject) {
     return (
-      <div className="w-full min-w-0 bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm">
+      <div className="w-full min-w-0 flex-1 bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm">
         <div className="flex items-center justify-center flex-1 p-[20px_18px]">
           <div className="flex flex-col items-center text-center gap-0">
             <div className="relative w-[72px] h-[72px] mb-[18px]">
@@ -97,7 +97,7 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
   const progressColor = overallPct === 100 ? '#16a34a' : overallPct > 50 ? '#c9921a' : subject.color;
 
   return (
-    <div className="w-full min-w-0 bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm">
+    <div className="w-full min-w-0 flex-1 bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm">
       {/* Header */}
       <div className="p-[12px_13px_10px] border-b-[1.5px] border-[#e0e8f4] bg-white flex-shrink-0">
         <div className="flex items-center gap-[8px] mb-[2px]">

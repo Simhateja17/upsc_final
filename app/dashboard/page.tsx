@@ -19,7 +19,7 @@ export default function DashboardPage() {
             background: '#FAFBFE',
             borderLeft: '1px solid #E5E7EB',
             padding: 'clamp(1rem,1.25vw,1.5rem)',
-            paddingRight: '0',
+            paddingRight: 'clamp(0.5rem,0.83vw,1rem)',
           }}
         >
           <PerformanceStatsWidget />

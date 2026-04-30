@@ -1,335 +1,364 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { pricingService } from '@/lib/services';
 
-interface Plan {
-  id: string;
+type PricingMode = 'explore' | 'billing';
+type BillingCycle = 'monthly' | 'yearly';
+
+type PlanItem = {
+  title?: string;
+  text: string;
+};
+
+type PlanCard = {
+  id: 'starter' | 'scholar' | 'pro';
+  label: string;
   name: string;
-  description?: string;
-  price: number;
-  originalPrice?: number;
-  duration: string;
-  features: string[];
-  notIncluded: string[];
-  badge?: string;
-  isPopular: boolean;
-}
+  description: string;
+  textTone: 'light' | 'dark';
+  featured?: boolean;
+  currentPlan?: boolean;
+  monthlyPrice?: number;
+  yearlyPrice?: number;
+  billedMonthlyText?: string;
+  billedYearlyText?: string;
+  subtitle: string;
+  cta: string;
+  sections: PlanItem[];
+};
 
-const faqs = [
+const PLAN_CARDS: PlanCard[] = [
   {
-    q: 'What is included in the free trial?',
-    a: 'You get full access to all Pro Aspirant features for 7 days. No credit card required. Cancel anytime.',
+    id: 'starter',
+    label: 'Forever Free',
+    name: 'Starter',
+    description: 'Build daily study habits. Begin your UPSC prep without spending a rupee.',
+    textTone: 'dark',
+    subtitle: 'Always free, no card needed',
+    cta: 'Get Started Free →',
+    sections: [
+      { text: '10 MCQs / day' },
+      { text: 'Daily Mains Challenge (1 Q)' },
+      { text: 'Daily News Analysis — The Hindu & IE' },
+      { text: '10,000+ Previous Year Questions' },
+      { text: 'YouTube Video Lectures' },
+      { text: 'Study Planner & Time Tracker' },
+      { text: 'Daily Leaderboard' },
+      { text: 'Jeet AI — 10 chats/day' },
+      { text: 'Limited Revision Suite' },
+    ],
   },
   {
-    q: 'Can I switch plans later?',
-    a: 'Yes. You can upgrade or downgrade your plan at any time from Account Settings. Changes take effect at your next billing cycle.',
+    id: 'scholar',
+    label: 'Dedicated Study',
+    name: 'Scholar',
+    description: 'For serious aspirants who study daily and want measurable progress.',
+    textTone: 'light',
+    featured: true,
+    monthlyPrice: 499,
+    yearlyPrice: 415,
+    billedMonthlyText: '₹5,988/yr · billed annually',
+    billedYearlyText: '₹4,988/yr · billed annually',
+    subtitle: '',
+    cta: 'Start 7-Day Free Trial →',
+    sections: [
+      { text: 'Everything in Starter' },
+      { title: 'Evaluation', text: '5 AI Mains Evaluations / day' },
+      { text: '10 Mock Test attempts / month' },
+      { text: 'Syllabus Tracker' },
+      { title: 'Analytics', text: 'Test Analytics' },
+      { text: 'Performance Analytics Dashboard' },
+      { title: 'Revision & AI', text: 'Full Revision Suite — Flashcards, Mindmap, Spaced Rep.' },
+      { text: 'Jeet AI — 50 chats/day' },
+      { text: 'Study Groups & Discussion Forum' },
+    ],
   },
   {
-    q: 'Is there a refund policy?',
-    a: 'Yes. We offer a full, no-questions-asked refund within 7 days of your initial subscription payment. See our Refund Policy for details.',
-  },
-  {
-    q: 'How does the AI Mains Evaluator work?',
-    a: 'Upload a photo of your handwritten answer or type it directly. Our AI evaluates it in 60 seconds across 8 parameters — content, structure, analysis, examples, and more — giving you UPSC examiner-level feedback.',
-  },
-  {
-    q: 'What happens after my free trial ends?',
-    a: 'Your account moves to the free Starter plan. You keep all your study data, streak history, and progress. No data is lost.',
-  },
-  {
-    q: 'Do you offer annual billing?',
-    a: 'Yes. Annual plans come with a discount. Contact us at billing@risewithjeet.in for annual pricing.',
+    id: 'pro',
+    label: 'Maximum Learning',
+    name: 'Pro Aspirant',
+    description: 'Unlimited tools, zero limits. For aspirants who leave nothing to chance.',
+    textTone: 'light',
+    currentPlan: true,
+    monthlyPrice: 999,
+    yearlyPrice: 832,
+    billedMonthlyText: '₹11,988/yr · billed annually',
+    billedYearlyText: '₹9,988/yr · billed annually',
+    subtitle: '',
+    cta: "You're on this plan ✓",
+    sections: [
+      { text: 'Everything in Scholar' },
+      { title: 'Unlimited Access', text: 'Unlimited AI Mains Evaluations' },
+      { text: 'Unlimited Mock Test Practice' },
+      { text: 'Jeet AI — Unlimited chats' },
+      { title: 'Priority Features', text: 'Priority Answer Review' },
+      { text: 'Q&A Forum — Priority Responses' },
+      { text: 'Mental Health Buddy' },
+      { text: 'Early Access to New Features' },
+    ],
   },
 ];
 
+function formatPrice(num: number) {
+  return num.toLocaleString('en-IN');
+}
+
 export default function PricingPage() {
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [mode, setMode] = useState<PricingMode>('explore');
+  const [cycle, setCycle] = useState<BillingCycle>('yearly');
 
-  useEffect(() => {
-    pricingService.getPlans()
-      .then((res) => {
-        const data = res.data || [];
-        // If API returns empty, use defaults
-        if (data.length === 0) {
-          setPlans([
-            {
-              id: 'starter',
-              name: 'Starter',
-              price: 0,
-              duration: 'Free',
-              description: 'Get a taste of what RiseWithJeet offers. No credit card required.',
-              features: ['10 MCQs / day', 'Current Affairs', 'Live Study Room'],
-              notIncluded: ['Mock Tests', 'AI Mains Evaluator', 'Mentorship'],
-              badge: '',
-              isPopular: false,
-            },
-            {
-              id: 'pro',
-              name: 'Pro Aspirant',
-              price: 499,
-              duration: 'month',
-              description: 'Everything you need for serious UPSC preparation, powered by AI.',
-              features: ['Unlimited MCQs', 'AI Mains Answer Evaluation', 'Full Mock Test Suite', 'Complete Study Material Library', 'Flashcards & Spaced Repetition', 'Performance Analytics'],
-              notIncluded: ['Mentorship'],
-              badge: 'Most Popular',
-              isPopular: true,
-            },
-            {
-              id: 'mentor',
-              name: 'Mentorship Pro',
-              price: 1499,
-              duration: 'month',
-              description: 'Pro Aspirant + personal mentorship from UPSC experts.',
-              features: ['Everything in Pro Aspirant', 'Weekly 1-on-1 Mentorship', 'Jeet Path Roadmap', 'Priority Answer Review', 'Interview Prep Module', 'Direct Mentor Access'],
-              notIncluded: [],
-              badge: '',
-              isPopular: false,
-            },
-          ]);
-        } else {
-          setPlans(data);
-        }
-      })
-      .catch(() => {
-        setPlans([]);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const allFeatures = Array.from(
-    new Set(plans.flatMap(p => p.features))
-  );
-
-  const getFeatureValue = (plan: Plan, feature: string) => {
-    if (plan.features.includes(feature)) return '✓';
-    if (plan.notIncluded?.includes(feature)) return '✗';
-    // Check for similar feature names
-    const hasSimilar = plan.features.some(f => 
-      f.toLowerCase().includes(feature.toLowerCase().split(' ')[0])
-    );
-    return hasSimilar ? '✓' : '—';
-  };
+  const cards = useMemo(() => PLAN_CARDS, []);
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a0f1e' }}>
-      {/* ── Hero ── */}
-      <section className="flex flex-col items-center text-center px-6 pt-28 pb-16">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 bg-[#131e33] border border-[#2a3550] rounded-full px-5 py-2.5 mb-6">
-          <span className="text-[#d08700] text-xs">💰</span>
-          <span className="text-[#90a1b9] text-xs font-medium tracking-wide uppercase">Radically Transparent Pricing</span>
-        </div>
+    <div className="min-h-screen bg-[#F0F1F5]">
+      <section className="relative overflow-hidden border-b border-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_7%_11%,rgba(55,53,51,0.62)_0%,rgba(55,53,51,0.2)_22%,rgba(55,53,51,0)_58%),linear-gradient(160deg,#060C1C_0%,#07132B_52%,#081B3D_100%)]" />
+        <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:28px_28px]" />
 
-        {/* Eyebrow */}
-        <p className="text-[#d08700] text-xs tracking-[1.5px] uppercase mb-4">Fair Pricing, No Surprises</p>
-
-        {/* Headline */}
-        <h1 className="text-white text-5xl md:text-6xl leading-[1.1] mb-6" style={{ fontFamily: 'Georgia, serif' }}>
-          Choose your{' '}
-          <span className="text-[#d4af37]" style={{ fontStyle: 'italic' }}>plan</span>
-        </h1>
-
-        {/* Sub */}
-        <p className="text-[#90a1b9] text-lg leading-[28px] max-w-2xl mb-4">
-          We charge only what it takes to run and improve this platform. Not a rupee more. That promise is non-negotiable.
-        </p>
-        <p className="text-[#62748e] text-sm max-w-xl">
-          All paid plans include a 7-day free trial. Cancel anytime. No questions asked.
-        </p>
-      </section>
-
-      {/* ── Pricing Cards ── */}
-      <section className="px-6 pb-20">
-        <div className="max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-          {loading ? (
-            <div className="col-span-3 text-center py-12">
-              <p className="text-[#90a1b9]">Loading plans...</p>
-            </div>
-          ) : plans.map((plan, i) => (
-            <div
-              key={plan.id || i}
-              className={`rounded-2xl p-8 flex flex-col ${
-                plan.isPopular
-                  ? 'bg-[#111827] border-2 border-[#f0b100] relative'
-                  : 'bg-[#111827] border border-[#1d293d]'
-              }`}
-            >
-              {(plan.badge || plan.isPopular) && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#f0b100] text-[#0f172b] text-xs font-bold px-4 py-1 rounded-full">
-                  {plan.badge || 'Most Popular'}
-                </div>
-              )}
-
-              {/* Plan name */}
-              <h3 className="text-white text-xl font-semibold mb-2">{plan.name}</h3>
-
-              {/* Price */}
-              <div className="mb-3">
-                {plan.price === 0 ? (
-                  <span className="text-white text-4xl font-bold">Free</span>
-                ) : (
-                  <>
-                    <span className="text-white text-4xl font-bold">₹{plan.price.toLocaleString()}</span>
-                    {plan.originalPrice && plan.originalPrice > plan.price && (
-                      <span className="text-[#62748e] text-lg line-through ml-2">₹{plan.originalPrice.toLocaleString()}</span>
-                    )}
-                    <span className="text-[#90a1b9] text-lg">/{plan.duration}</span>
-                  </>
-                )}
-              </div>
-
-              {/* Description */}
-              <p className="text-[#90a1b9] text-sm leading-[22px] mb-6">
-                {plan.description}
-              </p>
-
-              {/* Features */}
-              <ul className="flex flex-col gap-3 mb-6 flex-grow">
-                {plan.features.map((f, j) => (
-                  <li key={j} className="flex items-start gap-3 text-[#cad5e2] text-sm">
-                    <span className="text-[#22c55e] mt-0.5">✓</span>
-                    {f}
-                  </li>
-                ))}
-                {plan.notIncluded?.map((f, j) => (
-                  <li key={`not-${j}`} className="flex items-start gap-3 text-[#62748e] text-sm">
-                    <span className="mt-0.5">✗</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              {/* CTA */}
-              <Link
-                href={plan.price === 0 ? '/dashboard' : '/dashboard/billing'}
-                className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-colors text-center block ${
-                  plan.isPopular
-                    ? 'bg-[#f0b100] text-[#0f172b] hover:bg-[#d4a000]'
-                    : plan.price === 0
-                    ? 'border border-[#45556c] text-white hover:border-[#62748e]'
-                    : 'bg-[#f0b100] text-[#0f172b] hover:bg-[#d4a000]'
-                }`}
-              >
-                {plan.price === 0 ? 'Get Started Free' : 'Purchase Plan →'}
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Comparison ── */}
-      {!loading && plans.length > 0 && (
-        <section className="px-6 pb-20">
-          <div className="max-w-[900px] mx-auto">
-            <h2 className="text-white text-3xl text-center mb-10" style={{ fontFamily: 'Georgia, serif' }}>
-              Compare plans
-            </h2>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[#1d293d]">
-                    <th className="text-left text-[#90a1b9] font-medium py-4 pr-6">Feature</th>
-                    {plans.map((plan) => (
-                      <th key={plan.id} className={`text-center font-semibold py-4 px-4 ${plan.isPopular ? 'text-[#f0b100]' : 'text-white'}`}>
-                        {plan.name}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {allFeatures.map((feature, i) => (
-                    <tr key={i} className="border-b border-[#1d293d]">
-                      <td className="py-4 pr-6 text-[#cad5e2]">{feature}</td>
-                      {plans.map((plan) => (
-                        <td key={plan.id} className="text-center py-4 px-4 text-[#cad5e2]">
-                          {getFeatureValue(plan, feature)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <div className="relative mx-auto flex w-full max-w-[1200px] flex-col items-center px-4 pb-16 pt-14 sm:px-6 sm:pt-16">
+          <div className="mb-4 inline-flex items-center gap-3">
+            <span className="h-px w-12 bg-[rgba(232,184,75,0.4)]" />
+            <span className="rounded-[4px] bg-[#E8B84B] px-2 py-1 text-[10px] font-extrabold tracking-[1.2px] text-[#090E1C]">
+              BILLING & PLANS
+            </span>
+            <span className="h-px w-12 bg-[rgba(232,184,75,0.4)]" />
           </div>
-        </section>
-      )}
 
-      {/* ── FAQ ── */}
-      <section className="px-6 pb-20">
-        <div className="max-w-[700px] mx-auto">
-          <h2 className="text-white text-3xl text-center mb-10" style={{ fontFamily: 'Georgia, serif' }}>
-            Frequently asked questions
-          </h2>
-
-          <div className="flex flex-col gap-3">
-            {faqs.map((faq, i) => (
-              <div
-                key={i}
-                className="bg-[#111827] border border-[#1d293d] rounded-xl overflow-hidden"
-              >
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between p-5 text-left"
-                >
-                  <span className="text-white text-sm font-medium pr-4">{faq.q}</span>
-                  <span className={`text-[#d08700] text-lg transition-transform flex-shrink-0 ${openFaq === i ? 'rotate-45' : ''}`}>
-                    +
-                  </span>
-                </button>
-                {openFaq === i && (
-                  <div className="px-5 pb-5">
-                    <p className="text-[#90a1b9] text-sm leading-[24px]">{faq.a}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section className="px-6 pb-20">
-        <div className="max-w-[700px] mx-auto rounded-3xl p-10 text-center" style={{ background: 'linear-gradient(155.26deg, #0e182d 0%, #17223e 100%)', border: '1px solid #1d293d' }}>
-          <h2 className="text-white text-3xl mb-3" style={{ fontFamily: 'Georgia, serif' }}>
-            Still have questions?
-          </h2>
-          <p className="text-[#90a1b9] text-base leading-[26px] mb-8 max-w-lg mx-auto">
-            Write to us at billing@risewithjeet.in. A real person reads every message and gets back to you.
-          </p>
-          <Link
-            href="/contact"
-            className="inline-block bg-[#f0b100] text-[#0f172b] font-semibold text-base px-8 py-3.5 rounded-[14px] hover:bg-[#d4a000] transition-colors"
+          <h1
+            className="max-w-[760px] text-center text-white"
+            style={{ fontFamily: 'var(--font-playfair)', fontWeight: 600, fontSize: 'clamp(36px,5vw,52px)', lineHeight: 1.1 }}
           >
-            Contact Us →
-          </Link>
+            Your IAS Journey Deserves
+            <br />
+            a <span style={{ color: '#E8B84B', fontStyle: 'italic' }}>Smarter</span> Foundation
+          </h1>
+
+          <p
+            className="mt-4 text-center text-[15px] text-white/50"
+            style={{ fontFamily: 'var(--font-jakarta)', lineHeight: '26px' }}
+          >
+            No hidden fees · Cancel anytime · Start free today
+          </p>
         </div>
       </section>
 
-      {/* ── Footer Bar ── */}
-      <footer className="border-t border-[#1d293d] px-6 py-6">
-        <div className="max-w-[1200px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="bg-[#d08700] rounded w-8 h-8 flex items-center justify-center">
-              <span className="text-[#0f172b] font-serif text-sm font-bold">R</span>
+      <section className="px-4 pb-14 pt-8 sm:px-6">
+        <div className="mx-auto w-full max-w-[1200px]">
+          <div className="flex justify-center">
+            <div className="inline-flex gap-1 rounded-[12px] border border-[rgba(11,22,40,0.09)] bg-white p-[5px] shadow-[0_2px_7px_rgba(11,22,40,0.07)]">
+              <button
+                type="button"
+                onClick={() => setMode('billing')}
+                className={`rounded-[9px] px-7 py-[10px] text-[13px] font-semibold transition-colors ${
+                  mode === 'billing' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'
+                }`}
+                style={{ fontFamily: 'var(--font-jakarta)' }}
+              >
+                My Plan & Billing
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('explore')}
+                className={`rounded-[9px] px-7 py-[10px] text-[13px] font-semibold transition-colors ${
+                  mode === 'explore' ? 'bg-[#090E1C] text-[#E8B84B] shadow-[0_2px_4px_rgba(9,14,28,0.18)]' : 'text-[#6B7A99]'
+                }`}
+                style={{ fontFamily: 'var(--font-jakarta)' }}
+              >
+                Explore Plans
+              </button>
             </div>
-            <span className="text-white text-lg" style={{ fontFamily: 'Georgia, serif' }}>RiseWithJeet</span>
           </div>
-          <div className="flex items-center gap-6 text-sm">
-            <Link href="/privacy" className="text-[#90a1b9] hover:text-white transition-colors">Privacy Policy</Link>
-            <Link href="/terms" className="text-[#90a1b9] hover:text-white transition-colors">Terms of Service</Link>
-            <Link href="/contact" className="text-[#90a1b9] hover:text-white transition-colors">Contact Us</Link>
-            <Link href="/blog" className="text-[#90a1b9] hover:text-white transition-colors">Blog</Link>
+
+          {mode === 'billing' && (
+            <div className="mt-7 rounded-[16px] border border-[rgba(232,184,75,0.2)] bg-[#070D1C] px-4 py-5 sm:px-9 sm:py-7">
+              <div className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center">
+                <div className="flex items-center gap-4">
+                  <div className="flex size-[54px] items-center justify-center rounded-[12px] border border-[rgba(232,184,75,0.3)] bg-[rgba(232,184,75,0.12)] text-[22px]">
+                    🏆
+                  </div>
+                  <div>
+                    <h3 className="text-[32px] leading-none text-white" style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700 }}>
+                      You&apos;re on Pro Aspirant
+                    </h3>
+                    <p className="mt-2 text-[13px] text-white/45" style={{ fontFamily: 'var(--font-jakarta)' }}>
+                      Annual plan · Renews April 15, 2027
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMode('explore')}
+                  className="rounded-[9px] border border-white/15 px-6 py-3 text-[13px] font-semibold text-white/70"
+                  style={{ fontFamily: 'var(--font-jakarta)' }}
+                >
+                  ← Back to My Billing
+                </button>
+              </div>
+            </div>
+          )}
+
+          {mode === 'explore' && (
+            <div className="pt-7">
+              <div className="mx-auto mb-8 inline-flex h-[46px] items-center rounded-[30px] border border-black/10 bg-white p-1 shadow-[0_1px_1.5px_rgba(0,0,0,0.1)]">
+                <button
+                  type="button"
+                  onClick={() => setCycle('monthly')}
+                  className={`rounded-[26px] px-7 py-[9px] text-[13px] font-semibold transition-colors ${
+                    cycle === 'monthly' ? 'bg-[#0D1B2E] text-white' : 'text-[#121212]'
+                  }`}
+                  style={{ fontFamily: 'var(--font-jakarta)' }}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCycle('yearly')}
+                  className={`ml-1 flex items-center gap-2 rounded-[26px] px-7 py-[9px] text-[13px] font-semibold transition-colors ${
+                    cycle === 'yearly' ? 'bg-[#0D1B2E] text-white' : 'text-[#121212]'
+                  }`}
+                  style={{ fontFamily: 'var(--font-jakarta)' }}
+                >
+                  Yearly
+                  <span className="rounded-[10px] bg-[#E8B84B] px-2 py-[2px] text-[10px] font-bold text-[#0D1B2E]">Save 17%</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-1 grid grid-cols-1 gap-5 lg:grid-cols-3">
+            {cards.map((card) => {
+              const isDark = card.textTone === 'light';
+              const effectivePrice =
+                card.id === 'starter'
+                  ? 0
+                  : cycle === 'yearly'
+                  ? card.yearlyPrice ?? 0
+                  : card.monthlyPrice ?? 0;
+
+              const billedText =
+                card.id === 'starter'
+                  ? card.subtitle
+                  : cycle === 'yearly'
+                  ? card.billedYearlyText
+                  : card.billedMonthlyText;
+
+              return (
+                <div
+                  key={card.id}
+                  className={`relative overflow-hidden rounded-[18px] ${
+                    card.featured
+                      ? 'border-[5px] border-[#E8B84B] bg-[#0C1424] shadow-[0_8px_32px_rgba(9,14,28,0.2),0_0_0_1px_rgba(232,184,75,0.15)]'
+                      : isDark
+                      ? 'border border-white/10 bg-[linear-gradient(160deg,#101D36_0%,#172444_100%)]'
+                      : 'border border-[rgba(11,22,40,0.09)] bg-white'
+                  }`}
+                >
+                  {card.featured && (
+                    <>
+                      <div className="absolute -right-20 -top-20 size-[200px] rounded-full bg-[radial-gradient(circle,rgba(232,184,75,0.12)_0%,rgba(232,184,75,0)_65%)]" />
+                      <div className="absolute left-1/2 top-0 -translate-x-1/2 rounded-b-[10px] bg-[#E8B84B] px-4 py-[5px] text-[10px] font-extrabold tracking-[0.8px] text-[#090E1C] uppercase">
+                        ⭐ Most Popular
+                      </div>
+                    </>
+                  )}
+
+                  <div className={`relative ${card.featured ? 'px-6 pb-7 pt-12' : 'px-7 pb-7 pt-8'}`}>
+                    <p
+                      className={`text-[10px] font-bold uppercase tracking-[1.5px] ${
+                        isDark ? 'text-white/40' : 'text-[#6B7A99]'
+                      } ${card.featured ? '!text-[rgba(232,184,75,0.7)]' : ''}`}
+                      style={{ fontFamily: 'var(--font-jakarta)' }}
+                    >
+                      {card.label}
+                    </p>
+
+                    <h3
+                      className={`mt-2 text-[48px] leading-none ${isDark ? 'text-white' : 'text-[#0C1424]'}`}
+                      style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700 }}
+                    >
+                      {card.name}
+                    </h3>
+
+                    <p
+                      className={`mt-4 text-[13px] leading-[21.45px] ${isDark ? 'text-white/45' : 'text-[#6B7A99]'}`}
+                      style={{ fontFamily: 'var(--font-jakarta)' }}
+                    >
+                      {card.description}
+                    </p>
+
+                    <div className="mt-7 flex items-end gap-1">
+                      <span className={`pb-[6px] text-[16px] font-semibold ${isDark ? 'text-[#F5CE72]' : 'text-[#0C1424]'}`}>₹</span>
+                      <span
+                        className={`text-[56px] leading-[48px] ${isDark ? 'text-[#F5CE72]' : 'text-[#0C1424]'}`}
+                        style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700 }}
+                      >
+                        {formatPrice(effectivePrice)}
+                      </span>
+                      {card.id !== 'starter' && <span className="pb-2 text-[12px] text-white/35">/mo</span>}
+                    </div>
+
+                    <p
+                      className={`mt-3 text-[11px] ${isDark ? 'text-white/25' : 'text-[#9AA3B8]'}`}
+                      style={{ fontFamily: 'var(--font-jakarta)' }}
+                    >
+                      {billedText}
+                    </p>
+
+                    <div className={`mt-6 h-px ${isDark ? 'bg-white/10' : 'bg-[rgba(11,22,40,0.09)]'}`} />
+
+                    <div className="mt-3 space-y-[2px]">
+                      {card.sections.map((item, idx) => (
+                        <div key={`${card.id}-${idx}`} className="pt-[10px]">
+                          {item.title && (
+                            <div
+                              className={`mb-[8px] text-[13px] font-extrabold uppercase tracking-[1.95px] ${isDark ? 'text-white/70' : 'text-[#374560]'}`}
+                              style={{ fontFamily: 'var(--font-jakarta)' }}
+                            >
+                              {item.title}
+                            </div>
+                          )}
+                          <div className="flex items-start gap-[9px]">
+                            <span className={`pt-[1px] text-[12px] ${isDark ? 'text-[#F5CE72]' : 'text-[#374560]'}`}>✓</span>
+                            <span
+                              className={`text-[13px] leading-[1.45] ${isDark ? 'text-white/70' : 'text-[#374560]'}`}
+                              style={{ fontFamily: 'var(--font-jakarta)' }}
+                            >
+                              {item.text}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {card.currentPlan ? (
+                      <button
+                        type="button"
+                        className="mt-10 flex h-[46px] w-full items-center justify-center rounded-[10px] border border-white/15 bg-white/10 text-[14px] font-bold text-white"
+                        style={{ fontFamily: 'var(--font-jakarta)' }}
+                      >
+                        {card.cta}
+                      </button>
+                    ) : (
+                      <Link
+                        href={card.id === 'starter' ? '/login?tab=signup' : '/dashboard/billing'}
+                        className={`mt-10 flex h-[48px] w-full items-center justify-center rounded-[10px] border text-[14px] font-bold ${
+                          card.featured
+                            ? 'border-[#E8B84B] bg-[#E8B84B] text-[#090E1C]'
+                            : 'border-[rgba(11,22,40,0.17)] bg-[#FAF8F4] text-[#0C1424]'
+                        }`}
+                        style={{ fontFamily: 'var(--font-jakarta)' }}
+                      >
+                        {card.cta}
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <p className="text-[#62748e] text-sm">
-            © 2026 RiseWithJeet Edtech Pvt Ltd · Made with 💛 for every UPSC aspirant
-          </p>
         </div>
-      </footer>
+      </section>
     </div>
   );
 }

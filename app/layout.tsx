@@ -1,62 +1,6 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Manrope, Roboto, Poppins, Arimo, Tinos, Fahkwang, Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-geist',
-  weight: ['400', '500', '600', '700', '800'],
-})
-
-const arimo = Arimo({
-  subsets: ['latin'],
-  variable: '--font-arimo',
-  weight: ['400', '500', '600', '700'],
-})
-
-const tinos = Tinos({
-  subsets: ['latin'],
-  variable: '--font-tinos',
-  weight: ['400', '700'],
-  style: ['normal', 'italic'],
-})
-
-const fahkwang = Fahkwang({
-  subsets: ['latin'],
-  variable: '--font-fahkwang',
-  weight: ['400', '500', '600', '700'],
-})
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  variable: '--font-playfair',
-  weight: ['400', '500', '600', '700', '800', '900'],
-})
-
-const manrope = Manrope({
-  subsets: ['latin'],
-  variable: '--font-manrope',
-  weight: ['400', '500', '600', '700', '800'],
-})
-
-const roboto = Roboto({
-  subsets: ['latin'],
-  variable: '--font-roboto',
-  weight: ['400', '500', '700'],
-})
-
-const poppins = Poppins({
-  subsets: ['latin'],
-  variable: '--font-poppins',
-  weight: ['400', '500', '600', '700'],
-})
-
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  variable: '--font-jakarta',
-  weight: ['400', '500', '600', '700', '800'],
-})
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -81,7 +25,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${manrope.variable} ${roboto.variable} ${poppins.variable} ${arimo.variable} ${tinos.variable} ${fahkwang.variable} ${playfair.variable} ${jakarta.variable}`}>
+      <body>
         <AuthProvider>
           {children}
         </AuthProvider>

@@ -137,7 +137,7 @@ export default function DashboardLayout({
         {!hideSidebar && (
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         )}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0" style={{ background: '#0F131F' }}>
           {children}
         </main>
       </div>
