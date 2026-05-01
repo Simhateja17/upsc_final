@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { dailyAnswerService } from '@/lib/services';
 
 interface AnswerData {
@@ -17,9 +18,11 @@ interface AnswerData {
 }
 
 export default function DailyMainsChallengePage() {
+  const router = useRouter();
   const [data, setData] = useState<AnswerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     dailyAnswerService.getToday()
@@ -27,6 +30,28 @@ export default function DailyMainsChallengePage() {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  // Auto-start countdown
+  useEffect(() => {
+    if (loading || error || !data) return;
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          if (data.attempted) {
+            router.push('/dashboard/daily-answer/challenge/attempt/results');
+          } else {
+            router.push('/dashboard/daily-answer/challenge');
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [loading, error, data, router]);
 
   if (loading) {
     return (
@@ -152,9 +177,20 @@ export default function DailyMainsChallengePage() {
             </Link>
           )}
 
-          <p className="text-[#6A7282] mt-4 font-normal" style={{ fontSize: '12px' }}>
-            Skip intro (auto-start in 5s)
-          </p>
+          <button
+            type="button"
+            onClick={() => {
+              if (data.attempted) {
+                router.push('/dashboard/daily-answer/challenge/attempt/results');
+              } else {
+                router.push('/dashboard/daily-answer/challenge');
+              }
+            }}
+            className="text-[#6A7282] mt-4 font-normal hover:text-[#101828] transition-colors"
+            style={{ fontSize: '12px', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            Skip intro (auto-start in {countdown}s)
+          </button>
         </div>
       </main>
     </div>
