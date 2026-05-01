@@ -232,12 +232,12 @@ export const studyPlannerService = {
 // ==================== Video Lectures ====================
 
 export const videoService = {
-  getSubjects: () => api.get<any>('/videos/subjects'),
-  getVideosBySubject: (subject: string) => api.get<any>(`/videos/${encodeURIComponent(subject)}`),
-  getStats: () => api.get<any>('/videos/stats'),
-  getVideoQuestions: (videoId: string) => api.get<any>(`/videos/${videoId}/questions`),
+  getSubjects: () => api.get<any>('/videos/subjects', authConfig()),
+  getVideosBySubject: (subject: string) => api.get<any>(`/videos/${encodeURIComponent(subject)}`, authConfig()),
+  getStats: () => api.get<any>('/videos/stats', authConfig()),
+  getVideoQuestions: (videoId: string) => api.get<any>(`/videos/${videoId}/questions`, authConfig()),
   submitVideoQuiz: (videoId: string, answers: Record<string, number>) =>
-    api.post<any>(`/videos/${videoId}/submit`, { answers }),
+    api.post<any>(`/videos/${videoId}/submit`, { answers }, authConfig()),
   askMentor: (question: string) =>
     api.post<any>('/videos/mentor/ask', { question }, authConfig()),
 };
