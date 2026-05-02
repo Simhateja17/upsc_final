@@ -29,13 +29,37 @@ export default function LandingPage() {
     }
   }, [isAuthenticated, isLoading, user, router]);
 
+  // Ensure landing page never inherits stale body scroll locks.
+  useEffect(() => {
+    document.body.style.overflow = '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   // Scroll reveal
   useEffect(() => {
-    const revealEls = document.querySelectorAll('.reveal');
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    const revealEls = Array.from(document.querySelectorAll<HTMLElement>('.reveal'));
+    if (revealEls.length === 0) return;
+
+    revealEls.forEach((el) => el.classList.add('reveal-init'));
+
+    // Fallback: if IntersectionObserver is unavailable, keep sections visible.
+    if (!('IntersectionObserver' in window)) {
+      revealEls.forEach((el) => el.classList.add('visible'));
+      return;
+    }
+
+    const obs = new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
     }, { threshold: 0.08 });
-    revealEls.forEach(el => obs.observe(el));
+
+    revealEls.forEach((el) => obs.observe(el));
     return () => obs.disconnect();
   }, []);
 
