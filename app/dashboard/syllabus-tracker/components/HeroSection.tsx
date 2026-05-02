@@ -7,9 +7,15 @@ interface HeroSectionProps {
   states: TrackerState;
   syllabusData: SyllabusData;
   userName?: string;
+  cms?: Record<string, any>;
 }
 
-export default function HeroSection({ states, syllabusData, userName }: HeroSectionProps) {
+export default function HeroSection({ states, syllabusData, userName, cms }: HeroSectionProps) {
+  const badgeText = cms?.hero_badge || 'PERSONALIZED SYLLABUS TRACKER';
+  const titlePrefix = cms?.hero_title_prefix || 'Know Exactly Where You Stand,';
+  const titleSuffix = cms?.hero_title_suffix || '.';
+  const subtitle = cms?.hero_subtitle || "Your UPSC syllabus, fully mapped. Track every topic across Prelims, Mains and Optional — see what's done, what's pending, and what to conquer next.";
+  const statLabels = (() => { try { return JSON.parse(cms?.stat_labels || '{}'); } catch { return {}; } })();
   const calculateModeStats = (modeKey: Mode) => {
     const subjects = syllabusData[modeKey];
     let total = 0;
@@ -43,19 +49,23 @@ export default function HeroSection({ states, syllabusData, userName }: HeroSect
   return (
     <DashboardPageHero
       badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
-      badgeText="PERSONALIZED SYLLABUS TRACKER"
+      badgeText={badgeText}
+      heroBorderRadius={16}
+      heroHeight="auto"
+      heroMarginInline={0}
       title={
         <>
-          Know Exactly Where You Stand,{' '}
-          <em style={{ color: '#e8a820', fontStyle: 'italic' }}>{userName || 'Aspirant'}</em>.
+          {titlePrefix}{' '}
+          <em style={{ color: '#e8a820', fontStyle: 'italic' }}>{userName || 'Aspirant'}</em>
+          {titleSuffix}
         </>
       }
-      subtitle="Your UPSC syllabus, fully mapped. Track every topic across Prelims, Mains and Optional — see what's done, what's pending, and what to conquer next."
+      subtitle={subtitle}
       stats={[
-        { value: `${overallPct}%`, label: 'Overall',   color: '#F5A623' },
-        { value: String(allDone),  label: 'Done',      color: '#FF7070' },
-        { value: String(allRevision), label: 'Revising', color: '#FFFFFF' },
-        { value: String(Math.max(allTotal - allDone, 0)), label: 'Remaining', color: '#0E8A56' },
+        { value: `${overallPct}%`, label: statLabels.overall || 'Overall',   color: '#F5A623' },
+        { value: String(allDone),  label: statLabels.done || 'Done',      color: '#FF7070' },
+        { value: String(allRevision), label: statLabels.revising || 'Revising', color: '#FFFFFF' },
+        { value: String(Math.max(allTotal - allDone, 0)), label: statLabels.remaining || 'Remaining', color: '#0E8A56' },
       ]}
     />
   );

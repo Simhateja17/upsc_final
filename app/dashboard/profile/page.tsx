@@ -247,12 +247,19 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Optional subject</label>
-                  <input
-                    type="text"
+                  <select
                     value={optionalSubject}
                     onChange={(e) => setOptionalSubject(e.target.value)}
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
-                  />
+                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                  >
+                    <option value="">Select Subject</option>
+                    <option value="History">History</option>
+                    <option value="Geography">Geography</option>
+                    <option value="Polity">Polity</option>
+                    <option value="Economy">Economy</option>
+                    <option value="Environment & Ecology">Environment & Ecology</option>
+                    <option value="Science & Technology">Science & Technology</option>
+                  </select>
                 </div>
               </div>
 

@@ -224,9 +224,14 @@ function MockTestsPageInner() {
 
   /* ─── Generate Test Handler ─── */
   const handleGenerateTest = async () => {
+    const isPro = typeof window !== 'undefined' && localStorage.getItem('userPlan') === 'pro';
+    // Gate: free users get only 1 test per day. Redirect to free-trial if limit hit.
+    if (!isPro && practiceStats && practiceStats.todayCount >= 1) {
+      router.push('/dashboard/free-trial');
+      return;
+    }
     // Gate: free tier is capped at 10 questions / test. Send users
     // above the cap to the pricing page instead of silently failing.
-    const isPro = typeof window !== 'undefined' && localStorage.getItem('userPlan') === 'pro';
     const freeCap = selectedExamMode === 'mains' ? 2 : 10;
     if (questionCount > freeCap && !isPro) {
       router.push('/dashboard/free-trial?plan=pro&reason=question-cap');

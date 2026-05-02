@@ -7,7 +7,6 @@ import Image from 'next/image';
 const categories = [
   'All Posts',
   'Strategy',
-  'Current Affairs',
   'Answer Writing',
   'GS Concepts',
   'Success Stories',
@@ -90,7 +89,7 @@ const blogPosts = [
     image: '/blog-gs-3.png',
   },
   {
-    category: 'Current Affairs',
+    category: 'GS Concepts',
     title: "India's forest cover rises by 1,540 sq km: reading the State of Forest Report 2025 for UPSC",
     description: 'What the FSI report says, what it means for biodiversity and climate goals, and how to frame answers around it.',
     author: 'Priya Singh',
@@ -98,7 +97,7 @@ const blogPosts = [
     image: '/blog-ca-1.png',
   },
   {
-    category: 'Current Affairs',
+    category: 'GS Concepts',
     title: "India's space economy target of $44 billion by 2033: policy, players, and UPSC relevance",
     description: 'IN-SPACe, NSIL, ISRO reforms, and the commercialisation of India\'s space sector — everything you need for GS III.',
     author: 'Abhijeet Soni',
@@ -106,7 +105,7 @@ const blogPosts = [
     image: '/blog-ca-2.png',
   },
   {
-    category: 'Current Affairs',
+    category: 'Prelims Prep',
     title: 'The 20 most repeated Polity topics in UPSC Prelims in the last 10 years',
     description: 'A PYQ-based frequency analysis that shows exactly which Polity topics appear most often and how to prioritise them.',
     author: 'Priya Singh',

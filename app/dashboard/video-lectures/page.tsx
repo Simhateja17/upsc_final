@@ -28,7 +28,64 @@ interface SubjectItem {
   isNew?: boolean;
 }
 
-/* ─── Constants ─── */
+const CATEGORY_TABS: Array<{ label: string; width: number; active?: boolean }> = [
+  { label: 'All Categories', width: 128.1 },
+  { label: 'History', width: 86.188, active: true },
+  { label: 'Geography', width: 110.188 },
+  { label: 'Polity', width: 75.563 },
+  { label: 'Economy', width: 98.238 },
+  { label: 'Environment & Ecology', width: 160 },
+  { label: 'Science & Technology', width: 175 },
+];
+
+type SubjectCardTheme = {
+  bg: string;
+  border: string;
+  progress: number;
+  showNew?: boolean;
+};
+
+function getFallbackViewCount(seed: string): number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 100000;
+  }
+  return 20000 + (hash % 10001);
+}
+
+/* Subject card background colors — one per subject, cycling */
+const SUBJECT_COLORS: Record<string, { bg: string; border: string; accent: string }> = {
+  'History': { bg: '#FEF3C7', border: '#FDE68A', accent: '#B45309' },
+  'Geography': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#1D4ED8' },
+  'Polity': { bg: '#EDE9FE', border: '#DDD6FE', accent: '#7C3AED' },
+  'Economy': { bg: '#FFF7ED', border: '#FED7AA', accent: '#EA580C' },
+  'Environment & Ecology': { bg: '#F0FDF4', border: '#BBF7D0', accent: '#16A34A' },
+  'Science & Technology': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#0369A1' },
+};
+
+const SUBJECT_ICON_GRADIENTS: Record<string, string> = {
+  history:           'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
+  geography:         'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+  polity:            'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+  economy:           'linear-gradient(135deg, #F59E0B 0%, #EA580C 100%)',
+  environment:       'linear-gradient(135deg, #10B981 0%, #16A34A 100%)',
+  scienceandtech:    'linear-gradient(135deg, #0EA5E9 0%, #0369A1 100%)',
+  sciencetechnology: 'linear-gradient(135deg, #0EA5E9 0%, #0369A1 100%)',
+};
+
+const SUBJECT_CARD_THEMES: Record<string, SubjectCardTheme> = {
+  indianpolity: { bg: '#FDF0DE', border: '#C0D9F5', progress: 72 },
+  indianeconomy: { bg: 'linear-gradient(139.3269deg, #F3EFFD 0%, #EDE7FB 100%)', border: '#E8E1FD', progress: 38 },
+  geography: { bg: 'rgba(201, 168, 76, 0.19)', border: '#B2EDD0', progress: 48 },
+  history: { bg: '#FFF8EE', border: '#FFD5A8', progress: 55 },
+  environment: { bg: 'linear-gradient(139.3269deg, #EDF9F3 0%, #E0F5EA 100%)', border: '#B2EDD0', progress: 62 },
+  ethicsgs4: { bg: 'linear-gradient(139.3269deg, #EEF2F8 0%, #E8EDF6 100%)', border: '#DDE5F0', progress: 32 },
+  essaywriting: { bg: 'linear-gradient(139.3269deg, #FEF5EC 0%, #FEF0E0 100%)', border: '#FFD5A8', progress: 45 },
+  internalsecurity: { bg: 'linear-gradient(139.3269deg, #FEF0F0 0%, #FDE8E8 100%)', border: '#FFCECE', progress: 22, showNew: true },
+  intlrelations: { bg: 'linear-gradient(139.3269deg, #F0EBFF 0%, #E8E1FD 100%)', border: '#E8E1FD', progress: 35 },
+  scienceandtech: { bg: 'linear-gradient(139.3269deg, #E0EBF9 0%, #D4E4F7 100%)', border: '#C0D9F5', progress: 28 },
+};
+
 const SUBJECT_SORT_ORDER = [
   'polity',
   'history',

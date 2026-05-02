@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { userService, syllabusService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCmsContent } from '@/hooks/useCmsContent';
 import { SYLLABUS_DATA } from '@/data/syllabus/syllabusData';
 import HeroSection from './components/HeroSection';
 import StageTabs from './components/StageTabs';
@@ -43,6 +44,28 @@ export interface TrackerState {
 
 export default function SyllabusTrackerPage() {
   const { user } = useAuth();
+  const { content: cms, loading: cmsLoading } = useCmsContent('dashboard/syllabus-tracker', {
+    hero_badge: 'PERSONALIZED SYLLABUS TRACKER',
+    hero_title_prefix: 'Know Exactly Where You Stand,',
+    hero_title_suffix: '.',
+    hero_subtitle: "Your UPSC syllabus, fully mapped. Track every topic across Prelims, Mains and Optional — see what's done, what's pending, and what to conquer next.",
+    stat_labels: JSON.stringify({ overall: 'Overall', done: 'Done', revising: 'Revising', remaining: 'Remaining' }),
+    stage_tabs: JSON.stringify({ prelims: 'Prelims', mains: 'Mains', optional: 'Optional' }),
+    filter_labels: JSON.stringify({ all: 'All', pending: 'Pending', done: 'Done', important: 'Important' }),
+    status_labels: JSON.stringify({ none: 'Not Started', done: 'Done', in_progress: 'Reading', needs_revision: 'Needs Revision', weak: 'Weak Area' }),
+    right_panel_title: 'Subject Progress',
+    right_panel_view_all: 'View all →',
+    cta_title: "Plan Today's Study",
+    cta_subtitle: 'Set daily goals with Jeet AI and stay on track for UPSC 2026.',
+    cta_button: '+ Add in Study Planner',
+    modal_title: 'Syllabus Progress Overview',
+    subtopic_placeholder_title: 'Sub-Topics',
+    subtopic_placeholder_subtitle: 'Select a topic to start tracking',
+    subtopic_placeholder_body: 'Select a subject, then tap a topic to begin tracking progress.',
+    stats_strip_labels: JSON.stringify({ total: 'Total', done: 'Done', active: 'Active', left: 'Left' }),
+    pyq_button: '📜 PYQs',
+  });
+
   const [mode, setMode] = useState<Mode>('prelims');
   const [activeSubject, setActiveSubject] = useState<string | null>(null);
   const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
@@ -259,8 +282,8 @@ export default function SyllabusTrackerPage() {
       {/* Page Content - scrollable */}
       <div className="flex-1 overflow-y-auto">
         {/* Hero Section */}
-        <div>
-          <HeroSection states={states} syllabusData={syllabusData} userName={user?.firstName} />
+        <div className="px-4 sm:px-6 lg:px-8 pt-[clamp(12px,1.6vw,20px)]">
+          <HeroSection states={states} syllabusData={syllabusData} userName={user?.firstName} cms={cms} />
         </div>
 
         {/* Stage Tabs */}
@@ -270,6 +293,7 @@ export default function SyllabusTrackerPage() {
             onModeChange={handleModeChange}
             states={states}
             syllabusData={syllabusData}
+            cms={cms}
           />
         </div>
 
@@ -311,6 +335,7 @@ export default function SyllabusTrackerPage() {
               onOpenStatusModal={openStatusModal}
               onToggleImportant={toggleImportant}
               getKey={getKey}
+              cms={cms}
             />
           </div>
 
@@ -320,6 +345,7 @@ export default function SyllabusTrackerPage() {
             subjects={currentSubjects}
             states={states}
             syllabusData={syllabusData}
+            cms={cms}
           />
         </div>
       </div>

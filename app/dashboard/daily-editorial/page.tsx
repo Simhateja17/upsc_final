@@ -24,12 +24,12 @@ interface EditorialCard {
 }
 
 const categoryColors: Record<string, { color: string; bg: string }> = {
+  'History': { color: '#B45309', bg: '#FEF3C7' },
+  'Geography': { color: '#1D4ED8', bg: '#DBEAFE' },
   'Polity': { color: '#7C3AED', bg: '#EDE9FE' },
   'Economy': { color: '#EA580C', bg: '#FFF7ED' },
-  'Environment': { color: '#16A34A', bg: '#F0FDF4' },
-  'Technology': { color: '#7C3AED', bg: '#EDE9FE' },
-  'Judiciary': { color: '#DC2626', bg: '#FEF2F2' },
-  'International Relations': { color: '#EA580C', bg: '#FFF7ED' },
+  'Environment & Ecology': { color: '#16A34A', bg: '#F0FDF4' },
+  'Science & Technology': { color: '#0369A1', bg: '#DBEAFE' },
 };
 
 const subjects = UPSC_SUBJECTS.map((s) => ({
@@ -704,12 +704,12 @@ export default function DailyEditorialPage() {
             </div>
             <div className="grid grid-cols-2" style={{ gap: '12px' }}>
               {[
-                { id: 'agriculture',             emoji: '🌾', label: 'Agriculture', bg: '#EFF6FF', border: '#BEDBFF', color: '#1C398E' },
-                { id: 'economy',                 emoji: '💰', label: 'Economy',     bg: '#FFF7ED', border: '#FFD6A8', color: '#7E2A0C' },
-                { id: 'international-relations', emoji: '🌍', label: 'IR',          bg: '#EFF6FF', border: '#BEDBFF', color: '#1C398E' },
-                { id: 'environment',             emoji: '🌳', label: 'Environment', bg: '#F0FDF4', border: '#B9F8CF', color: '#0D542B' },
-                { id: 'science-tech',            emoji: '💻', label: 'Tech',        bg: '#F9FAFB', border: '#E5E7EB', color: '#101828' },
-                { id: 'polity',                  emoji: '🏛️', label: 'Polity',      bg: '#FAF5FF', border: '#E9D4FF', color: '#59168B' },
+                { id: 'history',                 emoji: '📜', label: 'History',              bg: '#FEF3C7', border: '#FDE68A', color: '#B45309' },
+                { id: 'geography',               emoji: '🌍', label: 'Geography',            bg: '#DBEAFE', border: '#BFDBFE', color: '#1D4ED8' },
+                { id: 'polity',                  emoji: '⚖️', label: 'Polity',               bg: '#EDE9FE', border: '#DDD6FE', color: '#7C3AED' },
+                { id: 'economy',                 emoji: '💰', label: 'Economy',              bg: '#FFF7ED', border: '#FED7AA', color: '#EA580C' },
+                { id: 'environment',             emoji: '🌿', label: 'Environment & Ecology', bg: '#F0FDF4', border: '#BBF7D0', color: '#16A34A' },
+                { id: 'science-tech',            emoji: '🔬', label: 'Science & Technology',  bg: '#DBEAFE', border: '#BFDBFE', color: '#0369A1' },
               ].map((s) => {
                 const active = selectedSubject === s.id;
                 return (

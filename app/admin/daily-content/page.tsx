@@ -23,7 +23,7 @@ export default function DailyContentManager() {
   // Mains form
   const [mainsForm, setMainsForm] = useState({
     date: new Date().toISOString().split('T')[0],
-    category: 'Governance',
+    category: 'Polity',
     questionText: '',
     marks: 10,
     wordLimit: 150,
@@ -114,7 +114,7 @@ export default function DailyContentManager() {
     }
   };
 
-  const categories = ['Governance', 'Polity', 'Economy', 'Society', 'Ethics', 'IR', 'Environment', 'Science & Tech', 'History', 'Geography'];
+  const categories = ['History', 'Geography', 'Polity', 'Economy', 'Environment & Ecology', 'Science & Technology'];
 
   return (
     <div>

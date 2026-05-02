@@ -135,12 +135,11 @@ const AddTaskModal = ({ onClose, onTaskAdded }: { onClose: () => void; onTaskAdd
             className="w-full border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-500 outline-none focus:border-[#6366F1] bg-white transition-colors appearance-auto"
           >
             <option value="">Select Subject</option>
-            <option value="indian-polity">Indian Polity</option>
             <option value="history">History</option>
             <option value="geography">Geography</option>
-            <option value="economics">Economics</option>
-            <option value="environment">Environment</option>
-            <option value="current-affairs">Current Affairs</option>
+            <option value="polity">Polity</option>
+            <option value="economy">Economy</option>
+            <option value="environment">Environment & Ecology</option>
             <option value="science-tech">Science & Technology</option>
           </select>
         </div>

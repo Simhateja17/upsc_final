@@ -8,9 +8,11 @@ interface StageTabsProps {
   onModeChange: (mode: Mode) => void;
   states: TrackerState;
   syllabusData: SyllabusData;
+  cms?: Record<string, any>;
 }
 
-export default function StageTabs({ mode, onModeChange, states, syllabusData }: StageTabsProps) {
+export default function StageTabs({ mode, onModeChange, states, syllabusData, cms }: StageTabsProps) {
+  const stageTabs = (() => { try { return JSON.parse(cms?.stage_tabs || '{}'); } catch { return {}; } })();
   const [hoveredTab, setHoveredTab] = useState<Mode | null>(null);
 
   const calculateModePct = (modeKey: Mode) => {
@@ -36,9 +38,9 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData }: 
   const optionalPct = calculateModePct('optional');
 
   const tabs = [
-    { key: 'prelims' as Mode, label: 'Prelims', icon: '🎯', pct: prelimsPct },
-    { key: 'mains' as Mode, label: 'Mains', icon: '✍️', pct: mainsPct },
-    { key: 'optional' as Mode, label: 'Optional', icon: '📖', pct: optionalPct },
+    { key: 'prelims' as Mode, label: stageTabs.prelims || 'Prelims', icon: '🎯', pct: prelimsPct },
+    { key: 'mains' as Mode, label: stageTabs.mains || 'Mains', icon: '✍️', pct: mainsPct },
+    { key: 'optional' as Mode, label: stageTabs.optional || 'Optional', icon: '📖', pct: optionalPct },
   ];
 
   const highlightedTab = hoveredTab ?? mode;
