@@ -136,7 +136,7 @@ export default function MindmapViewPage({ params }: PageParams) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F5F6FA] text-[#101828] flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAFBFE] text-[#101828] flex items-center justify-center">
         <div className="text-gray-400 animate-pulse">Loading mindmap...</div>
       </div>
     );

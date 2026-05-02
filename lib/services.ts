@@ -229,19 +229,6 @@ export const studyPlannerService = {
     api.get<any>(`/study-plan/monthly-activity?year=${year}&month=${month}`, authConfig()),
 };
 
-// ==================== Video Lectures ====================
-
-export const videoService = {
-  getSubjects: () => api.get<any>('/videos/subjects'),
-  getVideosBySubject: (subject: string) => api.get<any>(`/videos/${encodeURIComponent(subject)}`),
-  getStats: () => api.get<any>('/videos/stats'),
-  getVideoQuestions: (videoId: string) => api.get<any>(`/videos/${videoId}/questions`),
-  submitVideoQuiz: (videoId: string, answers: Record<string, number>) =>
-    api.post<any>(`/videos/${videoId}/submit`, { answers }),
-  askMentor: (question: string) =>
-    api.post<any>('/videos/mentor/ask', { question }, authConfig()),
-};
-
 // ==================== Library ====================
 
 export const libraryService = {
@@ -807,4 +794,17 @@ export const studyMaterialService = {
     return json;
   },
   deleteMockMaterial: (id: string) => api.delete<any>(`/admin/mock-test-materials/${id}`, authConfig()),
+};
+
+// ==================== Video Lectures ====================
+
+export const videoService = {
+  getSubjects: () => api.get<any>('/videos/subjects'),
+  getVideos: () => api.get<any>('/videos'),
+  getStats: () => api.get<any>('/videos/stats'),
+  getVideosBySubject: (subject: string) => api.get<any>(`/videos?subject=${encodeURIComponent(subject)}`),
+  getQuestions: (videoId: string) => api.get<any>(`/videos/${videoId}/questions`),
+  submitQuiz: (videoId: string, answers: Record<string, number>) =>
+    api.post<any>(`/videos/${videoId}/quiz`, { answers }),
+  askMentor: (data: { question: string }) => api.post<any>('/mentor/ask', data),
 };

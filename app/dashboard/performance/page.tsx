@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { dashboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
+import DashboardPageHero from '@/components/DashboardPageHero';
 
 type DayActivity = { questionsAttempted: number; hours: number };
 type SubjectRow = { name: string; accuracy: number; questions: number; tag?: string; color?: string };
@@ -320,51 +321,17 @@ export default function PerformancePage() {
 
   return (
     <div
-      className="flex overflow-hidden"
-      style={{ background: '#F4F6FA', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
+      className="flex overflow-hidden font-arimo"
+      style={{ background: '#F9FAFB', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
     >
       <div className="flex-1 overflow-y-auto">
+        <DashboardPageHero
+          badgeText="Analytics - Performance Dashboard"
+          title={<>{userFirstName}&apos;s <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Progress.</span></>}
+          subtitle="Your complete UPSC preparation analytics streaks, subject mastery, weak areas, spaced repetition & smart notes."
+          stats={summaryCards.slice(0, 4).map(c => ({ value: c.value, label: c.title.toUpperCase(), color: c.valueColor }))}
+        />
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div
-            className="relative mb-4 w-full overflow-hidden rounded-[16px]"
-            style={{ padding: '24px 26px 22px' }}
-          >
-            <div className="absolute inset-0">
-              <div
-                className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90"
-                style={{ backgroundImage: 'url(/hero-bg.jpg)' }}
-              />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_88%_78%,rgba(93,84,69,0.55)_0%,rgba(15,23,43,0.08)_30%,rgba(7,12,28,0.82)_76%)]" />
-              <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,rgba(255,255,255,0.035)_0,rgba(255,255,255,0.035)_1px,transparent_1px,transparent_34px),repeating-linear-gradient(90deg,rgba(255,255,255,0.035)_0,rgba(255,255,255,0.035)_1px,transparent_1px,transparent_34px)] opacity-60" />
-            </div>
-
-            <div className="relative z-10 max-w-[740px]">
-              <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[12px] font-bold uppercase leading-4 tracking-[1.2px] text-[#E8B84B]">
-                Analytics - Performance Dashboard
-              </span>
-
-              <h1 className="mt-6 text-[40px] font-bold leading-[48px] text-white sm:text-[48px]">
-                {userFirstName}&apos;s{' '}
-                <span className="font-serif italic text-[#E8B84B]">
-                  Progress.
-                </span>
-              </h1>
-
-              <p className="mt-5 max-w-[650px] text-[16px] leading-[26px] text-[#6A7282]">
-                Your complete UPSC preparation analytics streaks, subject mastery, weak areas,
-                spaced repetition &amp; smart notes.
-              </p>
-
-              <div className="mt-8 inline-flex items-center rounded-full border border-[#E8B84B]/35 bg-white/[0.07] px-5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                <span className="mr-3 text-[18px]" aria-hidden>
-                  🔥
-                </span>
-                <span className="text-[16px] font-bold leading-[22px] text-[#FFD43B]">
-                  {daysToPrelims} days to UPSC Prelims 2026 - Keep going, you&apos;re on track!
-                </span>
-              </div>
-            </div>
-          </div>
 
           <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {summaryCards.map((card) => (

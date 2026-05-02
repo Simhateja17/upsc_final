@@ -66,7 +66,7 @@ export default function LeaderboardPage() {
     range === 'all' ? '🏆 All Time' : range === 'week' ? '📅 This Week' : '📅 This Month';
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA] font-inter">
+    <div className="min-h-screen bg-[#F9FAFB] font-arimo">
       <DashboardPageHero
         badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="COMMUNITY RANKINGS"

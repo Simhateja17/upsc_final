@@ -26,7 +26,7 @@ type FooterContactInfo = {
 };
 
 const defaultFooterLinks: FooterLinkGroups = {
-  platform: ['Daily MCQ', 'Daily Mains Challenge', 'Mock Tests', 'Video Lectures', 'Current Affairs'],
+  platform: ['Daily MCQ', 'Daily Mains Challenge', 'Mock Tests', 'Current Affairs'],
   revision_tools: ['Flashcards', 'Mind Maps', 'Spaced Repetition', 'Study Planner', 'Syllabus Tracker'],
   company: ['About Us', 'FAQs', 'Terms of Use', 'Refund Policy', 'Cookies', 'Privacy Policy'],
 };
@@ -57,7 +57,6 @@ const platformRouteMap: Record<string, string> = {
   'Daily MCQ': '/dashboard/daily-mcq',
   'Daily Mains Challenge': '/dashboard/daily-answer',
   'Mock Tests': '/dashboard/mock-tests',
-  'Video Lectures': '/dashboard/video-lectures',
   'Current Affairs': '/dashboard/current-affairs',
 };
 
@@ -100,7 +99,7 @@ function normalizeFooterLinks(raw: unknown): FooterLinkGroups {
 }
 
 function linkClassName() {
-  return 'inline-flex items-center py-1 text-[rgba(255,255,255,0.56)] text-[28px] leading-[1.25] font-plus-jakarta transition hover:text-[#F4BF4C]';
+  return 'inline-flex items-center py-1 text-[rgba(255,255,255,0.56)] text-[28px] leading-[1.25] font-plus-jakarta transition hover:text-white';
 }
 
 export default function Footer() {
@@ -187,21 +186,21 @@ export default function Footer() {
             <div className="mt-4 space-y-4">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[rgba(255,255,255,0.35)]">Email</p>
-                <a href={`mailto:${contactInfo.email}`} className="mt-1 block text-[22px] leading-tight text-[rgba(255,255,255,0.85)] hover:text-[#F4BF4C]">
+                <a href={`mailto:${contactInfo.email}`} className="mt-1 block text-[22px] leading-tight text-[rgba(255,255,255,0.85)] hover:text-white">
                   {contactInfo.email}
                 </a>
               </div>
 
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[rgba(255,255,255,0.35)]">Contact Page</p>
-                <Link href="/contact" className="mt-1 block text-[22px] leading-tight text-[rgba(255,255,255,0.85)] hover:text-[#F4BF4C]">
+                <Link href="/contact" className="mt-1 block text-[22px] leading-tight text-[rgba(255,255,255,0.85)] hover:text-white">
                   Contact Us
                 </Link>
               </div>
 
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[rgba(255,255,255,0.35)]">WhatsApp</p>
-                <a href={contactInfo.whatsapp_link} target="_blank" rel="noopener noreferrer" className="mt-1 block text-[22px] leading-tight text-[rgba(255,255,255,0.85)] hover:text-[#F4BF4C]">
+                <a href={contactInfo.whatsapp_link} target="_blank" rel="noopener noreferrer" className="mt-1 block text-[22px] leading-tight text-[rgba(255,255,255,0.85)] hover:text-white">
                   {contactInfo.whatsapp}
                 </a>
                 <a href={contactInfo.whatsapp_link} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center rounded-full border border-[#25D366]/35 bg-[#25D366]/12 px-3 py-1 text-[12px] font-semibold text-[#4ADE80] hover:bg-[#25D366]/20">
@@ -211,7 +210,7 @@ export default function Footer() {
 
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[rgba(255,255,255,0.35)]">Telegram Support</p>
-                <a href={contactInfo.telegram_link} target="_blank" rel="noopener noreferrer" className="mt-1 block text-[22px] leading-tight text-[rgba(255,255,255,0.85)] hover:text-[#F4BF4C]">
+                <a href={contactInfo.telegram_link} target="_blank" rel="noopener noreferrer" className="mt-1 block text-[22px] leading-tight text-[rgba(255,255,255,0.85)] hover:text-white">
                   {contactInfo.telegram_handle}
                 </a>
                 <a href={contactInfo.telegram_link} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center rounded-full border border-[#38BDF8]/35 bg-[#38BDF8]/12 px-3 py-1 text-[12px] font-semibold text-[#7DD3FC] hover:bg-[#38BDF8]/20">

@@ -219,10 +219,10 @@ export default function DailyEditorialPage() {
   return (
     <div
       className="font-arimo w-full min-h-screen"
-      style={{ background: '#FFFFFF' }}
+      style={{ background: '#F9FAFB' }}
     >
       <DashboardPageHero
-        badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeIcon={<img src="/badge-daily-editorial.png" alt="daily" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="DAILY NEWS ANALYSIS"
         title={
           <>
@@ -244,7 +244,7 @@ export default function DailyEditorialPage() {
       {/* ============================================================ */}
       <div
         style={{
-          background: '#E8EDF5',
+          background: '#FAFBFE',
           borderRadius: '28px 28px 0 0',
           marginTop: '-4px',
           paddingTop: 'clamp(24px, 3vw, 40px)',

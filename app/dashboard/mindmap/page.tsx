@@ -76,7 +76,7 @@ export default function MindmapPage() {
   const needReview = Math.max(0, totalMaps - totalExplored);
 
   return (
-    <div className="min-h-screen font-inter" style={{ background: '#F5F6FA' }}>
+    <div className="min-h-screen font-arimo" style={{ background: '#F9FAFB' }}>
 
       <DashboardPageHero
         badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { dashboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
+import DashboardPageHero from '@/components/DashboardPageHero';
 
 // ─── SVG Line Chart ───────────────────────────────────────────────────────────
 function LineChart({ data, width = 400, height = 120, color = '#00D5BE' }: {
@@ -173,11 +174,11 @@ export default function TestAnalyticsPage() {
 
   return (
     <div
-      className="flex overflow-hidden"
-      style={{ background: '#FFFFFF', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
+      className="flex overflow-hidden font-arimo"
+      style={{ background: '#F9FAFB', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
     >
       <div className="flex-1 overflow-y-auto">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8 relative">
+        <div className="w-full relative">
           {loading && !error && (
             <div
               className="absolute right-6 top-4 rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.08em]"
@@ -195,72 +196,14 @@ export default function TestAnalyticsPage() {
             </div>
           )}
 
-          {/* ── Hero ── */}
-          <div
-            className="w-full rounded-[16px] border border-white/5 overflow-hidden flex flex-col gap-5"
-            style={{
-              background: 'linear-gradient(135deg, #0B1120 0%, #111827 60%, #0D1117 100%)',
-              boxShadow: '0 18px 50px rgba(15,23,43,0.16)',
-              padding: '24px 26px 22px',
-              marginBottom: 16,
-            }}
-          >
-            {/* Badge top-left */}
-            <span
-              className="inline-flex items-center justify-center self-start rounded-full px-3 py-1 uppercase tracking-[0.12em]"
-              style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', letterSpacing: '1.2px', color: '#00D5BE', background: 'transparent', border: '1px solid #00D5BE' }}
-            >
-              Analytics - Performance Dashboard
-            </span>
-
-            <div className="flex flex-col gap-2 items-start text-left">
-              <h1
-                className="text-[40px] sm:text-[48px] leading-[48px] font-bold"
-                style={{ color: '#FFFFFF', fontFamily: 'Inter, system-ui', margin: 0 }}
-              >
-                {user?.firstName ?? 'Your'}&apos;s{' '}
-                <span style={{ fontFamily: 'Georgia, ui-serif', fontWeight: 700, fontStyle: 'italic', color: '#e8b84b' }}>
-                  Progress.
-                </span>
-              </h1>
-              <p
-                className="max-w-[660px]"
-                style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '22.75px', color: '#4a5565' }}
-              >
-                Your complete UPSC test analytics, score trends, subject mastery, rank history, time management and AI-powered next steps.
-              </p>
-            </div>
-
-            {/* Stats strip */}
-            <div
-              className="flex overflow-hidden"
-              style={{ background: '#161c2d', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16 }}
-            >
-              {topStripCards.map((card, index) => (
-                <div
-                  key={index}
-                  className="flex-1 flex flex-col items-center justify-center py-3"
-                  style={{
-                    borderRight: index < topStripCards.length - 1 ? '1px solid rgba(255,255,255,0.08)' : undefined,
-                    minWidth: 0,
-                  }}
-                >
-                  <div
-                    style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 18, letterSpacing: '-0.4px', color: card.valueColor, lineHeight: '1.2' }}
-                  >
-                    {card.value}
-                  </div>
-                  <div
-                    className="uppercase text-center mt-1"
-                    style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 9.5, letterSpacing: '0.6px', color: 'rgba(255,255,255,0.4)' }}
-                  >
-                    {card.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
+          <DashboardPageHero
+            badgeText="Analytics - Performance Dashboard"
+            title={<>{user?.firstName ?? 'Your'}&apos;s <span style={{ fontStyle: 'italic', color: '#e8b84b' }}>Progress.</span></>}
+            subtitle="Your complete UPSC test analytics, score trends, subject mastery, rank history, time management and AI-powered next steps."
+            stats={topStripCards.map(c => ({ value: c.value, label: c.label, color: c.valueColor }))}
+          />
+        </div>
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           {/* ── 5 Summary Cards ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             {summaryCards.map((card) => (

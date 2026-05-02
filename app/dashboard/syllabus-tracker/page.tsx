@@ -255,11 +255,11 @@ export default function SyllabusTrackerPage() {
     : null;
 
   return (
-    <div className="flex flex-col h-full bg-[#f3f6fb]">
+    <div className="flex flex-col h-full bg-[#F9FAFB] font-arimo">
       {/* Page Content - scrollable */}
       <div className="flex-1 overflow-y-auto">
         {/* Hero Section */}
-        <div className="px-4 sm:px-6 lg:px-8 pt-[clamp(12px,1.6vw,20px)]">
+        <div>
           <HeroSection states={states} syllabusData={syllabusData} userName={user?.firstName} />
         </div>
 

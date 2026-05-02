@@ -15,27 +15,27 @@ interface HeroStats {
 }
 
 const filters = [
-  { key: 'all', label: 'ðŸ“š All Series' },
-  { key: 'prelims', label: 'ðŸ›ï¸ Prelims' },
-  { key: 'mains', label: 'âœï¸ Mains' },
-  { key: 'current-affairs', label: 'ðŸ“° Current Affairs' },
-  { key: 'pyq', label: 'ðŸ“‹ PYQ' },
-  { key: 'csat', label: 'ðŸ“Š CSAT' },
-  { key: 'foundation', label: 'ðŸ Foundation' },
-  { key: 'gs-papers', label: 'ðŸ“‘ GS Papers' },
-  { key: 'optional', label: 'ðŸŽ“ Optional' },
-  { key: 'free', label: 'ðŸŽ Free' },
+  { key: 'all', label: '\u{1F4DA} All Series' },
+  { key: 'prelims', label: '\u{1F3DB}\uFE0F Prelims' },
+  { key: 'mains', label: '\u270D\uFE0F Mains' },
+  { key: 'current-affairs', label: '\u{1F4F0} Current Affairs' },
+  { key: 'pyq', label: '\u{1F4CB} PYQ' },
+  { key: 'csat', label: '\u{1F4CA} CSAT' },
+  { key: 'foundation', label: '\u{1F3C1} Foundation' },
+  { key: 'gs-papers', label: '\u{1F4D1} GS Papers' },
+  { key: 'optional', label: '\u{1F393} Optional' },
+  { key: 'free', label: '\u{1F381} Free' },
 ];
 
 // Map examMode/subject to an emoji icon
 function seriesIcon(examMode: string, subject?: string | null): string {
-  if (subject?.toLowerCase().includes('polity')) return 'ðŸ›ï¸';
-  if (subject?.toLowerCase().includes('history')) return 'ðŸ“œ';
-  if (subject?.toLowerCase().includes('geography')) return 'ðŸŒ';
-  if (subject?.toLowerCase().includes('economy')) return 'ðŸ“ˆ';
-  if (subject?.toLowerCase().includes('science')) return 'ðŸ”¬';
-  if (examMode === 'mains') return 'âœï¸';
-  return 'ðŸ“„';
+  if (subject?.toLowerCase().includes('polity')) return '\u{1F3DB}\uFE0F';
+  if (subject?.toLowerCase().includes('history')) return '\u{1F4DC}';
+  if (subject?.toLowerCase().includes('geography')) return '\u{1F30D}';
+  if (subject?.toLowerCase().includes('economy')) return '\u{1F4C8}';
+  if (subject?.toLowerCase().includes('science')) return '\u{1F52C}';
+  if (examMode === 'mains') return '\u270D\uFE0F';
+  return '\u{1F4C4}';
 }
 
 interface SeriesItem {
@@ -132,91 +132,87 @@ export default function TestSeriesPage() {
   // Enrolled series with their full data
   const enrolledSeries = enrollments.map((e) => ({ ...e.series, progress: e.progress, testsCompleted: e.testsCompleted }));
 
-  // Non-enrolled series
-  const exploreSeries = allSeries.filter((s) => !enrolledIds.has(s.id));
-
   return (
     <div
+      className="font-arimo"
       style={{
         background: '#F9FAFB',
         minHeight: 'calc(100vh - 111px)',
-        fontFamily: 'Inter, system-ui, sans-serif',
         overflowX: 'hidden',
       }}
     >
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <div style={{ flex: 1, overflowY: 'auto' }}>
+          {/* Hero */}
+          <DashboardPageHero
+            badgeIcon={<img src="/lightning.png" alt="lightning" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+            badgeText="TEST SERIES"
+            title={<>Choose Your <em style={{ color: '#e8a820', fontStyle: 'italic' }}>Battle Plan.</em></>}
+            subtitle="From NCERT foundations to full Prelims war-room simulations — each series is crafted to mirror real UPSC patterns. Rise every day. Rise with Jeet."
+            stats={[
+              { value: heroStats ? String(heroStats.activeSeries) : '847', label: 'Active Series', color: '#F5A623' },
+              { value: heroStats ? heroStats.totalStudents.toLocaleString('en-IN') : '1.2L+', label: 'Students', color: '#FB7185' },
+              { value: heroStats ? heroStats.testsTaken.toLocaleString('en-IN') + (heroStats.testsTaken > 0 ? '+' : '') : '42,980+', label: 'Tests Taken', color: '#FFFFFF' },
+              { value: heroStats ? `${heroStats.successRate}%` : '68%', label: 'Success Rate', color: '#22C55E' },
+            ]}
+          />
           <div
             style={{
               width: '100%',
               maxWidth: '100%',
               margin: 0,
-              padding: 'clamp(12px, 1.6vw, 20px) clamp(16px, 2vw, 32px) 48px',
+              padding: '0 clamp(16px, 2vw, 32px) 48px',
               boxSizing: 'border-box',
             }}
           >
-            {/* Hero */}
-            <DashboardPageHero
-              badgeIcon={<img src="/lightning.png" alt="lightning" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
-              badgeText="TEST SERIES"
-              heroBorderRadius={16}
-              heroHeight="auto"
-              heroMarginInline={0}
-              title={<>Choose Your <em style={{ color: '#e8a820', fontStyle: 'italic' }}>Battle Plan.</em></>}
-              subtitle="From NCERT foundations to full Prelims war-room simulations — each series is crafted to mirror real UPSC patterns. Rise every day. Rise with Jeet."
-              stats={[
-                { value: heroStats ? String(heroStats.activeSeries) : '847', label: 'Active Series', color: '#F5A623' },
-                { value: heroStats ? heroStats.totalStudents.toLocaleString('en-IN') : '1.2L+', label: 'Students', color: '#FB7185' },
-                { value: heroStats ? heroStats.testsTaken.toLocaleString('en-IN') + (heroStats.testsTaken > 0 ? '+' : '') : '42,980+', label: 'Tests Taken', color: '#FFFFFF' },
-                { value: heroStats ? `${heroStats.successRate}%` : '68%', label: 'Success Rate', color: '#22C55E' },
-              ]}
-            />
 
             {/* Filter bar */}
             <div
               style={{
                 display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                gap: 8,
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 12,
                 marginBottom: 24,
                 padding: '12px 0',
                 width: '100%',
                 maxWidth: 1639,
               }}
             >
-              {filters.map((f, i) => (
-                <button
-                  key={f.key}
-                  type="button"
-                  style={{
-                    fontFamily: 'Inter',
-                    fontWeight: 600,
-                    fontSize: 14,
-                    lineHeight: '20px',
-                    height: 37.6,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    borderRadius: 26843500,
-                    padding: '8px 16px',
-                    boxSizing: 'border-box',
-                    color: i === 0 ? '#FFFFFF' : '#364153',
-                    background: i === 0 ? '#101828' : '#FFFFFF',
-                    border: i === 0 ? '0.8px solid #101828' : '0.8px solid #E5E7EB',
-                    borderTop: i === 0 ? '0.8px solid #101828' : '0.8px solid #E5E7EB',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
-              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                {filters.map((f, i) => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    style={{
+                      fontFamily: 'Inter',
+                      fontWeight: 600,
+                      fontSize: 14,
+                      lineHeight: '20px',
+                      height: 37.6,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      borderRadius: 26843500,
+                      padding: '8px 16px',
+                      boxSizing: 'border-box',
+                      color: i === 0 ? '#FFFFFF' : '#364153',
+                      background: i === 0 ? '#101828' : '#FFFFFF',
+                      border: i === 0 ? '0.8px solid #101828' : '0.8px solid #E5E7EB',
+                      borderTop: i === 0 ? '0.8px solid #101828' : '0.8px solid #E5E7EB',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                 <Link
                   href="/dashboard/test-analytics"
                   style={{
-                    height: 38,
+                    height: 37.6,
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -236,7 +232,7 @@ export default function TestSeriesPage() {
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  ðŸ“Š&nbsp; Analytics
+                  {'\u{1F4CA}'}&nbsp; Analytics
                 </Link>
               </div>
             </div>
@@ -259,30 +255,51 @@ export default function TestSeriesPage() {
                 </div>
               ) : (
                 <>
-                  {/* Explore All Programs */}
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                      <span aria-hidden="true" style={{ fontSize: 18, lineHeight: '18px' }}>ðŸ§­</span>
-                      <h2 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, lineHeight: '28px', color: '#101828', margin: 0 }}>Explore All Programs</h2>
+                  {/* Your Enrolled Series */}
+                  <div style={{ marginBottom: 32 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: '50%',
+                          border: '4px solid #F59E0B',
+                          color: '#F59E0B',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 24,
+                          fontWeight: 700,
+                          lineHeight: '24px',
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        {'\u2713'}
+                      </span>
+                      <h2 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: '#101828', margin: 0 }}>
+                        Your Enrolled Series
+                      </h2>
                     </div>
-                    {exploreSeries.length === 0 ? (
-                      <div style={{ color: '#6B7280', fontSize: 14, padding: '32px 0' }}>
-                        {allSeries.length === 0 ? 'No test series available yet. Check back soon!' : 'You\'re enrolled in all available series!'}
+                    {enrolledSeries.length === 0 ? (
+                      <div style={{ color: '#6B7280', fontSize: 14, padding: '20px 0 4px' }}>
+                        You are not enrolled in any series yet.
                       </div>
                     ) : (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 24, width: '100%' }}>
-                        {exploreSeries.map((s) => (
+                        {enrolledSeries.map((s) => (
                           <ProgramCard
                             key={s.id}
                             series={s}
-                            isEnrolled={false}
-                            enrolling={enrolling === s.id}
-                            onEnroll={() => handleEnroll(s.id)}
+                            isEnrolled
+                            enrolling={false}
+                            onEnroll={() => {}}
                           />
                         ))}
                       </div>
                     )}
                   </div>
+
                 </>
               )}
             </div>
@@ -315,7 +332,7 @@ const statusTagStyles: Record<string, { bg: string; color: string }> = {
 };
 
 function formatEnrolled(n: number | undefined) {
-  if (n == null) return 'â€”';
+  if (n == null) return '-';
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
   return String(n);
 }
@@ -337,7 +354,7 @@ function ProgramCard({
   const statusStyle = statusTagStyles[series.examMode] ?? statusTagStyles.default;
   const icon = seriesIcon(series.examMode, series.subject);
   const isFree = series.price === 0;
-  const priceDisplay = isFree ? 'Free' : `â‚¹${series.price.toLocaleString('en-IN')}`;
+  const priceDisplay = isFree ? 'Free' : `\u20B9${series.price.toLocaleString('en-IN')}`;
   const statusLabel = series.examMode.charAt(0).toUpperCase() + series.examMode.slice(1);
   const showLive = series.listingStatus === 'open' && series.published !== false;
   const duration = series.durationLabel ?? 'Ongoing';
@@ -424,7 +441,7 @@ function ProgramCard({
             </h3>
             <div style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, lineHeight: '16px', color: '#99A1AF', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
               {(series.categoryLabel ?? series.examMode).toUpperCase()}
-              {series.subject ? ` Â· ${series.subject}` : ''}
+              {series.subject ? ` · ${series.subject}` : ''}
             </div>
           </div>
         </div>
@@ -449,10 +466,10 @@ function ProgramCard({
       {/* Body */}
       <div style={{ padding: '24px 24px 0px', boxSizing: 'border-box', flex: 1 }}>
         <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#364153', marginBottom: 12 }}>
-          <span style={{ color: '#7C3AED' }}>ðŸ‘¤ {formatEnrolled(series.enrollmentCount)}</span>
-          <span style={{ color: '#EA580C' }}>ðŸ“„ {series.totalTests} Tests</span>
-          <span style={{ color: '#2563EB' }}>ðŸ• {duration}</span>
-          <span style={{ color: '#CA8A04' }}>â­ {rating.toFixed(1)}</span>
+          <span style={{ color: '#7C3AED' }}>{'\u{1F464}'} {formatEnrolled(series.enrollmentCount)}</span>
+          <span style={{ color: '#EA580C' }}>{'\u{1F4C4}'} {series.totalTests} Tests</span>
+          <span style={{ color: '#2563EB' }}>{'\u{1F550}'} {duration}</span>
+          <span style={{ color: '#CA8A04' }}>{'\u2B50'} {rating.toFixed(1)}</span>
         </div>
         <p
           style={{
@@ -482,7 +499,7 @@ function ProgramCard({
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'var(--font-playfair), "Playfair Display", serif', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: '#101828' }}>{priceDisplay}</span>
           {compare != null && compare > series.price && (
-            <span style={{ fontFamily: 'Inter', fontSize: 14, color: '#9CA3AF', textDecoration: 'line-through' }}>â‚¹{compare.toLocaleString('en-IN')}</span>
+            <span style={{ fontFamily: 'Inter', fontSize: 14, color: '#9CA3AF', textDecoration: 'line-through' }}>\u20B9{compare.toLocaleString('en-IN')}</span>
           )}
           {series.discountPercent != null && series.discountPercent > 0 && (
             <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, color: '#DC2626', background: '#FEE2E2', padding: '4px 8px', borderRadius: 8 }}>
@@ -498,7 +515,7 @@ function ProgramCard({
                 onClick={openAnalytics}
                 style={{ minWidth: 101, height: 40, fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#4A5565', background: '#F3F4F6', border: 'none', borderRadius: 10, cursor: 'pointer' }}
               >
-                ðŸ“Š Analytics
+                {'\u{1F4CA}'} Analytics
               </button>
               <button
                 type="button"
@@ -518,7 +535,7 @@ function ProgramCard({
                   opacity: starting ? 0.8 : 1,
                 }}
               >
-                â–¶ {starting ? 'Startingâ€¦' : 'Resume'}
+                {'\u25B6'} {starting ? 'Starting...' : 'Resume'}
               </button>
             </>
           ) : (
@@ -536,7 +553,7 @@ function ProgramCard({
                 disabled={enrolling}
                 style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: isFree ? '#065F46' : '#FFFFFF', background: enrolling ? '#9CA3AF' : (isFree ? '#D1FAE5' : '#101828'), border: 'none', borderRadius: 8, padding: '8px 16px', cursor: enrolling ? 'not-allowed' : 'pointer' }}
               >
-                {enrolling ? '...' : (isFree ? 'â–º Start Free' : 'â–º Enroll Now')}
+                {enrolling ? '...' : (isFree ? '\u25B6 Start Free' : '\u25B6 Enroll Now')}
               </button>
             </>
           )}

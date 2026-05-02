@@ -145,7 +145,7 @@ export default function TestResultsPage() {
   const seriesName = 'जड़ें मज़बूत Series';
 
   return (
-    <div className={plusJakarta.variable} style={{ fontFamily: 'var(--font-plus-jakarta), sans-serif', background: 'var(--bg)', minHeight: 'calc(100vh - 111px)', padding: '28px 20px 100px' }}>
+    <div className={plusJakarta.variable} style={{ fontFamily: 'var(--font-plus-jakarta), sans-serif', background: '#FAFBFE', minHeight: 'calc(100vh - 111px)', padding: '28px 20px 100px' }}>
       <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
         <button
           className="back-btn"

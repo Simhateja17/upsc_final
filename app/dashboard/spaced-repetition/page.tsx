@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { dashboardService, spacedRepService, userService } from '@/lib/services';
+import DashboardPageHero from '@/components/DashboardPageHero';
 
 const filterOptions = ['All', 'mcq', 'mains', 'pyq', 'custom'];
 const scheduleOptions = [3, 7, 15, 30];
-const heroBackground = 'https://www.figma.com/api/mcp/asset/131a2ecc-394d-42c2-a39f-8268ada9d3f0';
-
 const deckOptions = [
   { id: 'geography', label: 'Geography', icon: '🌍' },
   { id: 'polity', label: 'Polity', icon: '🏛️' },
@@ -252,83 +251,15 @@ export default function SpacedRepetitionPage() {
   const visibleItems = items.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   return (
-    <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: '100%' }}>
+    <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
+        <DashboardPageHero
+          badgeText="WEAK SUBJECT TRACKER - SPACED REPETITION"
+          title={<>Close every <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>gap</span> before exam day.</>}
+          subtitle="Real-time subject health monitoring pinpoints exactly which topics need your attention and builds a smart revision plan by ranking gaps through:"
+          stats={heroStats.map(s => ({ value: String(s.value), label: s.label, color: s.valueColor }))}
+        />
         <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          {/* Header banner */}
-          <div
-            className="relative w-full overflow-hidden rounded-[16px]"
-            style={{
-              background: '#161C2D',
-              boxShadow: '0px 1px 0px rgba(255,255,255,0.03) inset',
-              padding: '24px 26px 22px',
-              marginBottom: 16,
-            }}
-          >
-            <div className="pointer-events-none absolute inset-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={heroBackground}
-                alt=""
-                aria-hidden="true"
-                className="absolute left-0 top-[-14%] h-[128%] w-full max-w-none object-cover"
-              />
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: 'linear-gradient(180deg, rgba(12,18,33,0.76) 0%, rgba(12,18,33,0.84) 100%)',
-                }}
-              />
-              <div
-                className="absolute -right-24 bottom-[-48px] h-48 w-96 rounded-full blur-3xl"
-                style={{ background: 'radial-gradient(circle, rgba(255,210,140,0.28) 0%, rgba(255,210,140,0) 70%)' }}
-              />
-            </div>
-
-            <div className="relative z-10 max-w-[768px]">
-              <div
-                className="mb-[10px] inline-flex h-7 items-center rounded-[20px] border px-4 text-[10px] font-semibold uppercase tracking-[0.5px] text-[#FDC700]"
-                style={{
-                  fontFamily: 'Inter',
-                  background: 'rgba(255,255,255,0.06)',
-                  borderColor: 'rgba(255,255,255,0.12)',
-                }}
-              >
-                WEAK SUBJECT TRACKER - SPACED REPETITION
-              </div>
-              <h1 className="mb-[14px] text-[36px] font-bold leading-[40px] text-white" style={{ fontFamily: 'Inter' }}>
-                Close every <span className="italic text-[#E8B84B]">gap</span> before exam day.
-              </h1>
-              <p className="mb-5 max-w-[768px] text-[16px] leading-[24px] text-[#4A5565]" style={{ fontFamily: 'Inter' }}>
-                Real-time subject health monitoring pinpoints exactly which topics need your attention and builds a smart revision plan by ranking gaps through:
-              </p>
-
-              <div
-                className="grid w-full max-w-[508px] grid-cols-4 overflow-hidden rounded-[16px] bg-[#161c2d]"
-                style={{ border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0px 6px 18px rgba(0,0,0,0.18)' }}
-              >
-                {heroStats.map((stat, index) => (
-                  <div
-                    key={stat.label}
-                    className={`flex min-h-[61px] flex-col items-center justify-center px-2 py-[12px] ${index < heroStats.length - 1 ? 'border-r border-[rgba(255,255,255,0.08)]' : ''}`}
-                  >
-                    <div
-                      className="font-extrabold leading-none tracking-[-0.4px]"
-                      style={{ fontFamily: 'var(--font-jakarta)', color: stat.valueColor }}
-                    >
-                      <span style={{ fontSize: stat.valueSize }}>{stat.value}</span>
-                    </div>
-                    <div
-                      className="mt-[3px] text-[9.5px] font-normal uppercase tracking-[0.6px] text-white/40"
-                      style={{ fontFamily: 'var(--font-jakarta)' }}
-                    >
-                      {stat.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
 
           {/* Questions to Revisit - header */}
           <div

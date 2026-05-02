@@ -22,7 +22,7 @@ const features = [
 
 export default function StudyGroupsPage() {
   return (
-    <div className="min-h-screen bg-[#F4F6FA] font-inter text-[#0C1424]">
+    <div className="min-h-screen bg-[#F9FAFB] font-arimo text-[#0C1424]">
       <DashboardPageHero
         badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="STUDY TOGETHER"

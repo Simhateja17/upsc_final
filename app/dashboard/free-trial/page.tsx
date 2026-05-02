@@ -271,20 +271,20 @@ export default function FreeTrialPage() {
   };
 
   return (
-    <div style={{ background: '#FFFFFF', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+    <div className="font-arimo" style={{ background: '#F9FAFB', minHeight: '100vh' }}>
       {/* ================================================================ */}
       {/* ================================================================ */}
       {/*  SECTION 1: HERO                                                  */}
       {/* ================================================================ */}
       <DashboardPageHero
-        badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeIcon={<img src="/badge-mentorship.png" alt="mentorship" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="PERSONALIZED MENTORSHIP"
         title={
           <>
             The guidance that turns{' '}
             <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>aspirants</em>
             <br />
-            into officers
+            into officers.
           </>
         }
         subtitle="1-on-1 sessions tailored to your stage and timeline. Mentored by Abhijeet Sir."

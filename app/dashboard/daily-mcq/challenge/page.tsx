@@ -94,7 +94,7 @@ export default function DailyMcqChallengePage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#E8EDF5' }}>
+      <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#FAFBFE' }}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
@@ -109,7 +109,7 @@ export default function DailyMcqChallengePage() {
   const correctCount = questions.filter((qu) => answers[qu.id] && answers[qu.id] === qu.correctOption).length;
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#E8EDF5' }}>
+    <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}>
       <main className="flex-1 px-[clamp(1rem,4vw,5rem)] py-4 flex items-center justify-center">
         <div className="max-w-[900px] mx-auto">
           <div style={{ maxWidth: '1050px', borderRadius: '10px', background: '#EAECEF40', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '24px' }}>

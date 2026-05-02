@@ -17,7 +17,6 @@ async function main() {
             "Daily Answer Writing",
             "Editorial Summaries",
             "Basic Study Planner",
-            "Video Lectures Access",
             "Email Support",
           ],
           isPopular: false,

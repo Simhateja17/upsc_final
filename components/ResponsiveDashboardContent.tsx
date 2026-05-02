@@ -614,10 +614,23 @@ const ResponsiveDashboardContent = () => {
                 <div className="mb-1 py-0 text-[clamp(12px,0.73vw,13px)] invisible">AI Evaluation</div>
 
                 <div className="flex items-center gap-3 mb-2">
-                  <img src="/icons/dashboard/daily-mcq.png" alt="MCQ" className="w-7 h-7" />
-                  <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
-                    Daily MCQ
-                  </h3>
+                  <img
+                    src={isMcqCompleted ? '/sidebar-daily-mcq-new.png' : '/icons/dashboard/daily-mcq.png'}
+                    alt="MCQ"
+                    className="w-7 h-7 object-contain"
+                  />
+                  {isMcqCompleted ? (
+                    <span
+                      className="inline-flex items-center rounded-[8px] px-[10px] py-[2px] font-inter font-bold text-[clamp(18px,1.15vw,20px)] leading-[32px] text-[#0E182D]"
+                      style={{ background: '#F0AE00' }}
+                    >
+                      Daily MCQ
+                    </span>
+                  ) : (
+                    <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
+                      Daily MCQ
+                    </h3>
+                  )}
                 </div>
 
                 <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-gray-600 mb-2">
@@ -627,20 +640,11 @@ const ResponsiveDashboardContent = () => {
                   {mcqCount} Questions{mcqTopic ? ` - ${mcqTopic}` : ''}
                 </p>
 
-                <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
-                  {isMcqCompleted ? (
-                    <>
-                      <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
-                        <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      Completed
-                    </>
-                  ) : (
-                    <>
-                      <img src="/TrioCard.png" alt="Start" className="w-5 h-5" />
-                      Start Now
-                    </>
-                  )}
+                <div className="w-full flex justify-center" role="button">
+                  <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2">
+                    <img src="/mcq-completed-icon.png" alt="" className="w-[22px] h-[16px] object-contain flex-shrink-0" />
+                    <span>Completed</span>
+                  </div>
                 </div>
               </Link>
 
@@ -673,21 +677,17 @@ const ResponsiveDashboardContent = () => {
                   {mainsTopic || '—'}
                 </p>
 
-                <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
-                  {isMainsCompleted ? (
-                    <>
-                      <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
-                        <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      Completed
-                    </>
-                  ) : (
-                    <>
-                      <img src="/TrioCard (1).png" alt="Attempt" className="w-5 h-5" />
-                      Attempt Now
-                    </>
-                  )}
-                </div>
+                {isMainsCompleted ? (
+                  <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                    <img src="/mcq-completed-icon.png" alt="" className="w-[22px] h-[16px] object-contain flex-shrink-0" />
+                    Completed
+                  </div>
+                ) : (
+                  <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                    <img src="/TrioCard (1).png" alt="Attempt" className="w-5 h-5" />
+                    Attempt Now
+                  </div>
+                )}
               </div>
               </Link>
 
@@ -720,21 +720,17 @@ const ResponsiveDashboardContent = () => {
                   {editorialTopic || '—'}
                 </p>
 
-                <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
-                  {isEditorialCompleted ? (
-                    <>
-                      <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
-                        <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      Completed
-                    </>
-                  ) : (
-                    <>
-                      <img src="/TrioCard.png" alt="Read" className="w-5 h-5" />
-                      Read Now
-                    </>
-                  )}
-                </div>
+                {isEditorialCompleted ? (
+                  <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                    <img src="/mcq-completed-icon.png" alt="" className="w-[22px] h-[16px] object-contain flex-shrink-0" />
+                    Completed
+                  </div>
+                ) : (
+                  <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                    <img src="/TrioCard.png" alt="Read" className="w-5 h-5" />
+                    Read Now
+                  </div>
+                )}
               </div>
               </Link>
             </div>

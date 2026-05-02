@@ -76,6 +76,32 @@ export default function LibraryPage() {
   const [downloadingChapter, setDownloadingChapter] = useState<string | null>(null);
   const [apiTestimonials, setApiTestimonials] = useState<any[]>([]);
 
+  const defaultTestimonials = [
+    {
+      id: 'default-1',
+      name: 'Priya Rajan',
+      title: 'UPSC Prelims 2024 Cleared - Delhi',
+      content: "Jeet Sir's notes are unmatched. I revised them 3 times before Prelims and cleared with a huge margin. Clear, concise, UPSC-perfect.",
+      rating: 5,
+    },
+    {
+      id: 'default-2',
+      name: 'Ankit Kumar',
+      title: 'UPSC Mains 2024 - Bihar',
+      content: "The connection b/w the YouTube and the PDFs is seamless. I feel like I'm watching and taking notes at the same time. Genuinely the best free resource.",
+      rating: 5,
+    },
+    {
+      id: 'default-3',
+      name: 'Sneha Mishra',
+      title: 'UPSC Mains 2025 - MP',
+      content: "I've tried paid note-making notes — Jeet Sir's free PDFs are better. The Geography notes genuinely saved my Prelims score. Life-changing.",
+      rating: 5,
+    },
+  ];
+
+  const testimonials = apiTestimonials.length > 0 ? apiTestimonials : defaultTestimonials;
+
   const selectedApiSubject = apiSubjects.find(s => s.name === selectedSubject) ?? null;
 
   // Fetch subjects and testimonials on mount
@@ -150,16 +176,17 @@ export default function LibraryPage() {
   return (
     <div
       className="font-arimo w-full min-h-screen"
-      style={{ background: '#F9FAFB' }}
+      style={{ background: '#FAFBFE' }}
     >
       <DashboardPageHero
-        badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
-        badgeText="FREE STUDY MATERIALS"
+        badgeIcon={<span style={{ fontSize: '14px' }}>{'\u{1F4DA}'}</span>}
+        badgeText="SIMPLIFIED STUDY MATERIAL"
         title={
           <>
-            Master UPSC with{' '}
-            <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Expert Notes</em>
-            {' '}and Free Resources
+            Your Complete{' '}
+            <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Library</em>
+            <br />
+            for UPSC Preparation
           </>
         }
         subtitle="From PYQ-backed notes to concise summaries — everything you need, free."
@@ -932,28 +959,27 @@ export default function LibraryPage() {
         {/* ============================================================ */}
         <div style={{ marginBottom: 'clamp(40px, 4vw, 60px)' }}>
           {/* Header */}
-          <div className="flex flex-col items-center" style={{ marginBottom: 'clamp(20px, 2vw, 28px)' }}>
+          <div className="flex flex-col items-center" style={{ marginBottom: 'clamp(24px, 2.5vw, 32px)' }}>
             <div
-              className="flex items-center gap-2 font-arimo font-bold"
+              className="flex items-center gap-1.5 font-arimo font-bold"
               style={{
-                fontSize: 'clamp(10px, 0.82vw, 12px)',
-                color: '#DBAC49',
+                fontSize: '12px',
+                color: '#2563EB',
                 textTransform: 'uppercase',
-                letterSpacing: '0.3px',
-                marginBottom: 'clamp(6px, 0.6vw, 8px)',
+                letterSpacing: '0.5px',
+                marginBottom: '8px',
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#DBAC49" stroke="#DBAC49" strokeWidth="1" />
-              </svg>
+              <span style={{ fontSize: '14px', color: '#FDC700' }}>&#9734;</span>
               ASPIRANT STORIES
             </div>
             <h2
               className="font-arimo font-bold text-center"
               style={{
-                fontSize: 'clamp(24px, 2.5vw, 34px)',
-                color: '#101828',
-                lineHeight: 1.3,
+                fontSize: 'clamp(24px, 2.8vw, 36px)',
+                color: '#0F172A',
+                lineHeight: 1.2,
+                fontWeight: 700,
               }}
             >
               What UPSC Aspirants Say
@@ -961,84 +987,85 @@ export default function LibraryPage() {
           </div>
 
           {/* Testimonial cards */}
-          {apiTestimonials.length > 0 && (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))',
-                gap: 'clamp(14px, 1.5vw, 24px)',
-              }}
-            >
-              {apiTestimonials.slice(0, 3).map((t) => {
-                const initials = t.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-                return (
-                  <div
-                    key={t.id}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '24px',
+            }}
+          >
+            {testimonials.slice(0, 3).map((t) => {
+              const initials = t.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+              return (
+                <div
+                  key={t.id}
+                  style={{
+                    background: '#FFFBEB',
+                    borderRadius: '20px',
+                    padding: '28px',
+                    border: '1px solid #FDE68A',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  {/* Stars */}
+                  <div style={{ marginBottom: '16px', display: 'flex', gap: '2px' }}>
+                    {Array.from({ length: t.rating ?? 5 }).map((_: unknown, i: number) => (
+                      <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#FDC700" />
+                      </svg>
+                    ))}
+                  </div>
+
+                  {/* Quote */}
+                  <p
+                    className="font-arimo italic"
                     style={{
-                      background: 'linear-gradient(135deg, #FEFCE8 0%, #FFF7ED 100%)',
-                      borderRadius: '16px',
-                      padding: 'clamp(18px, 2vw, 24px)',
-                      border: '1px solid #FFF085',
+                      fontSize: '14px',
+                      lineHeight: '1.75',
+                      color: '#1E293B',
+                      marginBottom: '24px',
+                      flex: 1,
                     }}
                   >
-                    {/* Stars */}
-                    <div style={{ marginBottom: 'clamp(10px, 1vw, 14px)', display: 'flex', gap: '2px' }}>
-                      {Array.from({ length: t.rating ?? 5 }).map((_: unknown, i: number) => (
-                        <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="none">
-                          <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#F59E0B" stroke="#F59E0B" strokeWidth="1" />
-                        </svg>
-                      ))}
-                    </div>
+                    &ldquo;{t.content}&rdquo;
+                  </p>
 
-                    {/* Quote */}
-                    <p
-                      className="font-arimo italic"
+                  {/* Avatar + name */}
+                  <div className="flex items-center" style={{ gap: '12px' }}>
+                    <div
+                      className="flex items-center justify-center font-arimo font-bold"
                       style={{
-                        fontSize: 'clamp(12px, 1.05vw, 14px)',
-                        lineHeight: 'clamp(18px, 1.8vw, 24px)',
-                        color: '#374151',
-                        marginBottom: 'clamp(16px, 1.6vw, 22px)',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: '#1E40AF',
+                        color: '#FFFFFF',
+                        fontSize: '13px',
+                        flexShrink: 0,
                       }}
                     >
-                      &ldquo;{t.content}&rdquo;
-                    </p>
-
-                    {/* Avatar + name */}
-                    <div className="flex items-center" style={{ gap: 'clamp(10px, 1vw, 14px)' }}>
+                      {initials}
+                    </div>
+                    <div>
                       <div
-                        className="flex items-center justify-center font-arimo font-bold"
-                        style={{
-                          width: 'clamp(36px, 3.2vw, 44px)',
-                          height: 'clamp(36px, 3.2vw, 44px)',
-                          borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #1C398E 0%, #1447E6 100%)',
-                          color: '#FFFFFF',
-                          fontSize: 'clamp(12px, 1.05vw, 14px)',
-                          flexShrink: 0,
-                        }}
+                        className="font-arimo font-bold"
+                        style={{ fontSize: '14px', lineHeight: '1.3', color: '#0F172A', fontWeight: 700 }}
                       >
-                        {initials}
+                        {t.name}
                       </div>
-                      <div>
-                        <div
-                          className="font-arimo font-bold"
-                          style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#101828' }}
-                        >
-                          {t.name}
-                        </div>
-                        <div
-                          className="font-arimo"
-                          style={{ fontSize: 'clamp(11px, 0.9vw, 13px)', color: '#6A7282' }}
-                        >
-                          {t.title}
-                        </div>
+                      <div
+                        className="font-arimo"
+                        style={{ fontSize: '12px', lineHeight: '1.4', color: '#64748B' }}
+                      >
+                        {t.title}
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* ============================================================ */}
@@ -1070,7 +1097,9 @@ export default function LibraryPage() {
                 marginBottom: 'clamp(8px, 0.8vw, 12px)',
               }}
             >
-              Ready to start your IAS journey the right way?
+              Ready to start your IAS
+              <br />
+              journey the right way?
             </h3>
             <p
               className="font-arimo"
@@ -1082,55 +1111,51 @@ export default function LibraryPage() {
                 maxWidth: 'clamp(360px, 36vw, 480px)',
               }}
             >
-              Access 360+ free PDFs, PYQ notes, and study roadmaps &mdash; all designed to help you crack UPSC on your first attempt.
+              Join 15,000+ aspirants who study smarter with Rise with Jeet.
+              Free notes, live classes, and a community that believes in
+              your selection.
             </p>
 
-            <div className="flex items-center" style={{ gap: 'clamp(10px, 1vw, 14px)', flexWrap: 'wrap' }}>
-              <button
-                className="font-arimo font-bold"
-                style={{
-                  background: '#101828',
-                  color: '#FFFFFF',
-                  borderRadius: '14px',
-                  padding: 'clamp(12px, 1.2vw, 16px) clamp(22px, 2vw, 28px)',
-                  fontSize: 'clamp(13px, 1.12vw, 15px)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Start Studying Free
-              </button>
-              <button
-                className="font-arimo font-bold"
-                style={{
-                  background: '#FFFFFF',
-                  color: '#101828',
-                  borderRadius: '14px',
-                  padding: 'clamp(12px, 1.2vw, 16px) clamp(22px, 2vw, 28px)',
-                  fontSize: 'clamp(13px, 1.12vw, 15px)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Watch on YouTube
-              </button>
-            </div>
+            <a
+              href="https://www.youtube.com/@RiseWithJeet"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 font-arimo font-bold text-white"
+              style={{
+                background: '#DC2626',
+                borderRadius: '14px',
+                padding: 'clamp(12px, 1.2vw, 16px) clamp(22px, 2vw, 28px)',
+                fontSize: 'clamp(13px, 1.12vw, 15px)',
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              📺 Watch on YouTube
+            </a>
           </div>
 
           {/* Right side - decorative rocket */}
           <div
-            className="flex items-center justify-center"
             style={{
-              width: 'clamp(80px, 8vw, 110px)',
-              height: 'clamp(80px, 8vw, 110px)',
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.3)',
-              flexShrink: 0,
+              position: 'absolute',
+              right: 'clamp(20px, 3vw, 40px)',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 'clamp(120px, 12vw, 180px)',
+              height: 'clamp(120px, 12vw, 180px)',
+              opacity: 0.6,
+              pointerEvents: 'none',
             }}
           >
-            <span style={{ fontSize: 'clamp(40px, 4vw, 56px)' }}>{'\uD83D\uDE80'}</span>
+            <img
+              src="/rocket.png"
+              alt=""
+              aria-hidden="true"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
           </div>
         </div>
       </div>

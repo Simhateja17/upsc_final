@@ -46,7 +46,7 @@ export default function DailyMcqIntroPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen" style={{ background: '#E8EDF5' }}>
+      <div className="flex flex-col min-h-screen" style={{ background: '#FAFBFE' }}>
         <main className="flex-1 flex items-center justify-center p-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </main>
@@ -56,7 +56,7 @@ export default function DailyMcqIntroPage() {
 
   if (error || !mcq) {
     return (
-      <div className="flex flex-col min-h-screen" style={{ background: '#E8EDF5' }}>
+      <div className="flex flex-col min-h-screen" style={{ background: '#FAFBFE' }}>
         <main className="flex-1 flex items-center justify-center p-4">
           <div className="text-center">
             <h2 className="text-xl font-bold text-gray-800 mb-2">No MCQ Challenge Today</h2>
@@ -73,7 +73,7 @@ export default function DailyMcqIntroPage() {
     .trim();
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#E8EDF5' }}>
+    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-4">
         {/* Intro Card */}

@@ -9,7 +9,6 @@ import dailyAnswerRoutes from "./dailyAnswer.routes";
 import editorialRoutes from "./editorial.routes";
 import mockTestRoutes from "./mockTest.routes";
 import studyPlannerRoutes from "./studyPlanner.routes";
-import videoRoutes from "./video.routes";
 import libraryRoutes from "./library.routes";
 import pricingRoutes from "./pricing.routes";
 import mentorshipRoutes from "./mentorship.routes";
@@ -96,9 +95,6 @@ router.use("/mock-tests", mockTestRoutes);
 
 // Study Planner routes
 router.use("/study-plan", studyPlannerRoutes);
-
-// Video Lectures routes
-router.use("/videos", videoRoutes);
 
 // Library routes
 router.use("/library", libraryRoutes);

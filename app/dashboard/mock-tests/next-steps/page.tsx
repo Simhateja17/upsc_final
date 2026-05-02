@@ -153,7 +153,7 @@ function NextStepsInner() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#F9FAFB',
+        background: '#FAFBFE',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -178,7 +178,7 @@ function NextStepsInner() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#F9FAFB',
+      background: '#FAFBFE',
       fontFamily: 'Inter, sans-serif',
     }}>
       {/* ── Header ── */}
@@ -357,7 +357,7 @@ export default function NextStepsPage() {
     <Suspense fallback={
       <div style={{
         minHeight: '100vh',
-        background: '#F9FAFB',
+        background: '#FAFBFE',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

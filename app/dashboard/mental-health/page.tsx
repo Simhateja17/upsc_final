@@ -194,7 +194,7 @@ export default function MentalHealthPage() {
   const cg = 'var(--font-cormorant), Georgia, serif';
 
   return (
-    <div className="min-h-screen" style={{ background: '#f4f6fa', fontFamily: dm }}>
+    <div className="min-h-screen font-arimo" style={{ background: '#F9FAFB' }}>
 
       {/* ── slider styles ── */}
       <style>{`
@@ -330,15 +330,15 @@ export default function MentalHealthPage() {
                   const isDone = status === 'done';
                   return (
                     <div key={key} style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
                       padding: '12px 4px',
                       background: isToday ? '#090e1c' : isDone ? 'rgba(74,124,89,0.1)' : 'transparent',
                       borderRight: '1px solid rgba(11,22,40,0.08)',
                     }}>
                       <span style={{ fontFamily: dm, fontWeight: 700, fontSize: 10, letterSpacing: '0.6px', textTransform: 'uppercase' as const, color: isToday ? 'rgba(255,255,255,0.4)' : '#9aa3b8', textAlign: 'center' as const }}>{key}</span>
                       <span style={{ fontSize: 18, color: isToday ? '#e8b84b' : 'inherit' }}>{emoji}</span>
-                      <span style={{ fontFamily: dm, fontSize: 10, color: isToday ? 'rgba(255,255,255,0.5)' : '#6b7a99', textAlign: 'center' as const, lineHeight: '14px', whiteSpace: 'pre-line' as const }}>{label}</span>
-                      <span style={{ fontFamily: dm, fontSize: 13, color: isToday ? '#e8b84b' : '#000', textAlign: 'center' as const }}>
+                      <span style={{ fontFamily: dm, fontSize: 10, color: isToday ? 'rgba(255,255,255,0.5)' : '#6b7a99', textAlign: 'center' as const, lineHeight: '14px', whiteSpace: 'pre-line' as const, minHeight: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{label}</span>
+                      <span style={{ fontFamily: dm, fontSize: 13, color: isToday ? '#e8b84b' : '#000', textAlign: 'center' as const, minHeight: 18, display: 'flex', alignItems: 'center' }}>
                         {isDone ? '✅' : isToday ? '○' : '—'}
                       </span>
                     </div>

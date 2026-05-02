@@ -25,7 +25,7 @@ function ContactHeader() {
           <img
             src="/logo...png"
             alt="RiseWithJeet"
-            className="h-[38px] w-auto object-contain"
+            className="w-[62px] md:w-[62px] h-auto object-contain"
           />
         </Link>
 
@@ -228,7 +228,7 @@ export default function ContactPage() {
         />
       </div>
 
-      <section id="contact-content" className="w-full bg-[#F9FAFC] py-20 px-6">
+      <section id="contact-content" className="w-full bg-[#F9FAFB] py-20 px-6 font-arimo">
         <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-[430px_minmax(0,1fr)] gap-12 lg:gap-16 items-start">
           <div>
             <div className="mb-4 flex items-center gap-2.5">

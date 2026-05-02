@@ -30,7 +30,7 @@ export default function DailyMainsChallengePage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col bg-gray-50 font-arimo" style={{ height: '100%', overflow: 'hidden' }}>
+      <div className="flex flex-col bg-[#FAFBFE] font-arimo" style={{ height: '100%', overflow: 'hidden' }}>
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </main>
@@ -126,27 +126,22 @@ export default function DailyMainsChallengePage() {
           {data.attempted ? (
             <Link href="/dashboard/daily-answer/challenge/attempt/results">
               <button
-                className="flex items-center justify-center gap-3 bg-green-600 text-white rounded-[10px] hover:scale-105 transition-transform shadow-lg"
-                style={{ width: 'min(232px, 100%)', height: '52px', marginTop: '10px' }}
+                className="w-[232px] h-[52px] bg-green-600 text-white rounded-[10px] hover:bg-green-700 transition-all flex items-center justify-center gap-2 mx-auto font-arimo font-bold text-[20px] leading-[24px]"
+                style={{ marginTop: '10px' }}
               >
-                <span className="font-bold text-[16px]">View Results</span>
+                View Results
               </button>
             </Link>
           ) : (
             <Link href="/dashboard/daily-answer/challenge">
               <button
-                className="flex items-center justify-center gap-3 bg-[#101828] text-white rounded-[10px] hover:scale-105 transition-transform shadow-lg"
-                style={{ width: 'min(232px, 100%)', height: '52px', marginTop: '10px' }}
+                className="w-[232px] h-[52px] bg-[#101828] text-white rounded-[10px] hover:bg-[#1A1A1A] transition-all flex items-center justify-center gap-2 mx-auto font-arimo font-bold text-[20px] leading-[24px]"
+                style={{ marginTop: '10px' }}
               >
-                <div className="w-5 h-5 rounded-full border border-white flex items-center justify-center">
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <span className="font-bold text-[16px]">Start Now</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M5 12H19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 5L19 12L12 19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <img src="/icon-1.png" alt="" className="w-5 h-5 object-contain" />
+                Start Now
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white ml-1">
+                  <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
             </Link>

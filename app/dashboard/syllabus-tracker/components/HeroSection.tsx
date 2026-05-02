@@ -44,9 +44,6 @@ export default function HeroSection({ states, syllabusData, userName }: HeroSect
     <DashboardPageHero
       badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
       badgeText="PERSONALIZED SYLLABUS TRACKER"
-      heroBorderRadius={16}
-      heroHeight="auto"
-      heroMarginInline={0}
       title={
         <>
           Know Exactly Where You Stand,{' '}

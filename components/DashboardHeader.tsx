@@ -103,7 +103,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
           <img
             src="/logo...png"
             alt="RiseWithJeet Logo"
-            className="w-[62px] h-[62px] object-contain"
+            className="w-[62px] md:w-[62px] h-auto object-contain"
           />
         </Link>
       </div>

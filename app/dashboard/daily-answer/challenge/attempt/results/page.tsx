@@ -66,7 +66,7 @@ export default function ResultsPage() {
     return (
       <div
         className="min-h-screen font-arimo flex items-center justify-center"
-        style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}
+        style={{ background: '#FAFBFE' }}
       >
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>

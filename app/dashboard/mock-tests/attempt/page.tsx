@@ -455,7 +455,7 @@ function MockTestAttemptInner() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#FFFFFF',
+        background: '#FAFBFE',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -482,7 +482,7 @@ function MockTestAttemptInner() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#FFFFFF',
+        background: '#FAFBFE',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -529,7 +529,7 @@ function MockTestAttemptInner() {
       const { done, total } = evaluationProgress;
       const pct = total > 0 ? Math.max(8, Math.round((done / total) * 100)) : 8;
       return (
-        <div style={{ minHeight: '100vh', background: '#0F172B', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', gap: 20, padding: 24 }}>
+        <div style={{ minHeight: '100vh', background: '#FAFBFE', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', gap: 20, padding: 24 }}>
           <div style={{ fontSize: 56 }}>🧠</div>
           <h2 style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 700, margin: 0, textAlign: 'center' }}>AI is evaluating your answers...</h2>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, margin: 0 }}>
@@ -545,7 +545,7 @@ function MockTestAttemptInner() {
 
     /* ── Questions screen (mains) ── */
     return (
-      <div style={{ minHeight: '100vh', background: '#F9FAFB', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: '#FAFBFE', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
         {/* Header */}
         <div style={{ background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)', padding: '10px 24px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
@@ -728,7 +728,7 @@ function MockTestAttemptInner() {
   /* ─────────────────────────── END MAINS UI ─────────────────────────── */
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FFFFFF', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#FAFBFE', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
 
       {/* ── Sub-header (matches screenshot strip) ── */}
       <div
@@ -846,7 +846,7 @@ function MockTestAttemptInner() {
           {/* Question Card */}
           <div
             style={{
-              background: '#FFFFFF',
+        background: '#FAFBFE',
               borderRadius: 16,
               border: '1px solid #E5E7EB',
               padding: 24,
@@ -1200,7 +1200,7 @@ export default function MockTestAttemptPage() {
     <Suspense fallback={
       <div style={{
         minHeight: '100vh',
-        background: '#FFFFFF',
+        background: '#FAFBFE',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

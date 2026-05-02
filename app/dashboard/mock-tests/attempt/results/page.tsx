@@ -347,7 +347,7 @@ function MockTestResultsInner() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#F9FAFB',
+        background: '#FAFBFE',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -374,7 +374,7 @@ function MockTestResultsInner() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#F9FAFB',
+        background: '#FAFBFE',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -426,7 +426,7 @@ function MockTestResultsInner() {
     };
 
     return (
-      <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
+      <div style={{ minHeight: '100vh', background: '#FAFBFE', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
         <div style={{ maxWidth: 960, margin: '0 auto' }}>
           <button
             type="button"
@@ -551,7 +551,7 @@ function MockTestResultsInner() {
   const showConfetti = scorePct > 50;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#FAFBFE', fontFamily: 'Inter, sans-serif' }}>
       {showConfetti && (
         <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 10 }}>
           {Array.from({ length: 36 }, (_, i) => (
@@ -861,7 +861,7 @@ export default function MockTestResultsPage() {
     <Suspense fallback={
       <div style={{
         minHeight: '100vh',
-        background: '#F9FAFB',
+        background: '#FAFBFE',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

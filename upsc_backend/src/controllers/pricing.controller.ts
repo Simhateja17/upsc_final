@@ -40,7 +40,6 @@ export const getPlans = async (_req: Request, res: Response, next: NextFunction)
               "Everything in 3 Month Plan",
               "Unlimited Mock Tests",
               "AI Answer Evaluation",
-              "Video Lectures Access",
               "Personal Mentor Support",
               "Priority Support",
             ],

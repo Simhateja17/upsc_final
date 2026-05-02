@@ -1,273 +1,189 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { videoService } from '@/lib/services';
+import DashboardPageHero from '@/components/DashboardPageHero';
 
-/* ------------------------------------------------------------------ */
-/*  YouTube embed helper                                               */
-/* ------------------------------------------------------------------ */
-function getYouTubeEmbedUrl(url: string): string {
-  let videoId = '';
-  try {
-    if (url.includes('youtu.be/')) {
-      videoId = url.split('youtu.be/')[1].split('?')[0];
-    } else if (url.includes('youtube.com/watch')) {
-      const u = new URL(url);
-      videoId = u.searchParams.get('v') || '';
-    } else if (url.includes('youtube.com/embed/')) {
-      videoId = url.split('youtube.com/embed/')[1].split('?')[0];
-    }
-  } catch {}
-  return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0` : url;
+/* ─── Types ─── */
+interface VideoItem {
+  id: string;
+  title: string;
+  subject: string;
+  youtubeUrl?: string;
+  url?: string;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  viewCount?: number;
+  duration?: string;
+  instructor?: string;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-const SUBJECT_EMOJIS: Record<string, string> = {
-  polity: '\u2696\uFE0F',
-  history: '\u{1F3DB}\uFE0F',
-  geography: '\u{1F30D}',
-  economy: '\u{1F4C8}',
-  environment: '\u{1F33F}',
-  science: '\u{1F52C}',
-  ethics: '\u{1F91D}',
-  current: '\u{1F4F0}',
-  ir: '\u{1F310}',
-  essay: '\u270D\uFE0F',
-  security: '\u{1F6E1}\uFE0F',
-};
-
-function subjectEmoji(name: string): string {
-  const lower = name.toLowerCase();
-  for (const [key, emoji] of Object.entries(SUBJECT_EMOJIS)) {
-    if (lower.includes(key)) return emoji;
-  }
-  return '\u{1F4DA}';
+interface SubjectItem {
+  name: string;
+  videoCount?: number;
+  totalDuration?: string;
+  viewCount?: number;
+  description?: string;
+  isNew?: boolean;
 }
 
-const CATEGORY_TABS: Array<{ label: string; width: number; active?: boolean }> = [
-  { label: 'All Categories', width: 128.1 },
-  { label: 'Polity', width: 75.563 },
-  { label: 'History', width: 86.188, active: true },
-  { label: 'Geography', width: 110.188 },
-  { label: 'Economy', width: 98.238 },
-  { label: 'Environment', width: 120.838 },
-  { label: 'Science & Tech', width: 133.738 },
-  { label: 'Ethics', width: 76.738 },
-  { label: 'IR', width: 52.8 },
-  { label: 'Art & Culture', width: 124 },
-  { label: 'Current Affairs', width: 132.95 },
-];
-
-type SubjectCardTheme = {
-  bg: string;
-  border: string;
-  progress: number;
-  showNew?: boolean;
-};
-
-function getFallbackViewCount(seed: string): number {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) % 100000;
-  }
-  return 20000 + (hash % 10001);
-}
-
-/* Subject card background colors — one per subject, cycling */
-const SUBJECT_COLORS: Record<string, { bg: string; border: string; accent: string }> = {
-  'Indian Polity': { bg: '#FFF5E6', border: '#FDE8C8', accent: '#F59E0B' },
-  'Polity': { bg: '#FFF5E6', border: '#FDE8C8', accent: '#F59E0B' },
-  'Indian Economy': { bg: '#EDE9FE', border: '#DDD6FE', accent: '#8B5CF6' },
-  'Economy': { bg: '#EDE9FE', border: '#DDD6FE', accent: '#8B5CF6' },
-  'Geography': { bg: '#FEF3C7', border: '#FDE68A', accent: '#D97706' },
-  'History': { bg: '#FFF7ED', border: '#FFEDD5', accent: '#EA580C' },
-  'Environment': { bg: '#ECFDF5', border: '#D1FAE5', accent: '#059669' },
-  'Ethics': { bg: '#EFF6FF', border: '#DBEAFE', accent: '#2563EB' },
-  'Ethics GS4': { bg: '#EFF6FF', border: '#DBEAFE', accent: '#2563EB' },
-  'Essay Writing': { bg: '#FFF7ED', border: '#FFEDD5', accent: '#EA580C' },
-  'Essay': { bg: '#FFF7ED', border: '#FFEDD5', accent: '#EA580C' },
-  'Internal Security': { bg: '#FEF2F2', border: '#FECACA', accent: '#DC2626' },
-  'Security': { bg: '#FEF2F2', border: '#FECACA', accent: '#DC2626' },
-  "Int'l Relations": { bg: '#EDE9FE', border: '#DDD6FE', accent: '#7C3AED' },
-  'IR': { bg: '#EDE9FE', border: '#DDD6FE', accent: '#7C3AED' },
-  'Science & Tech': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#3B82F6' },
-  'Science': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#3B82F6' },
-  'Current Affairs': { bg: '#FEF3C7', border: '#FDE68A', accent: '#D97706' },
-};
-
-const SUBJECT_ICON_GRADIENTS: Record<string, string> = {
-  indianpolity:      'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)',
-  polity:            'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)',
-  indianeconomy:     'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
-  economy:           'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
-  geography:         'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-  history:           'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
-  environment:       'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-  ethicsgs4:         'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-  ethics:            'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-  essaywriting:      'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-  essay:             'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-  internalsecurity:  'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-  security:          'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-  intlrelations:     'linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)',
-  ir:                'linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)',
-  scienceandtech:    'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)',
-  science:           'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)',
-  currentaffairs:    'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
-};
-
-function getSubjectIconGradient(name: string): string {
-  const key = normalizeSubjectKey(name);
-  return SUBJECT_ICON_GRADIENTS[key] || 'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)';
-}
-
-const SUBJECT_CARD_THEMES: Record<string, SubjectCardTheme> = {
-  indianpolity: { bg: '#FDF0DE', border: '#C0D9F5', progress: 72 },
-  indianeconomy: { bg: 'linear-gradient(139.3269deg, #F3EFFD 0%, #EDE7FB 100%)', border: '#E8E1FD', progress: 38 },
-  geography: { bg: 'rgba(201, 168, 76, 0.19)', border: '#B2EDD0', progress: 48 },
-  history: { bg: '#FFF8EE', border: '#FFD5A8', progress: 55 },
-  environment: { bg: 'linear-gradient(139.3269deg, #EDF9F3 0%, #E0F5EA 100%)', border: '#B2EDD0', progress: 62 },
-  ethicsgs4: { bg: 'linear-gradient(139.3269deg, #EEF2F8 0%, #E8EDF6 100%)', border: '#DDE5F0', progress: 32 },
-  essaywriting: { bg: 'linear-gradient(139.3269deg, #FEF5EC 0%, #FEF0E0 100%)', border: '#FFD5A8', progress: 45 },
-  internalsecurity: { bg: 'linear-gradient(139.3269deg, #FEF0F0 0%, #FDE8E8 100%)', border: '#FFCECE', progress: 22, showNew: true },
-  intlrelations: { bg: 'linear-gradient(139.3269deg, #F0EBFF 0%, #E8E1FD 100%)', border: '#E8E1FD', progress: 35 },
-  scienceandtech: { bg: 'linear-gradient(139.3269deg, #E0EBF9 0%, #D4E4F7 100%)', border: '#C0D9F5', progress: 28 },
-};
-
+/* ─── Constants ─── */
 const SUBJECT_SORT_ORDER = [
-  'indianpolity',
-  'indianeconomy',
-  'geography',
+  'polity',
   'history',
+  'geography',
+  'economy',
   'environment',
-  'ethicsgs4',
-  'essaywriting',
-  'internalsecurity',
-  'intlrelations',
-  'scienceandtech',
+  'science',
+  'art & culture',
+  'current affairs',
+  'international relations',
+  'security',
 ];
 
-function normalizeSubjectKey(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+/* ─── Helpers ─── */
+function normalizeSubjectKey(name: string) {
+  return name.toLowerCase().replace(/&/g, '').replace(/\s+/g, ' ').trim();
 }
 
-function getSubjectCardTheme(name: string): SubjectCardTheme {
-  const key = normalizeSubjectKey(name);
-  const fallback: SubjectCardTheme = { bg: '#F3F4F6', border: '#E5E7EB', progress: 40 };
-  return SUBJECT_CARD_THEMES[key] || fallback;
+function subjectEmoji(name: string) {
+  const n = normalizeSubjectKey(name);
+  if (n.includes('polity')) return '🏛️';
+  if (n.includes('history')) return '📜';
+  if (n.includes('geography')) return '🌍';
+  if (n.includes('economy')) return '📊';
+  if (n.includes('environment')) return '🌿';
+  if (n.includes('science')) return '🔬';
+  if (n.includes('art')) return '🎨';
+  if (n.includes('current')) return '📰';
+  if (n.includes('international')) return '🌐';
+  if (n.includes('security')) return '🛡️';
+  return '📹';
 }
 
-function formatCardViews(count: number): string {
-  if (count >= 100000) {
-    const v = (count / 100000).toFixed(1);
-    return `${v.endsWith('.0') ? v.slice(0, -2) : v}L`;
+function getSubjectCardTheme(name: string) {
+  const n = normalizeSubjectKey(name);
+  if (n.includes('polity')) return { bg: '#EFF6FF', border: '#BFDBFE', progress: 80, showNew: true };
+  if (n.includes('history')) return { bg: '#FFF7ED', border: '#FDBA74', progress: 65, showNew: false };
+  if (n.includes('geography')) return { bg: '#ECFDF5', border: '#A7F3D0', progress: 55, showNew: false };
+  if (n.includes('economy')) return { bg: '#F5F3FF', border: '#DDD6FE', progress: 70, showNew: false };
+  if (n.includes('environment')) return { bg: '#F0FDF4', border: '#BBF7D0', progress: 45, showNew: false };
+  if (n.includes('science')) return { bg: '#FEF2F2', border: '#FECACA', progress: 60, showNew: true };
+  return { bg: '#F8FAFC', border: '#CBD5E1', progress: 50, showNew: false };
+}
+
+function getSubjectIconGradient(name: string) {
+  const n = normalizeSubjectKey(name);
+  if (n.includes('polity')) return 'linear-gradient(135deg, #3B82F6, #1D4ED8)';
+  if (n.includes('history')) return 'linear-gradient(135deg, #F59E0B, #D97706)';
+  if (n.includes('geography')) return 'linear-gradient(135deg, #10B981, #059669)';
+  if (n.includes('economy')) return 'linear-gradient(135deg, #8B5CF6, #7C3AED)';
+  if (n.includes('environment')) return 'linear-gradient(135deg, #22C55E, #16A34A)';
+  if (n.includes('science')) return 'linear-gradient(135deg, #EF4444, #DC2626)';
+  return 'linear-gradient(135deg, #64748B, #475569)';
+}
+
+function formatViews(n: number) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
+function formatCardViews(n: number | undefined) {
+  return formatViews(n ?? 0);
+}
+
+function getVideoViewCount(v: VideoItem) {
+  return v.viewCount ?? 0;
+}
+
+function getYouTubeEmbedUrl(url: string) {
+  if (url.includes('youtube.com/watch?v=')) {
+    const id = url.split('v=')[1]?.split('&')[0];
+    return id ? `https://www.youtube.com/embed/${id}` : url;
   }
-  if (count >= 1000) {
-    const v = (count / 1000).toFixed(1);
-    return `${v.endsWith('.0') ? v.slice(0, -2) : v}K`;
+  if (url.includes('youtu.be/')) {
+    const id = url.split('youtu.be/')[1]?.split('?')[0];
+    return id ? `https://www.youtube.com/embed/${id}` : url;
   }
-  return String(count);
+  return url;
 }
 
-function formatViews(count: number): string {
-  return formatCardViews(count);
-}
-
-function getVideoViewCount(video: any): number {
-  return video.viewCount || getFallbackViewCount(String(video.id || video.title || 'video'));
-}
-
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
+/* ─── Page Component ─── */
 export default function VideoLecturesPage() {
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showMentorModal, setShowMentorModal] = useState(false);
-  const [apiSubjects, setApiSubjects] = useState<any[]>([]);
-  const [apiStats, setApiStats] = useState<{ totalLectures: number; totalSubjects: number; totalHours: number } | null>(null);
-  const [apiVideos, setApiVideos] = useState<any[]>([]);
-  const [featuredSubjectName, setFeaturedSubjectName] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState('History');
-  const [subjectVideos, setSubjectVideos] = useState<any[]>([]);
-  const [subjectVideosLoading, setSubjectVideosLoading] = useState(false);
-  const [mentorQuestion, setMentorQuestion] = useState('');
-  const [mentorSubmitting, setMentorSubmitting] = useState(false);
-  const [mentorSuccess, setMentorSuccess] = useState(false);
+  const [apiSubjects, setApiSubjects] = useState<SubjectItem[]>([]);
+  const [apiVideos, setApiVideos] = useState<VideoItem[]>([]);
+  const [subjectVideos, setSubjectVideos] = useState<VideoItem[]>([]);
   const [subjectsLoading, setSubjectsLoading] = useState(true);
+  const [subjectVideosLoading, setSubjectVideosLoading] = useState(false);
+  const [apiStats, setApiStats] = useState<any>(null);
 
-  // Watch + Quiz modal state
-  const [watchVideo, setWatchVideo] = useState<any>(null);
+  const [watchVideo, setWatchVideo] = useState<VideoItem | null>(null);
   const [videoQuestions, setVideoQuestions] = useState<any[]>([]);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizResults, setQuizResults] = useState<any>(null);
   const [quizLoading, setQuizLoading] = useState(false);
 
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showMentorModal, setShowMentorModal] = useState(false);
+  const [mentorQuestion, setMentorQuestion] = useState('');
+  const [mentorSubmitting, setMentorSubmitting] = useState(false);
+  const [mentorSuccess, setMentorSuccess] = useState(false);
+
+  /* Load subjects & featured videos */
   useEffect(() => {
+    setSubjectsLoading(true);
     Promise.all([
-      videoService.getSubjects(),
-      videoService.getStats(),
-    ])
-      .then(([subjectsRes, statsRes]) => {
-        if (subjectsRes.data && Array.isArray(subjectsRes.data)) {
-          setApiSubjects(subjectsRes.data);
-          if (subjectsRes.data.length > 0) {
-            const first = subjectsRes.data[0];
-            setFeaturedSubjectName(first.name);
-            videoService.getVideosBySubject(first.name)
-              .then(vRes => { if (vRes.data?.videos) setApiVideos(vRes.data.videos); })
-              .catch(() => {});
-          }
-        }
-        if (statsRes.data) setApiStats(statsRes.data);
-      })
-      .catch(() => {})
-      .finally(() => setSubjectsLoading(false));
+      videoService.getSubjects().catch(() => ({ data: [] })),
+      videoService.getVideos().catch(() => ({ data: [] })),
+      videoService.getStats().catch(() => ({ data: null })),
+    ]).then(([subRes, vidRes, statRes]) => {
+      setApiSubjects(Array.isArray(subRes.data) ? subRes.data : []);
+      setApiVideos(Array.isArray(vidRes.data) ? vidRes.data : []);
+      setApiStats(statRes.data ?? null);
+      setSubjectsLoading(false);
+    });
   }, []);
 
-  const handleSubjectClick = (subjectName: string) => {
-    if (selectedSubject === subjectName) {
-      setSelectedSubject(null);
-      setSubjectVideos([]);
-      return;
-    }
-    setSelectedSubject(subjectName);
+  /* Load videos for selected subject */
+  useEffect(() => {
+    if (!selectedSubject) { setSubjectVideos([]); return; }
     setSubjectVideosLoading(true);
-    setSubjectVideos([]);
-    videoService.getVideosBySubject(subjectName)
-      .then(vRes => { if (vRes.data?.videos) setSubjectVideos(vRes.data.videos); })
-      .catch(() => {})
+    videoService.getVideosBySubject(selectedSubject)
+      .then((res: any) => setSubjectVideos(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setSubjectVideos([]))
       .finally(() => setSubjectVideosLoading(false));
-  };
+  }, [selectedSubject]);
 
-  const handleWatchVideo = (video: any) => {
-    setWatchVideo(video);
-    setVideoQuestions([]);
-    setQuizAnswers({});
-    setQuizResults(null);
-    videoService.getVideoQuestions(video.id)
-      .then(res => setVideoQuestions(res.data || []))
-      .catch(() => {});
+  /* Load quiz questions when watching a video */
+  useEffect(() => {
+    if (!watchVideo) { setVideoQuestions([]); setQuizAnswers({}); setQuizResults(null); return; }
+    videoService.getQuestions(watchVideo.id)
+      .then((res: any) => setVideoQuestions(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setVideoQuestions([]));
+  }, [watchVideo]);
+
+  const handleSubjectClick = (name: string) => {
+    setSelectedSubject((prev) => (prev === name ? null : name));
   };
 
   const handleQuizSubmit = async () => {
     if (!watchVideo) return;
     setQuizLoading(true);
     try {
-      const res = await videoService.submitVideoQuiz(watchVideo.id, quizAnswers);
-      setQuizResults(res.data);
+      const res = await videoService.submitQuiz(watchVideo.id, quizAnswers);
+      setQuizResults(res.data ?? null);
     } catch {}
     setQuizLoading(false);
   };
 
   const handleAskMentor = async () => {
-    if (!mentorQuestion.trim() || mentorSubmitting) return;
+    if (!mentorQuestion.trim()) return;
     setMentorSubmitting(true);
     try {
-      await videoService.askMentor(mentorQuestion);
+      await videoService.askMentor({ question: mentorQuestion.trim() });
       setMentorSuccess(true);
       setMentorQuestion('');
       setTimeout(() => setMentorSuccess(false), 3000);
@@ -283,142 +199,31 @@ export default function VideoLecturesPage() {
     return safeA - safeB;
   });
 
+  const featuredSubjectName = apiSubjects[0]?.name ?? 'Polity';
+
   return (
-    <div className="font-arimo w-full min-h-screen" style={{ background: '#FFFFFF' }}>
-
-      {/* ============================================================ */}
-      {/*  HERO SECTION â€” Dark background like Figma                    */}
-      {/* ============================================================ */}
-      <div
-        className="relative overflow-hidden"
-        style={{
-          background: '#0F131F',
-          padding: '24px 26px 22px',
-          marginBottom: 16,
-          height: '352px',
-        }}
-      >
-        {/* Background grid pattern */}
-        <div className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: 'radial-gradient(rgba(255,255,255,.035) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
-          }}
-        />
-
-        {/* Top bar: Back to Dashboard + Badge + @RiseWithJeet */}
-        <div className="relative z-10 flex items-center justify-between" style={{ marginBottom: '12px' }}>
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 font-arimo font-medium text-white/60 hover:text-white transition-colors"
-            style={{ fontSize: 'clamp(12px, 1vw, 14px)' }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back to Dashboard
-          </Link>
-
-          <div
-            className="flex items-center gap-2 font-arimo font-semibold text-[#e8a820]"
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '26843500px',
-              padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.5vw, 20px)',
-              fontSize: 'clamp(11px, 0.9vw, 13px)',
-              letterSpacing: '0.5px',
-            }}
-          >
-            <img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-            SIMPLIFIED VIDEO LECTURES
-          </div>
-
-          <a
-            href="https://www.youtube.com/@RiseWithJeet"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 font-arimo font-semibold text-white"
-            style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: '26843500px',
-              padding: 'clamp(8px, 0.75vw, 10px) clamp(16px, 1.5vw, 20px)',
-              fontSize: 'clamp(12px, 1.05vw, 14px)',
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FF0000"/>
-              <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="white"/>
-            </svg>
-            @RiseWithJeet
-          </a>
-        </div>
-
-        {/* Centered hero content */}
-        <div className="relative z-10 flex flex-col items-center" style={{ maxWidth: '700px', margin: '0 auto' }}>
-          <h1
-            className="font-arimo font-bold text-center"
-            style={{
-              fontSize: 'clamp(28px, 3.5vw, 48px)',
-              lineHeight: 'clamp(34px, 4.2vw, 56px)',
-              color: '#FFFFFF',
-              marginBottom: 'clamp(10px, 1vw, 16px)',
-              fontFamily: "'Playfair Display', 'Times New Roman', serif",
-            }}
-          >
+    <div className="font-arimo w-full min-h-screen" style={{ background: '#F9FAFB' }}>
+      <DashboardPageHero
+        badgeIcon={<img src="/🎥.png" alt="video" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeText="SIMPLIFIED VIDEO LECTURES"
+        title={
+          <>
             Master Your{' '}
             <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>UPSC Journey</em>
             <br />
             with Expert Video Lectures
-          </h1>
+          </>
+        }
+        subtitle="Every editorial, every perspective mapped to what UPSC asks."
+        stats={[
+          { value: `${apiStats?.totalLectures ?? '100'}+`, label: 'Video Lectures', color: '#FDC700' },
+          { value: `${apiStats?.totalSubjects ?? '12'}+`, label: 'Core Subjects', color: '#F87171' },
+          { value: `${apiStats?.totalHours ?? '15'}K+`, label: 'Subscribers', color: '#4ADE80' },
+          { value: '\u221E', label: 'Always Free', color: '#FFFFFF' },
+        ]}
+      />
 
-          <p
-            className="font-arimo text-center"
-            style={{
-              fontSize: 'clamp(13px, 1.2vw, 16px)',
-              lineHeight: 'clamp(20px, 1.8vw, 24px)',
-              color: 'rgba(255,255,255,0.5)',
-              maxWidth: '520px',
-              marginBottom: 'clamp(20px, 2.5vw, 32px)',
-            }}
-          >
-            Every editorial, every perspective mapped to what UPSC asks.
-          </p>
-
-          {/* Stats strip — dark boxes like Figma */}
-          <div className="flex gap-0 rounded-[12px] overflow-hidden" style={{ border: '0.8px solid rgba(255,255,255,0.1)' }}>
-            <div className="flex-1 p-[10px_16px] text-center" style={{ background: 'rgba(255,255,255,0.05)', borderRight: '0.8px solid rgba(255,255,255,0.08)' }}>
-              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#FDC700' }}>
-                {apiStats?.totalLectures ?? '100'}+
-              </div>
-              <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Video Lectures</div>
-            </div>
-            <div className="flex-1 p-[10px_16px] text-center" style={{ background: 'rgba(255,255,255,0.05)', borderRight: '0.8px solid rgba(255,255,255,0.08)' }}>
-              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#F87171' }}>
-                {apiStats?.totalSubjects ?? '12'}+
-              </div>
-              <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Core Subjects</div>
-            </div>
-            <div className="flex-1 p-[10px_16px] text-center" style={{ background: 'rgba(255,255,255,0.05)', borderRight: '0.8px solid rgba(255,255,255,0.08)' }}>
-              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#4ADE80' }}>
-                {apiStats?.totalHours ?? '15'}K+
-              </div>
-              <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Subscribers</div>
-            </div>
-            <div className="flex-1 p-[10px_16px] text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
-              <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#FFFFFF' }}>
-                ∞
-              </div>
-              <div className="font-arimo text-[9px] font-bold tracking-[0.8px] uppercase mt-[3px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Always Free</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/*  BROWSE BY SUBJECT â€” White background, shifted up             */}
-      {/* ============================================================ */}
+      {/* Browse by Subject */}
       <div
         className="w-full mx-auto"
         style={{
@@ -426,37 +231,7 @@ export default function VideoLecturesPage() {
           padding: 'clamp(32px, 4vw, 56px) clamp(16px, 2vw, 30px)',
         }}
       >
-        {/* Category tabs */}
-        <div className="flex flex-wrap items-center justify-center" style={{ gap: '16px', marginBottom: '32px' }}>
-          {CATEGORY_TABS.map((tab) => {
-            const isActive = activeCategory === tab.label;
-            return (
-              <button
-                key={tab.label}
-                type="button"
-                onClick={() => setActiveCategory(tab.label)}
-                className="font-arimo font-bold"
-                style={{
-                  height: '40px',
-                  minWidth: `${tab.width}px`,
-                  padding: '0 14px',
-                  borderRadius: '26843500px',
-                  border: 'none',
-                  background: isActive ? '#162456' : '#F3F4F6',
-                  color: isActive ? '#FFFFFF' : '#364153',
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Super heading + Heading on same line */}
+        {/* Super heading + Heading */}
         <div className="text-center" style={{ marginBottom: '34px' }}>
           <div
             className="font-arimo font-bold"
@@ -483,7 +258,7 @@ export default function VideoLecturesPage() {
           </h2>
         </div>
 
-        {/* Subject grid — colored cards */}
+        {/* Subject grid */}
         {subjectsLoading ? (
           <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
             <div className="w-10 h-10 border-4 border-[#e8a820] border-t-transparent rounded-full animate-spin mb-4" />
@@ -533,7 +308,7 @@ export default function VideoLecturesPage() {
                 >
                   {showNew && (
                     <div
-                      className="font-jakarta font-bold"
+                      className="font-arimo font-bold"
                       style={{
                         position: 'absolute',
                         top: '10px',
@@ -553,16 +328,16 @@ export default function VideoLecturesPage() {
                     </div>
                   )}
 
-                  <div style={{ fontSize: '30px', lineHeight: '30px', marginBottom: '10px', fontFamily: 'var(--font-jakarta), sans-serif' }}>
+                  <div style={{ fontSize: '30px', lineHeight: '30px', marginBottom: '10px' }}>
                     {subjectEmoji(subject.name)}
                   </div>
-                  <div className="font-jakarta" style={{ fontSize: '14px', lineHeight: '20px', color: '#1A2744', fontWeight: 800, letterSpacing: '-0.3px' }}>
+                  <div className="font-arimo font-bold" style={{ fontSize: '14px', lineHeight: '20px', color: '#1A2744', letterSpacing: '-0.3px' }}>
                     {subject.name}
                   </div>
-                  <div className="font-jakarta" style={{ fontSize: '11.5px', lineHeight: '17.25px', color: '#5A7096', marginTop: '3px', marginBottom: '2px', fontWeight: 400 }}>
+                  <div className="font-arimo" style={{ fontSize: '11.5px', lineHeight: '17.25px', color: '#5A7096', marginTop: '3px', marginBottom: '2px' }}>
                     {subject.videoCount ?? 0} videos{subject.totalDuration ? ` \u00B7 ${subject.totalDuration}` : ''}
                   </div>
-                  <div className="font-jakarta" style={{ fontSize: '10.5px', lineHeight: '15.75px', color: '#8FA4BE', marginBottom: '9px', fontWeight: 400 }}>
+                  <div className="font-arimo" style={{ fontSize: '10.5px', lineHeight: '15.75px', color: '#8FA4BE', marginBottom: '9px' }}>
                     {subject.viewCount ? formatCardViews(subject.viewCount) : '0'} views
                   </div>
                   <div className="rounded-full overflow-hidden" style={{ width: '141px', height: '4px', background: '#DDE5F0' }}>
@@ -579,10 +354,10 @@ export default function VideoLecturesPage() {
             })}
           </div>
         )}
+
         {/* Inline videos for selected subject */}
         {selectedSubject && (
           <div style={{ marginTop: 'clamp(24px, 2.5vw, 36px)' }}>
-            {/* Subject header */}
             <div style={{ marginBottom: 'clamp(20px, 2vw, 28px)' }}>
               <div className="flex items-center" style={{ gap: '12px', marginBottom: '4px' }}>
                 <div
@@ -605,10 +380,10 @@ export default function VideoLecturesPage() {
                     {selectedSubject} Simplified
                   </h2>
                   <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', color: '#4A5565' }}>
-                    {'📺'} {subjectVideos.length} Video{subjectVideos.length !== 1 ? 's' : ''}
+                    {'\u{1F4FA}'} {subjectVideos.length} Video{subjectVideos.length !== 1 ? 's' : ''}
                     {(() => {
                       const matched = apiSubjects.find(s => s.name === selectedSubject);
-                      return matched?.totalDuration ? ` · ${matched.totalDuration}` : '';
+                      return matched?.totalDuration ? ` \u00B7 ${matched.totalDuration}` : '';
                     })()}
                   </p>
                 </div>
@@ -631,200 +406,185 @@ export default function VideoLecturesPage() {
               </div>
             ) : subjectVideos.length === 0 ? (
               <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>ðŸ“­</div>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>{'\u{1F4ED}'}</div>
                 <p className="font-arimo font-medium" style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>
                   No videos available for {selectedSubject}
                 </p>
               </div>
             ) : (
               <>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
-                  gap: 'clamp(16px, 1.8vw, 24px)',
-                }}
-              >
-                {subjectVideos.map((video) => (
-                  <div
-                    key={video.id}
-                    style={{
-                      background: '#FFFFFF',
-                      borderRadius: '16px',
-                      boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.08), 0px 1px 2px -1px rgba(0,0,0,0.06)',
-                      overflow: 'hidden',
-                      border: '1px solid #E5E7EB',
-                    }}
-                  >
-                    {/* Thumbnail */}
-                    <div
-                      className="flex items-center justify-center"
-                      style={{ background: '#EFF6FF', height: 'clamp(150px, 14vw, 190px)', position: 'relative' }}
-                    >
-                      {video.thumbnailUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={video.thumbnailUrl} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <span style={{ fontSize: 'clamp(48px, 5vw, 64px)' }}>{subjectEmoji(selectedSubject)}</span>
-                      )}
-                    </div>
-
-                    {/* Card content */}
-                    <div style={{ padding: 'clamp(14px, 1.5vw, 20px)' }}>
-                      <p
-                        className="font-arimo font-bold"
-                        style={{ fontSize: 'clamp(10px, 0.85vw, 12px)', color: '#C68A0B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 'clamp(4px, 0.4vw, 6px)' }}
-                      >
-                        {selectedSubject}
-                      </p>
-                      <h3
-                        className="font-arimo font-bold"
-                        style={{ fontSize: 'clamp(14px, 1.15vw, 15px)', color: '#101828', marginBottom: 'clamp(6px, 0.6vw, 8px)', lineHeight: 1.35 }}
-                      >
-                        {video.title}
-                      </h3>
-                      <p className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 12px)', color: '#6A7282', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-                        👀 {formatViews(getVideoViewCount(video))} views
-                      </p>
-
-                      <div className="flex items-center" style={{ gap: '4px', flexWrap: 'nowrap', minWidth: 0 }}>
-                        {/* PDF button */}
-                        <button
-                          onClick={() => setShowLoginModal(true)}
-                          className="flex items-center gap-1 font-arimo font-bold"
-                          style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-                        >
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M7 11l5 5 5-5" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M12 4v12" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          PDF
-                        </button>
-                        {/* Ask Mentor button */}
-                        <button
-                          onClick={() => setShowMentorModal(true)}
-                          className="flex items-center gap-1 font-arimo font-bold"
-                          style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-                        >
-                          <span style={{ fontSize: '14px' }}>🧑‍🏫</span>
-                          Ask Mentor
-                        </button>
-                        {/* Watch button */}
-                        <button
-                          onClick={() => { const u = video.youtubeUrl || video.url || ''; window.open(u.startsWith('http') ? u : `https://${u}`, '_blank'); }}
-                          className="flex items-center gap-1 font-arimo font-bold text-white"
-                          style={{ padding: '5px 8px', borderRadius: '10px', background: '#17223E', border: '1.5px solid #17223E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect width="24" height="24" rx="5" fill="#FF0000"/>
-                            <path d="M10 8l6 4-6 4V8z" fill="white"/>
-                          </svg>
-                          Watch
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* YouTube CTA Banner â€” inside playlist */}
-              <div style={{ marginTop: 'clamp(28px, 3vw, 40px)' }}>
                 <div
                   style={{
-                    background: 'linear-gradient(135deg, #0E182D, #172240)',
-                    borderRadius: '24px',
-                    padding: 'clamp(28px, 3vw, 44px) clamp(32px, 3.5vw, 48px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 'clamp(24px, 3vw, 40px)',
-                    position: 'relative',
-                    overflow: 'hidden',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
+                    gap: 'clamp(16px, 1.8vw, 24px)',
                   }}
                 >
-                  {/* Left content */}
-                  <div style={{ flex: 1, zIndex: 1 }}>
-                    <h3
-                      className="font-tinos font-bold"
+                  {subjectVideos.map((video) => (
+                    <div
+                      key={video.id}
                       style={{
-                        fontSize: 'clamp(28px, 2.7vw, 36px)',
-                        lineHeight: 1.2,
-                        color: '#FFFFFF',
-                        marginBottom: 'clamp(4px, 0.4vw, 6px)',
+                        background: '#FFFFFF',
+                        borderRadius: '16px',
+                        boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.08), 0px 1px 2px -1px rgba(0,0,0,0.06)',
+                        overflow: 'hidden',
+                        border: '1px solid #E5E7EB',
                       }}
                     >
-                      Never Miss a<br />
-                      <span style={{ color: '#F0B100' }}>Lecture Again.</span>
-                    </h3>
+                      <div
+                        className="flex items-center justify-center"
+                        style={{ background: '#EFF6FF', height: 'clamp(150px, 14vw, 190px)', position: 'relative' }}
+                      >
+                        {video.thumbnailUrl ? (
+                          <img src={video.thumbnailUrl} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <span style={{ fontSize: 'clamp(48px, 5vw, 64px)' }}>{subjectEmoji(selectedSubject)}</span>
+                        )}
+                      </div>
 
-                    <p
-                      className="font-tinos"
-                      style={{
-                        fontSize: 'clamp(18px, 1.88vw, 25px)',
-                        color: '#FFFFFF',
-                        marginBottom: 'clamp(12px, 1.2vw, 16px)',
-                      }}
-                    >
-                      Stay Consistent. Stay Ahead.
-                    </p>
+                      <div style={{ padding: 'clamp(14px, 1.5vw, 20px)' }}>
+                        <p
+                          className="font-arimo font-bold"
+                          style={{ fontSize: 'clamp(10px, 0.85vw, 12px)', color: '#C68A0B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 'clamp(4px, 0.4vw, 6px)' }}
+                        >
+                          {selectedSubject}
+                        </p>
+                        <h3
+                          className="font-arimo font-bold"
+                          style={{ fontSize: 'clamp(14px, 1.15vw, 15px)', color: '#101828', marginBottom: 'clamp(6px, 0.6vw, 8px)', lineHeight: 1.35 }}
+                        >
+                          {video.title}
+                        </h3>
+                        <p className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 12px)', color: '#6A7282', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
+                          {'\u{1F440}'} {formatViews(getVideoViewCount(video))} views
+                        </p>
 
-                    <p
-                      className="font-arimo"
-                      style={{
-                        fontSize: 'clamp(13px, 1.12vw, 15px)',
-                        lineHeight: 'clamp(20px, 1.88vw, 25px)',
-                        color: '#FFFFFF',
-                        marginBottom: 'clamp(20px, 2vw, 28px)',
-                        maxWidth: '480px',
-                      }}
-                    >
-                      Subscribe to Rise with Jeet on YouTube and get instant notifications for new lectures, current affairs drops, and live sessions &mdash; completely free.
-                    </p>
+                        <div className="flex items-center" style={{ gap: '4px', flexWrap: 'nowrap', minWidth: 0 }}>
+                          <button
+                            onClick={() => setShowLoginModal(true)}
+                            className="flex items-center gap-1 font-arimo font-bold"
+                            style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                          >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                              <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M7 11l5 5 5-5" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M12 4v12" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            PDF
+                          </button>
+                          <button
+                            onClick={() => setShowMentorModal(true)}
+                            className="flex items-center gap-1 font-arimo font-bold"
+                            style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                          >
+                            <span style={{ fontSize: '14px' }}>{'\u{1F9D1}\u200D\u{1F3EB}'}</span>
+                            Ask Mentor
+                          </button>
+                          <button
+                            onClick={() => { const u = video.youtubeUrl || video.url || ''; window.open(u.startsWith('http') ? u : `https://${u}`, '_blank'); }}
+                            className="flex items-center gap-1 font-arimo font-bold text-white"
+                            style={{ padding: '5px 8px', borderRadius: '10px', background: '#17223E', border: '1.5px solid #17223E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                              <rect width="24" height="24" rx="5" fill="#FF0000"/>
+                              <path d="M10 8l6 4-6 4V8z" fill="white"/>
+                            </svg>
+                            Watch
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-                    {/* YouTube button */}
-                    <a
-                      href="https://www.youtube.com/@RiseWithJeet"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 font-arimo font-bold text-white"
-                      style={{
-                        background: '#E7000B',
-                        borderRadius: '26843500px',
-                        padding: 'clamp(12px, 1.2vw, 14px) clamp(24px, 2.25vw, 30px)',
-                        fontSize: 'clamp(13px, 1.12vw, 15px)',
-                        marginBottom: 'clamp(12px, 1.2vw, 16px)',
-                      }}
-                    >
-                      {/* YouTube icon */}
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FFFFFF"/>
-                        <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#E7000B"/>
-                      </svg>
-                      Join Our YouTube Family
-                    </a>
-
-                    <p className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#FFFFFF' }}>
-                      Join 15K+ in our YouTube family
-                    </p>
-                  </div>
-
-                  {/* Right - Bell icon */}
+                {/* YouTube CTA Banner */}
+                <div style={{ marginTop: 'clamp(28px, 3vw, 40px)' }}>
                   <div
-                    className="flex items-center justify-center"
                     style={{
-                      width: 'clamp(100px, 10vw, 140px)',
-                      height: 'clamp(100px, 10vw, 140px)',
-                      borderRadius: '50%',
-                      background: 'rgba(25,60,184,0.3)',
-                      flexShrink: 0,
-                      opacity: 0.4,
+                      background: 'linear-gradient(135deg, #0E182D, #172240)',
+                      borderRadius: '24px',
+                      padding: 'clamp(28px, 3vw, 44px) clamp(32px, 3.5vw, 48px)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 'clamp(24px, 3vw, 40px)',
+                      position: 'relative',
+                      overflow: 'hidden',
                     }}
                   >
-                    <span style={{ fontSize: 'clamp(48px, 5vw, 68px)' }}>{'\uD83D\uDD14'}</span>
+                    <div style={{ flex: 1, zIndex: 1 }}>
+                      <h3
+                        className="font-arimo font-bold"
+                        style={{
+                          fontSize: 'clamp(28px, 2.7vw, 36px)',
+                          lineHeight: 1.2,
+                          color: '#FFFFFF',
+                          marginBottom: 'clamp(4px, 0.4vw, 6px)',
+                        }}
+                      >
+                        Never Miss a<br />
+                        <span style={{ color: '#F0B100' }}>Lecture Again.</span>
+                      </h3>
+                      <p
+                        className="font-arimo"
+                        style={{
+                          fontSize: 'clamp(18px, 1.88vw, 25px)',
+                          color: '#FFFFFF',
+                          marginBottom: 'clamp(12px, 1.2vw, 16px)',
+                        }}
+                      >
+                        Stay Consistent. Stay Ahead.
+                      </p>
+                      <p
+                        className="font-arimo"
+                        style={{
+                          fontSize: 'clamp(13px, 1.12vw, 15px)',
+                          lineHeight: 'clamp(20px, 1.88vw, 25px)',
+                          color: '#FFFFFF',
+                          marginBottom: 'clamp(20px, 2vw, 28px)',
+                          maxWidth: '480px',
+                        }}
+                      >
+                        Subscribe to Rise with Jeet on YouTube and get instant notifications for new lectures, current affairs drops, and live sessions &mdash; completely free.
+                      </p>
+                      <a
+                        href="https://www.youtube.com/@RiseWithJeet"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 font-arimo font-bold text-white"
+                        style={{
+                          background: '#E7000B',
+                          borderRadius: '26843500px',
+                          padding: 'clamp(12px, 1.2vw, 14px) clamp(24px, 2.25vw, 30px)',
+                          fontSize: 'clamp(13px, 1.12vw, 15px)',
+                          marginBottom: 'clamp(12px, 1.2vw, 16px)',
+                        }}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FFFFFF"/>
+                          <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#E7000B"/>
+                        </svg>
+                        Join Our YouTube Family
+                      </a>
+                      <p className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#FFFFFF' }}>
+                        Join 15K+ in our YouTube family
+                      </p>
+                    </div>
+                    <div
+                      className="flex items-center justify-center"
+                      style={{
+                        width: 'clamp(100px, 10vw, 140px)',
+                        height: 'clamp(100px, 10vw, 140px)',
+                        borderRadius: '50%',
+                        background: 'rgba(25,60,184,0.3)',
+                        flexShrink: 0,
+                        opacity: 0.4,
+                      }}
+                    >
+                      <span style={{ fontSize: 'clamp(48px, 5vw, 68px)' }}>{'\u{1F514}'}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
               </>
             )}
           </div>
@@ -855,7 +615,7 @@ export default function VideoLecturesPage() {
                     {featuredSubjectName}
                   </h2>
                   <p className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#4A5565' }}>
-                    ðŸ“º {apiVideos.length} Video{apiVideos.length !== 1 ? 's' : ''}
+                    {'\u{1F4FA}'} {apiVideos.length} Video{apiVideos.length !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
@@ -884,7 +644,6 @@ export default function VideoLecturesPage() {
                     style={{ background: '#EFF6FF', height: 'clamp(150px, 14vw, 190px)', position: 'relative' }}
                   >
                     {video.thumbnailUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={video.thumbnailUrl} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                       <span style={{ fontSize: 'clamp(48px, 5vw, 64px)' }}>{subjectEmoji(featuredSubjectName)}</span>
@@ -905,33 +664,30 @@ export default function VideoLecturesPage() {
                       {video.title}
                     </h3>
                     <p className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 12px)', color: '#6A7282', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-                      👀 {formatViews(getVideoViewCount(video))} views
+                      {'\u{1F440}'} {formatViews(getVideoViewCount(video))} views
                     </p>
 
                     <div className="flex items-center" style={{ gap: '4px', flexWrap: 'nowrap', minWidth: 0 }}>
-                      {/* PDF button */}
                       <button
                         onClick={() => setShowLoginModal(true)}
                         className="flex items-center gap-1.5 font-arimo font-bold"
                         style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                       >
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                           <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           <path d="M7 11l5 5 5-5" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           <path d="M12 4v12" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                         PDF
                       </button>
-                      {/* Ask Mentor button */}
                       <button
                         onClick={() => setShowMentorModal(true)}
                         className="flex items-center gap-1.5 font-arimo font-bold"
                         style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                       >
-                        <span style={{ fontSize: '14px' }}>🧑‍🏫</span>
+                        <span style={{ fontSize: '14px' }}>{'\u{1F9D1}\u200D\u{1F3EB}'}</span>
                         Ask Mentor
                       </button>
-                      {/* Watch button */}
                       {video.videoUrl ? (
                         <a
                           href={video.videoUrl.startsWith('http') ? video.videoUrl : `https://${video.videoUrl}`}
@@ -940,7 +696,7 @@ export default function VideoLecturesPage() {
                           className="flex items-center gap-1 font-arimo font-bold text-white"
                           style={{ padding: '5px 8px', borderRadius: '10px', background: '#17223E', border: '1.5px solid #17223E', fontSize: '12px', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                             <rect width="24" height="24" rx="5" fill="#FF0000"/>
                             <path d="M10 8l6 4-6 4V8z" fill="white"/>
                           </svg>
@@ -952,7 +708,7 @@ export default function VideoLecturesPage() {
                           className="flex items-center gap-1 font-arimo font-bold text-white"
                           style={{ padding: '5px 8px', borderRadius: '10px', background: '#17223E', border: '1.5px solid #17223E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                             <rect width="24" height="24" rx="5" fill="#FF0000"/>
                             <path d="M10 8l6 4-6 4V8z" fill="white"/>
                           </svg>
@@ -968,7 +724,7 @@ export default function VideoLecturesPage() {
         )}
       </div>
 
-      {/* â”€â”€ Watch Video + Quiz Modal â”€â”€ */}
+      {/* Watch Video + Quiz Modal */}
       {watchVideo && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
@@ -1026,7 +782,7 @@ export default function VideoLecturesPage() {
                   className="flex flex-col items-center justify-center font-arimo"
                   style={{ background: '#F3F4F6', borderRadius: '14px', height: '240px', color: '#9CA3AF', fontSize: '14px' }}
                 >
-                  <span style={{ fontSize: '36px', marginBottom: '8px' }}>ðŸŽ¬</span>
+                  <span style={{ fontSize: '36px', marginBottom: '8px' }}>{'\u{1F3AC}'}</span>
                   Video URL not set yet
                 </div>
               )}
@@ -1039,7 +795,7 @@ export default function VideoLecturesPage() {
                     className="flex items-center gap-3"
                     style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '14px', padding: '16px 20px', marginBottom: '20px' }}
                   >
-                    <span style={{ fontSize: '28px' }}>ðŸŽ¯</span>
+                    <span style={{ fontSize: '28px' }}>{'\u{1F3AF}'}</span>
                     <div>
                       <p className="font-arimo font-bold" style={{ fontSize: '18px', color: '#065F46' }}>
                         You scored {quizResults.score} / {quizResults.total}
@@ -1067,15 +823,15 @@ export default function VideoLecturesPage() {
                                 className="font-arimo flex items-center gap-2">
                                 <span style={{ fontWeight: 600 }}>{['A', 'B', 'C', 'D'][i]}.</span>
                                 {opt}
-                                {isCorrect && <span style={{ marginLeft: 'auto' }}>âœ“</span>}
-                                {isSelected && !isCorrect && <span style={{ marginLeft: 'auto' }}>âœ—</span>}
+                                {isCorrect && <span style={{ marginLeft: 'auto' }}>{'\u2713'}</span>}
+                                {isSelected && !isCorrect && <span style={{ marginLeft: 'auto' }}>{'\u2717'}</span>}
                               </div>
                             );
                           })}
                         </div>
                         {r.explanation && (
                           <p className="font-arimo" style={{ fontSize: '12px', color: '#6A7282', marginTop: '8px', padding: '8px 12px', background: '#FFFBEB', borderRadius: '8px', border: '1px solid #FDE68A' }}>
-                            ðŸ’¡ {r.explanation}
+                            {'\u{1F4A1}'} {r.explanation}
                           </p>
                         )}
                       </div>
@@ -1096,7 +852,7 @@ export default function VideoLecturesPage() {
               ) : (
                 <div>
                   <h3 className="font-arimo font-bold" style={{ fontSize: '16px', color: '#101828', marginBottom: '16px' }}>
-                    ðŸ“ Test Your Understanding ({videoQuestions.length} question{videoQuestions.length !== 1 ? 's' : ''})
+                    {'\u{1F4DD}'} Test Your Understanding ({videoQuestions.length} question{videoQuestions.length !== 1 ? 's' : ''})
                   </h3>
                   <div className="space-y-5">
                     {videoQuestions.map((q: any, idx: number) => (
@@ -1155,7 +911,7 @@ export default function VideoLecturesPage() {
         </div>
       )}
 
-      {/* â”€â”€ Ask Our Team Modal â”€â”€ */}
+      {/* Ask Our Team Modal */}
       {showMentorModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
@@ -1167,7 +923,6 @@ export default function VideoLecturesPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/mentor-icon.png" alt="Ask Our Team" style={{ width: '56px', height: '56px', objectFit: 'contain' }} />
               <button onClick={() => setShowMentorModal(false)}
                 className="flex items-center justify-center"
@@ -1188,7 +943,7 @@ export default function VideoLecturesPage() {
 
             {mentorSuccess && (
               <div className="flex items-center gap-2 mb-4 p-3 rounded-lg" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
-                <span style={{ fontSize: '18px' }}>âœ…</span>
+                <span style={{ fontSize: '18px' }}>{'\u2705'}</span>
                 <span className="font-arimo font-medium" style={{ fontSize: '14px', color: '#065F46' }}>
                   Question submitted successfully!
                 </span>
@@ -1236,7 +991,7 @@ export default function VideoLecturesPage() {
                 </Link>
               </p>
               <p className="font-arimo" style={{ fontSize: '12px', color: '#6A7282' }}>
-                →{' '}
+                {'\u2192'}{' '}
                 <a href="https://www.youtube.com/@RiseWithJeet/community" target="_blank" rel="noopener noreferrer" className="text-[#162456] font-medium hover:underline">Join our YouTube Community</a>
                 {' & '}
                 <a href="https://t.me/togetherrisewithjeet" target="_blank" rel="noopener noreferrer" className="text-[#162456] font-medium hover:underline">Telegram</a>
@@ -1247,7 +1002,7 @@ export default function VideoLecturesPage() {
         </div>
       )}
 
-      {/* â”€â”€ Login Modal placeholder â”€â”€ */}
+      {/* Login Modal placeholder */}
       {showLoginModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
@@ -1258,7 +1013,7 @@ export default function VideoLecturesPage() {
             style={{ background: '#FFFFFF', borderRadius: '24px', padding: '32px', width: '100%', maxWidth: '400px', margin: '0 16px', textAlign: 'center' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>ðŸ”’</div>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>{'\u{1F512}'}</div>
             <h3 className="font-arimo font-bold" style={{ fontSize: '20px', color: '#101828', marginBottom: '8px' }}>
               PDF Access
             </h3>
@@ -1278,9 +1033,3 @@ export default function VideoLecturesPage() {
     </div>
   );
 }
-
-
-
-
-
-

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { studyPlannerService } from '@/lib/services';
@@ -249,7 +249,7 @@ export default function StudyPlannerPage() {
   const todayNum = today.getMonth() === currentDate.getMonth() && today.getFullYear() === currentDate.getFullYear()
     ? today.getDate() : -1;
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const offset = (firstDayOfMonth.getDay() + 6) % 7; // 0=Mon … 6=Sun
+  const offset = (firstDayOfMonth.getDay() + 6) % 7; // 0=Mon â€¦ 6=Sun
   const emptySlots = Array.from({ length: offset }, (_, i) => ({ day: 0, empty: true, studied: false, today: false }));
   const daySlots = Array.from({ length: daysInMonth }, (_, i) => ({
     day: i + 1,
@@ -260,7 +260,6 @@ export default function StudyPlannerPage() {
   const calendarDays = [...emptySlots, ...daySlots];
 
   const studyTypes = [
-    { id: 'video', label: 'Video Lectures', icon: '/study-type-video.png' },
     { id: 'reading', label: 'Reading', icon: '/study-type-reading.png' },
     { id: 'practice', label: 'Practice', icon: '/practise.png' },
     { id: 'revision', label: 'Revision', icon: '/revision.png' },
@@ -353,12 +352,11 @@ export default function StudyPlannerPage() {
 
   const totalStudyLabel = totalStudyMinutes > 0
     ? `Total Study Time: ${totalStudyMinutes} minutes (${totalStudyHours}h ${totalStudyMins}m)`
-    : 'Total Study Time: —';
+    : 'Total Study Time: â€”';
 
   // Time distribution by study type
   const typeConfig = [
     { id: 'reading',  label: 'Reading',        color: '#2DD4BF' },
-    { id: 'video',    label: 'Video Lectures',  color: '#F43F5E' },
     { id: 'practice', label: 'Practice',        color: '#FBBF24' },
     { id: 'revision', label: 'Revision',        color: '#312C85' },
     { id: 'test',     label: 'Test',            color: '#FF6900' },
@@ -400,10 +398,10 @@ export default function StudyPlannerPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-row gap-5 p-4 md:p-6">
 
-          {/* ═══════ Left Column: Main Content ═══════ */}
+          {/* â•â•â•â•â•â•â• Left Column: Main Content â•â•â•â•â•â•â• */}
           <div className="flex-1 min-w-0">
 
-            {/* Hero Banner — matches Figma study planner design */}
+            {/* Hero Banner â€” matches Figma study planner design */}
             <div
               className="rounded-[16px] border border-white/5 overflow-hidden relative"
               style={{
@@ -412,7 +410,7 @@ export default function StudyPlannerPage() {
                 marginBottom: '16px',
               }}
             >
-              {/* Warm radial glow — bottom-right like Figma */}
+              {/* Warm radial glow â€” bottom-right like Figma */}
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
@@ -429,7 +427,7 @@ export default function StudyPlannerPage() {
                   backgroundSize: '48px 48px',
                 }}
               />
-              {/* Subtle gold glow — upper-middle */}
+              {/* Subtle gold glow â€” upper-middle */}
               <div
                 className="absolute left-[28%] -top-[50px] w-[260px] h-[260px] rounded-full pointer-events-none"
                 style={{
@@ -438,47 +436,69 @@ export default function StudyPlannerPage() {
               />
 
               <div className="relative z-10">
-                {/* Pill Badge */}
-                <div
-                  className="inline-flex items-center gap-[6px] mb-[14px]"
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '100px',
-                    background: 'rgba(10,20,48,0.65)',
-                    border: '1px solid rgba(232,184,75,0.28)',
-                    backdropFilter: 'blur(10px)',
-                    boxShadow: '0 2px 12px rgba(232,184,75,0.08), inset 0 1px 0 rgba(255,255,255,0.05)',
-                  }}
-                >
-                  <span className="text-[13px]">📅</span>
-                  <span
-                    className="text-[11px] font-extrabold tracking-[1.2px] uppercase"
-                    style={{ color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}
-                  >
-                    Daily Study Planner
-                  </span>
-                </div>
+                {/* Top badge and heading */}
+                <div className="mb-[8px]">
+                  <div className="mb-[12px]">
+                    <div
+                      className="inline-flex items-center gap-[8px]"
+                      style={{
+                        padding: '8px 18px',
+                        borderRadius: '999px',
+                        background: 'rgba(19,36,70,0.55)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                      }}
+                    >
+                      <span
+                        className="inline-flex items-center justify-center rounded-[4px]"
+                        style={{
+                          width: '14px',
+                          height: '14px',
+                          background: 'rgba(255,255,255,0.15)',
+                          color: '#E8B84B',
+                          fontSize: '10px',
+                          lineHeight: '10px',
+                        }}
+                      >
+                        ▦
+                      </span>
+                      <span
+                        className="text-[11px] font-bold uppercase tracking-[0.5px]"
+                        style={{ color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}
+                      >
+                        Daily Study Planner
+                      </span>
+                    </div>
+                  </div>
 
-                {/* Heading */}
-                <h1
-                  className="text-white font-bold leading-tight mb-[6px]"
-                  style={{
-                    fontSize: 'clamp(22px, 2.6vw, 30px)',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    letterSpacing: '-0.5px',
-                  }}
-                >
-                  Where{' '}
-                  <span style={{ color: '#E8B84B' }}>planning meets purpose</span>
-                </h1>
+                  {/* Heading - Orange Pill */}
+                  <div
+                    className="inline-block rounded-[8px] px-[10px] py-[4px]"
+                    style={{
+                      background: '#F5A623',
+                      boxShadow: '0 2px 8px rgba(245,166,35,0.22)',
+                    }}
+                  >
+                    <h1
+                      className="font-bold leading-[1.14]"
+                      style={{
+                        fontSize: 'clamp(20px, 2.2vw, 45px)',
+                        fontFamily: 'Inter, system-ui, sans-serif',
+                        letterSpacing: '-0.4px',
+                        color: '#0F172A',
+                      }}
+                    >
+                      Where planning meets purpose
+                    </h1>
+                  </div>
+                </div>
 
                 {/* Subtitle */}
                 <p
-                  className="mb-[18px]"
+                  className="mb-[12px]"
                   style={{
                     fontSize: '13px',
                     lineHeight: '20px',
-                    color: 'rgba(255,255,255,0.45)',
+                    color: 'rgba(255,255,255,0.72)',
                     fontFamily: 'Inter, system-ui, sans-serif',
                   }}
                 >
@@ -487,8 +507,8 @@ export default function StudyPlannerPage() {
 
                 {/* Stats Strip */}
                 <div
-                  className="flex gap-0 rounded-[12px] overflow-hidden"
-                  style={{ border: '0.8px solid #2A3242', maxWidth: '420px' }}
+                  className="flex gap-0 rounded-[10px] overflow-hidden"
+                  style={{ border: '0.8px solid #2A3242', maxWidth: '520px' }}
                 >
                   <div
                     className="flex-1 p-[10px_12px] text-center"
@@ -502,7 +522,7 @@ export default function StudyPlannerPage() {
                     </div>
                     <div
                       className="text-[9px] font-bold tracking-[1px] uppercase mt-[4px]"
-                      style={{ color: '#6A7282', fontFamily: 'Inter, system-ui, sans-serif' }}
+                      style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, system-ui, sans-serif' }}
                     >
                       Planned
                     </div>
@@ -519,7 +539,7 @@ export default function StudyPlannerPage() {
                     </div>
                     <div
                       className="text-[9px] font-bold tracking-[1px] uppercase mt-[4px]"
-                      style={{ color: '#6A7282', fontFamily: 'Inter, system-ui, sans-serif' }}
+                      style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, system-ui, sans-serif' }}
                     >
                       Done
                     </div>
@@ -536,7 +556,7 @@ export default function StudyPlannerPage() {
                     </div>
                     <div
                       className="text-[9px] font-bold tracking-[1px] uppercase mt-[4px]"
-                      style={{ color: '#6A7282', fontFamily: 'Inter, system-ui, sans-serif' }}
+                      style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, system-ui, sans-serif' }}
                     >
                       Tasks
                     </div>
@@ -549,11 +569,11 @@ export default function StudyPlannerPage() {
                       className="text-[18px] font-bold leading-none"
                       style={{ color: '#FFFFFF', fontFamily: 'Inter, system-ui, sans-serif' }}
                     >
-                      {tasks.length > 0 ? Math.round((tasks.filter(t => t.isCompleted).length / tasks.length) * 100) + '%' : '—'}
+                      {tasks.length > 0 ? Math.round((tasks.filter(t => t.isCompleted).length / tasks.length) * 100) + '%' : '-'}
                     </div>
                     <div
                       className="text-[9px] font-bold tracking-[1px] uppercase mt-[4px]"
-                      style={{ color: '#6A7282', fontFamily: 'Inter, system-ui, sans-serif' }}
+                      style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, system-ui, sans-serif' }}
                     >
                       Progress
                     </div>
@@ -590,7 +610,7 @@ export default function StudyPlannerPage() {
               </button>
             </div>
 
-            {/* ── Two Cards Side by Side ── */}
+            {/* â”€â”€ Two Cards Side by Side â”€â”€ */}
             <div
               style={{
                 borderRadius: '10px',
@@ -887,7 +907,7 @@ export default function StudyPlannerPage() {
             </div>
             </div>
 
-            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals + Planner Sync ── */}
+            {/* â”€â”€ Bottom Row: Syllabus Coverage + Weekly Goals + Planner Sync â”€â”€ */}
             <div className="grid grid-cols-1 gap-4 mt-4 xl:grid-cols-[1fr_1fr_360px]">
 
               {/* Card 0: Syllabus Coverage */}
@@ -971,7 +991,7 @@ export default function StudyPlannerPage() {
                 </div>
               </div>
 
-              {/* Card 2: Planner Sync — fixed width matches "Your Plan is Empty" above */}
+              {/* Card 2: Planner Sync â€” fixed width matches "Your Plan is Empty" above */}
               <div
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] flex flex-col justify-between"
                 style={{ width: '100%', padding: '24px' }}
@@ -1023,7 +1043,7 @@ export default function StudyPlannerPage() {
             </div>
           </div>
 
-          {/* ═══════ Right Column (290px): Streak + Quick Add ═══════ */}
+          {/* â•â•â•â•â•â•â• Right Column (290px): Streak + Quick Add â•â•â•â•â•â•â• */}
           <div className="flex-shrink-0 flex flex-col gap-5 w-[290px]">
 
             {/* Study Streak Card */}
@@ -1048,7 +1068,7 @@ export default function StudyPlannerPage() {
                 <div className="flex items-center" style={{ gap: '6px', marginBottom: '4px' }}>
                 <img src="/fire-icon.png" alt="Fire" style={{ width: '16px', height: '20px' }} />
                 <span className="font-arimo font-bold" style={{ fontSize: '16px', lineHeight: '24px', letterSpacing: '0px', color: '#00BC7D' }}>
-                  {weeklyStreakLabel || '—'}
+                  {weeklyStreakLabel || 'â€”'}
                 </span>
               </div>
               <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, letterSpacing: '0px', color: '#6A7282', marginBottom: '24px' }}>
@@ -1107,7 +1127,7 @@ export default function StudyPlannerPage() {
                 </span>
               </div>
 
-              {/* Quick Add Buttons — row-by-row layout */}
+              {/* Quick Add Buttons â€” row-by-row layout */}
               <div className="flex flex-col" style={{ gap: '8px' }}>
                 {quickAddRows.map((row, rowIdx) => (
                   <div
@@ -1199,7 +1219,7 @@ export default function StudyPlannerPage() {
                         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: tc.color }}></span>
                         <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{tc.label}</span>
                       </div>
-                      <span className="font-arimo font-bold text-[#9CA3AF]" style={{ fontSize: '13px' }}>—</span>
+                      <span className="font-arimo font-bold text-[#9CA3AF]" style={{ fontSize: '13px' }}>â€”</span>
                     </div>
                   ))
                 ) : (
@@ -1221,7 +1241,7 @@ export default function StudyPlannerPage() {
       </div>
     </div>
 
-    {/* ── Save Plan Popup ── */}
+    {/* â”€â”€ Save Plan Popup â”€â”€ */}
     {showSaveToast && (
       <div
         className="fixed inset-0 z-[100] flex items-center justify-center px-4"
@@ -1261,7 +1281,7 @@ export default function StudyPlannerPage() {
       </div>
     )}
 
-    {/* ── Focus Session Modal ── */}
+    {/* â”€â”€ Focus Session Modal â”€â”€ */}
     {focusActive && (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center"
@@ -1272,7 +1292,7 @@ export default function StudyPlannerPage() {
           style={{ borderRadius: '24px', width: '520px', maxWidth: '95vw', maxHeight: '90vh', overflow: 'hidden' }}
         >
           {focusDone ? (
-            /* ── Summary Screen ── */
+            /* â”€â”€ Summary Screen â”€â”€ */
             <div className="flex flex-col items-center justify-center p-10 text-center" style={{ minHeight: '360px' }}>
               <div
                 className="flex items-center justify-center mb-6"
@@ -1283,7 +1303,7 @@ export default function StudyPlannerPage() {
                 </svg>
               </div>
               <h2 className="font-arimo font-bold text-[#101828] mb-2" style={{ fontSize: '26px' }}>Session Complete!</h2>
-              <p className="font-arimo text-[#6B7280] mb-6" style={{ fontSize: '15px' }}>Great work — keep the momentum going.</p>
+              <p className="font-arimo text-[#6B7280] mb-6" style={{ fontSize: '15px' }}>Great work â€” keep the momentum going.</p>
               <div className="flex gap-8 mb-8">
                 <div className="text-center">
                   <p className="font-arimo font-bold text-[#17223E]" style={{ fontSize: '32px', lineHeight: '1' }}>{fmtTimer(focusTotalSecs)}</p>
@@ -1305,7 +1325,7 @@ export default function StudyPlannerPage() {
               </button>
             </div>
           ) : (
-            /* ── Active Session Screen ── */
+            /* â”€â”€ Active Session Screen â”€â”€ */
             <>
               {/* Header */}
               <div className="flex items-center justify-between px-7 pt-6 pb-4" style={{ borderBottom: '1px solid #F3F4F6' }}>
@@ -1334,7 +1354,7 @@ export default function StudyPlannerPage() {
                       <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Task {focusTaskIdx + 1} of {focusSessionTasks.length}
                       </p>
-                      <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '20px', lineHeight: '1.3' }}>{task?.title ?? '—'}</h3>
+                      <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '20px', lineHeight: '1.3' }}>{task?.title ?? 'â€”'}</h3>
                       {task?.subject && (
                         <span className="inline-block font-arimo text-[#312C85] mt-1" style={{ fontSize: '12px', background: '#EEF2FF', borderRadius: '6px', padding: '2px 8px' }}>
                           {task.subject}
@@ -1353,7 +1373,7 @@ export default function StudyPlannerPage() {
                         </p>
                         {!isTimeUp && (
                           <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px', marginTop: '2px' }}>
-                            remaining · {fmtTimer(focusTotalSecs)} total
+                            remaining Â· {fmtTimer(focusTotalSecs)} total
                           </p>
                         )}
                       </div>
@@ -1420,7 +1440,7 @@ export default function StudyPlannerPage() {
                             {task.title}
                           </p>
                           {task.startTime && (
-                            <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px' }}>{task.startTime}{task.endTime ? ` – ${task.endTime}` : ''}</p>
+                            <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px' }}>{task.startTime}{task.endTime ? ` â€“ ${task.endTime}` : ''}</p>
                           )}
                         </div>
                         {(isActive || isJustMarked) && (
@@ -1435,7 +1455,7 @@ export default function StudyPlannerPage() {
                               transition: 'all 0.25s ease',
                             }}
                           >
-                            {isJustMarked ? 'Done ✓' : 'Active'}
+                            {isJustMarked ? 'Done âœ“' : 'Active'}
                           </span>
                         )}
                       </div>
@@ -1473,7 +1493,7 @@ export default function StudyPlannerPage() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                       Task Marked Done!
                     </span>
-                  ) : '✓ Mark Done & Next'}
+                  ) : 'âœ“ Mark Done & Next'}
                 </button>
                 <button
                   onClick={() => setFocusDone(true)}
@@ -1489,7 +1509,7 @@ export default function StudyPlannerPage() {
       </div>
     )}
 
-    {/* ── Weekly Goals Edit Modal ── */}
+    {/* â”€â”€ Weekly Goals Edit Modal â”€â”€ */}
     {showGoalsModal && (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center"
@@ -1579,7 +1599,7 @@ export default function StudyPlannerPage() {
               className="flex-1 font-arimo font-bold bg-[#101828] text-white rounded-[8px] hover:opacity-90 transition-opacity disabled:opacity-60"
               style={{ height: '44px', fontSize: '14px' }}
             >
-              {savingGoals ? 'Saving…' : 'Save Goals'}
+              {savingGoals ? 'Savingâ€¦' : 'Save Goals'}
             </button>
           </div>
         </div>
