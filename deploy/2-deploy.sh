@@ -8,7 +8,9 @@ APP_DIR="/var/www/frontend"
 cd "$APP_DIR"
 
 echo "=== Pulling latest code ==="
-git pull origin main
+git fetch origin
+git reset --hard origin/main
+git clean -fd
 
 echo "=== Installing dependencies ==="
 npm ci

@@ -27,7 +27,18 @@
       "Bash(npm run:*)",
       "Bash(git pull:*)",
       "Bash(git checkout:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git rm:*)",
+      "Bash(git -C /Users/teja/Desktop/upsc/backend remote -v)",
+      "Bash(git -C /Users/teja/Desktop/upsc/backend log --oneline -5)",
+      "Bash(git -C /Users/teja/Desktop/upsc/backend fetch origin)",
+      "Bash(git -C /Users/teja/Desktop/upsc/backend log --oneline origin/main -10)",
+      "Bash(git -C /Users/teja/Desktop/upsc/backend ls-tree --name-only origin/main)",
+      "Bash(git:*)",
+      "Bash(tar -x -C /tmp/backend_extract/)",
+      "Read(//tmp/**)",
+      "Bash(rsync:*)",
+      "Bash(npx tsc:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
