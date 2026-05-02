@@ -49,16 +49,12 @@ function subjectEmoji(name: string): string {
 
 const CATEGORY_TABS: Array<{ label: string; width: number; active?: boolean }> = [
   { label: 'All Categories', width: 128.1 },
-  { label: 'Polity', width: 75.563 },
   { label: 'History', width: 86.188, active: true },
   { label: 'Geography', width: 110.188 },
+  { label: 'Polity', width: 75.563 },
   { label: 'Economy', width: 98.238 },
-  { label: 'Environment', width: 120.838 },
-  { label: 'Science & Tech', width: 133.738 },
-  { label: 'Ethics', width: 76.738 },
-  { label: 'IR', width: 52.8 },
-  { label: 'Art & Culture', width: 124 },
-  { label: 'Current Affairs', width: 132.95 },
+  { label: 'Environment & Ecology', width: 160 },
+  { label: 'Science & Technology', width: 175 },
 ];
 
 type SubjectCardTheme = {
@@ -78,45 +74,22 @@ function getFallbackViewCount(seed: string): number {
 
 /* Subject card background colors — one per subject, cycling */
 const SUBJECT_COLORS: Record<string, { bg: string; border: string; accent: string }> = {
-  'Indian Polity': { bg: '#FFF5E6', border: '#FDE8C8', accent: '#F59E0B' },
-  'Polity': { bg: '#FFF5E6', border: '#FDE8C8', accent: '#F59E0B' },
-  'Indian Economy': { bg: '#EDE9FE', border: '#DDD6FE', accent: '#8B5CF6' },
-  'Economy': { bg: '#EDE9FE', border: '#DDD6FE', accent: '#8B5CF6' },
-  'Geography': { bg: '#FEF3C7', border: '#FDE68A', accent: '#D97706' },
-  'History': { bg: '#FFF7ED', border: '#FFEDD5', accent: '#EA580C' },
-  'Environment': { bg: '#ECFDF5', border: '#D1FAE5', accent: '#059669' },
-  'Ethics': { bg: '#EFF6FF', border: '#DBEAFE', accent: '#2563EB' },
-  'Ethics GS4': { bg: '#EFF6FF', border: '#DBEAFE', accent: '#2563EB' },
-  'Essay Writing': { bg: '#FFF7ED', border: '#FFEDD5', accent: '#EA580C' },
-  'Essay': { bg: '#FFF7ED', border: '#FFEDD5', accent: '#EA580C' },
-  'Internal Security': { bg: '#FEF2F2', border: '#FECACA', accent: '#DC2626' },
-  'Security': { bg: '#FEF2F2', border: '#FECACA', accent: '#DC2626' },
-  "Int'l Relations": { bg: '#EDE9FE', border: '#DDD6FE', accent: '#7C3AED' },
-  'IR': { bg: '#EDE9FE', border: '#DDD6FE', accent: '#7C3AED' },
-  'Science & Tech': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#3B82F6' },
-  'Science': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#3B82F6' },
-  'Current Affairs': { bg: '#FEF3C7', border: '#FDE68A', accent: '#D97706' },
+  'History': { bg: '#FEF3C7', border: '#FDE68A', accent: '#B45309' },
+  'Geography': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#1D4ED8' },
+  'Polity': { bg: '#EDE9FE', border: '#DDD6FE', accent: '#7C3AED' },
+  'Economy': { bg: '#FFF7ED', border: '#FED7AA', accent: '#EA580C' },
+  'Environment & Ecology': { bg: '#F0FDF4', border: '#BBF7D0', accent: '#16A34A' },
+  'Science & Technology': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#0369A1' },
 };
 
 const SUBJECT_ICON_GRADIENTS: Record<string, string> = {
-  indianpolity:      'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)',
-  polity:            'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)',
-  indianeconomy:     'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
-  economy:           'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
-  geography:         'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
   history:           'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
-  environment:       'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-  ethicsgs4:         'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-  ethics:            'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-  essaywriting:      'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-  essay:             'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-  internalsecurity:  'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-  security:          'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-  intlrelations:     'linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)',
-  ir:                'linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)',
-  scienceandtech:    'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)',
-  science:           'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)',
-  currentaffairs:    'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+  geography:         'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+  polity:            'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+  economy:           'linear-gradient(135deg, #F59E0B 0%, #EA580C 100%)',
+  environment:       'linear-gradient(135deg, #10B981 0%, #16A34A 100%)',
+  scienceandtech:    'linear-gradient(135deg, #0EA5E9 0%, #0369A1 100%)',
+  sciencetechnology: 'linear-gradient(135deg, #0EA5E9 0%, #0369A1 100%)',
 };
 
 function getSubjectIconGradient(name: string): string {

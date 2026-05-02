@@ -9,6 +9,7 @@ interface RightPanelProps {
   subjects: Subject[];
   states: TrackerState;
   syllabusData: SyllabusData;
+  cms?: Record<string, any>;
 }
 
 interface SubjectProgress extends Subject {
@@ -17,7 +18,13 @@ interface SubjectProgress extends Subject {
   pct: number;
 }
 
-export default function RightPanel({ mode, subjects, states, syllabusData }: RightPanelProps) {
+export default function RightPanel({ mode, subjects, states, syllabusData, cms }: RightPanelProps) {
+  const rightPanelTitle = cms?.right_panel_title || 'Subject Progress';
+  const viewAllText = cms?.right_panel_view_all || 'View all →';
+  const ctaTitle = cms?.cta_title || "Plan Today's Study";
+  const ctaSubtitle = cms?.cta_subtitle || 'Set daily goals with Jeet AI and stay on track for UPSC 2026.';
+  const ctaButton = cms?.cta_button || '+ Add in Study Planner';
+  const modalTitle = cms?.modal_title || 'Syllabus Progress Overview';
   const router = useRouter();
   const [showAllModal, setShowAllModal] = useState(false);
 
@@ -83,19 +90,19 @@ export default function RightPanel({ mode, subjects, states, syllabusData }: Rig
       <div className="w-[228px] min-w-[228px] flex flex-col gap-[11px] overflow-y-auto flex-shrink-0">
         <div className="bg-white border-[1.5px] border-[#e0e8f4] rounded-[14px] p-[13px] shadow-sm">
           <div className="flex items-center justify-between mb-[11px]">
-            <div className="flex items-center gap-[6px]">
-              <div className="w-[3px] h-[13px] bg-[#c9921a] rounded-[2px]" />
-              <div className="text-[9.5px] font-extrabold tracking-[1.2px] uppercase text-[#3c4f6d]">
-                Subject Progress
-              </div>
+          <div className="flex items-center gap-[6px]">
+            <div className="w-[3px] h-[13px] bg-[#c9921a] rounded-[2px]" />
+            <div className="text-[9.5px] font-extrabold tracking-[1.2px] uppercase text-[#3c4f6d]">
+              {rightPanelTitle}
             </div>
-            <button
-              type="button"
-              onClick={() => setShowAllModal(true)}
-              className="text-[11px] font-bold text-[#0f1f3d] cursor-pointer no-underline transition-colors duration-150 hover:text-[#c9921a] bg-transparent border-none p-0"
-            >
-              View all →
-            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAllModal(true)}
+            className="text-[11px] font-bold text-[#0f1f3d] cursor-pointer no-underline transition-colors duration-150 hover:text-[#c9921a] bg-transparent border-none p-0"
+          >
+            {viewAllText}
+          </button>
           </div>
 
           <div>
@@ -154,10 +161,10 @@ export default function RightPanel({ mode, subjects, states, syllabusData }: Rig
         >
           <div className="text-[24px] mb-[8px]">📅</div>
           <div className="text-[12.5px] font-extrabold text-[#0f1f3d] mb-[4px]">
-            Plan Today&apos;s Study
+            {ctaTitle}
           </div>
           <div className="text-[10.5px] text-[#8795ae] mb-[12px] leading-relaxed">
-            Set daily goals with Jeet AI and stay on track for UPSC 2026.
+            {ctaSubtitle}
           </div>
           <button
             type="button"
@@ -179,7 +186,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData }: Rig
               router.push('/dashboard/study-planner');
             }}
           >
-            + Add in Study Planner
+            {ctaButton}
           </button>
         </div>
       </div>
@@ -195,7 +202,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData }: Rig
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[16px] font-bold text-[#0f1f3d]">Syllabus Progress Overview</h3>
+              <h3 className="text-[16px] font-bold text-[#0f1f3d]">{modalTitle}</h3>
               <button
                 type="button"
                 className="w-8 h-8 rounded-full border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]"

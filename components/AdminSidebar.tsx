@@ -36,6 +36,8 @@ const navigationSections: NavSection[] = [
       { id: 'spaced-rep', label: 'Spaced Rep', path: '/admin/spaced-repetition', icon: '🔁' },
       { id: 'test-series', label: 'Test Series', path: '/admin/test-series', icon: '🏆' },
       { id: 'rag-manager', label: 'RAG Manager', path: '/admin/rag-manager', icon: '🧠' },
+      { id: 'syllabus', label: 'Syllabus Tracker', path: '/admin/syllabus', icon: '📋' },
+      { id: 'library', label: 'Library Manager', path: '/admin/library', icon: '📖' },
     ],
   },
   {
@@ -60,6 +62,7 @@ const navigationSections: NavSection[] = [
           { id: 'cms-dash-video', label: 'Video Lectures', path: '/admin/cms/dashboard%2Fvideo-lectures', icon: '🎥' },
           { id: 'cms-dash-jeet', label: 'Jeet GPT', path: '/admin/cms/dashboard%2Fjeet-gpt', icon: '⚡' },
           { id: 'cms-dash-planner', label: 'Study Planner', path: '/admin/cms/dashboard%2Fstudy-planner', icon: '📆' },
+          { id: 'cms-dash-syllabus-tracker', label: 'Syllabus Tracker', path: '/admin/cms/dashboard%2Fsyllabus-tracker', icon: '📋' },
           { id: 'cms-dash-pyq', label: 'PYQ Bank', path: '/admin/cms/dashboard%2Fpyq', icon: '🗂️' },
           { id: 'cms-dash-perf', label: 'Performance', path: '/admin/cms/dashboard%2Fperformance', icon: '📈' },
         ],

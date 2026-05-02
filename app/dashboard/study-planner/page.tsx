@@ -272,29 +272,17 @@ export default function StudyPlannerPage() {
 
   const quickAddRows = [
     ['Polity', 'History'],
-    ['Science & Technology'],
-    ['Economics', 'Geography'],
-    ['Revision'],
-    ['Environment', 'Ethics'],
-    ['Mock Test'],
-    ['Answer Writing'],
-    ['GS1', 'GS2', 'GS3', 'GS4'],
+    ['Science & Technology', 'Geography'],
+    ['Economy', 'Environment & Ecology'],
   ];
 
   const quickAddSubjectMap: Record<string, string> = {
     Polity: 'Polity',
     History: 'History',
     'Science & Technology': 'Science & Technology',
-    Economics: 'Economics',
+    Economy: 'Economy',
     Geography: 'Geography',
-    Environment: 'Environment',
-    Ethics: 'Ethics',
-    GS1: 'GS1',
-    GS2: 'GS2',
-    GS3: 'GS3',
-    GS4: 'GS4',
-    'Mock Test': 'Mock Test',
-    'Answer Writing': 'Essay',
+    'Environment & Ecology': 'Environment & Ecology',
   };
 
   const quickAddTypeMap: Record<string, string> = {
@@ -672,21 +660,12 @@ export default function StudyPlannerPage() {
                         onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }}
                       >
                         <option value="" disabled>Select Subject</option>
-                        <option value="Polity">Polity</option>
                         <option value="History">History</option>
                         <option value="Geography">Geography</option>
-                        <option value="Economics">Economics</option>
-                        <option value="Environment">Environment</option>
+                        <option value="Polity">Polity</option>
+                        <option value="Economy">Economy</option>
+                        <option value="Environment & Ecology">Environment &amp; Ecology</option>
                         <option value="Science & Technology">Science &amp; Technology</option>
-                        <option value="Ethics">Ethics</option>
-                        <option value="Current Affairs">Current Affairs</option>
-                        <option value="GS1">GS1</option>
-                        <option value="GS2">GS2</option>
-                        <option value="GS3">GS3</option>
-                        <option value="GS4">GS4</option>
-                        <option value="Essay">Essay</option>
-                        <option value="Optional">Optional</option>
-                        <option value="Mock Test">Mock Test</option>
                       </select>
                       <svg className="absolute pointer-events-none" style={{ right: '14px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none">
                         <path d="M6 9l6 6 6-6" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

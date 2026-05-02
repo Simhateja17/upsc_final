@@ -19,14 +19,12 @@ const browseItems = [
 ];
 
 const subjects = [
-  { label: 'Indian Polity', count: '312', color: '#F87171' },
   { label: 'History', count: '198', color: '#FBBF24' },
-  { label: 'Economy', count: '241', color: '#34D399' },
   { label: 'Geography', count: '176', color: '#60A5FA' },
-  { label: 'Ethics & GS4', count: '89', color: '#A78BFA' },
-  { label: 'Current Affairs', count: '367', color: '#FB923C' },
-  { label: 'Science & Tech', count: '134', color: '#22D3EE' },
-  { label: 'Mains Strategy', count: '104', color: '#F472B6' },
+  { label: 'Polity', count: '312', color: '#F87171' },
+  { label: 'Economy', count: '241', color: '#34D399' },
+  { label: 'Environment & Ecology', count: '156', color: '#22D3EE' },
+  { label: 'Science & Technology', count: '134', color: '#A78BFA' },
 ];
 
 export default function QAForumPage() {

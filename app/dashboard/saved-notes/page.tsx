@@ -15,12 +15,12 @@ interface SavedEditorial {
 }
 
 const categoryColors: Record<string, { color: string; bg: string }> = {
+  'History': { color: '#B45309', bg: '#FEF3C7' },
+  'Geography': { color: '#1D4ED8', bg: '#DBEAFE' },
   'Polity': { color: '#7C3AED', bg: '#EDE9FE' },
   'Economy': { color: '#EA580C', bg: '#FFF7ED' },
-  'Environment': { color: '#16A34A', bg: '#F0FDF4' },
-  'Technology': { color: '#7C3AED', bg: '#EDE9FE' },
-  'Judiciary': { color: '#DC2626', bg: '#FEF2F2' },
-  'International Relations': { color: '#EA580C', bg: '#FFF7ED' },
+  'Environment & Ecology': { color: '#16A34A', bg: '#F0FDF4' },
+  'Science & Technology': { color: '#0369A1', bg: '#DBEAFE' },
 };
 
 export default function SavedNotesPage() {

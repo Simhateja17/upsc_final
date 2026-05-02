@@ -16,7 +16,7 @@ export default function EditorialManager() {
     content: '',
     source: 'The Hindu',
     author: '',
-    category: 'Governance',
+    category: 'Polity',
     sourceUrl: '',
   });
 
@@ -52,7 +52,7 @@ export default function EditorialManager() {
       await adminService.createEditorial(form);
       setMsg('Editorial created!');
       setShowForm(false);
-      setForm({ title: '', content: '', source: 'The Hindu', author: '', category: 'Governance', sourceUrl: '' });
+      setForm({ title: '', content: '', source: 'The Hindu', author: '', category: 'Polity', sourceUrl: '' });
       loadEditorials();
     } catch (err: any) {
       setMsg(`Error: ${err.message}`);
@@ -80,7 +80,7 @@ export default function EditorialManager() {
     } catch {}
   };
 
-  const categories = ['Governance', 'Polity', 'Economy', 'Society', 'Ethics', 'IR', 'Environment', 'Science & Tech', 'History', 'Geography'];
+  const categories = ['History', 'Geography', 'Polity', 'Economy', 'Environment & Ecology', 'Science & Technology'];
 
   return (
     <div>

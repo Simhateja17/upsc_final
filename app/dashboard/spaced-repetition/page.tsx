@@ -8,17 +8,12 @@ const scheduleOptions = [3, 7, 15, 30];
 const heroBackground = 'https://www.figma.com/api/mcp/asset/131a2ecc-394d-42c2-a39f-8268ada9d3f0';
 
 const deckOptions = [
+  { id: 'history', label: 'History', icon: '📜' },
   { id: 'geography', label: 'Geography', icon: '🌍' },
-  { id: 'polity', label: 'Polity', icon: '🏛️' },
+  { id: 'polity', label: 'Polity', icon: '⚖️' },
   { id: 'economy', label: 'Economy', icon: '💰' },
-  { id: 'environment', label: 'Environment', icon: '🌿' },
-  { id: 'history', label: 'History', icon: '📚' },
-  { id: 'science-tech', label: 'Science & Tech', icon: '🔬' },
-  { id: 'ethics', label: 'Ethics GS4', icon: '🤝' },
-  { id: 'essay', label: 'Essay Writing', icon: '✍️' },
-  { id: 'internal-security', label: 'Internal Security', icon: '🛡️' },
-  { id: 'international-relations', label: 'Int’l Relations', icon: '🌐' },
-  { id: 'current-affairs', label: 'Current Affairs', icon: '📰' },
+  { id: 'environment', label: 'Environment & Ecology', icon: '🌿' },
+  { id: 'science-tech', label: 'Science & Technology', icon: '🔬' },
 ];
 
 const difficultyOptions = ['Easy', 'Medium', 'Hard', 'Tricky'];
@@ -44,17 +39,12 @@ function sourceColor(sourceType: string): string {
 
 function subjectBg(subject: string): string {
   const map: Record<string, string> = {
-    Economy: '#ECFDF5',
-    Polity: '#BEDBFF',
-    Environment: '#84FAB0',
-    Geography: '#FEF9C3',
     History: '#FEF3C7',
-    'Science & Tech': '#DBEAFE',
-    'Ethics GS4': '#EDE9FE',
-    'Essay Writing': '#FFEDD5',
-    'Internal Security': '#FEE2E2',
-    'Int’l Relations': '#F3E8FF',
-    'Current Affairs': '#CCFBF1',
+    Geography: '#DBEAFE',
+    Polity: '#EDE9FE',
+    Economy: '#FFF7ED',
+    'Environment & Ecology': '#F0FDF4',
+    'Science & Technology': '#DBEAFE',
   };
   return map[subject] ?? '#F3F4F6';
 }

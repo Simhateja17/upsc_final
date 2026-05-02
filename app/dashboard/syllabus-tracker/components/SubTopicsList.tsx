@@ -12,15 +12,29 @@ interface SubTopicsListProps {
   onOpenStatusModal: (subjectId: string, topicIndex: number, subTopicIndex: number, name: string) => void;
   onToggleImportant: (subjectId: string, topicIndex: number, subTopicIndex: number) => void;
   getKey: (subjectId: string, topicIndex: number, subTopicIndex: number) => string;
+  cms?: Record<string, any>;
 }
 
-const statusLabels: Record<Status, string> = {
-  'none': 'Not Started',
-  'done': 'Done',
-  'in-progress': 'Reading',
-  'needs-revision': 'Needs Revision',
-  'weak': 'Weak Area',
-};
+function useStatusLabels(cms?: Record<string, any>): Record<Status, string> {
+  const parsed = (() => { try { return JSON.parse(cms?.status_labels || '{}'); } catch { return {}; } })();
+  return {
+    'none': parsed.none || 'Not Started',
+    'done': parsed.done || 'Done',
+    'in-progress': parsed.in_progress || 'Reading',
+    'needs-revision': parsed.needs_revision || 'Needs Revision',
+    'weak': parsed.weak || 'Weak Area',
+  };
+}
+
+function useFilterLabels(cms?: Record<string, any>): Record<string, string> {
+  const parsed = (() => { try { return JSON.parse(cms?.filter_labels || '{}'); } catch { return {}; } })();
+  return {
+    all: parsed.all || 'All',
+    pending: parsed.pending || 'Pending',
+    done: parsed.done || 'Done',
+    important: parsed.important || 'Important',
+  };
+}
 
 const statusIcons: Record<Status, string> = {
   'none': '○',
@@ -40,17 +54,25 @@ export default function SubTopicsList({
   onOpenStatusModal,
   onToggleImportant,
   getKey,
+  cms,
 }: SubTopicsListProps) {
+  const statusLabels = useStatusLabels(cms);
+  const filterLabels = useFilterLabels(cms);
+  const placeholderTitle = cms?.subtopic_placeholder_title || 'Sub-Topics';
+  const placeholderSubtitle = cms?.subtopic_placeholder_subtitle || 'Select a topic to start tracking';
+  const placeholderBody = cms?.subtopic_placeholder_body || 'Select a subject, then tap a topic to begin tracking progress.';
+  const statsStripLabels = (() => { try { return JSON.parse(cms?.stats_strip_labels || '{}'); } catch { return {}; } })();
+  const pyqButton = cms?.pyq_button || '📜 PYQs';
   if (!selectedTopic || !subject) {
     return (
       <div className="w-full min-w-0 flex-1 bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm">
         <div className="p-[11px_15px_10px] border-b-[1.5px] border-[#e0e8f4] flex-shrink-0 flex items-start justify-between gap-[10px]">
           <div>
             <div className="font-playfair text-[15px] text-[#0f1f3d] font-bold">
-              Sub-Topics
+              {placeholderTitle}
             </div>
             <div className="text-[10.5px] text-[#8795ae] mt-[2px]">
-              Select a topic to start tracking
+              {placeholderSubtitle}
             </div>
           </div>
           <div className="flex gap-[4px] flex-wrap flex-shrink-0">
@@ -66,7 +88,7 @@ export default function SubTopicsList({
                   }
                 `}
               >
-                {f === 'important' ? '⭐' : f.charAt(0).toUpperCase() + f.slice(1)}
+                {f === 'important' ? '⭐' : filterLabels[f] || f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
             ))}
           </div>
@@ -74,7 +96,7 @@ export default function SubTopicsList({
         <div className="flex-1 flex flex-col items-center justify-center text-[#8795ae] gap-[10px] text-center p-[20px]">
           <div className="text-[34px] opacity-30">📖</div>
           <p className="text-[12.5px] max-w-[190px] leading-relaxed font-medium">
-            Select a subject, then tap a topic to begin tracking progress.
+            {placeholderBody}
           </p>
         </div>
       </div>
@@ -136,7 +158,7 @@ export default function SubTopicsList({
                 }
               `}
             >
-              {f === 'important' ? '⭐' : f.charAt(0).toUpperCase() + f.slice(1)}
+              {f === 'important' ? '⭐' : filterLabels[f] || f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
           ))}
         </div>
@@ -157,7 +179,7 @@ export default function SubTopicsList({
                 className="bg-[rgba(232,168,32,.18)] border border-[rgba(232,168,32,.35)] rounded-[8px] px-[10px] py-[4px] text-[10px] font-bold text-[#e8a820] cursor-pointer transition-all duration-200 flex items-center gap-[4px] hover:bg-[rgba(232,168,32,.30)]"
                 onClick={() => window.location.href = '/dashboard/pyq?subject=' + encodeURIComponent(topic.name)}
               >
-                📜 PYQs
+                {pyqButton}
               </button>
               <div className="font-playfair text-[20px] text-[#e8a820] font-bold">
                 {pct}%
@@ -179,19 +201,19 @@ export default function SubTopicsList({
         <div className="grid grid-cols-4 gap-[8px] mb-[12px]">
           <div className="bg-[#f3f6fb] border-[1.5px] border-[#e0e8f4] rounded-[9px] p-[8px_11px] transition-all duration-150 hover:border-[rgba(201,146,26,.30)]">
             <div className="font-playfair text-[19px] font-bold text-[#0f1f3d]">{total}</div>
-            <div className="text-[10px] text-[#8795ae] font-medium mt-[1px]">Total</div>
+            <div className="text-[10px] text-[#8795ae] font-medium mt-[1px]">{statsStripLabels.total || 'Total'}</div>
           </div>
           <div className="bg-[#f3f6fb] border-[1.5px] border-[#e0e8f4] rounded-[9px] p-[8px_11px] transition-all duration-150 hover:border-[rgba(201,146,26,.30)]">
             <div className="font-playfair text-[19px] font-bold" style={{ color: '#16a34a' }}>{done}</div>
-            <div className="text-[10px] text-[#8795ae] font-medium mt-[1px]">Done</div>
+            <div className="text-[10px] text-[#8795ae] font-medium mt-[1px]">{statsStripLabels.done || 'Done'}</div>
           </div>
           <div className="bg-[#f3f6fb] border-[1.5px] border-[#e0e8f4] rounded-[9px] p-[8px_11px] transition-all duration-150 hover:border-[rgba(201,146,26,.30)]">
             <div className="font-playfair text-[19px] font-bold" style={{ color: '#d97706' }}>{active}</div>
-            <div className="text-[10px] text-[#8795ae] font-medium mt-[1px]">Active</div>
+            <div className="text-[10px] text-[#8795ae] font-medium mt-[1px]">{statsStripLabels.active || 'Active'}</div>
           </div>
           <div className="bg-[#f3f6fb] border-[1.5px] border-[#e0e8f4] rounded-[9px] p-[8px_11px] transition-all duration-150 hover:border-[rgba(201,146,26,.30)]">
             <div className="font-playfair text-[19px] font-bold text-[#8795ae]">{remaining}</div>
-            <div className="text-[10px] text-[#8795ae] font-medium mt-[1px]">Left</div>
+            <div className="text-[10px] text-[#8795ae] font-medium mt-[1px]">{statsStripLabels.left || 'Left'}</div>
           </div>
         </div>
 

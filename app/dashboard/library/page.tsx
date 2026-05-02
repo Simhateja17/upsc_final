@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { libraryService, pricingService } from '@/lib/services';
+import { useCmsContent } from '@/hooks/useCmsContent';
 import DashboardPageHero from '@/components/DashboardPageHero';
 
 /* ------------------------------------------------------------------ */
@@ -15,11 +16,6 @@ const SUBJECT_ICONS: Record<string, string> = {
   'economy': '\uD83D\uDCCA',
   'environment': '\uD83C\uDF3F',
   'science': '\uD83D\uDD2C',
-  'art': '\uD83C\uDFA8',
-  'culture': '\uD83C\uDFA8',
-  'current': '\uD83D\uDCF0',
-  'ethics': '\u2696\uFE0F',
-  'security': '\uD83D\uDEE1\uFE0F',
 };
 
 function subjectIcon(name: string): string {
@@ -31,12 +27,12 @@ function subjectIcon(name: string): string {
 }
 
 const COMING_SOON_SUBJECTS = [
-  'International Relations',
-  'Essay Module',
-  'Ethics GS-IV',
-  'Internal Security',
-  'Social Issues',
-  'Monthly Digest Archive',
+  'Advanced Polity Compendium',
+  'Geography Map Workbook',
+  'Economy Data Handbook',
+  'Environment & Ecology Digest',
+  'Science & Technology Updates',
+  'History Timeline Archive',
 ];
 
 
@@ -68,6 +64,69 @@ const bottomStats = [
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 export default function LibraryPage() {
+  const { content: cms } = useCmsContent('dashboard/library', {
+    hero_badge: 'FREE STUDY MATERIALS',
+    hero_title: 'Master UPSC with Expert Notes and Free Resources',
+    hero_subtitle: 'From PYQ-backed notes to concise summaries — everything you need, free.',
+    hero_stats: JSON.stringify([
+      { value: '100+', label: 'Free PDFs', color: '#FDC700' },
+      { value: '25+', label: 'PYQ-Backed Notes', color: '#F87171' },
+      { value: '1L+', label: 'Downloads', color: '#4ADE80' },
+      { value: '∞', label: 'Always Free', color: '#FFFFFF' },
+    ]),
+    sidebar_header_title: 'CHOOSE A SUBJECT',
+    section_label_notes: 'FOUNDATIONAL NOTES',
+    section_label_pyq: 'PREVIOUS YEAR QUESTIONS',
+    banner_badge: 'WHY RISE WITH JEET',
+    banner_title: 'Not just notes. A system built to crack UPSC.',
+    banner_subtitle: "Every PDF is designed with one obsession — your selection. Here's what makes us different from every other resource out there.",
+    banner_stat_number: '15K+',
+    banner_stat_label: "Aspirants trust\nRise with Jeet",
+    testimonials_badge: 'ASPIRANT STORIES',
+    testimonials_title: 'What UPSC Aspirants Say',
+    cta_title: 'Ready to start your IAS journey the right way?',
+    cta_subtitle: 'Access 360+ free PDFs, PYQ notes, and study roadmaps — all designed to help you crack UPSC on your first attempt.',
+    cta_button_primary: 'Start Studying Free',
+    cta_button_secondary: 'Watch on YouTube',
+  });
+
+  const heroBadge = cms?.hero_badge || 'FREE STUDY MATERIALS';
+  const heroTitle = cms?.hero_title || 'Master UPSC with Expert Notes and Free Resources';
+  const heroSubtitle = cms?.hero_subtitle || 'From PYQ-backed notes to concise summaries — everything you need, free.';
+  const heroStats = (() => { try { return JSON.parse(cms?.hero_stats || '[]'); } catch { return []; } })();
+  const sidebarHeaderTitle = cms?.sidebar_header_title || 'CHOOSE A SUBJECT';
+  const sectionLabelNotes = cms?.section_label_notes || 'FOUNDATIONAL NOTES';
+  const sectionLabelPyq = cms?.section_label_pyq || 'PREVIOUS YEAR QUESTIONS';
+  const bannerBadge = cms?.banner_badge || 'WHY RISE WITH JEET';
+  const bannerTitle = cms?.banner_title || 'Not just notes. A system built to crack UPSC.';
+  const bannerSubtitle = cms?.banner_subtitle || "Every PDF is designed with one obsession — your selection. Here's what makes us different from every other resource out there.";
+  const bannerStatNumber = cms?.banner_stat_number || '15K+';
+  const bannerStatLabel = cms?.banner_stat_label || "Aspirants trust\nRise with Jeet";
+  const testimonialsBadge = cms?.testimonials_badge || 'ASPIRANT STORIES';
+  const testimonialsTitle = cms?.testimonials_title || 'What UPSC Aspirants Say';
+  const ctaTitle = cms?.cta_title || 'Ready to start your IAS journey the right way?';
+  const ctaSubtitle = cms?.cta_subtitle || 'Access 360+ free PDFs, PYQ notes, and study roadmaps — all designed to help you crack UPSC on your first attempt.';
+  const ctaButtonPrimary = cms?.cta_button_primary || 'Start Studying Free';
+  const ctaButtonSecondary = cms?.cta_button_secondary || 'Watch on YouTube';
+  const cmsFeatures = (() => { try { return JSON.parse(cms?.features || '[]'); } catch { return []; } })();
+  const cmsBottomStats = (() => { try { return JSON.parse(cms?.bottom_stats || '[]'); } catch { return []; } })();
+
+  const features = cmsFeatures.length > 0 ? cmsFeatures : [
+    { emoji: '🎯', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff \u2014 only what earns marks in Prelims and Mains.' },
+    { emoji: '🔄', bg: '#DBEAFE', title: 'Updated Every Week', desc: 'Budget, new schemes, policy shifts \u2014 our notes are refreshed weekly so you\u2019re study outcomes.' },
+    { emoji: '💜', bg: '#EDE9FE', title: 'YouTube + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s YouTube lessons. Watch, then revise \u2014 the most powerful UPSC loop.' },
+    { emoji: '🎁', bg: '#FEF3C7', title: 'Free. Forever. No Catch.', desc: 'No paywalls, no \u2018premium only\u2019 tricks. Quality UPSC preparation should never be gated behind money.' },
+    { emoji: '📊', bg: '#DCFCE7', title: 'PYQ-Backed Content', desc: 'All notes reviewed, weightaged from 10-years of PYQs \u2014 calibrated to exactly what UPSC asks every year.' },
+    { emoji: '🏆', bg: '#FFEDD5', title: 'Toppers Trust It', desc: 'Used by 94,000+ aspirants including students who cleared Prelims, Mains, and made it to the interview.' },
+  ];
+
+  const bottomStats = cmsBottomStats.length > 0 ? cmsBottomStats : [
+    { number: '94K', suffix: '+', label: 'ACTIVE ASPIRANTS', suffixColor: '#155DFC' },
+    { number: '280', suffix: '+', label: 'FREE PDFS', suffixColor: '#EA580C' },
+    { number: '500', suffix: '+', label: 'PYQS SOLVED', suffixColor: '#155DFC' },
+    { number: '100', suffix: '%', label: 'ALWAYS FREE', suffixColor: '#16A34A' },
+  ];
+
   const [selectedSubject, setSelectedSubject] = useState('');
   const [activeTab, setActiveTab] = useState('Notes');
   const [apiSubjects, setApiSubjects] = useState<any[]>([]);
@@ -154,16 +213,14 @@ export default function LibraryPage() {
     >
       <DashboardPageHero
         badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
-        badgeText="FREE STUDY MATERIALS"
+        badgeText={heroBadge}
         title={
           <>
-            Master UPSC with{' '}
-            <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Expert Notes</em>
-            {' '}and Free Resources
+            {heroTitle}
           </>
         }
-        subtitle="From PYQ-backed notes to concise summaries — everything you need, free."
-        stats={[
+        subtitle={heroSubtitle}
+        stats={heroStats.length > 0 ? heroStats : [
           { value: '100+', label: 'Free PDFs', color: '#FDC700' },
           { value: '25+', label: 'PYQ-Backed Notes', color: '#F87171' },
           { value: '1L+', label: 'Downloads', color: '#4ADE80' },
@@ -221,7 +278,7 @@ export default function LibraryPage() {
                   marginBottom: 'clamp(4px, 0.3vw, 6px)',
                 }}
               >
-                CHOOSE A SUBJECT
+                {sidebarHeaderTitle}
               </div>
               <div
                 className="font-arimo font-bold"
@@ -574,7 +631,7 @@ export default function LibraryPage() {
                 marginBottom: 'clamp(12px, 1.2vw, 16px)',
               }}
             >
-              {activeTab === 'Notes' ? 'FOUNDATIONAL NOTES' : 'PREVIOUS YEAR QUESTIONS'}
+              {activeTab === 'Notes' ? sectionLabelNotes : sectionLabelPyq}
             </div>
 
             {/* Chapter cards */}
@@ -745,7 +802,7 @@ export default function LibraryPage() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#DBAC49" stroke="#DBAC49" strokeWidth="1" />
               </svg>
-              WHY RISE WITH JEET
+              {bannerBadge}
             </div>
             <h3
               className="font-arimo font-bold"
@@ -755,20 +812,8 @@ export default function LibraryPage() {
                 color: '#FFFFFF',
                 marginBottom: 'clamp(4px, 0.4vw, 6px)',
               }}
-            >
-              Not just notes.
-            </h3>
-            <h3
-              className="font-arimo font-bold"
-              style={{
-                fontSize: 'clamp(22px, 2.2vw, 30px)',
-                lineHeight: 1.3,
-                color: '#FFFFFF',
-                marginBottom: 'clamp(12px, 1.2vw, 16px)',
-              }}
-            >
-              A <span style={{ color: '#F5C75D' }}>system built to crack UPSC.</span>
-            </h3>
+              dangerouslySetInnerHTML={{ __html: bannerTitle }}
+            />
             <p
               className="font-arimo"
               style={{
@@ -778,7 +823,7 @@ export default function LibraryPage() {
                 maxWidth: 'clamp(360px, 36vw, 480px)',
               }}
             >
-              Every PDF is designed with one obsession — your selection. Here&apos;s what makes us different from every other resource out there.
+              {bannerSubtitle}
             </p>
           </div>
 
@@ -807,15 +852,13 @@ export default function LibraryPage() {
               className="font-arimo font-bold"
               style={{ fontSize: 'clamp(40px, 4.5vw, 64px)', color: '#F5C75D', lineHeight: 1.1 }}
             >
-              15K+
+              {bannerStatNumber}
             </div>
             <div
               className="font-arimo"
-              style={{ fontSize: 'clamp(12px, 1vw, 14px)', color: '#94A3B8', textAlign: 'center', marginTop: '8px', lineHeight: '1.5' }}
+              style={{ fontSize: 'clamp(12px, 1vw, 14px)', color: '#94A3B8', textAlign: 'center', marginTop: '8px', lineHeight: '1.5', whiteSpace: 'pre-line' }}
             >
-              Aspirants trust
-              <br />
-              Rise with Jeet
+              {bannerStatLabel}
             </div>
           </div>
 
@@ -832,7 +875,7 @@ export default function LibraryPage() {
             marginBottom: 'clamp(40px, 4vw, 60px)',
           }}
         >
-          {features.map((feature) => (
+          {features.map((feature: any) => (
             <div
               key={feature.title}
               style={{
@@ -893,7 +936,7 @@ export default function LibraryPage() {
             flexWrap: 'wrap' as const,
           }}
         >
-          {bottomStats.map((stat) => (
+          {bottomStats.map((stat: any) => (
             <div
               key={stat.label}
               style={{
@@ -946,7 +989,7 @@ export default function LibraryPage() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#DBAC49" stroke="#DBAC49" strokeWidth="1" />
               </svg>
-              ASPIRANT STORIES
+              {testimonialsBadge}
             </div>
             <h2
               className="font-arimo font-bold text-center"
@@ -956,7 +999,7 @@ export default function LibraryPage() {
                 lineHeight: 1.3,
               }}
             >
-              What UPSC Aspirants Say
+              {testimonialsTitle}
             </h2>
           </div>
 
@@ -1070,7 +1113,7 @@ export default function LibraryPage() {
                 marginBottom: 'clamp(8px, 0.8vw, 12px)',
               }}
             >
-              Ready to start your IAS journey the right way?
+              {ctaTitle}
             </h3>
             <p
               className="font-arimo"
@@ -1082,7 +1125,7 @@ export default function LibraryPage() {
                 maxWidth: 'clamp(360px, 36vw, 480px)',
               }}
             >
-              Access 360+ free PDFs, PYQ notes, and study roadmaps &mdash; all designed to help you crack UPSC on your first attempt.
+              {ctaSubtitle}
             </p>
 
             <div className="flex items-center" style={{ gap: 'clamp(10px, 1vw, 14px)', flexWrap: 'wrap' }}>
@@ -1099,7 +1142,7 @@ export default function LibraryPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                Start Studying Free
+                {ctaButtonPrimary}
               </button>
               <button
                 className="font-arimo font-bold"
@@ -1114,7 +1157,7 @@ export default function LibraryPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                Watch on YouTube
+                {ctaButtonSecondary}
               </button>
             </div>
           </div>

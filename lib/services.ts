@@ -631,13 +631,23 @@ export const adminService = {
   deleteSpacedRepSeed: (id: string) => api.delete<any>(`/admin/spaced-rep/seeds/${id}`, authConfig()),
 
   // Library
-  createSubject: (data: any) => api.post<any>('/admin/library/subjects', data, authConfig()),
-  createChapter: (data: any) => api.post<any>('/admin/library/chapters', data, authConfig()),
-  uploadMaterial: async (file: File, subjectId: string, chapterId: string) => {
+  getLibrarySubjects: () => api.get<any>('/admin/library/subjects', authConfig()),
+  createLibrarySubject: (data: any) => api.post<any>('/admin/library/subjects', data, authConfig()),
+  updateLibrarySubject: (id: string, data: any) => api.put<any>(`/admin/library/subjects/${id}`, data, authConfig()),
+  deleteLibrarySubject: (id: string) => api.delete<any>(`/admin/library/subjects/${id}`, authConfig()),
+  getLibraryChapters: (subjectId?: string) =>
+    api.get<any>(`/admin/library/chapters${subjectId ? `?subjectId=${encodeURIComponent(subjectId)}` : ''}`, authConfig()),
+  createLibraryChapter: (data: any) => api.post<any>('/admin/library/chapters', data, authConfig()),
+  updateLibraryChapter: (id: string, data: any) => api.put<any>(`/admin/library/chapters/${id}`, data, authConfig()),
+  deleteLibraryChapter: (id: string) => api.delete<any>(`/admin/library/chapters/${id}`, authConfig()),
+  getLibraryMaterials: (chapterId?: string) =>
+    api.get<any>(`/admin/library/materials${chapterId ? `?chapterId=${encodeURIComponent(chapterId)}` : ''}`, authConfig()),
+  uploadLibraryMaterial: async (file: File, chapterId: string, title: string, type?: string) => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('subjectId', subjectId);
     formData.append('chapterId', chapterId);
+    formData.append('title', title);
+    if (type) formData.append('type', type);
 
     const token = getToken();
     const res = await fetch(
@@ -650,6 +660,19 @@ export const adminService = {
     );
     return res.json();
   },
+  deleteLibraryMaterial: (id: string) => api.delete<any>(`/admin/library/materials/${id}`, authConfig()),
+
+  // Syllabus
+  getSyllabusSubjects: () => api.get<any>('/admin/syllabus/subjects', authConfig()),
+  createSyllabusSubject: (data: any) => api.post<any>('/admin/syllabus/subjects', data, authConfig()),
+  updateSyllabusSubject: (id: string, data: any) => api.put<any>(`/admin/syllabus/subjects/${id}`, data, authConfig()),
+  deleteSyllabusSubject: (id: string) => api.delete<any>(`/admin/syllabus/subjects/${id}`, authConfig()),
+  createSyllabusTopic: (data: any) => api.post<any>('/admin/syllabus/topics', data, authConfig()),
+  updateSyllabusTopic: (id: string, data: any) => api.put<any>(`/admin/syllabus/topics/${id}`, data, authConfig()),
+  deleteSyllabusTopic: (id: string) => api.delete<any>(`/admin/syllabus/topics/${id}`, authConfig()),
+  createSyllabusSubTopic: (data: any) => api.post<any>('/admin/syllabus/sub-topics', data, authConfig()),
+  updateSyllabusSubTopic: (id: string, data: any) => api.put<any>(`/admin/syllabus/sub-topics/${id}`, data, authConfig()),
+  deleteSyllabusSubTopic: (id: string) => api.delete<any>(`/admin/syllabus/sub-topics/${id}`, authConfig()),
 };
 
 // ==================== Test Series (Next.js /api/test-series + Supabase) ====================

@@ -4,40 +4,30 @@ import React, { useState, useEffect } from 'react';
 import { flashcardService } from '@/lib/services';
 
 const SUBJECT_TO_ID: Record<string, string> = {
-  'Indian Polity': 'polity',
   'History': 'history',
-  'Modern History': 'history',
   'Geography': 'geography',
-  'Indian Economy': 'economy',
-  'Science & Tech': 'science',
-  'Environment': 'environment',
-  'GS IV — Ethics': 'ethics',
-  'Current Affairs': 'current-affairs',
-  'Weak Topics': 'weak',
+  'Polity': 'polity',
+  'Economy': 'economy',
+  'Environment & Ecology': 'environment',
+  'Science & Technology': 'science-tech',
 };
 
 const subjectOptions = [
-  'Indian Polity',
   'History',
   'Geography',
-  'Indian Economy',
-  'Science & Tech',
-  'Environment',
-  'GS IV — Ethics',
-  'Current Affairs',
-  'Weak Topics',
+  'Polity',
+  'Economy',
+  'Environment & Ecology',
+  'Science & Technology',
 ];
 
 const deckOptions = [
-  'Indian Polity',
   'History',
   'Geography',
-  'Indian Economy',
-  'Science & Tech',
-  'Environment',
-  'GS IV — Ethics',
-  'Current Affairs',
-  'Weak Topics',
+  'Polity',
+  'Economy',
+  'Environment & Ecology',
+  'Science & Technology',
 ];
 
 const inputShadow = '0px 1px 3px 0px rgba(0,0,0,0.4), 0px 1px 2px -1px rgba(0,0,0,0.4)';
