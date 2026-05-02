@@ -273,6 +273,22 @@ export const aiService = {
     api.delete<any>(`/ai/conversations/${conversationId}`, authConfig()),
 };
 
+// ==================== Mental Health ====================
+
+export const mentalHealthService = {
+  saveCheckIn: (data: { mood: string; energy: number; note?: string }) =>
+    api.post<any>('/mental-health/check-in', data, authConfig()),
+  getCheckIns: (days?: number) =>
+    api.get<any>(`/mental-health/check-ins${days ? `?days=${days}` : ''}`, authConfig()),
+  getStreak: () => api.get<any>('/mental-health/streak', authConfig()),
+  saveToolSession: (data: { toolType: string; duration: number; completed?: boolean }) =>
+    api.post<any>('/mental-health/tool-session', data, authConfig()),
+  getToolStats: () => api.get<any>('/mental-health/tool-stats', authConfig()),
+  getDailyContent: () => api.get<any>('/mental-health/daily-content', authConfig()),
+  getStressIndex: (days?: number) =>
+    api.get<any>(`/mental-health/stress-index${days ? `?days=${days}` : ''}`, authConfig()),
+};
+
 // ==================== CMS (Public) ====================
 
 export const cmsService = {
@@ -394,6 +410,30 @@ export const mindmapService = {
     api.patch<any>(`/mindmaps/${mindmapId}/progress`, { mastery, viewed }, authConfig()),
 };
 
+// ==================== Study Groups ====================
+
+export const studyGroupService = {
+  getGroups: (params?: { subject?: string; status?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.subject) query.set('subject', params.subject);
+    if (params?.status) query.set('status', params.status);
+    const qs = query.toString();
+    return api.get<any[]>(`/study-groups${qs ? `?${qs}` : ''}`, authConfig());
+  },
+  getGroup: (id: string) => api.get<any>(`/study-groups/${id}`, authConfig()),
+  createGroup: (data: { name: string; description?: string; subject: string; status?: string; maxMembers?: number }) =>
+    api.post<any>('/study-groups', data, authConfig()),
+  joinGroup: (id: string) => api.post<any>(`/study-groups/${id}/join`, {}, authConfig()),
+  leaveGroup: (id: string) => api.post<any>(`/study-groups/${id}/leave`, {}, authConfig()),
+  getMessages: (id: string, after?: string) => {
+    const qs = after ? `?after=${encodeURIComponent(after)}` : '';
+    return api.get<any[]>(`/study-groups/${id}/messages${qs}`, authConfig());
+  },
+  postMessage: (id: string, content: string) =>
+    api.post<any>(`/study-groups/${id}/messages`, { content }, authConfig()),
+  getMyGroups: () => api.get<any[]>('/study-groups/my-groups', authConfig()),
+};
+
 // ==================== User Profile & Settings ====================
 
 export const userService = {
@@ -424,6 +464,15 @@ export const userService = {
 
 export const syllabusService = {
   getSyllabus: () => api.get<any>('/syllabus'),
+};
+
+// ==================== Leaderboard ====================
+
+export const leaderboardService = {
+  getLeaderboard: (tab: string = 'overall', range: string = 'all') =>
+    api.get<any>(`/leaderboard?tab=${encodeURIComponent(tab)}&range=${encodeURIComponent(range)}`, authConfig()),
+  getMyRank: (range: string = 'all') =>
+    api.get<any>(`/leaderboard/me?range=${encodeURIComponent(range)}`, authConfig()),
 };
 
 // ==================== Contact ====================
@@ -830,4 +879,32 @@ export const studyMaterialService = {
     return json;
   },
   deleteMockMaterial: (id: string) => api.delete<any>(`/admin/mock-test-materials/${id}`, authConfig()),
+};
+
+// ==================== Forum ====================
+
+export const forumService = {
+  getPosts: (params?: { subject?: string; search?: string; sort?: 'latest' | 'top' | 'unanswered'; page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.subject && params.subject !== 'all') query.set('subject', params.subject);
+    if (params?.search) query.set('search', params.search);
+    if (params?.sort) query.set('sort', params.sort);
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    const qs = query.toString();
+    return api.get<any>(`/forum/posts${qs ? `?${qs}` : ''}`, authConfig());
+  },
+  getPost: (id: string) => api.get<any>(`/forum/posts/${encodeURIComponent(id)}`, authConfig()),
+  createPost: (data: { title: string; body: string; subject: string; tags?: string[] }) =>
+    api.post<any>('/forum/posts', data, authConfig()),
+  createAnswer: (postId: string, body: string) =>
+    api.post<any>(`/forum/posts/${encodeURIComponent(postId)}/answers`, { body }, authConfig()),
+  vote: (data: { postId?: string; answerId?: string; direction: 1 | -1 }) =>
+    api.post<any>('/forum/vote', data, authConfig()),
+  createBookmark: (postId: string) => api.post<any>('/forum/bookmarks', { postId }, authConfig()),
+  deleteBookmark: (postId: string) => api.delete<any>(`/forum/bookmarks/${encodeURIComponent(postId)}`, authConfig()),
+  getMyPosts: () => api.get<any>('/forum/my-posts', authConfig()),
+  getMyAnswers: () => api.get<any>('/forum/my-answers', authConfig()),
+  getBookmarks: () => api.get<any>('/forum/bookmarks', authConfig()),
+  getSubjects: () => api.get<any>('/forum/subjects', authConfig()),
 };
