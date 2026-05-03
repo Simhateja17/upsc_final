@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import CreateFlashcardModal from '@/components/CreateFlashcardModal';
 import { flashcardService } from '@/lib/services';
-
-const heroBackground = 'https://www.figma.com/api/mcp/asset/ff3b4559-2efb-467e-86d0-c6f5844156ff';
+import DashboardPageHero from '@/components/DashboardPageHero';
 
 const DECK_COLORS: Record<string, string> = {
   polity: '#155DFC',
@@ -85,97 +84,15 @@ export default function FlashcardsPage() {
   ];
 
   return (
-    <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: '100%' }}>
+    <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
+        <DashboardPageHero
+          badgeText="Revision - Smart Learning System"
+          title={<>Your <span style={{ color: '#FFCB47', fontStyle: 'italic' }}>Flashcard</span> <span style={{ fontStyle: 'italic', color: '#FFFFFF' }}>Vault.</span></>}
+          subtitle="Powered by spaced repetition science. Study smarter each card surfaces exactly when your brain is about to forget it."
+          stats={bannerMetrics.map(m => ({ value: m.value, label: m.label, color: m.valueColor }))}
+        />
         <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          {/* Flashcard Vault banner */}
-          <div
-            className="relative w-full overflow-hidden rounded-[16px]"
-            style={{
-              background: '#161C2D',
-              padding: '24px 26px 22px',
-              marginBottom: 16,
-              boxShadow: '0px 1px 0px rgba(255,255,255,0.03) inset',
-            }}
-          >
-            <div className="pointer-events-none absolute inset-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={heroBackground}
-                alt=""
-                aria-hidden="true"
-                className="absolute left-0 top-[-14%] h-[128%] w-full max-w-none object-cover"
-              />
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: 'linear-gradient(180deg, rgba(18,24,39,0.92) 0%, rgba(18,24,39,0.96) 100%)',
-                }}
-              />
-              <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: 'linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)',
-                  backgroundSize: '28px 28px',
-                  opacity: 0.28,
-                }}
-              />
-              <div
-                className="absolute -right-20 bottom-[-56px] h-56 w-[420px] rounded-full blur-3xl"
-                style={{ background: 'radial-gradient(circle, rgba(255,196,107,0.18) 0%, rgba(255,196,107,0) 70%)' }}
-              />
-            </div>
-
-            <div className="relative z-10 max-w-[768px]">
-              <div
-                className="mb-[10px] inline-flex h-7 items-center rounded-[20px] border px-4 text-[10px] font-semibold uppercase tracking-[0.5px] text-[#FDC700]"
-                style={{
-                  fontFamily: 'Inter',
-                  background: 'rgba(255,255,255,0.06)',
-                  borderColor: 'rgba(255,255,255,0.12)',
-                }}
-              >
-                Revision - Smart Learning System
-              </div>
-
-              <h1 className="text-[36px] font-bold leading-[40px] text-white sm:text-[48px] sm:leading-[48px]" style={{ fontFamily: 'Inter' }}>
-                Your <span style={{ color: '#FFCB47', fontStyle: 'italic' }}>Flashcard</span>{' '}
-                <span style={{ fontStyle: 'italic', color: '#FFFFFF' }}>Vault.</span>
-              </h1>
-
-              <p
-                className="mb-5 mt-5 max-w-[700px] text-[16px] leading-[24px] text-[#4A5565]"
-                style={{ fontFamily: 'Inter' }}
-              >
-                Powered by spaced repetition science. Study smarter each card surfaces exactly when your brain is about to forget it.
-              </p>
-
-              <div
-                className="grid w-full max-w-[508px] grid-cols-4 overflow-hidden rounded-[16px] bg-[#161c2d]"
-                style={{ border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0px 6px 18px rgba(0,0,0,0.18)' }}
-              >
-                {bannerMetrics.map((m, index) => (
-                  <div
-                    key={m.label}
-                    className={`flex min-h-[61px] flex-col items-center justify-center px-2 py-[12px] ${index < bannerMetrics.length - 1 ? 'border-r border-[rgba(255,255,255,0.08)]' : ''}`}
-                  >
-                    <div
-                      className="font-extrabold leading-none tracking-[-0.4px]"
-                      style={{ fontFamily: 'var(--font-jakarta)', color: m.valueColor }}
-                    >
-                      <span style={{ fontSize: m.valueSize }}>{m.value}</span>
-                    </div>
-                    <div
-                      className="mt-[3px] text-[9.5px] font-normal uppercase tracking-[0.6px] text-white/40"
-                      style={{ fontFamily: 'var(--font-jakarta)' }}
-                    >
-                      {m.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
 
           {/* 1 Choose a Subject */}
           <div className="flex flex-wrap items-center justify-between gap-4 mb-2">

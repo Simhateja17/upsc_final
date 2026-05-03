@@ -8,7 +8,6 @@ const dropdownMenus = {
   prepare: [
     { label: 'Study Planner', href: '/dashboard/study-planner', icon: 'calendar' },
     { label: 'Syllabus Tracker', href: '/dashboard/syllabus-tracker', icon: 'checklist' },
-    { label: 'Video Lectures', href: '/dashboard/video-lectures', icon: 'video' },
   ],
   practice: [
     { label: 'Mock Tests', href: '/dashboard/mock-tests', icon: 'clock' },

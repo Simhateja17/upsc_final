@@ -168,7 +168,7 @@ export default function DailyMcqResultsPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen" style={{ background: '#E8EDF5' }}>
+      <div className="flex flex-col min-h-screen" style={{ background: '#FAFBFE' }}>
         <main className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </main>
@@ -191,7 +191,7 @@ export default function DailyMcqResultsPage() {
   return (
     <>
       <ConfettiCanvas active={showConfetti} />
-      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#E8EDF5' }}>
+      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}>
         <main className="flex-1 flex items-center justify-center px-[clamp(1rem,2vw,3rem)]">
           <div className="card-elevated rounded-[clamp(10px,0.52vw,10px)]"
             style={{ width: 'clamp(600px,40vw,768px)', padding: 'clamp(1.5rem,2vw,2.5rem) clamp(1.5rem,2vw,2.5rem)' }}>

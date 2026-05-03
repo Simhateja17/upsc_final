@@ -284,7 +284,7 @@ function MockTestsPageInner() {
   };
 
   return (
-    <div className="flex overflow-hidden" style={{ background: '#D8DEE6', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
+    <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
 
       {/* ── Pro Upgrade Modal ── */}
       {showProModal && (
@@ -402,10 +402,10 @@ function MockTestsPageInner() {
       )}
 
       {/* Main scrollable content */}
-      <main className="flex-1 overflow-y-auto" style={{ background: '#E8EDF5' }}>
+      <main className="flex-1 overflow-y-auto font-arimo" style={{ background: '#F9FAFB' }}>
 
         <DashboardPageHero
-          badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+          badgeIcon={<img src="/badge-mocktest.png" alt="mocktest" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
           badgeText="MOCK TEST PLATFORM"
           title={
             <>
@@ -1236,7 +1236,7 @@ function MockTestsPageInner() {
 
 export default function MockTestsPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#F9FAFB' }} />}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#FAFBFE' }} />}>
       <MockTestsPageInner />
     </Suspense>
   );

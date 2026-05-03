@@ -31,7 +31,7 @@ export default function QuestionReviewPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#E8EDF5' }}>
+      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}>
         <main className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </main>
@@ -40,12 +40,12 @@ export default function QuestionReviewPage() {
   }
 
   const q = questions[currentIndex];
-  if (!q) return <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#E8EDF5' }}><main className="flex-1 flex items-center justify-center"><p>No review data available.</p></main></div>;
+  if (!q) return <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}><main className="flex-1 flex items-center justify-center"><p>No review data available.</p></main></div>;
 
   const optionLabels = ['A', 'B', 'C', 'D'];
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#E8EDF5' }}>
+    <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}>
       <main className="flex-1 flex flex-col items-center justify-center px-[clamp(1rem,2vw,3rem)] py-4">
         <div className="card-elevated rounded-[clamp(10px,0.52vw,10px)] flex-1 flex flex-col"
           style={{ width: 'clamp(700px,50vw,962px)', maxHeight: 'calc(100vh - 2rem)' }}>

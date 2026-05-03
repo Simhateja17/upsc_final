@@ -65,10 +65,10 @@ export default function DashboardPageHero({
 
   return (
     <div
-      className="relative overflow-hidden"
+      className="relative overflow-hidden flex flex-col"
       style={{
         background: '#0F131F',
-        padding: '24px 26px 22px',
+        padding: '20px 26px 18px',
         marginBottom: 16,
         height: heroHeight,
         minHeight: heroMinHeight,
@@ -88,7 +88,7 @@ export default function DashboardPageHero({
       {/* Top bar */}
       <div
         className="relative z-10"
-        style={{ marginBottom: '12px', paddingInline: 'clamp(8px, 1vw, 14px)' }}
+        style={{ marginBottom: '8px', paddingInline: 'clamp(8px, 1vw, 14px)' }}
       >
         <div
           style={{
@@ -134,43 +134,49 @@ export default function DashboardPageHero({
         </div>
       </div>
 
-      {/* Centered content */}
+      {/* Content area – fills remaining space and keeps stats at bottom */}
       <div
-        className="relative z-10 flex flex-col items-center"
-        style={{ maxWidth: '860px', margin: '0 auto' }}
+        className="relative z-10 flex flex-col items-center flex-1"
+        style={{ maxWidth: '860px', margin: '0 auto', width: '100%' }}
       >
-        <h1
-          className="text-center font-semibold"
-          style={{
-            color: '#FFFFFF',
-            textAlign: 'center',
-            fontFamily: '"Cormorant Garamond", var(--font-cormorant), serif',
-            fontSize: '48px',
-            fontStyle: 'normal',
-            fontWeight: 600,
-            lineHeight: '52.8px',
-            marginBottom: 'clamp(10px, 1vw, 16px)',
-          }}
-        >
-          {title}
-        </h1>
-
-        <p
-          className="font-arimo text-center"
-          style={{
-            fontSize: 'clamp(13px, 1.2vw, 16px)',
-            lineHeight: 'clamp(20px, 1.8vw, 24px)',
-            color: 'rgba(255,255,255,0.5)',
-            maxWidth: '640px',
-            marginBottom: '18px',
-          }}
-        >
-          {subtitle}
-        </p>
-
-        {/* Stats strip */}
+        {/* Title + subtitle – centered vertically in the upper portion */}
         <div
-          className="flex gap-0 rounded-[12px] overflow-hidden"
+          className="flex flex-col items-center justify-center"
+          style={{ flex: 1, width: '100%', paddingBottom: '64px' }}
+        >
+          <h1
+            className="text-center font-semibold"
+            style={{
+              color: '#FFF',
+              textAlign: 'center',
+              fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif',
+              fontSize: '64px',
+              fontStyle: 'normal',
+              fontWeight: 600,
+              lineHeight: '70.4px',
+              marginBottom: '6px',
+            }}
+          >
+            {title}
+          </h1>
+
+          <p
+            className="font-arimo text-center"
+            style={{
+              fontSize: 'clamp(13px, 1.2vw, 16px)',
+              lineHeight: 'clamp(20px, 1.8vw, 24px)',
+              color: 'rgba(255,255,255,0.5)',
+              maxWidth: '640px',
+              marginBottom: 0,
+            }}
+          >
+            {subtitle}
+          </p>
+        </div>
+
+        {/* Stats strip – always sits at the bottom with same gap */}
+        <div
+          className="absolute bottom-0 left-0 right-0 flex gap-0 rounded-[12px] overflow-hidden"
           style={{ border: '0.8px solid rgba(255,255,255,0.1)' }}
         >
           {stats.map((stat, i) => (

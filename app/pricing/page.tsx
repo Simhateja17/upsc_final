@@ -42,7 +42,6 @@ const PLAN_CARDS: PlanCard[] = [
       { text: 'Daily Mains Challenge (1 Q)' },
       { text: 'Daily News Analysis — The Hindu & IE' },
       { text: '10,000+ Previous Year Questions' },
-      { text: 'YouTube Video Lectures' },
       { text: 'Study Planner & Time Tracker' },
       { text: 'Daily Leaderboard' },
       { text: 'Jeet AI — 10 chats/day' },

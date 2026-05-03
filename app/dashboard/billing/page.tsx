@@ -61,7 +61,6 @@ const fallbackShowcasePlans: ShowcasePlan[] = [
       'Daily Mains Challenge (1 Q)',
       'Daily News Analysis - The Hindu & IE',
       '10,000+ Previous Year Questions',
-      'YouTube Video Lectures',
       'Study Planner & Time Tracker',
       'Daily Leaderboard',
       'Jeet AI - 10 chats/day',
@@ -321,14 +320,14 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F5F6FA] flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAFBFE] flex items-center justify-center">
         <div className="h-9 w-9 animate-spin rounded-full border-b-2 border-[#17223E]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] pb-16" style={{ fontFamily: 'var(--font-inter)' }}>
+    <div className="min-h-screen bg-[#FAFBFE] pb-16" style={{ fontFamily: 'var(--font-inter)' }}>
       <section
         className="relative overflow-hidden px-4 py-16 sm:px-8 md:py-24"
         style={{

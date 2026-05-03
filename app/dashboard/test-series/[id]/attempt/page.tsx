@@ -273,7 +273,7 @@ export default function TestAttemptPage() {
       <div
         className="test-topbar"
         style={{
-          background: 'var(--navy)',
+          background: '#FAFBFE',
           padding: '16px 24px',
           display: 'flex',
           justifyContent: 'space-between',

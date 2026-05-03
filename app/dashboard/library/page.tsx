@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { libraryService, pricingService } from '@/lib/services';
+import { useCmsContent } from '@/hooks/useCmsContent';
 import DashboardPageHero from '@/components/DashboardPageHero';
 
 /* ------------------------------------------------------------------ */
@@ -15,11 +16,6 @@ const SUBJECT_ICONS: Record<string, string> = {
   'economy': '\uD83D\uDCCA',
   'environment': '\uD83C\uDF3F',
   'science': '\uD83D\uDD2C',
-  'art': '\uD83C\uDFA8',
-  'culture': '\uD83C\uDFA8',
-  'current': '\uD83D\uDCF0',
-  'ethics': '\u2696\uFE0F',
-  'security': '\uD83D\uDEE1\uFE0F',
 };
 
 function subjectIcon(name: string): string {
@@ -31,12 +27,12 @@ function subjectIcon(name: string): string {
 }
 
 const COMING_SOON_SUBJECTS = [
-  'International Relations',
-  'Essay Module',
-  'Ethics GS-IV',
-  'Internal Security',
-  'Social Issues',
-  'Monthly Digest Archive',
+  'Advanced Polity Compendium',
+  'Geography Map Workbook',
+  'Economy Data Handbook',
+  'Environment & Ecology Digest',
+  'Science & Technology Updates',
+  'History Timeline Archive',
 ];
 
 
@@ -68,6 +64,69 @@ const bottomStats = [
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 export default function LibraryPage() {
+  const { content: cms } = useCmsContent('dashboard/library', {
+    hero_badge: 'FREE STUDY MATERIALS',
+    hero_title: 'Master UPSC with Expert Notes and Free Resources',
+    hero_subtitle: 'From PYQ-backed notes to concise summaries — everything you need, free.',
+    hero_stats: JSON.stringify([
+      { value: '100+', label: 'Free PDFs', color: '#FDC700' },
+      { value: '25+', label: 'PYQ-Backed Notes', color: '#F87171' },
+      { value: '1L+', label: 'Downloads', color: '#4ADE80' },
+      { value: '∞', label: 'Always Free', color: '#FFFFFF' },
+    ]),
+    sidebar_header_title: 'CHOOSE A SUBJECT',
+    section_label_notes: 'FOUNDATIONAL NOTES',
+    section_label_pyq: 'PREVIOUS YEAR QUESTIONS',
+    banner_badge: 'WHY RISE WITH JEET',
+    banner_title: 'Not just notes. A system built to crack UPSC.',
+    banner_subtitle: "Every PDF is designed with one obsession — your selection. Here's what makes us different from every other resource out there.",
+    banner_stat_number: '15K+',
+    banner_stat_label: "Aspirants trust\nRise with Jeet",
+    testimonials_badge: 'ASPIRANT STORIES',
+    testimonials_title: 'What UPSC Aspirants Say',
+    cta_title: 'Ready to start your IAS journey the right way?',
+    cta_subtitle: 'Access 360+ free PDFs, PYQ notes, and study roadmaps — all designed to help you crack UPSC on your first attempt.',
+    cta_button_primary: 'Start Studying Free',
+    cta_button_secondary: 'Watch on YouTube',
+  });
+
+  const heroBadge = cms?.hero_badge || 'FREE STUDY MATERIALS';
+  const heroTitle = cms?.hero_title || 'Master UPSC with Expert Notes and Free Resources';
+  const heroSubtitle = cms?.hero_subtitle || 'From PYQ-backed notes to concise summaries — everything you need, free.';
+  const heroStats = (() => { try { return JSON.parse(cms?.hero_stats || '[]'); } catch { return []; } })();
+  const sidebarHeaderTitle = cms?.sidebar_header_title || 'CHOOSE A SUBJECT';
+  const sectionLabelNotes = cms?.section_label_notes || 'FOUNDATIONAL NOTES';
+  const sectionLabelPyq = cms?.section_label_pyq || 'PREVIOUS YEAR QUESTIONS';
+  const bannerBadge = cms?.banner_badge || 'WHY RISE WITH JEET';
+  const bannerTitle = cms?.banner_title || 'Not just notes. A system built to crack UPSC.';
+  const bannerSubtitle = cms?.banner_subtitle || "Every PDF is designed with one obsession — your selection. Here's what makes us different from every other resource out there.";
+  const bannerStatNumber = cms?.banner_stat_number || '15K+';
+  const bannerStatLabel = cms?.banner_stat_label || "Aspirants trust\nRise with Jeet";
+  const testimonialsBadge = cms?.testimonials_badge || 'ASPIRANT STORIES';
+  const testimonialsTitle = cms?.testimonials_title || 'What UPSC Aspirants Say';
+  const ctaTitle = cms?.cta_title || 'Ready to start your IAS journey the right way?';
+  const ctaSubtitle = cms?.cta_subtitle || 'Access 360+ free PDFs, PYQ notes, and study roadmaps — all designed to help you crack UPSC on your first attempt.';
+  const ctaButtonPrimary = cms?.cta_button_primary || 'Start Studying Free';
+  const ctaButtonSecondary = cms?.cta_button_secondary || 'Watch on YouTube';
+  const cmsFeatures = (() => { try { return JSON.parse(cms?.features || '[]'); } catch { return []; } })();
+  const cmsBottomStats = (() => { try { return JSON.parse(cms?.bottom_stats || '[]'); } catch { return []; } })();
+
+  const features = cmsFeatures.length > 0 ? cmsFeatures : [
+    { emoji: '🎯', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff \u2014 only what earns marks in Prelims and Mains.' },
+    { emoji: '🔄', bg: '#DBEAFE', title: 'Updated Every Week', desc: 'Budget, new schemes, policy shifts \u2014 our notes are refreshed weekly so you\u2019re study outcomes.' },
+    { emoji: '💜', bg: '#EDE9FE', title: 'YouTube + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s YouTube lessons. Watch, then revise \u2014 the most powerful UPSC loop.' },
+    { emoji: '🎁', bg: '#FEF3C7', title: 'Free. Forever. No Catch.', desc: 'No paywalls, no \u2018premium only\u2019 tricks. Quality UPSC preparation should never be gated behind money.' },
+    { emoji: '📊', bg: '#DCFCE7', title: 'PYQ-Backed Content', desc: 'All notes reviewed, weightaged from 10-years of PYQs \u2014 calibrated to exactly what UPSC asks every year.' },
+    { emoji: '🏆', bg: '#FFEDD5', title: 'Toppers Trust It', desc: 'Used by 94,000+ aspirants including students who cleared Prelims, Mains, and made it to the interview.' },
+  ];
+
+  const bottomStats = cmsBottomStats.length > 0 ? cmsBottomStats : [
+    { number: '94K', suffix: '+', label: 'ACTIVE ASPIRANTS', suffixColor: '#155DFC' },
+    { number: '280', suffix: '+', label: 'FREE PDFS', suffixColor: '#EA580C' },
+    { number: '500', suffix: '+', label: 'PYQS SOLVED', suffixColor: '#155DFC' },
+    { number: '100', suffix: '%', label: 'ALWAYS FREE', suffixColor: '#16A34A' },
+  ];
+
   const [selectedSubject, setSelectedSubject] = useState('');
   const [activeTab, setActiveTab] = useState('Notes');
   const [apiSubjects, setApiSubjects] = useState<any[]>([]);
@@ -75,6 +134,32 @@ export default function LibraryPage() {
   const [loadingChapters, setLoadingChapters] = useState(false);
   const [downloadingChapter, setDownloadingChapter] = useState<string | null>(null);
   const [apiTestimonials, setApiTestimonials] = useState<any[]>([]);
+
+  const defaultTestimonials = [
+    {
+      id: 'default-1',
+      name: 'Priya Rajan',
+      title: 'UPSC Prelims 2024 Cleared - Delhi',
+      content: "Jeet Sir's notes are unmatched. I revised them 3 times before Prelims and cleared with a huge margin. Clear, concise, UPSC-perfect.",
+      rating: 5,
+    },
+    {
+      id: 'default-2',
+      name: 'Ankit Kumar',
+      title: 'UPSC Mains 2024 - Bihar',
+      content: "The connection b/w the YouTube and the PDFs is seamless. I feel like I'm watching and taking notes at the same time. Genuinely the best free resource.",
+      rating: 5,
+    },
+    {
+      id: 'default-3',
+      name: 'Sneha Mishra',
+      title: 'UPSC Mains 2025 - MP',
+      content: "I've tried paid note-making notes — Jeet Sir's free PDFs are better. The Geography notes genuinely saved my Prelims score. Life-changing.",
+      rating: 5,
+    },
+  ];
+
+  const testimonials = apiTestimonials.length > 0 ? apiTestimonials : defaultTestimonials;
 
   const selectedApiSubject = apiSubjects.find(s => s.name === selectedSubject) ?? null;
 
@@ -150,20 +235,18 @@ export default function LibraryPage() {
   return (
     <div
       className="font-arimo w-full min-h-screen"
-      style={{ background: '#F9FAFB' }}
+      style={{ background: '#FAFBFE' }}
     >
       <DashboardPageHero
         badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
-        badgeText="FREE STUDY MATERIALS"
+        badgeText={heroBadge}
         title={
           <>
-            Master UPSC with{' '}
-            <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Expert Notes</em>
-            {' '}and Free Resources
+            {heroTitle}
           </>
         }
-        subtitle="From PYQ-backed notes to concise summaries — everything you need, free."
-        stats={[
+        subtitle={heroSubtitle}
+        stats={heroStats.length > 0 ? heroStats : [
           { value: '100+', label: 'Free PDFs', color: '#FDC700' },
           { value: '25+', label: 'PYQ-Backed Notes', color: '#F87171' },
           { value: '1L+', label: 'Downloads', color: '#4ADE80' },
@@ -221,7 +304,7 @@ export default function LibraryPage() {
                   marginBottom: 'clamp(4px, 0.3vw, 6px)',
                 }}
               >
-                CHOOSE A SUBJECT
+                {sidebarHeaderTitle}
               </div>
               <div
                 className="font-arimo font-bold"
@@ -574,7 +657,7 @@ export default function LibraryPage() {
                 marginBottom: 'clamp(12px, 1.2vw, 16px)',
               }}
             >
-              {activeTab === 'Notes' ? 'FOUNDATIONAL NOTES' : 'PREVIOUS YEAR QUESTIONS'}
+              {activeTab === 'Notes' ? sectionLabelNotes : sectionLabelPyq}
             </div>
 
             {/* Chapter cards */}
@@ -745,7 +828,7 @@ export default function LibraryPage() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#DBAC49" stroke="#DBAC49" strokeWidth="1" />
               </svg>
-              WHY RISE WITH JEET
+              {bannerBadge}
             </div>
             <h3
               className="font-arimo font-bold"
@@ -755,20 +838,8 @@ export default function LibraryPage() {
                 color: '#FFFFFF',
                 marginBottom: 'clamp(4px, 0.4vw, 6px)',
               }}
-            >
-              Not just notes.
-            </h3>
-            <h3
-              className="font-arimo font-bold"
-              style={{
-                fontSize: 'clamp(22px, 2.2vw, 30px)',
-                lineHeight: 1.3,
-                color: '#FFFFFF',
-                marginBottom: 'clamp(12px, 1.2vw, 16px)',
-              }}
-            >
-              A <span style={{ color: '#F5C75D' }}>system built to crack UPSC.</span>
-            </h3>
+              dangerouslySetInnerHTML={{ __html: bannerTitle }}
+            />
             <p
               className="font-arimo"
               style={{
@@ -778,7 +849,7 @@ export default function LibraryPage() {
                 maxWidth: 'clamp(360px, 36vw, 480px)',
               }}
             >
-              Every PDF is designed with one obsession — your selection. Here&apos;s what makes us different from every other resource out there.
+              {bannerSubtitle}
             </p>
           </div>
 
@@ -807,15 +878,13 @@ export default function LibraryPage() {
               className="font-arimo font-bold"
               style={{ fontSize: 'clamp(40px, 4.5vw, 64px)', color: '#F5C75D', lineHeight: 1.1 }}
             >
-              15K+
+              {bannerStatNumber}
             </div>
             <div
               className="font-arimo"
-              style={{ fontSize: 'clamp(12px, 1vw, 14px)', color: '#94A3B8', textAlign: 'center', marginTop: '8px', lineHeight: '1.5' }}
+              style={{ fontSize: 'clamp(12px, 1vw, 14px)', color: '#94A3B8', textAlign: 'center', marginTop: '8px', lineHeight: '1.5', whiteSpace: 'pre-line' }}
             >
-              Aspirants trust
-              <br />
-              Rise with Jeet
+              {bannerStatLabel}
             </div>
           </div>
 
@@ -832,7 +901,7 @@ export default function LibraryPage() {
             marginBottom: 'clamp(40px, 4vw, 60px)',
           }}
         >
-          {features.map((feature) => (
+          {features.map((feature: any) => (
             <div
               key={feature.title}
               style={{
@@ -893,7 +962,7 @@ export default function LibraryPage() {
             flexWrap: 'wrap' as const,
           }}
         >
-          {bottomStats.map((stat) => (
+          {bottomStats.map((stat: any) => (
             <div
               key={stat.label}
               style={{
@@ -932,113 +1001,115 @@ export default function LibraryPage() {
         {/* ============================================================ */}
         <div style={{ marginBottom: 'clamp(40px, 4vw, 60px)' }}>
           {/* Header */}
-          <div className="flex flex-col items-center" style={{ marginBottom: 'clamp(20px, 2vw, 28px)' }}>
+          <div className="flex flex-col items-center" style={{ marginBottom: 'clamp(24px, 2.5vw, 32px)' }}>
             <div
-              className="flex items-center gap-2 font-arimo font-bold"
+              className="flex items-center gap-1.5 font-arimo font-bold"
               style={{
-                fontSize: 'clamp(10px, 0.82vw, 12px)',
-                color: '#DBAC49',
+                fontSize: '12px',
+                color: '#2563EB',
                 textTransform: 'uppercase',
-                letterSpacing: '0.3px',
-                marginBottom: 'clamp(6px, 0.6vw, 8px)',
+                letterSpacing: '0.5px',
+                marginBottom: '8px',
               }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#DBAC49" stroke="#DBAC49" strokeWidth="1" />
               </svg>
-              ASPIRANT STORIES
+              {testimonialsBadge}
             </div>
             <h2
               className="font-arimo font-bold text-center"
               style={{
-                fontSize: 'clamp(24px, 2.5vw, 34px)',
-                color: '#101828',
-                lineHeight: 1.3,
+                fontSize: 'clamp(24px, 2.8vw, 36px)',
+                color: '#0F172A',
+                lineHeight: 1.2,
+                fontWeight: 700,
               }}
             >
-              What UPSC Aspirants Say
+              {testimonialsTitle}
             </h2>
           </div>
 
           {/* Testimonial cards */}
-          {apiTestimonials.length > 0 && (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))',
-                gap: 'clamp(14px, 1.5vw, 24px)',
-              }}
-            >
-              {apiTestimonials.slice(0, 3).map((t) => {
-                const initials = t.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-                return (
-                  <div
-                    key={t.id}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '24px',
+            }}
+          >
+            {testimonials.slice(0, 3).map((t) => {
+              const initials = t.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+              return (
+                <div
+                  key={t.id}
+                  style={{
+                    background: '#FFFBEB',
+                    borderRadius: '20px',
+                    padding: '28px',
+                    border: '1px solid #FDE68A',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  {/* Stars */}
+                  <div style={{ marginBottom: '16px', display: 'flex', gap: '2px' }}>
+                    {Array.from({ length: t.rating ?? 5 }).map((_: unknown, i: number) => (
+                      <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#FDC700" />
+                      </svg>
+                    ))}
+                  </div>
+
+                  {/* Quote */}
+                  <p
+                    className="font-arimo italic"
                     style={{
-                      background: 'linear-gradient(135deg, #FEFCE8 0%, #FFF7ED 100%)',
-                      borderRadius: '16px',
-                      padding: 'clamp(18px, 2vw, 24px)',
-                      border: '1px solid #FFF085',
+                      fontSize: '14px',
+                      lineHeight: '1.75',
+                      color: '#1E293B',
+                      marginBottom: '24px',
+                      flex: 1,
                     }}
                   >
-                    {/* Stars */}
-                    <div style={{ marginBottom: 'clamp(10px, 1vw, 14px)', display: 'flex', gap: '2px' }}>
-                      {Array.from({ length: t.rating ?? 5 }).map((_: unknown, i: number) => (
-                        <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="none">
-                          <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#F59E0B" stroke="#F59E0B" strokeWidth="1" />
-                        </svg>
-                      ))}
-                    </div>
+                    &ldquo;{t.content}&rdquo;
+                  </p>
 
-                    {/* Quote */}
-                    <p
-                      className="font-arimo italic"
+                  {/* Avatar + name */}
+                  <div className="flex items-center" style={{ gap: '12px' }}>
+                    <div
+                      className="flex items-center justify-center font-arimo font-bold"
                       style={{
-                        fontSize: 'clamp(12px, 1.05vw, 14px)',
-                        lineHeight: 'clamp(18px, 1.8vw, 24px)',
-                        color: '#374151',
-                        marginBottom: 'clamp(16px, 1.6vw, 22px)',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: '#1E40AF',
+                        color: '#FFFFFF',
+                        fontSize: '13px',
+                        flexShrink: 0,
                       }}
                     >
-                      &ldquo;{t.content}&rdquo;
-                    </p>
-
-                    {/* Avatar + name */}
-                    <div className="flex items-center" style={{ gap: 'clamp(10px, 1vw, 14px)' }}>
+                      {initials}
+                    </div>
+                    <div>
                       <div
-                        className="flex items-center justify-center font-arimo font-bold"
-                        style={{
-                          width: 'clamp(36px, 3.2vw, 44px)',
-                          height: 'clamp(36px, 3.2vw, 44px)',
-                          borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #1C398E 0%, #1447E6 100%)',
-                          color: '#FFFFFF',
-                          fontSize: 'clamp(12px, 1.05vw, 14px)',
-                          flexShrink: 0,
-                        }}
+                        className="font-arimo font-bold"
+                        style={{ fontSize: '14px', lineHeight: '1.3', color: '#0F172A', fontWeight: 700 }}
                       >
-                        {initials}
+                        {t.name}
                       </div>
-                      <div>
-                        <div
-                          className="font-arimo font-bold"
-                          style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#101828' }}
-                        >
-                          {t.name}
-                        </div>
-                        <div
-                          className="font-arimo"
-                          style={{ fontSize: 'clamp(11px, 0.9vw, 13px)', color: '#6A7282' }}
-                        >
-                          {t.title}
-                        </div>
+                      <div
+                        className="font-arimo"
+                        style={{ fontSize: '12px', lineHeight: '1.4', color: '#64748B' }}
+                      >
+                        {t.title}
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* ============================================================ */}
@@ -1070,7 +1141,7 @@ export default function LibraryPage() {
                 marginBottom: 'clamp(8px, 0.8vw, 12px)',
               }}
             >
-              Ready to start your IAS journey the right way?
+              {ctaTitle}
             </h3>
             <p
               className="font-arimo"
@@ -1082,7 +1153,7 @@ export default function LibraryPage() {
                 maxWidth: 'clamp(360px, 36vw, 480px)',
               }}
             >
-              Access 360+ free PDFs, PYQ notes, and study roadmaps &mdash; all designed to help you crack UPSC on your first attempt.
+              {ctaSubtitle}
             </p>
 
             <div className="flex items-center" style={{ gap: 'clamp(10px, 1vw, 14px)', flexWrap: 'wrap' }}>
@@ -1099,7 +1170,7 @@ export default function LibraryPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                Start Studying Free
+                {ctaButtonPrimary}
               </button>
               <button
                 className="font-arimo font-bold"
@@ -1114,23 +1185,33 @@ export default function LibraryPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                Watch on YouTube
+                {ctaButtonSecondary}
               </button>
             </div>
           </div>
 
           {/* Right side - decorative rocket */}
           <div
-            className="flex items-center justify-center"
             style={{
-              width: 'clamp(80px, 8vw, 110px)',
-              height: 'clamp(80px, 8vw, 110px)',
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.3)',
-              flexShrink: 0,
+              position: 'absolute',
+              right: 'clamp(20px, 3vw, 40px)',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 'clamp(120px, 12vw, 180px)',
+              height: 'clamp(120px, 12vw, 180px)',
+              opacity: 0.6,
+              pointerEvents: 'none',
             }}
           >
-            <span style={{ fontSize: 'clamp(40px, 4vw, 56px)' }}>{'\uD83D\uDE80'}</span>
+            <img
+              src="/rocket.png"
+              alt=""
+              aria-hidden="true"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
           </div>
         </div>
       </div>

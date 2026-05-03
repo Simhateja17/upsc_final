@@ -205,13 +205,12 @@ export default function PyqPage() {
   return (
     <div
       ref={pageRootRef}
-      className="flex min-h-full flex-col items-stretch"
+      className="flex min-h-full flex-col items-stretch font-arimo"
       style={{ background: '#F9FAFB' }}
     >
       <DashboardPageHero
-        badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeIcon={<img src="/badge-pyq.png" alt="pyq" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="PREVIOUS YEAR QUESTIONS"
-        heroHeight="352px"
         title={
           <>
             The Complete <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>PYQ Bank</em>
