@@ -38,7 +38,10 @@
       "Bash(tar -x -C /tmp/backend_extract/)",
       "Read(//tmp/**)",
       "Bash(rsync:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(identify /Users/teja/Desktop/upsc/upsc_frontend/public/favicon-48x48.png /Users/teja/Desktop/upsc/upsc_frontend/public/logo.png)",
+      "Bash(sips -g pixelWidth -g pixelHeight /Users/teja/Desktop/upsc/upsc_frontend/public/favicon-48x48.png /Users/teja/Desktop/upsc/upsc_frontend/public/logo.png /Users/teja/Desktop/upsc/upsc_frontend/public/logo-white-bg.png)",
+      "Bash(sips:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
