@@ -10,12 +10,12 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 /* ------------------------------------------------------------------ */
 
 const SUBJECT_ICONS: Record<string, string> = {
-  'polity': '\uD83C\uDFDB\uFE0F',
-  'history': '\uD83D\uDCDC',
-  'geography': '\uD83C\uDF0D',
-  'economy': '\uD83D\uDCCA',
-  'environment': '\uD83C\uDF3F',
-  'science': '\uD83D\uDD2C',
+  'polity': '⚖️',
+  'history': '🏛️',
+  'geography': '🌍',
+  'economy': '💰',
+  'environment': '🌿',
+  'science': '🔬',
 };
 
 function subjectIcon(name: string): string {
@@ -37,26 +37,18 @@ const COMING_SOON_SUBJECTS = [
 
 
 const features = [
-  { emoji: '\uD83C\uDFAF', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff \u2014 only what earns marks in Prelims and Mains.' },
-  { emoji: '\uD83D\uDD04', bg: '#DBEAFE', title: 'Updated Every Week', desc: 'Budget, new schemes, policy shifts \u2014 our notes are refreshed weekly so you\u2019re study outcomes.' },
-  { emoji: '\uD83D\uDC9C', bg: '#EDE9FE', title: 'YouTube + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s YouTube lessons. Watch, then revise \u2014 the most powerful UPSC loop.' },
-  { emoji: '\uD83C\uDF81', bg: '#FEF3C7', title: 'Free. Forever. No Catch.', desc: 'No paywalls, no \u2018premium only\u2019 tricks. Quality UPSC preparation should never be gated behind money.' },
-  { emoji: '\uD83D\uDCCA', bg: '#DCFCE7', title: 'PYQ-Backed Content', desc: 'All notes reviewed, weightaged from 10-years of PYQs \u2014 calibrated to exactly what UPSC asks every year.' },
-  { emoji: '\uD83C\uDFC6', bg: '#FFEDD5', title: 'Toppers Trust It', desc: 'Used by 94,000+ aspirants including students who cleared Prelims, Mains, and made it to the interview.' },
+  { emoji: '\uD83C\uDFAF', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff, only what earns marks in Prelims and Mains.' },
+  { emoji: '\uD83D\uDD04', bg: '#DBEAFE', title: 'Updated Every Week', desc: 'Budget, new schemes, policy shifts, our notes are refreshed weekly so your prep stays current.' },
+  { emoji: '\uD83D\uDC9C', bg: '#EDE9FE', title: 'YouTube + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s YouTube lessons. Watch, then revise, the most powerful UPSC loop.' },
+  { emoji: '\uD83D\uDCCA', bg: '#DCFCE7', title: 'PYQ-Backed Content', desc: 'All notes are reviewed and weighted from 10 years of PYQs, calibrated to what UPSC asks every year.' },
+  { emoji: '\uD83C\uDFC6', bg: '#FFEDD5', title: 'Toppers Trust It', desc: 'Used by 15,000+ aspirants building stronger Prelims, Mains, and interview preparation.' },
 ];
 
-const heroStats = [
-  { number: '100', suffix: '+', label: 'FREE PDFs', numberColor: '#F5C75D' },
-  { number: '25', suffix: '+', label: 'PYQ-BACKED NOTES', numberColor: '#FF6B6B' },
-  { number: '1L', suffix: '+', label: 'DOWNLOADS', numberColor: '#10B981' },
-  { number: '\u221E', suffix: '', label: 'ALWAYS FREE', numberColor: '#FFFFFF' },
-];
-
-const bottomStats = [
-  { number: '94K', suffix: '+', label: 'ACTIVE ASPIRANTS', suffixColor: '#155DFC' },
-  { number: '280', suffix: '+', label: 'FREE PDFS', suffixColor: '#EA580C' },
-  { number: '500', suffix: '+', label: 'PYQS SOLVED', suffixColor: '#155DFC' },
-  { number: '100', suffix: '%', label: 'ALWAYS FREE', suffixColor: '#16A34A' },
+const heroStatItems = [
+  { value: '100+', label: 'PDFs', color: '#FDC700' },
+  { value: '25+', label: 'PYQ-Backed Notes', color: '#F87171' },
+  { value: '1L+', label: 'Downloads', color: '#4ADE80' },
+  { value: '4.9', label: 'Ratings', color: '#FFFFFF' },
 ];
 
 
@@ -65,67 +57,53 @@ const bottomStats = [
 /* ------------------------------------------------------------------ */
 export default function LibraryPage() {
   const { content: cms } = useCmsContent('dashboard/library', {
-    hero_badge: 'FREE STUDY MATERIALS',
-    hero_title: 'Master UPSC with Expert Notes and Free Resources',
-    hero_subtitle: 'From PYQ-backed notes to concise summaries — everything you need, free.',
+    hero_badge: 'Study Material',
+    hero_title: 'Master UPSC with Expert Notes and Simplified Resources',
+    hero_subtitle: 'From PYQ-backed notes to concise summaries, everything you need, simplified.',
     hero_stats: JSON.stringify([
-      { value: '100+', label: 'Free PDFs', color: '#FDC700' },
+      { value: '100+', label: 'PDFs', color: '#FDC700' },
       { value: '25+', label: 'PYQ-Backed Notes', color: '#F87171' },
       { value: '1L+', label: 'Downloads', color: '#4ADE80' },
-      { value: '∞', label: 'Always Free', color: '#FFFFFF' },
+      { value: '4.9', label: 'Ratings', color: '#FFFFFF' },
     ]),
     sidebar_header_title: 'CHOOSE A SUBJECT',
     section_label_notes: 'FOUNDATIONAL NOTES',
     section_label_pyq: 'PREVIOUS YEAR QUESTIONS',
     banner_badge: 'WHY RISE WITH JEET',
     banner_title: 'Not just notes. A system built to crack UPSC.',
-    banner_subtitle: "Every PDF is designed with one obsession — your selection. Here's what makes us different from every other resource out there.",
+    banner_subtitle: "Every PDF is designed with one obsession, your selection. Here's what makes us different from every other resource out there.",
     banner_stat_number: '15K+',
     banner_stat_label: "Aspirants trust\nRise with Jeet",
     testimonials_badge: 'ASPIRANT STORIES',
     testimonials_title: 'What UPSC Aspirants Say',
     cta_title: 'Ready to start your IAS journey the right way?',
-    cta_subtitle: 'Access 360+ free PDFs, PYQ notes, and study roadmaps — all designed to help you crack UPSC on your first attempt.',
-    cta_button_primary: 'Start Studying Free',
+    cta_subtitle: 'Access 100+ PDFs, PYQ notes, and study roadmaps, all designed to help you crack UPSC.',
+    cta_button_primary: 'Start Studying',
     cta_button_secondary: 'Watch on YouTube',
   });
 
-  const heroBadge = cms?.hero_badge || 'FREE STUDY MATERIALS';
-  const heroTitle = cms?.hero_title || 'Master UPSC with Expert Notes and Free Resources';
-  const heroSubtitle = cms?.hero_subtitle || 'From PYQ-backed notes to concise summaries — everything you need, free.';
-  const heroStats = (() => { try { return JSON.parse(cms?.hero_stats || '[]'); } catch { return []; } })();
+  const heroBadge = 'Study Material';
+  const heroSubtitle = 'From PYQ-backed notes to concise summaries, everything you need, simplified.';
   const sidebarHeaderTitle = cms?.sidebar_header_title || 'CHOOSE A SUBJECT';
   const sectionLabelNotes = cms?.section_label_notes || 'FOUNDATIONAL NOTES';
   const sectionLabelPyq = cms?.section_label_pyq || 'PREVIOUS YEAR QUESTIONS';
-  const bannerBadge = cms?.banner_badge || 'WHY RISE WITH JEET';
   const bannerTitle = cms?.banner_title || 'Not just notes. A system built to crack UPSC.';
-  const bannerSubtitle = cms?.banner_subtitle || "Every PDF is designed with one obsession — your selection. Here's what makes us different from every other resource out there.";
+  const bannerSubtitle = "Every PDF is designed with one obsession, your selection. Here's what makes us different from every other resource out there.";
   const bannerStatNumber = cms?.banner_stat_number || '15K+';
   const bannerStatLabel = cms?.banner_stat_label || "Aspirants trust\nRise with Jeet";
   const testimonialsBadge = cms?.testimonials_badge || 'ASPIRANT STORIES';
   const testimonialsTitle = cms?.testimonials_title || 'What UPSC Aspirants Say';
   const ctaTitle = cms?.cta_title || 'Ready to start your IAS journey the right way?';
-  const ctaSubtitle = cms?.cta_subtitle || 'Access 360+ free PDFs, PYQ notes, and study roadmaps — all designed to help you crack UPSC on your first attempt.';
-  const ctaButtonPrimary = cms?.cta_button_primary || 'Start Studying Free';
+  const ctaSubtitle = 'Access 100+ PDFs, PYQ notes, and study roadmaps, all designed to help you crack UPSC.';
+  const ctaButtonPrimary = 'Start Studying';
   const ctaButtonSecondary = cms?.cta_button_secondary || 'Watch on YouTube';
-  const cmsFeatures = (() => { try { return JSON.parse(cms?.features || '[]'); } catch { return []; } })();
-  const cmsBottomStats = (() => { try { return JSON.parse(cms?.bottom_stats || '[]'); } catch { return []; } })();
-
-  const features = cmsFeatures.length > 0 ? cmsFeatures : [
-    { emoji: '🎯', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff \u2014 only what earns marks in Prelims and Mains.' },
-    { emoji: '🔄', bg: '#DBEAFE', title: 'Updated Every Week', desc: 'Budget, new schemes, policy shifts \u2014 our notes are refreshed weekly so you\u2019re study outcomes.' },
-    { emoji: '💜', bg: '#EDE9FE', title: 'YouTube + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s YouTube lessons. Watch, then revise \u2014 the most powerful UPSC loop.' },
-    { emoji: '🎁', bg: '#FEF3C7', title: 'Free. Forever. No Catch.', desc: 'No paywalls, no \u2018premium only\u2019 tricks. Quality UPSC preparation should never be gated behind money.' },
-    { emoji: '📊', bg: '#DCFCE7', title: 'PYQ-Backed Content', desc: 'All notes reviewed, weightaged from 10-years of PYQs \u2014 calibrated to exactly what UPSC asks every year.' },
-    { emoji: '🏆', bg: '#FFEDD5', title: 'Toppers Trust It', desc: 'Used by 94,000+ aspirants including students who cleared Prelims, Mains, and made it to the interview.' },
-  ];
-
-  const bottomStats = cmsBottomStats.length > 0 ? cmsBottomStats : [
-    { number: '94K', suffix: '+', label: 'ACTIVE ASPIRANTS', suffixColor: '#155DFC' },
-    { number: '280', suffix: '+', label: 'FREE PDFS', suffixColor: '#EA580C' },
-    { number: '500', suffix: '+', label: 'PYQS SOLVED', suffixColor: '#155DFC' },
-    { number: '100', suffix: '%', label: 'ALWAYS FREE', suffixColor: '#16A34A' },
-  ];
+  const features = [
+    { emoji: '🎯', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff, only what earns marks in Prelims and Mains.' },
+    { emoji: '🔄', bg: '#DBEAFE', title: 'Updated Every Week', desc: 'Budget, new schemes, policy shifts, our notes are refreshed weekly so your prep stays current.' },
+    { emoji: '💜', bg: '#EDE9FE', title: 'YouTube + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s YouTube lessons. Watch, then revise, the most powerful UPSC loop.' },
+    { emoji: '📊', bg: '#DCFCE7', title: 'PYQ-Backed Content', desc: 'All notes are reviewed and weighted from 10 years of PYQs, calibrated to what UPSC asks every year.' },
+    { emoji: '🏆', bg: '#FFEDD5', title: 'Toppers Trust It', desc: 'Used by 15,000+ aspirants building stronger Prelims, Mains, and interview preparation.' },
+  ];
 
   const [selectedSubject, setSelectedSubject] = useState('');
   const [activeTab, setActiveTab] = useState('Notes');
@@ -238,20 +216,15 @@ export default function LibraryPage() {
       style={{ background: '#FAFBFE' }}
     >
       <DashboardPageHero
-        badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeIcon={<img src="/sidebar-study-material-new.png" alt="study material" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText={heroBadge}
         title={
           <>
-            {heroTitle}
+            Master UPSC with <span style={{ color: '#F5C75D' }}>Expert</span> Notes and <span style={{ color: '#F5C75D' }}>Simplified</span> Resources
           </>
         }
         subtitle={heroSubtitle}
-        stats={heroStats.length > 0 ? heroStats : [
-          { value: '100+', label: 'Free PDFs', color: '#FDC700' },
-          { value: '25+', label: 'PYQ-Backed Notes', color: '#F87171' },
-          { value: '1L+', label: 'Downloads', color: '#4ADE80' },
-          { value: '∞', label: 'Always Free', color: '#FFFFFF' },
-        ]}
+        stats={heroStatItems}
       />
       {/* Centered content wrapper for bottom sections */}
       <div
@@ -336,15 +309,28 @@ export default function LibraryPage() {
                       justifyContent: 'space-between',
                       padding: 'clamp(10px, 1.1vw, 16px)',
                       borderRadius: '14px',
-                      background: isSelected ? '#0F1A30' : '#F9FAFB',
+                      background: isSelected ? 'linear-gradient(135deg, #0F1A30 0%, #172240 100%)' : 'linear-gradient(135deg, #EEF4FF 0%, #F8FAFF 100%)',
                       color: isSelected ? '#FFFFFF' : '#101828',
                       border: 'none',
                       cursor: 'pointer',
                       marginBottom: 'clamp(4px, 0.3vw, 6px)',
                       transition: 'all 0.2s ease',
                       textAlign: 'left',
+                      position: 'relative',
+                      overflow: 'hidden',
                     }}
                   >
+                    <div
+                      className="pointer-events-none"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        opacity: isSelected ? 0.08 : 0.12,
+                        backgroundImage:
+                          'linear-gradient(rgba(59,130,246,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.35) 1px, transparent 1px)',
+                        backgroundSize: '18px 18px',
+                      }}
+                    />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 0.8vw, 12px)', minWidth: 0 }}>
                       <span style={{ fontSize: 'clamp(18px, 1.6vw, 22px)', flexShrink: 0 }}>{subjectIcon(subject.name)}</span>
                       <div style={{ minWidth: 0 }}>
@@ -418,8 +404,24 @@ export default function LibraryPage() {
                     gap: 'clamp(8px, 0.8vw, 12px)',
                     padding: 'clamp(8px, 0.8vw, 12px) clamp(10px, 1.1vw, 16px)',
                     color: '#9CA3AF',
+                    background: 'linear-gradient(135deg, #EEF4FF 0%, #F8FAFF 100%)',
+                    borderRadius: '12px',
+                    marginBottom: '6px',
+                    position: 'relative',
+                    overflow: 'hidden',
                   }}
                 >
+                  <div
+                    className="pointer-events-none"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      opacity: 0.08,
+                      backgroundImage:
+                        'linear-gradient(rgba(59,130,246,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.35) 1px, transparent 1px)',
+                      backgroundSize: '18px 18px',
+                    }}
+                  />
                   <span style={{ fontSize: 'clamp(16px, 1.4vw, 20px)', opacity: 0.5 }}>{'\uD83D\uDCC4'}</span>
                   <div style={{ minWidth: 0 }}>
                     <div
@@ -828,7 +830,7 @@ export default function LibraryPage() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#DBAC49" stroke="#DBAC49" strokeWidth="1" />
               </svg>
-              {bannerBadge}
+              WHY RISE WITH JEET
             </div>
             <h3
               className="font-arimo font-bold"
@@ -949,53 +951,7 @@ export default function LibraryPage() {
               </p>
             </div>
           ))}
-        </div>
-
-        {/* ============================================================ */}
-        {/*  SECTION 5: STATS ROW                                          */}
-        {/* ============================================================ */}
-        <div
-          className="flex"
-          style={{
-            gap: 'clamp(12px, 1.2vw, 18px)',
-            marginBottom: 'clamp(40px, 4vw, 60px)',
-            flexWrap: 'wrap' as const,
-          }}
-        >
-          {bottomStats.map((stat: any) => (
-            <div
-              key={stat.label}
-              style={{
-                flex: 1,
-                minWidth: 'clamp(160px, 16vw, 200px)',
-                background: '#FFFFFF',
-                borderRadius: '16px',
-                border: '0.8px solid #E5E7EB',
-                padding: 'clamp(18px, 2vw, 28px)',
-                textAlign: 'center',
-                boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.06)',
-              }}
-            >
-              <div className="font-arimo font-bold" style={{ fontSize: 'clamp(28px, 2.8vw, 38px)', color: '#101828', lineHeight: 1.2 }}>
-                {stat.number}
-                <span style={{ color: stat.suffixColor }}>{stat.suffix}</span>
-              </div>
-              <div
-                className="font-arimo font-bold"
-                style={{
-                  fontSize: 'clamp(10px, 0.82vw, 12px)',
-                  color: '#6A7282',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  marginTop: 'clamp(4px, 0.4vw, 6px)',
-                }}
-              >
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div>
-
+        </div>
         {/* ============================================================ */}
         {/*  SECTION 6: ASPIRANT STORIES                                   */}
         {/* ============================================================ */}
@@ -1218,3 +1174,5 @@ export default function LibraryPage() {
     </div>
   );
 }
+
+

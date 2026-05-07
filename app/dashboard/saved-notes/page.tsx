@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { editorialService } from '@/lib/services';
+import { editorialService, mentalHealthService } from '@/lib/services';
 
 interface SavedEditorial {
   id: string;
@@ -12,6 +12,15 @@ interface SavedEditorial {
   category: string;
   tags: string[];
   savedAt?: string;
+}
+
+interface CheckIn {
+  id: string;
+  mood: string;
+  energy: number;
+  note?: string;
+  date: string;
+  createdAt?: string;
 }
 
 const categoryColors: Record<string, { color: string; bg: string }> = {
@@ -25,14 +34,21 @@ const categoryColors: Record<string, { color: string; bg: string }> = {
 
 export default function SavedNotesPage() {
   const [savedNotes, setSavedNotes] = useState<SavedEditorial[]>([]);
+  const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'notes' | 'bookmarks'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'bookmarks' | 'checkins'>('notes');
 
   useEffect(() => {
-    editorialService.getStats()
-      .then(res => {
-        if (res.data?.savedItems && Array.isArray(res.data.savedItems)) {
-          setSavedNotes(res.data.savedItems);
+    Promise.all([
+      editorialService.getStats(),
+      mentalHealthService.getCheckIns(30),
+    ])
+      .then(([editorialRes, checkInRes]) => {
+        if (editorialRes.data?.savedItems && Array.isArray(editorialRes.data.savedItems)) {
+          setSavedNotes(editorialRes.data.savedItems);
+        }
+        if (checkInRes.data && Array.isArray(checkInRes.data)) {
+          setCheckIns(checkInRes.data);
         }
       })
       .catch(() => {})
@@ -69,7 +85,7 @@ export default function SavedNotesPage() {
       {/* Tab bar */}
       <div style={{ borderBottom: '2px solid #E5E7EB', marginBottom: '24px' }}>
         <div className="flex" style={{ gap: '24px' }}>
-          {(['notes', 'bookmarks'] as const).map((tab) => (
+          {(['notes', 'bookmarks', 'checkins'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -86,7 +102,7 @@ export default function SavedNotesPage() {
                 textTransform: 'capitalize',
               }}
             >
-              {tab}
+              {tab === 'checkins' ? 'Check-ins' : tab}
             </button>
           ))}
         </div>
@@ -97,6 +113,131 @@ export default function SavedNotesPage() {
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900"></div>
         </div>
+      ) : activeTab === 'checkins' ? (
+        /* Check-ins Tab Content */
+        checkIns.length === 0 ? (
+          <div className="text-center py-16">
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🧠</div>
+            <h3 className="font-semibold text-[18px] text-[#0f172b] mb-2">No check-ins yet</h3>
+            <p className="text-[14px] text-[#62748e] mb-6">
+              Start tracking your mental health from the Mental Health Buddy page.
+            </p>
+            <Link href="/dashboard/mental-health">
+              <button
+                style={{
+                  background: '#101828',
+                  color: '#FFFFFF',
+                  borderRadius: '10px',
+                  padding: '10px 24px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Go to Mental Health
+              </button>
+            </Link>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {checkIns.map((checkIn) => {
+              const moodEmojis: Record<string, string> = {
+                'On Fire!': '🔥', Great: '', Good: '🙂', Okay: '😐',
+                Low: '😔', Anxious: '😰', Frustrated: '', Exhausted: '😴',
+              };
+              const energyColor =
+                checkIn.energy >= 7 ? '#4ade80' :
+                checkIn.energy >= 4 ? '#e8b84b' : '#c4637a';
+              return (
+                <div
+                  key={checkIn.id}
+                  style={{
+                    background: '#FFFFFF',
+                    borderRadius: '14px',
+                    padding: '20px',
+                    boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  {/* Header: Date + Mood */}
+                  <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+                    <div className="flex items-center gap-3">
+                      <span style={{ fontSize: '28px' }}>{moodEmojis[checkIn.mood] || '😐'}</span>
+                      <div>
+                        <span className="font-arimo font-bold" style={{ fontSize: '16px', color: '#101828' }}>
+                          {checkIn.mood}
+                        </span>
+                        <span className="font-arimo" style={{ fontSize: '13px', color: '#6A7282', marginLeft: '8px' }}>
+                          · Energy: {checkIn.energy}/10
+                        </span>
+                      </div>
+                    </div>
+                    <span className="font-arimo" style={{ fontSize: '13px', color: '#6A7282' }}>
+                      {checkIn.date ? new Date(checkIn.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Recent'}
+                    </span>
+                  </div>
+
+                  {/* Energy Bar */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${(checkIn.energy / 10) * 100}%`,
+                          background: energyColor,
+                          borderRadius: '3px',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Note */}
+                  {checkIn.note && (
+                    <p
+                      className="font-arimo"
+                      style={{
+                        fontSize: '14px',
+                        color: '#4A5565',
+                        fontStyle: 'italic',
+                        lineHeight: '1.6',
+                        padding: '12px',
+                        background: '#F9FAFB',
+                        borderRadius: '8px',
+                        borderLeft: '3px solid #e8b84b',
+                      }}
+                    >
+                      {checkIn.note}
+                    </p>
+                  )}
+
+                  {/* Footer */}
+                  <div style={{ borderBottom: '1px solid #E5E7EB', marginTop: '12px', marginBottom: '12px' }} />
+                  <div className="flex items-center justify-between">
+                    <span className="font-arimo" style={{ fontSize: '12px', color: '#6A7282' }}>
+                      Mental Health Check-in
+                    </span>
+                    <Link href="/dashboard/mental-health">
+                      <button
+                        className="font-arimo"
+                        style={{
+                          padding: '6px 16px',
+                          borderRadius: '26843500px',
+                          border: '0.8px solid #E5E7EB',
+                          background: '#F9FAFB',
+                          color: '#155DFC',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        View Details →
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
       ) : savedNotes.length === 0 ? (
         <div className="text-center py-16">
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>📌</div>

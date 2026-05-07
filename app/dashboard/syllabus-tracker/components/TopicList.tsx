@@ -133,37 +133,113 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
           const isSelected = selectedTopic?.subjectId === subject.id && selectedTopic?.topicIndex === ti;
           const topicStats = stats[ti];
           const fillColor = topicStats.pct === 100 ? '#16a34a' : topicStats.pct > 0 ? subject.color : '#d8e4f5';
+          
+          // Status icon based on completion
+          const statusIcon = topicStats.pct === 100 
+            ? '/topic-completed.png' 
+            : topicStats.pct > 0 
+              ? '/topic-in-progress.png' 
+              : null;
+          
+          // Topic emoji icons
+          const topicEmojis: Record<string, string> = {
+            'Ancient India': '🏺',
+            'Medieval India': '🏰',
+            'Modern India': '🇮🇳',
+            'Art & Culture': '🎨',
+            'Performing Arts': '🎭',
+            'Post Independence': '📜',
+            'Physical Geography': '🌍',
+            'Indian Geography': '🗺️',
+            'World Geography': '🌐',
+            'Mapping': '📍',
+            'Constitution': '📖',
+            'Parliament': '🏛️',
+            'Judiciary': '⚖️',
+            'Governance': '📋',
+            'Rights': '✊',
+            'Growth': '📈',
+            'Fiscal Policy': '💰',
+            'Banking': '🏦',
+            'External Sector': '🌐',
+            'Agriculture': '🌾',
+            'Ecology': '🌿',
+            'Biodiversity': '🦋',
+            'Climate Change': '🌡️',
+            'Conservation': '🌳',
+            'Biotech': '🧬',
+            'Space': '🚀',
+            'Defence Tech': '🛡️',
+            'IT & Computers': '💻',
+            'Neighbourhood': '🤝',
+            'Global Institutions': '🌐',
+            'Bilateral Relations': '🤝',
+            'Architecture': '🏛️',
+            'Literature': '📚',
+            'Paintings': '🎨',
+            'Schemes': '📋',
+            'Reports': '📊',
+            'Awards': '🏆',
+          };
+          
+          const topicEmoji = topicEmojis[topic.name] || '📄';
 
           return (
             <div
               key={ti}
               className={`
-                bg-white border-[1.5px] rounded-[10px] mb-[4px] overflow-hidden transition-all duration-200 shadow-sm
+                bg-white border-[1.5px] rounded-[12px] mb-[4px] overflow-hidden transition-all duration-200 shadow-sm
                 ${isOpen ? 'border-[#0f1f3d]' : isSelected ? 'border-[#c9921a]' : 'border-[#e0e8f4] hover:border-[rgba(15,31,61,.12)] hover:shadow-md'}
               `}
               style={isSelected ? { boxShadow: '0 0 0 2px rgba(201,146,26,.12)' } : {}}
             >
               <div
-                className="flex items-center gap-[8px] p-[9px_11px] cursor-pointer select-none"
+                className="flex items-center gap-[10px] p-[10px_12px] cursor-pointer select-none"
                 onClick={() => onToggleTopic(subject.id, ti)}
               >
-                <div 
-                  className="w-[6px] h-[6px] rounded-full flex-shrink-0" 
-                  style={{ background: subject.color }}
-                />
-                <div className={`flex-1 text-[12px] font-semibold leading-tight ${
-                  isSelected ? 'text-[#0f1f3d]' : 'text-[#0f1f3d]'
+                {/* Status Icon */}
+                <div className="w-[28px] h-[28px] flex-shrink-0 flex items-center justify-center">
+                  {statusIcon ? (
+                    <img 
+                      src={statusIcon} 
+                      alt={topicStats.pct === 100 ? 'Completed' : 'In Progress'} 
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-[20px] h-[20px] rounded-[6px] border-[1.5px] border-[#d8e4f5]" />
+                  )}
+                </div>
+                
+                {/* Topic Emoji */}
+                <div className="text-[18px] flex-shrink-0">
+                  {topicEmoji}
+                </div>
+                
+                {/* Topic Info */}
+                <div className="flex-1 min-w-0">
+                  <div className={`text-[13px] font-bold leading-tight ${
+                    isSelected ? 'text-[#0f1f3d]' : 'text-[#0f1f3d]'
+                  }`}>
+                    {topic.name}
+                  </div>
+                  <div className="text-[10px] text-[#8795ae] mt-[1px]">
+                    {topicStats.total} topics · {topicStats.done} done · {topicStats.pct}%
+                  </div>
+                </div>
+                
+                {/* Progress Count */}
+                <div className={`text-[12px] font-bold flex-shrink-0 ${
+                  topicStats.pct === 100 ? 'text-[#16a34a]' : topicStats.pct > 0 ? subject.color : '#8795ae'
                 }`}>
-                  {topic.name}
-                </div>
-                <div className="text-[10px] font-bold text-[#8795ae] flex-shrink-0">
                   {topicStats.done}/{topicStats.total}
+                  <div className="text-[9px] font-normal text-[#8795ae]">topics</div>
                 </div>
+                
                 <span 
-                  className="text-[10px] text-[#8795ae] transition-transform duration-200 inline-block flex-shrink-0"
+                  className="text-[12px] text-[#8795ae] transition-transform duration-200 inline-block flex-shrink-0"
                   style={{ transform: isOpen || isSelected ? 'rotate(180deg)' : 'rotate(0deg)' }}
                 >
-                  ▾
+                  ›
                 </span>
               </div>
               <div className="h-[2px] bg-[#f3f6fb]">

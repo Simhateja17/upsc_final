@@ -1,7 +1,8 @@
 ﻿'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { studyPlannerService } from '@/lib/services';
+import React, { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import { dashboardService, studyPlannerService } from '@/lib/services';
 
 function fmtTimer(secs: number): string {
   const s = Math.max(0, secs);
@@ -46,6 +47,31 @@ interface Task {
   isCompleted: boolean;
 }
 
+const SUBJECT_OPTIONS = [
+  'Polity',
+  'History',
+  'Geography',
+  'Economy',
+  'Environment & Ecology',
+  'Science & Technology',
+  'Current Affairs',
+  'Society',
+  'Governance',
+  'International Relations',
+  'Social Justice',
+  'Agriculture',
+  'Internal Security',
+  'Disaster Management',
+  'Ethics',
+  'GS1',
+  'GS2',
+  'GS3',
+  'GS4',
+  'Essay',
+  'Optional Paper 1',
+  'Optional Paper 2',
+];
+
 export default function StudyPlannerPage() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskSubject, setTaskSubject] = useState('');
@@ -80,14 +106,26 @@ export default function StudyPlannerPage() {
   const focusTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    studyPlannerService.getStreak()
-      .then(res => {
-        if (res.data) {
-          setStreakDays(res.data.currentStreak || 0);
-          setLongestStreak(res.data.longestStreak || 0);
-          if (res.data.weeklyStudied !== undefined) setWeeklyStudied(res.data.weeklyStudied);
-          if (res.data.weeklyTarget !== undefined) setWeeklyTarget(res.data.weeklyTarget);
-        }
+    Promise.allSettled([
+      dashboardService.getStreak(),
+      studyPlannerService.getStreak(),
+    ])
+      .then(([dashboardStreakRes, plannerStreakRes]) => {
+        const dashboardStreak = dashboardStreakRes.status === 'fulfilled' ? dashboardStreakRes.value?.data : null;
+        const plannerStreak = plannerStreakRes.status === 'fulfilled' ? plannerStreakRes.value?.data : null;
+
+        setStreakDays(Number(dashboardStreak?.currentStreak ?? plannerStreak?.currentStreak ?? 0));
+        setLongestStreak(Number(dashboardStreak?.longestStreak ?? plannerStreak?.longestStreak ?? 0));
+
+        const normalizedWeeklyStudied =
+          plannerStreak?.weeklyStudied ??
+          (Array.isArray(dashboardStreak?.weekDays) ? dashboardStreak.weekDays.filter(Boolean).length : undefined);
+        const normalizedWeeklyTarget =
+          plannerStreak?.weeklyTarget ??
+          (Array.isArray(dashboardStreak?.weekDays) ? dashboardStreak.weekDays.length : 7);
+
+        if (normalizedWeeklyStudied !== undefined) setWeeklyStudied(Number(normalizedWeeklyStudied));
+        if (normalizedWeeklyTarget !== undefined) setWeeklyTarget(Number(normalizedWeeklyTarget));
       })
       .catch(() => {});
     studyPlannerService.getSyllabusCoverage()
@@ -185,11 +223,13 @@ export default function StudyPlannerPage() {
   }, []);
 
   const startFocusSession = () => {
-    if (tasks.length === 0) return;
-    setFocusSessionTasks([...tasks]);
+    const pendingTasks = tasks.filter((task) => !task.isCompleted);
+    if (pendingTasks.length === 0) return;
+    setFocusSessionTasks(pendingTasks);
     setFocusTaskIdx(0);
     setFocusTaskSecs(0);
     setFocusTotalSecs(0);
+    setJustCompleted(false);
     setFocusPaused(false);
     setFocusDone(false);
     setFocusActive(true);
@@ -231,7 +271,13 @@ export default function StudyPlannerPage() {
 
   const closeFocusSession = () => {
     setFocusActive(false);
+    setFocusPaused(false);
     setFocusDone(false);
+    setJustCompleted(false);
+    setFocusTaskIdx(0);
+    setFocusTaskSecs(0);
+    setFocusTotalSecs(0);
+    setFocusSessionTasks([]);
   };
 
   const formatDate = (date: Date) => {
@@ -269,19 +315,10 @@ export default function StudyPlannerPage() {
     { id: 'other', label: 'Other', icon: '/others.png' },
   ];
 
-  const quickAddRows = [
-    ['Polity', 'History'],
-    ['Science & Technology', 'Geography'],
-    ['Economy', 'Environment & Ecology'],
-  ];
+  const quickAddSubjects = SUBJECT_OPTIONS;
 
   const quickAddSubjectMap: Record<string, string> = {
-    Polity: 'Polity',
-    History: 'History',
-    'Science & Technology': 'Science & Technology',
-    Economy: 'Economy',
-    Geography: 'Geography',
-    'Environment & Ecology': 'Environment & Ecology',
+    ...Object.fromEntries(SUBJECT_OPTIONS.map((subject) => [subject, subject])),
   };
 
   const quickAddTypeMap: Record<string, string> = {
@@ -340,7 +377,8 @@ export default function StudyPlannerPage() {
 
   const totalStudyLabel = totalStudyMinutes > 0
     ? `Total Study Time: ${totalStudyMinutes} minutes (${totalStudyHours}h ${totalStudyMins}m)`
-    : 'Total Study Time: â€”';
+    : 'Total Study Time: -';
+  const pendingTaskCount = tasks.filter((task) => !task.isCompleted).length;
 
   // Time distribution by study type
   const typeConfig = [
@@ -436,19 +474,13 @@ export default function StudyPlannerPage() {
                         border: '1px solid rgba(255,255,255,0.12)',
                       }}
                     >
-                      <span
-                        className="inline-flex items-center justify-center rounded-[4px]"
-                        style={{
-                          width: '14px',
-                          height: '14px',
-                          background: 'rgba(255,255,255,0.15)',
-                          color: '#E8B84B',
-                          fontSize: '10px',
-                          lineHeight: '10px',
-                        }}
-                      >
-                        ▦
-                      </span>
+                      <Image
+                        src="/study-planner-badge.png"
+                        alt="Study planner"
+                        width={22}
+                        height={22}
+                        style={{ width: '22px', height: '22px', objectFit: 'contain' }}
+                      />
                       <span
                         className="text-[11px] font-bold uppercase tracking-[0.5px]"
                         style={{ color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}
@@ -458,26 +490,17 @@ export default function StudyPlannerPage() {
                     </div>
                   </div>
 
-                  {/* Heading - Orange Pill */}
-                  <div
-                    className="inline-block rounded-[8px] px-[10px] py-[4px]"
+                  <h1
+                    className="font-bold leading-[1.14]"
                     style={{
-                      background: '#F5A623',
-                      boxShadow: '0 2px 8px rgba(245,166,35,0.22)',
+                      fontSize: 'clamp(20px, 2.2vw, 45px)',
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                      letterSpacing: '-0.4px',
+                      color: '#FFFFFF',
                     }}
                   >
-                    <h1
-                      className="font-bold leading-[1.14]"
-                      style={{
-                        fontSize: 'clamp(20px, 2.2vw, 45px)',
-                        fontFamily: 'Inter, system-ui, sans-serif',
-                        letterSpacing: '-0.4px',
-                        color: '#0F172A',
-                      }}
-                    >
-                      Where planning meets purpose
-                    </h1>
-                  </div>
+                    Where <span style={{ color: '#F5A623' }}>planning</span> meets <span style={{ color: '#F5A623' }}>purpose</span>
+                  </h1>
                 </div>
 
                 {/* Subtitle */}
@@ -680,12 +703,9 @@ export default function StudyPlannerPage() {
                         onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }}
                       >
                         <option value="" disabled>Select Subject</option>
-                        <option value="History">History</option>
-                        <option value="Geography">Geography</option>
-                        <option value="Polity">Polity</option>
-                        <option value="Economy">Economy</option>
-                        <option value="Environment & Ecology">Environment &amp; Ecology</option>
-                        <option value="Science & Technology">Science &amp; Technology</option>
+                        {SUBJECT_OPTIONS.map((subject) => (
+                          <option key={subject} value={subject}>{subject}</option>
+                        ))}
                       </select>
                       <svg className="absolute pointer-events-none" style={{ right: '14px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none">
                         <path d="M6 9l6 6 6-6" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -866,7 +886,7 @@ export default function StudyPlannerPage() {
                   {/* Start Focus Session */}
                   <button
                     onClick={startFocusSession}
-                    disabled={tasks.length === 0}
+                    disabled={pendingTaskCount === 0}
                     className="flex items-center justify-center gap-2 font-arimo font-bold text-white hover:opacity-90 transition-opacity w-full disabled:opacity-40"
                     style={{
                       height: '44px',
@@ -1012,7 +1032,9 @@ export default function StudyPlannerPage() {
                 
                 {/* Button */}
                 <button
-                    className="w-full bg-[#101828] text-white font-arimo font-bold rounded-[8px] hover:opacity-90 transition-opacity"
+                    onClick={startFocusSession}
+                    disabled={pendingTaskCount === 0}
+                    className="w-full bg-[#101828] text-white font-arimo font-bold rounded-[8px] hover:opacity-90 transition-opacity disabled:opacity-40"
                     style={{ height: '40px', fontSize: '14px' }}
                 >
                     Start Today&apos;s Session
@@ -1047,7 +1069,7 @@ export default function StudyPlannerPage() {
                 <div className="flex items-center" style={{ gap: '6px', marginBottom: '4px' }}>
                 <img src="/fire-icon.png" alt="Fire" style={{ width: '16px', height: '20px' }} />
                 <span className="font-arimo font-bold" style={{ fontSize: '16px', lineHeight: '24px', letterSpacing: '0px', color: '#00BC7D' }}>
-                  {weeklyStreakLabel || 'â€”'}
+                  {weeklyStreakLabel || '-'}
                 </span>
               </div>
               <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, letterSpacing: '0px', color: '#6A7282', marginBottom: '24px' }}>
@@ -1106,38 +1128,28 @@ export default function StudyPlannerPage() {
                 </span>
               </div>
 
-              {/* Quick Add Buttons â€” row-by-row layout */}
-              <div className="flex flex-col" style={{ gap: '8px' }}>
-                {quickAddRows.map((row, rowIdx) => (
-                  <div
-                    key={rowIdx}
-                    className="grid"
+              <div className="flex flex-wrap" style={{ gap: '8px' }}>
+                {quickAddSubjects.map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => handleQuickAdd(item)}
+                    className="font-arimo hover:bg-gray-100 transition-colors"
                     style={{
-                      gridTemplateColumns: row.length === 4 ? 'repeat(4, 1fr)' : row.length === 2 ? 'repeat(2, 1fr)' : '1fr',
-                      gap: '8px',
+                      minHeight: '40px',
+                      borderRadius: '10px',
+                      border: '0.8px solid #E5E7EB',
+                      background: '#F9FAFB',
+                      fontSize: '12px',
+                      lineHeight: '16px',
+                      fontWeight: 500,
+                      color: '#374151',
+                      padding: '8px 10px',
+                      flex: '1 1 120px',
+                      textAlign: 'center',
                     }}
                   >
-                    {row.map((item) => (
-                      <button
-                        key={item}
-                        onClick={() => handleQuickAdd(item)}
-                        className="flex items-center justify-center font-arimo hover:bg-gray-100 transition-colors"
-                        style={{
-                          height: '40px',
-                          borderRadius: '10px',
-                          border: '0.8px solid #E5E7EB',
-                          background: '#F9FAFB',
-                          fontSize: row.length === 4 ? '12px' : '14px',
-                          lineHeight: '20px',
-                          fontWeight: 400,
-                          color: '#374151',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
+                    {item}
+                  </button>
                 ))}
               </div>
             </div>
@@ -1282,7 +1294,7 @@ export default function StudyPlannerPage() {
                 </svg>
               </div>
               <h2 className="font-arimo font-bold text-[#101828] mb-2" style={{ fontSize: '26px' }}>Session Complete!</h2>
-              <p className="font-arimo text-[#6B7280] mb-6" style={{ fontSize: '15px' }}>Great work â€” keep the momentum going.</p>
+              <p className="font-arimo text-[#6B7280] mb-6" style={{ fontSize: '15px' }}>Great work. Keep the momentum going.</p>
               <div className="flex gap-8 mb-8">
                 <div className="text-center">
                   <p className="font-arimo font-bold text-[#17223E]" style={{ fontSize: '32px', lineHeight: '1' }}>{fmtTimer(focusTotalSecs)}</p>
@@ -1333,7 +1345,7 @@ export default function StudyPlannerPage() {
                       <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Task {focusTaskIdx + 1} of {focusSessionTasks.length}
                       </p>
-                      <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '20px', lineHeight: '1.3' }}>{task?.title ?? 'â€”'}</h3>
+                      <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '20px', lineHeight: '1.3' }}>{task?.title ?? '-'}</h3>
                       {task?.subject && (
                         <span className="inline-block font-arimo text-[#312C85] mt-1" style={{ fontSize: '12px', background: '#EEF2FF', borderRadius: '6px', padding: '2px 8px' }}>
                           {task.subject}
@@ -1352,7 +1364,7 @@ export default function StudyPlannerPage() {
                         </p>
                         {!isTimeUp && (
                           <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px', marginTop: '2px' }}>
-                            remaining Â· {fmtTimer(focusTotalSecs)} total
+                            remaining | {fmtTimer(focusTotalSecs)} total
                           </p>
                         )}
                       </div>
@@ -1419,7 +1431,7 @@ export default function StudyPlannerPage() {
                             {task.title}
                           </p>
                           {task.startTime && (
-                            <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px' }}>{task.startTime}{task.endTime ? ` â€“ ${task.endTime}` : ''}</p>
+                            <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px' }}>{task.startTime}{task.endTime ? ` - ${task.endTime}` : ''}</p>
                           )}
                         </div>
                         {(isActive || isJustMarked) && (
@@ -1434,7 +1446,7 @@ export default function StudyPlannerPage() {
                               transition: 'all 0.25s ease',
                             }}
                           >
-                            {isJustMarked ? 'Done âœ“' : 'Active'}
+                            {isJustMarked ? 'Done' : 'Active'}
                           </span>
                         )}
                       </div>
@@ -1472,7 +1484,7 @@ export default function StudyPlannerPage() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                       Task Marked Done!
                     </span>
-                  ) : 'âœ“ Mark Done & Next'}
+                  ) : 'Mark Done & Next'}
                 </button>
                 <button
                   onClick={() => setFocusDone(true)}

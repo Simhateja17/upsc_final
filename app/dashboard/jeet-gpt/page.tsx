@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth } from '@/contexts/AuthContext';
@@ -100,6 +101,33 @@ function formatTime(dateStr?: string | Date): string {
   const am = h < 12;
   h = h % 12 || 12;
   return h + ':' + m.toString().padStart(2, '0') + ' ' + (am ? 'am' : 'pm');
+}
+
+function UserAvatar({ initials, size = 32 }: { initials: string; size?: number }) {
+  return (
+    <div
+      className="rounded-full flex items-center justify-center font-inter font-bold text-white flex-shrink-0"
+      style={{
+        width: size,
+        height: size,
+        fontSize: Math.max(10, Math.round(size * 0.38)),
+        background: 'linear-gradient(135deg, #51A2FF 0%, #155DFC 100%)',
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
+
+function JeetAIAvatar({ size = 32 }: { size?: number }) {
+  return (
+    <div
+      className="rounded-[10px] flex items-center justify-center flex-shrink-0"
+      style={{ width: size, height: size, background: '#FFF7E8' }}
+    >
+      <Image src="/sidebar-jeet-gpt.png" alt="Jeet AI" width={Math.round(size * 0.7)} height={Math.round(size * 0.7)} className="object-contain" />
+    </div>
+  );
 }
 
 /* ── Markdown renderer using react-markdown ── */
@@ -386,25 +414,26 @@ export default function JeetGPTPage() {
               <div className="h-full rounded-full transition-all duration-300" style={{ width: ((queriesUsed / DAILY_QUERY_LIMIT) * 100) + '%', background: queriesExhausted ? '#FB2C36' : 'linear-gradient(90deg, #FDC700 0%, #FF9E1A 100%)' }} />
             </div>
           </div>
-          <div className="flex items-center gap-2 p-2 rounded-[10px] hover:bg-white/5 cursor-pointer">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center font-inter font-bold text-[10px] text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #51A2FF 0%, #155DFC 100%)' }}>{initials}</div>
+          <Link href="/dashboard/profile" className="flex items-center gap-2 p-2 rounded-[10px] hover:bg-white/5 transition-colors">
+            <UserAvatar initials={initials} size={24} />
             <div className="flex-1 min-w-0">
               <div className="font-inter font-semibold text-[12px] leading-4 text-white truncate">{displayName}</div>
               <div className="font-inter text-[10px] leading-[15px]" style={{ color: '#99A1AF' }}>{userPlan}</div>
             </div>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="flex-shrink-0 text-white/70"><path d="M4.5 3L7.5 6L4.5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </div>
+          </Link>
         </div>
       </aside>
 
       {/* ── Main Content ── */}
       <main className="flex-1 flex flex-col overflow-hidden" style={{ background: '#FFFFFF' }}>
         <header className="flex-shrink-0 flex flex-col gap-0.5 py-3 px-6" style={{ borderBottom: '0.8px solid #E5E7EB' }}>
-          <div className="flex items-baseline gap-2">
-            <span className="font-inter font-bold text-[18px] leading-7" style={{ color: '#101828' }}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-inter font-semibold text-[18px] leading-7" style={{ color: '#101828' }}>
               Jeet <span style={{ color: '#D08700' }}>AI</span>
             </span>
-            <span className="font-inter text-[14px] leading-5" style={{ color: '#6A7282' }}>Your UPSC Preparation Partner</span>
+            <span className="font-inter font-semibold text-[18px] leading-7" style={{ color: '#99A1AF' }}>-</span>
+            <span className="font-inter font-semibold text-[18px] leading-7" style={{ color: '#6A7282' }}>Your UPSC Preparation Partner</span>
           </div>
           <div className="font-inter text-[12px] leading-4" style={{ color: '#99A1AF' }}>Ask anything about UPSC preparation</div>
         </header>
@@ -470,15 +499,17 @@ export default function JeetGPTPage() {
               {messages.map((msg) =>
                 msg.role === 'user' ? (
                   <div key={msg.id} className="flex flex-col items-end gap-1">
-                    <div className="max-w-[672px] py-3 px-6 rounded-[24px] font-inter text-[14px] leading-5 text-white" style={{ background: '#0F1C2E' }}>{msg.content}</div>
+                    <div className="flex items-end gap-3 max-w-[720px]">
+                      <div className="max-w-[672px] py-3 px-6 rounded-[24px] font-inter text-[14px] leading-5 text-white" style={{ background: '#0F1C2E' }}>{msg.content}</div>
+                      <UserAvatar initials={initials} />
+                    </div>
                     <span className="font-inter text-[12px]" style={{ color: '#99A1AF' }}>{formatTime(msg.createdAt)}</span>
                   </div>
                 ) : (
                   <div key={msg.id} className="flex flex-col gap-1">
                     <div className="max-w-[840px] rounded-[16px] p-6 border" style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF', boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1)' }}>
                       <div className="flex gap-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/scholar.png" alt="Jeet AI" className="w-8 h-8 rounded-lg flex-shrink-0 object-contain" />
+                        <JeetAIAvatar />
                         <div className="flex-1 min-w-0"><MarkdownRenderer content={msg.content} /></div>
                       </div>
                       <div className="flex justify-end mt-3">
@@ -493,8 +524,7 @@ export default function JeetGPTPage() {
                 <div className="flex flex-col gap-1">
                   <div className="max-w-[840px] rounded-[16px] p-6 border" style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF' }}>
                     <div className="flex gap-3 items-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/scholar.png" alt="Jeet AI" className="w-8 h-8 rounded-lg flex-shrink-0 object-contain" />
+                      <JeetAIAvatar />
                       <div className="flex gap-1.5">
                         <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#D08700', animationDelay: '0ms' }} />
                         <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#D08700', animationDelay: '150ms' }} />

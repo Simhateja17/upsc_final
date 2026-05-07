@@ -113,7 +113,7 @@ export default function Footer() {
       <div className="mx-auto max-w-[1320px] px-5 sm:px-8">
         <div className="grid grid-cols-1 gap-8 border-b border-white/10 py-10 md:grid-cols-2 xl:grid-cols-[1.6fr_1fr_1fr_1fr_1.1fr] xl:gap-0">
           <div className="pr-0 xl:pr-8">
-            <Image src="/footer-logo.png" alt="RiseWithJeet" width={205} height={80} className="h-auto w-[205px]" />
+            <Image src="/footer-logo.png" alt="RiseWithJeet" width={320} height={128} className="h-auto w-[320px]" />
             <p className="mt-4 max-w-[320px] text-[37px] leading-[1.45] text-[rgba(255,255,255,0.56)]">{description}</p>
 
             <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[rgba(255,255,255,0.38)]">Download the app</p>

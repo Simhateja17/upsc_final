@@ -182,7 +182,7 @@ export default function TestAnalyticsPage() {
           {loading && !error && (
             <div
               className="absolute right-6 top-4 rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.08em]"
-              style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1D4ED8', fontFamily: 'Inter', fontWeight: 700 }}
+              style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1D4ED8', fontFamily: 'Inter, sans-serif', fontWeight: 700 }}
             >
               Syncing
             </div>
@@ -190,13 +190,21 @@ export default function TestAnalyticsPage() {
           {error && (
             <div
               className="mb-6 rounded-[12px] px-5 py-4 text-[13px]"
-              style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', fontFamily: 'Inter' }}
+              style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', fontFamily: 'Inter, sans-serif' }}
             >
               {error}
             </div>
           )}
 
           <DashboardPageHero
+            badgeIcon={
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M18 17V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M13 17V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M8 17v-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            }
             badgeText="Analytics - Performance Dashboard"
             title={<>{user?.firstName ?? 'Your'}&apos;s <span style={{ fontStyle: 'italic', color: '#e8b84b' }}>Progress.</span></>}
             subtitle="Your complete UPSC test analytics, score trends, subject mastery, rank history, time management and AI-powered next steps."
@@ -223,13 +231,13 @@ export default function TestAnalyticsPage() {
                   >
                     {card.icon}
                   </div>
-                  <div className="mb-2 text-[32px] leading-[38px] font-bold" style={{ fontFamily: 'Inter', color: '#101828' }}>
+                  <div className="mb-2 text-[32px] leading-[38px] font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#101828' }}>
                     {card.value}
                   </div>
-                  <div className="uppercase text-[11px] tracking-[0.6px] mb-1" style={{ fontFamily: 'Inter', fontWeight: 600, color: '#6A7282' }}>
+                  <div className="uppercase text-[11px] tracking-[0.6px] mb-1" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#6A7282' }}>
                     {card.title}
                   </div>
-                  <p className="text-[11px]" style={{ fontFamily: 'Inter', fontWeight: 400, color: '#6A7282' }}>
+                  <p className="text-[11px]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, color: '#6A7282' }}>
                     {card.sub}
                   </p>
                 </div>
@@ -243,7 +251,7 @@ export default function TestAnalyticsPage() {
             {/* MCQ Performance Trend */}
             <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
               <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
+                <h2 className="text-[18px] leading-[26px] font-bold mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#1A1F36' }}>
                   <span aria-hidden>📊</span> MCQ Performance Trend
                 </h2>
 
@@ -255,10 +263,10 @@ export default function TestAnalyticsPage() {
                     { label: 'Net Accuracy', value: `${avgAccuracy}%`, color: '#FF6900' },
                   ].map(item => (
                     <div key={item.label}>
-                      <div className="text-[28px] leading-[34px] font-bold" style={{ fontFamily: 'Inter', color: item.color }}>
+                      <div className="text-[28px] leading-[34px] font-bold" style={{ fontFamily: 'Inter, sans-serif', color: item.color }}>
                         {typeof item.value === 'number' ? item.value.toLocaleString('en-IN') : item.value}
                       </div>
-                      <div className="uppercase text-[11px] tracking-[0.6px]" style={{ fontFamily: 'Inter', fontWeight: 600, color: '#99A1AF' }}>
+                      <div className="uppercase text-[11px] tracking-[0.6px]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#99A1AF' }}>
                         {item.label}
                       </div>
                     </div>
@@ -267,7 +275,7 @@ export default function TestAnalyticsPage() {
 
                 {/* Weekly line chart */}
                 <div className="rounded-[14px] overflow-hidden bg-[#F8F5FF] px-4 pt-4 pb-2 mb-5" style={{ border: '1px solid #E9D5FF' }}>
-                  <div className="text-[11px] uppercase tracking-[0.6px] mb-2" style={{ color: '#6A7282', fontFamily: 'Inter' }}>
+                  <div className="text-[11px] uppercase tracking-[0.6px] mb-2" style={{ color: '#6A7282', fontFamily: 'Inter, sans-serif' }}>
                     Weekly Accuracy Trend
                   </div>
                   <LineChart data={weeklyChartData} color="#A855F7" height={140} />
@@ -275,7 +283,7 @@ export default function TestAnalyticsPage() {
 
                 {/* Daily bar chart */}
                 <div>
-                  <div className="text-[11px] uppercase tracking-[0.6px] mb-3" style={{ color: '#6A7282', fontFamily: 'Inter' }}>
+                  <div className="text-[11px] uppercase tracking-[0.6px] mb-3" style={{ color: '#6A7282', fontFamily: 'Inter, sans-serif' }}>
                     Questions attempted this week
                   </div>
                   <div className="flex items-end gap-2 h-[92px] rounded-[12px] bg-[#F9FAFB] px-4 pt-4 pb-2">
@@ -283,7 +291,7 @@ export default function TestAnalyticsPage() {
                       const pct = (d.questionsAttempted / maxQuestions) * 100;
                       return (
                         <div key={d.day} className="flex flex-col items-center flex-1 gap-1">
-                          <div className="text-[10px] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>
+                          <div className="text-[10px] text-[#6A7282]" style={{ fontFamily: 'Inter, sans-serif' }}>
                             {d.questionsAttempted || ''}
                           </div>
                           <div
@@ -294,7 +302,7 @@ export default function TestAnalyticsPage() {
                               minHeight: pct > 0 ? 4 : 2,
                             }}
                           />
-                          <div className="text-[10px] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>{d.day}</div>
+                          <div className="text-[10px] text-[#6A7282]" style={{ fontFamily: 'Inter, sans-serif' }}>{d.day}</div>
                         </div>
                       );
                     })}
@@ -306,13 +314,13 @@ export default function TestAnalyticsPage() {
             {/* Subject Accuracy */}
             <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
               <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
+                <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#1A1F36' }}>
                   <span aria-hidden>🎯</span> Subject Accuracy
                 </h2>
-                <div className="mb-6 text-[12px] text-[#99A1AF]" style={{ fontFamily: 'Inter' }}>Across all attempted MCQs</div>
+                <div className="mb-6 text-[12px] text-[#99A1AF]" style={{ fontFamily: 'Inter, sans-serif' }}>Across all attempted MCQs</div>
 
                 {subjectAccuracy.length === 0 ? (
-                  <div className="flex items-center justify-center h-[200px] text-[13px] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>
+                  <div className="flex items-center justify-center h-[200px] text-[13px] text-[#6A7282]" style={{ fontFamily: 'Inter, sans-serif' }}>
                     No mock test data yet
                   </div>
                 ) : (
@@ -322,9 +330,9 @@ export default function TestAnalyticsPage() {
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: SUBJECT_COLORS[i % SUBJECT_COLORS.length] }} />
-                            <span className="text-[13px] font-medium" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>{s.subject}</span>
+                            <span className="text-[13px] font-medium" style={{ fontFamily: 'Inter, sans-serif', color: '#1A1F36' }}>{s.subject}</span>
                           </div>
-                          <div className="flex items-center gap-3 text-[12px]" style={{ fontFamily: 'Inter' }}>
+                          <div className="flex items-center gap-3 text-[12px]" style={{ fontFamily: 'Inter, sans-serif' }}>
                             <span style={{ color: '#22C55E' }}>{s.correct}✓</span>
                             <span style={{ color: '#EF4444' }}>{s.wrong}✗</span>
                             <span className="font-semibold" style={{ color: SUBJECT_COLORS[i % SUBJECT_COLORS.length] }}>{s.accuracy}%</span>
@@ -350,10 +358,10 @@ export default function TestAnalyticsPage() {
             {/* Mains Answer Writing Trend */}
             <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
               <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
+                <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#1A1F36' }}>
                   <span aria-hidden>📝</span> Mains Answer Writing Trend
                 </h2>
-                <div className="mb-5 text-[12px] text-[#99A1AF]" style={{ fontFamily: 'Inter' }}>Answer scoring performance</div>
+                <div className="mb-5 text-[12px] text-[#99A1AF]" style={{ fontFamily: 'Inter, sans-serif' }}>Answer scoring performance</div>
 
                 <div className="flex flex-wrap gap-5 mb-5">
                   {[
@@ -369,10 +377,10 @@ export default function TestAnalyticsPage() {
                     },
                   ].map(item => (
                     <div key={item.label}>
-                      <div className="text-[28px] leading-[34px] font-bold" style={{ fontFamily: 'Inter', color: item.color }}>
+                      <div className="text-[28px] leading-[34px] font-bold" style={{ fontFamily: 'Inter, sans-serif', color: item.color }}>
                         {item.value}
                       </div>
-                      <div className="uppercase text-[11px] tracking-[0.6px]" style={{ fontFamily: 'Inter', fontWeight: 600, color: '#99A1AF' }}>
+                      <div className="uppercase text-[11px] tracking-[0.6px]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#99A1AF' }}>
                         {item.label}
                       </div>
                     </div>
@@ -380,7 +388,7 @@ export default function TestAnalyticsPage() {
                 </div>
 
                 <div className="rounded-[14px] overflow-hidden bg-[#FFF7ED] px-4 pt-4 pb-2" style={{ border: '1px solid #FED7AA' }}>
-                  <div className="text-[11px] uppercase tracking-[0.6px] mb-2" style={{ color: '#6A7282', fontFamily: 'Inter' }}>
+                  <div className="text-[11px] uppercase tracking-[0.6px] mb-2" style={{ color: '#6A7282', fontFamily: 'Inter, sans-serif' }}>
                     Score progression
                   </div>
                   <LineChart data={mainsChartData} color="#FB923C" height={140} />
@@ -391,10 +399,10 @@ export default function TestAnalyticsPage() {
             {/* Time Spent per Question — Daily */}
             <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
               <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
+                <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#1A1F36' }}>
                   <span aria-hidden>⏱️</span> Time Spent per Question - Daily
                 </h2>
-                <div className="mb-5 text-[12px] text-[#99A1AF]" style={{ fontFamily: 'Inter' }}>Average seconds per question</div>
+                <div className="mb-5 text-[12px] text-[#99A1AF]" style={{ fontFamily: 'Inter, sans-serif' }}>Average seconds per question</div>
 
                 <div className="grid grid-cols-7 gap-2 mb-6">
                   {timePerQuestion.map((d) => (
@@ -403,11 +411,11 @@ export default function TestAnalyticsPage() {
                         className="w-full rounded-[8px] flex items-center justify-center py-3 text-center"
                         style={{ background: d.avgSeconds > 0 ? timeColor(d.avgSeconds) + '22' : '#F3F4F6' }}
                       >
-                        <span className="text-[11px] font-semibold leading-tight" style={{ fontFamily: 'Inter', color: timeColor(d.avgSeconds) }}>
+                        <span className="text-[11px] font-semibold leading-tight" style={{ fontFamily: 'Inter, sans-serif', color: timeColor(d.avgSeconds) }}>
                           {d.avgSeconds > 0 ? formatSeconds(d.avgSeconds) : '—'}
                         </span>
                       </div>
-                      <span className="text-[11px] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>{d.day}</span>
+                      <span className="text-[11px] text-[#6A7282]" style={{ fontFamily: 'Inter, sans-serif' }}>{d.day}</span>
                     </div>
                   ))}
                 </div>
@@ -417,7 +425,7 @@ export default function TestAnalyticsPage() {
                   {[['#22C55E', '< 90s'], ['#F59E0B', '90–120s'], ['#EF4444', '> 120s']].map(([c, l]) => (
                     <div key={l} className="flex items-center gap-1.5">
                       <div className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
-                      <span className="text-[11px] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>{l}</span>
+                      <span className="text-[11px] text-[#6A7282]" style={{ fontFamily: 'Inter, sans-serif' }}>{l}</span>
                     </div>
                   ))}
                 </div>
@@ -426,20 +434,20 @@ export default function TestAnalyticsPage() {
                 {subjectAccuracy.length >= 2 && (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-[10px] px-4 py-3" style={{ background: '#FEF2F2' }}>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: '#EF4444', fontFamily: 'Inter' }}>Lowest Accuracy</div>
-                      <div className="text-[13px] font-semibold" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: '#EF4444', fontFamily: 'Inter, sans-serif' }}>Lowest Accuracy</div>
+                      <div className="text-[13px] font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#1A1F36' }}>
                         {subjectAccuracy.at(-1)?.subject ?? '—'}
                       </div>
-                      <div className="text-[12px]" style={{ color: '#EF4444', fontFamily: 'Inter' }}>
+                      <div className="text-[12px]" style={{ color: '#EF4444', fontFamily: 'Inter, sans-serif' }}>
                         {subjectAccuracy.at(-1)?.accuracy ?? 0}%
                       </div>
                     </div>
                     <div className="rounded-[10px] px-4 py-3" style={{ background: '#F0FDF4' }}>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: '#22C55E', fontFamily: 'Inter' }}>Highest Accuracy</div>
-                      <div className="text-[13px] font-semibold" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: '#22C55E', fontFamily: 'Inter, sans-serif' }}>Highest Accuracy</div>
+                      <div className="text-[13px] font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#1A1F36' }}>
                         {subjectAccuracy[0]?.subject ?? '—'}
                       </div>
-                      <div className="text-[12px]" style={{ color: '#22C55E', fontFamily: 'Inter' }}>
+                      <div className="text-[12px]" style={{ color: '#22C55E', fontFamily: 'Inter, sans-serif' }}>
                         {subjectAccuracy[0]?.accuracy ?? 0}%
                       </div>
                     </div>
@@ -452,14 +460,14 @@ export default function TestAnalyticsPage() {
           {/* ── Complete Test History ── */}
           <div className="rounded-[14px] bg-white mb-8" style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}>
             <div className="px-8 pt-8 pb-2">
-              <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>
+              <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ fontFamily: 'Inter, sans-serif', color: '#1A1F36' }}>
                 Complete Test History
               </h2>
             </div>
 
             {testHistory.length === 0 ? (
               <div className="px-8 pb-10 text-center">
-                <p className="text-[14px] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>No tests attempted yet</p>
+                <p className="text-[14px] text-[#6A7282]" style={{ fontFamily: 'Inter, sans-serif' }}>No tests attempted yet</p>
               </div>
             ) : (
               <>
@@ -471,7 +479,7 @@ export default function TestAnalyticsPage() {
                           <th
                             key={h}
                             className="px-6 py-3 text-left text-[11px] uppercase tracking-[0.6px]"
-                            style={{ fontFamily: 'Inter', fontWeight: 600, color: '#99A1AF' }}
+                            style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#99A1AF' }}
                           >
                             {h}
                           </th>
@@ -485,32 +493,32 @@ export default function TestAnalyticsPage() {
                           style={{ borderBottom: i < testHistory.length - 1 ? '1px solid #F9FAFB' : undefined }}
                           className="hover:bg-[#FAFAFA] transition-colors"
                         >
-                          <td className="px-6 py-4 text-[13px]" style={{ fontFamily: 'Inter', color: '#6A7282' }}>{i + 1}</td>
+                          <td className="px-6 py-4 text-[13px]" style={{ fontFamily: 'Inter, sans-serif', color: '#6A7282' }}>{i + 1}</td>
                           <td className="px-6 py-4">
-                            <div className="text-[13px] font-semibold" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>{row.name}</div>
+                            <div className="text-[13px] font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#1A1F36' }}>{row.name}</div>
                           </td>
                           <td className="px-6 py-4">
                             <span
                               className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-                              style={{ background: '#EFF6FF', color: '#155DFC', fontFamily: 'Inter' }}
+                              style={{ background: '#EFF6FF', color: '#155DFC', fontFamily: 'Inter, sans-serif' }}
                             >
                               {row.series}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-[13px]" style={{ fontFamily: 'Inter', color: '#6A7282' }}>{row.date}</td>
-                          <td className="px-6 py-4 text-[13px] font-semibold" style={{ fontFamily: 'Inter', color: '#1A1F36' }}>{row.score}</td>
+                          <td className="px-6 py-4 text-[13px]" style={{ fontFamily: 'Inter, sans-serif', color: '#6A7282' }}>{row.date}</td>
+                          <td className="px-6 py-4 text-[13px] font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#1A1F36' }}>{row.score}</td>
                           <td className="px-6 py-4">
-                            <span className="text-[13px] font-semibold" style={{ fontFamily: 'Inter', color: row.accuracy >= 70 ? '#22C55E' : row.accuracy >= 50 ? '#F59E0B' : '#EF4444' }}>
+                            <span className="text-[13px] font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: row.accuracy >= 70 ? '#22C55E' : row.accuracy >= 50 ? '#F59E0B' : '#EF4444' }}>
                               {row.accuracy}%
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-[13px]" style={{ fontFamily: 'Inter', color: '#6A7282' }}>{row.rank ?? 'N/A'}</td>
+                          <td className="px-6 py-4 text-[13px]" style={{ fontFamily: 'Inter, sans-serif', color: '#6A7282' }}>{row.rank ?? 'N/A'}</td>
                           <td className="px-6 py-4">
                             <button
                               type="button"
                               onClick={() => setSelectedReport(row)}
                               className="text-[13px] font-medium hover:underline"
-                              style={{ fontFamily: 'Inter', color: '#155DFC' }}
+                              style={{ fontFamily: 'Inter, sans-serif', color: '#155DFC' }}
                             >
                               View report →
                             </button>
@@ -521,7 +529,7 @@ export default function TestAnalyticsPage() {
                   </table>
                 </div>
                 <div className="px-8 py-4 border-t border-[#F3F4F6]">
-                  <p className="text-[12px]" style={{ fontFamily: 'Inter', color: '#99A1AF' }}>
+                  <p className="text-[12px]" style={{ fontFamily: 'Inter, sans-serif', color: '#99A1AF' }}>
                     Showing {testHistory.length} of {totalTests} tests
                   </p>
                 </div>
@@ -548,10 +556,10 @@ export default function TestAnalyticsPage() {
                 <div className="mb-2 inline-flex rounded-full bg-[#ECFDF5] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#047857]">
                   Detailed Test Report
                 </div>
-                <h2 className="m-0 text-[26px] font-bold text-[#101828]" style={{ fontFamily: 'Inter' }}>
+                <h2 className="m-0 text-[26px] font-bold text-[#101828]" style={{ fontFamily: 'Inter, sans-serif' }}>
                   {selectedReport.name || 'Test Report'}
                 </h2>
-                <p className="mt-1 text-[13px] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>
+                <p className="mt-1 text-[13px] text-[#6A7282]" style={{ fontFamily: 'Inter, sans-serif' }}>
                   {selectedReport.series || 'Practice'} · {selectedReport.date || 'Recent attempt'}
                 </p>
               </div>
@@ -573,10 +581,10 @@ export default function TestAnalyticsPage() {
                 { label: 'Type', value: selectedReport.type ? String(selectedReport.type).replace(/-/g, ' ') : 'Practice', color: '#8B5CF6' },
               ].map((item) => (
                 <div key={item.label} className="rounded-[16px] border border-[#E5E7EB] bg-[#F9FAFB] p-4">
-                  <div className="text-[24px] font-bold capitalize" style={{ fontFamily: 'Inter', color: item.color }}>
+                  <div className="text-[24px] font-bold capitalize" style={{ fontFamily: 'Inter, sans-serif', color: item.color }}>
                     {item.value}
                   </div>
-                  <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#6A7282]" style={{ fontFamily: 'Inter' }}>
+                  <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#6A7282]" style={{ fontFamily: 'Inter, sans-serif' }}>
                     {item.label}
                   </div>
                 </div>
@@ -585,15 +593,15 @@ export default function TestAnalyticsPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-[16px] border border-[#E5E7EB] p-5">
-                <h3 className="mb-3 text-[15px] font-bold text-[#101828]" style={{ fontFamily: 'Inter' }}>Performance Summary</h3>
-                <p className="text-[13px] leading-[22px] text-[#4A5565]" style={{ fontFamily: 'Inter' }}>
+                <h3 className="mb-3 text-[15px] font-bold text-[#101828]" style={{ fontFamily: 'Inter, sans-serif' }}>Performance Summary</h3>
+                <p className="text-[13px] leading-[22px] text-[#4A5565]" style={{ fontFamily: 'Inter, sans-serif' }}>
                   This report summarizes the selected attempt without redirecting away from analytics. Use it to review score,
                   accuracy, rank and test context before opening the original module for a deeper question-by-question review.
                 </p>
               </div>
               <div className="rounded-[16px] border border-[#E5E7EB] p-5">
-                <h3 className="mb-3 text-[15px] font-bold text-[#101828]" style={{ fontFamily: 'Inter' }}>Next Actions</h3>
-                <ul className="m-0 list-none space-y-2 p-0 text-[13px] text-[#4A5565]" style={{ fontFamily: 'Inter' }}>
+                <h3 className="mb-3 text-[15px] font-bold text-[#101828]" style={{ fontFamily: 'Inter, sans-serif' }}>Next Actions</h3>
+                <ul className="m-0 list-none space-y-2 p-0 text-[13px] text-[#4A5565]" style={{ fontFamily: 'Inter, sans-serif' }}>
                   <li>Review weak subjects from the subject accuracy panel.</li>
                   <li>Retake a similar mock if accuracy is below 60%.</li>
                   <li>Add recurring weak areas to Smart Revision Tools.</li>

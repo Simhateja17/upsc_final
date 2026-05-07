@@ -87,16 +87,98 @@ const SUBJECT_CARD_THEMES: Record<string, SubjectCardTheme> = {
 };
 
 const SUBJECT_SORT_ORDER = [
+  'indian polity',
   'polity',
+  'indian economy',
   'history',
   'geography',
   'economy',
   'environment',
+  'ethics gs4',
+  'essay writing',
+  "int'l relations",
+  'science & tech',
   'science',
   'art & culture',
   'current affairs',
   'international relations',
+  'internal security',
   'security',
+];
+
+const FALLBACK_SUBJECTS: SubjectItem[] = [
+  {
+    name: 'Indian Polity',
+    videoCount: 41,
+    totalDuration: '28h',
+    viewCount: 32000,
+    description: 'Complete Indian Polity covering Constitution, Parliament, Judiciary, Centre-State relations, prelims and mains.',
+    isNew: true,
+  },
+  {
+    name: 'Indian Economy',
+    videoCount: 29,
+    totalDuration: '18h',
+    viewCount: 19000,
+    description: 'Budget, banking, inflation, growth and core macroeconomics explained for UPSC clarity.',
+  },
+  {
+    name: 'Geography',
+    videoCount: 35,
+    totalDuration: '22h',
+    viewCount: 21000,
+    description: 'Physical, Indian and world geography with conceptual maps and exam-focused coverage.',
+  },
+  {
+    name: 'History',
+    videoCount: 38,
+    totalDuration: '24h',
+    viewCount: 28000,
+    description: 'Ancient, medieval and modern history explained with chronology and PYQ linkage.',
+  },
+  {
+    name: 'Environment',
+    videoCount: 31,
+    totalDuration: '20h',
+    viewCount: 24000,
+    description: 'Ecology, biodiversity, climate and environment conventions simplified for quick retention.',
+  },
+  {
+    name: 'Ethics GS4',
+    videoCount: 18,
+    totalDuration: '11h',
+    viewCount: 9000,
+    description: 'Ethics, integrity and aptitude through examples, thinkers and answer-ready frameworks.',
+  },
+  {
+    name: 'Essay Writing',
+    videoCount: 16,
+    totalDuration: '10h',
+    viewCount: 13000,
+    description: 'Essay structure, idea generation and examples that improve flow and scoring.',
+  },
+  {
+    name: 'Internal Security',
+    videoCount: 14,
+    totalDuration: '9h',
+    viewCount: 7600,
+    description: 'Internal security basics, organisations, challenges and current linkages in simple language.',
+    isNew: true,
+  },
+  {
+    name: "Int'l Relations",
+    videoCount: 22,
+    totalDuration: '14h',
+    viewCount: 11000,
+    description: 'India and the world, diplomacy, neighbourhood, groupings and contemporary developments.',
+  },
+  {
+    name: 'Science & Tech',
+    videoCount: 21,
+    totalDuration: '13h',
+    viewCount: 12000,
+    description: 'Science and technology concepts, applications and current affairs translated for UPSC prep.',
+  },
 ];
 
 /* ─── Helpers ─── */
@@ -106,16 +188,17 @@ function normalizeSubjectKey(name: string) {
 
 function subjectEmoji(name: string) {
   const n = normalizeSubjectKey(name);
-  if (n.includes('polity')) return '🏛️';
-  if (n.includes('history')) return '📜';
+  if (n.includes('polity')) return '⚖️';
+  if (n.includes('history')) return '🏛️';
   if (n.includes('geography')) return '🌍';
-  if (n.includes('economy')) return '📊';
+  if (n.includes('economy')) return '💰';
   if (n.includes('environment')) return '🌿';
   if (n.includes('science')) return '🔬';
   if (n.includes('art')) return '🎨';
   if (n.includes('current')) return '📰';
   if (n.includes('international')) return '🌐';
   if (n.includes('security')) return '🛡️';
+  if (n.includes('csat')) return '📊';
   return '📹';
 }
 
@@ -152,7 +235,7 @@ function formatCardViews(n: number | undefined) {
 }
 
 function getVideoViewCount(v: VideoItem) {
-  return v.viewCount ?? 0;
+  return v.viewCount ?? getFallbackViewCount(`${v.id}-${v.title}`);
 }
 
 function getYouTubeEmbedUrl(url: string) {
@@ -185,6 +268,7 @@ export default function VideoLecturesPage() {
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showMentorModal, setShowMentorModal] = useState(false);
+  const [modalVideo, setModalVideo] = useState<VideoItem | null>(null);
   const [mentorQuestion, setMentorQuestion] = useState('');
   const [mentorSubmitting, setMentorSubmitting] = useState(false);
   const [mentorSuccess, setMentorSuccess] = useState(false);
@@ -226,6 +310,15 @@ export default function VideoLecturesPage() {
     setSelectedSubject((prev) => (prev === name ? null : name));
   };
 
+  const openVideoActionModal = (type: 'pdf' | 'mentor', video: VideoItem) => {
+    setModalVideo(video);
+    if (type === 'pdf') {
+      setShowLoginModal(true);
+      return;
+    }
+    setShowMentorModal(true);
+  };
+
   const handleQuizSubmit = async () => {
     if (!watchVideo) return;
     setQuizLoading(true);
@@ -256,7 +349,37 @@ export default function VideoLecturesPage() {
     return safeA - safeB;
   });
 
-  const featuredSubjectName = apiSubjects[0]?.name ?? 'Polity';
+  const inferredSubjects = apiVideos.reduce<SubjectItem[]>((acc, video) => {
+    const name = video.subject?.trim();
+    if (!name) return acc;
+    const existing = acc.find((item) => normalizeSubjectKey(item.name) === normalizeSubjectKey(name));
+    const fallbackViews = getFallbackViewCount(`${video.id}-${name}`);
+    if (existing) {
+      existing.videoCount = (existing.videoCount ?? 0) + 1;
+      existing.viewCount = (existing.viewCount ?? 0) + (video.viewCount ?? fallbackViews);
+      return acc;
+    }
+    acc.push({
+      name,
+      videoCount: 1,
+      viewCount: video.viewCount ?? fallbackViews,
+    });
+    return acc;
+  }, []);
+
+  const visibleSubjects = (orderedSubjects.length > 0 ? orderedSubjects : inferredSubjects.length > 0 ? inferredSubjects : FALLBACK_SUBJECTS).sort((a, b) => {
+    const aIndex = SUBJECT_SORT_ORDER.indexOf(normalizeSubjectKey(a.name));
+    const bIndex = SUBJECT_SORT_ORDER.indexOf(normalizeSubjectKey(b.name));
+    const safeA = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;
+    const safeB = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
+    return safeA - safeB;
+  });
+
+  const matchedSelectedSubject = visibleSubjects.find((subject) => subject.name === selectedSubject) ?? null;
+  const fallbackSubjectVideos = selectedSubject
+    ? apiVideos.filter((video) => normalizeSubjectKey(video.subject || '') === normalizeSubjectKey(selectedSubject))
+    : [];
+  const visibleSubjectVideos = subjectVideos.length > 0 ? subjectVideos : fallbackSubjectVideos;
 
   return (
     <div className="font-arimo w-full min-h-screen" style={{ background: '#F9FAFB' }}>
@@ -271,25 +394,28 @@ export default function VideoLecturesPage() {
             with Expert Video Lectures
           </>
         }
-        subtitle="Every editorial, every perspective mapped to what UPSC asks."
+        subtitle="Simplified video lectures that make even the toughest topics easy to understand and impossible to forget"
         stats={[
           { value: `${apiStats?.totalLectures ?? '100'}+`, label: 'Video Lectures', color: '#FDC700' },
           { value: `${apiStats?.totalSubjects ?? '12'}+`, label: 'Core Subjects', color: '#F87171' },
           { value: `${apiStats?.totalHours ?? '15'}K+`, label: 'Subscribers', color: '#4ADE80' },
-          { value: '\u221E', label: 'Always Free', color: '#FFFFFF' },
+          { value: '4.9', label: 'Ratings', color: '#FFFFFF' },
         ]}
+        heroHeight="312px"
+        titleMarginBottom="10px"
+        contentShiftY={-14}
       />
 
       {/* Browse by Subject */}
       <div
         className="w-full mx-auto"
         style={{
-          maxWidth: 'min(94vw, 1400px)',
-          padding: 'clamp(32px, 4vw, 56px) clamp(16px, 2vw, 30px)',
+          maxWidth: 'min(96vw, 1480px)',
+          padding: 'clamp(18px, 2.2vw, 28px) clamp(14px, 1.6vw, 24px) clamp(36px, 4vw, 56px)',
         }}
       >
         {/* Super heading + Heading */}
-        <div className="text-center" style={{ marginBottom: '34px' }}>
+        <div className="text-center" style={{ marginBottom: '24px' }}>
           <div
             className="font-arimo font-bold"
             style={{
@@ -307,7 +433,7 @@ export default function VideoLecturesPage() {
             style={{
               fontSize: 'clamp(28px, 3vw, 36px)',
               color: '#17223E',
-              lineHeight: '40px',
+              lineHeight: 1.12,
             }}
           >
             Pick Your Subject,{' '}
@@ -323,12 +449,6 @@ export default function VideoLecturesPage() {
               Loading subjects...
             </p>
           </div>
-        ) : apiSubjects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
-            <p className="font-arimo font-medium" style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>
-              No subjects available
-            </p>
-          </div>
         ) : (
           <div
             style={{
@@ -340,7 +460,7 @@ export default function VideoLecturesPage() {
               marginBottom: selectedSubject ? 'clamp(24px, 2.5vw, 36px)' : '0',
             }}
           >
-            {orderedSubjects.map((subject) => {
+            {visibleSubjects.map((subject) => {
               const theme = getSubjectCardTheme(subject.name);
               const isSelected = selectedSubject === subject.name;
               const showNew = theme.showNew || subject.isNew;
@@ -415,44 +535,64 @@ export default function VideoLecturesPage() {
         {/* Inline videos for selected subject */}
         {selectedSubject && (
           <div style={{ marginTop: 'clamp(24px, 2.5vw, 36px)' }}>
-            <div style={{ marginBottom: 'clamp(20px, 2vw, 28px)' }}>
-              <div className="flex items-center" style={{ gap: '12px', marginBottom: '4px' }}>
+            <div
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #E9EDF5',
+                borderRadius: '24px',
+                padding: 'clamp(18px, 2.1vw, 28px)',
+                marginBottom: 'clamp(20px, 2vw, 28px)',
+                boxShadow: '0 18px 45px rgba(15, 23, 42, 0.06)',
+              }}
+            >
+              <div className="flex items-start justify-between" style={{ gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                <div className="flex items-center" style={{ gap: '12px', marginBottom: '4px' }}>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      background: 'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)',
+                      borderRadius: '14px',
+                      width: '48px',
+                      height: '48px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span style={{ fontSize: '24px', lineHeight: '32px' }}>{subjectEmoji(selectedSubject)}</span>
+                  </div>
+                  <div>
+                    <h2
+                      className="font-arimo font-bold"
+                      style={{ fontSize: '24px', color: '#101828', lineHeight: '32px' }}
+                    >
+                      {selectedSubject} Simplified
+                    </h2>
+                    <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', color: '#4A5565' }}>
+                      {'\u{1F4FA}'} {visibleSubjectVideos.length} Video{visibleSubjectVideos.length !== 1 ? 's' : ''}
+                      {matchedSelectedSubject?.totalDuration ? ` · ${matchedSelectedSubject.totalDuration}` : ''}
+                    </p>
+                  </div>
+                </div>
                 <div
-                  className="flex items-center justify-center"
+                  className="flex items-center gap-2 font-arimo font-semibold text-white"
                   style={{
-                    background: getSubjectIconGradient(selectedSubject),
-                    borderRadius: '14px',
-                    width: '48px',
-                    height: '48px',
-                    flexShrink: 0,
+                    background: '#17223E',
+                    borderRadius: '999px',
+                    padding: '8px 14px',
+                    fontSize: '13px',
                   }}
                 >
-                  <span style={{ fontSize: '24px', lineHeight: '32px' }}>{subjectEmoji(selectedSubject)}</span>
-                </div>
-                <div>
-                  <h2
-                    className="font-arimo font-bold"
-                    style={{ fontSize: '24px', color: '#101828', lineHeight: '32px' }}
-                  >
-                    {selectedSubject} Simplified
-                  </h2>
-                  <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', color: '#4A5565' }}>
-                    {'\u{1F4FA}'} {subjectVideos.length} Video{subjectVideos.length !== 1 ? 's' : ''}
-                    {(() => {
-                      const matched = apiSubjects.find(s => s.name === selectedSubject);
-                      return matched?.totalDuration ? ` \u00B7 ${matched.totalDuration}` : '';
-                    })()}
-                  </p>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FF0000"/>
+                    <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#FFFFFF"/>
+                  </svg>
+                  @RiseWithJeet
                 </div>
               </div>
-              {(() => {
-                const matched = apiSubjects.find(s => s.name === selectedSubject);
-                return matched?.description ? (
-                  <p className="font-arimo" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#4A5565', marginTop: 'clamp(8px, 0.8vw, 12px)', lineHeight: 1.5 }}>
-                    {matched.description}
-                  </p>
-                ) : null;
-              })()}
+              {matchedSelectedSubject?.description ? (
+                <p className="font-arimo" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#4A5565', lineHeight: 1.5 }}>
+                  {matchedSelectedSubject.description}
+                </p>
+              ) : null}
             </div>
 
             {subjectVideosLoading ? (
@@ -461,7 +601,7 @@ export default function VideoLecturesPage() {
                   Loading videos...
                 </p>
               </div>
-            ) : subjectVideos.length === 0 ? (
+            ) : visibleSubjectVideos.length === 0 ? (
               <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px' }}>{'\u{1F4ED}'}</div>
                 <p className="font-arimo font-medium" style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>
@@ -473,11 +613,11 @@ export default function VideoLecturesPage() {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))',
                     gap: 'clamp(16px, 1.8vw, 24px)',
                   }}
                 >
-                  {subjectVideos.map((video) => (
+                  {visibleSubjectVideos.map((video) => (
                     <div
                       key={video.id}
                       style={{
@@ -504,7 +644,7 @@ export default function VideoLecturesPage() {
                           className="font-arimo font-bold"
                           style={{ fontSize: 'clamp(10px, 0.85vw, 12px)', color: '#C68A0B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 'clamp(4px, 0.4vw, 6px)' }}
                         >
-                          {selectedSubject}
+                          {matchedSelectedSubject?.name ?? selectedSubject}
                         </p>
                         <h3
                           className="font-arimo font-bold"
@@ -518,7 +658,7 @@ export default function VideoLecturesPage() {
 
                         <div className="flex items-center" style={{ gap: '4px', flexWrap: 'nowrap', minWidth: 0 }}>
                           <button
-                            onClick={() => setShowLoginModal(true)}
+                            onClick={() => openVideoActionModal('pdf', video)}
                             className="flex items-center gap-1 font-arimo font-bold"
                             style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                           >
@@ -530,12 +670,12 @@ export default function VideoLecturesPage() {
                             PDF
                           </button>
                           <button
-                            onClick={() => setShowMentorModal(true)}
+                            onClick={() => openVideoActionModal('mentor', video)}
                             className="flex items-center gap-1 font-arimo font-bold"
                             style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                           >
                             <span style={{ fontSize: '14px' }}>{'\u{1F9D1}\u200D\u{1F3EB}'}</span>
-                            Ask Mentor
+                            Ask Our Team
                           </button>
                           <button
                             onClick={() => { const u = video.youtubeUrl || video.url || ''; window.open(u.startsWith('http') ? u : `https://${u}`, '_blank'); }}
@@ -560,7 +700,7 @@ export default function VideoLecturesPage() {
                     style={{
                       background: 'linear-gradient(135deg, #0E182D, #172240)',
                       borderRadius: '24px',
-                      padding: 'clamp(28px, 3vw, 44px) clamp(32px, 3.5vw, 48px)',
+                      padding: 'clamp(28px, 3vw, 44px) clamp(28px, 3vw, 42px)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -599,10 +739,10 @@ export default function VideoLecturesPage() {
                           lineHeight: 'clamp(20px, 1.88vw, 25px)',
                           color: '#FFFFFF',
                           marginBottom: 'clamp(20px, 2vw, 28px)',
-                          maxWidth: '480px',
+                          maxWidth: '560px',
                         }}
                       >
-                        Subscribe to Rise with Jeet on YouTube and get instant notifications for new lectures, current affairs drops, and live sessions &mdash; completely free.
+                        Subscribe to Rise with Jeet on YouTube and get instant notifications for new lectures, current affairs drops, and live sessions.
                       </p>
                       <a
                         href="https://www.youtube.com/@RiseWithJeet"
@@ -616,15 +756,15 @@ export default function VideoLecturesPage() {
                           fontSize: 'clamp(13px, 1.12vw, 15px)',
                           marginBottom: 'clamp(12px, 1.2vw, 16px)',
                         }}
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                          <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FFFFFF"/>
-                          <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#E7000B"/>
-                        </svg>
-                        Join Our YouTube Family
-                      </a>
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FFFFFF"/>
+                            <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#E7000B"/>
+                          </svg>
+                          Join Our YouTube Family
+                        </a>
                       <p className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#FFFFFF' }}>
-                        Join 15K+ in our YouTube family
+                        15K+ join our YouTube family
                       </p>
                     </div>
                     <div
@@ -644,139 +784,6 @@ export default function VideoLecturesPage() {
                 </div>
               </>
             )}
-          </div>
-        )}
-
-        {/* Featured videos section (when no subject selected) */}
-        {!selectedSubject && apiVideos.length > 0 && (
-          <div style={{ marginTop: 'clamp(40px, 4vw, 56px)' }}>
-            <div style={{ marginBottom: 'clamp(20px, 2vw, 28px)' }}>
-              <div className="flex items-center gap-3" style={{ marginBottom: 'clamp(4px, 0.4vw, 6px)' }}>
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    background: 'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)',
-                    borderRadius: '12px',
-                    width: 'clamp(40px, 3.5vw, 48px)',
-                    height: 'clamp(40px, 3.5vw, 48px)',
-                    flexShrink: 0,
-                  }}
-                >
-                  <span style={{ fontSize: 'clamp(22px, 2vw, 26px)' }}>{subjectEmoji(featuredSubjectName)}</span>
-                </div>
-                <div>
-                  <h2
-                    className="font-arimo font-bold"
-                    style={{ fontSize: 'clamp(20px, 1.88vw, 26px)', color: '#101828', lineHeight: 1.2 }}
-                  >
-                    {featuredSubjectName}
-                  </h2>
-                  <p className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#4A5565' }}>
-                    {'\u{1F4FA}'} {apiVideos.length} Video{apiVideos.length !== 1 ? 's' : ''}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
-                gap: 'clamp(16px, 1.8vw, 24px)',
-              }}
-            >
-              {apiVideos.map((video) => (
-                <div
-                  key={video.id}
-                  style={{
-                    background: '#FFFFFF',
-                    borderRadius: '16px',
-                    boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.08), 0px 1px 2px -1px rgba(0,0,0,0.06)',
-                    overflow: 'hidden',
-                    border: '1px solid #E5E7EB',
-                  }}
-                >
-                  <div
-                    className="flex items-center justify-center"
-                    style={{ background: '#EFF6FF', height: 'clamp(150px, 14vw, 190px)', position: 'relative' }}
-                  >
-                    {video.thumbnailUrl ? (
-                      <img src={video.thumbnailUrl} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontSize: 'clamp(48px, 5vw, 64px)' }}>{subjectEmoji(featuredSubjectName)}</span>
-                    )}
-                  </div>
-
-                  <div style={{ padding: 'clamp(14px, 1.5vw, 20px)' }}>
-                    <p
-                      className="font-arimo font-bold"
-                      style={{ fontSize: 'clamp(10px, 0.85vw, 12px)', color: '#C68A0B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 'clamp(4px, 0.4vw, 6px)' }}
-                    >
-                      {featuredSubjectName}
-                    </p>
-                    <h3
-                      className="font-arimo font-bold"
-                      style={{ fontSize: 'clamp(14px, 1.15vw, 15px)', color: '#101828', marginBottom: 'clamp(6px, 0.6vw, 8px)', lineHeight: 1.35 }}
-                    >
-                      {video.title}
-                    </h3>
-                    <p className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 12px)', color: '#6A7282', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-                      {'\u{1F440}'} {formatViews(getVideoViewCount(video))} views
-                    </p>
-
-                    <div className="flex items-center" style={{ gap: '4px', flexWrap: 'nowrap', minWidth: 0 }}>
-                      <button
-                        onClick={() => setShowLoginModal(true)}
-                        className="flex items-center gap-1.5 font-arimo font-bold"
-                        style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-                      >
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                          <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M7 11l5 5 5-5" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M12 4v12" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        PDF
-                      </button>
-                      <button
-                        onClick={() => setShowMentorModal(true)}
-                        className="flex items-center gap-1.5 font-arimo font-bold"
-                        style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-                      >
-                        <span style={{ fontSize: '14px' }}>{'\u{1F9D1}\u200D\u{1F3EB}'}</span>
-                        Ask Mentor
-                      </button>
-                      {video.videoUrl ? (
-                        <a
-                          href={video.videoUrl.startsWith('http') ? video.videoUrl : `https://${video.videoUrl}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 font-arimo font-bold text-white"
-                          style={{ padding: '5px 8px', borderRadius: '10px', background: '#17223E', border: '1.5px solid #17223E', fontSize: '12px', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <rect width="24" height="24" rx="5" fill="#FF0000"/>
-                            <path d="M10 8l6 4-6 4V8z" fill="white"/>
-                          </svg>
-                          Watch
-                        </a>
-                      ) : (
-                        <button
-                          onClick={() => { const u = video.youtubeUrl || video.url || ''; window.open(u.startsWith('http') ? u : `https://${u}`, '_blank'); }}
-                          className="flex items-center gap-1 font-arimo font-bold text-white"
-                          style={{ padding: '5px 8px', borderRadius: '10px', background: '#17223E', border: '1.5px solid #17223E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <rect width="24" height="24" rx="5" fill="#FF0000"/>
-                            <path d="M10 8l6 4-6 4V8z" fill="white"/>
-                          </svg>
-                          Watch
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </div>
@@ -995,7 +1002,7 @@ export default function VideoLecturesPage() {
               Ask Our Team
             </h3>
             <p className="font-arimo" style={{ fontSize: '14px', color: '#6A7282', marginBottom: '20px' }}>
-              Got a doubt? Ask our team and get a clear answer.
+              {modalVideo ? `Ask our team about "${modalVideo.title}" and get a clear answer.` : 'Got a doubt? Ask our team and get a clear answer.'}
             </p>
 
             {mentorSuccess && (
@@ -1064,10 +1071,10 @@ export default function VideoLecturesPage() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{ background: 'rgba(0,0,0,0.5)' }}
-          onClick={() => setShowLoginModal(false)}
+              onClick={() => setShowLoginModal(false)}
         >
           <div
-            style={{ background: '#FFFFFF', borderRadius: '24px', padding: '32px', width: '100%', maxWidth: '400px', margin: '0 16px', textAlign: 'center' }}
+            style={{ background: '#FFFFFF', borderRadius: '24px', padding: '32px', width: '100%', maxWidth: '420px', margin: '0 16px', textAlign: 'center' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>{'\u{1F512}'}</div>
@@ -1075,7 +1082,7 @@ export default function VideoLecturesPage() {
               PDF Access
             </h3>
             <p className="font-arimo" style={{ fontSize: '14px', color: '#6A7282', marginBottom: '24px' }}>
-              Please subscribe to access downloadable PDFs.
+              {modalVideo ? `Please subscribe to download the PDF for "${modalVideo.title}".` : 'Please subscribe to access downloadable PDFs.'}
             </p>
             <button
               onClick={() => setShowLoginModal(false)}

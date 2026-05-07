@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { pricingService } from '@/lib/services';
 import PurchaseModal from '@/components/PurchaseModal';
@@ -17,7 +18,7 @@ const heroStats = [
 ];
 
 const mentorTags = [
-  { label: '✦ Solo Mentor', gold: true },
+  { label: '✦ Solo Mentor' },
   { label: 'Strategy & Planning' },
   { label: 'Answer Writing' },
   { label: 'Prelims Optimisation' },
@@ -26,8 +27,8 @@ const mentorTags = [
 
 const mentorStats = [
   { value: '15K+', label: 'FOLLOWERS' },
-  { value: '280+', label: 'FREE PDFS' },
-  { value: '3 yrs', label: 'TEACHING' },
+  { value: '4.9', label: 'RATING' },
+  { value: '120+', label: 'MENTEES' },
 ];
 
 const PLAN_ICONS = ['🌱', '🔥', '🏆'];
@@ -185,6 +186,7 @@ const faqItems = [
 /* ------------------------------------------------------------------ */
 
 export default function FreeTrialPage() {
+  const router = useRouter();
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [apiPlans, setApiPlans] = useState<any[] | null>(null);
   const [apiTestimonials, setApiTestimonials] = useState<any[] | null>(null);
@@ -200,22 +202,16 @@ export default function FreeTrialPage() {
   /* ---- Dynamic seats left ---- */
   const [seatsLeft, setSeatsLeft] = useState(4);
   useEffect(() => {
-    // Simulate slowly decreasing seats; in production this should come from API
-    const stored = localStorage.getItem('mentorshipSeatsLeft');
-    const storedTime = localStorage.getItem('mentorshipSeatsTime');
-    const now = Date.now();
-    if (stored && storedTime) {
-      const elapsed = now - parseInt(storedTime, 10);
-      const hoursPassed = Math.floor(elapsed / (1000 * 60 * 60));
-      const decrease = Math.min(hoursPassed, 4); // decrease by up to 4 over time
-      const base = Math.max(1, parseInt(stored, 10) - decrease);
-      setSeatsLeft(base);
-    } else {
-      const initial = 4;
-      localStorage.setItem('mentorshipSeatsLeft', String(initial));
-      localStorage.setItem('mentorshipSeatsTime', String(now));
-      setSeatsLeft(initial);
-    }
+    pricingService.getMentorshipSeats()
+      .then((res: any) => {
+        const backendSeats = res?.data?.seatsLeft;
+        if (typeof backendSeats === 'number') {
+          setSeatsLeft(backendSeats);
+        }
+      })
+      .catch(() => {
+        // fallback: keep default 4 if API fails
+      });
   }, []);
   useEffect(() => {
     pricingService.getPlans()
@@ -231,6 +227,7 @@ export default function FreeTrialPage() {
         setApiTestimonials(Array.isArray(items) ? items : []);
       })
       .catch(() => setApiTestimonials([]));
+
   }, []);
 
   const handleBookCall = async () => {
@@ -279,6 +276,8 @@ export default function FreeTrialPage() {
       <DashboardPageHero
         badgeIcon={<img src="/badge-mentorship.png" alt="mentorship" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="PERSONALIZED MENTORSHIP"
+        contentShiftY={-18}
+        titleMarginBottom={0}
         title={
           <>
             The guidance that turns{' '}
@@ -287,12 +286,12 @@ export default function FreeTrialPage() {
             into officers.
           </>
         }
-        subtitle="1-on-1 sessions tailored to your stage and timeline. Mentored by Abhijeet Sir."
+        subtitle="1-on-1 sessions for 3–12 months tailored to your stage & timeline. Mentored by Abhijeet."
         stats={[
-          { value: '200+', label: 'Mentees', color: '#FDC700' },
-          { value: '94%',  label: 'Success Rate', color: '#F87171' },
-          { value: '15',   label: 'Selections', color: '#4ADE80' },
-          { value: '5+',   label: 'Yrs Exp', color: '#FFFFFF' },
+          { value: '15K+', label: 'Community', color: '#FDC700' },
+          { value: '120+', label: 'Mentees', color: '#FDC700' },
+          { value: '4.9',  label: 'Rating', color: '#FDC700' },
+          { value: 'Free', label: 'First Call', color: '#4ADE80' },
         ]}
       />
 
@@ -303,15 +302,15 @@ export default function FreeTrialPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
             <div style={{ flex: '1 1 400px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '14px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: 'linear-gradient(135deg, #FDC700 0%, #FF8A00 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0A1128', fontWeight: 700, fontSize: '22px', flexShrink: 0 }}>J</div>
+                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg, #FDC700 0%, #FF8A00 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontWeight: 700, fontSize: '22px', flexShrink: 0 }}>A</div>
                 <div>
-                  <div style={{ fontSize: '22px', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.2, marginBottom: '6px' }}>Abhijeet Sir</div>
-                  <div style={{ fontSize: '13px', color: '#97A6BE', lineHeight: 1.5, maxWidth: '460px' }}>UPSC educator &amp; full-time mentor. 15K+ follow his free YouTube content, a select few get direct, personalized guidance.</div>
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: '#F4B321', lineHeight: 1.2, marginBottom: '6px' }}>Abhijeet Sir</div>
+                  <div style={{ fontSize: '13px', color: '#8B95A7', lineHeight: 1.6, maxWidth: '460px' }}>UPSC educator &amp; full-time mentor. 1M+ follow his free YouTube content a select few get direct, personalized guidance.</div>
                 </div>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {mentorTags.map((tag) => (
-                  <span key={tag.label} style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, border: tag.gold ? '1px solid rgba(245,199,93,0.3)' : '1px solid rgba(255,255,255,0.1)', color: tag.gold ? '#F5C75D' : '#9AA8BE', background: tag.gold ? 'rgba(245,199,93,0.1)' : 'rgba(255,255,255,0.04)' }}>{tag.label}</span>
+                  <span key={tag.label} style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)', color: '#9AA8BE', background: 'rgba(255,255,255,0.04)' }}>{tag.label}</span>
                 ))}
               </div>
             </div>
@@ -320,7 +319,7 @@ export default function FreeTrialPage() {
                 <React.Fragment key={stat.label}>
                   {i > 0 && <div style={{ width: '1px', background: 'rgba(255,255,255,0.08)' }} />}
                   <div style={{ minWidth: '100px', padding: '12px 16px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#F5C75D', lineHeight: 1.1 }}>{stat.value}</div>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: stat.label === 'RATING' ? '#4ADE80' : '#F5C75D', lineHeight: 1.1 }}>{stat.value}</div>
                     <div style={{ marginTop: '4px', fontSize: '10px', fontWeight: 600, color: '#7E8DA8', letterSpacing: '0.5px', textTransform: 'uppercase' }}>{stat.label}</div>
                   </div>
                 </React.Fragment>
@@ -349,7 +348,7 @@ export default function FreeTrialPage() {
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
           <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', color: '#C68A0B', textTransform: 'uppercase', marginBottom: '12px' }}>💡 CHOOSE YOUR PLAN</div>
           <h2 style={{ fontSize: 'clamp(24px, 3vw, 36px)', fontWeight: 700, color: '#0F172B', marginBottom: '12px' }}>One program. Your entire journey.</h2>
-          <p style={{ fontSize: '15px', color: '#64748B', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto' }}>Pick the plan that matches your stage — or book a free call and let Abhijeet Sir recommend the right fit.</p>
+          <p style={{ fontSize: '15px', color: '#64748B', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto' }}>Pick the plan that matches your stage or book a free call and let Abhijeet Sir recommend the right fit.</p>
         </div>
 
         <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -482,7 +481,7 @@ export default function FreeTrialPage() {
         <div style={{ textAlign: 'center', marginTop: '32px' }}>
           <div style={{ fontSize: '14px', color: '#64748B', marginBottom: '16px' }}>Still deciding?</div>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button style={{ padding: '12px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#0F172B', color: '#FFFFFF', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Compare All Plans →</button>
+            <button onClick={() => router.push('/dashboard/billing')} style={{ padding: '12px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#0F172B', color: '#FFFFFF', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Compare All Plans →</button>
             <button onClick={() => { setBookingSuccess(false); setBookingError(''); setShowBookingModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#FFFFFF', color: '#0F172B', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
               <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontSize: '10px', fontWeight: 700 }}>P</div>
               Free Discovery Call
@@ -527,38 +526,39 @@ export default function FreeTrialPage() {
           <p style={{ fontSize: '14px', color: '#64748B' }}>From Jeet Sir's Mentees</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-          {/* Hardcoded testimonials matching Figma */}
-          {[
+          {(apiTestimonials && apiTestimonials.length > 0 ? apiTestimonials : [
             {
               initials: 'PR',
               name: 'Priya Rajan',
-              credential: 'UPSC Prelims 2024 Cleared · Delhi · Foundation',
-              quote: "I was stuck for 2 years going in circles. One month with Jeet Sir made me study with a plan that actually made sense for my situation. Cleared Prelims 2024.",
+              title: 'UPSC Prelims 2024 Cleared · Delhi · Foundation',
+              content: "I was stuck for 2 years going in circles. One month with Jeet Sir made me study with a plan that actually made sense for my situation. Cleared Prelims 2024.",
               color: '#16A34A',
             },
             {
               initials: 'AK',
               name: 'Ankit Kumar',
-              credential: 'UPSC Mains 2024 · Bihar · Serious Attempt Plan',
-              quote: "The answer writing feedback was the game-changer. My GS-II score jumped significantly. Jeet Sir marks exactly where you're losing marks — not vaguely.",
+              title: 'UPSC Mains 2024 · Bihar · Serious Attempt Plan',
+              content: "The answer writing feedback was the game-changer. My GS-II score jumped significantly. Jeet Sir marks exactly where you're losing marks — not vaguely.",
               color: '#EA580C',
             },
             {
               initials: 'SM',
               name: 'Sneha Mishra',
-              credential: 'UPSC Interview Stage 2024 · MP · Final Mile Plan',
-              quote: "The mock interview sessions gave me confidence I didn't have. Jeet Sir's DAF analysis was so thorough — half the board questions I'd already answered in our mocks.",
+              title: 'UPSC Interview Stage 2024 · MP · Final Mile Plan',
+              content: "The mock interview sessions gave me confidence I didn't have. Jeet Sir's DAF analysis was so thorough — half the board questions I'd already answered in our mocks.",
               color: '#2563EB',
             },
-          ].map((t, idx) => (
-            <div key={idx} style={{ background: '#FEFCE8', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '28px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-              <div style={{ fontSize: '16px', marginBottom: '14px', color: '#FDC700', letterSpacing: '2px' }}>{'★'.repeat(5)}</div>
-              <p style={{ fontSize: '13px', color: '#374151', lineHeight: 1.7, marginBottom: '20px', minHeight: '80px' }}>&ldquo;{t.quote}&rdquo;</p>
+          ]).map((t: any, idx: number) => (
+            <div key={t.id || idx} style={{ background: '#FEFCE8', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '28px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div style={{ fontSize: '16px', marginBottom: '14px', color: '#FDC700', letterSpacing: '2px' }}>{'★'.repeat(t.rating || 5)}</div>
+              <p style={{ fontSize: '13px', color: '#374151', lineHeight: 1.7, marginBottom: '20px', minHeight: '80px' }}>&ldquo;{t.content || t.quote}&rdquo;</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: t.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#FFFFFF', flexShrink: 0 }}>{t.initials}</div>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: t.color || '#0F172B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#FFFFFF', flexShrink: 0 }}>
+                  {t.avatarUrl ? <img src={t.avatarUrl} alt={t.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : (t.initials || t.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase())}
+                </div>
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172B' }}>{t.name}</div>
-                  <div style={{ fontSize: '11px', color: '#64748B', lineHeight: 1.4 }}>{t.credential}</div>
+                  <div style={{ fontSize: '11px', color: '#64748B', lineHeight: 1.4 }}>{t.title || t.credential}</div>
                 </div>
               </div>
             </div>
@@ -594,9 +594,7 @@ export default function FreeTrialPage() {
       {/* ================================================================ */}
       <section style={{ maxWidth: '800px', margin: '0 auto', padding: '0 24px 80px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1px', color: '#94A3B8', textTransform: 'uppercase', marginBottom: '8px' }}>BEFORE YOU DECIDE</div>
-          <h2 style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 700, color: '#0F172B', marginBottom: '8px' }}>The questions you're actually thinking</h2>
-          <p style={{ fontSize: '14px', color: '#64748B' }}>No marketing fluff — just direct answers to the real objections.</p>
+          <h2 style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 700, color: '#0F172B' }}>The questions you're actually thinking</h2>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {faqItems.map((faq, idx) => (
@@ -648,7 +646,7 @@ export default function FreeTrialPage() {
                   }}
                   className="font-arimo"
                 >
-                  20-minute call with Jeet Sir — no commitment, no hard sell.
+                  20-minute call with Abhijeet Sir.
                 </p>
 
                 {/* Name */}

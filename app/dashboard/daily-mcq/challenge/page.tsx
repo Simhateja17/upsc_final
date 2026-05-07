@@ -94,7 +94,7 @@ export default function DailyMcqChallengePage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#FAFBFE' }}>
+      <div className="flex flex-col items-center justify-center" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
@@ -109,14 +109,14 @@ export default function DailyMcqChallengePage() {
   const correctCount = questions.filter((qu) => answers[qu.id] && answers[qu.id] === qu.correctOption).length;
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}>
+    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
       <main className="flex-1 px-[clamp(1rem,4vw,5rem)] py-4 flex items-center justify-center">
-        <div className="max-w-[900px] mx-auto">
-          <div style={{ maxWidth: '1050px', borderRadius: '10px', background: '#EAECEF40', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '24px' }}>
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
+        <div className="w-full max-w-[940px] mx-auto">
+          <div style={{ maxWidth: '940px', borderRadius: '16px', background: 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.96) 100%)', boxShadow: '0 22px 55px -32px rgba(15,23,42,0.28), 0 10px 24px -18px rgba(15,23,42,0.2), inset 0 1px 0 rgba(255,255,255,0.92)', padding: '22px', border: '1px solid rgba(226,232,240,0.95)' }}>
+            <div className="mb-5">
+              <div className="flex items-center justify-between gap-4 mb-4">
                 <div className="flex items-center gap-2">
-                  <img src="/daily-challenge-icon.png" alt="MCQ" className="w-10 h-10" />
+                  <img src="/daily-challenge-icon.png" alt="MCQ" className="w-10 h-10 object-contain" />
                   <h1 className="font-arimo font-bold text-black text-[26px] leading-[28px] whitespace-nowrap">
                     Daily MCQ Challenge
                     <span className="font-arimo font-normal text-[#94A3B8] text-[18px] leading-[28px]"> ({new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })})</span>
@@ -139,17 +139,19 @@ export default function DailyMcqChallengePage() {
 
               <div className="w-full border-t border-[#99A1AFE5] mb-4"></div>
 
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[38px]">
-                  <img src="/tag-one.png" alt="Tag" className="w-4 h-4" />
-                  <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px]">{q.category}</span>
-                </div>
-                <div className="flex items-center gap-2 bg-[#FFF7ED] px-4 rounded-full h-[38px]">
-                  <span className="font-arimo font-bold text-[#C2410C] text-[14px] leading-[16px]">{q.difficulty}</span>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[38px]">
+                    <img src="/tag-one.png" alt="Tag" className="w-4 h-4 object-contain" />
+                    <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px] whitespace-nowrap">{q.category}</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-[#FFF7ED] px-4 rounded-full h-[38px]">
+                    <span className="font-arimo font-bold text-[#C2410C] text-[14px] leading-[16px] whitespace-nowrap">{q.difficulty}</span>
+                  </div>
                 </div>
                 {!submitted && (
-                  <div className="flex items-center gap-2">
-                    <img src="/timer-icon.png" alt="Timer" className="w-10 h-10" />
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <img src="/timer-icon.png" alt="Timer" className="w-10 h-10 object-contain" />
                     <div className="flex flex-col items-end">
                       <span className={`font-arimo font-bold text-xl leading-none ${timeLeft < 60 ? 'text-red-600' : 'text-[#101828]'}`}>
                         {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
@@ -161,13 +163,13 @@ export default function DailyMcqChallengePage() {
               </div>
             </div>
 
-            <div className="mb-6">
-              <p className="font-arimo font-bold text-[#101828] text-sm mb-6">
+            <div className="mb-5">
+              <p className="font-arimo font-bold text-[#101828] text-sm mb-4">
                 <span className="font-bold">Question {q.questionNum}:</span>{' '}
                 <span className="whitespace-pre-line">{normalizeQuestionText(q.questionText)}</span>
               </p>
 
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {q.options.map((option) => {
                   const optKey = option.id || option.label || '';
                   const isSelected = answers[q.id] === optKey;
@@ -220,7 +222,7 @@ export default function DailyMcqChallengePage() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '16px',
-                        padding: '16px 20px',
+                        padding: '14px 18px',
                         borderRadius: '12px',
                         border,
                         background: bg,
@@ -257,14 +259,16 @@ export default function DailyMcqChallengePage() {
               {submitted && q.explanation && (
                 <div
                   style={{
-                    marginTop: '20px',
+                    marginTop: '16px',
                     background: '#EFF6FF',
                     borderLeft: '4px solid #2B7FFF',
                     borderRadius: '10px',
-                    padding: '16px 16px 16px 20px',
+                    padding: '14px 14px 14px 18px',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '8px',
+                    maxHeight: '190px',
+                    overflowY: 'auto',
                   }}
                 >
                   <span style={{ fontWeight: 600, fontSize: '14px', color: '#155DFC', lineHeight: '20px' }}>EXPLANATION</span>
@@ -273,7 +277,7 @@ export default function DailyMcqChallengePage() {
               )}
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-between">
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center justify-between gap-4">
               <button
                 className="flex items-center gap-2 text-[#101828] hover:opacity-70 transition-opacity disabled:opacity-30"
                 disabled={currentQuestion === 0}

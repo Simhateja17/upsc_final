@@ -20,6 +20,19 @@ interface StreakData {
   streakLabel?: string;
 }
 
+type BadgeState = 'earned' | 'in-progress' | 'locked';
+
+interface AchievementBadge {
+  key: string;
+  title: string;
+  note: string;
+  accent: string;
+  tint: string;
+  status: BadgeState;
+  icon?: string;
+  iconNode?: React.ReactNode;
+}
+
 const PerformanceStatsWidget = () => {
   const [performance, setPerformance] = useState<PerformanceData | null>(null);
   const [streak, setStreak] = useState<StreakData | null>(null);
@@ -64,10 +77,113 @@ const PerformanceStatsWidget = () => {
 
   const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const hasAnyProgress = Boolean((currentStreak ?? 0) > 0 || (testsTaken ?? 0) > 0 || (syllabusCoverage ?? 0) > 0);
+  const isFirstTimeUser = !hasAnyProgress && (jeetCoins ?? 0) === 0 && rank === null;
+  const showOnFire = (currentStreak ?? 0) > 7;
   const badgeStatus = {
-    streak: (currentStreak ?? 0) >= 30,
-    learner: hasAnyProgress,
-    accuracy: (testsTaken ?? 0) > 0 && (rankPercentile ?? 100) <= 5,
+    streak: {
+      earned: (currentStreak ?? 0) >= 30,
+      progress: (currentStreak ?? 0) > 0,
+    },
+    learner: {
+      earned: (testsTaken ?? 0) >= 10,
+      progress: (testsTaken ?? 0) > 0,
+    },
+    accuracy: {
+      earned: (testsTaken ?? 0) > 0 && (rankPercentile ?? 100) <= 5,
+      progress: (testsTaken ?? 0) > 0,
+    },
+    polity: {
+      earned: (syllabusCoverage ?? 0) >= 60,
+      progress: (syllabusCoverage ?? 0) > 0,
+    },
+    allRounder: {
+      earned: (currentStreak ?? 0) >= 7 && (testsTaken ?? 0) >= 5 && (syllabusCoverage ?? 0) >= 40,
+      progress: (currentStreak ?? 0) > 0 || (testsTaken ?? 0) > 0 || (syllabusCoverage ?? 0) > 0,
+    },
+    centurion: {
+      earned: (jeetCoins ?? 0) >= 100,
+      progress: (jeetCoins ?? 0) > 0,
+    },
+  };
+  const achievementBadges: AchievementBadge[] = [
+    {
+      key: 'streak',
+      title: '30-Day Streak',
+      note: `${currentStreak ?? 0} day streak`,
+      icon: '/icons/dashboard/badge-streak.png',
+      accent: '#F59E0B',
+      tint: '#FFF7E8',
+      status: isFirstTimeUser ? 'locked' : badgeStatus.streak.earned ? 'earned' : badgeStatus.streak.progress ? 'in-progress' : 'locked',
+    },
+    {
+      key: 'learner',
+      title: 'Quick Learner',
+      note: `${testsTaken ?? 0} tests done`,
+      icon: '/icons/dashboard/badge-learner.png',
+      accent: '#F59E0B',
+      tint: '#FFF9EB',
+      status: isFirstTimeUser ? 'locked' : badgeStatus.learner.earned ? 'earned' : badgeStatus.learner.progress ? 'in-progress' : 'locked',
+    },
+    {
+      key: 'accuracy',
+      title: '95% Accuracy',
+      note: rankPercentile !== null ? `Top ${rankPercentile}%` : 'Build accuracy',
+      icon: '/icons/dashboard/badge-accuracy.png',
+      accent: '#4F7CFF',
+      tint: '#EEF4FF',
+      status: isFirstTimeUser ? 'locked' : badgeStatus.accuracy.earned ? 'earned' : badgeStatus.accuracy.progress ? 'in-progress' : 'locked',
+    },
+    {
+      key: 'polity',
+      title: 'Polity Pro',
+      note: `${syllabusCoverage ?? 0}% coverage`,
+      accent: '#7C3AED',
+      tint: '#F5F3FF',
+      status: isFirstTimeUser ? 'locked' : badgeStatus.polity.earned ? 'earned' : badgeStatus.polity.progress ? 'in-progress' : 'locked',
+      iconNode: (
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
+          <path d="M3 9L12 4L21 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M5 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M9 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M15 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M19 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M4 20H20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      ),
+    },
+    {
+      key: 'all-rounder',
+      title: 'All-Rounder',
+      note: 'Consistency badge',
+      accent: '#2563EB',
+      tint: '#EFF6FF',
+      status: isFirstTimeUser ? 'locked' : badgeStatus.allRounder.earned ? 'earned' : badgeStatus.allRounder.progress ? 'in-progress' : 'locked',
+      iconNode: (
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
+          <path d="M12 3L13.9 9.1L20 12L13.9 14.9L12 21L10.1 14.9L4 12L10.1 9.1L12 3Z" fill="currentColor" />
+        </svg>
+      ),
+    },
+    {
+      key: 'centurion',
+      title: 'Centurion',
+      note: `${jeetCoins ?? 0}/100 coins`,
+      accent: '#0EA5A4',
+      tint: '#ECFEFF',
+      status: isFirstTimeUser ? 'locked' : badgeStatus.centurion.earned ? 'earned' : badgeStatus.centurion.progress ? 'in-progress' : 'locked',
+      iconNode: (
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
+          <path d="M6 4.5H16C17.1 4.5 18 5.4 18 6.5V19.5L12 16.5L6 19.5V4.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M9 8H15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M9 11H15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      ),
+    },
+  ];
+  const badgeTextByStatus: Record<BadgeState, string> = {
+    earned: 'Earned',
+    'in-progress': 'In Progress',
+    locked: 'Locked',
   };
 
   return (
@@ -119,23 +235,25 @@ const PerformanceStatsWidget = () => {
                   Day Study Streak
                 </p>
               </div>
-              <div
-                className="rounded-full flex items-center gap-[clamp(4px,0.31vw,6px)]"
-                style={{
-                  background: '#D1FAE5',
-                  padding: 'clamp(6px,0.42vw,8px) clamp(12px,0.83vw,16px)',
-                }}
-              >
-                <img
-                  src="/fire-icon-green.svg"
-                  alt="On Fire"
-                  className="w-[clamp(16px,1.04vw,20px)] h-[clamp(16px,1.04vw,20px)]"
-                  style={{ objectFit: 'contain' }}
-                />
-                <span className="font-inter font-semibold text-green-700" style={{ fontSize: 'clamp(12px,0.83vw,16px)' }}>
-                  {streakLabel || 'On Fire!'}
-                </span>
-              </div>
+              {showOnFire ? (
+                <div
+                  className="rounded-full flex items-center gap-[clamp(4px,0.31vw,6px)]"
+                  style={{
+                    background: '#D1FAE5',
+                    padding: 'clamp(6px,0.42vw,8px) clamp(12px,0.83vw,16px)',
+                  }}
+                >
+                  <img
+                    src="/fire-icon-green.svg"
+                    alt="On Fire"
+                    className="w-[clamp(16px,1.04vw,20px)] h-[clamp(16px,1.04vw,20px)]"
+                    style={{ objectFit: 'contain' }}
+                  />
+                  <span className="font-inter font-semibold text-green-700" style={{ fontSize: 'clamp(12px,0.83vw,16px)' }}>
+                    {streakLabel || 'On Fire!'}
+                  </span>
+                </div>
+              ) : null}
             </div>
 
             {/* Week Days */}
@@ -250,7 +368,7 @@ const PerformanceStatsWidget = () => {
 
       {/* Weekly Leaderboard */}
       <Link
-        href="/dashboard/performance"
+        href="/dashboard/leaderboard"
         className="cursor-pointer hover:shadow-md transition-shadow flex items-center justify-center"
         style={{
           background: '#74A0FF30',
@@ -259,6 +377,7 @@ const PerformanceStatsWidget = () => {
         }}
       >
         <div className="flex items-center" style={{ gap: '8px' }}>
+          <img src="/add-icon.png" alt="" aria-hidden="true" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
           <span className="font-outfit font-semibold whitespace-nowrap" style={{ fontSize: '18px', lineHeight: '1', color: '#1E2875' }}>
             Weekly Leaderboard
           </span>
@@ -277,71 +396,61 @@ const PerformanceStatsWidget = () => {
           padding: 'clamp(20px,1.29vw,24.8px) clamp(20px,1.25vw,24px)',
         }}
       >
-        <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.25vw,24px)]">
-          <img
-            src="/ach.png"
-            alt="Achievement Badges"
-            className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
-          />
-          <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(16px,1.04vw,20px)', lineHeight: '1.2' }}>
-            Achievement Badges
-          </h3>
+        <div className="flex items-center justify-between gap-3 mb-[clamp(16px,1.25vw,24px)]">
+          <div className="flex items-center gap-[clamp(6px,0.42vw,8px)]">
+            <img
+              src="/ach.png"
+              alt="Achievement Badges"
+              className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
+            />
+            <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(16px,1.04vw,20px)', lineHeight: '1.2' }}>
+              Achievement Badges
+            </h3>
+          </div>
+          <Link href="/dashboard/performance" className="font-inter font-semibold text-[12px] text-[#1E2875] hover:underline">
+            View All -&gt;
+          </Link>
         </div>
-        <div className="flex justify-between items-start gap-[clamp(8px,0.52vw,12px)]">
-          <div className="flex-1 flex flex-col items-center gap-[clamp(6px,0.42vw,8px)]">
-            <div
-              className="rounded-full flex items-center justify-center overflow-hidden"
-              style={{
-                width: 'clamp(52px,3.33vw,64px)',
-                height: 'clamp(52px,3.33vw,64px)',
-                background: '#FFF5E6',
-              }}
-            >
-              <img
-                src="/icons/dashboard/badge-streak.png"
-                alt="30-Day Streak"
-                style={{ width: '70%', height: 'auto' }}
-              />
-            </div>
-            <p className="font-arimo font-bold text-[#101828] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>30-Day Streak</p>
-            <p className={`font-arimo text-center ${badgeStatus.streak ? 'text-[#F97316]' : 'text-[#6B7280]'}`} style={{ fontSize: 'clamp(9px,0.52vw,10px)', lineHeight: '1.2' }}>{badgeStatus.streak ? 'Earned' : 'Locked'}</p>
-          </div>
-          <div className="flex-1 flex flex-col items-center gap-[clamp(6px,0.42vw,8px)]">
-            <div
-              className="rounded-full flex items-center justify-center overflow-hidden"
-              style={{
-                width: 'clamp(52px,3.33vw,64px)',
-                height: 'clamp(52px,3.33vw,64px)',
-                background: '#FFF9E6',
-              }}
-            >
-              <img
-                src="/icons/dashboard/badge-learner.png"
-                alt="Quick Learner"
-                style={{ width: '70%', height: 'auto' }}
-              />
-            </div>
-            <p className="font-arimo font-bold text-[#101828] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Quick Learner</p>
-            <p className={`font-arimo text-center ${badgeStatus.learner ? 'text-[#F97316]' : 'text-[#6B7280]'}`} style={{ fontSize: 'clamp(9px,0.52vw,10px)', lineHeight: '1.2' }}>{badgeStatus.learner ? 'Earned' : 'Locked'}</p>
-          </div>
-          <div className="flex-1 flex flex-col items-center gap-[clamp(6px,0.42vw,8px)]">
-            <div
-              className="rounded-full flex items-center justify-center overflow-hidden"
-              style={{
-                width: 'clamp(52px,3.33vw,64px)',
-                height: 'clamp(52px,3.33vw,64px)',
-                background: '#FFF5F5',
-              }}
-            >
-              <img
-                src="/icons/dashboard/badge-accuracy.png"
-                alt="95% Accuracy"
-                style={{ width: '70%', height: 'auto' }}
-              />
-            </div>
-            <p className="font-arimo font-bold text-[#101828] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>95% Accuracy</p>
-            <p className={`font-arimo text-center ${badgeStatus.accuracy ? 'text-[#F97316]' : 'text-[#6B7280]'}`} style={{ fontSize: 'clamp(9px,0.52vw,10px)', lineHeight: '1.2' }}>{badgeStatus.accuracy ? 'Earned' : (hasAnyProgress ? 'In Progress' : 'Locked')}</p>
-          </div>
+        <div className="grid grid-cols-3 gap-[clamp(8px,0.52vw,12px)]">
+          {achievementBadges.map((badge) => {
+            const isLocked = badge.status === 'locked';
+            const isProgress = badge.status === 'in-progress';
+            const cardBorder = isLocked ? '#E5E7EB' : isProgress ? '#BFDBFE' : '#F3D27A';
+            const cardBackground = isLocked ? '#FFFFFF' : isProgress ? '#F8FBFF' : '#FFF9E8';
+            const iconColor = isLocked ? '#B8C1CC' : isProgress ? '#3B82F6' : badge.accent;
+            return (
+              <div
+                key={badge.key}
+                className="rounded-[18px] border px-2 py-3 text-center"
+                style={{
+                  borderColor: cardBorder,
+                  background: cardBackground,
+                }}
+              >
+                <div
+                  className="mx-auto mb-2 rounded-[14px] flex items-center justify-center overflow-hidden"
+                  style={{
+                    width: 'clamp(54px,3vw,64px)',
+                    height: 'clamp(54px,3vw,64px)',
+                    background: '#FFFFFF',
+                    border: `1px solid ${isLocked ? '#E5E7EB' : isProgress ? '#DBEAFE' : '#FDE7A8'}`,
+                    color: iconColor,
+                    filter: isLocked ? 'grayscale(1)' : 'none',
+                  }}
+                >
+                  {badge.icon ? (
+                    <img src={badge.icon} alt={badge.title} style={{ width: '68%', height: 'auto' }} />
+                  ) : (
+                    badge.iconNode
+                  )}
+                </div>
+                <p className="font-arimo font-bold text-[#4B5563] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>{badge.title}</p>
+                <p className="font-arimo text-center mt-1" style={{ fontSize: 'clamp(9px,0.52vw,10px)', lineHeight: '1.2', color: isLocked ? '#B8C1CC' : isProgress ? '#2563EB' : '#D08700' }}>
+                  {badgeTextByStatus[badge.status]}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -373,7 +482,7 @@ const PerformanceStatsWidget = () => {
             }}
           >
             <img
-              src="/icon-folder.png"
+              src="/flashcards-icon.png"
               alt="Flashcards"
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
@@ -381,7 +490,7 @@ const PerformanceStatsWidget = () => {
             <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
           </Link>
           <Link
-            href="/dashboard/performance"
+            href="/dashboard/spaced-repetition"
             className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:border-[#17223E] hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
             style={{
               padding: 'clamp(12px,0.83vw,16px)',
@@ -411,14 +520,14 @@ const PerformanceStatsWidget = () => {
             <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
           </Link>
           <Link
-            href="/dashboard/daily-editorial"
+            href="/dashboard/saved-notes"
             className="border border-[#E5E7EB] bg-white rounded-[clamp(12px,0.73vw,14px)] hover:border-[#17223E] hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col items-center gap-[clamp(8px,0.63vw,12px)]"
             style={{
               padding: 'clamp(12px,0.83vw,16px)',
             }}
           >
             <img
-              src="/news.png"
+              src="/paper.png"
               alt="Quick Notes"
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
@@ -602,3 +711,4 @@ const PerformanceStatsWidget = () => {
 };
 
 export default PerformanceStatsWidget;
+

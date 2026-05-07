@@ -170,7 +170,7 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
                 className="relative h-full min-h-[340px] cursor-pointer outline-none"
                 style={{
                   transformStyle: 'preserve-3d',
-                  transition: 'transform 520ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  transition: 'transform 900ms cubic-bezier(0.22, 1, 0.36, 1)',
                   transform: revealed ? 'rotateY(180deg)' : 'rotateY(0deg)',
                 }}
               >

@@ -3,32 +3,55 @@
 import React, { useState, useEffect } from 'react';
 import { flashcardService } from '@/lib/services';
 
+const FLASHCARD_SUBJECT_OPTIONS = [
+  'Polity',
+  'History',
+  'Geography',
+  'Economy',
+  'Environment & Ecology',
+  'Science & Technology',
+  'Current Affairs',
+  'Society',
+  'Governance',
+  'International Relations',
+  'Social Justice',
+  'Agriculture',
+  'Internal Security',
+  'Disaster Management',
+  'Ethics',
+  'GS1',
+  'GS2',
+  'GS3',
+  'GS4',
+  'Essay',
+  'Optional Paper 1',
+  'Optional Paper 2',
+ ] as const;
+
 const SUBJECT_TO_ID: Record<string, string> = {
+  'Polity': 'polity',
   'History': 'history',
   'Geography': 'geography',
-  'Polity': 'polity',
   'Economy': 'economy',
-  'Environment & Ecology': 'environment',
-  'Science & Technology': 'science-tech',
+  'Environment & Ecology': 'environment-ecology',
+  'Science & Technology': 'science-technology',
+  'Current Affairs': 'current-affairs',
+  'Society': 'society',
+  'Governance': 'governance',
+  'International Relations': 'international-relations',
+  'Social Justice': 'social-justice',
+  'Agriculture': 'agriculture',
+  'Internal Security': 'internal-security',
+  'Disaster Management': 'disaster-management',
+  'Ethics': 'ethics',
+  'GS1': 'gs1',
+  'GS2': 'gs2',
+  'GS3': 'gs3',
+  'GS4': 'gs4',
+  'Essay': 'essay',
+  'Optional Paper 1': 'optional-paper-1',
+  'Optional Paper 2': 'optional-paper-2',
 };
-
-const subjectOptions = [
-  'History',
-  'Geography',
-  'Polity',
-  'Economy',
-  'Environment & Ecology',
-  'Science & Technology',
-];
-
-const deckOptions = [
-  'History',
-  'Geography',
-  'Polity',
-  'Economy',
-  'Environment & Ecology',
-  'Science & Technology',
-];
 
 const inputShadow = '0px 1px 3px 0px rgba(0,0,0,0.4), 0px 1px 2px -1px rgba(0,0,0,0.4)';
 
@@ -228,7 +251,7 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
               }}
             >
               <option value="">Select subject</option>
-              {subjectOptions.map((opt) => (
+              {FLASHCARD_SUBJECT_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
@@ -256,7 +279,7 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
               }}
             >
               <option value="">Select deck</option>
-              {deckOptions.map((opt) => (
+              {FLASHCARD_SUBJECT_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>

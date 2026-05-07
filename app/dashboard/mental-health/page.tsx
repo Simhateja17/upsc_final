@@ -139,29 +139,38 @@ function getMoodColor(mood: string) {
 // ── Stress gauge SVG ─────────────────────────────────────────────────────────
 
 function StressGauge({ level = 0.5 }: { level?: number }) {
-  const cx = 130, cy = 122, r = 100;
+  const cx = 130, cy = 130, r = 110;
+  // level 0 → needle points left (−180°), level 1 → needle points right (0°)
   const angleDeg = -180 + level * 180;
   const angleRad = (angleDeg * Math.PI) / 180;
-  const needleLen = 75;
+  const needleLen = 82;
   const nx = cx + needleLen * Math.cos(angleRad);
   const ny = cy + needleLen * Math.sin(angleRad);
 
   return (
-    <svg width="260" height="130" viewBox="0 0 260 130" style={{ overflow: 'visible' }}>
+    <svg width="260" height="135" viewBox="0 0 260 135" style={{ overflow: 'visible' }}>
       <defs>
         <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#4a7c59" />
-          <stop offset="40%" stopColor="#e8b84b" />
-          <stop offset="100%" stopColor="#c4637a" />
+          <stop offset="0%"   stopColor="#bbf7d0" />   {/* soft green  */}
+          <stop offset="100%" stopColor="#fecdd3" />   {/* soft pink   */}
         </linearGradient>
-        <clipPath id="halfCircle">
-          <rect x="0" y="0" width="260" height="122" />
-        </clipPath>
       </defs>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(11,22,40,0.07)" strokeWidth="20" clipPath="url(#halfCircle)" />
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="url(#gaugeGrad)" strokeWidth="18" clipPath="url(#halfCircle)" />
-      <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#101d36" strokeWidth="3" strokeLinecap="round" />
-      <circle cx={cx} cy={cy} r={7} fill="#101d36" stroke="white" strokeWidth="3" />
+
+      {/* Filled semicircle matching Figma design */}
+      <path
+        d={`M 20,130 A 110,110 0 0,1 240,130 Z`}
+        fill="url(#gaugeGrad)"
+      />
+
+      {/* Needle */}
+      <line
+        x1={cx} y1={cy}
+        x2={nx} y2={ny}
+        stroke="#2d3a4a" strokeWidth="2.5" strokeLinecap="round"
+      />
+
+      {/* Pivot dot */}
+      <circle cx={cx} cy={cy} r={5} fill="#2d3a4a" />
     </svg>
   );
 }
@@ -185,6 +194,34 @@ export default function MentalHealthPage() {
   const [toolStats, setToolStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [affIdx, setAffIdx] = useState(0);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [wellnessPlan, setWellnessPlan] = useState([
+    { emoji: '🧘', label: 'Morning meditation' },
+    { emoji: '📔', label: 'Journaling' },
+    { emoji: '🚶', label: '10 min walk' },
+    { emoji: '🫁', label: 'Breathing' },
+    { emoji: '📔', label: 'Weekly review' },
+    { emoji: '🌿', label: 'Rest + Nature' },
+    { emoji: '📋', label: 'Week planning' },
+  ]);
+  const [activeTool, setActiveTool] = useState<string | null>(null);
+  const [breathingPhase, setBreathingPhase] = useState<'idle' | 'inhale' | 'hold' | 'exhale' | 'hold2'>('idle');
+  const [breathingCount, setBreathingCount] = useState(4);
+  const [breathingCycles, setBreathingCycles] = useState(0);
+  const [breathingActive, setBreathingActive] = useState(false);
+  const [journalTab, setJournalTab] = useState('Gratitude');
+  const [journalEntry, setJournalEntry] = useState('');
+  const [journalEntries, setJournalEntries] = useState<any[]>([
+    { date: 'Apr 22 · WED', text: '"Today was better than I expected. I finished the entire Polity chapter and actually understood the nuances of the Emergency provisions..."', mood: '🙂' },
+    { date: 'Apr 21 · TUE', text: '"Had a really rough day. Couldn\'t focus at all. Mock score was 60/200 which felt like a failure. But I know one bad test doesn\'t define..."', mood: '😔' },
+    { date: 'Apr 20 · MON', text: '"Grateful for waking up with purpose. The study room session with Rahul and Priya was so motivating. Finished 4 pomodoro sessions..."', mood: '🔥' },
+  ]);
+  const [affirmationIdx, setAffirmationIdx] = useState(0);
+  const [savedAffirmations, setSavedAffirmations] = useState<string[]>([
+    '"Failure is feedback. Every wrong answer teaches me something right."',
+    '"I study with intention. I rest without guilt. I trust the process."',
+  ]);
+  const [pressureRelieved, setPressureRelieved] = useState(false);
 
   const dm = 'var(--font-dm-sans), Inter, sans-serif';
   const cg = 'var(--font-cormorant), Georgia, serif';
@@ -231,6 +268,29 @@ export default function MentalHealthPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!breathingActive) return;
+    const timer = setInterval(() => {
+      setBreathingCount(prev => {
+        if (prev <= 1) {
+          setBreathingPhase(current => {
+            if (current === 'inhale') return 'hold';
+            if (current === 'hold') return 'exhale';
+            if (current === 'exhale') return 'hold2';
+            if (current === 'hold2') {
+              setBreathingCycles(c => c + 1);
+              return 'inhale';
+            }
+            return 'inhale';
+          });
+          return 4;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [breathingActive, breathingPhase]);
 
   const handleSaveCheckIn = async () => {
     try {
@@ -298,12 +358,10 @@ export default function MentalHealthPage() {
       return cd.getFullYear() === target.getFullYear() && cd.getMonth() === target.getMonth() && cd.getDate() === target.getDate();
     });
     const isToday = target.getDay() === d.getDay();
-    const icons = ['🧘','📔','🚶','🫁','📔','🌿','📋'];
-    const labels = ['Morning\nmeditation','Journaling','10 min walk','Breathing','Weekly\nreview','Rest +\nNature','Week\nplanning'];
     return {
       key: isToday ? 'TODAY' : key,
-      emoji: icons[idx],
-      label: labels[idx],
+      emoji: wellnessPlan[idx].emoji,
+      label: wellnessPlan[idx].label,
       status: hasCheckIn ? 'done' : isToday ? 'today' : 'future' as 'done' | 'today' | 'future',
     };
   });
@@ -353,9 +411,10 @@ export default function MentalHealthPage() {
           { value: String(streak || 0), label: 'Day Streak', color: '#4ADE80' },
           { value: '∞', label: 'Always Free', color: '#FFFFFF' },
         ]}
+        contentShiftY={-25}
       />
 
-      <div className="mx-auto max-w-[1040px] px-4 py-8" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div className="mx-auto max-w-[1040px] px-4 py-8" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* ══ DAILY CHECK-IN CARD ══════════════════════════════════════════════ */}
         <div className="relative overflow-hidden" style={{ background: '#fff', border: '1px solid rgba(11,22,40,0.08)', borderRadius: 20, boxShadow: '0px 8px 36px rgba(11,22,40,0.11)', padding: '33px 37px', display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -434,7 +493,7 @@ export default function MentalHealthPage() {
             <div style={{ border: '1px solid rgba(11,22,40,0.08)', borderRadius: 18, overflow: 'hidden', boxShadow: '0px 2px 14px rgba(11,22,40,0.07)' }}>
               <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(11,22,40,0.08)' }}>
                 <span style={{ fontFamily: cg, fontWeight: 600, fontSize: 17.6, color: '#0c1424' }}>🗓 Weekly Wellness Plan</span>
-                <button style={{ fontFamily: dm, fontWeight: 600, fontSize: 12, color: '#c99730', background: 'none', border: 'none', cursor: 'pointer' }}>Customize</button>
+                <button onClick={() => setShowCustomize(true)} style={{ fontFamily: dm, fontWeight: 600, fontSize: 12, color: '#c99730', background: 'none', border: 'none', cursor: 'pointer' }}>Customize</button>
               </div>
 
               <div className="grid grid-cols-7" style={{ minHeight: 120 }}>
@@ -502,7 +561,7 @@ export default function MentalHealthPage() {
 
             <div className="flex flex-col items-center" style={{ marginTop: 8, marginBottom: 4 }}>
               <StressGauge level={stress.level} />
-              <span style={{ fontFamily: cg, fontWeight: 700, fontSize: 20.8, color: stress.level > 0.65 ? '#c4637a' : stress.level > 0.35 ? '#d97706' : '#4a7c59', marginTop: -8 }}>
+              <span style={{ fontFamily: cg, fontWeight: 700, fontSize: 20.8, color: stress.level > 0.65 ? '#c4637a' : stress.level > 0.35 ? '#d97706' : '#4a7c59', marginTop: 4 }}>
                 {stress.label} {stress.level > 0.65 ? '⛈' : stress.level > 0.35 ? '🌤' : '☀'}
               </span>
               <span style={{ fontFamily: dm, fontSize: 12, color: '#6b7a99', marginTop: 4, textAlign: 'center' as const }}>
@@ -511,12 +570,15 @@ export default function MentalHealthPage() {
             </div>
 
             <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column' }}>
-              {(stress.tips.slice(1).length ? stress.tips.slice(1) : ['Take 5 minutes of box breathing before your study session', 'Spend 10 min outside — sunlight resets cortisol naturally', "Write tomorrow's 3 tasks tonight — reduces morning anxiety"]).map((tip, i, arr) => (
+              {(stress.tips.slice(1).length ? stress.tips.slice(1) : ['Take 5 minutes of box breathing before your study session', 'Spend 10 min outside — sunlight resets cortisol naturally', "Write tomorrow's 3 tasks tonight — reduces morning anxiety"]).map((tip, i, arr) => {
+                const cleanTip = tip.replace(/ — /g, '. ').replace(/—/g, '. ');
+                return (
                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '7px 0', borderBottom: i < arr.length - 1 ? '1px solid rgba(11,22,40,0.08)' : 'none' }}>
-                  <span style={{ fontSize: 14, lineHeight: '21.7px', flexShrink: 0 }}>{['🧘','🌿','📋'][i]}</span>
-                  <span style={{ fontFamily: dm, fontSize: 12, color: '#6b7a99', lineHeight: '18.6px' }}>{tip}</span>
+                  <span style={{ fontSize: 14, lineHeight: '21.7px', flexShrink: 0 }}>{['🧘','🌿',''][i]}</span>
+                  <span style={{ fontFamily: dm, fontSize: 12, color: '#6b7a99', lineHeight: '18.6px' }}>{cleanTip}</span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -560,42 +622,253 @@ export default function MentalHealthPage() {
               Tools for Your Mind
             </h2>
             <p style={{ fontFamily: dm, fontSize: 14, color: '#6b7a99', margin: 0 }}>
-              Quick practices designed for UPSC aspirants do them between study sessions.
+              Quick practices designed for UPSC aspirants — do them between study sessions.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mindTools.map((tool, i) => {
-              const stat = toolStats.find((s: any) => s.toolType === tool.title);
-              return (
-                <div key={i} style={{ background: '#fff', border: '1px solid rgba(11,22,40,0.08)', borderRadius: 16, overflow: 'hidden', boxShadow: '0px 2px 7px rgba(11,22,40,0.07)', display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ height: 4, background: tool.borderColor }} />
-                  <div style={{ padding: '20px 22px 18px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
-                    <span style={{ fontSize: 26, lineHeight: '26px' }}>{tool.icon}</span>
-                    <span style={{ fontFamily: dm, fontWeight: 700, fontSize: 15.5, color: '#0c1424' }}>{tool.title}</span>
-                    <p style={{ fontFamily: dm, fontSize: 13, color: '#6b7a99', lineHeight: '20px', margin: 0, flex: 1 }}>{tool.desc}</p>
-                    {stat && (
-                      <span style={{ fontFamily: dm, fontSize: 11, color: '#4a7c59' }}>
-                        ✅ {stat.sessions} sessions · {stat.totalMinutes} min
-                      </span>
-                    )}
-                    <div className="flex items-center justify-between" style={{ paddingTop: 6 }}>
-                      <span style={{ fontFamily: dm, fontSize: 12, color: '#9aa3b8', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        {tool.duration} min
-                      </span>
-                      <button
-                        onClick={() => handleStartTool(tool)}
-                        style={{ fontFamily: dm, fontWeight: 700, fontSize: 12, color: '#c99730', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
-                      >
-                        {tool.action}
+          {/* Tool Cards Grid */}
+          {!activeTool && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {mindTools.map((tool, i) => {
+                const stat = toolStats.find((s: any) => s.toolType === tool.title);
+                return (
+                  <div key={i} onClick={() => setActiveTool(tool.title)} style={{ background: '#fff', border: '1px solid rgba(11,22,40,0.08)', borderRadius: 16, overflow: 'hidden', boxShadow: '0px 2px 7px rgba(11,22,40,0.07)', display: 'flex', flexDirection: 'column', cursor: 'pointer', transition: 'transform 0.15s' }} onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')} onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}>
+                    <div style={{ height: 4, background: tool.borderColor }} />
+                    <div style={{ padding: '20px 22px 18px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+                      <span style={{ fontSize: 26, lineHeight: '26px' }}>{tool.icon}</span>
+                      <span style={{ fontFamily: dm, fontWeight: 700, fontSize: 15.5, color: '#0c1424' }}>{tool.title}</span>
+                      <p style={{ fontFamily: dm, fontSize: 13, color: '#6b7a99', lineHeight: '20px', margin: 0, flex: 1 }}>{tool.desc}</p>
+                      {stat && (
+                        <span style={{ fontFamily: dm, fontSize: 11, color: '#4a7c59' }}>
+                          ✅ {stat.sessions} sessions · {stat.totalMinutes} min
+                        </span>
+                      )}
+                      <div className="flex items-center justify-between" style={{ paddingTop: 6 }}>
+                        <span style={{ fontFamily: dm, fontSize: 12, color: '#9aa3b8', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          {tool.duration} min
+                        </span>
+                        <span style={{ fontFamily: dm, fontWeight: 700, fontSize: 12, color: '#c99730', display: 'flex', alignItems: 'center', gap: 3 }}>
+                          {tool.action}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Active Tool Detail View */}
+          {activeTool && (
+            <div style={{ background: '#f8f9fb', borderRadius: 18, padding: '32px', position: 'relative' }}>
+              <button onClick={() => { setActiveTool(null); setBreathingActive(false); setBreathingPhase('idle'); setBreathingCount(4); setPressureRelieved(false); }} style={{ position: 'absolute', top: 16, right: 16, background: '#fff', border: '1px solid rgba(11,22,40,0.12)', borderRadius: 8, padding: '6px 12px', fontFamily: dm, fontSize: 12, color: '#6b7a99', cursor: 'pointer' }}>← Back</button>
+
+              {/* Box Breathing */}
+              {activeTool === 'Box Breathing' && (
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span style={{ fontSize: 28 }}>🫁</span>
+                    <h3 style={{ fontFamily: cg, fontWeight: 600, fontSize: 28, color: '#0c1424', margin: 0 }}>Box Breathing</h3>
+                  </div>
+                  <p style={{ fontFamily: dm, fontSize: 14, color: '#6b7a99', marginBottom: 20 }}>Used by Navy SEALs and IAS toppers alike — 4 counts in, 4 hold, 4 out, 4 hold.</p>
+
+                  <div className="flex items-center justify-center gap-3 mb-8">
+                    {['IN · 4s', 'HOLD · 4s', 'OUT · 4s', 'HOLD · 4s'].map((phase, i) => {
+                      const phases = ['inhale', 'hold', 'exhale', 'hold2'];
+                      const isActive = breathingPhase === phases[i];
+                      return (
+                        <span key={phase} style={{ padding: '8px 16px', borderRadius: 8, fontFamily: dm, fontWeight: 600, fontSize: 13, background: isActive ? '#d1fae5' : '#fff', color: isActive ? '#065f46' : '#6b7a99', border: `1px solid ${isActive ? '#a7f3d0' : 'rgba(11,22,40,0.08)'}` }}>
+                          {phase}
+                        </span>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex flex-col items-center mb-8">
+                    <div style={{ position: 'relative', width: 200, height: 200 }}>
+                      <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, #d1fae5 0%, #e5e7eb 100%)', opacity: breathingActive ? 0.8 : 0.3, transition: 'all 4s ease-in-out', transform: breathingPhase === 'inhale' ? 'scale(1.1)' : breathingPhase === 'exhale' ? 'scale(0.9)' : 'scale(1)' }} />
+                      <div style={{ position: 'absolute', inset: 30, borderRadius: '50%', background: 'radial-gradient(circle, #a7f3d0 0%, #d1fae5 100%)', opacity: breathingActive ? 0.6 : 0.2, transition: 'all 4s ease-in-out', transform: breathingPhase === 'inhale' ? 'scale(1.15)' : breathingPhase === 'exhale' ? 'scale(0.85)' : 'scale(1)' }} />
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontFamily: cg, fontWeight: 700, fontSize: 48, color: '#0c1424' }}>{breathingCount}</span>
+                        <span style={{ fontFamily: dm, fontWeight: 600, fontSize: 12, color: '#4a7c59', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{breathingPhase === 'idle' ? 'Ready' : breathingPhase === 'inhale' ? ' INHALE' : breathingPhase === 'hold' ? '⏸ HOLD' : breathingPhase === 'exhale' ? ' EXHALE' : '⏸ HOLD'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p style={{ fontFamily: dm, fontSize: 16, color: '#374560', textAlign: 'center', marginBottom: 8 }}>
+                    {breathingPhase === 'idle' ? 'Press Start to begin your breathing exercise' : breathingPhase === 'inhale' ? 'Breathe in slowly through your nose...' : breathingPhase === 'hold' ? 'Hold your breath gently...' : breathingPhase === 'exhale' ? 'Breathe out slowly through your mouth...' : 'Hold...'}
+                  </p>
+                  <p style={{ fontFamily: dm, fontSize: 13, color: '#9aa3b8', textAlign: 'center', marginBottom: 20 }}>Cycles completed: {breathingCycles}</p>
+
+                  <div className="flex items-center justify-center gap-3">
+                    <button onClick={() => { setBreathingActive(true); setBreathingPhase('inhale'); setBreathingCount(4); }} disabled={breathingActive} style={{ flex: 1, maxWidth: 400, background: breathingActive ? '#9aa3b8' : '#4a7c59', border: 'none', borderRadius: 12, padding: '14px 28px', fontFamily: dm, fontWeight: 700, fontSize: 16, color: '#fff', cursor: breathingActive ? 'not-allowed' : 'pointer' }}>
+                      ▶ Start
+                    </button>
+                    <button onClick={() => { setBreathingActive(false); setBreathingPhase('idle'); setBreathingCount(4); setBreathingCycles(0); }} disabled={!breathingActive} style={{ background: breathingActive ? '#fff' : '#e5e7eb', border: '1px solid rgba(11,22,40,0.12)', borderRadius: 12, padding: '14px 28px', fontFamily: dm, fontWeight: 600, fontSize: 16, color: breathingActive ? '#0c1424' : '#9aa3b8', cursor: breathingActive ? 'pointer' : 'not-allowed' }}>
+                      Stop
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Focus Meditation */}
+              {activeTool === 'Focus Meditation' && (
+                <div className="text-center">
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>🧘</div>
+                  <h3 style={{ fontFamily: cg, fontWeight: 600, fontSize: 28, color: '#0c1424', marginBottom: 8 }}>Focus Meditation</h3>
+                  <p style={{ fontFamily: dm, fontSize: 14, color: '#6b7a99', marginBottom: 24 }}>7-minute guided session to enter deep focus before studying.</p>
+
+                  <div style={{ background: '#0c1424', borderRadius: 18, padding: '32px', marginBottom: 16 }}>
+                    <p style={{ fontFamily: cg, fontStyle: 'italic', fontSize: 18, color: '#fff', lineHeight: '32px', margin: 0 }}>
+                      "Close your eyes. Take a slow breath in through your nose for 4 counts. Feel your chest and belly rise. Now breathe out slowly for 6 counts through your mouth. Let your shoulders drop. You are safe. You are capable. The exam is not today. Right now, all that exists is this breath..."
+                    </p>
+                  </div>
+
+                  <button style={{ width: '100%', maxWidth: 400, background: '#4a7fa8', border: 'none', borderRadius: 12, padding: '14px 28px', fontFamily: dm, fontWeight: 700, fontSize: 16, color: '#fff', cursor: 'pointer' }}>
+                    ▶ Begin Session (7 min)
+                  </button>
+                </div>
+              )}
+
+              {/* Reflective Journaling */}
+              {activeTool === 'Reflective Journaling' && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <span style={{ fontSize: 28 }}>📔</span>
+                      <h3 style={{ fontFamily: cg, fontWeight: 600, fontSize: 28, color: '#0c1424', margin: 0 }}>Reflective Journaling</h3>
+                    </div>
+                    <span style={{ fontFamily: dm, fontSize: 12, color: '#6b7a99' }}>Thu, April 24</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {['Gratitude', 'Anxiety', 'Reflection', 'Win', 'Self-talk', 'Free write'].map(tab => (
+                      <button key={tab} onClick={() => setJournalTab(tab)} style={{ padding: '6px 16px', borderRadius: 20, fontFamily: dm, fontWeight: 600, fontSize: 12, background: journalTab === tab ? '#e8b84b' : '#fff', color: journalTab === tab ? '#0c1424' : '#6b7a99', border: `1px solid ${journalTab === tab ? '#e8b84b' : 'rgba(11,22,40,0.12)'}`, cursor: 'pointer' }}>
+                        {tab}
                       </button>
+                    ))}
+                  </div>
+
+                  <textarea value={journalEntry} onChange={e => setJournalEntry(e.target.value)} rows={4} placeholder={journalTab === 'Gratitude' ? 'What is one thing I am grateful for today?' : journalTab === 'Anxiety' ? 'What is worrying me right now?' : journalTab === 'Reflection' ? 'What did I learn today?' : journalTab === 'Win' ? 'What went well today?' : journalTab === 'Self-talk' ? 'What am I telling myself?' : 'Write freely...'} style={{ width: '100%', background: '#fff', border: '1px solid rgba(11,22,40,0.12)', borderRadius: 12, padding: '16px', fontFamily: cg, fontStyle: 'italic', fontSize: 15, color: '#0c1424', outline: 'none', resize: 'vertical', marginBottom: 12, boxSizing: 'border-box' }} />
+
+                  <p style={{ fontFamily: dm, fontSize: 11, color: '#9aa3b8', marginBottom: 12 }}>Your journal is encrypted and private.</p>
+
+                  <button onClick={() => { if (journalEntry.trim()) { setJournalEntries(prev => [{ date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' }).toUpperCase(), text: `"${journalEntry}"`, mood: '🙂' }, ...prev]); setJournalEntry(''); } }} style={{ background: 'rgba(232,184,75,0.15)', border: '1px solid rgba(232,184,75,0.3)', borderRadius: 8, padding: '8px 20px', fontFamily: dm, fontWeight: 600, fontSize: 13, color: '#c99730', cursor: 'pointer' }}>
+                    Save Entry →
+                  </button>
+
+                  <div style={{ marginTop: 24 }}>
+                    <p style={{ fontFamily: dm, fontWeight: 700, fontSize: 11, letterSpacing: '1px', textTransform: 'uppercase', color: '#9aa3b8', marginBottom: 12 }}>Past Entries</p>
+                    <div className="flex flex-col gap-3">
+                      {journalEntries.map((entry, i) => (
+                        <div key={i} style={{ background: '#fff', borderRadius: 12, padding: '16px', border: '1px solid rgba(11,22,40,0.08)', borderLeft: `4px solid ${entry.mood === '🔥' ? '#e8b84b' : entry.mood === '🙂' ? '#4ade80' : '#fca5a5'}` }}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span style={{ fontFamily: dm, fontWeight: 600, fontSize: 11, color: '#9aa3b8' }}>{entry.date}</span>
+                            <span style={{ fontSize: 14 }}>{entry.mood}</span>
+                          </div>
+                          <p style={{ fontFamily: cg, fontStyle: 'italic', fontSize: 14, color: '#374560', lineHeight: '22px', margin: 0 }}>{entry.text}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              )}
+
+              {/* UPSC Affirmations */}
+              {activeTool === 'Positive Affirmations' && (
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span style={{ fontSize: 28 }}>💫</span>
+                    <h3 style={{ fontFamily: cg, fontWeight: 600, fontSize: 28, color: '#0c1424', margin: 0 }}>UPSC Affirmations</h3>
+                  </div>
+                  <p style={{ fontFamily: dm, fontSize: 14, color: '#6b7a99', marginBottom: 20 }}>Say each one out loud. Let it land before you scroll to the next.</p>
+
+                  <div style={{ background: '#0c1424', borderRadius: 18, padding: '32px', marginBottom: 16 }}>
+                    <p style={{ fontFamily: cg, fontStyle: 'italic', fontSize: 20, color: '#fff', lineHeight: '32px', margin: 0, textAlign: 'center' }}>
+                      {['"I am exactly where I need to be. Every hour I study today brings me closer to my dream."', '"My preparation is unique to me. I don\'t need to compare my chapter 3 to someone else\'s chapter 20."', '"I am capable of handling uncertainty. The process itself is building my resilience."', '"Every mock test is data, not destiny. I learn, I adjust, I improve."', '"I deserve rest. I deserve breaks. I deserve to be kind to myself."'][affirmationIdx % 5]}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3 mb-8">
+                    <button onClick={() => setAffirmationIdx(i => i + 1)} style={{ flex: 1, background: '#e8b84b', border: 'none', borderRadius: 12, padding: '14px 28px', fontFamily: dm, fontWeight: 700, fontSize: 16, color: '#0c1424', cursor: 'pointer' }}>
+                      Next →
+                    </button>
+                    <button onClick={() => { const current = ['"I am exactly where I need to be. Every hour I study today brings me closer to my dream."', '"My preparation is unique to me. I don\'t need to compare my chapter 3 to someone else\'s chapter 20."', '"I am capable of handling uncertainty. The process itself is building my resilience."', '"Every mock test is data, not destiny. I learn, I adjust, I improve."', '"I deserve rest. I deserve breaks. I deserve to be kind to myself."'][affirmationIdx % 5]; if (!savedAffirmations.includes(current)) setSavedAffirmations(prev => [...prev, current]); }} style={{ background: '#fff', border: '1px solid rgba(11,22,40,0.12)', borderRadius: 12, padding: '14px 20px', fontFamily: dm, fontWeight: 600, fontSize: 14, color: '#6b7a99', cursor: 'pointer' }}>
+                      🔖 Save
+                    </button>
+                  </div>
+
+                  <p style={{ fontFamily: dm, fontWeight: 700, fontSize: 11, letterSpacing: '1px', textTransform: 'uppercase', color: '#9aa3b8', marginBottom: 12 }}>Your Saved Affirmations</p>
+                  <div className="flex flex-col gap-3">
+                    {savedAffirmations.map((aff, i) => (
+                      <div key={i} style={{ background: '#fff', borderRadius: 12, padding: '16px', border: '1px solid rgba(11,22,40,0.08)' }}>
+                        <p style={{ fontFamily: cg, fontStyle: 'italic', fontSize: 15, color: '#374560', lineHeight: '24px', margin: 0 }}>{aff}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 5-4-3-2-1 Grounding */}
+              {activeTool === '5-4-3-2-1 Grounding' && (
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span style={{ fontSize: 28 }}>🌱</span>
+                    <h3 style={{ fontFamily: cg, fontWeight: 600, fontSize: 28, color: '#0c1424', margin: 0 }}>5-4-3-2-1 Grounding</h3>
+                  </div>
+                  <p style={{ fontFamily: dm, fontSize: 14, color: '#6b7a99', marginBottom: 20 }}>When anxiety spikes, bring yourself back to the present. Go through each step slowly.</p>
+
+                  <div className="flex flex-col gap-3">
+                    {[
+                      { step: 'STEP 1 — SEE', title: 'Name 5 things you can see right now', hint: 'Your phone, a book, the ceiling light... look around slowly.' },
+                      { step: 'STEP 2 — TOUCH', title: 'Name 4 things you can physically feel', hint: 'Chair under you, clothes on your skin, your breath...' },
+                      { step: 'STEP 3 — HEAR', title: 'Name 3 things you can hear right now', hint: 'Fan noise, distant traffic, your own breathing...' },
+                      { step: 'STEP 4 — SMELL', title: 'Name 2 things you can smell', hint: 'Paper, tea, fresh air — even subtle scents count.' },
+                      { step: 'STEP 5 — TASTE', title: 'Name 1 thing you can taste', hint: 'Water, a recent meal, or just the sensation of your mouth.' },
+                    ].map((item, i) => (
+                      <div key={i} style={{ background: '#fff', borderRadius: 12, padding: '16px 20px', border: '1px solid rgba(11,22,40,0.08)', borderLeft: i === 0 ? '4px solid #4a7c59' : '4px solid transparent' }}>
+                        <p style={{ fontFamily: dm, fontWeight: 700, fontSize: 11, letterSpacing: '0.5px', color: '#4a7c59', marginBottom: 4 }}>{item.step}</p>
+                        <p style={{ fontFamily: dm, fontWeight: 600, fontSize: 14, color: '#0c1424', marginBottom: 4 }}>{item.title}</p>
+                        <p style={{ fontFamily: dm, fontSize: 12, color: '#6b7a99', margin: 0 }}>{item.hint}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Study Pressure Release */}
+              {activeTool === 'Study Pressure Release' && (
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span style={{ fontSize: 28 }}>🎯</span>
+                    <h3 style={{ fontFamily: cg, fontWeight: 600, fontSize: 28, color: '#0c1424', margin: 0 }}>Study Pressure Release</h3>
+                  </div>
+                  <p style={{ fontFamily: dm, fontSize: 14, color: '#6b7a99', marginBottom: 20 }}>Quick somatic exercise to release shoulder & neck tension after long study hours.</p>
+
+                  <div style={{ background: '#0c1424', borderRadius: 18, padding: '24px', marginBottom: 20 }}>
+                    <p style={{ fontFamily: cg, fontStyle: 'italic', fontSize: 16, color: '#fff', lineHeight: '28px', margin: 0 }}>
+                      Release exercise: Roll your neck slowly 3 times each direction. Shrug shoulders up to ears hold 5 seconds, release. Repeat 3 times. Feel the tension go.
+                    </p>
+                  </div>
+
+                  <div style={{ marginBottom: 20 }}>
+                    <p style={{ fontFamily: dm, fontWeight: 700, fontSize: 15, color: '#0c1424', marginBottom: 12 }}>What to do when comparison hits:</p>
+                    <ol style={{ fontFamily: dm, fontSize: 14, color: '#6b7a99', lineHeight: '28px', margin: 0, paddingLeft: 20 }}>
+                      <li>Close the app immediately</li>
+                      <li>Write one thing you did well today</li>
+                      <li>Remember your unique reasons for attempting this exam</li>
+                      <li>Come back to your own study plan — not theirs</li>
+                    </ol>
+                  </div>
+
+                  <button onClick={() => setPressureRelieved(true)} style={{ width: '100%', background: pressureRelieved ? '#4ade80' : '#4a7c59', border: 'none', borderRadius: 12, padding: '14px 28px', fontFamily: dm, fontWeight: 700, fontSize: 16, color: '#fff', cursor: 'pointer' }}>
+                    {pressureRelieved ? '✓ I feel relieved' : 'I feel relieved'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ══ CRISIS SUPPORT BANNER ═════════════════════════════════════════════ */}
@@ -642,6 +915,55 @@ export default function MentalHealthPage() {
             ))}
           </div>
         </div>
+
+        {/* Customize Wellness Plan Modal */}
+        {showCustomize && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setShowCustomize(false)}>
+            <div className="w-full max-w-lg rounded-[18px] bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 style={{ fontFamily: cg, fontWeight: 600, fontSize: 20, color: '#0c1424' }}>Customize Weekly Wellness Plan</h3>
+                <button onClick={() => setShowCustomize(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#6b7a99', cursor: 'pointer' }}>✕</button>
+              </div>
+              <p style={{ fontFamily: dm, fontSize: 13, color: '#6b7a99', marginBottom: 16 }}>Pick a wellness activity for each day of the week.</p>
+              <div className="flex flex-col gap-3" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map((day, idx) => (
+                  <div key={day} className="flex items-center gap-3">
+                    <span style={{ fontFamily: dm, fontWeight: 600, fontSize: 12, color: '#9aa3b8', width: 70, flexShrink: 0 }}>{day}</span>
+                    <select
+                      value={wellnessPlan[idx].emoji + '|' + wellnessPlan[idx].label}
+                      onChange={e => {
+                        const [emoji, ...labelParts] = e.target.value.split('|');
+                        setWellnessPlan(prev => prev.map((item, i) => i === idx ? { emoji, label: labelParts.join('|') } : item));
+                      }}
+                      style={{ flex: 1, borderRadius: 8, border: '1px solid rgba(11,22,40,0.12)', padding: '8px 12px', fontFamily: dm, fontSize: 13, color: '#0c1424', background: '#fff', cursor: 'pointer' }}
+                    >
+                      {[
+                        ['🧘','Morning meditation'],
+                        ['','Journaling'],
+                        ['🚶','10 min walk'],
+                        ['🫁','Breathing exercises'],
+                        ['📔','Weekly review'],
+                        ['🌿','Rest + Nature'],
+                        ['📋','Week planning'],
+                        ['🧘','Yoga session'],
+                        ['🎵','Music break'],
+                        ['💤','Power nap'],
+                        ['📖','Read for pleasure'],
+                        ['🤝','Call a friend'],
+                      ].map(([emoji, label]) => (
+                        <option key={label} value={emoji + '|' + label}>{emoji} {label}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => setShowCustomize(false)} style={{ flex: 1, borderRadius: 10, border: '1px solid rgba(11,22,40,0.12)', padding: '10px 0', fontFamily: dm, fontWeight: 600, fontSize: 14, color: '#6b7a99', cursor: 'pointer', background: '#fff' }}>Cancel</button>
+                <button onClick={() => setShowCustomize(false)} style={{ flex: 1, borderRadius: 10, border: 'none', padding: '10px 0', fontFamily: dm, fontWeight: 700, fontSize: 14, color: '#fff', cursor: 'pointer', background: '#090e1c' }}>Save Plan</button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

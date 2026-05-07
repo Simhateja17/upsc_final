@@ -241,6 +241,7 @@ export const libraryService = {
 
 export const pricingService = {
   getPlans: () => api.get<any>('/pricing/plans'),
+  getMentorshipSeats: () => api.get<any>('/mentorship/seats'),
   bookCall: (data: { name: string; email: string; phone?: string; message?: string }) =>
     api.post<any>('/mentorship/book-call', data, authConfig()),
   getTestimonials: () => api.get<any>('/mentorship/testimonials'),

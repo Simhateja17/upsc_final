@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { studyGroupService } from '@/lib/services';
 
@@ -30,17 +31,18 @@ interface Message {
 }
 
 export default function StudyGroupsPage() {
+  const searchParams = useSearchParams();
   const [groups, setGroups] = useState<Group[]>([]);
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'rooms' | 'my'>('rooms');
+  const [activeTab, setActiveTab] = useState<'rooms' | 'solo' | 'my'>('rooms');
   const [subjectFilter, setSubjectFilter] = useState('All Rooms');
   const [search, setSearch] = useState('');
   const [messageInput, setMessageInput] = useState('');
   const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({ name: '', description: '', subject: 'Polity', maxMembers: 50 });
+  const [createForm, setCreateForm] = useState({ name: '', description: '', subject: 'Polity', maxMembers: 50, focusTopic: '', subjects: [] as string[], timeGoal: 4 });
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -76,6 +78,13 @@ export default function StudyGroupsPage() {
     })();
     return () => { mounted = false; };
   }, [fetchGroups, fetchMyGroups]);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'solo' || tab === 'my' || tab === 'rooms') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const openGroup = useCallback(async (group: Group) => {
     setSelectedGroup(group);
@@ -170,17 +179,17 @@ export default function StudyGroupsPage() {
   };
 
   const handleCreate = async () => {
-    if (!createForm.name || !createForm.subject) return;
+    if (!createForm.name) return;
     try {
       const res = await studyGroupService.createGroup({
         name: createForm.name,
-        description: createForm.description,
-        subject: createForm.subject,
+        description: createForm.description || createForm.focusTopic || (createForm.subjects || []).join(', '),
+        subject: (createForm.subjects && createForm.subjects.length > 0) ? createForm.subjects[0] : createForm.subject,
         maxMembers: createForm.maxMembers,
       });
       if (res.status === 'success') {
         setShowCreate(false);
-        setCreateForm({ name: '', description: '', subject: 'Polity', maxMembers: 50 });
+        setCreateForm({ name: '', description: '', subject: 'Polity', maxMembers: 50, focusTopic: '', subjects: [], timeGoal: 4 });
         await fetchGroups();
         await fetchMyGroups();
       }
@@ -236,6 +245,8 @@ export default function StudyGroupsPage() {
           { value: '2.4h', label: 'Avg. Session', color: '#F87171' },
           { value: String(groups.length || 0), label: 'Groups', color: '#FFFFFF' },
         ]}
+        contentShiftY={-20}
+        titleMarginBottom={12}
       />
 
       <main className="mx-auto max-w-[1244px] px-4 pb-16">
@@ -244,18 +255,38 @@ export default function StudyGroupsPage() {
           <div className="flex gap-1">
             <button
               onClick={() => setActiveTab('rooms')}
-              className={`rounded-[8px] px-5 py-2 text-[13px] font-semibold ${activeTab === 'rooms' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
+              className={`flex items-center gap-2 rounded-[8px] px-5 py-2 text-[13px] font-semibold ${activeTab === 'rooms' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
             >
-              🏛️ Study Rooms
+              ️ Study Rooms
+            </button>
+            <button
+              onClick={() => setActiveTab('solo')}
+              className={`flex items-center gap-2 rounded-[8px] px-5 py-2 text-[13px] font-semibold ${activeTab === 'solo' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M3 18v-6a9 9 0 1118 0v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" fill="currentColor"/>
+              </svg>
+              Solo Focus
             </button>
             <button
               onClick={() => setActiveTab('my')}
-              className={`rounded-[8px] px-5 py-2 text-[13px] font-semibold ${activeTab === 'my' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
+              className={`flex items-center gap-2 rounded-[8px] px-5 py-2 text-[13px] font-semibold ${activeTab === 'my' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
             >
-              🎯 My Groups {myGroups.length > 0 ? `(${myGroups.length})` : ''}
+               My Groups {myGroups.length > 0 ? `(${myGroups.length})` : ''}
             </button>
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={() => setActiveTab('solo')}
+              className="flex items-center gap-2 rounded-[8px] bg-[#090E1C] px-5 py-2 text-[13px] font-semibold text-white"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M3 18v-6a9 9 0 1118 0v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" fill="currentColor"/>
+              </svg>
+              Solo Session
+            </button>
             <button
               onClick={() => setShowCreate(true)}
               className="rounded-[8px] bg-[#E8B84B] px-5 py-2 text-[13px] font-semibold text-[#090E1C]"
@@ -265,7 +296,68 @@ export default function StudyGroupsPage() {
           </div>
         </div>
 
-        {/* Search & filters */}
+        {/* Solo Focus Tab Content */}
+        {activeTab === 'solo' && (
+          <section className="mt-5">
+            {/* Solo Session Header */}
+            <div className="mb-4 flex items-center gap-3">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <path d="M3 18v-6a9 9 0 1118 0v6" stroke="#6B7A99" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" fill="#6B7A99"/>
+              </svg>
+              <h2 className="text-[24px] font-bold text-[#0C1424]">Solo Session</h2>
+            </div>
+            <div className="overflow-hidden rounded-[14px] border border-[#D7DEE9] bg-[linear-gradient(90deg,#0C1424_0%,#1B2C59_100%)] px-6 py-5 text-white shadow-[0_8px_22px_rgba(12,20,36,0.18)]">
+              <div className="flex flex-wrap items-center gap-5">
+                {/* Avatars */}
+                <div className="flex -space-x-2">
+                  {['A', 'R', 'P', 'B'].map((x, i) => (
+                    <span
+                      key={x}
+                      className="flex size-9 items-center justify-center rounded-full border-2 border-[#0C1424] bg-[#172444] text-[11px] font-bold text-white"
+                      style={{ zIndex: 4 - i }}
+                    >
+                      {x}
+                    </span>
+                  ))}
+                  <span className="flex size-9 items-center justify-center rounded-full border-2 border-[#0C1424] bg-[#E8B84B] text-[9px] font-bold text-[#0C1424]" style={{ zIndex: 0 }}>
+                    +120
+                  </span>
+                </div>
+
+                {/* Info */}
+                <div className="min-w-[200px] flex-1">
+                  <p className="text-[15px] font-bold text-white">
+                    Live Study Room — Silent Mode
+                  </p>
+                  <p className="mt-1 text-[12px] text-white/45">
+                    Currently studying: Modern History · QSL Focus Guard ON
+                  </p>
+                </div>
+
+                {/* Stats */}
+                <div className="flex gap-8 text-center">
+                  <div>
+                    <div className="text-[22px] font-bold leading-none text-[#E8B84B]">124</div>
+                    <div className="mt-1 text-[10px] uppercase tracking-[0.8px] text-white/38">Online Now</div>
+                  </div>
+                  <div>
+                    <div className="text-[22px] font-bold leading-none text-[#E8B84B]">2h 14m</div>
+                    <div className="mt-1 text-[10px] uppercase tracking-[0.8px] text-white/38">Session</div>
+                  </div>
+                </div>
+
+                {/* Join Button */}
+                <button className="rounded-[9px] bg-[#E8B84B] px-6 py-[10px] text-[13px] font-bold text-[#0C1424]">
+                  Join Study Room →
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Search & filters - only show for rooms tab */}
+        {activeTab === 'rooms' && (
         <section className="mt-5 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap gap-2">
             {SUBJECTS.map((item) => (
@@ -290,7 +382,11 @@ export default function StudyGroupsPage() {
             />
           </div>
         </section>
+        )}
 
+        {/* Room/My Groups Content */}
+        {activeTab !== 'solo' && (
+        <>
         {/* Divider */}
         <div className="mt-5 flex items-center gap-3">
           <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">
@@ -480,71 +576,152 @@ export default function StudyGroupsPage() {
             </div>
           ))}
         </section>
+        </>
+        )}
       </main>
 
       {/* Create Group Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-md rounded-[18px] border border-[#E1E6EF] bg-white p-6 shadow-xl">
-            <h3 className="mb-4 text-[18px] font-bold text-[#0C1424]">Create Study Room</h3>
-            <div className="flex flex-col gap-3">
+          <div className="w-full max-w-[520px] rounded-[20px] bg-[#F4F6FA] p-8 shadow-2xl">
+            {/* Header */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2">
+                <span className="text-[24px]">🚀</span>
+                <span className="rounded-[8px] bg-[#FFD700] px-3 py-1.5">
+                  <h3 className="text-[22px] font-bold text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)' }}>
+                    Create Study Room
+                  </h3>
+                </span>
+              </div>
+              <p className="mt-2 text-[14px] text-[#6B7A99]">
+                Set up your space and invite aspirants to study together.
+              </p>
+            </div>
+
+            {/* Form */}
+            <div className="flex flex-col gap-5">
+              {/* Room Name */}
               <div>
-                <label className="mb-1 block text-[12px] font-semibold text-[#6B7A99]">Room Name</label>
+                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[1px] text-[#6B7A99]">
+                  Room Name
+                </label>
                 <input
                   type="text"
                   value={createForm.name}
                   onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="e.g. Polity Warriors"
-                  className="w-full rounded-[10px] border border-[#E1E6EF] bg-[#F4F6FA] px-4 py-2 text-[13px] outline-none"
+                  placeholder="e.g., Polity Warriors · Evening Batch"
+                  className="w-full rounded-[12px] border border-[#DDE3EC] bg-white px-4 py-3 text-[14px] text-[#0C1424] outline-none placeholder:text-[#9CA3AF] focus:border-[#E8B84B]"
                 />
               </div>
+
+              {/* Focus Topic */}
               <div>
-                <label className="mb-1 block text-[12px] font-semibold text-[#6B7A99]">Subject</label>
-                <select
-                  value={createForm.subject}
-                  onChange={(e) => setCreateForm((p) => ({ ...p, subject: e.target.value }))}
-                  className="w-full rounded-[10px] border border-[#E1E6EF] bg-[#F4F6FA] px-4 py-2 text-[13px] outline-none"
-                >
-                  {SUBJECTS.filter((s) => s !== 'All Rooms').map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-[12px] font-semibold text-[#6B7A99]">Description</label>
-                <textarea
-                  value={createForm.description}
-                  onChange={(e) => setCreateForm((p) => ({ ...p, description: e.target.value }))}
-                  placeholder="What's this group about?"
-                  rows={3}
-                  className="w-full rounded-[10px] border border-[#E1E6EF] bg-[#F4F6FA] px-4 py-2 text-[13px] outline-none"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-[12px] font-semibold text-[#6B7A99]">Max Members</label>
+                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[1px] text-[#6B7A99]">
+                  Focus Topic <span className="font-normal normal-case text-[#9CA3AF]">(Optional)</span>
+                </label>
                 <input
-                  type="number"
-                  min={2}
-                  max={500}
-                  value={createForm.maxMembers}
-                  onChange={(e) => setCreateForm((p) => ({ ...p, maxMembers: Number(e.target.value) }))}
-                  className="w-full rounded-[10px] border border-[#E1E6EF] bg-[#F4F6FA] px-4 py-2 text-[13px] outline-none"
+                  type="text"
+                  value={createForm.focusTopic || ''}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, focusTopic: e.target.value }))}
+                  placeholder="e.g., GS2 — Parliament & Governance"
+                  className="w-full rounded-[12px] border border-[#DDE3EC] bg-white px-4 py-3 text-[14px] text-[#0C1424] outline-none placeholder:text-[#9CA3AF] focus:border-[#E8B84B]"
                 />
+              </div>
+
+              {/* Subjects */}
+              <div>
+                <label className="mb-3 block text-[11px] font-bold uppercase tracking-[1px] text-[#6B7A99]">
+                  Subjects <span className="font-normal normal-case text-[#9CA3AF]">(Optional)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: 'Indian Polity', icon: '🏛️', value: 'Polity' },
+                    { label: 'History', icon: '📜', value: 'History' },
+                    { label: 'Geography', icon: '🌍', value: 'Geography' },
+                    { label: 'Economy', icon: '💰', value: 'Economy' },
+                    { label: 'Environment', icon: '🌿', value: 'Environment' },
+                    { label: 'Science & Tech', icon: '🔬', value: 'Sci & Tech' },
+                    { label: 'Current Affairs', icon: '📰', value: 'Current Affairs' },
+                    { label: 'Ethics', icon: '⚖️', value: 'Ethics' },
+                  ].map((subject) => {
+                    const isSelected = createForm.subjects?.includes(subject.value);
+                    return (
+                      <button
+                        key={subject.value}
+                        onClick={() => {
+                          const current = createForm.subjects || [];
+                          const updated = isSelected
+                            ? current.filter((s: string) => s !== subject.value)
+                            : [...current, subject.value];
+                          setCreateForm((p) => ({ ...p, subjects: updated }));
+                        }}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] font-medium transition-colors ${
+                          isSelected
+                            ? 'border-[#E8B84B] bg-[#E8B84B]/10 text-[#C99730]'
+                            : 'border-[#DDE3EC] bg-white text-[#6B7A99] hover:border-[#C99730]'
+                        }`}
+                      >
+                        <span>{subject.icon}</span>
+                        <span>{subject.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Capacity & Daily Time Goal */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-2 block text-[11px] font-bold uppercase tracking-[1px] text-[#6B7A99]">
+                    Capacity
+                  </label>
+                  <select
+                    value={createForm.maxMembers}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, maxMembers: Number(e.target.value) }))}
+                    className="w-full appearance-none rounded-[12px] border border-[#DDE3EC] bg-white px-4 py-3 text-[14px] text-[#0C1424] outline-none focus:border-[#E8B84B]"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
+                  >
+                    {[0, 5, 10, 20, 50, 100].map((n) => (
+                      <option key={n} value={n}>{n === 0 ? 'Unlimited' : `${n} People`}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-2 block text-[11px] font-bold uppercase tracking-[1px] text-[#6B7A99]">
+                    Daily Time Goal
+                  </label>
+                  <select
+                    value={createForm.timeGoal || 4}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, timeGoal: Number(e.target.value) }))}
+                    className="w-full appearance-none rounded-[12px] border border-[#DDE3EC] bg-white px-4 py-3 text-[14px] text-[#0C1424] outline-none focus:border-[#E8B84B]"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
+                  >
+                    {[1, 2, 3, 4, 5, 6, 8].map((h) => (
+                      <option key={h} value={h}>{h} {h === 1 ? 'hour' : 'hours'} per day</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-            <div className="mt-6 flex gap-3">
+
+            {/* Buttons */}
+            <div className="mt-8 flex gap-3">
               <button
-                onClick={() => setShowCreate(false)}
-                className="flex-1 rounded-[10px] border border-[#E1E6EF] py-2 text-[13px] font-semibold text-[#6B7A99]"
+                onClick={() => {
+                  setShowCreate(false);
+                  setCreateForm({ name: '', description: '', subject: 'Polity', maxMembers: 50, focusTopic: '', subjects: [], timeGoal: 4 });
+                }}
+                className="flex-1 rounded-[12px] border border-[#DDE3EC] bg-white py-3 text-[14px] font-semibold text-[#6B7A99] hover:bg-[#F9FAFB]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreate}
-                disabled={!createForm.name || !createForm.subject}
-                className="flex-1 rounded-[10px] bg-[#E8B84B] py-2 text-[13px] font-bold text-[#090E1C] disabled:opacity-50"
+                disabled={!createForm.name}
+                className="flex-[2] rounded-[12px] bg-[#0C1424] py-3 text-[14px] font-bold text-[#E8B84B] disabled:opacity-50 hover:bg-[#17223E]"
               >
-                Create
+                🚀 Go Live Now
               </button>
             </div>
           </div>

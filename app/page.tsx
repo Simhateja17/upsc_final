@@ -5,13 +5,35 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { studyGroupService } from '@/lib/services';
 import '@/styles/landing.css';
 
+const NAV_DROPDOWNS = {
+  prepare: [
+    { label: 'Study Planner', href: '/dashboard/study-planner' },
+    { label: 'Syllabus Tracker', href: '/dashboard/syllabus-tracker' },
+    { label: 'Video Lectures', href: '/dashboard/video-lectures' },
+  ],
+  practice: [
+    { label: 'Daily MCQs', href: '/dashboard/daily-mcq' },
+    { label: 'Daily Mains Answer', href: '/dashboard/daily-answer' },
+    { label: 'Mock Tests', href: '/dashboard/mock-tests' },
+    { label: 'Previous Year Questions', href: '/dashboard/pyq' },
+    { label: 'Test Series', href: '/dashboard/test-series' },
+  ],
+  revision: [
+    { label: 'Flashcards', href: '/dashboard/flashcards' },
+    { label: 'Mind Maps', href: '/dashboard/mindmap' },
+    { label: 'Spaced Repetition', href: '/dashboard/spaced-repetition' },
+    { label: 'Study Planner', href: '/dashboard/study-planner' },
+  ],
+};
+
 const AI_SLIDES = [
-  { title: 'Mains Evaluator — AI Mode', iconSrc: '/emoji-2.png', iconBg: 'rgba(232,184,75,0.14)', desc: 'Upload your handwritten or typed answers and receive structured feedback, marks, and personalized improvement tips. Our UPSC-examiner style analysis is delivered in under 60 seconds.' },
-  { title: 'Jeet AI Assistant', iconSrc: '/emoji-3.png', iconBg: 'rgba(6,182,212,0.14)', desc: 'Get instant, precise answers for all your UPSC queries, covering everything from syllabus details and current affairs context to answer structuring and general doubt resolution.' },
-  { title: 'Adaptive Mock Test Platform', iconSrc: '/emoji-4.png', iconBg: 'rgba(139,92,246,0.14)', desc: 'Personalised mock tests targeting your weakest areas, ensuring every session moves the needle towards your goal.' },
-  { title: 'Current Affairs Digest', iconSrc: '/emoji-5.png', iconBg: 'rgba(16,185,129,0.14)', desc: 'Our platform instantly connects daily news articles with the relevant UPSC syllabus. For each article, we provide a detailed summary, related practice MCQs and Mains examination questions.' },
+  { title: 'Mains Evaluator', iconSrc: '/sidebar-daily-answer-new.png', iconBg: 'rgba(232,184,75,0.14)', desc: 'Upload your handwritten or typed answers and receive structured feedback, marks, and personalized improvement tips. Our UPSC-examiner style analysis is delivered in under 60 seconds.' },
+  { title: 'Jeet AI Assistant', iconSrc: '/sidebar-jeet-gpt.png', iconBg: 'rgba(6,182,212,0.14)', desc: 'Get instant, precise answers for all your UPSC queries, covering everything from syllabus details and current affairs context to answer structuring and general doubt resolution.' },
+  { title: 'Adaptapic Mock Test Platform', iconSrc: '/sidebar-mock-tests-new.png', iconBg: 'rgba(139,92,246,0.14)', desc: 'Personalised mock tests targeting your weakest areas, ensuring every session moves the needle towards your goal.' },
+  { title: 'Current Affairs Digest', iconSrc: '/sidebar-current-affairs.png', iconBg: 'rgba(16,185,129,0.14)', desc: 'Our platform instantly connects daily news articles with the relevant UPSC syllabus. For each article, we provide a detailed summary, related practice MCQs and Mains examination questions.' },
 ];
 
 export default function LandingPage() {
@@ -20,6 +42,8 @@ export default function LandingPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [onlineCount, setOnlineCount] = useState(532);
 
   // Auth redirect
   useEffect(() => {
@@ -44,23 +68,48 @@ export default function LandingPage() {
 
     revealEls.forEach((el) => el.classList.add('reveal-init'));
 
-    // Fallback: if IntersectionObserver is unavailable, keep sections visible.
+    const makeVisible = (el: HTMLElement) => el.classList.add('visible');
+
     if (!('IntersectionObserver' in window)) {
-      revealEls.forEach((el) => el.classList.add('visible'));
+      revealEls.forEach(makeVisible);
       return;
     }
 
     const obs = new IntersectionObserver((entries, observer) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
+          makeVisible(entry.target as HTMLElement);
           observer.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.08 });
+    }, { threshold: 0, rootMargin: '0px 0px -20px 0px' });
 
     revealEls.forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
+
+    // Ensure any element already in viewport on load becomes visible immediately
+    revealEls.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) makeVisible(el);
+    });
+
+    // Safety net: make all remaining elements visible after 2s
+    const timer = setTimeout(() => revealEls.forEach(makeVisible), 2000);
+
+    return () => { obs.disconnect(); clearTimeout(timer); };
+  }, []);
+
+  // Fetch online count from study groups
+  useEffect(() => {
+    studyGroupService.getGroups()
+      .then((res) => {
+        if (res.data && Array.isArray(res.data)) {
+          const total = res.data.reduce((sum: number, g: any) => sum + (g.memberCount || 0), 0);
+          if (total > 0) setOnlineCount(total);
+        }
+      })
+      .catch(() => {
+        // Keep default 532 if fetch fails
+      });
   }, []);
 
   // Hero canvas
@@ -73,13 +122,13 @@ export default function LandingPage() {
     function drawHero() {
       const W = canvas!.width, H = canvas!.height;
       ctx!.clearRect(0, 0, W, H);
-      ctx!.fillStyle = '#060C1C';
+      ctx!.fillStyle = '#070e1e';
       ctx!.fillRect(0, 0, W, H);
-      const tl = ctx!.createRadialGradient(0, 0, 0, 0, 0, Math.max(W, H) * 0.50);
-      tl.addColorStop(0, 'rgba(55,53,51,0.62)');
-      tl.addColorStop(0.26, 'rgba(55,53,51,0.30)');
-      tl.addColorStop(1, 'rgba(6,12,28,0)');
-      ctx!.fillStyle = tl;
+      const glow = ctx!.createRadialGradient(W * 0.05, H * 0.5, 0, W * 0.15, H * 0.5, W * 0.55);
+      glow.addColorStop(0, 'rgba(232,184,75,0.18)');
+      glow.addColorStop(0.35, 'rgba(232,184,75,0.07)');
+      glow.addColorStop(1, 'rgba(7,14,30,0)');
+      ctx!.fillStyle = glow;
       ctx!.fillRect(0, 0, W, H);
     }
     resize(); drawHero();
@@ -98,7 +147,7 @@ export default function LandingPage() {
   useEffect(() => {
     const nav = document.getElementById('lp-main-nav');
     if (!nav) return;
-    const onScroll = () => { nav.style.background = window.scrollY > 60 ? 'rgba(7,14,30,0.98)' : 'rgba(13,25,49,0.92)'; };
+    const onScroll = () => { nav.style.background = window.scrollY > 60 ? 'rgba(7,14,30,0.99)' : 'rgba(7,14,30,0.92)'; };
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -119,20 +168,51 @@ export default function LandingPage() {
   }
 
   return (
-    <div style={{ fontFamily: "'Outfit', sans-serif", background: '#F4F6FA', color: '#0B1D3A', overflowX: 'hidden', minHeight: '100%' }}>
+    <div style={{ fontFamily: "'Outfit', sans-serif", background: '#F4F6FA', color: '#0B1D3A', overflowX: 'hidden', minHeight: '100vh' }}>
 
       {/* ── NAV ── */}
       <nav className="landing-nav" id="lp-main-nav">
         <Link href="/" className="logo">
-          <Image src="/logo...png" alt="RiseWithJeet" width={120} height={62} style={{ height: '62px', width: 'auto', objectFit: 'contain' }} />
+          <Image src="/logo...png" alt="RiseWithJeet" width={48} height={48} style={{ height: '48px', width: 'auto', objectFit: 'contain' }} />
         </Link>
-        <ul className="nav-links">
-          <li><a href="#modules">Modules</a></li>
-          <li><a href="#ai">Jeet AI</a></li>
-          <li><a href="#analytics">Analytics</a></li>
-          <li><a href="#community">Community</a></li>
-        </ul>
-        <div className="nav-btns">
+
+        {/* Desktop nav links */}
+        <div className="hidden md:flex items-center" style={{ gap: 28 }}>
+          <Link href="/dashboard/jeet-gpt" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Jeet AI</Link>
+          <Link href="/dashboard/daily-answer/challenge" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Daily Mains Challenge</Link>
+
+          {(['prepare', 'practice', 'revision'] as const).map((key) => {
+            const labels: Record<string, string> = { prepare: 'Prepare', practice: 'Practice', revision: 'Revision Tools' };
+            return (
+              <div key={key} className="relative"
+                onMouseEnter={() => setActiveDropdown(key)}
+                onMouseLeave={() => setActiveDropdown(null)}
+              >
+                <button style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: 'rgba(255,255,255,0.58)', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", cursor: 'pointer', whiteSpace: 'nowrap', padding: 0 }} className="hover:!text-[#E8B84B]">
+                  {labels[key]}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {activeDropdown === key && (
+                  <div className="absolute top-full left-0 mt-2 rounded-xl shadow-2xl py-1 z-50" style={{ minWidth: 200, background: '#0E182D', border: '1px solid rgba(255,255,255,0.10)' }}>
+                    {NAV_DROPDOWNS[key].map(item => (
+                      <Link key={item.href} href={item.href}
+                        style={{ display: 'block', padding: '10px 16px', fontSize: 13.5, color: 'rgba(255,255,255,0.70)', textDecoration: 'none', fontFamily: "'Outfit',sans-serif", transition: 'color 0.15s, background 0.15s' }}
+                        className="hover:!text-[#E8B84B] hover:!bg-white/5"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          <Link href="/community" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Community</Link>
+          <Link href="/pricing" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Pricing</Link>
+        </div>
+
+        <div className="nav-btns hidden md:flex">
           <button className="btn-nav-ghost" onClick={() => go('/login?tab=login')}>Login</button>
           <button className="btn-nav-gold" onClick={() => go('/login?tab=signup')}>Start Free →</button>
         </div>
@@ -151,10 +231,22 @@ export default function LandingPage() {
 
       {/* ── MOBILE NAV ── */}
       <div className={`mobile-nav${mobileNavOpen ? ' open' : ''}`}>
-        <a href="#modules" onClick={closeMobileNav}>Modules</a>
-        <a href="#ai" onClick={closeMobileNav}>Jeet AI</a>
-        <a href="#analytics" onClick={closeMobileNav}>Analytics</a>
-        <a href="#community" onClick={closeMobileNav}>Community</a>
+        <a href="/dashboard/jeet-gpt" onClick={closeMobileNav}>Jeet AI</a>
+        <a href="/dashboard/daily-answer/challenge" onClick={closeMobileNav}>Daily Mains Challenge</a>
+        <div style={{ padding: '10px 0 4px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Prepare</div>
+          {NAV_DROPDOWNS.prepare.map(i => <a key={i.href} href={i.href} onClick={closeMobileNav} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
+        </div>
+        <div style={{ padding: '10px 0 4px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Practice</div>
+          {NAV_DROPDOWNS.practice.map(i => <a key={i.href} href={i.href} onClick={closeMobileNav} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
+        </div>
+        <div style={{ padding: '10px 0 4px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Revision Tools</div>
+          {NAV_DROPDOWNS.revision.map(i => <a key={i.href} href={i.href} onClick={closeMobileNav} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
+        </div>
+        <a href="/community" onClick={closeMobileNav}>Community</a>
+        <a href="/pricing" onClick={closeMobileNav}>Pricing</a>
         <div className="mobile-nav-btns">
           <button className="btn-nav-ghost" onClick={() => go('/login?tab=login')}>Login</button>
           <button className="btn-nav-gold" onClick={() => go('/login?tab=signup')}>Start Free →</button>
@@ -194,7 +286,7 @@ export default function LandingPage() {
 
         <div className="hero-stats">
           {[
-            { val: '50K+', label: 'Active Aspirants' },
+            { val: '15K+', label: 'Active Aspirants' },
             { val: '10K+', label: 'MCQ Library' },
             { val: '95%', label: 'Prelims Accuracy' },
             { val: '500+', label: 'Video Hours' },
@@ -216,18 +308,19 @@ export default function LandingPage() {
         </div>
         <div className="modules-grid-full">
           {[
-            { card: 'mc-gold', wrap: 'mw-gold', img: '/emoji-1.png', alt: 'MCQ', title: 'Daily MCQ Practice', desc: 'Subject-wise & topic-wise MCQs with detailed explanations. New questions every day, curated by experts.', tag: 'tag-gold', tagLabel: 'Daily Practice', delay: 1 },
-            { card: 'mc-emerald', wrap: 'mw-emerald', img: '/emoji-2.png', alt: 'Answer Writing', title: 'Daily Answer Writing', desc: 'Daily mains practice with AI-powered instant evaluation and UPSC-style marking schemes.', tag: 'tag-emerald', tagLabel: 'Instant Evaluation', delay: 2 },
-            { card: 'mc-cyan', wrap: 'mw-cyan', img: '/emoji-3.png', alt: 'Mock Tests', title: 'Mock Tests', desc: 'Full-length Prelims & Mains simulations in UPSC pattern. Timed, scored, ranked.', tag: 'tag-cyan', tagLabel: 'Test Series', delay: 3 },
-            { card: 'mc-violet', wrap: 'mw-violet', img: '/emoji-4.png', alt: 'PYQ', title: 'Previous Year Questions', desc: '30 years of PYQs with trend analysis, topic clustering, and examiner insights.', tag: 'tag-violet', tagLabel: 'PYQ Bank', delay: 4 },
-            { card: 'mc-rose', wrap: 'mw-rose', img: '/emoji-5.png', alt: 'Current Affairs', title: 'Current Affairs', desc: 'Curated daily news, monthly magazines, and UPSC-relevant analysis. Never miss what matters.', tag: 'tag-rose', tagLabel: 'Daily Updates', delay: 1 },
-            { card: 'mc-teal', wrap: 'mw-teal', img: '/emoji-7.png', alt: 'Syllabus Tracker', title: 'Syllabus Tracker', desc: 'Visual progress across GS I–IV & Optional. Know your coverage, never leave a topic behind.', tag: 'tag-teal', tagLabel: 'Smart Tracking', delay: 2 },
-            { card: 'mc-amber', wrap: 'mw-amber', img: '/emoji-8.png', alt: 'Analytics', title: 'Performance Analytics', desc: 'Test-level breakdowns, weak-area detection, and daily UPSC readiness scores. Know where you stand.', tag: 'tag-amber', tagLabel: 'Smart Insights', delay: 3 },
+            { card: 'mc-gold', wrap: 'mw-gold', title: 'Daily MCQ Practice', desc: 'Subject-wise & topic-wise MCQs with detailed explanations. New questions every day, curated by experts.', tag: 'tag-gold', tagLabel: 'Daily Practice', delay: 1, icon: '/sidebar-daily-mcq-new.png' },
+            { card: 'mc-cyan', wrap: 'mw-cyan', title: 'Mock Tests', desc: 'Full-length Prelims & Mains simulations in UPSC pattern. Timed, scored, ranked.', tag: 'tag-cyan', tagLabel: 'Test Series', delay: 2, icon: '/sidebar-mock-tests-new.png' },
+            { card: 'mc-violet', wrap: 'mw-violet', title: 'Previous Year Questions', desc: '30 years of PYQs with trend analysis, topic clustering, and examiner insights.', tag: 'tag-violet', tagLabel: 'PYQ Bank', delay: 3, icon: '/sidebar-pyq-new.png' },
+            { card: 'mc-emerald', wrap: 'mw-emerald', title: 'Answer Writing', desc: 'Daily mains practice with AI-powered instant evaluation and UPSC-style marking schemes.', tag: 'tag-emerald', tagLabel: 'AI Evaluated', delay: 4, icon: '/sidebar-daily-answer-new.png' },
+            { card: 'mc-rose', wrap: 'mw-rose', title: 'Current Affairs', desc: 'Curated daily news, monthly magazines, and UPSC-relevant analysis. Never miss what matters.', tag: 'tag-rose', tagLabel: 'Daily Updates', delay: 1, icon: '/sidebar-current-affairs.png' },
+            { card: 'mc-navy', wrap: 'mw-navy', title: 'Video Lectures', desc: "India's best educators. Interactive quizzes, notes & timestamped bookmarks. 500+ hours.", tag: 'tag-navy', tagLabel: '500+ Hours', delay: 2, icon: '/sidebar-video.png' },
+            { card: 'mc-teal', wrap: 'mw-teal', title: 'Syllabus Tracker', desc: 'Visual progress across GS I–IV & Optional. Know your coverage, never leave a topic behind.', tag: 'tag-teal', tagLabel: 'Smart Tracking', delay: 3, icon: '/sidebar-syllabus-new.png' },
+            { card: 'mc-amber', wrap: 'mw-amber', title: 'Performance Analytics', desc: 'Test-level breakdowns, weak-area detection, and daily UPSC readiness scores. Know where you stand.', tag: 'tag-amber', tagLabel: 'Smart Insights', delay: 4, icon: '/sidebar-analytics-new.png' },
           ].map(m => (
             <div key={m.title} className={`mod-card ${m.card} reveal reveal-delay-${m.delay}`}>
               <div>
                 <div className={`mod-icon-wrap ${m.wrap}`}>
-                  <Image src={m.img} alt={m.alt} width={36} height={36} />
+                  <Image src={m.icon} alt={m.title} width={36} height={36} style={{ objectFit: 'contain' }} />
                 </div>
                 <div className="mod-title">{m.title}</div>
                 <div className="mod-desc">{m.desc}</div>
@@ -368,10 +461,10 @@ export default function LandingPage() {
           </div>
           <div className="tools-grid-2">
             {[
-              { card: 'tc-gold', ib: 'tib-gold', img: '/emoji-9.png', title: 'Flashcards', desc: '1,000+ pre-built smart cards across all GS topics. Scheduled by difficulty, never boring.', delay: 1 },
-              { card: 'tc-cyan', ib: 'tib-cyan', img: '/emoji-10.png', title: 'Mind Maps', desc: 'Visual concept maps linking ideas across GS. Build connections, not isolated notes.', delay: 2 },
-              { card: 'tc-emerald', ib: 'tib-emerald', img: '/emoji-11.png', title: 'Spaced Repetition', desc: 'Ebbinghaus-powered review scheduling. Study smarter — revisit topics exactly when needed.', delay: 3 },
-              { card: 'tc-violet', ib: 'tib-violet', img: '/emoji-12.png', title: 'Study Planner', desc: 'AI-generated daily plans adapting to your pace, goals, and exam date. Zero manual planning.', delay: 4 },
+              { card: 'tc-gold', ib: 'tib-gold', img: '/sidebar-flashcards-new.png', title: 'Flashcards', desc: '1,000+ pre-built smart cards across all GS topics. Scheduled by difficulty, never boring.', delay: 1 },
+              { card: 'tc-cyan', ib: 'tib-cyan', img: '/sidebar-mindmap-new.png', title: 'Mind Maps', desc: 'Visual concept maps linking ideas across GS. Build connections, not isolated notes.', delay: 2 },
+              { card: 'tc-emerald', ib: 'tib-emerald', img: '/sidebar-spaced-repetition.png', title: 'Spaced Repetition', desc: 'Ebbinghaus-powered review scheduling. Study smarter — revisit topics exactly when needed.', delay: 3 },
+              { card: 'tc-violet', ib: 'tib-violet', img: '/sidebar-study-planner.png', title: 'Study Planner', desc: 'AI-generated daily plans adapting to your pace, goals, and exam date. Zero manual planning.', delay: 4 },
             ].map(t => (
               <div key={t.title} className={`tool-card ${t.card} reveal reveal-delay-${t.delay}`}>
                 <div className={`tool-icon-box ${t.ib}`}>
@@ -453,9 +546,9 @@ export default function LandingPage() {
             </p>
             <div className="analytics-points">
               {[
-                { bg: '#FEF3C7', img: '/emoji-6.png', title: 'Test Analytics', desc: 'Question-level breakdown, time-per-question, and rank prediction after every mock.' },
-                { bg: '#E0F7FA', img: '/emoji-7.png', title: 'Weak Area Identification', desc: 'AI pinpoints your weakest sub-topics and auto-schedules targeted revision sessions.' },
-                { bg: '#D1FAE5', img: '/emoji-8.png', title: 'UPSC Readiness Score', desc: 'A composite score updated daily — telling you how ready you are for the actual exam.' },
+                { bg: '#FEF3C7', img: '/sidebar-analytics-new.png', title: 'Test Analytics', desc: 'Question-level breakdown, time-per-question, and rank prediction after every mock.' },
+                { bg: '#E0F7FA', img: '/sidebar-performance-new.png', title: 'Weak Area Identification', desc: 'AI pinpoints your weakest sub-topics and auto-schedules targeted revision sessions.' },
+                { bg: '#D1FAE5', img: '/sidebar-overview-new.png', title: 'UPSC Readiness Score', desc: 'A composite score updated daily — telling you how ready you are for the actual exam.' },
               ].map(p => (
                 <div key={p.title} className="apoint">
                   <div className="apoint-icon" style={{ background: p.bg }}>
@@ -477,10 +570,10 @@ export default function LandingPage() {
         <div className="mentor-inner">
           <div className="mentor-top">
             <div className="reveal">
-              <div className="section-eyebrow eyebrow-light"><span className="digit-token">1-on-1</span> Personalised Mentorship</div>
-              <h2 className="section-h2-light"><span className="digit-token">1-on-1</span> Personalised<br />Mentorship</h2>
+              <div className="section-eyebrow eyebrow-light">Mentorship</div>
+              <h2 className="section-h2-light">UPSC Mentorship<br />Tailored To Your Journey</h2>
               <p className="section-p-light" style={{ marginTop: 12, maxWidth: 380 }}>
-                Personalized 1-on-1 UPSC Mentorship tailored to your preparation journey and built to help you succeed in Prelims, Mains and interview
+                UPSC mentorship tailored to your preparation journey and built to help you succeed in Prelims, Mains and interview
               </p>
               <div className="mentor-cta-row">
                 <button className="btn-schedule" onClick={() => go('/dashboard/free-trial')}>📅 Schedule Mentor Session</button>
@@ -490,10 +583,10 @@ export default function LandingPage() {
             <div className="mentor-quote-card reveal reveal-delay-2">
               <div className="mqc-mark">&quot;</div>
               <div className="mqc-text">
-                &quot;The difference between aspirants and officers is often not knowledge — it is strategy. We help you build the right one.&quot;
+                &quot;The difference between aspirants and officers is often not knowledge, it is strategy. We help you build the right one.&quot;
               </div>
               <div className="mqc-author">
-                <div className="mqc-av">J</div>
+                <div className="mqc-av">A</div>
                 <div>
                   <div className="mqc-name">Abhijeet Soni</div>
                   <div className="mqc-role">Founder &amp; Mentor Rise With Jeet IAS | UPSC Simplified</div>
@@ -504,12 +597,12 @@ export default function LandingPage() {
 
           <div className="mentor-features-grid">
             {[
-              { img: '/emoji-9.png', title: 'Weekly 1-on-1 Sessions', desc: 'Personal strategy calls with your assigned mentor. Adjust, refine, and stay on course.', delay: 1 },
-              { img: '/emoji-10.png', title: 'Jeet Path Roadmap', desc: 'Your personalised preparation roadmap built around your strengths, gaps, and timeline.', delay: 2 },
-              { img: '/emoji-11.png', title: 'Dynamic Plan Updates', desc: 'Your study plan evolves weekly based on performance data and live mentor feedback.', delay: 3 },
+              { img: '/pppp.png', title: 'Weekly 1-on-1 Sessions', desc: 'Personal strategy calls with your assigned mentor. Adjust, refine, and stay on course.', delay: 1 },
+              { img: '/mmmm.png', title: 'Jeet Path Roadmap', desc: 'Your personalised preparation roadmap built around your strengths, gaps, and timeline.', delay: 2 },
+              { img: '/ree.png', title: 'Dynamic Plan Updates', desc: 'Your study plan evolves weekly based on performance data and live mentor feedback.', delay: 3 },
             ].map(f => (
               <div key={f.title} className={`mf-item reveal reveal-delay-${f.delay}`}>
-                <div className="mf-icon"><Image src={f.img} alt={f.title} width={32} height={32} /></div>
+                <div className="mf-icon"><Image src={f.img} alt={f.title} width={32} height={32} style={{ objectFit: 'contain' }} /></div>
                 <div className="mf-title">{f.title}</div>
                 <div className="mf-desc">{f.desc}</div>
               </div>
@@ -525,7 +618,7 @@ export default function LandingPage() {
             <div className="section-eyebrow eyebrow-dark" style={{ justifyContent: 'center' }}>Community</div>
             <h2 className="section-h2-dark">Study With 10,000+<br />UPSC Aspirants</h2>
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14 }}>
-              <div className="live-pulse"><div className="pulse-dot" />532 students studying right now</div>
+              <div className="live-pulse"><div className="pulse-dot" />{onlineCount} students studying right now</div>
             </div>
             <p className="section-p-dark" style={{ marginTop: 14 }}>Accountability, peer learning, and community, because the UPSC journey is better together.</p>
           </div>
@@ -542,7 +635,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="live-stats">
-              <div className="lstat"><span className="lstat-val">124</span><div className="lstat-label">Online Now</div></div>
+              <div className="lstat"><span className="lstat-val">{onlineCount}</span><div className="lstat-label">Online Now</div></div>
               <div className="lstat"><span className="lstat-val">2h 14m</span><div className="lstat-label">Session</div></div>
             </div>
             <button className="btn-join-live" onClick={() => go('/login?tab=signup')}>Join Study Room →</button>
@@ -550,10 +643,10 @@ export default function LandingPage() {
 
           <div className="live-tools-grid reveal reveal-delay-2">
             {[
-              { img: '/emoji-13.png', title: 'Pomodoro Timer', desc: 'Stay deep in focus with proven time blocks' },
-              { img: '/fire-emoji.png', title: 'Leaderboards', desc: 'Track rankings and compete with peers' },
-              { img: '/emoji-1.png', title: 'Task Cards', desc: 'Share daily goals, stay accountable' },
-              { img: '/emoji-2.png', title: 'Peer Review', desc: 'Get answer feedback from fellow aspirants' },
+              { img: '/tttttt.png', title: 'Pomodoro Timer', desc: 'Stay deep in focus with proven time blocks' },
+              { img: '/cuppppp.png', title: 'Leaderboards', desc: 'Track rankings and compete with peers' },
+              { img: '/nn.png', title: 'Task Cards', desc: 'Share daily goals, stay accountable' },
+              { img: '/mggg.png', title: 'Peer Review', desc: 'Get answer feedback from fellow aspirants' },
             ].map(t => (
               <div key={t.title} className="lt-item">
                 <div className="lt-icon"><Image src={t.img} alt={t.title} width={32} height={32} /></div>
@@ -576,10 +669,10 @@ export default function LandingPage() {
             </p>
             <div className="app-features">
               {[
-                { bg: '#FEF3C7', img: '/emoji-1.png', title: 'Daily MCQ Notifications', desc: 'Never miss your daily practice with smart reminders' },
-                { bg: '#E0F7FA', img: '/emoji-2.png', title: 'Click & Evaluate Answers', desc: 'Photograph handwritten answers for instant AI evaluation' },
-                { bg: '#D1FAE5', img: '/emoji-3.png', title: 'Offline Flashcards', desc: 'Study even without internet — all flashcards work offline' },
-                { bg: '#EDE9FE', img: '/emoji-4.png', title: 'Streak & Goal Reminders', desc: 'Stay accountable with intelligent habit-building nudges' },
+                { bg: '#FEF3C7', img: '/jjjjjj.png', title: 'Daily MCQ Notifications', desc: 'Never miss your daily practice with smart reminders' },
+                { bg: '#E0F7FA', img: '/hjj.png', title: 'Click & Evaluate Answers', desc: 'Photograph handwritten answers for instant AI evaluation' },
+                { bg: '#D1FAE5', img: '/ree.png', title: 'Offline Flashcards', desc: 'Study even without internet — all flashcards work offline' },
+                { bg: '#EDE9FE', img: '/belllllll.png', title: 'Streak & Goal Reminders', desc: 'Stay accountable with intelligent habit-building nudges' },
               ].map(f => (
                 <div key={f.title} className="app-feat">
                   <div className="app-feat-icon" style={{ background: f.bg }}>
@@ -628,7 +721,7 @@ export default function LandingPage() {
                   </div>
                   <div className="ps-top-bar">
                     <div className="ps-topbar-row">
-                      <div className="ps-logo-s">Rise<span>WithJeet</span></div>
+                      <div className="ps-logo-s">RiseWith<span>Jeet</span></div>
                       <div className="ps-notif-btn">🔔</div>
                     </div>
                     <div className="ps-welcome">Good morning, <span style={{ color: '#F5A623' }}>Rahul!</span> 👋</div>
@@ -639,7 +732,7 @@ export default function LandingPage() {
                     <div className="ps-progress-row">
                       <div className="ps-mini-card">
                         <div className="ps-mini-card-top">
-                          <span className="ps-mini-icon"><Image src="/emoji-1.png" alt="MCQ" width={18} height={18} /></span>
+                          <span className="ps-mini-icon"><Image src="/sidebar-daily-mcq-new.png" alt="MCQ" width={18} height={18} /></span>
                           <span className="ps-mini-badge badge-up">↑ +6%</span>
                         </div>
                         <div className="ps-mini-val">84%</div>
@@ -648,7 +741,7 @@ export default function LandingPage() {
                       </div>
                       <div className="ps-mini-card">
                         <div className="ps-mini-card-top">
-                          <span className="ps-mini-icon"><Image src="/emoji-2.png" alt="Mains" width={18} height={18} /></span>
+                          <span className="ps-mini-icon"><Image src="/sidebar-daily-answer-new.png" alt="Mains" width={18} height={18} /></span>
                           <span className="ps-mini-badge badge-warn">238 total</span>
                         </div>
                         <div className="ps-mini-val">8.2</div>
@@ -676,7 +769,7 @@ export default function LandingPage() {
                       ))}
                     </div>
                     <div className="ps-eval-card">
-                      <div className="ps-eval-icon"><Image src="/emoji-3.png" alt="AI Evaluate" width={22} height={22} /></div>
+                      <div className="ps-eval-icon"><Image src="/sidebar-daily-answer-new.png" alt="AI Evaluate" width={22} height={22} /></div>
                       <div className="ps-eval-text">
                         <div className="ps-eval-title">Submit Mains Answer</div>
                         <div className="ps-eval-sub">Instant Mains Evaluation in &lt;60 seconds</div>
@@ -695,7 +788,7 @@ export default function LandingPage() {
       <section className="cta-section">
         <div className="cta-box reveal">
           <h2>Your UPSC Journey<br />Starts <span style={{ color: '#E8B84B' }}>Today</span></h2>
-          <p>Join 15,000+ aspirants already preparing smarter. No credit card needed.</p>
+          <p>Smart preparation, structured planning, and AI-powered insights, everything serious aspirants need, in one place.</p>
           <div className="cta-btns">
             <button className="cta-primary" onClick={() => go('/login?tab=signup')}>Start Free Trial →</button>
             <button className="cta-secondary" style={{ borderColor: 'rgba(255,255,255,0.2)' }} onClick={() => go('/contact')}>Connect Us</button>
@@ -704,15 +797,15 @@ export default function LandingPage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ background: '#060C1C', borderTop: '1px solid rgba(244,191,76,0.7)' }}>
+      <footer style={{ background: '#060C1C' }}>
         <div className="mx-auto max-w-[1320px] px-5 sm:px-8">
-          <div className="grid grid-cols-1 gap-8 border-b border-white/10 py-10 md:grid-cols-2 xl:grid-cols-[1.6fr_1fr_1fr_1fr_1.1fr] xl:gap-0">
+          <div className="border-t border-[#F4BF4C]/40" />
+          <div className="grid grid-cols-1 gap-8 border-b border-white/5 py-10 md:grid-cols-2 xl:grid-cols-[1.6fr_1fr_1fr_1fr_1.1fr] xl:gap-0">
             {/* Brand Column */}
             <div className="pr-0 xl:pr-8">
               <div className="flex items-center gap-3">
-                <Image src="/footer-logo.png" alt="RiseWithJeet" width={48} height={48} className="h-12 w-12" />
+                <Image src="/footer-logo.png" alt="RiseWithJeet" width={140} height={56} style={{ height: 56, width: 'auto', objectFit: 'contain' }} />
                 <div>
-                  <div className="text-[18px] font-bold text-white">RiseWithJeet</div>
                   <div className="text-[10px] uppercase tracking-[0.12em] text-white/50">Your IAS Dream, Powered by<br/>Jeet Intelligence</div>
                 </div>
               </div>
@@ -722,11 +815,11 @@ export default function LandingPage() {
 
               <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Download the app</p>
               <div className="mt-3 flex flex-wrap gap-3">
-                <a href="#" className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-[13px] font-semibold text-white hover:bg-white/10 transition">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 20.5V3.5C3 2.91 3.34 2.39 3.84 2.15L13.69 12L3.84 21.85C3.34 21.6 3 21.09 3 20.5ZM16.81 15.12L6.05 21.34L14.54 12.85L16.81 15.12ZM20.16 10.81C20.5 11.08 20.75 11.5 20.75 12C20.75 12.5 20.53 12.9 20.18 13.18L17.89 14.5L15.39 12L17.89 9.5L20.16 10.81ZM6.05 2.66L16.81 8.88L14.54 11.15L6.05 2.66Z" fill="white"/></svg>
+                <a href="https://play.google.com/store/apps/details?id=com.risewithjeet" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-[13px] font-semibold text-white hover:bg-white/10 transition">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 20.5V3.5C3 2.91 3.34 2.39 3.84 2.15L13.69 12L3.84 21.85C3.34 21.6 3 21.09 3 20.5Z" fill="#EA4335"/><path d="M16.81 15.12L6.05 21.34L14.54 12.85L16.81 15.12Z" fill="#FBBC04"/><path d="M20.16 10.81C20.5 11.08 20.75 11.5 20.75 12C20.75 12.5 20.53 12.9 20.18 13.18L17.89 14.5L15.39 12L17.89 9.5L20.16 10.81Z" fill="#4285F4"/><path d="M6.05 2.66L16.81 8.88L14.54 11.15L6.05 2.66Z" fill="#34A853"/></svg>
                   Google Play
                 </a>
-                <a href="#" className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-[13px] font-semibold text-white hover:bg-white/10 transition">
+                <a href="https://apps.apple.com/app/risewithjeet" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-[13px] font-semibold text-white hover:bg-white/10 transition">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.47C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.96 6.61C11.82 5.46 12.36 4.26 13 3.5Z" fill="white"/></svg>
                   App Store
                 </a>
@@ -734,29 +827,29 @@ export default function LandingPage() {
 
               <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Follow us</p>
               <div className="mt-3 flex items-center gap-2">
-                <a href="#" className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/85 hover:bg-white/10 transition">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" fill="white"/></svg>
+                <a href="https://www.youtube.com/@RisewithJeet" target="_blank" rel="noopener noreferrer" className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" fill="#FF0000"/></svg>
                 </a>
-                <a href="#" className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/85 hover:bg-white/10 transition">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" fill="white"/></svg>
+                <a href="https://www.instagram.com/risewithjeet" target="_blank" rel="noopener noreferrer" className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" fill="#E4405F"/></svg>
                 </a>
-                <a href="#" className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/85 hover:bg-white/10 transition">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" fill="white"/></svg>
+                <a href="https://wa.me/918357056891" target="_blank" rel="noopener noreferrer" className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" fill="#25D366"/></svg>
                 </a>
-                <a href="#" className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/85 hover:bg-white/10 transition">
+                <a href="https://x.com/risewithjeet" target="_blank" rel="noopener noreferrer" className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="white"/></svg>
                 </a>
-                <a href="#" className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/85 hover:bg-white/10 transition">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="white"/></svg>
+                <a href="https://www.facebook.com/risewithjeet" target="_blank" rel="noopener noreferrer" className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/></svg>
                 </a>
-                <a href="#" className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/85 hover:bg-white/10 transition">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="white"/></svg>
+                <a href="https://www.linkedin.com/company/risewithjeet" target="_blank" rel="noopener noreferrer" className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="#0A66C2"/></svg>
                 </a>
               </div>
             </div>
 
             {/* Platform Column */}
-            <div className="xl:border-l xl:border-white/10 xl:pl-8">
+            <div className="xl:border-l xl:border-white/5 xl:pl-8">
               <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Platform</h3>
               <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
               <ul className="mt-3 space-y-1">
@@ -768,7 +861,7 @@ export default function LandingPage() {
             </div>
 
             {/* Revision Tools Column */}
-            <div className="xl:border-l xl:border-white/10 xl:pl-8">
+            <div className="xl:border-l xl:border-white/5 xl:pl-8">
               <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Revision Tools</h3>
               <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
               <ul className="mt-3 space-y-1">
@@ -781,7 +874,7 @@ export default function LandingPage() {
             </div>
 
             {/* Company Column */}
-            <div className="xl:border-l xl:border-white/10 xl:pl-8">
+            <div className="xl:border-l xl:border-white/5 xl:pl-8">
               <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Company</h3>
               <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
               <ul className="mt-3 space-y-1">
@@ -795,7 +888,7 @@ export default function LandingPage() {
             </div>
 
             {/* Contact Us Column */}
-            <div className="xl:border-l xl:border-white/10 xl:pl-8">
+            <div className="xl:border-l xl:border-white/5 xl:pl-8">
               <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Contact Us</h3>
               <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
 
@@ -803,7 +896,7 @@ export default function LandingPage() {
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/35">Email</p>
                   <a href="mailto:together@risewithjeet.com" className="mt-1 flex items-center gap-2 text-[13px] text-white/85 hover:text-white transition">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="white" fillOpacity="0.6"/></svg>
+                    <Image src="/emm.png" alt="Email" width={16} height={16} style={{ objectFit: 'contain' }} />
                     together@risewithjeet.com
                   </a>
                 </div>
@@ -811,7 +904,7 @@ export default function LandingPage() {
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/35">Contact Page</p>
                   <Link href="/contact" className="mt-1 flex items-center gap-2 text-[13px] text-white/85 hover:text-white transition">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="white" fillOpacity="0.6"/></svg>
+                    <Image src="/link.png" alt="Contact" width={16} height={16} style={{ objectFit: 'contain' }} />
                     Contact Us
                   </Link>
                 </div>
@@ -819,7 +912,7 @@ export default function LandingPage() {
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/35">WhatsApp</p>
                   <a href="https://wa.me/918357056891" target="_blank" rel="noopener noreferrer" className="mt-1 flex items-center gap-2 text-[13px] text-white/85 hover:text-white transition">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" fill="white" fillOpacity="0.6"/></svg>
+                    <Image src="/msggg.png" alt="WhatsApp" width={16} height={16} style={{ objectFit: 'contain' }} />
                     +91 83570 56891
                   </a>
                   <a href="https://wa.me/918357056891" target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#25D366]/35 bg-[#25D366]/12 px-3 py-1 text-[11px] font-semibold text-[#4ADE80] hover:bg-[#25D366]/20 transition">
@@ -831,10 +924,10 @@ export default function LandingPage() {
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/35">Telegram Support</p>
                   <a href="https://t.me/togetherrisewithjeet" target="_blank" rel="noopener noreferrer" className="mt-1 flex items-center gap-2 text-[13px] text-white/85 hover:text-white transition">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" fill="white" fillOpacity="0.6"/></svg>
+                    <Image src="/pooOO.png" alt="Telegram" width={16} height={16} style={{ objectFit: 'contain' }} />
                     @togetherrisewithjeet
                   </a>
-                  <a href="https://t.me/togetherrisewithjeet" target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#38BDF8]/35 bg-[#38BDF8]/12 px-3 py-1 text-[11px] font-semibold text-[#7DD3FC] hover:bg-[#38BDF8]/20 transition">
+                  <a href="https://t.me/risewithjeet" target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#38BDF8]/35 bg-[#38BDF8]/12 px-3 py-1 text-[11px] font-semibold text-[#7DD3FC] hover:bg-[#38BDF8]/20 transition">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" fill="#7DD3FC"/></svg>
                     Join Telegram Community
                   </a>

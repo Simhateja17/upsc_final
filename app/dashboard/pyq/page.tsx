@@ -881,13 +881,13 @@ export default function PyqPage() {
                   { label: 'History', icon: '🏛️' },
                   { label: 'Geography', icon: '🌍' },
                   { label: 'Polity', icon: '⚖️' },
-                  { label: 'Economy', icon: '📈' },
+                  { label: 'Economy', icon: '💰' },
                   { label: 'Science & Tech', icon: '🔬' },
                   { label: 'Environment', icon: '🌿' },
                   { label: 'International Relations', icon: '🌐' },
                   { label: 'Art & Culture', icon: '🎨' },
                   { label: 'Current Affairs', icon: '📰' },
-	                ].map(({ label, icon }) => {
+                ].map(({ label, icon }) => {
 	                  const selected = selectedSubject === label;
 	                  return (
                       <React.Fragment key={label}>

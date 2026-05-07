@@ -7,7 +7,7 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 const filterOptions = ['All', 'mcq', 'mains', 'pyq', 'custom'];
 const scheduleOptions = [3, 7, 15, 30];
 const deckOptions = [
-  { id: 'history', label: 'History', icon: '📜' },
+  { id: 'history', label: 'History', icon: '🏛️' },
   { id: 'geography', label: 'Geography', icon: '🌍' },
   { id: 'polity', label: 'Polity', icon: '⚖️' },
   { id: 'economy', label: 'Economy', icon: '💰' },
@@ -16,6 +16,31 @@ const deckOptions = [
 ];
 
 const difficultyOptions = ['Easy', 'Medium', 'Hard', 'Tricky'];
+
+const subjectOptions = [
+  { id: 'polity', label: 'Polity', icon: '🏛️' },
+  { id: 'history', label: 'History', icon: '🏺' },
+  { id: 'geography', label: 'Geography', icon: '🌍' },
+  { id: 'economy', label: 'Economy', icon: '💰' },
+  { id: 'environment-ecology', label: 'Environment & Ecology', icon: '🌿' },
+  { id: 'science-technology', label: 'Science & Technology', icon: '🔬' },
+  { id: 'current-affairs', label: 'Current Affairs', icon: '📰' },
+  { id: 'society', label: 'Society', icon: '👥' },
+  { id: 'governance', label: 'Governance', icon: '🏢' },
+  { id: 'international-relations', label: 'International Relations', icon: '🌐' },
+  { id: 'social-justice', label: 'Social Justice', icon: '⚖️' },
+  { id: 'agriculture', label: 'Agriculture', icon: '🌾' },
+  { id: 'internal-security', label: 'Internal Security', icon: '🛡️' },
+  { id: 'disaster-management', label: 'Disaster Management', icon: '🚨' },
+  { id: 'ethics', label: 'Ethics', icon: '📘' },
+  { id: 'gs1', label: 'GS1', icon: '1️⃣' },
+  { id: 'gs2', label: 'GS2', icon: '2️⃣' },
+  { id: 'gs3', label: 'GS3', icon: '3️⃣' },
+  { id: 'gs4', label: 'GS4', icon: '4️⃣' },
+  { id: 'essay', label: 'Essay', icon: '✍️' },
+  { id: 'optional-paper-1', label: 'Optional Paper 1', icon: '📗' },
+  { id: 'optional-paper-2', label: 'Optional Paper 2', icon: '📕' },
+];
 
 type SpacedRepItem = {
   id: string;
@@ -38,12 +63,28 @@ function sourceColor(sourceType: string): string {
 
 function subjectBg(subject: string): string {
   const map: Record<string, string> = {
+    Polity: '#EDE9FE',
     History: '#FEF3C7',
     Geography: '#DBEAFE',
-    Polity: '#EDE9FE',
     Economy: '#FFF7ED',
     'Environment & Ecology': '#F0FDF4',
     'Science & Technology': '#DBEAFE',
+    'Current Affairs': '#FEE2E2',
+    Society: '#FCE7F3',
+    Governance: '#E0E7FF',
+    'International Relations': '#F3E8FF',
+    'Social Justice': '#FDF2F8',
+    Agriculture: '#ECFCCB',
+    'Internal Security': '#FFE4E6',
+    'Disaster Management': '#FEF9C3',
+    Ethics: '#F5F3FF',
+    GS1: '#DBEAFE',
+    GS2: '#EDE9FE',
+    GS3: '#FFF7ED',
+    GS4: '#F0FDF4',
+    Essay: '#FCE7F3',
+    'Optional Paper 1': '#E0E7FF',
+    'Optional Paper 2': '#F3E8FF',
   };
   return map[subject] ?? '#F3F4F6';
 }
@@ -73,7 +114,7 @@ export default function SpacedRepetitionPage() {
   const [showAddModal, setShowAddModal] = useState(false);
 
   // Modal state
-  const [modalDeck, setModalDeck] = useState('geography');
+  const [modalDeck, setModalDeck] = useState('polity');
   const [modalDifficulty, setModalDifficulty] = useState('Hard');
   const [modalQuestion, setModalQuestion] = useState('');
   const [modalAnswer, setModalAnswer] = useState('');
@@ -193,7 +234,7 @@ export default function SpacedRepetitionPage() {
   const handleAddItem = () => {
     if (!modalQuestion.trim()) return;
     setSaving(true);
-    const subjectLabel = deckOptions.find((d) => d.id === modalDeck)?.label ?? modalDeck;
+    const subjectLabel = subjectOptions.find((d) => d.id === modalDeck)?.label ?? modalDeck;
     spacedRepService.addItem({
       questionText: modalQuestion,
       subject: subjectLabel,
@@ -244,6 +285,7 @@ export default function SpacedRepetitionPage() {
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
         <DashboardPageHero
+          badgeIcon={<img src="/sidebar-spaced-repetition.png" alt="spaced repetition" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
           badgeText="WEAK SUBJECT TRACKER - SPACED REPETITION"
           title={<>Close every <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>gap</span> before exam day.</>}
           subtitle="Real-time subject health monitoring pinpoints exactly which topics need your attention and builds a smart revision plan by ranking gaps through:"
@@ -479,7 +521,7 @@ export default function SpacedRepetitionPage() {
               </button>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
               <div className="space-y-2">
                 <label className="block uppercase tracking-[0.5px]" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, lineHeight: '15px', color: '#99A1AF' }}>
                   QUESTION
@@ -499,7 +541,7 @@ export default function SpacedRepetitionPage() {
                   SELECT SUBJECT
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  {deckOptions.map((deck) => (
+                  {subjectOptions.map((deck) => (
                     <button
                       key={deck.id}
                       type="button"

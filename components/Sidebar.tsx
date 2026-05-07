@@ -25,14 +25,14 @@ const Sidebar = ({ forceShow = false, isOpen, onClose }: SidebarProps) => {
     {
       title: 'DASHBOARD',
       items: [
-        { id: 'overview', label: 'Overview', icon: '/sidebar-overview-new.png', path: '/dashboard' },
+        { id: 'overview', label: 'Overview', icon: '/sidebar-overview.png', path: '/dashboard' },
         { id: 'study-planner', label: 'Study Planner', icon: '/sidebar-study-planner.png', path: '/dashboard/study-planner' },
-        { id: 'jeet-gpt', label: 'Jeet GPT', icon: '/sidebar-jeet-gpt.png', path: '/dashboard/jeet-gpt' },
+        { id: 'jeet-gpt', label: 'Jeet AI', icon: '/sidebar-jeet-gpt.png', path: '/dashboard/jeet-gpt' },
         { id: 'syllabus-tracker', label: 'Syllabus Tracker', icon: '/sidebar-syllabus-new.png', path: '/dashboard/syllabus-tracker' },
       ],
     },
     {
-      title: 'LEARNING',
+      title: 'PREPARE',
       items: [
         { id: 'study-material', label: 'Study Material', icon: '/sidebar-study-material-new2.png', path: '/dashboard/library' },
         { id: 'video-lectures', label: 'Video Lectures', icon: '/sidebar-video.png', path: '/dashboard/video-lectures' },
@@ -62,8 +62,8 @@ const Sidebar = ({ forceShow = false, isOpen, onClose }: SidebarProps) => {
       title: 'REVISION TOOLS',
       items: [
         { id: 'flashcards', label: 'Flashcards', icon: '/sidebar-flashcards-new.png', path: '/dashboard/flashcards' },
-        { id: 'spaced-repetition', label: 'Spaced Repetition', icon: '/sidebar-flashcards-new.png', path: '/dashboard/spaced-repetition' },
         { id: 'mindmap', label: 'Mindmaps', icon: '/sidebar-mindmap-new.png', path: '/dashboard/mindmap' },
+        { id: 'spaced-repetition', label: 'Spaced Repetition', icon: '/sidebar-spaced-repetition.png', path: '/dashboard/spaced-repetition' },
       ],
     },
     {
@@ -71,16 +71,13 @@ const Sidebar = ({ forceShow = false, isOpen, onClose }: SidebarProps) => {
       items: [
         { id: 'study-groups', label: 'Study Groups', icon: '/sidebar-mindmap.png', path: '/dashboard/study-groups' },
         { id: 'leaderboard', label: 'Leaderboard', icon: '/sidebar-study-groups.png', path: '/dashboard/leaderboard' },
-        { id: 'discussion', label: 'Discussion', icon: '/sidebar-discussion.png', path: '/dashboard/discussion' },
-        { id: 'qa-forum', label: 'Q&A Forum', icon: '/sidebar-qa-forum.png', path: '/dashboard/qa-forum' },
+        { id: 'discussion', label: 'Discussion Forum', icon: '/sidebar-discussion.png', path: '/dashboard/discussion' },
         { id: 'mental-health', label: 'Mental Health Buddy', icon: '/sidebar-mental-health-new.png', path: '/dashboard/mental-health' },
       ],
     },
   ];
 
   // Hide dashboard sidebar on Jeet GPT — it has its own sidebar (unless explicitly forced)
-  if (!forceShow && pathname === '/dashboard/jeet-gpt') return null;
-
   const asideWidth = isCollapsed ? 'w-[60px] min-w-[60px]' : 'w-[260px] min-w-[260px]';
 
   return (

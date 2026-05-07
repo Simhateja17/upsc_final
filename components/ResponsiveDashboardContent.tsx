@@ -13,6 +13,23 @@ function getGreeting() {
   return 'Good evening';
 }
 
+function getDashboardUserName(firstName?: string, email?: string) {
+  if (firstName?.trim()) return firstName.trim();
+  const emailPrefix = email?.split('@')[0]?.trim().toLowerCase();
+  if (!emailPrefix) return '';
+  const withoutDigits = emailPrefix.replace(/\d+$/g, '');
+  const parts = withoutDigits.split(/[._-]+/).filter(Boolean);
+  if (parts.length > 0) {
+    return parts
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+  if (withoutDigits.length <= 6) {
+    return withoutDigits.charAt(0).toUpperCase() + withoutDigits.slice(1);
+  }
+  return withoutDigits.charAt(0).toUpperCase() + withoutDigits.slice(1, 4);
+}
+
 interface DashboardData {
   daysRemaining?: number;
   trio?: {
@@ -205,8 +222,6 @@ const ResponsiveDashboardContent = () => {
   const [tasksError, setTasksError] = useState<string | null>(null);
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState('');
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [timerSeconds, setTimerSeconds] = useState(25 * 60);
   const [showLoginToast, setShowLoginToast] = useState(false);
   const [selectedTaskDate, setSelectedTaskDate] = useState(() => {
     const date = new Date();
@@ -214,7 +229,7 @@ const ResponsiveDashboardContent = () => {
     return date;
   });
 
-  const userName = user?.firstName || '';
+  const userName = getDashboardUserName(user?.firstName, user?.email);
   const greeting = getGreeting();
 
   useEffect(() => {
@@ -263,27 +278,9 @@ const ResponsiveDashboardContent = () => {
     if (sessionStorage.getItem('rwj_login_success') !== '1') return;
     sessionStorage.removeItem('rwj_login_success');
     setShowLoginToast(true);
-    const timeout = setTimeout(() => setShowLoginToast(false), 5000);
+    const timeout = setTimeout(() => setShowLoginToast(false), 7000);
     return () => clearTimeout(timeout);
   }, []);
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    if (timerRunning && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds(prev => {
-          if (prev <= 1) {
-            setTimerRunning(false);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [timerRunning, timerSeconds]);
 
   const trio = dashboardData?.trio;
   const daysRemaining = dashboardData?.daysRemaining ?? null;
@@ -367,12 +364,6 @@ const ResponsiveDashboardContent = () => {
     router.push('/dashboard/jeet-gpt');
   }
 
-  function formatTimer(totalSeconds: number) {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }
-
   function formatDuration(mins?: number) {
     if (!mins) return '';
     const h = Math.floor(mins / 60);
@@ -410,7 +401,7 @@ const ResponsiveDashboardContent = () => {
       </div>
     )}
     <div className="w-full min-h-screen py-[clamp(1rem,1.5vw,2rem)] px-[clamp(1rem,2vw,3rem)]" style={{ background: '#FAFBFE' }}>
-      <div className="max-w-[1400px] mx-auto">
+      <div className="w-full">
 
         {/* Greeting Card */}
         <div
@@ -429,7 +420,7 @@ const ResponsiveDashboardContent = () => {
                 letterSpacing: '0px',
               }}
             >
-              {greeting}{userName ? `, ` : '!'}{userName ? <span style={{ color: '#FFB954' }}>{userName}!</span> : null}
+                  {greeting}{userName ? `, ` : '!'}{userName ? <span style={{ color: '#E8B84B' }}>{userName}!</span> : null}
             </h1>
 
             <div
@@ -600,7 +591,7 @@ const ResponsiveDashboardContent = () => {
                 href="/dashboard/daily-mcq"
                 aria-label="Open Daily MCQ"
                 className="block bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] relative cursor-pointer h-full flex flex-col transition-colors"
-                style={{ borderColor: isMcqCompleted ? '#22C55E' : '#E5E7EB' }}
+                style={{ borderColor: isMcqCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #22C55E' }}
               >
                 {isMcqCompleted && (
                   <div className="absolute top-4 right-4 w-8 h-8 bg-[#22C55E] rounded-full flex items-center justify-center">
@@ -623,11 +614,11 @@ const ResponsiveDashboardContent = () => {
                       className="inline-flex items-center rounded-[8px] px-[10px] py-[2px] font-inter font-bold text-[clamp(18px,1.15vw,20px)] leading-[32px] text-[#0E182D]"
                       style={{ background: '#F0AE00' }}
                     >
-                      Daily MCQ
+                      Daily MCQ Challenge
                     </span>
                   ) : (
                     <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
-                      Daily MCQ
+                      Daily MCQ Challenge
                     </h3>
                   )}
                 </div>
@@ -651,7 +642,7 @@ const ResponsiveDashboardContent = () => {
               <Link href="/dashboard/daily-answer" className="block h-full">
               <div
                 className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-colors cursor-pointer relative"
-                style={{ borderColor: isMainsCompleted ? '#22C55E' : '#E5E7EB' }}
+                style={{ borderColor: isMainsCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #94A3B8' }}
               >
                 {isMainsCompleted && (
                   <div className="absolute top-4 right-4 w-8 h-8 bg-[#22C55E] rounded-full flex items-center justify-center">
@@ -665,7 +656,7 @@ const ResponsiveDashboardContent = () => {
                 <div className="flex items-center gap-3 mb-2">
                   <img src="/mains-question-icon.png" alt="Mains" className="w-7 h-7 object-contain" />
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
-                    Mains Question
+                    Daily Mains Challenge
                   </h3>
                 </div>
 
@@ -694,7 +685,7 @@ const ResponsiveDashboardContent = () => {
               <Link href="/dashboard/daily-editorial" className="block h-full">
               <div
                 className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-colors cursor-pointer relative"
-                style={{ borderColor: isEditorialCompleted ? '#22C55E' : '#E5E7EB' }}
+                style={{ borderColor: isEditorialCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #F59E0B' }}
               >
                 {isEditorialCompleted && (
                   <div className="absolute top-4 right-4 w-8 h-8 bg-[#22C55E] rounded-full flex items-center justify-center">
@@ -893,56 +884,16 @@ const ResponsiveDashboardContent = () => {
           </div>
 
           {/* Start Focus Session Button */}
-          {timerRunning || timerSeconds < 25 * 60 ? (
-            <div className="w-full bg-[#17223E] text-white rounded-lg py-[clamp(0.75rem,1vw,1rem)] px-4 flex items-center justify-between">
-              <div>
-                <p className="font-inter text-[12px] text-white/70">Focus Timer</p>
-                <p className="font-inter font-bold text-[24px] leading-none">{formatTimer(timerSeconds)}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setTimerRunning(false);
-                    setTimerSeconds(25 * 60);
-                  }}
-                  className="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
-                  aria-label="Reset timer"
-                >
-                  <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 12a9 9 0 109-9 9 9 0 00-6.36 2.64L3 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M3 3v5h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-                <button
-                  onClick={() => setTimerRunning(prev => !prev)}
-                  className="w-10 h-10 rounded-lg bg-white text-[#17223E] hover:bg-gray-100 transition-colors flex items-center justify-center"
-                  aria-label={timerRunning ? 'Pause' : 'Start'}
-                >
-                  {timerRunning ? (
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                      <rect x="6" y="5" width="4" height="14" rx="1" />
-                      <rect x="14" y="5" width="4" height="14" rx="1" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5l11 7-11 7V5z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setTimerRunning(true)}
-              className="w-full bg-[#17223E] text-white rounded-lg py-[clamp(0.75rem,1vw,1rem)] font-inter font-semibold text-[clamp(14px,0.94vw,16px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="10" fill="white"/>
-                <path d="M10 8l6 4-6 4V8z" fill="#17223E"/>
-              </svg>
-              Start Focus Session (25 Mins)
-            </button>
-          )}
+          <button
+            onClick={() => router.push('/dashboard/study-groups?tab=solo')}
+            className="w-full bg-[#17223E] text-white rounded-lg py-[clamp(0.75rem,1vw,1rem)] font-inter font-semibold text-[clamp(14px,0.94vw,16px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="12" r="10" fill="white"/>
+              <path d="M10 8l6 4-6 4V8z" fill="#17223E"/>
+            </svg>
+            Start Focus Session
+          </button>
         </div>
 
       </div>

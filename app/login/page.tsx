@@ -8,11 +8,11 @@ import { authService } from '@/lib/auth';
 
 const featureCards = [
   { label: 'Daily Mains Challenge', icon: '/sidebar-daily-answer-new.png' },
-  { label: 'Personal Mentorship',   icon: '/icon-mentorship.png' },
+  { label: '1-on-1 Mentorship',     icon: '/sidebar-mentorship-new.png' },
   { label: 'Study Planner',         icon: '/icon-study-planner.png' },
-  { label: 'Mock Test Generator',   icon: '/icon-mock-test.png' },
+  { label: 'Mock Tests',            icon: '/sidebar-mock-tests-new.png' },
   { label: 'Performance Analytics', icon: '/icon-analytics.png' },
-  { label: 'Study Group Forum',     icon: '/icon-forum.png' },
+  { label: 'Study Group Forum',     icon: '/sidebar-study-groups.png' },
 ];
 
 const avatarColors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444'];
@@ -174,8 +174,9 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="flex w-full min-h-screen" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="flex w-full min-h-screen" style={{ fontFamily: "'Inter', 'Outfit', sans-serif" }}>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
         .success-burst {
           position: absolute;
           left: 50%;
@@ -205,10 +206,9 @@ function LoginPageContent() {
       `}</style>
       {/* ── LEFT PANEL ── */}
       <div
-        className="relative flex-shrink-0 overflow-hidden"
+        className="relative flex-shrink-0"
         style={{
           width: 478,
-          minHeight: 787,
           background: '#0F1C2E',
         }}
       >
@@ -229,33 +229,33 @@ function LoginPageContent() {
           style={{ position: 'absolute', top: 24, left: 26 }}
         >
           <Image
-            src="/auth-logo.png"
+            src="/auth-logo-new.png"
             alt="RiseWithJeet"
-            width={218}
-            height={73}
-            style={{ objectFit: 'contain', width: 218, height: 73 }}
+            width={1312}
+            height={194}
+            style={{ objectFit: 'contain', width: 320, height: 'auto' }}
             priority
           />
         </div>
 
         {/* Main content */}
-        <div className="relative z-10" style={{ width: 382, top: 124, left: 48, position: 'absolute' }}>
+        <div className="relative z-10" style={{ width: 382, marginTop: 124, marginLeft: 48, paddingBottom: 40 }}>
 
           {/* Trusted by badge */}
           <div className="flex items-center gap-2" style={{ marginBottom: 20 }}>
-            <div style={{ width: 32, height: 1, background: '#FF6900', flexShrink: 0 }} />
+            <div style={{ width: 48, height: 3, background: '#E8B84B', borderRadius: 2, flexShrink: 0 }} />
             <span
               style={{
-                fontFamily: 'Inter',
-                fontWeight: 400,
-                fontSize: 12,
+                fontFamily: "'JetBrains Mono', monospace",
+                fontWeight: 600,
+                fontSize: 11,
                 lineHeight: '16px',
-                letterSpacing: '0.6px',
+                letterSpacing: '2.5px',
                 textTransform: 'uppercase',
-                color: '#99A1AF',
+                color: '#E8B84B',
               }}
             >
-              Trusted by 2,400+ Aspirants
+              Trusted by 15,000+ Aspirants
             </span>
           </div>
 
@@ -263,7 +263,7 @@ function LoginPageContent() {
           <div style={{ marginBottom: 16 }}>
             <div
               style={{
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 700,
                 fontSize: 36,
                 lineHeight: '45px',
@@ -274,7 +274,7 @@ function LoginPageContent() {
             </div>
             <div
               style={{
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 700,
                 fontSize: 36,
                 lineHeight: '45px',
@@ -285,7 +285,7 @@ function LoginPageContent() {
               <span
                 style={{
                   fontStyle: 'italic',
-                  color: '#FF6900',
+                  color: '#E8B84B',
                 }}
               >
                 right here.
@@ -295,24 +295,20 @@ function LoginPageContent() {
 
           {/* Subtitle */}
           <div style={{ marginBottom: 36 }}>
-            {[
-              'Structured PYQs, AI-powered Mains evaluation,',
-              'and personal mentorship from IAS toppers —',
-              'everything you need to crack UPSC in one place.',
-            ].map((line, i) => (
-              <div
-                key={i}
-                style={{
-                  fontFamily: 'Inter',
-                  fontWeight: 400,
-                  fontSize: 14,
-                  lineHeight: '22.75px',
-                  color: '#99A1AF',
-                }}
-              >
-                {line}
-              </div>
-            ))}
+            <div
+              style={{
+                fontFamily: "'Outfit', sans-serif",
+                fontWeight: 400,
+                fontSize: 14,
+                lineHeight: '22.75px',
+                color: '#99A1AF',
+              }}
+            >
+              A comprehensive platform offering all resources necessary to excel
+              in the UPSC exam. Including Daily Mains Challenge, Syllabus Tracker, Study Planner, Smart Revision Tools,
+              Simplified Video Lectures, Mock Tests, detailed Performance Analytics, Personalized Mentorship and structured
+              Previous Year Questions.
+            </div>
           </div>
 
           {/* Feature cards grid */}
@@ -353,7 +349,7 @@ function LoginPageContent() {
                 </div>
                 <span
                   style={{
-                    fontFamily: 'Inter',
+                    fontFamily: "'Outfit', sans-serif",
                     fontWeight: 600,
                     fontSize: 14,
                     lineHeight: '20px',
@@ -387,34 +383,34 @@ function LoginPageContent() {
                     color: '#fff',
                   }}
                 >
-                  {i < 4 ? ['AK', 'PS', 'RV', 'MF'][i] : '+2k'}
+                  {i < 4 ? ['AK', 'PS', 'RV', 'MF'][i] : '+14k'}
                 </div>
               ))}
             </div>
             <div>
               <span
                 style={{
-                  fontFamily: 'Inter',
+                  fontFamily: "'Outfit', sans-serif",
                   fontWeight: 700,
                   fontSize: 14,
-                  color: '#FF6900',
+                  color: '#E8B84B',
                 }}
               >
-                2,400+{' '}
+                15,000+{' '}
               </span>
               <span
                 style={{
-                  fontFamily: 'Inter',
+                  fontFamily: "'Outfit', sans-serif",
                   fontWeight: 400,
                   fontSize: 12,
                   color: '#99A1AF',
                 }}
               >
-                aspirants
+                Aspirants
               </span>
               <div
                 style={{
-                  fontFamily: 'Inter',
+                  fontFamily: "'Outfit', sans-serif",
                   fontWeight: 400,
                   fontSize: 11,
                   color: '#99A1AF',
@@ -430,7 +426,7 @@ function LoginPageContent() {
       {/* ── RIGHT PANEL ── */}
       <div
         className="flex-1 flex flex-col items-center"
-        style={{ background: '#F9FAFB', minHeight: 787, paddingTop: 72 }}
+        style={{ background: '#F9FAFB', paddingTop: 72, paddingBottom: 72 }}
       >
         {/* Single centered container for tab + form */}
         <div style={{ width: 448 }}>
@@ -620,10 +616,10 @@ function LoginPageContent() {
               {/* Feature list */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
-                  { icon: '/icon-pyq.png', text: '2,400+ PYQ questions · All years' },
-                  { icon: '/icon-mentorship.png', text: 'AI Mains answer evaluation' },
-                  { icon: '/icon-dashboard.png', text: 'Personal progress dashboard' },
-                  { icon: '/icon-streak.png', text: 'Daily streak & accuracy tracking' },
+                  { icon: '/icon-mentorship.png', text: 'Daily Mains Challenge and Instant Evaluation' },
+                  { icon: '/icon-pyq.png', text: '10,000+ PYQ questions' },
+                  { icon: '/icon-dashboard.png', text: 'Personal Performance dashboard' },
+                  { icon: '/icon-streak.png', text: 'Daily streak, Syllabus and Study Planner tracking' },
                 ].map((item) => (
                   <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <Image src={item.icon} alt="" width={28} height={28} style={{ objectFit: 'contain', flexShrink: 0 }} />
@@ -684,7 +680,7 @@ function LoginPageContent() {
                 letterSpacing: 0,
               }}
             >
-              Join the <span style={{ color: '#D9A84F' }}>mission</span> <span style={{ color: '#D9A84F' }}>✦</span>
+              Welcome to <span style={{ color: '#D9A84F' }}>RiseWithJeet!</span>
             </h1>
             <p
               style={{
@@ -692,12 +688,12 @@ function LoginPageContent() {
                 fontWeight: 400,
                 fontSize: 14,
                 lineHeight: '20px',
-                color: '#6A7282',
+                color: '#9CA3AF',
                 margin: 0,
                 marginBottom: 20,
               }}
             >
-              Create your free account and start practicing with 2,400+ PYQs today.
+              Create your free account and start your preparation with structured planning, and AI-powered insights, everything serious aspirants need, in one place.
             </p>
 
             {/* Sign up with Google */}
@@ -795,11 +791,10 @@ function LoginPageContent() {
               </div>
             </div>
 
-            {/* Mobile Number (optional) */}
+            {/* Mobile Number */}
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
-                Mobile Number{' '}
-                <span style={{ fontWeight: 400, textTransform: 'none', color: '#99A1AF', fontSize: 11 }}>(optional)</span>
+                Mobile Number
               </label>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex' }}>
@@ -1031,8 +1026,8 @@ function LoginPageContent() {
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 18 }}>
               {[0, 1, 2, 3, 4, 5].map((i) => (
-                <div key={i} style={{ width: 28, height: 36, borderRadius: 8, border: '0.8px solid #99A1AF', background: i === 0 ? '#FEF3C7' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: i === 0 ? '#D08700' : '#99A1AF', fontWeight: 700 }}>
-                  {i === 0 ? '✓' : ''}
+                <div key={i} style={{ width: 28, height: 36, borderRadius: 8, border: '0.8px solid #99A1AF', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#99A1AF', fontWeight: 700 }}>
+                  {'•'}
                 </div>
               ))}
             </div>
@@ -1121,9 +1116,10 @@ function LoginPageContent() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                borderRadius: 10,
+                borderRadius: 14,
                 border: '0.8px solid #D1D5DC',
                 background: '#FFFFFF',
+                boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.10), 0px 1px 2px -1px rgba(0,0,0,0.10)',
                 cursor: 'pointer',
                 marginBottom: 20,
               }}
@@ -1373,7 +1369,7 @@ function LoginPageContent() {
               {!isLoading && <Image src="/icon-login-arrow.png" alt="" width={18} height={18} style={{ objectFit: 'contain' }} />}
             </button>
 
-            {/* New Here — gradient CTA button */}
+            {/* New Here — theme CTA button */}
             <button
               type="button"
               onClick={() => { setActiveTab('signup'); setError(null); }}
@@ -1381,7 +1377,7 @@ function LoginPageContent() {
                 width: '100%',
                 height: 44,
                 borderRadius: 14,
-                background: 'linear-gradient(90deg, #FF6900 0%, #F0B100 100%)',
+                background: '#D9A84F',
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex',
@@ -1403,7 +1399,7 @@ function LoginPageContent() {
                   color: '#101828',
                 }}
               >
-                New Here Create A Free Account
+                New here, create a free account
               </span>
             </button>
 

@@ -4,10 +4,11 @@ import React from 'react';
 import { useCmsContent } from '@/hooks/useCmsContent';
 
 const defaultLiveFeatures = [
-  { emoji: '⏱️', title: 'Pomodoro Timer', desc: 'Stay focused with proven time management' },
+  { emoji: '️', title: 'Pomodoro Timer', desc: 'Stay focused with proven time management' },
   { emoji: '🏆', title: 'Leaderboards', desc: 'Track rankings & compete healthily' },
   { emoji: '📋', title: 'Task Cards', desc: 'Share goals & stay accountable' },
-  { emoji: '🔍', title: 'Peer Review', desc: 'Get feedback from fellow aspirants' },
+  { emoji: '', title: 'Peer Review', desc: 'Get feedback from fellow aspirants' },
+  { emoji: '👥', title: 'Study Together', desc: 'Collaborate with aspirants in real-time' },
 ];
 
 const defaults = {
@@ -32,7 +33,7 @@ const LiveStudyRoom = () => {
       className="w-full flex flex-col items-center"
       style={{
         background: '#05070A',
-        paddingTop: 'clamp(3rem, 6vw, 80px)',
+        paddingTop: 'clamp(1.5rem, 4vw, 50px)',
         paddingBottom: 'clamp(3rem, 6vw, 80px)',
         paddingLeft: 'clamp(1.5rem, 5vw, 80px)',
         paddingRight: 'clamp(1.5rem, 5vw, 80px)',
@@ -47,7 +48,7 @@ const LiveStudyRoom = () => {
           lineHeight: '150%',
           letterSpacing: '0.01em',
           color: '#FFD170',
-          marginBottom: 'clamp(1.5rem, 3vw, 40px)',
+          marginBottom: 'clamp(0.5rem, 1.5vw, 16px)',
         }}
       >
         {get('live_study_room_title')}
@@ -180,7 +181,7 @@ const LiveStudyRoom = () => {
 
       {/* Features Grid */}
       <div
-        className="w-full grid grid-cols-2 lg:grid-cols-4"
+        className="w-full grid grid-cols-2 lg:grid-cols-5"
         style={{
           maxWidth: '1000px',
           gap: 'clamp(1.5rem, 3vw, 3rem)',

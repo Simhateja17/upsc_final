@@ -282,12 +282,12 @@ export default function SyllabusTrackerPage() {
       {/* Page Content - scrollable */}
       <div className="flex-1 overflow-y-auto">
         {/* Hero Section */}
-        <div className="px-4 sm:px-6 lg:px-8 pt-[clamp(12px,1.6vw,20px)]">
+        <div className="pt-[clamp(12px,1.6vw,20px)]">
           <HeroSection states={states} syllabusData={syllabusData} userName={user?.firstName} cms={cms} />
         </div>
 
         {/* Stage Tabs */}
-        <div className="px-[18px] pt-[14px] pb-0">
+        <div className="px-[18px] pt-[14px] pb-0 overflow-x-auto">
           <StageTabs
             mode={mode}
             onModeChange={handleModeChange}

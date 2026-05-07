@@ -39,7 +39,7 @@ export default function NextStepsPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen panel-recessed">
+      <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
         <main className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </main>
@@ -48,12 +48,12 @@ export default function NextStepsPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen panel-recessed">
-      <main className="flex-1 flex items-center justify-center py-[clamp(2rem,4vw,4rem)] px-[clamp(1rem,2vw,3rem)]">
+    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
+      <main className="flex-1 flex items-center justify-center py-[clamp(1.25rem,2vw,2rem)] px-[clamp(1rem,2vw,3rem)]">
         <div className="card-elevated rounded-[clamp(8px,0.52vw,10px)]"
-          style={{ width: 'clamp(700px,46.67vw,896px)', padding: 'clamp(2rem,2.08vw,2.5rem)' }}>
+          style={{ width: 'clamp(700px,46.67vw,896px)', padding: 'clamp(1.4rem,1.6vw,2rem)', boxShadow: '0 24px 58px -30px rgba(15,23,42,0.24), 0 10px 26px -18px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.9)' }}>
 
-          <div className="text-center mb-[clamp(2rem,2.6vw,3.25rem)]">
+          <div className="text-center mb-[clamp(1.1rem,1.4vw,1.6rem)]">
             <h1 className="font-arimo font-bold text-[#101828] mb-[clamp(0.5rem,0.625vw,0.75rem)]"
               style={{ fontSize: 'clamp(20px,1.25vw,24px)', lineHeight: 'clamp(28px,1.67vw,32px)' }}>
               What would you like to do next?
@@ -64,12 +64,12 @@ export default function NextStepsPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 mb-[clamp(2rem,2.6vw,3.25rem)]"
-            style={{ gap: 'clamp(1.25rem,1.67vw,2rem)' }}>
+          <div className="grid grid-cols-2 mb-[clamp(1.1rem,1.4vw,1.6rem)]"
+            style={{ gap: 'clamp(0.9rem,1vw,1.1rem)' }}>
             {recommendations.map((item, index) => (
               <Link key={index} href={item.link}>
                 <div className="bg-white border border-[#E5E7EB] rounded-[clamp(8px,0.52vw,10px)] hover:shadow-md transition-all cursor-pointer relative"
-                  style={{ padding: 'clamp(1.5rem,1.88vw,2.25rem) clamp(1.25rem,1.67vw,2rem)' }}>
+                  style={{ padding: 'clamp(1.1rem,1.2vw,1.4rem) clamp(1rem,1.1vw,1.3rem)' }}>
                   <div className="rounded-[clamp(12px,0.83vw,16px)] flex items-center justify-center mb-[clamp(1rem,1.25vw,1.5rem)] mx-auto"
                     style={{ width: 'clamp(52px,3.33vw,64px)', height: 'clamp(52px,3.33vw,64px)', background: bgColors[item.type] || '#E5E7EB' }}>
                     <img src={icons[item.type] || '/🎯.png'} alt={item.title}

@@ -128,11 +128,11 @@ const Header = () => {
   };
 
   return (
-    <nav className="w-full bg-transparent absolute top-0 left-0 pt-4 pb-2 px-4 md:px-8 flex items-center justify-between z-50 border-b border-[#D8C784]/30 relative">
+    <nav className="w-full flex items-center justify-between z-50 relative px-4 md:px-8 py-3" style={{ background: 'rgba(7,14,30,0.98)', backdropFilter: 'blur(24px) saturate(200%)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
       {/* Logo Section */}
       <Link href="/" className="flex flex-col items-center flex-shrink-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo...png" alt="RiseWithJeet Logo" className="w-[62px] md:w-[62px] h-auto object-contain" />
+        <img src="/logo...png" alt="RiseWithJeet Logo" className="w-[74px] md:w-[84px] h-auto object-contain" />
       </Link>
 
       {/* Desktop Nav Links */}
@@ -291,7 +291,7 @@ const Header = () => {
 
       {/* Mobile dropdown menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-[#0E182D]/95 backdrop-blur-sm border-t border-[#D8C784]/20 flex flex-col z-50 shadow-xl max-h-[80vh] overflow-y-auto">
+        <div className="md:hidden absolute top-full left-0 w-full flex flex-col z-50 shadow-xl max-h-[80vh] overflow-y-auto" style={{ background: 'rgba(7,14,30,0.98)', backdropFilter: 'blur(24px) saturate(200%)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           {/* Simple Links */}
           <Link
             href="/dashboard/jeet-gpt"

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Mode, TrackerState, SyllabusData } from '../page';
 import DashboardPageHero from '@/components/DashboardPageHero';
 
@@ -14,8 +15,17 @@ export default function HeroSection({ states, syllabusData, userName, cms }: Her
   const badgeText = cms?.hero_badge || 'PERSONALIZED SYLLABUS TRACKER';
   const titlePrefix = cms?.hero_title_prefix || 'Know Exactly Where You Stand,';
   const titleSuffix = cms?.hero_title_suffix || '.';
-  const subtitle = cms?.hero_subtitle || "Your UPSC syllabus, fully mapped. Track every topic across Prelims, Mains and Optional — see what's done, what's pending, and what to conquer next.";
-  const statLabels = (() => { try { return JSON.parse(cms?.stat_labels || '{}'); } catch { return {}; } })();
+  const subtitle =
+    cms?.hero_subtitle ||
+    "Your UPSC syllabus, fully mapped. Track every topic across Prelims, Mains and Optional, see what's done, what's pending, and what to conquer next.";
+  const statLabels = (() => {
+    try {
+      return JSON.parse(cms?.stat_labels || '{}');
+    } catch {
+      return {};
+    }
+  })();
+
   const calculateModeStats = (modeKey: Mode) => {
     const subjects = syllabusData[modeKey];
     let total = 0;
@@ -48,11 +58,26 @@ export default function HeroSection({ states, syllabusData, userName, cms }: Her
 
   return (
     <DashboardPageHero
-      badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+      badgeIcon={
+        <Image
+          src="/sidebar-syllabus-new.png"
+          alt="Syllabus tracker"
+          width={18}
+          height={18}
+          style={{ width: '18px', height: '18px', objectFit: 'contain' }}
+        />
+      }
       badgeText={badgeText}
       heroBorderRadius={16}
       heroHeight="auto"
+      heroMinHeight="344px"
       heroMarginInline={0}
+      heroBackground="#0A1731"
+      heroBackgroundImage="url('/syllabus-tracker-hero.png')"
+      heroBackgroundPosition="center"
+      heroBackgroundSize="cover"
+      showDotGrid={false}
+      rightElement={null}
       title={
         <>
           {titlePrefix}{' '}
@@ -61,9 +86,10 @@ export default function HeroSection({ states, syllabusData, userName, cms }: Her
         </>
       }
       subtitle={subtitle}
+      titleMarginBottom={12}
       stats={[
-        { value: `${overallPct}%`, label: statLabels.overall || 'Overall',   color: '#F5A623' },
-        { value: String(allDone),  label: statLabels.done || 'Done',      color: '#FF7070' },
+        { value: `${overallPct}%`, label: statLabels.overall || 'Overall', color: '#F5A623' },
+        { value: String(allDone), label: statLabels.done || 'Done', color: '#FF7070' },
         { value: String(allRevision), label: statLabels.revising || 'Revising', color: '#FFFFFF' },
         { value: String(Math.max(allTotal - allDone, 0)), label: statLabels.remaining || 'Remaining', color: '#0E8A56' },
       ]}

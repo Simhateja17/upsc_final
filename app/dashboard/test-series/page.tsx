@@ -29,13 +29,13 @@ const filters = [
 
 // Map examMode/subject to an emoji icon
 function seriesIcon(examMode: string, subject?: string | null): string {
-  if (subject?.toLowerCase().includes('polity')) return '\u{1F3DB}\uFE0F';
-  if (subject?.toLowerCase().includes('history')) return '\u{1F4DC}';
-  if (subject?.toLowerCase().includes('geography')) return '\u{1F30D}';
-  if (subject?.toLowerCase().includes('economy')) return '\u{1F4C8}';
-  if (subject?.toLowerCase().includes('science')) return '\u{1F52C}';
-  if (examMode === 'mains') return '\u270D\uFE0F';
-  return '\u{1F4C4}';
+  if (subject?.toLowerCase().includes('polity')) return '⚖️';
+  if (subject?.toLowerCase().includes('history')) return '🏛️';
+  if (subject?.toLowerCase().includes('geography')) return '🌍';
+  if (subject?.toLowerCase().includes('economy')) return '💰';
+  if (subject?.toLowerCase().includes('science')) return '🔬';
+  if (examMode === 'mains') return '✍️';
+  return '📄';
 }
 
 interface SeriesItem {
@@ -145,10 +145,12 @@ export default function TestSeriesPage() {
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {/* Hero */}
           <DashboardPageHero
-            badgeIcon={<img src="/lightning.png" alt="lightning" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+            badgeIcon={<img src="/badge-test-series.png" alt="test series" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />}
             badgeText="TEST SERIES"
+            heroBorderRadius={16}
+            contentShiftY={-22}
             title={<>Choose Your <em style={{ color: '#e8a820', fontStyle: 'italic' }}>Battle Plan.</em></>}
-            subtitle="From NCERT foundations to full Prelims war-room simulations — each series is crafted to mirror real UPSC patterns. Rise every day. Rise with Jeet."
+            subtitle="From NCERT foundations to full Prelims war-room simulations, each series is crafted to mirror real UPSC patterns. Rise every day. Rise with Jeet."
             stats={[
               { value: heroStats ? String(heroStats.activeSeries) : '847', label: 'Active Series', color: '#F5A623' },
               { value: heroStats ? heroStats.totalStudents.toLocaleString('en-IN') : '1.2L+', label: 'Students', color: '#FB7185' },
@@ -185,7 +187,7 @@ export default function TestSeriesPage() {
                     key={f.key}
                     type="button"
                     style={{
-                      fontFamily: 'Inter',
+                      fontFamily: 'var(--font-inter), Inter, sans-serif',
                       fontWeight: 600,
                       fontSize: 14,
                       lineHeight: '20px',
@@ -220,7 +222,7 @@ export default function TestSeriesPage() {
                     borderRadius: 10,
                     padding: '8px 16px',
                     boxSizing: 'border-box',
-                    fontFamily: 'Inter',
+                    fontFamily: 'var(--font-inter), Inter, sans-serif',
                     fontWeight: 600,
                     fontSize: 14,
                     lineHeight: '20px',

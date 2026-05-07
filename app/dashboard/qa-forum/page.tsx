@@ -234,6 +234,7 @@ export default function QAForumPage() {
           { value: '547', label: 'Active Right Now', color: '#4ADE80' },
           { value: '∞', label: 'Always Free', color: '#FFFFFF' },
         ]}
+        contentShiftY={-30}
       />
 
       <main className="mx-auto mt-2 grid max-w-[1180px] grid-cols-1 gap-6 px-4 pb-14 lg:grid-cols-[220px_1fr]">

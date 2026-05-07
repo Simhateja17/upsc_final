@@ -29,7 +29,7 @@ export const SYLLABUS_DATA: SyllabusData = {
       id: 'history',
       name: 'History',
       short: 'History',
-      icon: '📜',
+      icon: '🏛️',
       color: '#e07b39',
       bg: 'rgba(224,123,57,.11)',
       topics: [
@@ -240,7 +240,7 @@ export const SYLLABUS_DATA: SyllabusData = {
       id: 'economy',
       name: 'Economy',
       short: 'Economy',
-      icon: '📈',
+      icon: '💰',
       color: '#059669',
       bg: 'rgba(5,150,105,.09)',
       topics: [
@@ -481,7 +481,7 @@ export const SYLLABUS_DATA: SyllabusData = {
       id: 'mhistory',
       name: 'History',
       short: 'History',
-      icon: '📜',
+      icon: '🏛️',
       color: '#e07b39',
       bg: 'rgba(224,123,57,.11)',
       topics: [
@@ -692,7 +692,7 @@ export const SYLLABUS_DATA: SyllabusData = {
       id: 'meconomy',
       name: 'Economy',
       short: 'Economy',
-      icon: '📈',
+      icon: '💰',
       color: '#059669',
       bg: 'rgba(5,150,105,.09)',
       topics: [

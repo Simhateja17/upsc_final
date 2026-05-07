@@ -50,7 +50,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 
 const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const pathname = usePathname();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
@@ -84,7 +84,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   };
 
   return (
-    <header className="w-full h-[clamp(56px,5.78vw,111px)] bg-gradient-to-r from-[#0E182D] to-[#17223E] flex items-center justify-between px-3 md:px-[clamp(1rem,2vw,2.5rem)] sticky top-0 z-50">
+    <header className="w-full h-[clamp(56px,5.78vw,111px)] flex items-center justify-between px-3 md:px-[clamp(1rem,2vw,2.5rem)] sticky top-0 z-50" style={{ background: 'rgba(7,14,30,0.98)', backdropFilter: 'blur(24px) saturate(200%)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
       {/* Left: Hamburger (mobile) + Logo */}
       <div className="flex items-center gap-2 md:gap-3">
         {/* Hamburger button — visible on mobile/tablet only */}
@@ -103,7 +103,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
           <img
             src="/logo...png"
             alt="RiseWithJeet Logo"
-            className="w-[62px] md:w-[62px] h-auto object-contain"
+            className="w-[74px] md:w-[84px] h-auto object-contain"
           />
         </Link>
       </div>
@@ -147,6 +147,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
         <button
           onClick={() => setShowNotifications((prev) => !prev)}
           className="relative flex items-center justify-center w-[clamp(38px,2.8vw,48px)] h-[clamp(38px,2.8vw,48px)] rounded-xl bg-[#1a2540] text-white hover:bg-[#243050] transition-colors flex-shrink-0"
+          style={{ border: '1px solid rgba(255,255,255,0.16)' }}
           aria-label="Notifications"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -175,95 +176,88 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
             <div
               className="absolute right-0 top-full mt-2 z-50"
               style={{
-                width: 'min(360px, calc(100vw - 1rem))',
-                borderRadius: '14px',
+                width: '240px',
+                borderRadius: '12px',
                 background: '#FFFFFF',
-                borderTop: '0.8px solid #E2E8F0',
                 boxShadow: '0px 4px 6px -4px #0000001A, 0px 10px 15px -3px #0000001A',
               }}
             >
               {/* User Info Section */}
-              <div className="px-5 pt-6 pb-5">
-                <div className="font-inter font-medium text-[16px] leading-[24px] text-[#17223E]">
+              <div className="px-4 pt-4 pb-3">
+                <div className="font-inter font-semibold text-[14px] leading-[20px] text-[#111827]">
                   {displayName}
                 </div>
-                <div className="font-inter text-[13px] leading-[18px] text-[#999999] mt-0.5">
+                <div className="font-inter text-[12px] leading-[16px] text-[#9CA3AF] mt-0.5">
                   {user?.email || ''}
                 </div>
               </div>
 
-              <hr className="border-[#E2E8F0] mx-0" />
+              <hr className="border-[#F3F4F6] mx-0" />
 
               {/* Menu Items */}
-              <div className="py-2">
+              <div className="py-1.5">
                 <Link
                   href="/dashboard/profile"
-                  className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/human.png" alt="" className="w-[18px] h-[18px] object-contain" />
-                  <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
+                  <img src="/human.png" alt="" className="w-4 h-4 object-contain opacity-60" />
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     My Profile
                   </span>
                 </Link>
 
                 <Link
                   href="/dashboard/billing"
-                  className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/card.png" alt="" className="w-[18px] h-[18px] object-contain" />
-                  <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
+                  <img src="/card.png" alt="" className="w-4 h-4 object-contain opacity-60" />
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Billing &amp; Plan
                   </span>
                 </Link>
 
                 <Link
                   href="/dashboard/saved-notes"
-                  className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/paper.png" alt="" className="w-[18px] h-[18px] object-contain" />
-                  <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
+                  <img src="/paper.png" alt="" className="w-4 h-4 object-contain opacity-60" />
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Bookmarks
                   </span>
                 </Link>
 
                 <Link
                   href="/dashboard/settings"
-                  className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/sett.png" alt="" className="w-[18px] h-[18px] object-contain" />
-                  <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
+                  <img src="/sett.png" alt="" className="w-4 h-4 object-contain opacity-60" />
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Account Settings
                   </span>
                 </Link>
 
                 <Link
                   href="/contact"
-                  className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/question-help-message--Streamline-Ultimate.png" alt="" className="w-[18px] h-[18px] object-contain" />
-                  <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
+                  <img src="/question-help-message--Streamline-Ultimate.png" alt="" className="w-4 h-4 object-contain opacity-60" />
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Help &amp; Support
                   </span>
                 </Link>
 
                 <Link
                   href="/dashboard/feedback"
-                  className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/tin.png" alt="" className="w-[18px] h-[18px] object-contain" />
-                  <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
+                  <img src="/tin.png" alt="" className="w-4 h-4 object-contain opacity-60" />
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Feedback
                   </span>
                 </Link>
@@ -271,17 +265,37 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 {user?.role === 'admin' && (
                   <Link
                     href="/admin"
-                    className="flex items-center gap-[10px] px-5 py-[9px] hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                     onClick={() => setShowDropdown(false)}
                   >
-                    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="#1A1A1A" strokeWidth={1.5}>
+                    <svg className="w-4 h-4 opacity-60" fill="none" viewBox="0 0 24 24" stroke="#374151" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
                     </svg>
-                    <span className="font-inter font-medium text-[13px] leading-none text-[#1A1A1A]">
+                    <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                       Admin Panel
                     </span>
                   </Link>
                 )}
+              </div>
+
+              <hr className="border-[#F3F4F6] mx-0" />
+
+              {/* Sign Out */}
+              <div className="py-1.5">
+                <button
+                  onClick={async () => {
+                    setShowDropdown(false);
+                    await logout();
+                  }}
+                  className="flex items-center gap-2.5 px-4 py-2 w-full hover:bg-gray-50 transition-colors"
+                >
+                  <svg className="w-4 h-4 opacity-60" fill="none" viewBox="0 0 24 24" stroke="#EF4444" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                  </svg>
+                  <span className="font-inter font-medium text-[13px] leading-none text-[#EF4444]">
+                    Sign out
+                  </span>
+                </button>
               </div>
             </div>
           )}

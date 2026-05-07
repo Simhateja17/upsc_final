@@ -115,7 +115,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms }
                   <div className="text-[12px] flex-shrink-0 w-[14px] text-center">
                     {subject.icon}
                   </div>
-                  <div className="text-[10.5px] font-semibold text-[#0f1f3d] flex-shrink-0 w-[56px] whitespace-nowrap overflow-hidden text-ellipsis">
+                  <div className="text-[10.5px] font-semibold text-[#0f1f3d] flex-shrink-0 w-[72px] whitespace-nowrap overflow-hidden text-ellipsis">
                     {subject.short}
                   </div>
                   <div className="flex-1">

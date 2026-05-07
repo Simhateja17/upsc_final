@@ -47,7 +47,7 @@ body { font-family:'Outfit',sans-serif; background:var(--light-bg); color:var(--
 :root {
   --logo-x: 0px;   /* ← change me */
   --logo-y: 0px;   /* ← change me */
-  --logo-h: 62px;  /* ← change me */
+  --logo-h: 76px;  /* ← change me */
 }
 
 /* ── NAV ── */
@@ -55,11 +55,19 @@ nav {
   position:fixed; top:0; left:0; right:0; z-index:200;
   display:flex; align-items:center; justify-content:space-between;
   padding:0 56px; height:66px;
-  background:rgba(13,25,49,0.92);
+  background:rgba(7,14,30,0.98);
   backdrop-filter:blur(24px) saturate(200%);
   border-bottom:1px solid rgba(255,255,255,0.06);
   transition:background 0.3s;
 }
+/* Dropdown nav */
+.nav-dropdown-wrap { position:relative; }
+.nav-dropdown-wrap > button { display:flex; align-items:center; gap:4px; background:none; border:none; color:rgba(255,255,255,0.58); font-size:14px; font-weight:500; cursor:pointer; font-family:'Outfit',sans-serif; padding:0; transition:color 0.2s; white-space:nowrap; }
+.nav-dropdown-wrap:hover > button, .nav-dropdown-wrap > button:hover { color:var(--gold); }
+.nav-dropdown-wrap:hover .nav-dropdown { display:block; }
+.nav-dropdown { display:none; position:absolute; top:100%; left:0; margin-top:8px; background:#0E182D; border:1px solid rgba(255,255,255,0.10); border-radius:12px; min-width:200px; padding:6px 0; z-index:300; box-shadow:0 16px 48px rgba(0,0,0,0.5); }
+.nav-dropdown a { display:block; padding:10px 16px; font-size:13.5px; color:rgba(255,255,255,0.70); text-decoration:none; font-family:'Outfit',sans-serif; transition:color 0.15s, background 0.15s; }
+.nav-dropdown a:hover { color:var(--gold); background:rgba(255,255,255,0.05); }
 .logo {
   display:flex; align-items:center; gap:10px; text-decoration:none;
   position:relative;
@@ -91,9 +99,6 @@ nav {
 ══════════════════════════════════════════ */
 .hero {
   min-height:100vh;
-  background:
-    radial-gradient(circle at 8% 12%, rgba(55,53,51,0.62) 0%, rgba(55,53,51,0.32) 22%, rgba(55,53,51,0.10) 46%, rgba(55,53,51,0) 66%),
-    linear-gradient(135deg, var(--hero-base) 0%, var(--hero-base) 100%);
   background-color: var(--hero-base);
   position:relative;
   display:flex; flex-direction:column;
@@ -118,19 +123,13 @@ nav {
   pointer-events:none; z-index:1;
 }
 
-/* top-left corner glow – kept very subtle */
+/* golden left-side glow */
 .hero::after {
   content:''; position:absolute;
-  top:-220px; left:-260px;
-  width:840px; height:840px;
-  background:radial-gradient(
-    circle at 36% 36%,
-    rgba(55,53,51,0.34) 0%,
-    rgba(55,53,51,0.18) 26%,
-    rgba(55,53,51,0.07) 52%,
-    rgba(55,53,51,0) 74%
-  );
-  pointer-events:none; z-index:1; opacity:0.5;
+  top:-100px; left:-200px;
+  width:900px; height:900px;
+  background:radial-gradient(circle at 20% 50%, rgba(232,184,75,0.14) 0%, rgba(232,184,75,0.06) 35%, rgba(7,14,30,0) 65%);
+  pointer-events:none; z-index:1; opacity:1;
 }
 
 /* Small dim floating checkbox marks in grid */
@@ -295,8 +294,8 @@ nav {
 .d-dot { width:10px; height:10px; border-radius:50%; }
 .device-title { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-mid); margin-left:6px; }
 .demo-content { padding:0; min-height:370px; position:relative; overflow:hidden; background:#FFFFFF; }
-.demo-slide { position:absolute; inset:0; padding:24px; opacity:0; transition:opacity 0.5s ease; display:flex; flex-direction:column; background:#FFFFFF; }
-.demo-slide.active { opacity:1; position:relative; }
+.demo-slide { display:none; padding:24px; flex-direction:column; background:#FFFFFF; min-height:100%; }
+.demo-slide.active { display:flex; }
 .eval-q { font-size:12.5px; color:var(--navy); padding:13px; background:#F4F6FA; border-radius:10px; border-left:3px solid var(--gold-dark); line-height:1.6; margin-bottom:12px; font-weight:500; }
 .eval-ans { font-size:12px; color:var(--text-mid); padding:11px; background:#F8F9FC; border-radius:10px; line-height:1.6; font-style:italic; margin-bottom:12px; border:1px solid #E4EAF5; }
 .eval-bar { height:4px; background:#E4EAF5; border-radius:2px; margin-bottom:10px; overflow:hidden; }
@@ -714,8 +713,10 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
 
 /* ── ANIMATIONS ── */
 @keyframes fadeUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
-.reveal { opacity:0; transform:translateY(22px); transition:opacity 0.65s ease, transform 0.65s ease; }
-.reveal.visible { opacity:1; transform:translateY(0); }
+/* reveal: visible by default; JS adds reveal-init to enable animation */
+.reveal { }
+.reveal.reveal-init { opacity:0; transform:translateY(22px); transition:opacity 0.65s ease, transform 0.65s ease; }
+.reveal.reveal-init.visible { opacity:1; transform:translateY(0); }
 .reveal-delay-1{transition-delay:0.1s} .reveal-delay-2{transition-delay:0.2s} .reveal-delay-3{transition-delay:0.3s} .reveal-delay-4{transition-delay:0.4s}
 
 /* ── HAMBURGER + MOBILE NAV ── */
@@ -856,14 +857,41 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
 <!-- ═══ NAV ═══ -->
 <nav id="main-nav">
   <a href="#" class="logo">
-    <img src="logo...png" alt="RiseWithJeet" />
+    <img src="logo...png" alt="RiseWithJeet" style="height:48px;width:auto;object-fit:contain;" />
   </a>
-  <ul class="nav-links">
-    <li><a href="#modules">Modules</a></li>
-    <li><a href="#ai">Jeet AI</a></li>
-    <li><a href="#analytics">Analytics</a></li>
-    <li><a href="#community">Community</a></li>
-  </ul>
+  <div class="nav-links" style="display:flex;align-items:center;gap:28px;list-style:none;">
+    <a href="/dashboard/jeet-gpt" style="color:rgba(255,255,255,0.58);text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap;transition:color 0.2s;" onmouseover="this.style.color='#E8B84B'" onmouseout="this.style.color='rgba(255,255,255,0.58)'">Jeet AI</a>
+    <a href="/dashboard/daily-answer/challenge" style="color:rgba(255,255,255,0.58);text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap;transition:color 0.2s;" onmouseover="this.style.color='#E8B84B'" onmouseout="this.style.color='rgba(255,255,255,0.58)'">Daily Mains Challenge</a>
+    <div class="nav-dropdown-wrap">
+      <button>Prepare <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+      <div class="nav-dropdown">
+        <a href="/dashboard/study-planner">Study Planner</a>
+        <a href="/dashboard/syllabus-tracker">Syllabus Tracker</a>
+        <a href="/dashboard/video-lectures">Video Lectures</a>
+      </div>
+    </div>
+    <div class="nav-dropdown-wrap">
+      <button>Practice <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+      <div class="nav-dropdown">
+        <a href="/dashboard/daily-mcq">Daily MCQs</a>
+        <a href="/dashboard/daily-answer">Daily Mains Answer</a>
+        <a href="/dashboard/mock-tests">Mock Tests</a>
+        <a href="/dashboard/pyq">Previous Year Questions</a>
+        <a href="/dashboard/test-series">Test Series</a>
+      </div>
+    </div>
+    <div class="nav-dropdown-wrap">
+      <button>Revision Tools <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+      <div class="nav-dropdown">
+        <a href="/dashboard/flashcards">Flashcards</a>
+        <a href="/dashboard/mindmap">Mind Maps</a>
+        <a href="/dashboard/spaced-repetition">Spaced Repetition</a>
+        <a href="/dashboard/study-planner">Study Planner</a>
+      </div>
+    </div>
+    <a href="/community" style="color:rgba(255,255,255,0.58);text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap;" onmouseover="this.style.color='#E8B84B'" onmouseout="this.style.color='rgba(255,255,255,0.58)'">Community</a>
+    <a href="/pricing" style="color:rgba(255,255,255,0.58);text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap;" onmouseover="this.style.color='#E8B84B'" onmouseout="this.style.color='rgba(255,255,255,0.58)'">Pricing</a>
+  </div>
   <div class="nav-btns">
     <button class="btn-nav-ghost" onclick="go('/login?tab=login')">Login</button>
     <button class="btn-nav-gold" onclick="go('/login?tab=signup')">Start Free →</button>
@@ -875,10 +903,29 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
 
 <!-- Mobile Nav -->
 <div class="mobile-nav" id="mobileNav">
-  <a href="#modules" onclick="closeMobileNav()">Modules</a>
-  <a href="#ai" onclick="closeMobileNav()">Jeet AI</a>
-  <a href="#analytics" onclick="closeMobileNav()">Analytics</a>
-  <a href="#community" onclick="closeMobileNav()">Community</a>
+  <a href="/dashboard/jeet-gpt" onclick="closeMobileNav()">Jeet AI</a>
+  <a href="/dashboard/daily-answer/challenge" onclick="closeMobileNav()">Daily Mains Challenge</a>
+  <div style="padding:10px 0 4px;border-bottom:1px solid rgba(255,255,255,0.06)">
+    <div style="color:#E8B84B;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Prepare</div>
+    <a href="/dashboard/study-planner" onclick="closeMobileNav()" style="padding-left:12px;font-size:14px">Study Planner</a>
+    <a href="/dashboard/syllabus-tracker" onclick="closeMobileNav()" style="padding-left:12px;font-size:14px">Syllabus Tracker</a>
+    <a href="/dashboard/video-lectures" onclick="closeMobileNav()" style="padding-left:12px;font-size:14px">Video Lectures</a>
+  </div>
+  <div style="padding:10px 0 4px;border-bottom:1px solid rgba(255,255,255,0.06)">
+    <div style="color:#E8B84B;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Practice</div>
+    <a href="/dashboard/daily-mcq" onclick="closeMobileNav()" style="padding-left:12px;font-size:14px">Daily MCQs</a>
+    <a href="/dashboard/daily-answer" onclick="closeMobileNav()" style="padding-left:12px;font-size:14px">Daily Mains Answer</a>
+    <a href="/dashboard/mock-tests" onclick="closeMobileNav()" style="padding-left:12px;font-size:14px">Mock Tests</a>
+    <a href="/dashboard/pyq" onclick="closeMobileNav()" style="padding-left:12px;font-size:14px">Previous Year Questions</a>
+  </div>
+  <div style="padding:10px 0 4px;border-bottom:1px solid rgba(255,255,255,0.06)">
+    <div style="color:#E8B84B;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Revision Tools</div>
+    <a href="/dashboard/flashcards" onclick="closeMobileNav()" style="padding-left:12px;font-size:14px">Flashcards</a>
+    <a href="/dashboard/mindmap" onclick="closeMobileNav()" style="padding-left:12px;font-size:14px">Mind Maps</a>
+    <a href="/dashboard/spaced-repetition" onclick="closeMobileNav()" style="padding-left:12px;font-size:14px">Spaced Repetition</a>
+  </div>
+  <a href="/community" onclick="closeMobileNav()">Community</a>
+  <a href="/pricing" onclick="closeMobileNav()">Pricing</a>
   <div class="mobile-nav-btns">
     <button class="btn-nav-ghost" onclick="go('/login?tab=login');closeMobileNav()">Login</button>
     <button class="btn-nav-gold" onclick="go('/login?tab=signup');closeMobileNav()">Start Free →</button>
@@ -926,7 +973,7 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
   </div>
 
   <div class="hero-stats">
-    <div class="hstat"><span class="hstat-val">50K+</span><div class="hstat-label">Active Aspirants</div></div>
+    <div class="hstat"><span class="hstat-val">15K+</span><div class="hstat-label">Active Aspirants</div></div>
     <div class="hstat"><span class="hstat-val">10K+</span><div class="hstat-label">MCQ Library</div></div>
     <div class="hstat"><span class="hstat-val">95%</span><div class="hstat-label">Prelims Accuracy</div></div>
     <div class="hstat"><span class="hstat-val">500+</span><div class="hstat-label">Video Hours</div></div>
@@ -941,13 +988,14 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
     <p class="section-p-dark" style="max-width:500px;margin:16px auto 0">Every tool you need in your preparation, thoughtfully built, to take you from aspirant to officer.</p>
   </div>
   <div class="modules-grid-full">
-    <div class="mod-card mc-gold reveal reveal-delay-1"><div><div class="mod-icon-wrap mw-gold"><img src="emoji-1.png" alt="MCQ" /></div><div class="mod-title">Daily MCQ Practice</div><div class="mod-desc">Subject-wise &amp; topic-wise MCQs with detailed explanations. New questions every day, curated by experts.</div></div><div class="mod-tag tag-gold">Daily Practice</div></div>
-    <div class="mod-card mc-emerald reveal reveal-delay-2"><div><div class="mod-icon-wrap mw-emerald"><img src="emoji-2.png" alt="Answer Writing" /></div><div class="mod-title">Daily Answer Writing</div><div class="mod-desc">Daily mains practice with AI-powered instant evaluation and UPSC-style marking schemes.</div></div><div class="mod-tag tag-emerald">Instant Evaluation</div></div>
-    <div class="mod-card mc-cyan reveal reveal-delay-3"><div><div class="mod-icon-wrap mw-cyan"><img src="emoji-3.png" alt="Mock Tests" /></div><div class="mod-title">Mock Tests</div><div class="mod-desc">Full-length Prelims &amp; Mains simulations in UPSC pattern. Timed, scored, ranked.</div></div><div class="mod-tag tag-cyan">Test Series</div></div>
-    <div class="mod-card mc-violet reveal reveal-delay-4"><div><div class="mod-icon-wrap mw-violet"><img src="emoji-4.png" alt="PYQ" /></div><div class="mod-title">Previous Year Questions</div><div class="mod-desc">30 years of PYQs with trend analysis, topic clustering, and examiner insights.</div></div><div class="mod-tag tag-violet">PYQ Bank</div></div>
-    <div class="mod-card mc-rose reveal reveal-delay-1"><div><div class="mod-icon-wrap mw-rose"><img src="emoji-5.png" alt="Current Affairs" /></div><div class="mod-title">Current Affairs</div><div class="mod-desc">Curated daily news, monthly magazines, and UPSC-relevant analysis. Never miss what matters.</div></div><div class="mod-tag tag-rose">Daily Updates</div></div>
-    <div class="mod-card mc-teal reveal reveal-delay-2"><div><div class="mod-icon-wrap mw-teal"><img src="emoji-7.png" alt="Syllabus Tracker" /></div><div class="mod-title">Syllabus Tracker</div><div class="mod-desc">Visual progress across GS I–IV &amp; Optional. Know your coverage, never leave a topic behind.</div></div><div class="mod-tag tag-teal">Smart Tracking</div></div>
-    <div class="mod-card mc-amber reveal reveal-delay-4"><div><div class="mod-icon-wrap mw-amber"><img src="emoji-8.png" alt="Analytics" /></div><div class="mod-title">Performance Analytics</div><div class="mod-desc">Test-level breakdowns, weak-area detection, and daily UPSC readiness scores. Know where you stand.</div></div><div class="mod-tag tag-amber">Smart Insights</div></div>
+    <div class="mod-card mc-gold reveal reveal-delay-1"><div><div class="mod-icon-wrap mw-gold"><img src="sidebar-daily-mcq-new.png" alt="MCQ" /></div><div class="mod-title">Daily MCQ Practice</div><div class="mod-desc">Subject-wise &amp; topic-wise MCQs with detailed explanations. New questions every day, curated by experts.</div></div><div class="mod-tag tag-gold">Daily Practice</div></div>
+    <div class="mod-card mc-emerald reveal reveal-delay-2"><div><div class="mod-icon-wrap mw-emerald"><img src="sidebar-daily-answer-new.png" alt="Answer Writing" /></div><div class="mod-title">Answer Writing</div><div class="mod-desc">Daily mains practice with AI-powered instant evaluation and UPSC-style marking schemes.</div></div><div class="mod-tag tag-emerald">AI Evaluated</div></div>
+    <div class="mod-card mc-cyan reveal reveal-delay-3"><div><div class="mod-icon-wrap mw-cyan"><img src="sidebar-mock-tests-new.png" alt="Mock Tests" /></div><div class="mod-title">Mock Tests</div><div class="mod-desc">Full-length Prelims &amp; Mains simulations in UPSC pattern. Timed, scored, ranked.</div></div><div class="mod-tag tag-cyan">Test Series</div></div>
+    <div class="mod-card mc-violet reveal reveal-delay-4"><div><div class="mod-icon-wrap mw-violet"><img src="sidebar-pyq-new.png" alt="PYQ" /></div><div class="mod-title">Previous Year Questions</div><div class="mod-desc">30 years of PYQs with trend analysis, topic clustering, and examiner insights.</div></div><div class="mod-tag tag-violet">PYQ Bank</div></div>
+    <div class="mod-card mc-rose reveal reveal-delay-1"><div><div class="mod-icon-wrap mw-rose"><img src="sidebar-current-affairs.png" alt="Current Affairs" /></div><div class="mod-title">Current Affairs</div><div class="mod-desc">Curated daily news, monthly magazines, and UPSC-relevant analysis. Never miss what matters.</div></div><div class="mod-tag tag-rose">Daily Updates</div></div>
+    <div class="mod-card mc-navy reveal reveal-delay-2"><div><div class="mod-icon-wrap mw-navy"><img src="sidebar-video.png" alt="Video Lectures" /></div><div class="mod-title">Video Lectures</div><div class="mod-desc">India's best educators. Interactive quizzes, notes &amp; timestamped bookmarks. 300+ hours.</div></div><div class="mod-tag tag-navy">300+ Hours</div></div>
+    <div class="mod-card mc-teal reveal reveal-delay-3"><div><div class="mod-icon-wrap mw-teal"><img src="sidebar-syllabus-new.png" alt="Syllabus Tracker" /></div><div class="mod-title">Syllabus Tracker</div><div class="mod-desc">Visual progress across GS I–IV &amp; Optional. Know your coverage, never leave a topic behind.</div></div><div class="mod-tag tag-teal">Smart Tracking</div></div>
+    <div class="mod-card mc-amber reveal reveal-delay-4"><div><div class="mod-icon-wrap mw-amber"><img src="sidebar-analytics-new.png" alt="Analytics" /></div><div class="mod-title">Performance Analytics</div><div class="mod-desc">Test-level breakdowns, weak-area detection, and daily UPSC readiness scores. Know where you stand.</div></div><div class="mod-tag tag-amber">Smart Insights</div></div>
   </div>
 </section>
 
@@ -959,10 +1007,10 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
       <h2 class="section-h2-light">Experience the Power<br>of <span style="color:var(--gold)">AI-First Learning</span></h2>
       <p class="section-p-light" style="margin-top:12px">Our AI doesn't just grade. It understands your gaps, adapts your plan, and coaches you like a personal mentor — 24/7.</p>
       <div class="ai-features-switcher" id="aiFeatSwitcher">
-        <div class="ai-feat active" data-slide="0"><div class="ai-feat-header"><div class="ai-feat-icon" style="background:rgba(232,184,75,0.14)"><img src="emoji-2.png" alt="Mains Evaluator" /></div><div class="ai-feat-title">Instant Mains Evaluator</div></div><div class="ai-feat-desc">Upload your handwritten or typed answers and receive structured feedback, marks, and personalized improvement tips. Our UPSC-examiner style analysis is delivered in under 60 seconds.</div><div class="ai-feat-progress"><div class="ai-feat-progress-fill"></div></div></div>
-        <div class="ai-feat" data-slide="1"><div class="ai-feat-header"><div class="ai-feat-icon" style="background:rgba(6,182,212,0.14)"><img src="emoji-3.png" alt="AI Assistant" /></div><div class="ai-feat-title">Jeet AI Assistant</div></div><div class="ai-feat-desc">Get instant, precise answers for all your UPSC queries, covering everything from syllabus details and current affairs context to answer structuring and general doubt resolution.</div><div class="ai-feat-progress"><div class="ai-feat-progress-fill"></div></div></div>
-        <div class="ai-feat" data-slide="2"><div class="ai-feat-header"><div class="ai-feat-icon" style="background:rgba(139,92,246,0.14)"><img src="emoji-4.png" alt="Mock Test" /></div><div class="ai-feat-title">Adaptive Mock Test Platform</div></div><div class="ai-feat-desc">Personalised mock tests targeting your weakest areas, ensuring every session moves the needle towards your goal.</div><div class="ai-feat-progress"><div class="ai-feat-progress-fill"></div></div></div>
-        <div class="ai-feat" data-slide="3"><div class="ai-feat-header"><div class="ai-feat-icon" style="background:rgba(16,185,129,0.14)"><img src="emoji-5.png" alt="Current Affairs" /></div><div class="ai-feat-title">Current Affairs Digest</div></div><div class="ai-feat-desc">Our platform instantly connects daily news articles with the relevant UPSC syllabus. For each article, we provide a detailed summary, related practice MCQs and Mains examination questions.</div><div class="ai-feat-progress"><div class="ai-feat-progress-fill"></div></div></div>
+        <div class="ai-feat active" data-slide="0"><div class="ai-feat-header"><div class="ai-feat-icon" style="background:rgba(232,184,75,0.14)"><img src="sidebar-daily-answer-new.png" alt="Instant Mains Evaluator" /></div><div class="ai-feat-title">Instant Mains Evaluator</div></div><div class="ai-feat-desc">Upload your handwritten or typed answers and receive structured feedback, marks, and personalized improvement tips. Our UPSC-examiner style analysis is delivered in under 60 seconds.</div><div class="ai-feat-progress"><div class="ai-feat-progress-fill"></div></div></div>
+        <div class="ai-feat" data-slide="1"><div class="ai-feat-header"><div class="ai-feat-icon" style="background:rgba(6,182,212,0.14)"><img src="sidebar-jeet-gpt.png" alt="UPSC GPT Assistant" /></div><div class="ai-feat-title">UPSC GPT Assistant</div></div><div class="ai-feat-desc">Get instant, precise answers for all your UPSC queries, covering everything from syllabus details and current affairs context to answer structuring and general doubt resolution.</div><div class="ai-feat-progress"><div class="ai-feat-progress-fill"></div></div></div>
+        <div class="ai-feat" data-slide="2"><div class="ai-feat-header"><div class="ai-feat-icon" style="background:rgba(139,92,246,0.14)"><img src="sidebar-mock-tests-new.png" alt="Adaptive Test Generator" /></div><div class="ai-feat-title">Adaptive Test Generator</div></div><div class="ai-feat-desc">Personalised mock tests targeting your weakest areas, ensuring every session moves the needle towards your goal.</div><div class="ai-feat-progress"><div class="ai-feat-progress-fill"></div></div></div>
+        <div class="ai-feat" data-slide="3"><div class="ai-feat-header"><div class="ai-feat-icon" style="background:rgba(16,185,129,0.14)"><img src="sidebar-current-affairs.png" alt="Current Affairs" /></div><div class="ai-feat-title">Current Affairs Digest</div></div><div class="ai-feat-desc">Our platform instantly connects daily news articles with the relevant UPSC syllabus. For each article, we provide a detailed summary, related practice MCQs and Mains examination questions.</div><div class="ai-feat-progress"><div class="ai-feat-progress-fill"></div></div></div>
       </div>
     </div>
     <div class="ai-right reveal reveal-delay-2">
@@ -971,7 +1019,7 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
           <div class="d-dot" style="background:#FF5F57"></div>
           <div class="d-dot" style="background:#FFBD2E"></div>
           <div class="d-dot" style="background:#28CA41"></div>
-          <span class="device-title" id="deviceTitle">Mains Evaluator — AI Mode</span>
+          <span class="device-title" id="deviceTitle">Instant Mains Evaluator</span>
         </div>
         <div class="demo-content" id="demoContent">
           <div class="demo-slide active" id="slide-0">
@@ -1030,10 +1078,10 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
       </div>
     </div>
     <div class="tools-grid-2">
-      <div class="tool-card tc-gold reveal reveal-delay-1"><div class="tool-icon-box tib-gold"><img src="emoji-9.png" alt="Flashcards" /></div><h4>Flashcards</h4><p>1,000+ pre-built smart cards across all GS topics. Scheduled by difficulty, never boring.</p><div class="tool-arrow">Explore →</div></div>
-      <div class="tool-card tc-cyan reveal reveal-delay-2"><div class="tool-icon-box tib-cyan"><img src="emoji-10.png" alt="Mind Maps" /></div><h4>Mind Maps</h4><p>Visual concept maps linking ideas across GS. Build connections, not isolated notes.</p><div class="tool-arrow">Explore →</div></div>
-      <div class="tool-card tc-emerald reveal reveal-delay-3"><div class="tool-icon-box tib-emerald"><img src="emoji-11.png" alt="Spaced Repetition" /></div><h4>Spaced Repetition</h4><p>Ebbinghaus-powered review scheduling. Study smarter — revisit topics exactly when needed.</p><div class="tool-arrow">Explore →</div></div>
-      <div class="tool-card tc-violet reveal reveal-delay-4"><div class="tool-icon-box tib-violet"><img src="emoji-12.png" alt="Study Planner" /></div><h4>Study Planner</h4><p>AI-generated daily plans adapting to your pace, goals, and exam date. Zero manual planning.</p><div class="tool-arrow">Explore →</div></div>
+      <div class="tool-card tc-gold reveal reveal-delay-1"><div class="tool-icon-box tib-gold"><img src="sidebar-flashcards-new.png" alt="Flashcards" /></div><h4>Flashcards</h4><p>1,000+ pre-built smart cards across all GS topics. Scheduled by difficulty, never boring.</p><div class="tool-arrow">Explore →</div></div>
+      <div class="tool-card tc-cyan reveal reveal-delay-2"><div class="tool-icon-box tib-cyan"><img src="sidebar-mindmap-new.png" alt="Mind Maps" /></div><h4>Mind Maps</h4><p>Visual concept maps linking ideas across GS. Build connections, not isolated notes.</p><div class="tool-arrow">Explore →</div></div>
+      <div class="tool-card tc-emerald reveal reveal-delay-3"><div class="tool-icon-box tib-emerald"><img src="sidebar-spaced-repetition.png" alt="Spaced Repetition" /></div><h4>Spaced Repetition</h4><p>Ebbinghaus-powered review scheduling. Study smarter — revisit topics exactly when needed.</p><div class="tool-arrow">Explore →</div></div>
+      <div class="tool-card tc-violet reveal reveal-delay-4"><div class="tool-icon-box tib-violet"><img src="sidebar-study-planner.png" alt="Study Planner" /></div><h4>Study Planner</h4><p>AI-generated daily plans adapting to your pace, goals, and exam date. Zero manual planning.</p><div class="tool-arrow">Explore →</div></div>
     </div>
   </div>
 </section>
@@ -1091,9 +1139,9 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
       <h2 class="section-h2-dark">Know Exactly<br>Where You Stand</h2>
       <p class="section-p-dark" style="margin:14px 0 32px">Our Performance Analytics Dashboard meticulously monitors every question, test, and mains answers. This thorough tracking proactively pinpoints weak areas, preventing potential loss of marks.</p>
       <div class="analytics-points">
-        <div class="apoint"><div class="apoint-icon" style="background:#FEF3C7"><img src="emoji-6.png" alt="Test Analytics" /></div><div class="apoint-body"><h4>Test Analytics</h4><p>Question-level breakdown, time-per-question, and rank prediction after every mock.</p></div></div>
-        <div class="apoint"><div class="apoint-icon" style="background:#E0F7FA"><img src="emoji-7.png" alt="Weak Area" /></div><div class="apoint-body"><h4>Weak Area Identification</h4><p>AI pinpoints your weakest sub-topics and auto-schedules targeted revision sessions.</p></div></div>
-        <div class="apoint"><div class="apoint-icon" style="background:#D1FAE5"><img src="emoji-8.png" alt="Readiness Score" /></div><div class="apoint-body"><h4>UPSC Readiness Score</h4><p>A composite score updated daily — telling you how ready you are for the actual exam.</p></div></div>
+        <div class="apoint"><div class="apoint-icon" style="background:#FEF3C7"><img src="sidebar-analytics-new.png" alt="Test Analytics" /></div><div class="apoint-body"><h4>Test Analytics</h4><p>Question-level breakdown, time-per-question, and rank prediction after every mock.</p></div></div>
+        <div class="apoint"><div class="apoint-icon" style="background:#E0F7FA"><img src="areas-improve-icon.png" alt="Weak Area" /></div><div class="apoint-body"><h4>Weak Area Identification</h4><p>AI pinpoints your weakest sub-topics and auto-schedules targeted revision sessions.</p></div></div>
+        <div class="apoint"><div class="apoint-icon" style="background:#D1FAE5"><img src="target-icon.png" alt="Readiness Score" /></div><div class="apoint-body"><h4>UPSC Readiness Score</h4><p>A composite score updated daily — telling you how ready you are for the actual exam.</p></div></div>
       </div>
     </div>
   </div>
@@ -1115,7 +1163,7 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
         <div class="mqc-mark">"</div>
         <div class="mqc-text">"The difference between aspirants and officers is often not knowledge — it is strategy. We help you build the right one."</div>
         <div class="mqc-author">
-          <div class="mqc-av">J</div>
+          <div class="mqc-av">A</div>
           <div><div class="mqc-name">Abhijeet Soni</div><div class="mqc-role">Founder &amp; Mentor Rise With Jeet IAS | UPSC Simplified</div></div>
         </div>
       </div>
@@ -1211,7 +1259,7 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
             <!-- Hero bar -->
             <div class="ps-top-bar">
               <div class="ps-topbar-row">
-                <div class="ps-logo-s">Rise<span>WithJeet</span></div>
+                <div class="ps-logo-s">RiseWith<span>Jeet</span></div>
                 <div class="ps-notif-btn">🔔</div>
               </div>
               <div class="ps-welcome">Good morning, <span style="color:#F5A623">Rahul!</span> 👋</div>
@@ -1308,7 +1356,7 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
 <footer>
   <div class="footer-grid">
     <div>
-      <a href="#" class="logo" style="text-decoration:none"><img src="logo...png" alt="RiseWithJeet" style="height:38px;width:auto;object-fit:contain;" /></a>
+      <a href="#" class="logo" style="text-decoration:none"><img src="logo...png" alt="RiseWithJeet" style="height:52px;width:auto;object-fit:contain;" /></a>
       <div class="fb-desc">India's #1 AI-powered UPSC preparation platform. Everything you need — simplified, personalised, always evolving.</div>
       <div class="fb-socials"><div class="fsoc">𝕏</div><div class="fsoc">in</div><div class="fsoc">▶</div><div class="fsoc">📸</div></div>
     </div>
@@ -1343,7 +1391,7 @@ new IntersectionObserver((entries) => {
 const slides = document.querySelectorAll('.demo-slide');
 const feats = document.querySelectorAll('.ai-feat');
 const deviceTitle = document.getElementById('deviceTitle');
-const titles = ['Mains Evaluator — AI Mode','Jeet AI Assistant','Adaptive Mock Test Platform','Current Affairs Digest'];
+const titles = ['Instant Mains Evaluator','UPSC GPT Assistant','Adaptive Test Generator','Current Affairs Digest'];
 let currentSlide = 0, autoTimer;
 
 function switchSlide(idx) {

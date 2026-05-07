@@ -15,11 +15,11 @@ export default function DashboardPage() {
         <aside
           className="hidden lg:block flex-shrink-0"
           style={{
-            width: 'clamp(320px,22vw,420px)',
+            width: 'clamp(280px,20vw,340px)',
             background: '#FAFBFE',
             borderLeft: '1px solid #E5E7EB',
-            padding: 'clamp(1rem,1.25vw,1.5rem)',
-            paddingRight: 'clamp(0.5rem,0.83vw,1rem)',
+            padding: 'clamp(0.875rem,1vw,1.25rem)',
+            paddingRight: 'clamp(0.5rem,0.73vw,0.875rem)',
           }}
         >
           <PerformanceStatsWidget />

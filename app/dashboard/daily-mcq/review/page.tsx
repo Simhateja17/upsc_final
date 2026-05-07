@@ -31,7 +31,7 @@ export default function QuestionReviewPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}>
+      <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
         <main className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </main>
@@ -40,15 +40,15 @@ export default function QuestionReviewPage() {
   }
 
   const q = questions[currentIndex];
-  if (!q) return <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}><main className="flex-1 flex items-center justify-center"><p>No review data available.</p></main></div>;
+  if (!q) return <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}><main className="flex-1 flex items-center justify-center"><p>No review data available.</p></main></div>;
 
   const optionLabels = ['A', 'B', 'C', 'D'];
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}>
+    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
       <main className="flex-1 flex flex-col items-center justify-center px-[clamp(1rem,2vw,3rem)] py-4">
         <div className="card-elevated rounded-[clamp(10px,0.52vw,10px)] flex-1 flex flex-col"
-          style={{ width: 'clamp(700px,50vw,962px)', maxHeight: 'calc(100vh - 2rem)' }}>
+          style={{ width: 'clamp(700px,50vw,962px)', maxHeight: '100%', boxShadow: '0 24px 58px -30px rgba(15,23,42,0.24), 0 10px 26px -18px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.9)' }}>
 
           <div className="flex items-center justify-between px-[clamp(1.5rem,2vw,2.5rem)] pt-[clamp(1.25rem,1.5vw,2rem)] pb-3 flex-shrink-0">
             <div className="flex items-center gap-[clamp(8px,0.625vw,12px)]">
@@ -67,7 +67,7 @@ export default function QuestionReviewPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-[clamp(1.5rem,2vw,2.5rem)] pb-4">
+          <div className="flex-1 px-[clamp(1.5rem,2vw,2.5rem)] pb-4 overflow-hidden">
             <div className="flex gap-[clamp(1rem,1.25vw,1.5rem)]">
               <div className="flex-shrink-0 rounded-full bg-[#F9FAFB] flex items-center justify-center font-arimo text-[#99A1AF]"
                 style={{ width: 'clamp(28px,1.67vw,32px)', height: 'clamp(28px,1.67vw,32px)', fontSize: 'clamp(20px,1.25vw,24px)' }}>
@@ -82,7 +82,7 @@ export default function QuestionReviewPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(1rem,1.25vw,1.5rem)]">
+                <div className="grid grid-cols-2 gap-[clamp(0.65rem,0.9vw,1rem)] mb-[clamp(0.85rem,1vw,1.15rem)]">
                   {(q.options as any[]).map((option: any, idx: number) => {
                     const isCorrect = option.id === q.correctOption;
                     const isSelected = option.id === q.selectedOption;
@@ -164,7 +164,7 @@ export default function QuestionReviewPage() {
 
                 {showExplanation && q.explanation && (
                   <div className="bg-[#F9FAFB] rounded-[clamp(8px,0.52vw,10px)] border border-[#E5E7EB]"
-                    style={{ padding: 'clamp(1rem,1.25vw,1.5rem)' }}>
+                    style={{ padding: 'clamp(0.9rem,1vw,1.2rem)', maxHeight: '150px', overflowY: 'auto' }}>
                     <h3 className="font-arimo font-bold text-[#101828] mb-[clamp(0.5rem,0.75vw,1rem)]"
                       style={{ fontSize: 'clamp(14px,0.83vw,16px)' }}>Explanation</h3>
                     <p className="font-arimo text-[#364153]"

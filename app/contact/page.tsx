@@ -25,7 +25,7 @@ function ContactHeader() {
           <img
             src="/logo...png"
             alt="RiseWithJeet"
-            className="w-[62px] md:w-[62px] h-auto object-contain"
+            className="w-[74px] md:w-[84px] h-auto object-contain"
           />
         </Link>
 

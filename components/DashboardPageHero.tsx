@@ -22,6 +22,13 @@ interface DashboardPageHeroProps {
   heroHeight?: number | string;
   heroMinHeight?: number | string;
   heroMarginInline?: number | string;
+  contentShiftY?: number | string;
+  titleMarginBottom?: number | string;
+  heroBackground?: string;
+  heroBackgroundImage?: string;
+  heroBackgroundSize?: string;
+  heroBackgroundPosition?: string;
+  showDotGrid?: boolean;
 }
 
 const DefaultYouTubeButton = (
@@ -60,6 +67,13 @@ export default function DashboardPageHero({
   heroHeight = '352px',
   heroMinHeight,
   heroMarginInline = 0,
+  contentShiftY = 0,
+  titleMarginBottom = '6px',
+  heroBackground = '#0F131F',
+  heroBackgroundImage,
+  heroBackgroundSize = 'cover',
+  heroBackgroundPosition = 'center',
+  showDotGrid = true,
 }: DashboardPageHeroProps) {
   const right = rightElement !== undefined ? rightElement : DefaultYouTubeButton;
 
@@ -67,7 +81,10 @@ export default function DashboardPageHero({
     <div
       className="relative overflow-hidden flex flex-col"
       style={{
-        background: '#0F131F',
+        background: heroBackground,
+        backgroundImage: heroBackgroundImage,
+        backgroundSize: heroBackgroundImage ? heroBackgroundSize : undefined,
+        backgroundPosition: heroBackgroundImage ? heroBackgroundPosition : undefined,
         padding: '20px 26px 18px',
         marginBottom: 16,
         height: heroHeight,
@@ -77,13 +94,15 @@ export default function DashboardPageHero({
       }}
     >
       {/* Dot grid background */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: 'radial-gradient(rgba(255,255,255,.035) 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
-        }}
-      />
+      {showDotGrid && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: 'radial-gradient(rgba(255,255,255,.035) 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+          }}
+        />
+      )}
 
       {/* Top bar */}
       <div
@@ -142,7 +161,7 @@ export default function DashboardPageHero({
         {/* Title + subtitle – centered vertically in the upper portion */}
         <div
           className="flex flex-col items-center justify-center"
-          style={{ flex: 1, width: '100%', paddingBottom: '64px' }}
+          style={{ flex: 1, width: '100%', paddingBottom: '48px', transform: `translateY(${typeof contentShiftY === 'number' ? `${contentShiftY}px` : contentShiftY})` }}
         >
           <h1
             className="text-center font-semibold"
@@ -154,7 +173,7 @@ export default function DashboardPageHero({
               fontStyle: 'normal',
               fontWeight: 600,
               lineHeight: '70.4px',
-              marginBottom: '6px',
+              marginBottom: typeof titleMarginBottom === 'number' ? `${titleMarginBottom}px` : titleMarginBottom,
             }}
           >
             {title}

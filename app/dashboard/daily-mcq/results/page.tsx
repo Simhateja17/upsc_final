@@ -191,12 +191,12 @@ export default function DailyMcqResultsPage() {
   return (
     <>
       <ConfettiCanvas active={showConfetti} />
-      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}>
-        <main className="flex-1 flex items-center justify-center px-[clamp(1rem,2vw,3rem)]">
+      <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
+        <main className="flex-1 flex items-center justify-center px-[clamp(1rem,2vw,3rem)] py-4">
           <div className="card-elevated rounded-[clamp(10px,0.52vw,10px)]"
-            style={{ width: 'clamp(600px,40vw,768px)', padding: 'clamp(1.5rem,2vw,2.5rem) clamp(1.5rem,2vw,2.5rem)' }}>
+            style={{ width: 'clamp(640px,42vw,820px)', padding: 'clamp(1.25rem,1.6vw,2rem) clamp(1.4rem,1.8vw,2.2rem)', boxShadow: '0 26px 60px -30px rgba(15,23,42,0.24), 0 12px 28px -20px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.9)' }}>
 
-            <div className="text-center mb-[clamp(1rem,1.5vw,1.5rem)]">
+            <div className="text-center mb-[clamp(0.9rem,1.2vw,1.25rem)]">
               <h1 className="font-arimo font-bold text-[#101828] mb-[clamp(0.25rem,0.5vw,0.5rem)]"
                 style={{ fontSize: 'clamp(20px,1.25vw,24px)', lineHeight: 'clamp(28px,1.67vw,32px)' }}>
                 Daily MCQs Challenge Completed!
@@ -207,7 +207,7 @@ export default function DailyMcqResultsPage() {
               </p>
             </div>
 
-            <div className="flex justify-center mb-[clamp(1.25rem,2vw,2rem)]">
+            <div className="flex justify-center mb-[clamp(1rem,1.5vw,1.4rem)]">
               <div className="rounded-full bg-[#17223E] flex flex-col items-center justify-center gap-1"
                 style={{ width: 'clamp(100px,6.67vw,128px)', height: 'clamp(100px,6.67vw,128px)' }}>
                 <div className="font-arimo font-bold text-white leading-none"
@@ -221,7 +221,7 @@ export default function DailyMcqResultsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(1rem,1.5vw,1.5rem)]">
+            <div className="grid grid-cols-4 gap-[clamp(0.65rem,0.9vw,1rem)] mb-[clamp(0.85rem,1.2vw,1.15rem)]">
               <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-[clamp(10px,0.73vw,14px)] text-center"
                 style={{ padding: 'clamp(0.5rem,0.75vw,1rem) clamp(0.5rem,0.625vw,0.75rem)' }}>
                 <div className="font-arimo text-[#4A5565] mb-[clamp(0.15rem,0.3vw,0.25rem)]"
@@ -252,7 +252,7 @@ export default function DailyMcqResultsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(1rem,1.5vw,1.5rem)]">
+            <div className="grid grid-cols-2 gap-[clamp(0.65rem,0.9vw,1rem)] mb-[clamp(0.9rem,1.2vw,1.2rem)]">
               <div className="bg-[#F0FDF4] rounded-[clamp(8px,0.52vw,10px)]" style={{ padding: 'clamp(0.75rem,1vw,1.25rem)' }}>
                 <div className="flex items-center gap-2 mb-[clamp(0.5rem,0.75vw,1rem)]">
                   <img src="/strong-icon.png" alt="Strong" className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]" />
@@ -285,7 +285,7 @@ export default function DailyMcqResultsPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-center gap-[clamp(1rem,1.25vw,1.5rem)]">
+            <div className="flex items-center justify-center gap-[clamp(0.9rem,1.1vw,1.25rem)]">
               <Link href="/dashboard/daily-mcq/review">
                 <button className="bg-[#00A63E] text-white rounded-[clamp(8px,0.52vw,10px)] hover:bg-[#008C35] transition-colors"
                   style={{ padding: 'clamp(10px,0.83vw,12px) clamp(1.5rem,1.67vw,2rem)', fontSize: 'clamp(14px,0.83vw,16px)', fontFamily: 'Arimo, sans-serif' }}>

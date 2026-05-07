@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { pricingService, userService } from '@/lib/services';
+import DashboardPageHero from '@/components/DashboardPageHero';
 
 type SubscriptionPlan = 'free' | 'trial' | 'pro' | 'pro-annual';
 type SubscriptionStatus = 'active' | 'cancelled' | 'expired' | 'trial';
@@ -328,37 +329,25 @@ export default function BillingPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFBFE] pb-16" style={{ fontFamily: 'var(--font-inter)' }}>
-      <section
-        className="relative overflow-hidden px-4 py-16 sm:px-8 md:py-24"
-        style={{
-          background: 'radial-gradient(circle at left top, rgba(232,184,75,0.16) 0%, rgba(232,184,75,0) 26%), linear-gradient(135deg, #050C1B 0%, #06153A 55%, #0D2859 100%)',
-        }}
-      >
-        <div
-          className="absolute inset-0 opacity-25"
-          style={{
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
-          }}
-        />
-        <div className="relative mx-auto max-w-[920px] text-center">
-          <div className="mx-auto mb-4 flex w-fit items-center gap-3">
-            <span className="h-[2px] w-10 rounded bg-[#E8B84B]" />
-            <span className="rounded bg-[#E8B84B] px-3 py-1 text-[10px] font-bold uppercase tracking-[1.4px] text-[#090E1C]">Billing & Plans</span>
-            <span className="h-[2px] w-10 rounded bg-[#E8B84B]" />
-          </div>
-          <h1 className="text-balance text-[40px] leading-[1.15] text-white md:text-[58px]" style={{ fontFamily: 'var(--font-cormorant)' }}>
+      <DashboardPageHero
+        badgeText="BILLING & PLANS"
+        title={
+          <>
             Your IAS Journey Deserves
             <br />
-            a <span className="italic text-[#E8B84B]">Smarter</span> Foundation
-          </h1>
-          <p className="mx-auto mt-5 max-w-[560px] text-[15px] text-[rgba(255,255,255,0.45)]">
-            No hidden fees · Cancel anytime · Start free today
-          </p>
-        </div>
-      </section>
+            a <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Smarter</em> Foundation
+          </>
+        }
+        subtitle="No hidden fees · Cancel anytime · Start free today"
+        stats={[
+          { value: planTitle, label: 'Current Plan', color: '#FDC700' },
+          { value: sub?.status ? sub.status.charAt(0).toUpperCase() + sub.status.slice(1) : 'Free', label: 'Status', color: '#4ADE80' },
+          { value: sub?.renewsOn ? formatDate(sub.renewsOn) : (sub?.trialEndsOn ? formatDate(sub.trialEndsOn) : 'N/A'), label: sub?.status === 'trial' ? 'Trial Ends' : 'Renews On', color: '#60A5FA' },
+          { value: sub?.amount || 'Free', label: 'Amount', color: '#FFFFFF' },
+        ]}
+      />
 
-      <div className="mx-auto -mt-7 w-fit rounded-xl border border-[rgba(11,22,40,0.09)] bg-white p-1.5 shadow-[0_2px_7px_rgba(11,22,40,0.07)]">
+      <div className="mx-auto w-fit rounded-xl border border-[rgba(11,22,40,0.09)] bg-white p-1.5 shadow-[0_2px_7px_rgba(11,22,40,0.07)]" style={{ marginTop: '-28px', position: 'relative', zIndex: 10 }}>
         <button
           type="button"
           onClick={() => scrollToSection('billing')}

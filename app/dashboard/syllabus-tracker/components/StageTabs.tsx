@@ -54,7 +54,7 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData, cm
 
   return (
     <div
-      className="relative flex items-center w-full overflow-hidden"
+      className="relative inline-flex items-center overflow-hidden min-w-max"
       style={{
         background: '#F1F3F9',
         borderRadius: '26843500px',
@@ -87,12 +87,12 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData, cm
             onMouseLeave={() => setHoveredTab(null)}
             onFocus={() => setHoveredTab(tab.key)}
             onBlur={() => setHoveredTab(null)}
-            className="relative z-10 flex flex-1 items-center justify-center gap-2 whitespace-nowrap transition-colors duration-200"
-            style={{
-              padding: '10px 20px',
+          className="relative z-10 flex items-center justify-center gap-2 whitespace-nowrap transition-colors duration-200"
+          style={{
+              padding: '10px 18px',
               color: isHighlighted ? '#FFFFFF' : '#4A5565',
               fontWeight: 700,
-              fontSize: '16px',
+              fontSize: '14px',
               lineHeight: '1',
             }}
           >
