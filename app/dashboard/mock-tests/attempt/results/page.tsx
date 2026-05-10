@@ -145,6 +145,37 @@ interface MainsPerQuestion {
   wordCount?: number;
 }
 
+const NEXT_STEP_CARDS = [
+  {
+    title: 'Retake this test',
+    desc: 'Same config, fresh attempt. Ideal for reinforcing weak areas.',
+    href: '/dashboard/mock-tests/attempt',
+    dark: true,
+    badge: 'Recommended',
+  },
+  {
+    title: 'Build a new test',
+    desc: 'Change subject, difficulty or source. Keep the variety going.',
+    href: '/dashboard/mock-tests',
+    dark: false,
+    badge: 'Most popular',
+  },
+  {
+    title: 'Try Mains Writing',
+    desc: 'Practice answer writing with AI feedback and timed structure.',
+    href: '/dashboard/daily-answer',
+    dark: false,
+    badge: 'Mains prep',
+  },
+  {
+    title: 'Unlock Pro Practice',
+    desc: 'Remove limits with full-length papers, PYQ archives, and analytics.',
+    href: '/dashboard/free-trial',
+    dark: false,
+    badge: 'Upgrade',
+  },
+];
+
 function MockTestResultsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -580,10 +611,11 @@ function MockTestResultsInner() {
       )}
       <div
         style={{
-          width: 1024,
+          width: '100%',
+          maxWidth: 1024,
           minHeight: 955.9750366210938,
-          marginTop: 52,
-          marginLeft: 46,
+          margin: '52px auto 0',
+          padding: '0 24px 40px',
           boxSizing: 'border-box',
         }}
       >
@@ -627,7 +659,7 @@ function MockTestResultsInner() {
           <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
             <button
               type="button"
-              onClick={() => router.push(`/dashboard/mock-tests/attempt?mode=sample&title=${encodeURIComponent(title)}`)}
+              onClick={() => router.push(testId ? `/dashboard/mock-tests/attempt?testId=${encodeURIComponent(testId)}&examMode=${encodeURIComponent(examMode)}` : `/dashboard/mock-tests/attempt?mode=sample&title=${encodeURIComponent(title)}`)}
               style={{ height: 36, borderRadius: 10, padding: '0 16px', border: 'none', background: 'linear-gradient(89.92deg, #F1A901 0.07%, #FD7302 99.93%)', color: '#0B1120', fontWeight: 800, cursor: 'pointer' }}
             >
               ↻ Reattempt
@@ -652,6 +684,39 @@ function MockTestResultsInner() {
             >
               📄 PDF Report
             </button>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#101828', marginBottom: 12 }}>
+            What would you like to do next?
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {NEXT_STEP_CARDS.map((card) => (
+              <button
+                key={card.title}
+                type="button"
+                onClick={() => router.push(card.href)}
+                style={{
+                  textAlign: 'left',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: 18,
+                  padding: '20px 18px',
+                  background: card.dark ? '#1D293D' : '#FFFFFF',
+                  color: card.dark ? '#FFFFFF' : '#101828',
+                  boxShadow: '0 8px 20px rgba(15, 23, 43, 0.08)',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 800, color: card.dark ? '#DBEAFE' : '#7C3AED', marginBottom: 8 }}>
+                  {card.badge}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>{card.title}</div>
+                <div style={{ fontSize: 13, lineHeight: '20px', color: card.dark ? 'rgba(255,255,255,0.72)' : '#4B5563' }}>
+                  {card.desc}
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -825,13 +890,25 @@ function MockTestResultsInner() {
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14, fontSize: 12 }}>
-                        <button type="button" style={{ background: 'transparent', border: 'none', color: '#DC2626', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => router.push('/dashboard/flashcards')}
+                          style={{ background: 'transparent', border: 'none', color: '#DC2626', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                        >
                           Add to Flashcards
                         </button>
-                        <button type="button" style={{ background: 'transparent', border: 'none', color: '#D97706', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => router.push('/dashboard/spaced-repetition')}
+                          style={{ background: 'transparent', border: 'none', color: '#D97706', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                        >
                           Mark Weak
                         </button>
-                        <button type="button" style={{ background: 'transparent', border: 'none', color: '#2563EB', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => router.push('/dashboard/library')}
+                          style={{ background: 'transparent', border: 'none', color: '#2563EB', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                        >
                           Study Notes
                         </button>
                       </div>

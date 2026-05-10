@@ -84,6 +84,33 @@ export default function EvaluatingPage() {
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const maxRetriesRef = useRef(0);
 
+  const navigateToResultsIfReady = useCallback(async () => {
+    if (!attemptId || navigatedRef.current) return false;
+    try {
+      const resultsRes = await dailyAnswerService.getResults(attemptId);
+      const resultsData = resultsRes?.data;
+      const hasUsableResults =
+        resultsData &&
+        (
+          typeof resultsData.score === 'number' ||
+          typeof resultsData.maxScore === 'number' ||
+          Array.isArray(resultsData.strengths) ||
+          Array.isArray(resultsData.improvements) ||
+          Array.isArray(resultsData.suggestions)
+        );
+
+      if (hasUsableResults) {
+        navigatedRef.current = true;
+        if (pollRef.current) clearInterval(pollRef.current);
+        router.push('/dashboard/daily-answer/challenge/attempt/results');
+        return true;
+      }
+    } catch (err) {
+      console.log('Results not ready yet, staying on evaluating screen');
+    }
+    return false;
+  }, [attemptId, router]);
+
   // Get attemptId from sessionStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -120,17 +147,17 @@ export default function EvaluatingPage() {
         console.log('Completed steps:', data.completedSteps);
       }
 
-      // Check if evaluation is completed - backend returns isComplete flag or status === "completed"
+      // Only leave this screen once the results endpoint is actually ready.
       const isComplete = data?.isComplete || evalStatus === 'completed' || evalStatus === 'done';
       if (isComplete && !navigatedRef.current) {
-        console.log('Evaluation completed! Navigating to results...');
-        navigatedRef.current = true;
+        console.log('Evaluation marked complete, verifying results payload...');
+        setCompletedSteps(STEPS.map((step) => step.key));
+        await navigateToResultsIfReady();
+      }
+
+      if (evalStatus === 'failed') {
+        setError('Evaluation failed. Please open the results page or submit the answer again.');
         if (pollRef.current) clearInterval(pollRef.current);
-        // Clear the stored attemptId
-        if (typeof window !== 'undefined') {
-          sessionStorage.removeItem('dailyAnswerAttemptId');
-        }
-        router.push('/dashboard/daily-answer/challenge/attempt/results');
       }
 
       // Safety check: if we've been polling for too long (5 minutes), stop and show error
@@ -143,7 +170,7 @@ export default function EvaluatingPage() {
       console.error('Poll error:', err);
       // Don't set error immediately, let it retry
     }
-  }, [attemptId, router]);
+  }, [attemptId, navigateToResultsIfReady]);
 
   // Start polling when attemptId is available
   useEffect(() => {

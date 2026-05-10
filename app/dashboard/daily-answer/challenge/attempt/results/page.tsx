@@ -1,41 +1,25 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { dailyAnswerService } from '@/lib/services';
 
-interface MarkupSegment {
-  text: string;
-  color?: string; // css color for highlight background
-  note?: string;
-}
-
 interface ResultsData {
   score: number;
   maxScore: number;
-  metrics: {
-    id: string;
-    label: string;
-    value: string;
-    icon: string;
-    bg: string;
-    borderColor: string;
-    iconColor: string;
-    valueColor: string;
-  }[];
-  didWell: string[];
-  areasToImprove: string[];
-  valueAddIdeas: string[];
-  markup?: { segments: MarkupSegment[] };
-  rubric?: { label: string; score: number; max: number }[];
-  answerText?: string;
+  strengths: string[];
+  improvements: string[];
+  suggestions: string[];
+  detailedFeedback?: string;
+  wordCount?: number | null;
+  submittedAt?: string | null;
 }
 
+type SlideKey = 'feedback' | 'markup' | 'rubric' | 'next';
+
 const BETA_DISCLAIMER =
-  'Jeet AI is currently in beta and evolving every day alongside you. Our evaluation engine is built to deliver meaningful, structured, and exam-relevant feedback — but like any AI, it can make mistakes. Use it as a smart companion in your UPSC journey, strengthening your preparation alongside your mentors, notes, and instincts.';
-
-
+  'Jeet AI is currently in beta and evolving every day alongside you. Our evaluation engine is built to deliver meaningful, structured, and exam-relevant feedback, but it can still make mistakes. Use it as a smart companion alongside your mentors, notes, and judgment.';
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -43,111 +27,162 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
-  const [slide, setSlide] = useState<'feedback' | 'markup' | 'rubric' | 'next'>('feedback');
+  const [slide, setSlide] = useState<SlideKey>('feedback');
 
-  // Get attemptId from sessionStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedAttemptId = sessionStorage.getItem('dailyAnswerAttemptId');
-      if (storedAttemptId) {
-        setAttemptId(storedAttemptId);
-      }
+      if (storedAttemptId) setAttemptId(storedAttemptId);
     }
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    setLoading(true);
+    setError(null);
+
     dailyAnswerService.getResults(attemptId || undefined)
-      .then(res => setData(res.data))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (cancelled) return;
+        setData(res.data);
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('dailyAnswerAttemptId');
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err.message || 'Could not load results');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [attemptId]);
+
+  const slides: Array<{ key: SlideKey; label: string }> = [
+    { key: 'feedback', label: 'Feedback' },
+    { key: 'markup', label: "Examiner's Markup" },
+    { key: 'rubric', label: 'Score' },
+    { key: 'next', label: "What's Next" },
+  ];
+
+  const score = data?.score ?? 0;
+  const maxScore = data?.maxScore ?? 0;
+  const scorePercent = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+  const strengths = data?.strengths ?? [];
+  const improvements = data?.improvements ?? [];
+  const suggestions = data?.suggestions ?? [];
+  const detailedFeedback = data?.detailedFeedback?.trim() ?? '';
+  const detailedFeedbackParagraphs = useMemo(
+    () => detailedFeedback.split(/\n+/).map((item) => item.trim()).filter(Boolean),
+    [detailedFeedback]
+  );
+
+  const summaryCards = [
+    {
+      id: 'score',
+      label: 'Overall Score',
+      value: maxScore > 0 ? `${score}/${maxScore}` : `${score}`,
+      hint: `${scorePercent}% examiner alignment`,
+      bg: '#FEF3C7',
+      borderColor: '#FCD34D',
+      valueColor: '#92400E',
+    },
+    {
+      id: 'strengths',
+      label: 'Strong Points',
+      value: `${strengths.length}`,
+      hint: 'Well-handled answer elements',
+      bg: '#DCFCE7',
+      borderColor: '#86EFAC',
+      valueColor: '#166534',
+    },
+    {
+      id: 'improvements',
+      label: 'Needs Work',
+      value: `${improvements.length}`,
+      hint: 'Priority fix areas',
+      bg: '#FEF3C7',
+      borderColor: '#FDE68A',
+      valueColor: '#A16207',
+    },
+    {
+      id: 'words',
+      label: 'Word Count',
+      value: `${data?.wordCount ?? 0}`,
+      hint: 'Captured from your submission',
+      bg: '#DBEAFE',
+      borderColor: '#93C5FD',
+      valueColor: '#1D4ED8',
+    },
+  ];
+
+  const rubricCards = [
+    {
+      label: 'Score Conversion',
+      value: `${scorePercent}%`,
+      text: 'Converted from the examiner score returned by the evaluation engine.',
+    },
+    {
+      label: 'Strength Signals',
+      value: `${strengths.length}`,
+      text: 'Distinct strengths identified in the answer review.',
+    },
+    {
+      label: 'Improvement Signals',
+      value: `${improvements.length}`,
+      text: 'Areas flagged for sharper structure, content, or substantiation.',
+    },
+    {
+      label: 'Value-Add Ideas',
+      value: `${suggestions.length}`,
+      text: 'Specific improvement suggestions you can apply in the next rewrite.',
+    },
+  ];
 
   if (loading) {
     return (
-      <div
-        className="min-h-screen font-arimo flex items-center justify-center"
-        style={{ background: '#FAFBFE' }}
-      >
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      <div className="min-h-screen font-arimo flex items-center justify-center" style={{ background: '#FAFBFE' }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div
-        className="min-h-screen font-arimo flex items-center justify-center"
-        style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}
-      >
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Could not load results</h2>
-          <p className="text-gray-500 mb-4">{error}</p>
-          <Link href="/dashboard/daily-answer" className="text-blue-600 hover:underline">Back to Challenge</Link>
-        </div>
-      </div>
-    );
-  }
-
-  // If no data or evaluation not complete, show evaluation in progress state
-  if (!data || !data.metrics || data.metrics.length === 0) {
+  if (error || !data) {
     return (
       <div
         className="min-h-screen font-arimo flex items-center justify-center"
         style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}
       >
         <div className="text-center px-6">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">AI Evaluation in Progress</h2>
-          <p className="text-gray-500 mb-4">Our AI is analyzing your answer. This usually takes 30-60 seconds.</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Check Status
-          </button>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Could not load results</h2>
+          <p className="text-gray-500 mb-4">{error || 'Please try again in a moment.'}</p>
+          <Link href="/dashboard/daily-answer" className="text-blue-600 hover:underline">
+            Back to Daily Answer
+          </Link>
         </div>
       </div>
     );
   }
 
-  const score = data.score ?? 0;
-  const maxScore = data.maxScore ?? 10;
-  // Use only real AI evaluation data from API - no fallbacks
-  const metrics = data.metrics || [];
-  const didWell = data.didWell || [];
-  const areasToImprove = data.areasToImprove || [];
-  const valueAddIdeas = data.valueAddIdeas || [];
-  const markupSegments = data.markup?.segments || [];
-  const rubric = data.rubric || [];
-
-  const slides: Array<{ key: typeof slide; label: string }> = [
-    { key: 'feedback', label: 'Feedback' },
-    { key: 'markup', label: "Examiner's Markup" },
-    { key: 'rubric', label: 'Rubric Score' },
-    { key: 'next', label: "What's Next" },
-  ];
-
   return (
-    <div
-      className="min-h-screen font-arimo"
-      style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}
-    >
-      {/* Main Content */}
+    <div className="min-h-screen font-arimo" style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}>
       <div className="flex flex-col items-center py-10 px-6 gap-6">
-
-        {/* Score Card */}
         <div
-          className="flex flex-col items-center justify-center"
+          className="flex flex-col items-center justify-center px-6"
           style={{
             width: '988px',
-            height: '168px',
+            minHeight: '168px',
             borderRadius: '14px',
             background: 'linear-gradient(90deg, #101828 0%, #17223E 100%)',
           }}
         >
           <p
             style={{
-              fontFamily: 'Arimo',
               fontWeight: 700,
               fontSize: '14px',
               lineHeight: '20px',
@@ -157,157 +192,129 @@ export default function ResultsPage() {
               marginBottom: '4px',
             }}
           >
-            SCORE
+            Score
           </p>
           <div className="flex items-baseline gap-1">
-            <span
-              style={{
-                fontFamily: 'Arimo',
-                fontWeight: 700,
-                fontSize: '82px',
-                lineHeight: '72px',
-                color: '#FDC700',
-              }}
-            >
-              {score}
-            </span>
-            <span
-              style={{
-                fontFamily: 'Arimo',
-                fontWeight: 700,
-                fontSize: '35px',
-                lineHeight: '48px',
-                color: '#FDC70087',
-              }}
-            >
+            <span style={{ fontWeight: 700, fontSize: '82px', lineHeight: '72px', color: '#FDC700' }}>{score}</span>
+            <span style={{ fontWeight: 700, fontSize: '35px', lineHeight: '48px', color: '#FDC70087' }}>
               /{maxScore}
             </span>
           </div>
+          <p className="mt-3 text-[#D1D5DC]" style={{ fontSize: '14px' }}>
+            Examiner score based on structure, depth, relevance, and substantiation.
+          </p>
         </div>
 
-        {/* Slide tabs */}
-        <div className="flex items-center gap-2" style={{ width: '988px' }}>
-          {slides.map((s) => (
+        <div className="flex items-center gap-2 flex-wrap" style={{ width: '988px' }}>
+          {slides.map((item) => (
             <button
-              key={s.key}
-              onClick={() => setSlide(s.key)}
+              key={item.key}
+              onClick={() => setSlide(item.key)}
               className={`px-4 py-2 rounded-[8px] text-sm font-semibold transition-colors ${
-                slide === s.key
+                slide === item.key
                   ? 'bg-[#17223E] text-white'
                   : 'bg-white text-[#4A5565] border border-[#E5E7EB] hover:bg-gray-50'
               }`}
             >
-              {s.label}
+              {item.label}
             </button>
           ))}
         </div>
 
-        {/* Feedback Card */}
         {slide === 'feedback' && (
-        <div
-          style={{
-            width: '988px',
-            borderRadius: '14px',
-            background: '#FFFFFF',
-            boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
-            padding: '32px 32px 32px 32px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '24px',
-          }}
-        >
-          {/* Feedback Header Row */}
-          <img
-            src="/feedback-header.png"
-            alt="Personalized Feedback"
+          <div
             style={{
-              width: '924px',
-              objectFit: 'fill',
+              width: '988px',
+              borderRadius: '14px',
+              background: '#FFFFFF',
+              boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
+              padding: '32px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '24px',
             }}
-          />
+          >
+            <img src="/feedback-header.png" alt="Personalized Feedback" style={{ width: '924px', objectFit: 'fill' }} />
+            <img
+              src="/feedback-subtitle.png"
+              alt="Actionable insights to help you improve, not just a score"
+              style={{ width: '924px', objectFit: 'fill' }}
+            />
 
-          {/* Subtitle */}
-          <img
-            src="/feedback-subtitle.png"
-            alt="Actionable insights to help you improve, not just a score"
-            style={{
-              width: '924px',
-              objectFit: 'fill',
-            }}
-          />
-
-          {/* 4 Metric Cards */}
-          {metrics.length > 0 ? (
             <div className="grid grid-cols-4 gap-4">
-              {metrics.map((metric) => (
+              {summaryCards.map((metric) => (
                 <div
                   key={metric.id}
                   className="flex flex-col items-center justify-center rounded-[10px] p-4"
-                  style={{
-                    background: metric.bg,
-                    border: `1px solid ${metric.borderColor}`,
-                  }}
+                  style={{ background: metric.bg, border: `1px solid ${metric.borderColor}` }}
                 >
-                  <span style={{ fontSize: '20px', color: metric.iconColor, marginBottom: '4px' }}>{metric.icon}</span>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#6A7282', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>{metric.label}</span>
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: metric.valueColor }}>{metric.value}</span>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#6A7282', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                    {metric.label}
+                  </span>
+                  <span style={{ fontSize: '22px', fontWeight: 700, color: metric.valueColor }}>{metric.value}</span>
+                  <span className="text-center mt-2" style={{ fontSize: '12px', color: '#4A5565', lineHeight: '18px' }}>
+                    {metric.hint}
+                  </span>
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>No metrics available. Please wait for AI evaluation to complete.</p>
-            </div>
-          )}
 
-          {/* 3 Feedback Columns */}
-          {(didWell.length > 0 || areasToImprove.length > 0 || valueAddIdeas.length > 0) ? (
             <div className="grid grid-cols-3 gap-6">
-              {/* What You Did Well */}
               <div className="rounded-[10px] border border-[#B9F8CF] bg-[#F0FDF4] p-5">
                 <h3 className="font-bold text-[#0D542B] mb-3" style={{ fontSize: '15px' }}>What You Did Well</h3>
-                <ul className="space-y-2">
-                  {didWell.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[#0D542B]" style={{ fontSize: '13px', lineHeight: '20px' }}>
-                      <span className="mt-0.5 flex-shrink-0">&#10003;</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                {strengths.length > 0 ? (
+                  <ul className="space-y-2">
+                    {strengths.map((item, index) => (
+                      <li key={`${item}-${index}`} className="flex items-start gap-2 text-[#0D542B]" style={{ fontSize: '13px', lineHeight: '20px' }}>
+                        <span className="mt-0.5 flex-shrink-0">&#10003;</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[#166534]" style={{ fontSize: '13px', lineHeight: '20px' }}>
+                    The evaluator did not return structured strengths for this answer yet.
+                  </p>
+                )}
               </div>
 
-              {/* Areas to Improve */}
               <div className="rounded-[10px] border border-[#FFF085] bg-[#FEFCE8] p-5">
                 <h3 className="font-bold text-[#713F12] mb-3" style={{ fontSize: '15px' }}>Areas to Improve</h3>
-                <ul className="space-y-2">
-                  {areasToImprove.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[#713F12]" style={{ fontSize: '13px', lineHeight: '20px' }}>
-                      <span className="mt-0.5 flex-shrink-0">&#9888;</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                {improvements.length > 0 ? (
+                  <ul className="space-y-2">
+                    {improvements.map((item, index) => (
+                      <li key={`${item}-${index}`} className="flex items-start gap-2 text-[#713F12]" style={{ fontSize: '13px', lineHeight: '20px' }}>
+                        <span className="mt-0.5 flex-shrink-0">&#9888;</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[#713F12]" style={{ fontSize: '13px', lineHeight: '20px' }}>
+                    No explicit improvement bullets were returned by the evaluator.
+                  </p>
+                )}
               </div>
 
-              {/* Value-Add Ideas */}
               <div className="rounded-[10px] border border-[#E5E7EB] bg-[#F9FAFB] p-5">
                 <h3 className="font-bold text-[#101828] mb-3" style={{ fontSize: '15px' }}>Value-Add Ideas</h3>
-                <ul className="space-y-2">
-                  {valueAddIdeas.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[#374151]" style={{ fontSize: '13px', lineHeight: '20px' }}>
-                      <span className="mt-0.5 flex-shrink-0">&#128161;</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                {suggestions.length > 0 ? (
+                  <ul className="space-y-2">
+                    {suggestions.map((item, index) => (
+                      <li key={`${item}-${index}`} className="flex items-start gap-2 text-[#374151]" style={{ fontSize: '13px', lineHeight: '20px' }}>
+                        <span className="mt-0.5 flex-shrink-0">&#128161;</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[#374151]" style={{ fontSize: '13px', lineHeight: '20px' }}>
+                    No extra suggestions were returned for this answer yet.
+                  </p>
+                )}
               </div>
             </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>No feedback available yet. AI evaluation is processing your answer.</p>
-            </div>
-          )}
-        </div>
+          </div>
         )}
 
         {slide === 'markup' && (
@@ -324,41 +331,68 @@ export default function ResultsPage() {
               Examiner&apos;s Markup
             </h2>
             <p className="text-[#4A5565] mb-6" style={{ fontSize: '14px' }}>
-              Color-coded notes directly on your answer — just like a real examiner would.
+              This slide now stays available even when the backend returns narrative feedback instead of token-level markup.
             </p>
-            {markupSegments.length > 0 ? (
-              <div className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] p-6 leading-relaxed text-[#101828]" style={{ fontSize: '15px', lineHeight: '26px' }}>
-                {markupSegments.map((seg, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      background: seg.color || 'transparent',
-                      padding: seg.color ? '2px 4px' : 0,
-                      borderRadius: '3px',
-                    }}
-                    title={seg.note}
-                  >
-                    {seg.text}{' '}
-                  </span>
-                ))}
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] p-5">
+                <h3 className="font-bold text-[#166534] mb-3" style={{ fontSize: '15px' }}>Positive examiner notes</h3>
+                {strengths.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {strengths.map((item, index) => (
+                      <span
+                        key={`${item}-${index}`}
+                        className="rounded-full px-3 py-2"
+                        style={{ background: '#DCFCE7', color: '#166534', fontSize: '13px', lineHeight: '18px' }}
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[#166534]" style={{ fontSize: '13px', lineHeight: '20px' }}>
+                    Positive markup will appear here when the evaluator returns line-level comments.
+                  </p>
+                )}
               </div>
-            ) : (
-              <div className="bg-[#F9FAFB] rounded-[10px] border border-[#E5E7EB] p-6 text-[#101828]" style={{ fontSize: '15px', lineHeight: '26px' }}>
-                <span style={{ background: '#BBF7D0', padding: '2px 4px', borderRadius: '3px' }}>
-                  {data.answerText || 'Your answer structure and relevant facts will be highlighted here.'}
-                </span>{' '}
-                <span style={{ background: '#FEF08A', padding: '2px 4px', borderRadius: '3px' }}>
-                  Areas needing sharper analysis will be marked in yellow.
-                </span>{' '}
-                <span style={{ background: '#FECACA', padding: '2px 4px', borderRadius: '3px' }}>
-                  Missing dimensions or unsupported claims will be marked in red.
-                </span>
+
+              <div className="rounded-[12px] border border-[#FDE68A] bg-[#FEFCE8] p-5">
+                <h3 className="font-bold text-[#A16207] mb-3" style={{ fontSize: '15px' }}>Attention areas</h3>
+                {improvements.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {improvements.map((item, index) => (
+                      <span
+                        key={`${item}-${index}`}
+                        className="rounded-full px-3 py-2"
+                        style={{ background: '#FEF3C7', color: '#A16207', fontSize: '13px', lineHeight: '18px' }}
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[#A16207]" style={{ fontSize: '13px', lineHeight: '20px' }}>
+                    Improvement markup will appear here when the evaluator returns line-level comments.
+                  </p>
+                )}
               </div>
-            )}
-            <div className="mt-4 flex items-center gap-4 text-xs text-[#4A5565]">
-              <span><span className="inline-block w-3 h-3 rounded-sm mr-1" style={{ background: '#BBF7D0' }} /> Strong point</span>
-              <span><span className="inline-block w-3 h-3 rounded-sm mr-1" style={{ background: '#FEF08A' }} /> Needs sharpening</span>
-              <span><span className="inline-block w-3 h-3 rounded-sm mr-1" style={{ background: '#FECACA' }} /> Missing / incorrect</span>
+            </div>
+
+            <div className="mt-6 rounded-[12px] border border-[#E5E7EB] bg-[#F9FAFB] p-6">
+              <h3 className="font-bold text-[#101828] mb-3" style={{ fontSize: '16px' }}>Detailed examiner commentary</h3>
+              {detailedFeedbackParagraphs.length > 0 ? (
+                <div className="space-y-3">
+                  {detailedFeedbackParagraphs.map((paragraph, index) => (
+                    <p key={index} className="text-[#374151]" style={{ fontSize: '14px', lineHeight: '24px' }}>
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[#4A5565]" style={{ fontSize: '14px', lineHeight: '24px' }}>
+                  Detailed commentary was not returned by the evaluation engine for this submission.
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -373,29 +407,36 @@ export default function ResultsPage() {
               padding: '32px',
             }}
           >
-            <h2 className="font-bold text-[#101828] mb-6" style={{ fontSize: '22px' }}>
-              6-Pillar Rubric Score
+            <h2 className="font-bold text-[#101828] mb-3" style={{ fontSize: '22px' }}>
+              Score Snapshot
             </h2>
-            {rubric.length > 0 ? (
-              <div className="space-y-4">
-                {rubric.map((r, i) => {
-                  const pct = r.max > 0 ? (r.score / r.max) * 100 : 0;
-                  return (
-                    <div key={i}>
-                      <div className="flex justify-between text-sm text-[#101828] mb-1">
-                        <span className="font-semibold">{r.label}</span>
-                        <span>{r.score}/{r.max}</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#17223E]" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
+            <p className="text-[#4A5565] mb-6" style={{ fontSize: '14px' }}>
+              The current backend returns an overall examiner score, plus structured strengths and improvement points.
+            </p>
+
+            <div className="mb-8">
+              <div className="flex justify-between text-sm text-[#101828] mb-2">
+                <span className="font-semibold">Overall evaluation score</span>
+                <span>{score}/{maxScore}</span>
               </div>
-            ) : (
-              <p className="text-[#4A5565]">Detailed rubric breakdown will appear once evaluation finalises. Overall: <strong>{score}/{maxScore}</strong></p>
-            )}
+              <div className="w-full h-3 bg-[#E5E7EB] rounded-full overflow-hidden">
+                <div className="h-full bg-[#17223E]" style={{ width: `${scorePercent}%` }} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-5">
+              {rubricCards.map((card) => (
+                <div key={card.label} className="rounded-[12px] border border-[#E5E7EB] bg-[#F9FAFB] p-5">
+                  <div className="text-[#6A7282] uppercase mb-2" style={{ fontSize: '11px', letterSpacing: '0.4px', fontWeight: 700 }}>
+                    {card.label}
+                  </div>
+                  <div className="font-bold text-[#101828] mb-2" style={{ fontSize: '28px', lineHeight: '34px' }}>
+                    {card.value}
+                  </div>
+                  <p className="text-[#4A5565]" style={{ fontSize: '13px', lineHeight: '20px' }}>{card.text}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -412,37 +453,29 @@ export default function ResultsPage() {
             <h2 className="font-bold text-[#101828] mb-6" style={{ fontSize: '22px' }}>
               What would you like to do next?
             </h2>
+
             <div className="grid grid-cols-3 gap-5">
               <button onClick={() => setSlide('feedback')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#EDE9FE] text-2xl">🎯</div>
-                <div className="font-bold text-[#101828] mb-1">Rewrite with Feedback</div>
-                <div className="text-sm text-[#4A5565]">Apply suggestions immediately</div>
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#EDE9FE] text-[#5B21B6] text-xl">F</div>
+                <div className="font-bold text-[#101828] mb-1">Review Feedback</div>
+                <div className="text-sm text-[#4A5565]">Revisit strengths, gaps, and suggestions</div>
               </button>
-              <button onClick={() => router.push('/dashboard/saved-notes')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#FEF3C7] text-2xl">📝</div>
-                <div className="font-bold text-[#101828] mb-1">Save to Notes</div>
-                <div className="text-sm text-[#4A5565]">Add to personalized revision</div>
+
+              <button onClick={() => setSlide('markup')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#FEF3C7] text-[#B45309] text-xl">M</div>
+                <div className="font-bold text-[#101828] mb-1">Read Examiner Notes</div>
+                <div className="text-sm text-[#4A5565]">Study the narrative commentary carefully</div>
               </button>
-              <button onClick={() => router.push('/dashboard/free-trial')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#DBEAFE] text-2xl">🧑‍🏫</div>
-                <div className="font-bold text-[#101828] mb-1">Discuss with Mentor</div>
-                <div className="text-sm text-[#4A5565]">Get expert guidance</div>
-              </button>
+
               <button onClick={() => router.push('/dashboard/daily-answer')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#DCFCE7] text-2xl">📋</div>
-                <div className="font-bold text-[#101828] mb-1">Practice Similar Question</div>
-                <div className="text-sm text-[#4A5565]">Continue your streak</div>
-              </button>
-              <button onClick={() => router.push('/dashboard/library')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#FEE2E2] text-2xl">📚</div>
-                <div className="font-bold text-[#101828] mb-1">View Model Answer</div>
-                <div className="text-sm text-[#4A5565]">Learn structure and content</div>
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#DCFCE7] text-[#166534] text-xl">N</div>
+                <div className="font-bold text-[#101828] mb-1">Practice Another One</div>
+                <div className="text-sm text-[#4A5565]">Return to daily answer writing and continue</div>
               </button>
             </div>
           </div>
         )}
 
-        {/* Beta Disclaimer */}
         <div
           style={{
             width: '988px',

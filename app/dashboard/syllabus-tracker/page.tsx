@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { userService, syllabusService } from '@/lib/services';
-import { useAuth } from '@/contexts/AuthContext';
 import { useCmsContent } from '@/hooks/useCmsContent';
 import { SYLLABUS_DATA } from '@/data/syllabus/syllabusData';
 import HeroSection from './components/HeroSection';
@@ -43,12 +42,11 @@ export interface TrackerState {
 }
 
 export default function SyllabusTrackerPage() {
-  const { user } = useAuth();
   const { content: cms, loading: cmsLoading } = useCmsContent('dashboard/syllabus-tracker', {
-    hero_badge: 'PERSONALIZED SYLLABUS TRACKER',
-    hero_title_prefix: 'Know Exactly Where You Stand,',
-    hero_title_suffix: '.',
-    hero_subtitle: "Your UPSC syllabus, fully mapped. Track every topic across Prelims, Mains and Optional — see what's done, what's pending, and what to conquer next.",
+    hero_badge: 'Personalized Syllabus Tracker',
+    hero_title_prefix: 'Know Exactly Where You Stand',
+    hero_title_suffix: '',
+    hero_subtitle: "Your UPSC syllabus, fully mapped. Track every topic across Prelims, Mains and Optional, see what's done, what's pending, and what to conquer next.",
     stat_labels: JSON.stringify({ overall: 'Overall', done: 'Done', revising: 'Revising', remaining: 'Remaining' }),
     stage_tabs: JSON.stringify({ prelims: 'Prelims', mains: 'Mains', optional: 'Optional' }),
     filter_labels: JSON.stringify({ all: 'All', pending: 'Pending', done: 'Done', important: 'Important' }),
@@ -282,12 +280,12 @@ export default function SyllabusTrackerPage() {
       {/* Page Content - scrollable */}
       <div className="flex-1 overflow-y-auto">
         {/* Hero Section */}
-        <div className="pt-[clamp(12px,1.6vw,20px)]">
-          <HeroSection states={states} syllabusData={syllabusData} userName={user?.firstName} cms={cms} />
+        <div className="pt-0">
+          <HeroSection states={states} syllabusData={syllabusData} cms={cms} />
         </div>
 
         {/* Stage Tabs */}
-        <div className="px-[18px] pt-[14px] pb-0 overflow-x-auto">
+        <div className="px-[12px] pt-[12px] pb-0 overflow-x-auto">
           <StageTabs
             mode={mode}
             onModeChange={handleModeChange}
@@ -298,9 +296,9 @@ export default function SyllabusTrackerPage() {
         </div>
 
         {/* Tracker Area — four side-by-side columns */}
-        <div className="flex items-stretch gap-[13px] p-[18px] pt-[12px]">
+        <div className="flex items-stretch gap-[14px] px-[12px] pb-[18px] pt-[10px] min-w-[1180px]">
           {/* Column A - Subjects */}
-          <div className="w-[210px] shrink-0 flex flex-col">
+          <div className="w-[230px] shrink-0 flex flex-col">
             <SubjectList
               subjects={currentSubjects}
               activeSubject={activeSubject}
@@ -364,3 +362,4 @@ export default function SyllabusTrackerPage() {
     </div>
   );
 }
+

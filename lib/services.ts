@@ -428,7 +428,7 @@ export const userService = {
   getProfile: () => api.get<any>('/user/profile', authConfig()),
   updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; bio?: string; state?: string; targetYear?: string; optionalSubject?: string }) =>
     api.put<any>('/user/profile', data, authConfig()),
-  updateSettings: (data: { notifications?: any; preferences?: any; privacy?: any }) =>
+  updateSettings: (data: { notifications?: any; preferences?: any; privacy?: any; profile?: any }) =>
     api.put<any>('/user/settings', data, authConfig()),
   submitFeedback: (data: { rating: number; category?: string; workingWell?: string; couldBeBetter?: string }) =>
     api.post<any>('/user/feedback', data, authConfig()),

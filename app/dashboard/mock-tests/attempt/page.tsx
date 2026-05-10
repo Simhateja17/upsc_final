@@ -46,6 +46,26 @@ function normalizeDurationToSeconds(rawDuration: unknown, questionCount: number,
   return Math.round(parsed);
 }
 
+function buildMainsQuestionPattern(questionCount: number) {
+  if (questionCount <= 0) return [];
+  if (questionCount === 1) return [{ marks: 10, minutes: 7, words: 150 }];
+  if (questionCount === 2) {
+    return [
+      { marks: 10, minutes: 7, words: 150 },
+      { marks: 15, minutes: 11, words: 250 },
+    ];
+  }
+
+  return Array.from({ length: questionCount }, (_, idx) => {
+    const marks = (idx + 1) % 3 === 0 ? 15 : 10;
+    return {
+      marks,
+      minutes: marks === 15 ? 11 : 7,
+      words: marks === 15 ? 250 : 150,
+    };
+  });
+}
+
 const SAMPLE_QUESTIONS: Question[] = [
   {
     id: 1,
@@ -138,6 +158,7 @@ function MockTestAttemptInner() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
   const [questionStatuses, setQuestionStatuses] = useState<Record<number, QuestionStatus>>({});
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<number[]>([]);
   const [timeLeft, setTimeLeft] = useState(0);
   const [startTime] = useState(Date.now());
 
@@ -217,6 +238,26 @@ function MockTestAttemptInner() {
   }, [loading, questions.length]);
 
   const totalQuestions = questions.length;
+  const bookmarkStorageKey = `mock-test-bookmarks:${testId ?? 'sample'}:${examMode}`;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = sessionStorage.getItem(bookmarkStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setBookmarkedQuestions(parsed.filter((value) => Number.isInteger(value)));
+      }
+    } catch {
+      /* ignore bad session data */
+    }
+  }, [bookmarkStorageKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    sessionStorage.setItem(bookmarkStorageKey, JSON.stringify(bookmarkedQuestions));
+  }, [bookmarkStorageKey, bookmarkedQuestions]);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
@@ -238,6 +279,12 @@ function MockTestAttemptInner() {
   const handleSelectOption = (label: string) => {
     setSelectedOptions(prev => ({ ...prev, [currentIdx]: label }));
     setQuestionStatuses(prev => ({ ...prev, [currentIdx]: 'answered' }));
+  };
+
+  const handleToggleBookmark = () => {
+    setBookmarkedQuestions((prev) =>
+      prev.includes(currentIdx) ? prev.filter((idx) => idx !== currentIdx) : [...prev, currentIdx]
+    );
   };
 
   const handleMark = () => {
@@ -435,6 +482,7 @@ function MockTestAttemptInner() {
   // Stats
   const answered = Object.values(questionStatuses).filter(s => s === 'answered').length;
   const marked = Object.values(questionStatuses).filter(s => s === 'marked').length;
+  const bookmarked = bookmarkedQuestions.length;
   const correct = Object.entries(selectedOptions).filter(([idx, opt]) => questions[Number(idx)]?.correct === opt).length;
   const wrong = Object.keys(selectedOptions).length - correct;
   const netScore = correct * 2 - wrong * 0.67;
@@ -516,8 +564,11 @@ function MockTestAttemptInner() {
 
   /* ──────────────────────────── MAINS UI ──────────────────────────── */
   if (isMains) {
-    const marksPerQ = totalMarks && totalQuestions ? Math.round(totalMarks / totalQuestions) : 15;
-    const minPerQ = Math.max(1, Math.round(marksPerQ * 0.5));
+    const mainsPattern = buildMainsQuestionPattern(totalQuestions);
+    const currentPattern = mainsPattern[currentIdx] || { marks: 15, minutes: 11, words: 250 };
+    const marksPerQ = currentPattern.marks;
+    const minPerQ = currentPattern.minutes;
+    const targetWords = currentPattern.words;
     const isLast = currentIdx === totalQuestions - 1;
     const answeredCount = questions.reduce((acc, _, i) => {
       const a = mainsAnswers[i];
@@ -529,7 +580,7 @@ function MockTestAttemptInner() {
       const { done, total } = evaluationProgress;
       const pct = total > 0 ? Math.max(8, Math.round((done / total) * 100)) : 8;
       return (
-        <div style={{ minHeight: '100vh', background: '#FAFBFE', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', gap: 20, padding: 24 }}>
+        <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #101828 0%, #17223E 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', gap: 20, padding: 24 }}>
           <div style={{ fontSize: 56 }}>🧠</div>
           <h2 style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 700, margin: 0, textAlign: 'center' }}>AI is evaluating your answers...</h2>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, margin: 0 }}>
@@ -603,13 +654,13 @@ function MockTestAttemptInner() {
 
             {/* Text answer */}
             <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#0F172B', marginBottom: 8, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-              Your Answer
+              Type your answer
             </label>
             <textarea
               value={currentAnswer.text}
               onChange={(e) => handleMainsTextChange(e.target.value)}
               placeholder="Type your answer here… or upload a PDF/image below."
-              rows={8}
+              rows={6}
               style={{
                 width: '100%',
                 padding: '14px 16px',
@@ -626,7 +677,7 @@ function MockTestAttemptInner() {
               }}
             />
             <div style={{ marginTop: 6, fontSize: 12, color: '#6B7280' }}>
-              {currentAnswer.text.trim() ? `${currentAnswer.text.trim().split(/\s+/).filter(Boolean).length} words` : 'No text yet'}
+              {currentAnswer.text.trim() ? `${currentAnswer.text.trim().split(/\s+/).filter(Boolean).length} words` : 'No text yet'} Â· Target {targetWords} words
             </div>
 
             {/* File upload */}
@@ -890,26 +941,31 @@ function MockTestAttemptInner() {
                 </span>
               </div>
 
-              <div
-                aria-label="Bookmark"
+              <button
+                type="button"
+                onClick={handleToggleBookmark}
+                aria-label={bookmarkedQuestions.includes(currentIdx) ? 'Remove bookmark' : 'Add bookmark'}
                 style={{
                   width: 32,
                   height: 32,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
                 }}
               >
                 {/* Inline icon so no asset needed */}
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarkedQuestions.includes(currentIdx) ? '#F59E0B' : 'none'} aria-hidden="true">
                   <path
                     d="M7 3.5h10A1.5 1.5 0 0 1 18.5 5v16l-6.5-3-6.5 3V5A1.5 1.5 0 0 1 7 3.5Z"
-                    stroke="#111827"
+                    stroke={bookmarkedQuestions.includes(currentIdx) ? '#F59E0B' : '#111827'}
                     strokeWidth="1.6"
                     strokeLinejoin="round"
                   />
                 </svg>
-              </div>
+              </button>
             </div>
 
             {/* Question Text (fixed frame per layout) */}
@@ -1127,6 +1183,7 @@ function MockTestAttemptInner() {
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
               {questions.map((_, idx) => {
                 const isCurrent = idx === currentIdx;
+                const isBookmarked = bookmarkedQuestions.includes(idx);
                 return (
                   <button
                     key={idx}
@@ -1135,9 +1192,9 @@ function MockTestAttemptInner() {
                       width: 34,
                       height: 34,
                       borderRadius: 10,
-                      border: '1px solid #E5E7EB',
+                      border: isBookmarked ? '1px solid #F59E0B' : '1px solid #E5E7EB',
                       background: isCurrent ? '#0F172B' : '#F3F4F6',
-                      color: isCurrent ? '#FFFFFF' : '#111827',
+                      color: isCurrent ? '#FFFFFF' : (isBookmarked ? '#B45309' : '#111827'),
                       fontWeight: 700,
                       fontSize: 13,
                       cursor: 'pointer',
@@ -1153,7 +1210,8 @@ function MockTestAttemptInner() {
               {[
                 { label: 'Answered', color: '#00C950', value: answered },
                 { label: 'Unanswered', color: '#94A3B8', value: Math.max(0, totalQuestions - answered) },
-                { label: 'Bookmarked', color: '#F59E0B', value: marked },
+                { label: 'Bookmarked', color: '#F59E0B', value: bookmarked },
+                { label: 'Marked for review', color: '#FB2C36', value: marked },
               ].map((row) => (
                 <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1166,8 +1224,10 @@ function MockTestAttemptInner() {
             </div>
 
             <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 12, marginTop: 6 }}>
-              <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 6 }}>Est. Score</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#0F172B', marginBottom: 14 }}>{netScore.toFixed(1)}</div>
+              <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 6 }}>Ready to submit</div>
+              <div style={{ fontSize: 13, color: '#374151', lineHeight: '20px', marginBottom: 14 }}>
+                {answered} answered Â· {Math.max(0, totalQuestions - answered)} unanswered Â· {bookmarked} bookmarked
+              </div>
               <button
                 onClick={handleSubmit}
                 disabled={submitting}

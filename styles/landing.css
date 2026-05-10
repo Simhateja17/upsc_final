@@ -207,6 +207,83 @@
 .mod-tag { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; letter-spacing: 0.4px; margin-top: 14px; width: fit-content; font-family: 'Outfit', sans-serif; }
 .tag-gold { background: #FEF3C7; color: #92400E; } .tag-cyan { background: #E0F2FE; color: #075985; } .tag-emerald { background: #D1FAE5; color: #065F46; } .tag-violet { background: #EDE9FE; color: #5B21B6; } .tag-rose { background: #FFE4E6; color: #9F1239; } .tag-navy { background: #E8EDF5; color: var(--navy); } .tag-teal { background: #CCFBF1; color: #134E4A; } .tag-amber { background: #FEF3C7; color: #92400E; }
 
+/* ── WHY RISE BANNER ── */
+.why-banner-wrap { background: var(--light-bg); padding: 0 56px 64px; }
+.why-banner {
+  background: linear-gradient(to right, #0f192f, #17223f);
+  border-radius: 24px;
+  padding: 48px 56px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  min-height: 200px;
+}
+.why-banner-books {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-30%);
+  top: -12px;
+  font-size: 160px;
+  line-height: 1;
+  opacity: 0.10;
+  pointer-events: none;
+  user-select: none;
+}
+.why-banner-left {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  max-width: 620px;
+}
+.why-badge {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fdc700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  font-family: 'Outfit', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.why-heading {
+  font-size: 34px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.15;
+  font-family: 'Outfit', sans-serif;
+}
+.why-heading-accent { color: #E8B84B; }
+.why-sub {
+  font-size: 15px;
+  color: #bedbff;
+  line-height: 1.6;
+  font-family: 'Outfit', sans-serif;
+  max-width: 480px;
+}
+.why-stat {
+  text-align: right;
+  flex-shrink: 0;
+}
+.why-stat-val {
+  font-size: 58px;
+  font-weight: 700;
+  color: #E8B84B;
+  line-height: 1;
+  font-family: 'Outfit', sans-serif;
+}
+.why-stat-label {
+  font-size: 14px;
+  color: #bedbff;
+  line-height: 1.5;
+  margin-top: 8px;
+  font-family: 'Outfit', sans-serif;
+}
+
 /* ── AI SECTION ── */
 .ai-section {
   background: linear-gradient(160deg,#060E1E 0%,#040A18 50%,#091C3A 100%);
@@ -621,6 +698,12 @@
   .hstat:last-child { border-bottom: none; }
   .hstat-val { font-size: 30px; }
   .modules-section, .ai-section, .tools-section, .analytics-section, .mentor-section, .live-section, .app-section, .cta-section { padding: 72px 20px; }
+  .why-banner-wrap { padding: 0 20px 48px; }
+  .why-banner { flex-direction: column; align-items: flex-start; gap: 24px; padding: 36px 28px; }
+  .why-banner-books { display: none; }
+  .why-stat { text-align: left; }
+  .why-stat-val { font-size: 44px; }
+  .why-heading { font-size: 26px; }
   .landing-footer { padding: 56px 20px 36px; }
   .modules-grid-full { grid-template-columns: 1fr; }
   .modules-header { margin-bottom: 40px; }

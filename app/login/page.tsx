@@ -433,7 +433,7 @@ function LoginPageContent() {
 
         {/* Tab row */}
         <div
-          style={{ visibility: ['success', 'forgot', 'resetSent'].includes(activeTab) ? 'hidden' : 'visible', marginBottom: 32 }}
+          style={{ display: 'none' }}
         >
           {/* Tab container */}
           <div
@@ -1377,7 +1377,7 @@ function LoginPageContent() {
                 width: '100%',
                 height: 44,
                 borderRadius: 14,
-                background: '#D9A84F',
+                background: '#F3A312',
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex',
@@ -1385,6 +1385,7 @@ function LoginPageContent() {
                 justifyContent: 'center',
                 gap: 8,
                 marginBottom: 14,
+                boxShadow: '0 10px 24px -18px rgba(243,163,18,0.9)',
               }}
             >
               <Image src="/icon-sparkle.png" alt="" width={20} height={20} style={{ objectFit: 'contain' }} />

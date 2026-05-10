@@ -29,6 +29,7 @@ interface DashboardPageHeroProps {
   heroBackgroundSize?: string;
   heroBackgroundPosition?: string;
   showDotGrid?: boolean;
+  statsBorderRadius?: number | string;
 }
 
 const DefaultYouTubeButton = (
@@ -74,6 +75,7 @@ export default function DashboardPageHero({
   heroBackgroundSize = 'cover',
   heroBackgroundPosition = 'center',
   showDotGrid = true,
+  statsBorderRadius = 12,
 }: DashboardPageHeroProps) {
   const right = rightElement !== undefined ? rightElement : DefaultYouTubeButton;
 
@@ -195,8 +197,11 @@ export default function DashboardPageHero({
 
         {/* Stats strip – always sits at the bottom with same gap */}
         <div
-          className="absolute bottom-0 left-0 right-0 flex gap-0 rounded-[12px] overflow-hidden"
-          style={{ border: '0.8px solid rgba(255,255,255,0.1)' }}
+          className="absolute bottom-0 left-0 right-0 flex gap-0 overflow-hidden"
+          style={{
+            border: '0.8px solid rgba(255,255,255,0.1)',
+            borderRadius: typeof statsBorderRadius === 'number' ? `${statsBorderRadius}px` : statsBorderRadius,
+          }}
         >
           {stats.map((stat, i) => (
             <div

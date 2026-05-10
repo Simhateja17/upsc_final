@@ -29,11 +29,22 @@ function toDateParam(date: Date): string {
 }
 
 function pieSlicePath(cx: number, cy: number, r: number, startAngle: number, endAngle: number): string {
+  const angleDiff = endAngle - startAngle;
+  if (angleDiff >= Math.PI * 2 - 0.0001) {
+    // SVG arc commands cannot draw a full circle in a single segment.
+    return [
+      `M ${cx} ${cy}`,
+      `L ${cx} ${(cy - r).toFixed(3)}`,
+      `A ${r} ${r} 0 1 1 ${cx} ${(cy + r).toFixed(3)}`,
+      `A ${r} ${r} 0 1 1 ${cx} ${(cy - r).toFixed(3)}`,
+      'Z',
+    ].join(' ');
+  }
   const x1 = cx + r * Math.cos(startAngle);
   const y1 = cy + r * Math.sin(startAngle);
   const x2 = cx + r * Math.cos(endAngle);
   const y2 = cy + r * Math.sin(endAngle);
-  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+  const largeArc = angleDiff > Math.PI ? 1 : 0;
   return `M ${cx} ${cy} L ${x1.toFixed(3)} ${y1.toFixed(3)} A ${r} ${r} 0 ${largeArc} 1 ${x2.toFixed(3)} ${y2.toFixed(3)} Z`;
 }
 
@@ -416,7 +427,7 @@ export default function StudyPlannerPage() {
     ? `${weeklyStudied}/${weeklyTarget} This Week`
     : weeklyStudied !== null
     ? `${weeklyStudied} days this week`
-    : null;
+    : '0/7 This Week';
 
   return (
     <>
@@ -1210,7 +1221,7 @@ export default function StudyPlannerPage() {
                         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: tc.color }}></span>
                         <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{tc.label}</span>
                       </div>
-                      <span className="font-arimo font-bold text-[#9CA3AF]" style={{ fontSize: '13px' }}>â€”</span>
+                      <span className="font-arimo font-bold text-[#9CA3AF]" style={{ fontSize: '13px' }}>-</span>
                     </div>
                   ))
                 ) : (
@@ -1590,7 +1601,7 @@ export default function StudyPlannerPage() {
               className="flex-1 font-arimo font-bold bg-[#101828] text-white rounded-[8px] hover:opacity-90 transition-opacity disabled:opacity-60"
               style={{ height: '44px', fontSize: '14px' }}
             >
-              {savingGoals ? 'Savingâ€¦' : 'Save Goals'}
+              {savingGoals ? 'Saving...' : 'Save Goals'}
             </button>
           </div>
         </div>

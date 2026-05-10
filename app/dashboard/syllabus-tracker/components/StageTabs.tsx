@@ -12,15 +12,26 @@ interface StageTabsProps {
 }
 
 export default function StageTabs({ mode, onModeChange, states, syllabusData, cms }: StageTabsProps) {
-  const stageTabs = (() => { try { return JSON.parse(cms?.stage_tabs || '{}'); } catch { return {}; } })();
+  const stageTabs = (() => {
+    try {
+      return JSON.parse(cms?.stage_tabs || '{}');
+    } catch {
+      return {};
+    }
+  })();
   const [hoveredTab, setHoveredTab] = useState<Mode | null>(null);
+  const stageMeta: Record<Mode, { accent: string; icon: string }> = {
+    prelims: { accent: '#F59E0B', icon: '🎯' },
+    mains: { accent: '#F3A312', icon: '✍️' },
+    optional: { accent: '#2563EB', icon: '📖' },
+  };
 
   const calculateModePct = (modeKey: Mode) => {
     const subjects = syllabusData[modeKey];
     let total = 0;
     let done = 0;
 
-    subjects.forEach(subject => {
+    subjects.forEach((subject) => {
       subject.topics.forEach((topic, ti) => {
         topic.subs.forEach((_, si) => {
           total++;
@@ -33,48 +44,49 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData, cm
     return total > 0 ? Math.round((done / total) * 100) : 0;
   };
 
-  const prelimsPct = calculateModePct('prelims');
-  const mainsPct = calculateModePct('mains');
-  const optionalPct = calculateModePct('optional');
-
   const tabs = [
-    { key: 'prelims' as Mode, label: stageTabs.prelims || 'Prelims', icon: '🎯', pct: prelimsPct },
-    { key: 'mains' as Mode, label: stageTabs.mains || 'Mains', icon: '✍️', pct: mainsPct },
-    { key: 'optional' as Mode, label: stageTabs.optional || 'Optional', icon: '📖', pct: optionalPct },
+    { key: 'prelims' as Mode, label: stageTabs.prelims || 'Prelims', pct: calculateModePct('prelims') },
+    { key: 'mains' as Mode, label: stageTabs.mains || 'Mains', pct: calculateModePct('mains') },
+    { key: 'optional' as Mode, label: stageTabs.optional || 'Optional', pct: calculateModePct('optional') },
   ];
 
   const highlightedTab = hoveredTab ?? mode;
-  const highlightedIndex = tabs.findIndex(tab => tab.key === highlightedTab);
+  const highlightedIndex = tabs.findIndex((tab) => tab.key === highlightedTab);
   const thumbLeft =
     highlightedIndex === 0
-      ? '4px'
+      ? '6px'
       : highlightedIndex === 1
-        ? 'calc(8px + ((100% - 16px) / 3))'
-        : 'calc(12px + 2 * ((100% - 16px) / 3))';
+        ? 'calc(12px + ((100% - 18px) / 3))'
+        : 'calc(18px + 2 * ((100% - 18px) / 3))';
 
   return (
-    <div
-      className="relative inline-flex items-center overflow-hidden min-w-max"
-      style={{
-        background: '#F1F3F9',
-        borderRadius: '26843500px',
-        padding: '4px',
-      }}
-    >
+    <div className="flex justify-center">
+      <div
+        className="relative inline-flex items-center overflow-hidden min-w-max max-w-full"
+        style={{
+          background: 'linear-gradient(180deg, #FFFFFF 0%, #F6F8FC 100%)',
+          borderRadius: '999px',
+          padding: '6px',
+          border: '1px solid #E4E9F2',
+          boxShadow: '0 10px 30px -22px rgba(15, 23, 43, 0.35), inset 0 1px 0 rgba(255,255,255,0.95)',
+        }}
+      >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-[4px] bottom-[4px] z-0"
+        className="pointer-events-none absolute top-[3px] bottom-[3px] z-0"
         style={{
           left: thumbLeft,
-          width: 'calc((100% - 16px) / 3)',
-          borderRadius: '26843500px',
+          top: '6px',
+          bottom: '6px',
+          width: 'calc((100% - 18px) / 3)',
+          borderRadius: '999px',
           background: '#0F172B',
-          boxShadow: '0px 4px 12px rgba(15, 23, 43, 0.3)',
+          boxShadow: '0 8px 20px rgba(15, 23, 43, 0.24)',
           transition: 'left 220ms ease, width 220ms ease, background 220ms ease, box-shadow 220ms ease',
         }}
       />
 
-      {tabs.map(tab => {
+      {tabs.map((tab) => {
         const isActive = mode === tab.key;
         const isHovered = hoveredTab === tab.key;
         const isHighlighted = isActive || isHovered;
@@ -87,30 +99,31 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData, cm
             onMouseLeave={() => setHoveredTab(null)}
             onFocus={() => setHoveredTab(tab.key)}
             onBlur={() => setHoveredTab(null)}
-          className="relative z-10 flex items-center justify-center gap-2 whitespace-nowrap transition-colors duration-200"
-          style={{
-              padding: '10px 18px',
-              color: isHighlighted ? '#FFFFFF' : '#4A5565',
+            className="relative z-10 flex items-center justify-center gap-2 whitespace-nowrap transition-colors duration-200"
+            style={{
+              padding: '12px 22px',
+              color: isHighlighted ? '#FFFFFF' : '#17223E',
               fontWeight: 700,
               fontSize: '14px',
               lineHeight: '1',
             }}
+            aria-label={`${tab.label} ${tab.pct}% complete`}
           >
-            <span style={{ fontSize: '18px', lineHeight: '1' }}>{tab.icon}</span>
-            <span>{tab.label}</span>
             <span
-              className="rounded-full px-2 py-[2px] text-[12px] font-extrabold"
+              aria-hidden="true"
               style={{
-                background: isHighlighted ? 'rgba(255,255,255,0.18)' : '#FFFFFF',
-                color: isHighlighted ? '#FFFFFF' : '#17223E',
-                boxShadow: isHighlighted ? 'none' : '0 1px 3px rgba(15, 23, 43, 0.08)',
+                fontSize: '16px',
+                lineHeight: 1,
+                filter: isHighlighted ? 'none' : 'saturate(0.95)',
               }}
             >
-              {tab.pct}%
+              {stageMeta[tab.key].icon}
             </span>
+            <span>{tab.label}</span>
           </button>
         );
       })}
+      </div>
     </div>
   );
 }

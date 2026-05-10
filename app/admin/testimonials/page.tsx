@@ -97,12 +97,12 @@ export default function TestimonialsManager() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="block text-sm text-[#6B7280] mb-1">Name *</label>
+              <label className="block text-sm text-[#6B7280] mb-1">Aspirant Name *</label>
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="e.g. Priya Sharma" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
             </div>
             <div>
-              <label className="block text-sm text-[#6B7280] mb-1">Title *</label>
+              <label className="block text-sm text-[#6B7280] mb-1">Position / Result *</label>
               <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="e.g. IAS 2024 - AIR 45" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
             </div>
@@ -120,9 +120,9 @@ export default function TestimonialsManager() {
             </div>
           </div>
           <div className="mb-3">
-            <label className="block text-sm text-[#6B7280] mb-1">Testimonial Content *</label>
+            <label className="block text-sm text-[#6B7280] mb-1">Feedback *</label>
             <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })}
-              placeholder="What did they say about the platform?" rows={4}
+              placeholder="Write the aspirant's feedback here" rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
           </div>
           <div className="mb-4">

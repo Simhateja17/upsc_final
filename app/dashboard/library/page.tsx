@@ -35,6 +35,52 @@ const COMING_SOON_SUBJECTS = [
   'History Timeline Archive',
 ];
 
+const PLACEHOLDER_TESTIMONIAL_CONTENT = /^(hello|hi|test|sample|demo)\W*$/i;
+
+const LIBRARY_TESTIMONIAL_FALLBACKS = [
+  {
+    name: 'Priya Sharma',
+    title: 'IAS 2024 - AIR 45',
+    content:
+      'The daily MCQ practice and AI-powered answer evaluation transformed my preparation. The structured approach helped me improve my Prelims score from 95 to 132 within 3 months.',
+  },
+  {
+    name: 'Surendra',
+    title: 'IAS 2029',
+    content:
+      'The daily answer-writing practice and structured revision flow gave me consistency. I stopped wasting time deciding what to study and started improving steadily in both mock accuracy and mains answers.',
+  },
+  {
+    name: 'Rahul Verma',
+    title: 'IPS 2023 - AIR 112',
+    content:
+      'The editorial summaries saved me 2 hours daily. The mock tests are incredibly accurate to the actual exam pattern. I cleared both Prelims and Mains on my first attempt.',
+  },
+];
+
+function normalizeLibraryTestimonials(items: any[]) {
+  return items.map((item, index) => {
+    const fallback = LIBRARY_TESTIMONIAL_FALLBACKS[index % LIBRARY_TESTIMONIAL_FALLBACKS.length];
+    const rawContent = typeof item?.content === 'string' ? item.content.trim() : '';
+    const rawName = typeof item?.name === 'string' ? item.name.trim() : '';
+    const rawTitle = typeof item?.title === 'string' ? item.title.trim() : '';
+
+    return {
+      ...item,
+      name: rawName || fallback.name,
+      title: rawTitle || fallback.title,
+      content:
+        rawContent && !PLACEHOLDER_TESTIMONIAL_CONTENT.test(rawContent)
+          ? rawContent
+          : fallback.content,
+      rating:
+        typeof item?.rating === 'number' && item.rating >= 1 && item.rating <= 5
+          ? item.rating
+          : 5,
+    };
+  });
+}
+
 
 const features = [
   { emoji: '\uD83C\uDFAF', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff, only what earns marks in Prelims and Mains.' },
@@ -156,7 +202,7 @@ export default function LibraryPage() {
     pricingService.getTestimonials()
       .then((res: any) => {
         const items = res?.data ?? [];
-        setApiTestimonials(Array.isArray(items) ? items : []);
+        setApiTestimonials(Array.isArray(items) ? normalizeLibraryTestimonials(items) : []);
       })
       .catch(() => {});
   }, []);

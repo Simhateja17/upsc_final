@@ -87,7 +87,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms }
 
   return (
     <>
-      <div className="w-[228px] min-w-[228px] flex flex-col gap-[11px] overflow-y-auto flex-shrink-0">
+      <div className="w-[250px] min-w-[250px] flex flex-col gap-[11px] overflow-y-auto flex-shrink-0">
         <div className="bg-white border-[1.5px] border-[#e0e8f4] rounded-[14px] p-[13px] shadow-sm">
           <div className="flex items-center justify-between mb-[11px]">
           <div className="flex items-center gap-[6px]">
@@ -111,15 +111,15 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms }
               const progressColor = stats.pct === 100 ? '#16a34a' : subject.color;
 
               return (
-                <div key={subject.id} className="flex items-center gap-[7px] mb-[9px] last:mb-0">
-                  <div className="text-[12px] flex-shrink-0 w-[14px] text-center">
+                <div key={subject.id} className="flex items-center gap-[5px] mb-[8px] last:mb-0">
+                  <div className="text-[11px] flex-shrink-0 w-[12px] text-center">
                     {subject.icon}
                   </div>
-                  <div className="text-[10.5px] font-semibold text-[#0f1f3d] flex-shrink-0 w-[72px] whitespace-nowrap overflow-hidden text-ellipsis">
+                  <div className="text-[9.5px] font-semibold text-[#0f1f3d] flex-shrink-0 w-[102px] whitespace-nowrap overflow-hidden text-ellipsis">
                     {subject.short}
                   </div>
                   <div className="flex-1">
-                    <div className="h-[5px] bg-[#d8e4f5] rounded-[4px] overflow-hidden">
+                    <div className="h-[4px] bg-[#d8e4f5] rounded-[4px] overflow-hidden">
                       <div
                         className="h-full rounded-[4px] transition-all duration-900"
                         style={{
@@ -130,7 +130,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms }
                     </div>
                   </div>
                   <div
-                    className="text-[10px] font-bold flex-shrink-0 w-[26px] text-right"
+                    className="text-[9px] font-bold flex-shrink-0 w-[24px] text-right"
                     style={{ color: progressColor }}
                   >
                     {stats.pct}%

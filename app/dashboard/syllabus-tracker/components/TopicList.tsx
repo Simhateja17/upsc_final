@@ -34,47 +34,49 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
   if (!subject) {
     return (
       <div className="w-full min-w-0 flex-1 bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm">
-        <div className="flex items-center justify-center flex-1 p-[20px_18px]">
+        <div className="flex items-center justify-center flex-1 p-[16px_14px]">
           <div className="flex flex-col items-center text-center gap-0">
-            <div className="relative w-[72px] h-[72px] mb-[18px]">
+            <div className="relative w-[60px] h-[60px] mb-[14px]">
               <div className="absolute inset-0 rounded-full border-[2.5px] border-dashed border-[rgba(201,146,26,.30)]"
                    style={{ animation: 'spinRing 8s linear infinite' }} />
-              <div className="absolute inset-0 flex items-center justify-center text-[26px]"
+              <div className="absolute inset-0 flex items-center justify-center text-[22px]"
                    style={{ animation: 'floatDot 3s ease-in-out infinite' }}>
                 👈
               </div>
             </div>
-            <div className="font-playfair text-[15px] font-bold text-[#0f1f3d] mb-[7px]">
+            <div className="font-playfair text-[13px] font-bold text-[#0f1f3d] mb-[6px]">
               Select a Subject
             </div>
-            <div className="text-[11px] text-[#8795ae] leading-relaxed max-w-[190px] mb-[20px]">
+            <div className="text-[10px] text-[#8795ae] leading-relaxed max-w-[160px] mb-[16px]">
               Choose any subject from the left panel to explore its topics and begin tracking
             </div>
-            <div className="flex items-center gap-[6px] justify-center">
-              <div className="flex flex-col items-center gap-[4px]">
-                <div className="w-[22px] h-[22px] rounded-full bg-[#0f1f3d] text-white text-[10px] font-extrabold flex items-center justify-center">
+            <div className="flex items-start gap-[5px] justify-center">
+              <div className="flex flex-col items-center gap-[3px]">
+                <div className="w-[20px] h-[20px] rounded-full bg-[#0f1f3d] text-white text-[9px] font-extrabold flex items-center justify-center">
                   1
                 </div>
-                <div className="text-[9.5px] font-semibold text-[#8795ae] whitespace-nowrap">
-                  Pick a subject
+                <div className="text-[8.5px] leading-[1.2] font-semibold text-[#8795ae] text-center">
+                  Pick a
+                  <br />
+                  subject
                 </div>
               </div>
-              <div className="text-[12px] text-[#c9921a] mb-[14px] font-bold">→</div>
-              <div className="flex flex-col items-center gap-[4px]">
-                <div className="w-[22px] h-[22px] rounded-full bg-[#0f1f3d] text-white text-[10px] font-extrabold flex items-center justify-center">
+              <div className="text-[10px] text-[#c9921a] mt-[3px] font-bold">→</div>
+              <div className="flex flex-col items-center gap-[3px]">
+                <div className="w-[20px] h-[20px] rounded-full bg-[#0f1f3d] text-white text-[9px] font-extrabold flex items-center justify-center">
                   2
                 </div>
-                <div className="text-[9.5px] font-semibold text-[#8795ae] whitespace-nowrap">
-                  Open a topic
+                <div className="text-[8.5px] leading-[1.2] font-semibold text-[#8795ae] text-center">
+                  Open a<br />topic
                 </div>
               </div>
-              <div className="text-[12px] text-[#c9921a] mb-[14px] font-bold">→</div>
-              <div className="flex flex-col items-center gap-[4px]">
-                <div className="w-[22px] h-[22px] rounded-full bg-[#0f1f3d] text-white text-[10px] font-extrabold flex items-center justify-center">
+              <div className="text-[10px] text-[#c9921a] mt-[3px] font-bold">→</div>
+              <div className="flex flex-col items-center gap-[3px]">
+                <div className="w-[20px] h-[20px] rounded-full bg-[#0f1f3d] text-white text-[9px] font-extrabold flex items-center justify-center">
                   3
                 </div>
-                <div className="text-[9.5px] font-semibold text-[#8795ae] whitespace-nowrap">
-                  Mark progress
+                <div className="text-[8.5px] leading-[1.2] font-semibold text-[#8795ae] text-center">
+                  Mark<br />progress
                 </div>
               </div>
             </div>
@@ -258,3 +260,4 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
     </div>
   );
 }
+

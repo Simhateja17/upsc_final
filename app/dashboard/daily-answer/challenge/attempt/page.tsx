@@ -153,106 +153,19 @@ export default function DailyAnswerAttemptPage() {
                     {/* Main Content Area - Centered Card */}
                     <div className="p-10 flex flex-col items-center w-full">
 
-                        {/* Timer Card Section */}
-                        <div
-                            className="bg-white rounded-[16px] flex flex-col items-center justify-center mb-6"
-                            style={{
-                                width: '909px',
-                                minHeight: '263px',
-                                boxShadow: '0px 1px 3px 0px #0000001A, 0px 1px 2px -1px #0000001A',
-                                padding: '30px'
-                            }}
-                        >
-                            {/* Title: WRITING TIMER */}
-                            <div style={{
-                                fontFamily: 'Arimo',
-                                fontSize: '20px',
-                                fontWeight: 400,
-                                letterSpacing: '0.3px',
-                                color: '#6A7282',
-                                textTransform: 'uppercase',
-                                marginBottom: '20px'
-                            }}>
-                                WRITING TIMER
-                            </div>
-
-                            {/* Timer Circle */}
-                            <div
-                                className="rounded-full border-4 border-[#101828] flex items-center justify-center mb-4"
-                                style={{
-                                    width: '112px',
-                                    height: '112px'
-                                }}
-                            >
-                                <span style={{
-                                    fontFamily: 'Arimo',
-                                    fontWeight: 700,
-                                    fontSize: '24px',
-                                    color: '#101828'
-                                }}>
-                                    {formatTime(timeLeft)}
-                                </span>
-                            </div>
-
-                            {/* Subtitle: WRITING IN PROGESS */}
-                            <div style={{
-                                fontFamily: 'Arimo',
-                                fontSize: '20px',
-                                fontWeight: 400,
-                                letterSpacing: '0.3px',
-                                color: '#6A7282',
-                                textTransform: 'uppercase',
-                                marginBottom: '24px'
-                            }}>
-                                WRITING IN PROGESS
-                            </div>
-
-                            {/* Buttons Row */}
-                            <div className="flex gap-4">
-                                {/* Start Timer Button */}
-                                <button
-                                    onClick={toggleTimer}
-                                    className="flex items-center justify-center gap-2 text-white font-bold transition-transform hover:scale-105"
-                                    style={{
-                                        width: '136px',
-                                        height: '48px',
-                                        background: isActive ? '#dc2626' : '#00BC7D', // Red if active, Green default
-                                        borderRadius: '10px',
-                                        fontSize: '16px'
-                                    }}
-                                >
-                                    <img src="/Icon%20(11).png" alt="" style={{ width: '24px', height: '24px', filter: 'brightness(0) invert(1)' }} />
-                                    {isActive ? 'Pause' : 'Start Timer'}
-                                </button>
-
-                                 {/* Reset Button */}
-                                 <button
-                                    onClick={resetTimer}
-                                    className="flex items-center justify-center gap-2 bg-white border border-[#D1D5DB] text-[#374151] font-bold transition-transform hover:scale-105"
-                                    style={{
-                                        width: '96px',
-                                        height: '48px',
-                                        borderRadius: '10px',
-                                        fontSize: '16px'
-                                    }}
-                                >
-                                    <img src="/Icon%20(10).png" alt="Reset" style={{ width: '20px', height: '20px' }} />
-                                    Reset
-                                </button>
-                            </div>
-                        </div>
-
+                        <div className="w-full flex flex-col lg:flex-row items-start justify-center gap-8 mb-8">
                         {/* Bottom Card Container (Wrapping Text Area, Upload & Submit) */}
                         <div
-                            className="bg-white rounded-[16px] flex flex-col items-center pt-[68px] pb-8 mb-8"
+                            className="bg-white rounded-[16px] flex flex-col items-center pt-[68px] pb-8"
                             style={{
-                                width: '909px',
+                                width: '100%',
+                                maxWidth: '640px',
                                 minHeight: '600px',
                                 boxShadow: '0px 1px 3px 0px #0000001A, 0px 1px 2px -1px #0000001A'
                             }}
                         >
                             {/* Text Answer Area */}
-                            <div className="w-full px-[134px] mb-8">
+                            <div className="w-full px-[40px] mb-8">
                                 <label
                                     htmlFor="answer-text"
                                     style={{
@@ -287,10 +200,10 @@ export default function DailyAnswerAttemptPage() {
                             </div>
 
                             {/* Divider */}
-                            <div className="w-full px-[134px] mb-8">
+                            <div className="w-full px-[40px] mb-8">
                                 <div className="flex items-center gap-4">
                                     <div className="flex-1 h-px bg-[#E5E7EB]"></div>
-                                    <span className="text-[#6A7282] font-arimo" style={{ fontSize: '13px' }}>OR upload handwritten answer</span>
+                                    <span className="text-[#6A7282] font-arimo text-center" style={{ fontSize: '13px' }}>OR upload handwritten answer</span>
                                     <div className="flex-1 h-px bg-[#E5E7EB]"></div>
                                 </div>
                             </div>
@@ -299,7 +212,8 @@ export default function DailyAnswerAttemptPage() {
                             <div
                                 className={`bg-[#F9FAFB] rounded-[16px] flex flex-col items-center justify-center mb-8 relative cursor-pointer transition-colors ${isDragging ? 'bg-blue-50 border-blue-400' : ''}`}
                                 style={{
-                                    width: '639.81px',
+                                    width: 'calc(100% - 80px)',
+                                    maxWidth: '560px',
                                     height: '300px',
                                     border: isDragging ? '2px dashed #3B82F6' : '1px dashed #17223E',
                                 }}
@@ -417,7 +331,7 @@ export default function DailyAnswerAttemptPage() {
 
                             {/* Error Message */}
                             {submitError && (
-                                <div className="mb-4 px-6 py-3 bg-red-50 border border-red-200 rounded-[10px] text-red-700 font-arimo" style={{ width: '640px', fontSize: '14px' }}>
+                                <div className="mb-4 px-6 py-3 bg-red-50 border border-red-200 rounded-[10px] text-red-700 font-arimo" style={{ width: 'calc(100% - 80px)', maxWidth: '560px', fontSize: '14px' }}>
                                     {submitError}
                                 </div>
                             )}
@@ -428,7 +342,8 @@ export default function DailyAnswerAttemptPage() {
                                 disabled={submitting}
                                 className="flex items-center justify-center gap-2 text-white font-bold transition-transform hover:scale-105 mb-4 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 style={{
-                                    width: '640px',
+                                    width: 'calc(100% - 80px)',
+                                    maxWidth: '560px',
                                     height: '56px',
                                     background: '#17223E',
                                     borderRadius: '14px',
@@ -461,6 +376,94 @@ export default function DailyAnswerAttemptPage() {
                                     Get detailed feedback in 60 seconds
                                 </span>
                             </div>
+                        </div>
+
+                        {/* Timer Sidebar */}
+                        <div
+                            className="bg-white rounded-[16px] flex flex-col items-center justify-start"
+                            style={{
+                                width: '100%',
+                                maxWidth: '240px',
+                                minHeight: '470px',
+                                boxShadow: '0px 1px 3px 0px #0000001A, 0px 1px 2px -1px #0000001A',
+                                padding: '26px 22px 24px'
+                            }}
+                        >
+                            <div style={{
+                                fontFamily: 'Arimo',
+                                fontSize: '20px',
+                                fontWeight: 400,
+                                letterSpacing: '0.3px',
+                                color: '#6A7282',
+                                textTransform: 'uppercase',
+                                marginBottom: '26px',
+                                textAlign: 'center'
+                            }}>
+                                WRITING TIMER
+                            </div>
+
+                            <div
+                                className="rounded-full border-4 border-[#101828] flex items-center justify-center"
+                                style={{
+                                    width: '126px',
+                                    height: '126px',
+                                    marginBottom: '28px'
+                                }}
+                            >
+                                <span style={{
+                                    fontFamily: 'Arimo',
+                                    fontWeight: 700,
+                                    fontSize: '24px',
+                                    color: '#101828'
+                                }}>
+                                    {formatTime(timeLeft)}
+                                </span>
+                            </div>
+
+                            <div style={{
+                                fontFamily: 'Arimo',
+                                fontSize: '18px',
+                                fontWeight: 400,
+                                letterSpacing: '0.3px',
+                                color: '#6A7282',
+                                textTransform: 'uppercase',
+                                marginBottom: '28px',
+                                textAlign: 'center'
+                            }}>
+                                WRITING IN PROGRESS
+                            </div>
+
+                            <div className="flex flex-col gap-3 w-full">
+                                <button
+                                    onClick={toggleTimer}
+                                    className="flex items-center justify-center gap-2 text-white font-bold transition-transform hover:scale-105"
+                                    style={{
+                                        width: '100%',
+                                        height: '52px',
+                                        background: isActive ? '#dc2626' : '#00BC7D',
+                                        borderRadius: '10px',
+                                        fontSize: '16px'
+                                    }}
+                                >
+                                    <img src="/Icon%20(11).png" alt="" style={{ width: '24px', height: '24px', filter: 'brightness(0) invert(1)' }} />
+                                    {isActive ? 'Pause' : 'Start Timer'}
+                                </button>
+
+                                <button
+                                    onClick={resetTimer}
+                                    className="flex items-center justify-center gap-2 bg-white border border-[#D1D5DB] text-[#374151] font-bold transition-transform hover:scale-105"
+                                    style={{
+                                        width: '100%',
+                                        height: '52px',
+                                        borderRadius: '10px',
+                                        fontSize: '16px'
+                                    }}
+                                >
+                                    <img src="/Icon%20(10).png" alt="Reset" style={{ width: '20px', height: '20px' }} />
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
                         </div>
                     </div>
             </main>

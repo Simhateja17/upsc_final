@@ -7,7 +7,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { editorialService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
 
 interface EditorialCard {
   id: string;
@@ -30,15 +29,34 @@ const categoryColors: Record<string, { color: string; bg: string }> = {
   'Economy': { color: '#EA580C', bg: '#FFF7ED' },
   'Environment & Ecology': { color: '#16A34A', bg: '#F0FDF4' },
   'Science & Technology': { color: '#0369A1', bg: '#DBEAFE' },
+  'Current Affairs': { color: '#C2410C', bg: '#FFF7ED' },
+  'Society': { color: '#BE185D', bg: '#FDF2F8' },
+  'Governance': { color: '#1D4ED8', bg: '#EFF6FF' },
+  'International Relations': { color: '#0F766E', bg: '#F0FDFA' },
+  'Social Justice': { color: '#9A3412', bg: '#FFF7ED' },
+  'Agriculture': { color: '#15803D', bg: '#F0FDF4' },
+  'Internal Security': { color: '#991B1B', bg: '#FEF2F2' },
+  'Disaster Management': { color: '#92400E', bg: '#FFFBEB' },
+  'Ethics': { color: '#4338CA', bg: '#EEF2FF' },
 };
 
-const subjects = UPSC_SUBJECTS.map((s) => ({
-  id: s.id,
-  emoji: s.emoji,
-  label: s.label,
-  bg: s.bg,
-  border: s.border,
-})) as Array<{ id: string; emoji: string; label: string; bg: string; border: string; icon?: string }>;
+const subjects = [
+  { id: 'polity', label: 'Polity', emoji: 'PO', bg: '#EDE9FE', border: '#DDD6FE', color: '#7C3AED', terms: ['polity'] },
+  { id: 'history', label: 'History', emoji: 'HI', bg: '#FEF3C7', border: '#FDE68A', color: '#B45309', terms: ['history'] },
+  { id: 'geography', label: 'Geography', emoji: 'GE', bg: '#DBEAFE', border: '#BFDBFE', color: '#1D4ED8', terms: ['geography'] },
+  { id: 'economy', label: 'Economy', emoji: 'EC', bg: '#FFF7ED', border: '#FED7AA', color: '#EA580C', terms: ['economy', 'economic'] },
+  { id: 'environment-ecology', label: 'Environment & Ecology', emoji: 'EN', bg: '#F0FDF4', border: '#BBF7D0', color: '#16A34A', terms: ['environment', 'ecology'] },
+  { id: 'science-technology', label: 'Science & Technology', emoji: 'ST', bg: '#DBEAFE', border: '#BFDBFE', color: '#0369A1', terms: ['science', 'technology'] },
+  { id: 'current-affairs', label: 'Current Affairs', emoji: 'CA', bg: '#FFF7ED', border: '#FED7AA', color: '#C2410C', terms: ['current affairs', 'current-affairs'] },
+  { id: 'society', label: 'Society', emoji: 'SO', bg: '#FDF2F8', border: '#FBCFE8', color: '#BE185D', terms: ['society', 'social'] },
+  { id: 'governance', label: 'Governance', emoji: 'GO', bg: '#EFF6FF', border: '#BFDBFE', color: '#1D4ED8', terms: ['governance'] },
+  { id: 'international-relations', label: 'International Relations', emoji: 'IR', bg: '#F0FDFA', border: '#99F6E4', color: '#0F766E', terms: ['international relations', 'foreign policy'] },
+  { id: 'social-justice', label: 'Social Justice', emoji: 'SJ', bg: '#FFF7ED', border: '#FED7AA', color: '#9A3412', terms: ['social justice'] },
+  { id: 'agriculture', label: 'Agriculture', emoji: 'AG', bg: '#F0FDF4', border: '#BBF7D0', color: '#15803D', terms: ['agriculture', 'agri'] },
+  { id: 'internal-security', label: 'Internal Security', emoji: 'IS', bg: '#FEF2F2', border: '#FECACA', color: '#991B1B', terms: ['internal security', 'security'] },
+  { id: 'disaster-management', label: 'Disaster Management', emoji: 'DM', bg: '#FFFBEB', border: '#FDE68A', color: '#92400E', terms: ['disaster management', 'disaster'] },
+  { id: 'ethics', label: 'Ethics', emoji: 'ET', bg: '#EEF2FF', border: '#C7D2FE', color: '#4338CA', terms: ['ethics', 'integrity'] },
+] as const;
 
 const defaultLearningStats = [
   { icon: '/dark.png', label: 'Editorials read', value: '0', color: '#047857' },
@@ -154,6 +172,10 @@ export default function DailyEditorialPage() {
     }));
   }, [activeNewspaper, editorials]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedSubject]);
+
   const handleSave = async (id: string) => {
     try {
       const res = await editorialService.toggleSave(id);
@@ -206,6 +228,18 @@ export default function DailyEditorialPage() {
   const today = now.getMonth() === calMonth && now.getFullYear() === calYear ? now.getDate() : -1;
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const dayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const selectedSubjectMeta = subjects.find((subject) => subject.id === selectedSubject);
+  const filteredEditorials = selectedSubjectMeta
+    ? editorials.filter((editorial) => {
+        const searchableValues = [editorial.category || '', ...(editorial.tags || [])].map((value) => normalizeSubjectValue(value));
+        return selectedSubjectMeta.terms.some((term) => {
+          const needle = normalizeSubjectValue(term);
+          return searchableValues.some((value) => value.includes(needle));
+        });
+      })
+    : editorials;
+  const totalPages = Math.max(1, Math.ceil(filteredEditorials.length / PAGE_SIZE));
+  const paginatedEditorials = filteredEditorials.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const prevMonth = () => {
     if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); }
@@ -222,7 +256,25 @@ export default function DailyEditorialPage() {
       style={{ background: '#F9FAFB' }}
     >
       <DashboardPageHero
-        badgeIcon={<img src="/badge-daily-editorial.png" alt="daily" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeIcon={
+          <span
+            aria-hidden="true"
+            style={{
+              width: '18px',
+              height: '18px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '999px',
+              background: 'rgba(232,184,75,0.14)',
+              color: '#E8B84B',
+              fontSize: '12px',
+              fontWeight: 700,
+            }}
+          >
+            +
+          </span>
+        }
         badgeText="DAILY NEWS ANALYSIS"
         title={
           <>
@@ -270,8 +322,8 @@ export default function DailyEditorialPage() {
             {/* Newspaper toggles */}
             <div className="flex flex-col sm:flex-row sm:items-center" style={{ gap: '10px' }}>
               <div className="flex items-center" style={{ background: '#FFFFFF', border: '1px solid #D7DEEA', borderRadius: '999px', padding: '4px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
-                {[
-                  { id: 'hindu' as const, label: 'The Hindu', icon: '/hindu.png' },
+                {[ 
+                  { id: 'hindu' as const, label: 'The Hindu', icon: '/hindu-full.png' },
                   { id: 'express' as const, label: 'Indian Express', icon: '/indian.png' },
                 ].map((item) => (
                   <button
@@ -279,20 +331,58 @@ export default function DailyEditorialPage() {
                     onClick={() => setActiveNewspaper(item.id)}
                     className="flex items-center justify-center gap-2 font-fahkwang"
                     style={{
-                      minWidth: 'clamp(140px, 12vw, 174px)',
-                      height: '38px',
-                      padding: '0 16px',
+                      minWidth: 'clamp(220px, 20vw, 280px)',
+                      height: '48px',
+                      padding: '0 22px',
                       borderRadius: '999px',
                       background: activeNewspaper === item.id ? '#101828' : 'transparent',
                       color: activeNewspaper === item.id ? '#FFFFFF' : '#101828',
-                      fontSize: 'clamp(12px, 1.05vw, 14px)',
+                      fontSize: 'clamp(14px, 1.4vw, 18px)',
                       fontWeight: 500,
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                     }}
                   >
-                    <img src={item.icon} alt={item.label} style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-                    {item.label}
+                    <span
+                      style={{
+                        width: item.id === 'hindu' ? '96px' : '22px',
+                        height: item.id === 'hindu' ? '32px' : '22px',
+                        borderRadius: '999px',
+                        background: '#FFFFFF',
+                        border: activeNewspaper === item.id ? '1px solid rgba(255,255,255,0.3)' : '1px solid #E5E7EB',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: item.id === 'hindu' ? '0 10px' : '3px',
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <img
+                        src={item.icon}
+                        alt={item.label}
+                        style={{
+                          width: item.id === 'hindu' ? '100%' : '16px',
+                          height: item.id === 'hindu' ? '100%' : '16px',
+                          objectFit: item.id === 'hindu' ? 'cover' : 'contain',
+                          objectPosition: item.id === 'hindu' ? 'center' : 'center',
+                          filter: 'none',
+                          imageRendering: 'auto',
+                          transform: 'none',
+                        }}
+                      />
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: 'inherit',
+                        fontWeight: 500,
+                        fontSize: 'inherit',
+                        lineHeight: 1,
+                        letterSpacing: 'normal',
+                      }}
+                    >
+                      {item.label}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -348,7 +438,7 @@ export default function DailyEditorialPage() {
                 🕐 Updated {lastFetched ? lastFetched.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'just now'} &nbsp;·&nbsp; {editorials.length} articles (last 24 hrs)
               </span>
               <span className="font-arimo" style={{ fontSize: '13px', color: '#6A7282' }}>
-                Page {currentPage} of {Math.ceil(editorials.length / PAGE_SIZE)}
+                Page {Math.min(currentPage, totalPages)} of {totalPages}
               </span>
             </div>
           )}
@@ -364,25 +454,14 @@ export default function DailyEditorialPage() {
             {loading ? (
               <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900"></div></div>
             ) : (() => {
-              const filtered = selectedSubject
-                ? editorials.filter((e) => {
-                    const subjectMeta = subjects.find((subject) => subject.id === selectedSubject);
-                    const needles = [selectedSubject, subjectMeta?.label]
-                      .filter(Boolean)
-                      .map((value) => normalizeSubjectValue(value as string));
-                    const category = normalizeSubjectValue(e.category || '');
-                    const tags = (e.tags || []).map((tag) => normalizeSubjectValue(tag));
-                    return needles.some((needle) => category.includes(needle) || tags.some((tag) => tag.includes(needle)));
-                  })
-                : editorials;
-              if (filtered.length === 0) {
+              if (filteredEditorials.length === 0) {
                 return (
                   <div className="text-center py-12 text-gray-500">
                     {selectedSubject ? 'No articles for this subject on this date.' : 'No articles in the last 24 hours. Check back later.'}
                   </div>
                 );
               }
-              return filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((card) => {
+              return paginatedEditorials.map((card) => {
               const tagList = card.tags?.length > 0 ? card.tags : [card.category];
               return (
               <div
@@ -528,7 +607,7 @@ export default function DailyEditorialPage() {
           </div>
 
           {/* Pagination controls */}
-          {!loading && editorials.length > PAGE_SIZE && (
+          {!loading && filteredEditorials.length > PAGE_SIZE && (
             <div className="flex items-center justify-center" style={{ gap: '8px', marginTop: '8px', paddingBottom: '8px' }}>
               <button
                 onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -543,7 +622,7 @@ export default function DailyEditorialPage() {
                 }}
               >← Prev</button>
 
-              {Array.from({ length: Math.ceil(editorials.length / PAGE_SIZE) }, (_, i) => i + 1).map(page => (
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                 <button
                   key={page}
                   onClick={() => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -559,14 +638,14 @@ export default function DailyEditorialPage() {
               ))}
 
               <button
-                onClick={() => { setCurrentPage(p => Math.min(Math.ceil(editorials.length / PAGE_SIZE), p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                disabled={currentPage === Math.ceil(editorials.length / PAGE_SIZE)}
+                onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                disabled={currentPage === totalPages}
                 className="font-arimo font-medium"
                 style={{
                   padding: '8px 16px', borderRadius: '8px', border: '1px solid #E5E7EB',
-                  background: currentPage === Math.ceil(editorials.length / PAGE_SIZE) ? '#F9FAFB' : '#FFFFFF',
-                  color: currentPage === Math.ceil(editorials.length / PAGE_SIZE) ? '#9CA3AF' : '#101828',
-                  cursor: currentPage === Math.ceil(editorials.length / PAGE_SIZE) ? 'not-allowed' : 'pointer',
+                  background: currentPage === totalPages ? '#F9FAFB' : '#FFFFFF',
+                  color: currentPage === totalPages ? '#9CA3AF' : '#101828',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                   fontSize: '13px',
                 }}
               >Next →</button>
@@ -734,55 +813,50 @@ export default function DailyEditorialPage() {
                 );
               })}
             </div>
-          </div>
-
-          {/* -------------------------------------------------------- */}
-          {/*  Streak Banner Card (dark navy)                           */}
-          {/* -------------------------------------------------------- */}
-          <div
-            style={{
-              background: '#0E182D',
-              borderRadius: '16px',
-              border: '1.6px solid #193CB8',
-              padding: '24px',
-              boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1), 0px 4px 6px -4px rgba(0,0,0,0.1)',
-            }}
-          >
-            {/* Title row */}
-            <div className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
-              <span style={{ fontSize: '24px', lineHeight: 1 }}>🔥</span>
-              <span className="font-arimo font-bold" style={{ fontSize: '20px', color: '#F3BB4B' }}>
-                {streakData.streak}-Day Streak
-              </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: '10px', marginTop: '10px' }}>
+              {subjects
+                .filter((subject) => !['history', 'geography', 'polity', 'economy'].includes(subject.id) && !['environment-ecology', 'science-technology'].includes(subject.id))
+                .map((subject) => {
+                  const active = selectedSubject === subject.id;
+                  return (
+                    <button
+                      key={subject.id}
+                      onClick={() => setSelectedSubject(active ? null : subject.id)}
+                      className="flex items-center gap-2 font-arimo font-bold"
+                      style={{
+                        padding: '12px 16px',
+                        borderRadius: '14px',
+                        background: active ? '#17223E' : subject.bg,
+                        border: `0.8px solid ${active ? '#17223E' : subject.border}`,
+                        color: active ? '#FFFFFF' : subject.color,
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '999px',
+                          background: active ? 'rgba(255,255,255,0.16)' : '#FFFFFF',
+                          border: active ? '1px solid rgba(255,255,255,0.18)' : `1px solid ${subject.border}`,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          fontSize: '11px',
+                          letterSpacing: '0.04em',
+                        }}
+                      >
+                        {subject.emoji}
+                      </span>
+                      <span style={{ lineHeight: 1.3 }}>{subject.label}</span>
+                    </button>
+                  );
+                })}
             </div>
-            <p className="font-arimo" style={{ fontSize: '14px', color: '#99A1AF', marginBottom: '16px' }}>
-              Keep it up! Read {streakData.readToday} today
-            </p>
-
-            {/* Week check boxes */}
-            <div className="flex items-center" style={{ gap: '8px', marginBottom: '12px' }}>
-              {streakData.weekChecks.map((checked, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-center font-arimo font-bold"
-                  style={{
-                    flex: 1,
-                    height: '40px',
-                    borderRadius: '10px',
-                    background: checked ? '#F3BB4B' : '#17223E',
-                    border: '1px solid #4A5565',
-                    color: '#17223E',
-                    fontSize: '16px',
-                  }}
-                >
-                  {checked ? '✓' : ''}
-                </div>
-              ))}
-            </div>
-
-            <p className="font-arimo" style={{ fontSize: '14px', color: '#99A1AF' }}>
-              {streakData.readToday} of {streakData.targetToday} articles read today
-            </p>
           </div>
 
           {/* -------------------------------------------------------- */}
@@ -813,6 +887,7 @@ export default function DailyEditorialPage() {
               className="flex items-center justify-between"
               style={{
                 background: 'linear-gradient(90deg, #FF6900 0%, #FB2C36 100%)',
+                display: 'none',
                 borderRadius: '14px',
                 padding: '0 16px',
                 height: '64px',
@@ -837,8 +912,91 @@ export default function DailyEditorialPage() {
               </svg>
             </div>
 
+            <div
+              style={{
+                background: '#0E182D',
+                borderRadius: '16px',
+                border: '1px solid #1E2A40',
+                padding: '24px',
+                marginBottom: '20px',
+                boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.08), 0px 4px 6px -4px rgba(0,0,0,0.08)',
+              }}
+            >
+              <div className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
+                <span style={{ fontSize: '24px', lineHeight: 1 }}>🔥</span>
+                <span className="font-arimo font-bold" style={{ fontSize: '22px', color: '#F3BB4B' }}>
+                  {streakData.streak}-Day Streak
+                </span>
+              </div>
+              <p className="font-arimo" style={{ fontSize: '14px', color: '#99A1AF', marginBottom: '20px' }}>
+                Keep it up! Read {streakData.readToday} today
+              </p>
+
+              <div className="flex items-center" style={{ gap: '10px', marginBottom: '16px' }}>
+                {streakData.weekChecks.map((checked, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-center"
+                    style={{
+                      flex: 1,
+                      aspectRatio: '3 / 4',
+                      maxHeight: '64px',
+                      borderRadius: '16px',
+                      background: checked ? '#F3BB4B' : '#17223E',
+                      border: checked ? '1.5px solid #E5A632' : '1.5px solid #4A5565',
+                    }}
+                  >
+                    {checked && (
+                      <img
+                        src="/tick.png"
+                        alt=""
+                        style={{ width: '20px', height: '20px', objectFit: 'contain' }}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <p className="font-arimo" style={{ fontSize: '14px', color: '#99A1AF' }}>
+                {streakData.readToday} of {streakData.targetToday} articles read today
+              </p>
+            </div>
+
+            <div className="flex flex-col" style={{ gap: '16px', marginBottom: '20px' }}>
+              {[
+                {
+                  icon: (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <rect x="0.5" y="0.5" width="15" height="15" rx="3.5" stroke="#16A34A" strokeWidth="1"/>
+                      <path d="M4 8L7 11L12 5" stroke="#16A34A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  ),
+                  label: 'Editorials read',
+                  value: learningStats[0]?.value ?? '0',
+                },
+                {
+                  icon: (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <circle cx="8" cy="8" r="6.5" stroke="#2563EB" strokeWidth="1"/>
+                      <path d="M8 5V8.5L10.5 10" stroke="#2563EB" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  ),
+                  label: 'Total saved',
+                  value: learningStats[1]?.value ?? '0',
+                },
+              ].map((stat) => (
+                <div key={stat.label} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {stat.icon}
+                    <span className="font-arimo" style={{ fontSize: '14px', color: '#364153' }}>{stat.label}</span>
+                  </div>
+                  <span className="font-arimo font-bold" style={{ fontSize: '14px', color: '#101828' }}>{stat.value}</span>
+                </div>
+              ))}
+            </div>
+
             {/* Stats rows */}
-            <div className="flex flex-col" style={{ gap: '16px', marginBottom: '0' }}>
+            <div className="flex flex-col" style={{ gap: '16px', marginBottom: '0', display: 'none' }}>
               {[
                 {
                   icon: (
@@ -1107,7 +1265,7 @@ export default function DailyEditorialPage() {
                         if (!summaryModal.editorial) return;
                         if (summaryModal.editorial.isSaved) {
                           // Already saved — jump to bookmarks
-                          router.push('/dashboard/profile?tab=bookmarks');
+                          router.push('/dashboard/saved-notes?tab=bookmarks');
                           return;
                         }
                         await handleSave(summaryModal.editorial.id);

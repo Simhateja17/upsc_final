@@ -74,16 +74,16 @@ const SUBJECT_ICON_GRADIENTS: Record<string, string> = {
 };
 
 const SUBJECT_CARD_THEMES: Record<string, SubjectCardTheme> = {
-  indianpolity: { bg: '#FDF0DE', border: '#C0D9F5', progress: 72 },
-  indianeconomy: { bg: 'linear-gradient(139.3269deg, #F3EFFD 0%, #EDE7FB 100%)', border: '#E8E1FD', progress: 38 },
-  geography: { bg: 'rgba(201, 168, 76, 0.19)', border: '#B2EDD0', progress: 48 },
-  history: { bg: '#FFF8EE', border: '#FFD5A8', progress: 55 },
-  environment: { bg: 'linear-gradient(139.3269deg, #EDF9F3 0%, #E0F5EA 100%)', border: '#B2EDD0', progress: 62 },
-  ethicsgs4: { bg: 'linear-gradient(139.3269deg, #EEF2F8 0%, #E8EDF6 100%)', border: '#DDE5F0', progress: 32 },
-  essaywriting: { bg: 'linear-gradient(139.3269deg, #FEF5EC 0%, #FEF0E0 100%)', border: '#FFD5A8', progress: 45 },
-  internalsecurity: { bg: 'linear-gradient(139.3269deg, #FEF0F0 0%, #FDE8E8 100%)', border: '#FFCECE', progress: 22, showNew: true },
-  intlrelations: { bg: 'linear-gradient(139.3269deg, #F0EBFF 0%, #E8E1FD 100%)', border: '#E8E1FD', progress: 35 },
-  scienceandtech: { bg: 'linear-gradient(139.3269deg, #E0EBF9 0%, #D4E4F7 100%)', border: '#C0D9F5', progress: 28 },
+  indianpolity: { bg: 'linear-gradient(145deg, #FFF4E2 0%, #FBE9CC 100%)', border: '#F4CCA0', progress: 72 },
+  indianeconomy: { bg: 'linear-gradient(145deg, #F3EEFF 0%, #E7DEFF 100%)', border: '#D7C8FF', progress: 38 },
+  geography: { bg: 'linear-gradient(145deg, #F4ECD2 0%, #ECE3C2 100%)', border: '#D9C88E', progress: 48 },
+  history: { bg: 'linear-gradient(145deg, #FFF7EC 0%, #FCECD8 100%)', border: '#F2CFA5', progress: 55 },
+  environment: { bg: 'linear-gradient(145deg, #EEFBF4 0%, #DCF5E8 100%)', border: '#BCE9D1', progress: 62 },
+  ethicsgs4: { bg: 'linear-gradient(145deg, #EEF4FB 0%, #E4ECF7 100%)', border: '#D1DFF0', progress: 32 },
+  essaywriting: { bg: 'linear-gradient(145deg, #FFF7EE 0%, #FDEBD7 100%)', border: '#F5D0A9', progress: 45 },
+  internalsecurity: { bg: 'linear-gradient(145deg, #FFF1F2 0%, #FDE7EA 100%)', border: '#F6C6CF', progress: 22, showNew: true },
+  intlrelations: { bg: 'linear-gradient(145deg, #F2ECFF 0%, #E9E0FF 100%)', border: '#D8CBFB', progress: 35 },
+  scienceandtech: { bg: 'linear-gradient(145deg, #E7F0FC 0%, #D7E6F8 100%)', border: '#BED4EE', progress: 28 },
 };
 
 const SUBJECT_SORT_ORDER = [
@@ -234,6 +234,10 @@ function formatCardViews(n: number | undefined) {
   return formatViews(n ?? 0);
 }
 
+function getSubjectHeroLabel(name: string) {
+  return name.replace(/^Indian\s+/i, '').trim();
+}
+
 function getVideoViewCount(v: VideoItem) {
   return v.viewCount ?? getFallbackViewCount(`${v.id}-${v.title}`);
 }
@@ -307,7 +311,13 @@ export default function VideoLecturesPage() {
   }, [watchVideo]);
 
   const handleSubjectClick = (name: string) => {
-    setSelectedSubject((prev) => (prev === name ? null : name));
+    setSelectedSubject((prev) => {
+      const next = prev === name ? null : name;
+      if (next && typeof window !== 'undefined') {
+        window.open('https://www.youtube.com/@RiseWithJeet', '_blank', 'noopener,noreferrer');
+      }
+      return next;
+    });
   };
 
   const openVideoActionModal = (type: 'pdf' | 'mentor', video: VideoItem) => {
@@ -401,9 +411,6 @@ export default function VideoLecturesPage() {
           { value: `${apiStats?.totalHours ?? '15'}K+`, label: 'Subscribers', color: '#4ADE80' },
           { value: '4.9', label: 'Ratings', color: '#FFFFFF' },
         ]}
-        heroHeight="312px"
-        titleMarginBottom="10px"
-        contentShiftY={-14}
       />
 
       {/* Browse by Subject */}
@@ -429,9 +436,9 @@ export default function VideoLecturesPage() {
             BROWSE BY SUBJECT
           </div>
           <h2
-            className="font-arimo font-bold"
+            className="font-arimo font-bold sm:whitespace-nowrap"
             style={{
-              fontSize: 'clamp(28px, 3vw, 36px)',
+              fontSize: 'clamp(26px, 2.7vw, 36px)',
               color: '#17223E',
               lineHeight: 1.12,
             }}
@@ -451,10 +458,10 @@ export default function VideoLecturesPage() {
           </div>
         ) : (
           <div
+            className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 justify-center"
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(169px, 169px))',
               justifyContent: 'center',
+              justifyItems: 'center',
               columnGap: '14px',
               rowGap: '16px',
               marginBottom: selectedSubject ? 'clamp(24px, 2.5vw, 36px)' : '0',
@@ -537,12 +544,12 @@ export default function VideoLecturesPage() {
           <div style={{ marginTop: 'clamp(24px, 2.5vw, 36px)' }}>
             <div
               style={{
-                background: '#FFFFFF',
-                border: '1px solid #E9EDF5',
-                borderRadius: '24px',
-                padding: 'clamp(18px, 2.1vw, 28px)',
+                background: 'linear-gradient(180deg, #FCFDFF 0%, #F8FAFD 100%)',
+                border: '1px solid #E3EAF4',
+                borderRadius: '22px',
+                padding: 'clamp(18px, 2vw, 26px)',
                 marginBottom: 'clamp(20px, 2vw, 28px)',
-                boxShadow: '0 18px 45px rgba(15, 23, 42, 0.06)',
+                boxShadow: '0 16px 36px rgba(15, 23, 42, 0.05)',
               }}
             >
               <div className="flex items-start justify-between" style={{ gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
@@ -564,7 +571,7 @@ export default function VideoLecturesPage() {
                       className="font-arimo font-bold"
                       style={{ fontSize: '24px', color: '#101828', lineHeight: '32px' }}
                     >
-                      {selectedSubject} Simplified
+                      {getSubjectHeroLabel(selectedSubject)} Simplified
                     </h2>
                     <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', color: '#4A5565' }}>
                       {'\u{1F4FA}'} {visibleSubjectVideos.length} Video{visibleSubjectVideos.length !== 1 ? 's' : ''}
@@ -572,13 +579,17 @@ export default function VideoLecturesPage() {
                     </p>
                   </div>
                 </div>
-                <div
+                <a
+                  href="https://www.youtube.com/@RiseWithJeet"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-2 font-arimo font-semibold text-white"
                   style={{
                     background: '#17223E',
                     borderRadius: '999px',
                     padding: '8px 14px',
                     fontSize: '13px',
+                    textDecoration: 'none',
                   }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -586,7 +597,7 @@ export default function VideoLecturesPage() {
                     <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#FFFFFF"/>
                   </svg>
                   @RiseWithJeet
-                </div>
+                </a>
               </div>
               {matchedSelectedSubject?.description ? (
                 <p className="font-arimo" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#4A5565', lineHeight: 1.5 }}>
@@ -628,6 +639,23 @@ export default function VideoLecturesPage() {
                         border: '1px solid #E5E7EB',
                       }}
                     >
+                      <div
+                        className="font-arimo font-bold"
+                        style={{
+                          position: 'absolute',
+                          top: '10px',
+                          left: '10px',
+                          background: '#17223E',
+                          color: '#FFFFFF',
+                          borderRadius: '6px',
+                          padding: '4px 8px',
+                          fontSize: '10px',
+                          lineHeight: 1,
+                          zIndex: 1,
+                        }}
+                      >
+                        🔥 HOT
+                      </div>
                       <div
                         className="flex items-center justify-center"
                         style={{ background: '#EFF6FF', height: 'clamp(150px, 14vw, 190px)', position: 'relative' }}
@@ -675,7 +703,7 @@ export default function VideoLecturesPage() {
                             style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                           >
                             <span style={{ fontSize: '14px' }}>{'\u{1F9D1}\u200D\u{1F3EB}'}</span>
-                            Ask Our Team
+                            Ask Mentor
                           </button>
                           <button
                             onClick={() => { const u = video.youtubeUrl || video.url || ''; window.open(u.startsWith('http') ? u : `https://${u}`, '_blank'); }}

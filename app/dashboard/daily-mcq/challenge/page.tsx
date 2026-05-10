@@ -109,8 +109,11 @@ export default function DailyMcqChallengePage() {
   const correctCount = questions.filter((qu) => answers[qu.id] && answers[qu.id] === qu.correctOption).length;
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
-      <main className="flex-1 px-[clamp(1rem,4vw,5rem)] py-4 flex items-center justify-center">
+    <div
+      className="flex flex-col overflow-y-auto"
+      style={{ minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}
+    >
+      <main className="flex-1 px-[clamp(1rem,4vw,5rem)] py-4 md:py-6 flex items-start justify-center">
         <div className="w-full max-w-[940px] mx-auto">
           <div style={{ maxWidth: '940px', borderRadius: '16px', background: 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.96) 100%)', boxShadow: '0 22px 55px -32px rgba(15,23,42,0.28), 0 10px 24px -18px rgba(15,23,42,0.2), inset 0 1px 0 rgba(255,255,255,0.92)', padding: '22px', border: '1px solid rgba(226,232,240,0.95)' }}>
             <div className="mb-5">
@@ -277,7 +280,7 @@ export default function DailyMcqChallengePage() {
               )}
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center justify-between gap-4">
+            <div className="sticky bottom-3 bg-white rounded-xl border border-gray-200 p-3.5 flex items-center justify-between gap-4 z-10 shadow-[0_10px_30px_-20px_rgba(15,23,42,0.45)]">
               <button
                 className="flex items-center gap-2 text-[#101828] hover:opacity-70 transition-opacity disabled:opacity-30"
                 disabled={currentQuestion === 0}

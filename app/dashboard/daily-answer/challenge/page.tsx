@@ -29,6 +29,8 @@ type DailyAnswerSubmitResponse = {
   };
 };
 
+const READING_WINDOW_SECONDS = 15;
+
 export default function DailyMainsChallengeContextPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -39,6 +41,7 @@ export default function DailyMainsChallengeContextPage() {
 
   const [challengeStarted, setChallengeStarted] = useState(false);
   const [textExpanded, setTextExpanded] = useState(false);
+  const [readTimeLeft, setReadTimeLeft] = useState<number | null>(null);
 
   // Timer
   const [timeLeft, setTimeLeft] = useState(15 * 60);
@@ -72,6 +75,22 @@ export default function DailyMainsChallengeContextPage() {
     return () => { if (interval) clearInterval(interval); };
   }, [isActive, timeLeft]);
 
+  useEffect(() => {
+    if (!challengeStarted || readTimeLeft === null) return;
+
+    if (readTimeLeft <= 0) {
+      setReadTimeLeft(null);
+      setIsActive(true);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setReadTimeLeft((prev) => (prev === null ? null : prev - 1));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [challengeStarted, readTimeLeft]);
+
   const formatTime = (s: number) =>
     `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
@@ -80,7 +99,8 @@ export default function DailyMainsChallengeContextPage() {
 
   const handleBeginChallenge = () => {
     setChallengeStarted(true);
-    setIsActive(true);
+    setIsActive(false);
+    setReadTimeLeft(READING_WINDOW_SECONDS);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,8 +170,8 @@ export default function DailyMainsChallengeContextPage() {
   // ── PRE-CHALLENGE: single screen, no scroll ────────────────────────────────
   if (!challengeStarted) {
     return (
-      <div className="flex flex-col bg-[#F3F4F6] font-arimo" style={{ height: '100%', overflow: 'hidden' }}>
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-6 w-full max-w-[1200px] mx-auto">
+      <div className="flex flex-col bg-[#F3F4F6] font-arimo" style={{ minHeight: '100%', overflowY: 'auto' }}>
+        <div className="flex-1 flex flex-col items-center px-6 py-8 w-full max-w-[1200px] mx-auto">
 
           {/* Badge */}
           <div
@@ -167,7 +187,8 @@ export default function DailyMainsChallengeContextPage() {
             className="text-center text-[#17223E] mb-3"
             style={{ fontSize: 'clamp(28px, 3vw, 42px)', lineHeight: '1.2', fontWeight: 400 }}
           >
-            Daily Answer Writing with Detailed Feedback &amp; Evaluation
+            <span className="block">Daily Answer Writing with</span>
+            <span className="block">Detailed Feedback &amp; Evaluation</span>
           </h1>
 
           {/* Description */}
@@ -350,24 +371,59 @@ export default function DailyMainsChallengeContextPage() {
             </div>
 
             <div className="uppercase tracking-widest text-[#6A7282] mb-4" style={{ fontSize: '10px', fontWeight: 600 }}>
-              {isActive ? 'In Progress' : timeLeft === 0 ? 'Time Up' : 'Paused'}
+              {readTimeLeft !== null
+                ? `Auto-start in ${readTimeLeft}s`
+                : isActive
+                  ? 'In Progress'
+                  : timeLeft === 0
+                    ? 'Time Up'
+                    : 'Paused'}
             </div>
+
+            {readTimeLeft !== null && (
+              <p className="text-center text-[#4A5565] mb-4" style={{ fontSize: '12px', lineHeight: '18px' }}>
+                Reading time is live. The writing timer will begin automatically so students can first read the full question.
+              </p>
+            )}
 
             <div className="flex gap-3">
               <button
-                onClick={() => setIsActive(a => !a)}
+                onClick={() => {
+                  if (readTimeLeft !== null) {
+                    setReadTimeLeft(null);
+                    setIsActive(true);
+                    return;
+                  }
+                  setIsActive((active) => !active);
+                }}
                 className="flex items-center justify-center gap-1.5 text-white font-bold transition-transform hover:scale-105"
                 style={{
                   width: '110px', height: '40px',
-                  background: isActive ? '#DC2626' : '#00BC7D',
+                  background: readTimeLeft !== null ? '#17223E' : isActive ? '#DC2626' : '#00BC7D',
                   borderRadius: '10px', fontSize: '14px'
                 }}
               >
-                <img src="/Icon%20(11).png" alt="" style={{ width: '18px', height: '18px', filter: 'brightness(0) invert(1)' }} />
-                {isActive ? 'Pause' : 'Resume'}
+                {readTimeLeft !== null ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M8 5v14M16 5v14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                  </svg>
+                ) : isActive ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M8 5v14M16 5v14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M8 5.5v13l10-6.5-10-6.5Z" fill="currentColor" />
+                  </svg>
+                )}
+                {readTimeLeft !== null ? 'Start now' : isActive ? 'Pause' : 'Resume'}
               </button>
               <button
-                onClick={() => { setIsActive(false); setTimeLeft(data.timeLimit * 60); }}
+                onClick={() => {
+                  setIsActive(false);
+                  setReadTimeLeft(READING_WINDOW_SECONDS);
+                  setTimeLeft(data.timeLimit * 60);
+                }}
                 className="flex items-center justify-center gap-1.5 bg-white border border-[#D1D5DB] text-[#374151] font-bold transition-transform hover:scale-105"
                 style={{ width: '80px', height: '40px', borderRadius: '10px', fontSize: '14px' }}
               >

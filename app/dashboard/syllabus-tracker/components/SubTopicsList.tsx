@@ -66,12 +66,12 @@ export default function SubTopicsList({
   if (!selectedTopic || !subject) {
     return (
       <div className="w-full min-w-0 flex-1 bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm">
-        <div className="p-[11px_15px_10px] border-b-[1.5px] border-[#e0e8f4] flex-shrink-0 flex items-start justify-between gap-[10px]">
+        <div className="p-[10px_13px_9px] border-b-[1.5px] border-[#e0e8f4] flex-shrink-0 flex items-start justify-between gap-[8px]">
           <div>
-            <div className="font-playfair text-[15px] text-[#0f1f3d] font-bold">
+            <div className="font-playfair text-[14px] text-[#0f1f3d] font-bold">
               {placeholderTitle}
             </div>
-            <div className="text-[10.5px] text-[#8795ae] mt-[2px]">
+            <div className="text-[10px] text-[#8795ae] mt-[2px]">
               {placeholderSubtitle}
             </div>
           </div>
@@ -81,7 +81,7 @@ export default function SubTopicsList({
                 key={f}
                 onClick={() => onFilterChange(f as any)}
                 className={`
-                  px-[10px] py-[4px] rounded-[14px] border-[1.5px] text-[11px] font-semibold cursor-pointer transition-all duration-150
+                  px-[9px] py-[3px] rounded-[13px] border-[1.5px] text-[10px] font-semibold cursor-pointer transition-all duration-150
                   ${filter === f 
                     ? 'bg-[#0f1f3d] border-[#0f1f3d] text-white' 
                     : 'border-[#e0e8f4] bg-white text-[#8795ae] hover:border-[#0f1f3d] hover:text-[#0f1f3d]'
@@ -93,9 +93,9 @@ export default function SubTopicsList({
             ))}
           </div>
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center text-[#8795ae] gap-[10px] text-center p-[20px]">
-          <div className="text-[34px] opacity-30">📖</div>
-          <p className="text-[12.5px] max-w-[190px] leading-relaxed font-medium">
+        <div className="flex-1 flex flex-col items-center justify-center text-[#8795ae] gap-[8px] text-center p-[16px]">
+          <div className="text-[26px] opacity-30">📖</div>
+          <p className="text-[11px] max-w-[170px] leading-relaxed font-medium">
             {placeholderBody}
           </p>
         </div>
@@ -339,3 +339,4 @@ export default function SubTopicsList({
     </div>
   );
 }
+

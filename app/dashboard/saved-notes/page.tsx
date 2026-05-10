@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { editorialService, mentalHealthService } from '@/lib/services';
 
 interface SavedEditorial {
@@ -33,10 +34,21 @@ const categoryColors: Record<string, { color: string; bg: string }> = {
 };
 
 export default function SavedNotesPage() {
+  const searchParams = useSearchParams();
   const [savedNotes, setSavedNotes] = useState<SavedEditorial[]>([]);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'notes' | 'bookmarks' | 'checkins'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'bookmarks' | 'checkins'>(() => {
+    const requestedTab = searchParams.get('tab');
+    return requestedTab === 'bookmarks' || requestedTab === 'checkins' ? requestedTab : 'notes';
+  });
+
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    if (requestedTab === 'bookmarks' || requestedTab === 'checkins' || requestedTab === 'notes') {
+      setActiveTab(requestedTab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     Promise.all([
@@ -241,9 +253,13 @@ export default function SavedNotesPage() {
       ) : savedNotes.length === 0 ? (
         <div className="text-center py-16">
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>📌</div>
-          <h3 className="font-semibold text-[18px] text-[#0f172b] mb-2">No saved notes yet</h3>
+          <h3 className="font-semibold text-[18px] text-[#0f172b] mb-2">
+            {activeTab === 'bookmarks' ? 'No bookmarks yet' : 'No saved notes yet'}
+          </h3>
           <p className="text-[14px] text-[#62748e] mb-6">
-            Start saving editorials from the Daily Editorial page to build your collection.
+            {activeTab === 'bookmarks'
+              ? 'Bookmark editorials from the Daily Editorial page to keep them in one place.'
+              : 'Start saving editorials from the Daily Editorial page to build your collection.'}
           </p>
           <Link href="/dashboard/daily-editorial">
             <button

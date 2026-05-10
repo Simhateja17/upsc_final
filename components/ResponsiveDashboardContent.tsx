@@ -609,18 +609,9 @@ const ResponsiveDashboardContent = () => {
                     alt="MCQ"
                     className="w-7 h-7 object-contain"
                   />
-                  {isMcqCompleted ? (
-                    <span
-                      className="inline-flex items-center rounded-[8px] px-[10px] py-[2px] font-inter font-bold text-[clamp(18px,1.15vw,20px)] leading-[32px] text-[#0E182D]"
-                      style={{ background: '#F0AE00' }}
-                    >
-                      Daily MCQ Challenge
-                    </span>
-                  ) : (
-                    <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
-                      Daily MCQ Challenge
-                    </h3>
-                  )}
+                  <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
+                    Daily MCQ Challenge
+                  </h3>
                 </div>
 
                 <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-gray-600 mb-2">

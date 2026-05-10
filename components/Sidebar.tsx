@@ -77,7 +77,6 @@ const Sidebar = ({ forceShow = false, isOpen, onClose }: SidebarProps) => {
     },
   ];
 
-  // Hide dashboard sidebar on Jeet GPT — it has its own sidebar (unless explicitly forced)
   const asideWidth = isCollapsed ? 'w-[60px] min-w-[60px]' : 'w-[260px] min-w-[260px]';
 
   return (

@@ -7,17 +7,20 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 interface HeroSectionProps {
   states: TrackerState;
   syllabusData: SyllabusData;
-  userName?: string;
   cms?: Record<string, any>;
 }
 
-export default function HeroSection({ states, syllabusData, userName, cms }: HeroSectionProps) {
-  const badgeText = cms?.hero_badge || 'PERSONALIZED SYLLABUS TRACKER';
-  const titlePrefix = cms?.hero_title_prefix || 'Know Exactly Where You Stand,';
-  const titleSuffix = cms?.hero_title_suffix || '.';
-  const subtitle =
+export default function HeroSection({ states, syllabusData, cms }: HeroSectionProps) {
+  const badgeText = cms?.hero_badge || 'Personalized Syllabus Tracker';
+  const titlePrefix = cms?.hero_title_prefix || 'Know Exactly Where You Stand';
+  const titleSuffix = cms?.hero_title_suffix || '';
+  const subtitle = (
     cms?.hero_subtitle ||
-    "Your UPSC syllabus, fully mapped. Track every topic across Prelims, Mains and Optional, see what's done, what's pending, and what to conquer next.";
+    "Your UPSC syllabus, fully mapped. Track every topic across Prelims, Mains and Optional, see what's done, what's pending, and what to conquer next."
+  )
+    .replace(/â€”/g, ',')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
   const statLabels = (() => {
     try {
       return JSON.parse(cms?.stat_labels || '{}');
@@ -68,25 +71,19 @@ export default function HeroSection({ states, syllabusData, userName, cms }: Her
         />
       }
       badgeText={badgeText}
-      heroBorderRadius={16}
-      heroHeight="auto"
-      heroMinHeight="344px"
+      heroBorderRadius={0}
+      statsBorderRadius={0}
       heroMarginInline={0}
-      heroBackground="#0A1731"
-      heroBackgroundImage="url('/syllabus-tracker-hero.png')"
-      heroBackgroundPosition="center"
-      heroBackgroundSize="cover"
+      heroBackground="#0F131F"
       showDotGrid={false}
       rightElement={null}
       title={
         <>
-          {titlePrefix}{' '}
-          <em style={{ color: '#e8a820', fontStyle: 'italic' }}>{userName || 'Aspirant'}</em>
+          {titlePrefix}
           {titleSuffix}
         </>
       }
       subtitle={subtitle}
-      titleMarginBottom={12}
       stats={[
         { value: `${overallPct}%`, label: statLabels.overall || 'Overall', color: '#F5A623' },
         { value: String(allDone), label: statLabels.done || 'Done', color: '#FF7070' },
@@ -96,3 +93,4 @@ export default function HeroSection({ states, syllabusData, userName, cms }: Her
     />
   );
 }
+

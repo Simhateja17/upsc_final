@@ -242,6 +242,17 @@ function NextStepsInner() {
         </div>
 
         {/* ── 2x2 Option Cards ── */}
+        <div>
+          <p style={{
+            fontSize: '12px',
+            fontWeight: 800,
+            letterSpacing: '1.2px',
+            textTransform: 'uppercase',
+            color: '#6B7280',
+            margin: '0 0 16px 4px',
+          }}>
+            Next Steps
+          </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
           {cards.map((card) => (
             <div
@@ -315,6 +326,7 @@ function NextStepsInner() {
               </div>
             </div>
           ))}
+        </div>
         </div>
 
         {/* ── Streak Card ── */}
