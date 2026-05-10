@@ -331,26 +331,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── WHY RISE BANNER ── */}
-      <div className="why-banner-wrap">
-        <div className="why-banner reveal">
-          <div className="why-banner-books" aria-hidden="true">📚</div>
-          <div className="why-banner-left">
-            <div className="why-badge"><span>★</span> Why Rise with Jeet</div>
-            <h2 className="why-heading">
-              Not just notes.<br />
-              A <span className="why-heading-accent">system built to crack UPSC.</span>
-            </h2>
-            <p className="why-sub">
-              Every PDF is designed with one obsession — your selection. Here&apos;s what makes us different from every other resource out there.
-            </p>
-          </div>
-          <div className="why-stat">
-            <div className="why-stat-val">15K+</div>
-            <div className="why-stat-label">Aspirants trust<br />Rise with Jeet</div>
-          </div>
-        </div>
-      </div>
 
       {/* ── AI SECTION ── */}
       <section className="ai-section" id="ai">
