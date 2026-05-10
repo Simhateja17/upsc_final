@@ -308,7 +308,7 @@ export default function LandingPage() {
         </div>
         <div className="modules-grid-full">
           {[
-            { card: 'mc-gold', wrap: 'mw-gold', title: 'Daily MCQ Practice', desc: 'Subject-wise & topic-wise MCQs with detailed explanations. New questions every day, curated by experts.', tag: 'tag-gold', tagLabel: 'Daily Practice', delay: 1, icon: '/sidebar-daily-mcq-new.png' },
+            { card: 'mc-gold', wrap: 'mw-gold', title: 'Daily MCQ Practice', desc: 'Subject-wise & topic-wise MCQs with detailed explanations. New questions every day, curated by experts.', tag: 'tag-gold', tagLabel: 'Daily Practice', delay: 1, icon: '/assets/daily-mcq-practice.png' },
             { card: 'mc-cyan', wrap: 'mw-cyan', title: 'Mock Tests', desc: 'Full-length Prelims & Mains simulations in UPSC pattern. Timed, scored, ranked.', tag: 'tag-cyan', tagLabel: 'Test Series', delay: 2, icon: '/sidebar-mock-tests-new.png' },
             { card: 'mc-violet', wrap: 'mw-violet', title: 'Previous Year Questions', desc: '30 years of PYQs with trend analysis, topic clustering, and examiner insights.', tag: 'tag-violet', tagLabel: 'PYQ Bank', delay: 3, icon: '/sidebar-pyq-new.png' },
             { card: 'mc-emerald', wrap: 'mw-emerald', title: 'Answer Writing', desc: 'Daily mains practice with AI-powered instant evaluation and UPSC-style marking schemes.', tag: 'tag-emerald', tagLabel: 'AI Evaluated', delay: 4, icon: '/sidebar-daily-answer-new.png' },
