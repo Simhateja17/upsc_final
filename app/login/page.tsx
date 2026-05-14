@@ -75,13 +75,10 @@ function LoginPageContent() {
 
     try {
       await login({ email: loginEmail, password: loginPassword });
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('rwj_has_logged_in', '1');
-        sessionStorage.setItem('rwj_login_success', '1');
-        window.location.replace('/dashboard');
-        return;
-      }
-      // Redirect immediately after login succeeds - don't wait for useEffect
+      localStorage.setItem('rwj_has_logged_in', '1');
+      sessionStorage.setItem('rwj_login_success', '1');
+      // Client-side nav preserves the AuthContext so the dashboard sees
+      // isAuthenticated:true immediately — no full-page reload race condition.
       router.replace('/dashboard');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed. Please try again.';
@@ -123,6 +120,8 @@ function LoginPageContent() {
         lastName: signupLastName,
         phone: signupPhone || undefined,
       });
+      // Mark a fresh login so the onboarding modal triggers on dashboard
+      sessionStorage.setItem('rwj_login_success', '1');
       setActiveTab('success');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Signup failed. Please try again.';
@@ -175,7 +174,7 @@ function LoginPageContent() {
 
   return (
     <div className="flex w-full min-h-screen" style={{ fontFamily: "'Inter', 'Outfit', sans-serif" }}>
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
         .success-burst {
           position: absolute;
@@ -203,7 +202,7 @@ function LoginPageContent() {
           18% { opacity: 1; }
           100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--burst-rotate)) translateY(-58px) scale(1); }
         }
-      `}</style>
+      ` }} />
       {/* ── LEFT PANEL ── */}
       <div
         className="relative flex-shrink-0"

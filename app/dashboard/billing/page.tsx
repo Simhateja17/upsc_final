@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { pricingService, userService } from '@/lib/services';
-import DashboardPageHero from '@/components/DashboardPageHero';
 
 type SubscriptionPlan = 'free' | 'trial' | 'pro' | 'pro-annual';
 type SubscriptionStatus = 'active' | 'cancelled' | 'expired' | 'trial';
@@ -34,209 +34,198 @@ interface ApiPlan {
   isPopular?: boolean;
 }
 
-interface ShowcasePlan {
-  id: 'starter' | 'scholar' | 'pro';
-  eyebrow: string;
-  name: string;
-  description: string;
-  monthlyPrice: number;
-  yearlyMonthlyPrice: number;
-  yearlyLabel: string;
-  features: string[];
-  sectionLabels?: string[];
-  featured?: boolean;
-  dark?: boolean;
+function CancelSubscriptionModal({
+  open,
+  onClose,
+  onConfirmCancel,
+  pending,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirmCancel: () => void;
+  pending: boolean;
+}) {
+  const [reason, setReason] = useState('');
+  const [choice, setChoice] = useState<'support' | 'cancel' | null>(null);
+  if (!open) return null;
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(10,17,32,0.45)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ width: '100%', maxWidth: 760, borderRadius: 24, background: '#F5F7FC', border: '1px solid #E5E7EB', padding: 28 }}>
+        <h3 style={{ margin: '0 0 8px', color: '#EF4444', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 42, fontWeight: 600 }}>Cancel Subscription?</h3>
+        <p style={{ margin: '0 0 14px', color: '#7C88A6', fontSize: 14 }}>We're sorry to see you go. Here's what you'll lose:</p>
+        <div style={{ border: '1px solid #FCD5D8', background: '#FFF6F7', borderLeft: '4px solid #EF4444', borderRadius: 10, padding: 16, marginBottom: 12 }}>
+          <p style={{ margin: '0 0 10px', color: '#EF4444', fontSize: 14 }}>Your plan remains active until April 15, 2027. After that, you'll be downgraded to the free Starter plan. You will permanently lose :</p>
+          {['Unlimited Jeet AI Chats', 'Unlimited AI Mains Evaluations', 'Priority Answer Review', 'Mental Health Buddy', 'Unlimited Mock Tests'].map((item) => (
+            <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#334155', marginBottom: 6 }}>
+              <span style={{ color: '#EF4444', fontWeight: 700 }}>✕</span>
+              <span style={{ fontSize: 14 }}>{item}</span>
+            </div>
+          ))}
+        </div>
+        <label style={{ display: 'block', marginBottom: 6, color: '#475569', fontSize: 14 }}>What's making you leave? (required)</label>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Share what is not working for you, every word helps us to improve..."
+          style={{ width: '100%', height: 86, borderRadius: 10, border: '1px solid #BFD2F3', background: '#fff', padding: 12, fontSize: 14, resize: 'none', marginBottom: 12 }}
+        />
+        <p style={{ margin: '0 0 8px', color: '#475569', fontSize: 14 }}>Is there anything we could do to change your mind?</p>
+        <button type="button" onClick={() => setChoice('support')} style={{ width: '100%', marginBottom: 8, textAlign: 'left', borderRadius: 10, border: '1px solid #BFD2F3', background: '#fff', padding: '10px 12px', color: '#475569', fontSize: 14 }}>
+          ○ Connect me with Support
+        </button>
+        <button type="button" onClick={() => setChoice('cancel')} style={{ width: '100%', marginBottom: 16, textAlign: 'left', borderRadius: 10, border: '1px solid #BFD2F3', background: '#fff', padding: '10px 12px', color: '#475569', fontSize: 14 }}>
+          ○ No, I have made my decision
+        </button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <button type="button" onClick={onClose} style={{ borderRadius: 10, border: 'none', background: '#091A37', color: '#fff', fontWeight: 700, padding: '12px 14px' }}>
+            Keep My Plan
+          </button>
+          <button
+            type="button"
+            disabled={pending || !reason.trim() || choice !== 'cancel'}
+            onClick={onConfirmCancel}
+            style={{ borderRadius: 10, border: '1px solid #F9C9CF', background: '#fff', color: '#EF4444', fontWeight: 700, padding: '12px 14px', opacity: pending || !reason.trim() || choice !== 'cancel' ? 0.6 : 1 }}
+          >
+            {pending ? 'Cancelling...' : 'Yes, Cancel Plan'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-const fallbackShowcasePlans: ShowcasePlan[] = [
-  {
-    id: 'starter',
-    eyebrow: 'Forever Free',
-    name: 'Starter',
-    description: 'Build daily study habits. Begin your UPSC prep without spending a rupee.',
-    monthlyPrice: 0,
-    yearlyMonthlyPrice: 0,
-    yearlyLabel: 'Always free, no card needed',
-    features: [
-      '10 MCQs / day',
-      'Daily Mains Challenge (1 Q)',
-      'Daily News Analysis - The Hindu & IE',
-      '10,000+ Previous Year Questions',
-      'Study Planner & Time Tracker',
-      'Daily Leaderboard',
-      'Jeet AI - 10 chats/day',
-      'Limited Revision Suite',
-    ],
-  },
-  {
-    id: 'scholar',
-    eyebrow: 'Dedicated Study',
-    name: 'Scholar',
-    description: 'For serious aspirants who study daily and want measurable progress.',
-    monthlyPrice: 499,
-    yearlyMonthlyPrice: 415,
-    yearlyLabel: 'Rs 4,988/yr - billed annually',
-    features: [
-      'Everything in Starter',
-      'Evaluation',
-      '5 AI Mains Evaluations / day',
-      '10 Mock Test attempts / month',
-      'Syllabus Tracker',
-      'Analytics',
-      'Test Analytics',
-      'Performance Analytics Dashboard',
-      'Revision & AI',
-      'Full Revision Suite - Flashcards, Mindmap, Spaced Rep.',
-      'Jeet AI - 50 chats/day',
-      'Study Groups & Discussion Forum',
-    ],
-    sectionLabels: ['Evaluation', 'Analytics', 'Revision & AI'],
-    featured: true,
-    dark: true,
-  },
-  {
-    id: 'pro',
-    eyebrow: 'Maximum Learning',
-    name: 'Pro Aspirant',
-    description: 'Unlimited tools, zero limits. For aspirants who leave nothing to chance.',
-    monthlyPrice: 999,
-    yearlyMonthlyPrice: 832,
-    yearlyLabel: 'Rs 9,988/yr - billed annually',
-    features: [
-      'Everything in Scholar',
-      'Unlimited Access',
-      'Unlimited AI Mains Evaluations',
-      'Unlimited Mock Test Practice',
-      'Jeet AI - Unlimited chats',
-      'Priority Features',
-      'Priority Answer Review',
-      'Q&A Forum - Priority Responses',
-      'Mental Health Buddy',
-      'Early Access to New Features',
-    ],
-    sectionLabels: ['Unlimited Access', 'Priority Features'],
-    dark: true,
-  },
-];
+function BillingAddressModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [form, setForm] = useState({ fullName: 'Tanshi', email: 'tanshi494@gmail.com', phone: '+91 XXXXXXXXXX', city: 'Delhi', state: 'Delhi' });
+  if (!open) return null;
 
-const addonCards = [
-  {
-    icon: 'P',
-    title: 'Prelims Test Series',
-    description: '10 full-length Prelims mocks with detailed analysis & rank prediction',
-    price: 'Rs 499',
-    unit: '/ pack',
-    cta: 'Add to Cart ->',
-  },
-  {
-    icon: 'M',
-    title: 'Mains Test Series',
-    description: 'GS Paper I-IV full mocks with expert evaluation & model answers',
-    price: 'Rs 799',
-    unit: '/ pack',
-    cta: 'Add to Cart ->',
-  },
-  {
-    icon: '1:1',
-    title: '1-on-1 Mentorship',
-    description: 'Book a session with a UPSC-cleared mentor for personalised strategy',
-    price: 'Rs 999',
-    unit: '/ session',
-    cta: 'Book a Session ->',
-  },
-];
-
-const faqs = [
-  {
-    q: 'Can I cancel anytime?',
-    a: "Yes, absolutely. You can cancel your subscription at any time from this page. Your access continues until the end of your current billing period. We don't charge any cancellation fees.",
-  },
-  {
-    q: 'What happens after my 7-day free trial?',
-    a: 'You can continue on a paid plan or stay on Starter. Your study data, progress and notes remain available on your account.',
-  },
-  {
-    q: 'Is my payment information secure?',
-    a: 'Yes. Payments are processed through secure gateways with encryption and standard payment-compliance controls.',
-  },
-  {
-    q: 'Can I switch between plans?',
-    a: 'Yes. You can switch or upgrade any time. Plan changes apply from the next billing cycle unless stated otherwise.',
-  },
-  {
-    q: 'Do you offer refunds?',
-    a: 'If you need help with a charge, contact support from this page and our billing team will guide you based on the active policy.',
-  },
-];
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(10,17,32,0.45)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ width: '100%', maxWidth: 760, borderRadius: 24, background: '#F5F7FC', border: '1px solid #E5E7EB', padding: 28 }}>
+        <h3 style={{ margin: '0 0 4px', color: '#1F2937', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 42, fontWeight: 600 }}>Update Billing Address</h3>
+        <p style={{ margin: '0 0 14px', color: '#7C88A6', fontSize: 14 }}>Used for GST invoice generation.</p>
+        <div style={{ display: 'grid', gap: 10 }}>
+          <label style={{ color: '#7C88A6', fontSize: 11, fontWeight: 700, letterSpacing: '1px' }}>FULL NAME</label>
+          <input value={form.fullName} onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))} style={{ borderRadius: 10, border: '1px solid #D9D5CD', background: '#F7F5F1', padding: '12px 14px' }} />
+          <label style={{ color: '#7C88A6', fontSize: 11, fontWeight: 700, letterSpacing: '1px' }}>EMAIL</label>
+          <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} style={{ borderRadius: 10, border: '1px solid #D9D5CD', background: '#F7F5F1', padding: '12px 14px' }} />
+          <label style={{ color: '#7C88A6', fontSize: 11, fontWeight: 700, letterSpacing: '1px' }}>PHONE</label>
+          <input value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} style={{ borderRadius: 10, border: '1px solid #D9D5CD', background: '#F7F5F1', padding: '12px 14px' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <label style={{ color: '#7C88A6', fontSize: 11, fontWeight: 700, letterSpacing: '1px' }}>CITY</label>
+              <input value={form.city} onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))} style={{ marginTop: 8, width: '100%', borderRadius: 10, border: '1px solid #D9D5CD', background: '#F7F5F1', padding: '12px 14px' }} />
+            </div>
+            <div>
+              <label style={{ color: '#7C88A6', fontSize: 11, fontWeight: 700, letterSpacing: '1px' }}>STATE</label>
+              <input value={form.state} onChange={(e) => setForm((p) => ({ ...p, state: e.target.value }))} style={{ marginTop: 8, width: '100%', borderRadius: 10, border: '1px solid #D9D5CD', background: '#F7F5F1', padding: '12px 14px' }} />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
+            <button type="button" onClick={onClose} style={{ borderRadius: 10, border: '1px solid #D1D5DB', background: '#F0F2F7', color: '#475569', fontWeight: 700, padding: '12px 14px' }}>Cancel</button>
+            <button type="button" onClick={onClose} style={{ borderRadius: 10, border: 'none', background: '#E0B43F', color: '#111827', fontWeight: 700, padding: '12px 14px' }}>Save Address</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function formatDate(value?: string) {
-  if (!value) return 'Not available';
+  if (!value) return 'N/A';
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return 'Not available';
+  if (Number.isNaN(d.getTime())) return 'N/A';
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function mapApiPlansToShowcase(apiPlans: ApiPlan[]): ShowcasePlan[] {
-  if (!Array.isArray(apiPlans) || apiPlans.length === 0) {
-    return fallbackShowcasePlans;
-  }
-
-  const freeApi = apiPlans.find((p) => Number(p.price || 0) === 0);
-  const paidApi = apiPlans.filter((p) => Number(p.price || 0) > 0).sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
-  const scholarApi = paidApi[0];
-  const proApi = paidApi[1] || paidApi[0];
-
-  const scholarMonthly = Number(scholarApi?.price || fallbackShowcasePlans[1].monthlyPrice);
-  const proMonthly = Number(proApi?.price || fallbackShowcasePlans[2].monthlyPrice);
-
-  return [
-    {
-      ...fallbackShowcasePlans[0],
-      description: freeApi?.description || fallbackShowcasePlans[0].description,
-      features: Array.isArray(freeApi?.features) && freeApi!.features!.length > 0 ? freeApi!.features! : fallbackShowcasePlans[0].features,
-    },
-    {
-      ...fallbackShowcasePlans[1],
-      monthlyPrice: scholarMonthly,
-      yearlyMonthlyPrice: Math.max(1, Math.round(scholarMonthly * 0.83)),
-      yearlyLabel: `Rs ${Math.max(1, Math.round(scholarMonthly * 0.83 * 12)).toLocaleString('en-IN')}/yr - billed annually`,
-      features: Array.isArray(scholarApi?.features) && scholarApi!.features!.length > 0
-        ? ['Everything in Starter', ...scholarApi!.features!]
-        : fallbackShowcasePlans[1].features,
-    },
-    {
-      ...fallbackShowcasePlans[2],
-      monthlyPrice: proMonthly,
-      yearlyMonthlyPrice: Math.max(1, Math.round(proMonthly * 0.83)),
-      yearlyLabel: `Rs ${Math.max(1, Math.round(proMonthly * 0.83 * 12)).toLocaleString('en-IN')}/yr - billed annually`,
-      features: Array.isArray(proApi?.features) && proApi!.features!.length > 0
-        ? ['Everything in Scholar', ...proApi!.features!]
-        : fallbackShowcasePlans[2].features,
-    },
-  ];
+// ── Hero ──────────────────────────────────────────────────────────────────────
+function BillingHero() {
+  return (
+    <div
+      className="relative overflow-hidden flex flex-col items-center justify-center"
+      style={{
+        background: 'linear-gradient(180deg, #0B1428 0%, #0F1C35 100%)',
+        minHeight: 280,
+        padding: '40px 24px 48px',
+      }}
+    >
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(rgba(255,255,255,.03) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+        }}
+      />
+      <div className="relative z-10 flex items-center gap-3 mb-5">
+        <span style={{ display: 'block', width: 44, height: 1, background: 'linear-gradient(to right, transparent, #C8972A)' }} />
+        <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '2.5px', color: '#C8972A', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+          Billing &amp; Plans
+        </span>
+        <span style={{ display: 'block', width: 44, height: 1, background: 'linear-gradient(to left, transparent, #C8972A)' }} />
+      </div>
+      <h1
+        className="relative z-10 text-center"
+        style={{
+          fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif',
+          fontWeight: 600,
+          fontSize: 'clamp(28px, 3.6vw, 58px)',
+          lineHeight: 1.15,
+          color: '#FFFFFF',
+          marginBottom: 16,
+        }}
+      >
+        <span style={{ display: 'block', whiteSpace: 'nowrap' }}>Your IAS Journey Deserves</span>
+        <span style={{ display: 'block', whiteSpace: 'nowrap' }}>
+          a{' '}
+          <em style={{ color: '#E8A820', fontStyle: 'italic', fontWeight: 600 }}>Smarter</em>
+          {' '}Foundation
+        </span>
+      </h1>
+      <p className="relative z-10 text-center" style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.45)', margin: 0 }}>
+        No hidden fees. No surprise charges. Cancel anytime.
+      </p>
+    </div>
+  );
 }
 
-function isSectionLabel(feature: string, labels?: string[]) {
-  return Boolean(labels?.includes(feature));
+// ── Tab bar ───────────────────────────────────────────────────────────────────
+function TabBar() {
+  const router = useRouter();
+  return (
+    <div className="flex justify-center" style={{ padding: '12px 0 0' }}>
+      <div style={{ display: 'inline-flex', background: '#fff', border: '1px solid rgba(11,22,40,0.09)', borderRadius: 14, padding: 5, boxShadow: '0 2px 8px rgba(11,22,40,0.07)' }}>
+        <button
+          type="button"
+          style={{ borderRadius: 10, padding: '10px 28px', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer', border: 'none', background: '#090E1C', color: '#E8B84B' }}
+        >
+          My Plan &amp; Billing
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push('/dashboard/billing/plans')}
+          style={{ borderRadius: 10, padding: '10px 28px', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', color: '#6B7A99' }}
+        >
+          Explore Plans
+        </button>
+      </div>
+    </div>
+  );
 }
 
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function BillingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const trialJustStarted = searchParams.get('trial') === 'started';
-
   const billingRef = useRef<HTMLElement | null>(null);
-  const plansRef = useRef<HTMLElement | null>(null);
-
-  const [activeTab, setActiveTab] = useState<'billing' | 'plans'>('plans');
-  const [cycle, setCycle] = useState<'monthly' | 'yearly'>('yearly');
 
   const [sub, setSub] = useState<Subscription | null>(null);
   const [orders, setOrders] = useState<OrderItem[]>([]);
-  const [apiPlans, setApiPlans] = useState<ApiPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
-  const [openFaq, setOpenFaq] = useState(0);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [cancelPending, setCancelPending] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -248,11 +237,8 @@ export default function BillingPage() {
         setSub(subRes.data || { plan: 'free', status: 'expired' });
         setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
       } catch {
-        const localPlan = typeof window !== 'undefined'
-          ? (localStorage.getItem('userPlan') as SubscriptionPlan | null)
-          : null;
+        const localPlan = typeof window !== 'undefined' ? (localStorage.getItem('userPlan') as SubscriptionPlan | null) : null;
         const trialEnd = typeof window !== 'undefined' ? localStorage.getItem('proTrialEnd') : null;
-
         if (localPlan === 'trial' && trialEnd) {
           setSub({ plan: 'trial', status: 'trial', trialEndsOn: trialEnd, amount: '7-day free trial' });
         } else {
@@ -262,50 +248,16 @@ export default function BillingPage() {
         setLoading(false);
       }
     }
-
     fetchData();
   }, []);
 
-  useEffect(() => {
-    pricingService.getPlans()
-      .then((res) => {
-        const rows = Array.isArray(res?.data) ? res.data : [];
-        setApiPlans(rows);
-      })
-      .catch(() => setApiPlans([]));
-  }, []);
+  // TODO: remove PREVIEW_PAID — set to false to restore real plan detection
+  const PREVIEW_PAID = true;
+  const isPaidUser = PREVIEW_PAID || sub?.plan === 'pro' || sub?.plan === 'pro-annual' || sub?.plan === 'trial';
 
-  const showcasePlans = useMemo(() => mapApiPlansToShowcase(apiPlans), [apiPlans]);
-  const isPaidUser = sub?.plan === 'pro' || sub?.plan === 'pro-annual' || sub?.plan === 'trial';
-
-  const planTitle = sub?.plan === 'trial'
-    ? 'Trial Plan'
-    : sub?.plan === 'pro-annual'
-      ? 'Pro Aspirant Annual'
-      : sub?.plan === 'pro'
-        ? 'Pro Aspirant'
-        : 'Starter';
-
-  const planMeta = sub?.status === 'trial'
-    ? `Trial ends ${formatDate(sub?.trialEndsOn)}`
-    : sub?.renewsOn
-      ? `Renews ${formatDate(sub.renewsOn)}`
-      : 'No active renewal date';
-
-  const scrollToSection = (section: 'billing' | 'plans') => {
-    setActiveTab(section);
-    const target = section === 'billing' ? billingRef.current : plansRef.current;
-    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  const handleUpgrade = () => {
-    setActionMsg(null);
-    router.push('/pricing');
-  };
-
+  const handleUpgrade = () => router.push('/dashboard/billing/plans');
   const handleCancel = async () => {
-    if (!confirm('Cancel your subscription? You will keep access until the end of the current period.')) return;
-
+    setCancelPending(true);
     try {
       await userService.cancelSubscription();
       setSub({ plan: 'free', status: 'expired' });
@@ -314,8 +266,11 @@ export default function BillingPage() {
         localStorage.removeItem('proTrialEnd');
       }
       setActionMsg('Subscription cancelled. Your access remains active until the current period ends.');
-    } catch (err: any) {
-      setActionMsg(err?.message || 'Unable to cancel right now. Please try again.');
+      setShowCancelModal(false);
+    } catch (err: unknown) {
+      setActionMsg((err as { message?: string })?.message || 'Unable to cancel right now. Please try again.');
+    } finally {
+      setCancelPending(false);
     }
   };
 
@@ -328,332 +283,172 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFBFE] pb-16" style={{ fontFamily: 'var(--font-inter)' }}>
-      <DashboardPageHero
-        badgeText="BILLING & PLANS"
-        title={
-          <>
-            Your IAS Journey Deserves
-            <br />
-            a <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Smarter</em> Foundation
-          </>
-        }
-        subtitle="No hidden fees · Cancel anytime · Start free today"
-        stats={[
-          { value: planTitle, label: 'Current Plan', color: '#FDC700' },
-          { value: sub?.status ? sub.status.charAt(0).toUpperCase() + sub.status.slice(1) : 'Free', label: 'Status', color: '#4ADE80' },
-          { value: sub?.renewsOn ? formatDate(sub.renewsOn) : (sub?.trialEndsOn ? formatDate(sub.trialEndsOn) : 'N/A'), label: sub?.status === 'trial' ? 'Trial Ends' : 'Renews On', color: '#60A5FA' },
-          { value: sub?.amount || 'Free', label: 'Amount', color: '#FFFFFF' },
-        ]}
-      />
+    <div className="min-h-screen" style={{ background: '#E9EAEE', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <BillingHero />
+      <TabBar />
 
-      <div className="mx-auto w-fit rounded-xl border border-[rgba(11,22,40,0.09)] bg-white p-1.5 shadow-[0_2px_7px_rgba(11,22,40,0.07)]" style={{ marginTop: '-28px', position: 'relative', zIndex: 10 }}>
-        <button
-          type="button"
-          onClick={() => scrollToSection('billing')}
-          className={`rounded-[9px] px-7 py-2.5 text-[13px] font-semibold transition ${
-            activeTab === 'billing' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'
-          }`}
-        >
-          My Plan & Billing
-        </button>
-        <button
-          type="button"
-          onClick={() => scrollToSection('plans')}
-          className={`rounded-[9px] px-7 py-2.5 text-[13px] font-semibold transition ${
-            activeTab === 'plans' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'
-          }`}
-        >
-          Explore Plans
-        </button>
-      </div>
+      <div className="mx-auto mt-3 flex w-full max-w-[1120px] flex-col gap-8 px-4 pb-20 sm:px-6 lg:px-8" style={{ overflow: 'visible' }}>
 
-      <div className="mx-auto mt-8 flex w-full max-w-[1200px] flex-col gap-8 px-4 sm:px-6 lg:px-8">
         {trialJustStarted && (
-          <div className="rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-[14px] text-[#166534]">
+          <div style={{ borderRadius: 12, border: '1px solid #BBF7D0', background: '#F0FDF4', padding: '12px 16px', fontSize: 14, color: '#166534' }}>
             Your 7-day free trial is active. Enjoy full access until {formatDate(sub?.trialEndsOn)}.
           </div>
         )}
 
         {actionMsg && (
-          <div className="rounded-xl border border-[#FCD9B6] bg-[#FFF7ED] px-4 py-3 text-[14px] text-[#9A3412]">
+          <div style={{ borderRadius: 12, border: '1px solid #FCD9B6', background: '#FFF7ED', padding: '12px 16px', fontSize: 14, color: '#9A3412' }}>
             {actionMsg}
           </div>
         )}
 
-        <section
-          ref={billingRef}
-          className="rounded-2xl border border-[rgba(232,184,75,0.2)] bg-[#070D1C] px-6 py-6 md:px-9 md:py-7"
-        >
-          <div className="flex flex-col items-start justify-between gap-5 lg:flex-row lg:items-center">
-            <div className="flex items-start gap-4">
-              <div className="flex h-[54px] w-[54px] items-center justify-center rounded-xl border border-[rgba(232,184,75,0.3)] bg-[rgba(232,184,75,0.12)] text-[15px] font-bold text-[#E8B84B]">PRO</div>
+        {/* ── My Plan & Billing ── */}
+        <section ref={billingRef} style={{ scrollMarginTop: 80, display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 8, overflow: 'visible' }}>
+
+          {/* Plan header card */}
+          <div style={{
+            borderRadius: 16,
+            background: 'linear-gradient(160deg, #0A1120 0%, #0F1C35 100%)',
+            display: 'flex',
+            padding: '29px 37px 37px 37px',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            alignSelf: 'stretch',
+            position: 'relative',
+            overflow: 'visible',
+          }}>
+            {/* Left — icon + plan info */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 68, height: 68, borderRadius: 14, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111827', border: '1.5px solid rgba(232,184,75,0.45)' }}>
+                <Image src="/ksp.png" alt="Plan" width={26} height={26} style={{ objectFit: 'contain' }} />
+              </div>
               <div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="text-[34px] leading-none text-white" style={{ fontFamily: 'var(--font-cormorant)' }}>
-                    {isPaidUser ? "You're on Pro Aspirant" : 'You are on Starter'}
-                  </h2>
-                  <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold tracking-[0.3px] ${
-                    isPaidUser
-                      ? 'border border-[rgba(34,197,94,0.3)] bg-[rgba(34,197,94,0.15)] text-[#4ADE80]'
-                      : 'border border-[rgba(148,163,184,0.35)] bg-[rgba(148,163,184,0.12)] text-[#CBD5E1]'
-                  }`}>
-                    {isPaidUser ? 'Current Plan' : 'Free Plan'}
+                {/* Plan name + Active badge */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: '"Cormorant Garamond", var(--font-cormorant-garamond), Georgia, serif', fontSize: 22.4, fontWeight: 600, fontStyle: 'normal', lineHeight: 'normal', color: '#FFF' }}>
+                    {isPaidUser ? 'Rise Aspirant Plan' : 'Starter Plan'}
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, background: isPaidUser ? 'rgba(34,197,94,0.18)' : 'rgba(148,163,184,0.12)', border: `1px solid ${isPaidUser ? 'rgba(34,197,94,0.4)' : 'rgba(148,163,184,0.3)'}`, color: isPaidUser ? '#4ADE80' : '#94A3B8', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: isPaidUser ? '#4ADE80' : '#94A3B8', display: 'inline-block', flexShrink: 0 }} />
+                    {isPaidUser ? 'Active' : 'Free'}
                   </span>
                 </div>
-                <p className="mt-2 text-[13px] text-[rgba(255,255,255,0.45)]">
-                  {planTitle} · {planMeta}
+                {/* Subtitle */}
+                <p style={{ margin: '5px 0 0', fontSize: 12.5, color: 'rgba(255,255,255,0.38)', fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.4 }}>
+                  {PREVIEW_PAID ? 'Annual' : (sub?.plan === 'pro-annual' ? 'Annual' : sub?.plan === 'trial' ? 'Trial' : 'Monthly')}
+                  {' · '}
+                  {PREVIEW_PAID ? 'Renews April 15, 2027' : sub?.status === 'trial' ? `Trial ends ${formatDate(sub?.trialEndsOn)}` : sub?.renewsOn ? `Renews ${formatDate(sub.renewsOn)}` : 'No renewal date'}
+                  {(PREVIEW_PAID || (sub?.amount && sub.amount !== 'Free')) && (
+                    <> · <span style={{ color: '#E8B84B', fontWeight: 600 }}>₹{PREVIEW_PAID ? '3588' : sub?.amount} / year</span></>
+                  )}
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => scrollToSection('plans')}
-                className="rounded-[9px] border border-[rgba(255,255,255,0.15)] px-6 py-2.5 text-[13px] font-semibold text-[rgba(255,255,255,0.72)]"
-              >
-                {'<- Explore Plans'}
-              </button>
-              {isPaidUser ? (
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="rounded-[9px] border border-[rgba(248,113,113,0.4)] px-6 py-2.5 text-[13px] font-semibold text-[#FCA5A5]"
-                >
+            {/* Right — buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {isPaidUser && (
+                <button type="button" onClick={() => setShowCancelModal(true)} style={{ borderRadius: 12, border: '1.5px solid rgba(255,255,255,0.22)', padding: '13px 26px', fontFamily: '"DM Sans", system-ui, sans-serif', fontSize: 13, fontStyle: 'normal', fontWeight: 600, lineHeight: 'normal', textAlign: 'center', color: 'rgba(255,255,255,0.70)', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                   Cancel Plan
                 </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleUpgrade}
-                  className="rounded-[9px] border border-[rgba(232,184,75,0.35)] bg-[#E8B84B] px-6 py-2.5 text-[13px] font-bold text-[#090E1C]"
-                >
-                  Start Free Trial
-                </button>
               )}
+              <button type="button" onClick={handleUpgrade} style={{ borderRadius: 12, border: 'none', padding: '13px 26px', fontFamily: '"DM Sans", system-ui, sans-serif', fontSize: 13, fontStyle: 'normal', fontWeight: 600, lineHeight: 'normal', textAlign: 'center', color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                {isPaidUser ? 'Upgrade / Change Plan' : 'Start Free Trial →'}
+              </button>
             </div>
           </div>
 
-          <div className="mt-5 overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)]">
-            <div className="max-h-[200px] overflow-y-auto">
-              {orders.length > 0 ? (
-                orders.slice(0, 4).map((item) => (
-                  <div key={item.id} className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] px-4 py-3 last:border-b-0">
-                    <div>
-                      <p className="text-[13px] font-semibold text-white">{item.itemName}</p>
-                      <p className="text-[12px] text-[rgba(255,255,255,0.45)]">{formatDate(item.created_at)}</p>
+          {/* Usage + Features two-column */}
+          <div style={{ background: '#fff', border: '1px solid #ECEAE4', borderRadius: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
+            {/* Left — YOUR USAGE THIS MONTH */}
+            <div style={{ padding: '28px 28px', borderRight: '1px solid #ECEAE4' }}>
+              <p style={{ margin: '0 0 18px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', color: '#9B9590', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                Your usage this month
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {([
+                  { label: 'Jeet AI Chats',         value: 'Unlimited ∞', bar: 100, color: '#E8B84B' },
+                  { label: 'AI Mains Evaluations',  value: 'Unlimited ∞', bar: 100, color: '#E8B84B' },
+                  { label: 'Mock Tests Attempted',  value: '8 / ∞',       bar: 40,  color: '#22C55E' },
+                  { label: 'Answer Reviews',        value: '12 used',      bar: 60,  color: '#E8B84B' },
+                  { label: 'Syllabus Coverage',     value: '34%',          bar: 34,  color: '#22C55E' },
+                ] as { label: string; value: string; bar: number; color: string }[]).map((row, i, arr) => (
+                  <div key={row.label} style={{ paddingTop: i === 0 ? 0 : 14, paddingBottom: 14, borderBottom: i < arr.length - 1 ? '1px solid #F0EDE8' : 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: '#1A2540', fontFamily: 'Inter, system-ui, sans-serif' }}>{row.label}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', fontFamily: 'Inter, system-ui, sans-serif' }}>{row.value}</span>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[13px] font-semibold text-[#E8B84B]">Rs {(item.amount / 100).toLocaleString('en-IN')}</p>
-                      <p className="text-[12px] capitalize text-[rgba(255,255,255,0.5)]">{item.status}</p>
+                    <div style={{ height: 5, background: '#F0EDE8', borderRadius: 999 }}>
+                      <div style={{ height: '100%', width: `${row.bar}%`, background: row.color, borderRadius: 999 }} />
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="px-4 py-3 text-[13px] text-[rgba(255,255,255,0.45)]">
-                  Billing history will appear here after your first successful payment.
-                </div>
-              )}
+                ))}
+              </div>
+            </div>
+
+            {/* Right — INCLUDED IN RISE */}
+            <div style={{ padding: '28px 28px' }}>
+              <p style={{ margin: '0 0 18px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', color: '#9B9590', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                Included in Rise
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {([
+                  '25 Mains Evaluations / day',
+                  '25 Mock Test attempts / day',
+                  'Daily News Analysis – Hindu & IE',
+                  '10,000+ Previous Year Questions',
+                  'Jeet AI – 100 conversations / day',
+                  'Daily MCQ Challenge – 10 questions',
+                  'Study Planner & Time Tracker',
+                  'Full Revision Suite – Flashcards, Mindmaps, Spaced Rep.',
+                  'Full Performance Analytics Dashboard',
+                  'Test Analytics – Deep insights',
+                  'Syllabus Tracker – Full access',
+                  'Daily Leaderboard & Discussion Forum',
+                  'Live Study Room 24×7',
+                  'Mental Health Buddy',
+                ] as string[]).map((feat, i, arr) => (
+                  <div key={feat} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: i === 0 ? 0 : 11, paddingBottom: 11, borderBottom: i < arr.length - 1 ? '1px solid #F0EDE8' : 'none' }}>
+                    <span style={{ fontSize: 13, fontWeight: 400, color: '#1A2540', fontFamily: 'Inter, system-ui, sans-serif' }}>{feat}</span>
+                    <span style={{ color: '#22C55E', fontSize: 15, fontWeight: 700, flexShrink: 0, marginLeft: 16 }}>✓</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+
+          {/* Billing footer bar */}
+          <div style={{ borderRadius: 16, background: '#0A1120', padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 20, lineHeight: 1 }}>📅</span>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                Next billing date:{' '}
+                <strong style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
+                  {PREVIEW_PAID ? 'April 15, 2027' : (sub?.renewsOn ? formatDate(sub.renewsOn) : '—')}
+                </strong>
+                {' · '}
+                {isPaidUser ? 'Annual Rise Plan renewal' : 'No active subscription'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button type="button" onClick={() => setShowAddressModal(true)} style={{ borderRadius: 10, border: '1px solid rgba(255,255,255,0.26)', background: 'transparent', color: 'rgba(255,255,255,0.78)', padding: '10px 14px', fontSize: 12, fontWeight: 700 }}>
+                Update Billing Address
+              </button>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.3px' }}>
+                {orders.length > 0 ? `INR ${(orders[0].amount / 100).toLocaleString('en-IN')}` : PREVIEW_PAID ? 'INR 11,988' : 'INR 0'}
+              </span>
+            </div>
+          </div>
+
         </section>
 
-        <section ref={plansRef} className="space-y-5">
-          <div className="mx-auto w-fit rounded-full border border-[rgba(11,22,40,0.09)] bg-white p-1.5 shadow-[0_2px_7px_rgba(11,22,40,0.07)]">
-            <button
-              type="button"
-              onClick={() => setCycle('monthly')}
-              className={`rounded-full px-8 py-2.5 text-[13px] font-bold ${
-                cycle === 'monthly' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#374560]'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              type="button"
-              onClick={() => setCycle('yearly')}
-              className={`rounded-full px-8 py-2.5 text-[13px] font-bold ${
-                cycle === 'yearly' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#374560]'
-              }`}
-            >
-              Yearly <span className="ml-1 rounded bg-[#E8B84B] px-2 py-0.5 text-[10px] text-[#090E1C]">Save 17%</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-            {showcasePlans.map((plan) => {
-              const isCurrentPro = isPaidUser && plan.id === 'pro';
-              const price = cycle === 'yearly' ? plan.yearlyMonthlyPrice : plan.monthlyPrice;
-
-              return (
-                <article
-                  key={plan.id}
-                  className={`relative overflow-hidden rounded-[18px] border ${
-                    plan.dark
-                      ? 'border-[rgba(255,255,255,0.1)] text-white'
-                      : 'border-[rgba(11,22,40,0.09)] bg-white text-[#0C1424]'
-                  } ${plan.featured ? 'ring-2 ring-[#E8B84B]' : ''}`}
-                  style={{
-                    background: plan.dark
-                      ? plan.featured
-                        ? 'radial-gradient(circle at 100% 0%, rgba(232,184,75,0.12) 0%, rgba(232,184,75,0) 35%), #08122B'
-                        : 'linear-gradient(160deg, #101D36 0%, #172444 100%)'
-                      : '#FFFFFF',
-                  }}
-                >
-                  {plan.featured && (
-                    <div className="absolute left-1/2 top-0 -translate-x-1/2 rounded-b-[10px] bg-[#E8B84B] px-4 py-1 text-[10px] font-extrabold uppercase tracking-[0.8px] text-[#090E1C]">
-                      Most Popular
-                    </div>
-                  )}
-
-                  <div className="p-7 pt-9">
-                    <p className={`text-[10px] font-bold uppercase tracking-[1.5px] ${plan.dark ? 'text-[rgba(232,184,75,0.7)]' : 'text-[#6B7A99]'}`}>
-                      {plan.eyebrow}
-                    </p>
-                    <h3 className="mt-1 text-[44px] leading-none" style={{ fontFamily: 'var(--font-cormorant)' }}>{plan.name}</h3>
-                    <p className={`mt-3 min-h-[44px] text-[13px] leading-[1.65] ${plan.dark ? 'text-[rgba(255,255,255,0.45)]' : 'text-[#6B7A99]'}`}>
-                      {plan.description}
-                    </p>
-
-                    <div className="mt-5 flex items-end gap-1.5">
-                      <span className={`pb-2 text-[18px] font-semibold ${plan.dark ? 'text-[#E8B84B]' : 'text-[#0C1424]'}`}>Rs</span>
-                      <span className={`text-[52px] leading-none ${plan.dark ? 'text-[#E8B84B]' : 'text-[#0C1424]'}`} style={{ fontFamily: 'var(--font-cormorant)' }}>
-                        {price.toLocaleString('en-IN')}
-                      </span>
-                      {plan.id !== 'starter' && <span className="pb-2 text-[12px] text-[rgba(255,255,255,0.35)]">/mo</span>}
-                    </div>
-
-                    <p className={`mt-2 text-[11px] ${plan.dark ? 'text-[rgba(255,255,255,0.28)]' : 'text-[#9AA3B8]'}`}>
-                      {plan.id === 'starter' ? plan.yearlyLabel : plan.yearlyLabel}
-                    </p>
-
-                    <div className={`mt-5 h-px ${plan.dark ? 'bg-[rgba(255,255,255,0.1)]' : 'bg-[rgba(11,22,40,0.09)]'}`} />
-
-                    <ul className="mt-4 space-y-2.5">
-                      {plan.features.map((feature) => (
-                        <li
-                          key={`${plan.id}-${feature}`}
-                          className={`flex items-start gap-2.5 text-[13px] ${
-                            isSectionLabel(feature, plan.sectionLabels)
-                              ? plan.dark
-                                ? 'pt-4 text-[13px] font-extrabold uppercase tracking-[1.9px] text-[rgba(255,255,255,0.7)]'
-                                : 'pt-4 text-[13px] font-extrabold uppercase tracking-[1.9px] text-[#374560]'
-                              : plan.dark
-                                ? 'text-[rgba(255,255,255,0.72)]'
-                                : 'text-[#374560]'
-                          }`}
-                        >
-                          {!isSectionLabel(feature, plan.sectionLabels) && (
-                            <span className={`${plan.dark ? 'text-[#E8B84B]' : 'text-[#374560]'}`}>•</span>
-                          )}
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <button
-                      type="button"
-                      onClick={isCurrentPro ? undefined : handleUpgrade}
-                      className={`mt-6 w-full rounded-[10px] px-4 py-3 text-[14px] font-bold ${
-                        isCurrentPro
-                          ? 'border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.1)] text-white'
-                          : plan.featured
-                            ? 'bg-[#E8B84B] text-[#090E1C]'
-                            : plan.dark
-                              ? 'bg-[#E8B84B] text-[#090E1C]'
-                              : 'border border-[rgba(11,22,40,0.17)] bg-[#FAF8F4] text-[#0C1424]'
-                      }`}
-                    >
-                      {isCurrentPro ? "You're on this plan" : plan.id === 'starter' ? 'Get Started Free ->' : 'Start 7-Day Free Trial ->'}
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="rounded-[14px] bg-[#090E1C] px-6 py-5">
-          <div className="grid gap-4 text-[12px] text-[rgba(255,255,255,0.45)] md:grid-cols-4">
-            <div className="flex items-center gap-2">LOCK Secure payments</div>
-            <div className="flex items-center gap-2">TRIAL 7-day free trial</div>
-            <div className="flex items-center gap-2">CANCEL anytime</div>
-            <div className="flex items-center gap-2">COMMUNITY 15,000+ UPSC aspirants</div>
-          </div>
-        </section>
-
-        <section>
-          <div className="flex items-center gap-2">
-            <span className="h-[2px] w-7 rounded bg-[#E8B84B]" />
-            <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#E8B84B]">Supercharge with Add-ons</span>
-          </div>
-          <h3 className="mt-2 text-[48px] leading-none text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)' }}>
-            Compatible with any plan
-          </h3>
-          <p className="mt-2 text-[14px] text-[#6B7A99]">Buy what you need · No lock-ins · One-time purchases</p>
-
-          <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {addonCards.map((addon) => (
-              <article key={addon.title} className="rounded-[14px] border border-[rgba(11,22,40,0.09)] bg-white p-5">
-                <div className="text-[26px]">{addon.icon}</div>
-                <h4 className="mt-4 text-[22px] leading-none text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)' }}>
-                  {addon.title}
-                </h4>
-                <p className="mt-3 min-h-[40px] text-[12px] leading-[1.55] text-[#6B7A99]">{addon.description}</p>
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-[28px] leading-none text-[#C99730]" style={{ fontFamily: 'var(--font-cormorant)' }}>{addon.price}</span>
-                  <span className="text-[11px] font-semibold text-[#9AA3B8]">{addon.unit}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleUpgrade}
-                  className="mt-4 w-full rounded-[8px] border border-[rgba(11,22,40,0.17)] px-3 py-2.5 text-[12px] font-semibold text-[#374560]"
-                >
-                  {addon.cta}
-                </button>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <div className="flex items-center gap-2">
-            <span className="h-[2px] w-7 rounded bg-[#E8B84B]" />
-            <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#E8B84B]">Common Questions</span>
-          </div>
-          <h3 className="mt-2 text-[46px] leading-none text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)' }}>
-            Frequently Asked
-          </h3>
-
-          <div className="mt-4 overflow-hidden rounded-xl border border-[rgba(11,22,40,0.09)] bg-white">
-            {faqs.map((item, index) => {
-              const open = openFaq === index;
-              return (
-                <div key={item.q} className="border-b border-[rgba(11,22,40,0.09)] last:border-b-0">
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(open ? -1 : index)}
-                    className="flex w-full items-center justify-between px-5 py-4 text-left"
-                  >
-                    <span className={`text-[14px] font-semibold ${open ? 'text-[#C99730]' : 'text-[#0C1424]'}`}>
-                      {item.q}
-                    </span>
-                    <span className="text-[12px] text-[#6B7A99]">{open ? '^' : 'v'}</span>
-                  </button>
-                  {open && (
-                    <div className="px-5 pb-4 text-[13px] leading-[1.75] text-[#6B7A99]">
-                      {item.a}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
       </div>
+      <CancelSubscriptionModal
+        open={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirmCancel={handleCancel}
+        pending={cancelPending}
+      />
+      <BillingAddressModal open={showAddressModal} onClose={() => setShowAddressModal(false)} />
     </div>
   );
 }
-

@@ -1,9 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { editorialService, mentalHealthService } from '@/lib/services';
+import { useEffect, useMemo, useState } from 'react';
+import { editorialService } from '@/lib/services';
 
 interface SavedEditorial {
   id: string;
@@ -15,365 +13,192 @@ interface SavedEditorial {
   savedAt?: string;
 }
 
-interface CheckIn {
-  id: string;
-  mood: string;
-  energy: number;
-  note?: string;
-  date: string;
-  createdAt?: string;
-}
-
-const categoryColors: Record<string, { color: string; bg: string }> = {
-  'History': { color: '#B45309', bg: '#FEF3C7' },
-  'Geography': { color: '#1D4ED8', bg: '#DBEAFE' },
-  'Polity': { color: '#7C3AED', bg: '#EDE9FE' },
-  'Economy': { color: '#EA580C', bg: '#FFF7ED' },
-  'Environment & Ecology': { color: '#16A34A', bg: '#F0FDF4' },
-  'Science & Technology': { color: '#0369A1', bg: '#DBEAFE' },
-};
+const CARD_ACCENTS = ['#63BF7A', '#F59E0B', '#8B5CF6', '#60A5FA', '#EC4899'];
 
 export default function SavedNotesPage() {
-  const searchParams = useSearchParams();
   const [savedNotes, setSavedNotes] = useState<SavedEditorial[]>([]);
-  const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'notes' | 'bookmarks' | 'checkins'>(() => {
-    const requestedTab = searchParams.get('tab');
-    return requestedTab === 'bookmarks' || requestedTab === 'checkins' ? requestedTab : 'notes';
-  });
+  const [search, setSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState('ALL');
 
   useEffect(() => {
-    const requestedTab = searchParams.get('tab');
-    if (requestedTab === 'bookmarks' || requestedTab === 'checkins' || requestedTab === 'notes') {
-      setActiveTab(requestedTab);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    Promise.all([
-      editorialService.getStats(),
-      mentalHealthService.getCheckIns(30),
-    ])
-      .then(([editorialRes, checkInRes]) => {
-        if (editorialRes.data?.savedItems && Array.isArray(editorialRes.data.savedItems)) {
-          setSavedNotes(editorialRes.data.savedItems);
-        }
-        if (checkInRes.data && Array.isArray(checkInRes.data)) {
-          setCheckIns(checkInRes.data);
+    editorialService
+      .getStats()
+      .then((res) => {
+        if (res.data?.savedItems && Array.isArray(res.data.savedItems)) {
+          setSavedNotes(res.data.savedItems);
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const handleUnsave = async (id: string) => {
-    try {
-      await editorialService.toggleSave(id);
-      setSavedNotes(prev => prev.filter(n => n.id !== id));
-    } catch {}
-  };
+  const grouped = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const filtered = savedNotes.filter((note) => {
+      const matchesFilter = activeFilter === 'ALL' || note.category === activeFilter;
+      if (!matchesFilter) return false;
+      if (!query) return true;
+      const haystack = `${note.title} ${note.summary ?? ''} ${note.source} ${(note.tags ?? []).join(' ')}`.toLowerCase();
+      return haystack.includes(query);
+    });
+
+    return filtered.reduce<Record<string, SavedEditorial[]>>((acc, note) => {
+      const key = note.category || 'General';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(note);
+      return acc;
+    }, {});
+  }, [savedNotes, search, activeFilter]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: savedNotes.length };
+    for (const note of savedNotes) {
+      const key = note.category || 'General';
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }, [savedNotes]);
 
   return (
-    <div className="min-h-screen bg-[#FAFBFE] px-4 sm:px-6 py-6 md:py-8" style={{ fontFamily: "'Inter', sans-serif" }}>
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 mb-4">
-        <Link href="/dashboard" className="font-normal text-[14px] leading-[20px] text-[#62748e] hover:text-[#314158]">
-          Home
-        </Link>
-        <span className="text-[14px] leading-[20px] text-[#90a1b9]">›</span>
-        <Link href="/dashboard/profile" className="font-normal text-[14px] leading-[20px] text-[#62748e] hover:text-[#314158]">
-          Profile
-        </Link>
-        <span className="text-[14px] leading-[20px] text-[#90a1b9]">›</span>
-        <span className="font-medium text-[14px] leading-[20px] text-[#0f172b]">Saved Notes</span>
-      </nav>
+    <div className="min-h-screen bg-[#F5F7FB]">
+      <section className="relative overflow-hidden bg-[#020A1D] px-4 pb-10 pt-5 sm:px-6 lg:px-10">
+        <div
+          className="absolute inset-0 opacity-70"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 0% 30%, rgba(255,255,255,0.14), transparent 32%), linear-gradient(90deg, rgba(25,43,88,0.55) 1px, transparent 1px), linear-gradient(180deg, rgba(25,43,88,0.45) 1px, transparent 1px)',
+            backgroundSize: 'auto, 36px 36px, 36px 36px',
+          }}
+        />
 
-      {/* Page Title */}
-      <h1 className="text-xl md:text-2xl lg:text-[30px] leading-[36px] text-[#0f172b] mb-6 md:mb-8" style={{ fontFamily: "'Georgia', serif" }}>
-        Saved Notes & Bookmarks
-      </h1>
+        <div className="relative mx-auto max-w-5xl text-center">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-[#D6A94F]">Your Bookmarks Vault</p>
+          <h1
+            className="mx-auto mt-4 max-w-[920px] text-center text-white"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '60.8px',
+              fontStyle: 'normal',
+              fontWeight: 600,
+              lineHeight: '66.88px',
+            }}
+          >
+            Everything you&apos;ve <span className="italic text-[#E8B84B]">saved</span>, in one place
+          </h1>
+          <p
+            className="mx-auto mt-5 max-w-[710px] text-[15px] leading-[26.25px] text-[rgba(255,255,255,0.48)]"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Articles, MCQs, questions, flashcards, lectures all your bookmarks from every module, tagged and ready for revision.
+          </p>
 
-      {/* Tab bar */}
-      <div style={{ borderBottom: '2px solid #E5E7EB', marginBottom: '24px' }}>
-        <div className="flex" style={{ gap: '24px' }}>
-          {(['notes', 'bookmarks', 'checkins'] as const).map((tab) => (
+          <div
+            className="mx-auto mt-7 flex max-w-[860px] items-center rounded-[12px] border px-[17px] py-[5px] backdrop-blur"
+            style={{ background: 'rgba(255,255,255,0.07)', borderColor: 'rgba(255,255,255,0.13)' }}
+          >
+            <span className="mr-3 text-[15px] text-[rgba(255,255,255,0.3)]" style={{ fontFamily: "'DM Sans', sans-serif" }}>🔍</span>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search across all saved items…"
+              className="w-full bg-transparent py-[10px] text-[15px] text-[#E2E8F0] placeholder:text-[#757575] outline-none"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            />
+            <span
+              className="rounded-[6px] border px-3 py-1.5 text-[11px] text-[rgba(255,255,255,0.3)]"
+              style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.12)' }}
+            >
+              ⌘K
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <main className="mx-auto max-w-7xl px-4 pb-12 pt-5 sm:px-6 lg:px-10">
+        <div className="mb-7 flex flex-wrap items-center gap-3 border-b border-[#E5EAF3] pb-4 text-sm">
+          {Object.entries(categoryCounts).map(([name, count]) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className="font-arimo font-bold"
+              key={name}
+              onClick={() => setActiveFilter(name)}
+              className="rounded-full px-3 py-1.5 transition"
               style={{
-                fontSize: '15px',
-                color: activeTab === tab ? '#155DFC' : '#6A7282',
-                background: 'none',
-                border: 'none',
-                borderBottom: activeTab === tab ? '2px solid #155DFC' : '2px solid transparent',
-                padding: '12px 0',
-                marginBottom: '-2px',
-                cursor: 'pointer',
-                textTransform: 'capitalize',
+                color: activeFilter === name ? '#C98A1D' : '#5A6B85',
+                background: activeFilter === name ? '#FFF4DD' : 'transparent',
+                fontWeight: activeFilter === name ? 600 : 500,
               }}
             >
-              {tab === 'checkins' ? 'Check-ins' : tab}
+              {name} <span className="ml-1 text-xs opacity-70">{count}</span>
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Content */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900"></div>
-        </div>
-      ) : activeTab === 'checkins' ? (
-        /* Check-ins Tab Content */
-        checkIns.length === 0 ? (
-          <div className="text-center py-16">
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🧠</div>
-            <h3 className="font-semibold text-[18px] text-[#0f172b] mb-2">No check-ins yet</h3>
-            <p className="text-[14px] text-[#62748e] mb-6">
-              Start tracking your mental health from the Mental Health Buddy page.
-            </p>
-            <Link href="/dashboard/mental-health">
-              <button
-                style={{
-                  background: '#101828',
-                  color: '#FFFFFF',
-                  borderRadius: '10px',
-                  padding: '10px 24px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                Go to Mental Health
-              </button>
-            </Link>
+        {loading ? (
+          <div className="py-16 text-center text-[#5A6B85]">Loading bookmarks...</div>
+        ) : Object.keys(grouped).length === 0 ? (
+          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-10 text-center text-[#5A6B85]">
+            No bookmarks found for this filter.
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
-            {checkIns.map((checkIn) => {
-              const moodEmojis: Record<string, string> = {
-                'On Fire!': '🔥', Great: '', Good: '🙂', Okay: '😐',
-                Low: '😔', Anxious: '😰', Frustrated: '', Exhausted: '😴',
-              };
-              const energyColor =
-                checkIn.energy >= 7 ? '#4ade80' :
-                checkIn.energy >= 4 ? '#e8b84b' : '#c4637a';
-              return (
-                <div
-                  key={checkIn.id}
-                  style={{
-                    background: '#FFFFFF',
-                    borderRadius: '14px',
-                    padding: '20px',
-                    boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1)',
-                  }}
-                >
-                  {/* Header: Date + Mood */}
-                  <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-                    <div className="flex items-center gap-3">
-                      <span style={{ fontSize: '28px' }}>{moodEmojis[checkIn.mood] || '😐'}</span>
-                      <div>
-                        <span className="font-arimo font-bold" style={{ fontSize: '16px', color: '#101828' }}>
-                          {checkIn.mood}
-                        </span>
-                        <span className="font-arimo" style={{ fontSize: '13px', color: '#6A7282', marginLeft: '8px' }}>
-                          · Energy: {checkIn.energy}/10
-                        </span>
-                      </div>
-                    </div>
-                    <span className="font-arimo" style={{ fontSize: '13px', color: '#6A7282' }}>
-                      {checkIn.date ? new Date(checkIn.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Recent'}
-                    </span>
+          <div className="space-y-8">
+            {Object.entries(grouped).map(([section, items]) => (
+              <section key={section}>
+                <div className="mb-4 flex items-end justify-between border-b border-[#E5EAF3] pb-2">
+                  <div>
+                    <h2 className="text-[30px] font-semibold leading-none text-[#0B1323]">{section}</h2>
+                    <p className="mt-2 text-sm text-[#6A7892]">{items.length} resources</p>
                   </div>
+                  <span className="text-2xl text-[#9AA7BD]">{items.length}</span>
+                </div>
 
-                  {/* Energy Bar */}
-                  <div style={{ marginBottom: '12px' }}>
-                    <div style={{ height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div
-                        style={{
-                          height: '100%',
-                          width: `${(checkIn.energy / 10) * 100}%`,
-                          background: energyColor,
-                          borderRadius: '3px',
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Note */}
-                  {checkIn.note && (
-                    <p
-                      className="font-arimo"
-                      style={{
-                        fontSize: '14px',
-                        color: '#4A5565',
-                        fontStyle: 'italic',
-                        lineHeight: '1.6',
-                        padding: '12px',
-                        background: '#F9FAFB',
-                        borderRadius: '8px',
-                        borderLeft: '3px solid #e8b84b',
-                      }}
-                    >
-                      {checkIn.note}
-                    </p>
-                  )}
-
-                  {/* Footer */}
-                  <div style={{ borderBottom: '1px solid #E5E7EB', marginTop: '12px', marginBottom: '12px' }} />
-                  <div className="flex items-center justify-between">
-                    <span className="font-arimo" style={{ fontSize: '12px', color: '#6A7282' }}>
-                      Mental Health Check-in
-                    </span>
-                    <Link href="/dashboard/mental-health">
-                      <button
-                        className="font-arimo"
-                        style={{
-                          padding: '6px 16px',
-                          borderRadius: '26843500px',
-                          border: '0.8px solid #E5E7EB',
-                          background: '#F9FAFB',
-                          color: '#155DFC',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                        }}
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {items.map((note, idx) => {
+                    const accent = CARD_ACCENTS[idx % CARD_ACCENTS.length];
+                    const chips = (note.tags?.length ? note.tags : [note.category]).slice(0, 3);
+                    return (
+                      <article
+                        key={note.id}
+                        className="rounded-2xl border border-[#E8EDF5] bg-white p-4"
+                        style={{ borderLeft: `3px solid ${accent}` }}
                       >
-                        View Details →
-                      </button>
-                    </Link>
-                  </div>
+                        <div className="mb-3 flex items-center justify-between text-[11px] text-[#8A97AE]">
+                          <div className="flex items-center gap-1.5">
+                            <span className="rounded-full bg-[#EEF3FF] px-2 py-0.5 text-[#4F46E5]">GS</span>
+                            <span className="rounded-full bg-[#FFF4DD] px-2 py-0.5 text-[#C98A1D]">PRELIMS</span>
+                            <span>{note.source || 'Source'}</span>
+                          </div>
+                          <span>{note.savedAt ? new Date(note.savedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : ''}</span>
+                        </div>
+
+                        <h3 className="line-clamp-2 text-[21px] font-semibold leading-7 text-[#121A2D]">{note.title}</h3>
+                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#5C6B85]">{note.summary || 'Saved for quick revision.'}</p>
+
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {chips.map((tag) => (
+                            <span key={tag} className="rounded-md bg-[#FFF4DD] px-2 py-1 text-[11px] text-[#B7791F]">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between border-t border-[#EEF2F8] pt-3">
+                          <span className="rounded-full bg-[#FFF4DD] px-2.5 py-1 text-xs text-[#A87216]">Revision</span>
+                          <button
+                            onClick={() => setSavedNotes((prev) => prev.filter((x) => x.id !== note.id))}
+                            className="rounded-lg border border-[#F4D7D9] px-2.5 py-1 text-xs text-[#C2414D]"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </section>
+            ))}
           </div>
-        )
-      ) : savedNotes.length === 0 ? (
-        <div className="text-center py-16">
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>📌</div>
-          <h3 className="font-semibold text-[18px] text-[#0f172b] mb-2">
-            {activeTab === 'bookmarks' ? 'No bookmarks yet' : 'No saved notes yet'}
-          </h3>
-          <p className="text-[14px] text-[#62748e] mb-6">
-            {activeTab === 'bookmarks'
-              ? 'Bookmark editorials from the Daily Editorial page to keep them in one place.'
-              : 'Start saving editorials from the Daily Editorial page to build your collection.'}
-          </p>
-          <Link href="/dashboard/daily-editorial">
-            <button
-              style={{
-                background: '#101828',
-                color: '#FFFFFF',
-                borderRadius: '10px',
-                padding: '10px 24px',
-                fontSize: '14px',
-                fontWeight: 600,
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              Browse Editorials
-            </button>
-          </Link>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {savedNotes.map((note) => {
-            const tagList = note.tags?.length > 0 ? note.tags : [note.category];
-            return (
-              <div
-                key={note.id}
-                style={{
-                  background: '#FFFFFF',
-                  borderRadius: '14px',
-                  padding: '20px',
-                  boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1)',
-                }}
-              >
-                {/* Tags row + source */}
-                <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-                  <div className="flex items-center flex-wrap" style={{ gap: '8px' }}>
-                    {tagList.map((tag) => {
-                      const colors = categoryColors[tag] || { color: '#1E40AF', bg: '#DBEAFE' };
-                      return (
-                        <span
-                          key={tag}
-                          className="font-arimo font-medium"
-                          style={{
-                            fontSize: '13px',
-                            padding: '4px 12px',
-                            borderRadius: '6px',
-                            background: colors.bg,
-                            color: colors.color,
-                          }}
-                        >
-                          {tag}
-                        </span>
-                      );
-                    })}
-                  </div>
-                  <span className="font-arimo shrink-0" style={{ color: '#6A7282', fontSize: '13px' }}>
-                    {note.source}
-                  </span>
-                </div>
-
-                {/* Title */}
-                <h3
-                  className="font-arimo font-bold"
-                  style={{
-                    fontSize: '18px',
-                    color: '#101828',
-                    marginBottom: '8px',
-                  }}
-                >
-                  {note.title}
-                </h3>
-
-                {/* Summary */}
-                {note.summary && (
-                  <p
-                    className="font-arimo"
-                    style={{
-                      fontSize: '14px',
-                      color: '#4A5565',
-                      marginBottom: '16px',
-                    }}
-                  >
-                    {note.summary}
-                  </p>
-                )}
-
-                {/* Divider */}
-                <div style={{ borderBottom: '1px solid #E5E7EB', marginBottom: '12px' }} />
-
-                {/* Actions */}
-                <div className="flex items-center justify-between">
-                  <span className="font-arimo" style={{ fontSize: '12px', color: '#6A7282' }}>
-                    {note.savedAt ? new Date(note.savedAt).toLocaleDateString('en-IN') : 'Saved recently'}
-                  </span>
-                  <button
-                    onClick={() => handleUnsave(note.id)}
-                    className="font-arimo"
-                    style={{
-                      padding: '6px 16px',
-                      borderRadius: '26843500px',
-                      border: '0.8px solid #FEE2E2',
-                      background: '#FEF2F2',
-                      color: '#DC2626',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+        )}
+      </main>
     </div>
   );
 }

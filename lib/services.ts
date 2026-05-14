@@ -426,7 +426,7 @@ export const studyGroupService = {
 
 export const userService = {
   getProfile: () => api.get<any>('/user/profile', authConfig()),
-  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; bio?: string; state?: string; targetYear?: string; optionalSubject?: string }) =>
+  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; bio?: string; state?: string; targetYear?: string; optionalSubject?: string; gender?: string; dateOfBirth?: string }) =>
     api.put<any>('/user/profile', data, authConfig()),
   updateSettings: (data: { notifications?: any; preferences?: any; privacy?: any; profile?: any }) =>
     api.put<any>('/user/settings', data, authConfig()),

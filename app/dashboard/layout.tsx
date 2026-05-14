@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import DashboardHeader from '@/components/DashboardHeader';
 import Sidebar from '@/components/Sidebar';
 import MilestonePopup from '@/components/MilestonePopup';
+import OnboardingFlow from '@/components/OnboardingFlow';
 
 const HIDE_SIDEBAR_ROUTES = ['/dashboard/profile', '/dashboard/settings', '/dashboard/billing', '/dashboard/feedback'];
 const STREAK_MILESTONES = [3, 7, 10, 14, 21, 30] as const;
@@ -41,6 +42,7 @@ export default function DashboardLayout({
   const [milestoneValue, setMilestoneValue] = useState<number | null>(null);
   const [milestoneTitle, setMilestoneTitle] = useState<string | undefined>(undefined);
   const [milestoneDescription, setMilestoneDescription] = useState<string | undefined>(undefined);
+  const [authTimedOut, setAuthTimedOut] = useState(false);
 
   // Show a streak milestone when the current streak crosses one of the supported thresholds.
   useEffect(() => {
@@ -93,32 +95,41 @@ export default function DashboardLayout({
   useEffect(() => {
     if (isLoading || isAuthenticated) return;
 
-    // Avoid false redirects when the Supabase session exists but `user` hasn't hydrated yet.
-    // Try once to refresh user from session before sending to /login.
-    if (!didTryRefreshRef.current) {
-      didTryRefreshRef.current = true;
-      refreshUser().catch(() => {
-        // ignore and fall through to redirect on next render
-      });
-      return;
-    }
-
-    // Double-check Supabase session before redirecting — prevents
-    // race conditions where user state hasn't caught up yet.
+    // Always check the Supabase session before redirecting.
+    // A valid session means auth state just hasn't hydrated yet — never
+    // redirect a user who has a live session to the login page.
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
+        // Truly unauthenticated — send to login.
         router.push('/login');
-      } else {
-        // Session exists but user state hasn't caught up — refresh again
-        refreshUser();
+      } else if (!didTryRefreshRef.current) {
+        // Session exists but user state not resolved — try once to hydrate it.
+        didTryRefreshRef.current = true;
+        refreshUser().catch(() => {});
       }
+      // If didTryRefreshRef is already true and session still exists, do nothing —
+      // refreshUser is likely still in flight; wait for the next render cycle.
     }).catch(() => {
-      // Network error — don't redirect, let the user stay on dashboard
-      // with cached session data
+      // Network error — don't redirect, let the user stay on the dashboard.
     });
   }, [isLoading, isAuthenticated, refreshUser, router]);
 
-  if (isLoading || !isAuthenticated) {
+  // Fail-safe: if auth hydration hangs for too long, stop blocking UI forever.
+  useEffect(() => {
+    if (!isLoading) {
+      setAuthTimedOut(false);
+      return;
+    }
+    const timer = setTimeout(() => setAuthTimedOut(true), 8000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (!authTimedOut || isAuthenticated) return;
+    router.replace('/login');
+  }, [authTimedOut, isAuthenticated, router]);
+
+  if ((isLoading && !authTimedOut) || !isAuthenticated) {
     // Show a loading state instead of blank screen
     return (
       <div className="flex items-center justify-center" style={{ height: '100dvh', background: '#FAFBFE' }}>
@@ -141,6 +152,9 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Onboarding flow — shown once for new users */}
+      <OnboardingFlow />
 
       {/* Milestone Popup — WIP placeholder */}
       <MilestonePopup

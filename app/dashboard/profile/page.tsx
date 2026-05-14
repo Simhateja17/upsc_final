@@ -1,9 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { dashboardService, userService } from '@/lib/services';
+
+const MONTHS = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December',
+];
+const WEEKDAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+function formatDisplayDate(iso: string) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${String(d).padStart(2, '0')} ${MONTHS[m - 1]} ${y}`;
+}
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -13,23 +25,41 @@ export default function ProfilePage() {
   const [state, setState] = useState('');
   const [targetYear, setTargetYear] = useState('');
   const [optionalSubject, setOptionalSubject] = useState('');
+  const [gender, setGender] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [saving, setSaving] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null);
+
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const [calYear, setCalYear] = useState(new Date().getFullYear() - 22);
+  const calRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onOutsideClick(e: MouseEvent) {
+      if (calRef.current && !calRef.current.contains(e.target as Node)) {
+        setShowCalendar(false);
+      }
+    }
+    if (showCalendar) document.addEventListener('mousedown', onOutsideClick);
+    return () => document.removeEventListener('mousedown', onOutsideClick);
+  }, [showCalendar]);
 
   useEffect(() => {
     if (user) {
       setFirstName(user.firstName || '');
       setLastName(user.lastName || '');
-      setPhone(user.phone || '');
+      setPhone((user as any).phone || '');
       const extra = (user as any).profile || {};
       setState(extra.state || '');
       setTargetYear(extra.targetYear || '');
       setOptionalSubject(extra.optionalSubject || '');
+      setGender(extra.gender || '');
+      setDateOfBirth(extra.dateOfBirth || '');
     }
   }, [user]);
 
-  // Load full profile from backend to get extra fields
   useEffect(() => {
     userService.getProfile().then((res) => {
       const d = res.data;
@@ -40,6 +70,13 @@ export default function ProfilePage() {
         setState(d.state || '');
         setTargetYear(d.targetYear || '');
         setOptionalSubject(d.optionalSubject || '');
+        setGender(d.gender || '');
+        setDateOfBirth(d.dateOfBirth || '');
+        if (d.dateOfBirth) {
+          const [y, m] = d.dateOfBirth.split('-').map(Number);
+          setCalYear(y);
+          setCalMonth(m - 1);
+        }
       }
     }).catch(() => {});
   }, []);
@@ -63,6 +100,8 @@ export default function ProfilePage() {
         setState(d.state || '');
         setTargetYear(d.targetYear || '');
         setOptionalSubject(d.optionalSubject || '');
+        setGender(d.gender || '');
+        setDateOfBirth(d.dateOfBirth || '');
       }
     }).catch(() => {});
   };
@@ -78,6 +117,8 @@ export default function ProfilePage() {
         state: state.trim(),
         targetYear: targetYear.trim(),
         optionalSubject: optionalSubject.trim(),
+        gender: gender.trim(),
+        dateOfBirth: dateOfBirth.trim(),
       });
       setToast({ kind: 'success', msg: 'Profile updated successfully!' });
     } catch (err: any) {
@@ -90,10 +131,33 @@ export default function ProfilePage() {
   };
 
   const handlePhoneChange = (raw: string) => {
-    // Allow only digits, cap at 10. Strip a leading +91 silently.
     const cleaned = raw.replace(/\D/g, '').replace(/^91/, '').slice(0, 10);
     setPhone(cleaned);
   };
+
+  // Calendar helpers
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: currentYear - 1920 + 1 }, (_, i) => currentYear - i);
+
+  const handleDayClick = (day: number) => {
+    const iso = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    setDateOfBirth(iso);
+    setShowCalendar(false);
+  };
+
+  const prevMonth = () => {
+    if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); }
+    else setCalMonth(m => m - 1);
+  };
+
+  const nextMonth = () => {
+    if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); }
+    else setCalMonth(m => m + 1);
+  };
+
+  const selectedParts = dateOfBirth ? dateOfBirth.split('-').map(Number) : null;
 
   const daysOnPlatform = user?.createdAt
     ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24))
@@ -205,6 +269,143 @@ export default function ProfilePage() {
                 />
               </div>
 
+              {/* Gender / Date of Birth */}
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* Gender */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Gender</label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Non-binary">Non-binary</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                  </select>
+                </div>
+
+                {/* Date of Birth */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Date of Birth</label>
+                  <div className="relative" ref={calRef}>
+                    <button
+                      type="button"
+                      onClick={() => setShowCalendar(v => !v)}
+                      className="w-full h-[45.6px] px-4 rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-left focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent flex items-center justify-between gap-2 transition-colors hover:border-[#d08700]"
+                    >
+                      <span className={dateOfBirth ? 'text-[#0a0a0a]' : 'text-[#90a1b9]'}>
+                        {dateOfBirth ? formatDisplayDate(dateOfBirth) : 'Select date'}
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#62748e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
+                    </button>
+
+                    {showCalendar && (
+                      <div
+                        className="absolute z-50 mt-2 bg-white rounded-[16px] border border-[#e2e8f0] p-4 w-[296px]"
+                        style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08)' }}
+                      >
+                        {/* Calendar header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <button
+                            type="button"
+                            onClick={prevMonth}
+                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#f1f5f9] transition-colors"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#314158" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="15 18 9 12 15 6"/>
+                            </svg>
+                          </button>
+
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-[14px] text-[#0f172b]">{MONTHS[calMonth]}</span>
+                            <select
+                              value={calYear}
+                              onChange={(e) => setCalYear(Number(e.target.value))}
+                              className="font-semibold text-[14px] text-[#0f172b] bg-transparent border border-[#e2e8f0] rounded-[6px] px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#d08700] cursor-pointer"
+                            >
+                              {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={nextMonth}
+                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#f1f5f9] transition-colors"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#314158" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* Weekday labels */}
+                        <div className="grid grid-cols-7 mb-1">
+                          {WEEKDAYS.map(d => (
+                            <div key={d} className="text-center text-[11px] font-semibold text-[#90a1b9] py-1 tracking-wide">
+                              {d}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Day grid */}
+                        <div className="grid grid-cols-7 gap-y-0.5">
+                          {Array.from({ length: firstDay }).map((_, i) => (
+                            <div key={`pad-${i}`} />
+                          ))}
+                          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
+                            const isSelected =
+                              selectedParts &&
+                              selectedParts[0] === calYear &&
+                              selectedParts[1] - 1 === calMonth &&
+                              selectedParts[2] === day;
+                            return (
+                              <button
+                                key={day}
+                                type="button"
+                                onClick={() => handleDayClick(day)}
+                                className={`h-9 w-full rounded-full text-[13px] font-medium transition-all ${
+                                  isSelected
+                                    ? 'bg-[#d08700] text-white font-semibold shadow-sm'
+                                    : 'text-[#314158] hover:bg-[#fef9c2] hover:text-[#a65f00]'
+                                }`}
+                              >
+                                {day}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="mt-3 pt-3 border-t border-[#f1f5f9] flex items-center justify-between">
+                          {dateOfBirth ? (
+                            <>
+                              <span className="text-[12px] font-medium text-[#45556c]">{formatDisplayDate(dateOfBirth)}</span>
+                              <button
+                                type="button"
+                                onClick={() => { setDateOfBirth(''); setShowCalendar(false); }}
+                                className="text-[12px] text-[#DC2626] hover:underline"
+                              >
+                                Clear
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-[12px] text-[#90a1b9]">No date selected</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Phone / State */}
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 flex flex-col gap-2">
@@ -253,12 +454,32 @@ export default function ProfilePage() {
                     className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
                   >
                     <option value="">Select Subject</option>
-                    <option value="History">History</option>
+                    <option value="Agriculture">Agriculture</option>
+                    <option value="Animal Husbandry and Veterinary Science">Animal Husbandry and Veterinary Science</option>
+                    <option value="Anthropology">Anthropology</option>
+                    <option value="Botany">Botany</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Civil Engineering">Civil Engineering</option>
+                    <option value="Commerce and Accountancy">Commerce and Accountancy</option>
+                    <option value="Economics">Economics</option>
+                    <option value="Electrical Engineering">Electrical Engineering</option>
                     <option value="Geography">Geography</option>
-                    <option value="Polity">Polity</option>
-                    <option value="Economy">Economy</option>
-                    <option value="Environment & Ecology">Environment & Ecology</option>
-                    <option value="Science & Technology">Science & Technology</option>
+                    <option value="Geology">Geology</option>
+                    <option value="History">History</option>
+                    <option value="Law">Law</option>
+                    <option value="Management">Management</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Medical Science">Medical Science</option>
+                    <option value="Philosophy">Philosophy</option>
+                    <option value="Physics">Physics</option>
+                    <option value="Political Science and International Relations">Political Science and International Relations</option>
+                    <option value="Psychology">Psychology</option>
+                    <option value="Public Administration">Public Administration</option>
+                    <option value="Sociology">Sociology</option>
+                    <option value="Statistics">Statistics</option>
+                    <option value="Zoology">Zoology</option>
+                    <option value="Literature">Literature</option>
                   </select>
                 </div>
               </div>
@@ -335,9 +556,6 @@ export default function ProfilePage() {
             </div>
 
             {(() => {
-              // Only render badges for milestones the user has actually
-              // hit. Empty state encourages action and avoids the
-              // hardcoded "Top 10" / "1000 MCQs" lie when nothing is done.
               const earned: { icon: string; label: string }[] = [];
               if ((stats?.streak ?? 0) >= 3) earned.push({ icon: '/icons/fire.png', label: `${stats.streak}-day streak` });
               const mcqs = stats?.mcqsAttempted ?? 0;

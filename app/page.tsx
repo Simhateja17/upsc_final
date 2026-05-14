@@ -159,7 +159,7 @@ export default function LandingPage() {
 
   const go = useCallback((path: string) => { router.push(path); closeMobileNav(); }, [router, closeMobileNav]);
 
-  if (isLoading || isAuthenticated) {
+  if (isAuthenticated) {
     return (
       <div style={{ minHeight: '100dvh', background: '#FAFBFE', color: '#6B7280', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         Loading...
