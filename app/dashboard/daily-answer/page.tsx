@@ -89,6 +89,7 @@ export default function DailyMainsChallengePage() {
           }}
         >
           {/* Top Icon */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/pen-circle.png"
             alt="Pen"
@@ -163,6 +164,7 @@ export default function DailyMainsChallengePage() {
                 className="w-[232px] h-[52px] bg-[#101828] text-white rounded-[10px] hover:bg-[#1A1A1A] transition-all flex items-center justify-center gap-2 mx-auto font-arimo font-bold text-[20px] leading-[24px]"
                 style={{ marginTop: '10px' }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/icon-1.png" alt="" className="w-5 h-5 object-contain" />
                 Start Now
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white ml-1">

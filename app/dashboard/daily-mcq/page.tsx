@@ -76,6 +76,7 @@ export default function DailyMcqIntroPage() {
         <div className="card-elevated rounded-[18px] p-8 text-center" style={{ width: '605px', minHeight: '620px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 26px 60px -28px rgba(15, 23, 42, 0.28), 0 10px 24px -18px rgba(15, 23, 42, 0.18), inset 0 1px 0 rgba(255,255,255,0.85)' }}>
           {/* Icon */}
           <div className="flex justify-center mb-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/icons/dashboard/daily-mcq.png" alt="Target Icon" className="w-[44px] h-[44px] object-contain" />
           </div>
 
@@ -133,6 +134,7 @@ export default function DailyMcqIntroPage() {
           ) : (
             <Link href="/dashboard/daily-mcq/challenge">
               <button className="w-[232px] h-[52px] bg-[#101828] text-white rounded-[10px] hover:bg-[#1A1A1A] transition-all flex items-center justify-center gap-2 mx-auto font-arimo font-bold text-[20px] leading-[24px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/icon-1.png" alt="" className="w-5 h-5 object-contain" />
                 Start Now
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white ml-1">

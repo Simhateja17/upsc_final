@@ -49,6 +49,7 @@ export default function StudyMaterialsPage() {
 
   useEffect(() => {
     loadMaterials();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const handleUpload = async (e: React.FormEvent) => {

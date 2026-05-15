@@ -178,6 +178,7 @@ export default function TestAttemptPage() {
     }, 1000);
 
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTimerRunning, timer]);
 
   const handleSelectOption = (optionIndex: number) => {

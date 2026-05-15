@@ -72,6 +72,7 @@ export default function NextStepsPage() {
                   style={{ padding: 'clamp(1.1rem,1.2vw,1.4rem) clamp(1rem,1.1vw,1.3rem)' }}>
                   <div className="rounded-[clamp(12px,0.83vw,16px)] flex items-center justify-center mb-[clamp(1rem,1.25vw,1.5rem)] mx-auto"
                     style={{ width: 'clamp(52px,3.33vw,64px)', height: 'clamp(52px,3.33vw,64px)', background: bgColors[item.type] || '#E5E7EB' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={icons[item.type] || '/🎯.png'} alt={item.title}
                       style={{ width: 'clamp(24px,1.56vw,30px)', height: 'clamp(29px,1.88vw,36px)', objectFit: 'contain' }} />
                   </div>

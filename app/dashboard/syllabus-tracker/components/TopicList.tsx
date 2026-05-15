@@ -202,9 +202,10 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
                 {/* Status Icon */}
                 <div className="w-[28px] h-[28px] flex-shrink-0 flex items-center justify-center">
                   {statusIcon ? (
-                    <img 
-                      src={statusIcon} 
-                      alt={topicStats.pct === 100 ? 'Completed' : 'In Progress'} 
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={statusIcon}
+                      alt={topicStats.pct === 100 ? 'Completed' : 'In Progress'}
                       className="w-full h-full object-contain"
                     />
                   ) : (

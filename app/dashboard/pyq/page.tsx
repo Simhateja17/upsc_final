@@ -334,6 +334,7 @@ export default function PyqPage() {
       style={{ background: '#F9FAFB' }}
     >
       <DashboardPageHero
+        // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/badge-pyq.png" alt="pyq" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="PREVIOUS YEAR QUESTIONS"
         title={
@@ -376,6 +377,7 @@ export default function PyqPage() {
               }}
               onClick={() => setMode('prelims')}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/9k.png"
                 alt="Prelims"
@@ -407,6 +409,7 @@ export default function PyqPage() {
               }}
               onClick={() => setMode('mains')}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/8k.png"
                 alt="Mains"

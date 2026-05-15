@@ -86,6 +86,7 @@ export default function CmsPageEditor() {
 
   useEffect(() => {
     loadPage();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   const loadPage = async () => {

@@ -78,12 +78,12 @@ export default function PurchaseModal({ open, onClose, itemType, itemId, itemNam
   const [bank] = useState('SBI');
   const [walletName] = useState('Paytm Wallet');
 
-  if (!open) return null;
-
   const payableAmount = useMemo(() => {
     if (amount > 0) return amount;
     return PLAN_OPTIONS.find(p => p.key === selectedPlan)?.price ?? 499;
   }, [amount, selectedPlan]);
+
+  if (!open) return null;
 
   const displayName = itemName?.trim() || 'Rise Plan';
 

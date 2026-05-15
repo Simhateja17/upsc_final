@@ -79,6 +79,7 @@ export default function MindmapPage() {
     <div className="min-h-screen font-arimo" style={{ background: '#F9FAFB' }}>
 
       <DashboardPageHero
+        // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="VISUAL LEARNING"
         title={

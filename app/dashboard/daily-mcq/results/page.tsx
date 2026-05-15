@@ -203,7 +203,7 @@ export default function DailyMcqResultsPage() {
               </h1>
               <p className="font-arimo text-[#4A5565]"
                 style={{ fontSize: 'clamp(13px,0.73vw,14px)', lineHeight: 'clamp(18px,1.04vw,20px)' }}>
-                Great effort! Here's your performance analysis
+                Great effort! Here{'\''}s your performance analysis
               </p>
             </div>
 
@@ -255,8 +255,9 @@ export default function DailyMcqResultsPage() {
             <div className="grid grid-cols-2 gap-[clamp(0.65rem,0.9vw,1rem)] mb-[clamp(0.9rem,1.2vw,1.2rem)]">
               <div className="bg-[#F0FDF4] rounded-[clamp(8px,0.52vw,10px)]" style={{ padding: 'clamp(0.75rem,1vw,1.25rem)' }}>
                 <div className="flex items-center gap-2 mb-[clamp(0.5rem,0.75vw,1rem)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/strong-icon.png" alt="Strong" className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]" />
-                  <h3 className="font-arimo font-bold text-[#0D542B]" style={{ fontSize: 'clamp(13px,0.78vw,16px)' }}>You're strong in:</h3>
+                  <h3 className="font-arimo font-bold text-[#0D542B]" style={{ fontSize: 'clamp(13px,0.78vw,16px)' }}>You{'\''}re strong in:</h3>
                 </div>
                 <div className="space-y-[clamp(0.35rem,0.5vw,0.6rem)]">
                   {(r.strongTopics.length > 0 ? r.strongTopics : ['No data yet']).map((topic) => (
@@ -271,6 +272,7 @@ export default function DailyMcqResultsPage() {
               </div>
               <div className="bg-[#FEF2F2] rounded-[clamp(8px,0.52vw,10px)]" style={{ padding: 'clamp(0.75rem,1vw,1.25rem)' }}>
                 <div className="flex items-center gap-2 mb-[clamp(0.5rem,0.75vw,1rem)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/revision-icon.png" alt="Needs Revision" className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]" />
                   <h3 className="font-arimo font-bold text-[#991B1B]" style={{ fontSize: 'clamp(13px,0.78vw,16px)' }}>Needs revision:</h3>
                 </div>

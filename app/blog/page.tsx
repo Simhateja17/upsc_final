@@ -313,7 +313,7 @@ export default function BlogPage() {
             Weekly UPSC digest
           </h2>
           <p className="text-[#90a1b9] text-base leading-[26px] mb-8 max-w-lg mx-auto">
-            Get the week's best articles, key current affairs, and one answer writing prompt, every Sunday morning.
+            Get the week{'\''}s best articles, key current affairs, and one answer writing prompt, every Sunday morning.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3 max-w-md mx-auto">
             <input

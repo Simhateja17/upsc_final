@@ -394,6 +394,7 @@ export default function VideoLecturesPage() {
   return (
     <div className="font-arimo w-full min-h-screen" style={{ background: '#F9FAFB' }}>
       <DashboardPageHero
+        // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/🎥.png" alt="video" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="SIMPLIFIED VIDEO LECTURES"
         title={
@@ -661,6 +662,7 @@ export default function VideoLecturesPage() {
                         style={{ background: '#EFF6FF', height: 'clamp(150px, 14vw, 190px)', position: 'relative' }}
                       >
                         {video.thumbnailUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img src={video.thumbnailUrl} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           <span style={{ fontSize: 'clamp(48px, 5vw, 64px)' }}>{subjectEmoji(selectedSubject)}</span>
@@ -1015,6 +1017,7 @@ export default function VideoLecturesPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/mentor-icon.png" alt="Ask Our Team" style={{ width: '56px', height: '56px', objectFit: 'contain' }} />
               <button onClick={() => setShowMentorModal(false)}
                 className="flex items-center justify-center"

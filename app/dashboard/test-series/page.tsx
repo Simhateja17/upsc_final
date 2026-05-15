@@ -145,6 +145,7 @@ export default function TestSeriesPage() {
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {/* Hero */}
           <DashboardPageHero
+            // eslint-disable-next-line @next/next/no-img-element
             badgeIcon={<img src="/badge-test-series.png" alt="test series" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />}
             badgeText="TEST SERIES"
 

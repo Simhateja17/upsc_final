@@ -285,6 +285,7 @@ export default function SpacedRepetitionPage() {
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
         <DashboardPageHero
+          // eslint-disable-next-line @next/next/no-img-element
           badgeIcon={<img src="/sidebar-spaced-repetition.png" alt="spaced repetition" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
           badgeText="WEAK SUBJECT TRACKER - SPACED REPETITION"
           title={<>Close every <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>gap</span> before exam day.</>}

@@ -288,9 +288,11 @@ function NextStepsInner() {
                 color: card.iconColor || '#fff',
                 overflow: 'hidden',
               }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 {card.imgSrc
-                  ? <img src={card.imgSrc} alt={card.title} style={{ width: '30px', height: '36px', objectFit: 'contain' }} />
+                  ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={card.imgSrc} alt={card.title} style={{ width: '30px', height: '36px', objectFit: 'contain' }} />
+                  )
                   : <span style={{ lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{card.icon}</span>
                 }
               </div>

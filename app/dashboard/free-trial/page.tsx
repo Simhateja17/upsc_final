@@ -274,6 +274,7 @@ export default function FreeTrialPage() {
       {/*  SECTION 1: HERO                                                  */}
       {/* ================================================================ */}
       <DashboardPageHero
+        // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/badge-mentorship.png" alt="mentorship" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="PERSONALIZED MENTORSHIP"
         contentShiftY={-18}
@@ -497,7 +498,7 @@ export default function FreeTrialPage() {
         <div style={{ background: '#0A1128', borderRadius: '20px', padding: '36px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px', marginBottom: '32px' }}>
           <div style={{ flex: '1 1 400px' }}>
             <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', color: '#F5C75D', textTransform: 'uppercase', marginBottom: '12px' }}>★ WHY MENTORSHIP WORKS</div>
-            <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 32px)', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.3, marginBottom: '12px' }}>A coach who knows you<br />beats a <span style={{ color: '#F5C75D' }}>course that doesn't.</span></h2>
+            <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 32px)', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.3, marginBottom: '12px' }}>A coach who knows you<br />beats a <span style={{ color: '#F5C75D' }}>course that doesn{'\''}t.</span></h2>
             <p style={{ fontSize: '14px', color: '#94A3B8', lineHeight: 1.6, maxWidth: '440px' }}>UPSC prep is personal. Abhijeet Sir mentorship is built around you, not a batch schedule.</p>
           </div>
           <div style={{ textAlign: 'center' }}>
@@ -523,7 +524,7 @@ export default function FreeTrialPage() {
       <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px 48px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 32px)', fontWeight: 700, color: '#0F172B', marginBottom: '8px' }}>What UPSC Aspirants Say</h2>
-          <p style={{ fontSize: '14px', color: '#64748B' }}>From Jeet Sir's Mentees</p>
+          <p style={{ fontSize: '14px', color: '#64748B' }}>From Jeet Sir{'\''}s Mentees</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
           {(apiTestimonials && apiTestimonials.length > 0 ? apiTestimonials : [
@@ -554,7 +555,10 @@ export default function FreeTrialPage() {
               <p style={{ fontSize: '13px', color: '#374151', lineHeight: 1.7, marginBottom: '20px', minHeight: '80px' }}>&ldquo;{t.content || t.quote}&rdquo;</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: t.color || '#0F172B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#FFFFFF', flexShrink: 0 }}>
-                  {t.avatarUrl ? <img src={t.avatarUrl} alt={t.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : (t.initials || t.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase())}
+                  {t.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={t.avatarUrl} alt={t.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (t.initials || t.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase())}
                 </div>
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172B' }}>{t.name}</div>
@@ -594,7 +598,7 @@ export default function FreeTrialPage() {
       {/* ================================================================ */}
       <section style={{ maxWidth: '800px', margin: '0 auto', padding: '0 24px 80px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <h2 style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 700, color: '#0F172B' }}>The questions you're actually thinking</h2>
+          <h2 style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 700, color: '#0F172B' }}>The questions you{'\''}re actually thinking</h2>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {faqItems.map((faq, idx) => (
@@ -622,7 +626,7 @@ export default function FreeTrialPage() {
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
                 <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172B', marginBottom: '8px' }}>Call Booked!</h3>
-                <p style={{ fontSize: '14px', color: '#64748B' }}>We'll reach out shortly to confirm your discovery call.</p>
+                <p style={{ fontSize: '14px', color: '#64748B' }}>We{'\''}ll reach out shortly to confirm your discovery call.</p>
               </div>
             ) : (
               <>
