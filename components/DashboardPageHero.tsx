@@ -87,7 +87,7 @@ export default function DashboardPageHero({
         padding: '20px 26px 18px',
         marginBottom: 16,
         height: heroHeight,
-        minHeight: heroMinHeight,
+        minHeight: heroMinHeight ?? heroHeight,
         marginInline: heroMarginInline,
         borderRadius: heroBorderRadius,
         // Allow callers to override background for special cases
@@ -160,7 +160,7 @@ export default function DashboardPageHero({
         {/* Title + subtitle – centered vertically in the upper portion */}
         <div
           className="flex flex-col items-center justify-center"
-          style={{ flex: 1, width: '100%', paddingBottom: '48px', transform: `translateY(${typeof contentShiftY === 'number' ? `${contentShiftY}px` : contentShiftY})` }}
+          style={{ flex: 1, width: '100%', paddingBottom: '12px', transform: `translateY(${typeof contentShiftY === 'number' ? `${contentShiftY}px` : contentShiftY})` }}
         >
           <h1
             className="text-center font-semibold"
@@ -192,12 +192,13 @@ export default function DashboardPageHero({
           </p>
         </div>
 
-        {/* Stats strip – always sits at the bottom with same gap */}
+        {/* Stats strip – in normal flow below subtitle, no overlap possible */}
         <div
-          className="absolute bottom-0 left-0 right-0 flex gap-0 overflow-hidden"
+          className="w-full flex gap-0 overflow-hidden"
           style={{
             border: '0.8px solid rgba(255,255,255,0.1)',
             borderRadius: typeof statsBorderRadius === 'number' ? `${statsBorderRadius}px` : statsBorderRadius,
+            flexShrink: 0,
           }}
         >
           {stats.map((stat, i) => (
