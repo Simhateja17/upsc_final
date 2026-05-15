@@ -270,6 +270,7 @@ export default function EvaluatingPage() {
       >
         {/* Header */}
         <div className="flex flex-col items-center mb-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/eval-header.png"
             alt="Evaluating"
@@ -428,6 +429,7 @@ export default function EvaluatingPage() {
         >
           {/* Timer row */}
           <div className="flex items-center justify-center gap-2 mb-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/eval-timer.png" alt="Timer" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
             <span
               style={{

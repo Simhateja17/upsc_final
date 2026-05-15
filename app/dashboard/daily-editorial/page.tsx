@@ -358,6 +358,7 @@ export default function DailyEditorialPage() {
                         flexShrink: 0,
                       }}
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={item.icon}
                         alt={item.label}
@@ -405,6 +406,7 @@ export default function DailyEditorialPage() {
                   transition: 'all 0.2s ease',
                 }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/list.png" alt="List" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                 List View
               </button>
@@ -554,6 +556,7 @@ export default function DailyEditorialPage() {
                         cursor: 'pointer',
                       }}
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src="/paper.png" alt="Save" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                       {card.isSaved ? 'Saved' : 'Save'}
                     </button>
@@ -596,6 +599,7 @@ export default function DailyEditorialPage() {
                       opacity: summarizing === card.id ? 0.6 : 1,
                     }}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/summaruze.png" alt="Summarize" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                     {summarizing === card.id ? 'Summarizing...' : 'Summarize with Jeet AI'}
                   </button>
@@ -947,6 +951,7 @@ export default function DailyEditorialPage() {
                     }}
                   >
                     {checked && (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src="/tick.png"
                         alt=""

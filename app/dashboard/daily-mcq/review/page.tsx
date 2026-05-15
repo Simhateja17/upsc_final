@@ -52,6 +52,7 @@ export default function QuestionReviewPage() {
 
           <div className="flex items-center justify-between px-[clamp(1.5rem,2vw,2.5rem)] pt-[clamp(1.25rem,1.5vw,2rem)] pb-3 flex-shrink-0">
             <div className="flex items-center gap-[clamp(8px,0.625vw,12px)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/question-review-icon.png" alt="Question Review"
                 style={{ width: 'clamp(20px,1.46vw,28px)', height: 'clamp(20px,1.46vw,28px)' }} />
               <h1 className="font-arimo font-bold text-[#101828]"
@@ -158,6 +159,7 @@ export default function QuestionReviewPage() {
                   className="flex items-center gap-2 font-arimo font-bold text-[#101828] hover:opacity-70 transition-opacity mb-[clamp(0.75rem,1vw,1.25rem)]"
                   style={{ fontSize: 'clamp(13px,0.73vw,14px)' }}>
                   {showExplanation ? 'Hide' : 'View'} Explanation
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/arrow-down-icon.png" alt="Arrow"
                     style={{ width: 'clamp(14px,0.83vw,16px)', height: 'clamp(14px,0.83vw,16px)', transform: showExplanation ? 'rotate(180deg)' : undefined }} />
                 </button>

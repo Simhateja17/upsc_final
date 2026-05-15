@@ -167,7 +167,7 @@ export default function AdminFaqPage() {
           <div className="w-8 h-8 border-3 border-gray-200 border-t-[#0F172B] rounded-full animate-spin" />
         </div>
       ) : faqs.length === 0 ? (
-        <div className="text-center py-12 text-gray-500 font-inter">No FAQs yet. Click "Add FAQ" to create one.</div>
+        <div className="text-center py-12 text-gray-500 font-inter">No FAQs yet. Click {'"'}Add FAQ{'"'} to create one.</div>
       ) : (
         <div className="space-y-6">
           {Object.entries(grouped).map(([category, items]) => (

@@ -154,7 +154,7 @@ export default function SpacedRepManager() {
         {loading ? (
           <p className="text-sm text-[#6B7280] py-12 text-center">Loading...</p>
         ) : seeds.length === 0 ? (
-          <p className="text-sm text-[#6B7280] py-12 text-center">No seed questions yet. Click "Add Seed Question" to create one.</p>
+          <p className="text-sm text-[#6B7280] py-12 text-center">No seed questions yet. Click {'"'}Add Seed Question{'"'} to create one.</p>
         ) : (
           <table className="w-full text-sm">
             <thead>

@@ -239,7 +239,7 @@ export default function FlashcardManager() {
           {loading ? (
             <p className="text-sm text-[#6B7280] py-12 text-center">Loading...</p>
           ) : decks.length === 0 ? (
-            <p className="text-sm text-[#6B7280] py-12 text-center">No decks yet. Click "Add Deck" to create one.</p>
+            <p className="text-sm text-[#6B7280] py-12 text-center">No decks yet. Click {'"'}Add Deck{'"'} to create one.</p>
           ) : (
             <table className="w-full text-sm">
               <thead>

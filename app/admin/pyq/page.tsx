@@ -96,6 +96,7 @@ export default function PYQManager() {
     setCurrentPage(1);
     setSelectedIds(new Set());
     loadQuestions(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, mode]);
 
   const goToPage = (page: number) => {

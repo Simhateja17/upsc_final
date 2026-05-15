@@ -119,6 +119,7 @@ export default function DailyMcqChallengePage() {
             <div className="mb-5">
               <div className="flex items-center justify-between gap-4 mb-4">
                 <div className="flex items-center gap-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/daily-challenge-icon.png" alt="MCQ" className="w-10 h-10 object-contain" />
                   <h1 className="font-arimo font-bold text-black text-[26px] leading-[28px] whitespace-nowrap">
                     Daily MCQ Challenge
@@ -145,6 +146,7 @@ export default function DailyMcqChallengePage() {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[38px]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/tag-one.png" alt="Tag" className="w-4 h-4 object-contain" />
                     <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px] whitespace-nowrap">{q.category}</span>
                   </div>
@@ -154,6 +156,7 @@ export default function DailyMcqChallengePage() {
                 </div>
                 {!submitted && (
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/timer-icon.png" alt="Timer" className="w-10 h-10 object-contain" />
                     <div className="flex flex-col items-end">
                       <span className={`font-arimo font-bold text-xl leading-none ${timeLeft < 60 ? 'text-red-600' : 'text-[#101828]'}`}>

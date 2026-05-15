@@ -395,6 +395,7 @@ export default function MentalHealthPage() {
       `}</style>
 
       <DashboardPageHero
+        // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="MENTAL HEALTH BUDDY"
         title={
@@ -721,7 +722,7 @@ export default function MentalHealthPage() {
 
                   <div style={{ background: '#0c1424', borderRadius: 18, padding: '32px', marginBottom: 16 }}>
                     <p style={{ fontFamily: cg, fontStyle: 'italic', fontSize: 18, color: '#fff', lineHeight: '32px', margin: 0 }}>
-                      "Close your eyes. Take a slow breath in through your nose for 4 counts. Feel your chest and belly rise. Now breathe out slowly for 6 counts through your mouth. Let your shoulders drop. You are safe. You are capable. The exam is not today. Right now, all that exists is this breath..."
+                      {'"'}Close your eyes. Take a slow breath in through your nose for 4 counts. Feel your chest and belly rise. Now breathe out slowly for 6 counts through your mouth. Let your shoulders drop. You are safe. You are capable. The exam is not today. Right now, all that exists is this breath...{'"'}
                     </p>
                   </div>
 

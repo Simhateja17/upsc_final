@@ -149,7 +149,7 @@ export default function LibraryPage() {
     { emoji: '💜', bg: '#EDE9FE', title: 'YouTube + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s YouTube lessons. Watch, then revise, the most powerful UPSC loop.' },
     { emoji: '📊', bg: '#DCFCE7', title: 'PYQ-Backed Content', desc: 'All notes are reviewed and weighted from 10 years of PYQs, calibrated to what UPSC asks every year.' },
     { emoji: '🏆', bg: '#FFEDD5', title: 'Toppers Trust It', desc: 'Used by 15,000+ aspirants building stronger Prelims, Mains, and interview preparation.' },
-  ];
+  ];
 
   const [selectedSubject, setSelectedSubject] = useState('');
   const [activeTab, setActiveTab] = useState('Notes');
@@ -262,6 +262,7 @@ export default function LibraryPage() {
       style={{ background: '#FAFBFE' }}
     >
       <DashboardPageHero
+        // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/sidebar-study-material-new.png" alt="study material" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText={heroBadge}
         title={
@@ -809,6 +810,7 @@ export default function LibraryPage() {
                         opacity: downloadingChapter === chapterId ? 0.6 : 1,
                       }}
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src="/bbook.png" alt="read" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
                       {downloadingChapter === chapterId ? 'Opening...' : 'Read'}
                     </button>
@@ -830,6 +832,7 @@ export default function LibraryPage() {
                         opacity: downloadingChapter === chapterId ? 0.6 : 1,
                       }}
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src="/get pdf.png" alt="get pdf" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
                       {downloadingChapter === chapterId ? 'Loading...' : 'Get PDF'}
                     </button>
@@ -902,6 +905,7 @@ export default function LibraryPage() {
           </div>
 
           {/* Books image — absolute, center-top of banner, bleeds from top */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/books-stack.png"
             alt=""
@@ -997,7 +1001,7 @@ export default function LibraryPage() {
               </p>
             </div>
           ))}
-        </div>
+        </div>
         {/* ============================================================ */}
         {/*  SECTION 6: ASPIRANT STORIES                                   */}
         {/* ============================================================ */}
@@ -1205,6 +1209,7 @@ export default function LibraryPage() {
               pointerEvents: 'none',
             }}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/rocket.png"
               alt=""

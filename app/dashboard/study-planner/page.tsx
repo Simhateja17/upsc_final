@@ -659,6 +659,7 @@ export default function StudyPlannerPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between" style={{ marginBottom: '18px' }}>
                   <div className="flex items-center" style={{ gap: '6px' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/build.png" alt="Build" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
                     <h2 className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
                       Build Your Study Plan
@@ -669,6 +670,7 @@ export default function StudyPlannerPage() {
                     style={{ height: '34px', padding: '0 14px', borderRadius: '8px', background: '#17223E', fontSize: '13px' }}
                     onClick={showSaveAcknowledgement}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/saved.png" alt="Save" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                     Save Plan
                   </button>
@@ -746,6 +748,7 @@ export default function StudyPlannerPage() {
                             gap: '4px',
                           }}
                         >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={type.icon} alt={type.label} style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
                           <span
                             className="font-arimo text-center"
@@ -842,6 +845,7 @@ export default function StudyPlannerPage() {
                     padding: '20px',
                   }}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/empty-plan-calendar.png"
                     alt="Empty calendar"
@@ -925,6 +929,7 @@ export default function StudyPlannerPage() {
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
               >
                 <div className="flex items-center gap-2 mb-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/image-removebg-preview%20(60)%201.png" alt="Syllabus" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
                   <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '16px', lineHeight: '24px' }}>
                     Syllabus Coverage
@@ -953,6 +958,7 @@ export default function StudyPlannerPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     {/* Target Icon */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/image-removebg-preview%20(61)%201%20(1).png" alt="Goals" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
                     <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '16px', lineHeight: '24px' }}>
                       Weekly Goals
@@ -1008,6 +1014,7 @@ export default function StudyPlannerPage() {
               >
                 <div>
                     <div className="flex items-center gap-2 mb-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src="/image-removebg-preview%20(64)%201.png" alt="Sync" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
                       <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '16px', lineHeight: '24px' }}>
                         Planner Sync
@@ -1018,6 +1025,7 @@ export default function StudyPlannerPage() {
                       {/* Google Calendar */}
                       <div className="flex items-center justify-between pb-3 border-b border-[#F3F4F6]">
                         <div className="flex items-center gap-3">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src="/Container%20(3).png" alt="GCal" style={{ width: '20px', height: '20px', objectFit: 'contain', flexShrink: 0 }} />
                           <span className="font-arimo text-[#101828]" style={{ fontSize: '14px' }}>Google Calendar</span>
                         </div>
@@ -1030,6 +1038,7 @@ export default function StudyPlannerPage() {
                       {/* Smart Notifications */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src="/Container%20(4).png" alt="Notifications" style={{ width: '20px', height: '20px', objectFit: 'contain', flexShrink: 0 }} />
                           <span className="font-arimo text-[#101828]" style={{ fontSize: '14px' }}>Smart Notifications</span>
                         </div>
@@ -1078,6 +1087,7 @@ export default function StudyPlannerPage() {
                 {streakDays} Days
               </h2>
                 <div className="flex items-center" style={{ gap: '6px', marginBottom: '4px' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/fire-icon.png" alt="Fire" style={{ width: '16px', height: '20px' }} />
                 <span className="font-arimo font-bold" style={{ fontSize: '16px', lineHeight: '24px', letterSpacing: '0px', color: '#00BC7D' }}>
                   {weeklyStreakLabel || '-'}
@@ -1133,6 +1143,7 @@ export default function StudyPlannerPage() {
             >
               {/* Header */}
               <div className="flex items-center" style={{ marginBottom: '16px', gap: '8px' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/plus.png" alt="Plus" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
                 <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
                   Quick Add to Plan
@@ -1522,6 +1533,7 @@ export default function StudyPlannerPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/image-removebg-preview%20(61)%201%20(1).png" alt="Goals" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
               <h2 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '18px' }}>Edit Weekly Goals</h2>
             </div>

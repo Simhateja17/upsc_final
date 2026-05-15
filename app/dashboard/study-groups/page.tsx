@@ -124,6 +124,7 @@ export default function StudyGroupsPage() {
 
     pollRef.current = setInterval(poll, 5000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGroup?.id]);
 
   useEffect(() => {
@@ -229,6 +230,7 @@ export default function StudyGroupsPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB] font-arimo text-[#0C1424]">
       <DashboardPageHero
+        // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="STUDY TOGETHER"
         title={

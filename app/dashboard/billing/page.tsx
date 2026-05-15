@@ -53,9 +53,9 @@ function CancelSubscriptionModal({
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(10,17,32,0.45)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
       <div style={{ width: '100%', maxWidth: 760, borderRadius: 24, background: '#F5F7FC', border: '1px solid #E5E7EB', padding: 28 }}>
         <h3 style={{ margin: '0 0 8px', color: '#EF4444', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 42, fontWeight: 600 }}>Cancel Subscription?</h3>
-        <p style={{ margin: '0 0 14px', color: '#7C88A6', fontSize: 14 }}>We're sorry to see you go. Here's what you'll lose:</p>
+        <p style={{ margin: '0 0 14px', color: '#7C88A6', fontSize: 14 }}>We{'\''}re sorry to see you go. Here{'\''}s what you{'\''}ll lose:</p>
         <div style={{ border: '1px solid #FCD5D8', background: '#FFF6F7', borderLeft: '4px solid #EF4444', borderRadius: 10, padding: 16, marginBottom: 12 }}>
-          <p style={{ margin: '0 0 10px', color: '#EF4444', fontSize: 14 }}>Your plan remains active until April 15, 2027. After that, you'll be downgraded to the free Starter plan. You will permanently lose :</p>
+          <p style={{ margin: '0 0 10px', color: '#EF4444', fontSize: 14 }}>Your plan remains active until April 15, 2027. After that, you{'\''}ll be downgraded to the free Starter plan. You will permanently lose :</p>
           {['Unlimited Jeet AI Chats', 'Unlimited AI Mains Evaluations', 'Priority Answer Review', 'Mental Health Buddy', 'Unlimited Mock Tests'].map((item) => (
             <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#334155', marginBottom: 6 }}>
               <span style={{ color: '#EF4444', fontWeight: 700 }}>✕</span>
@@ -63,7 +63,7 @@ function CancelSubscriptionModal({
             </div>
           ))}
         </div>
-        <label style={{ display: 'block', marginBottom: 6, color: '#475569', fontSize: 14 }}>What's making you leave? (required)</label>
+        <label style={{ display: 'block', marginBottom: 6, color: '#475569', fontSize: 14 }}>What{'\''}s making you leave? (required)</label>
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}

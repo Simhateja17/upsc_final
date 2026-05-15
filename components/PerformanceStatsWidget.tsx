@@ -200,6 +200,7 @@ const PerformanceStatsWidget = () => {
       >
         {/* Header */}
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/icons/dashboard/perf-header.png"
             alt="Performance Stats"
@@ -243,6 +244,7 @@ const PerformanceStatsWidget = () => {
                     padding: 'clamp(6px,0.42vw,8px) clamp(12px,0.83vw,16px)',
                   }}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/fire-icon-green.svg"
                     alt="On Fire"
@@ -348,6 +350,7 @@ const PerformanceStatsWidget = () => {
                 }}
               >
                 <div className="flex items-center" style={{ gap: '6px', marginBottom: '6px' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/funds-icon.png"
                     alt="Jeet Coins"
@@ -377,6 +380,7 @@ const PerformanceStatsWidget = () => {
         }}
       >
         <div className="flex items-center" style={{ gap: '8px' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/add-icon.png" alt="" aria-hidden="true" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
           <span className="font-outfit font-semibold whitespace-nowrap" style={{ fontSize: '18px', lineHeight: '1', color: '#1E2875' }}>
             Weekly Leaderboard
@@ -398,6 +402,7 @@ const PerformanceStatsWidget = () => {
       >
         <div className="flex items-center justify-between gap-3 mb-[clamp(16px,1.25vw,24px)]">
           <div className="flex items-center gap-[clamp(6px,0.42vw,8px)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/ach.png"
               alt="Achievement Badges"
@@ -439,6 +444,7 @@ const PerformanceStatsWidget = () => {
                   }}
                 >
                   {badge.icon ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={badge.icon} alt={badge.title} style={{ width: '68%', height: 'auto' }} />
                   ) : (
                     badge.iconNode
@@ -464,6 +470,7 @@ const PerformanceStatsWidget = () => {
         }}
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/icons/dashboard/target-sm.png"
             alt="Smart Revision Tools"
@@ -481,6 +488,7 @@ const PerformanceStatsWidget = () => {
               padding: 'clamp(12px,0.83vw,16px)',
             }}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/flashcards-icon.png"
               alt="Flashcards"
@@ -496,6 +504,7 @@ const PerformanceStatsWidget = () => {
               padding: 'clamp(12px,0.83vw,16px)',
             }}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/list-fail.png"
               alt="Wrong Attempts"
@@ -511,6 +520,7 @@ const PerformanceStatsWidget = () => {
               padding: 'clamp(12px,0.83vw,16px)',
             }}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/icons/dashboard/brain.png"
               alt="Mindmaps"
@@ -526,6 +536,7 @@ const PerformanceStatsWidget = () => {
               padding: 'clamp(12px,0.83vw,16px)',
             }}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/paper.png"
               alt="Quick Notes"
@@ -547,6 +558,7 @@ const PerformanceStatsWidget = () => {
         }}
       >
         <div className="flex items-center gap-[clamp(6px,0.42vw,8px)] mb-[clamp(16px,1.04vw,20px)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/icons/dashboard/settings.png"
             alt="Quick Settings"

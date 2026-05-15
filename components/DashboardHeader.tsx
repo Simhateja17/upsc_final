@@ -201,6 +201,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/human.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                   <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     My Profile
@@ -212,6 +213,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/card.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                   <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Billing &amp; Plan
@@ -223,6 +225,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/paper.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                   <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Bookmarks
@@ -234,6 +237,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/sett.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                   <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Account Settings
@@ -245,6 +249,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/question-help-message--Streamline-Ultimate.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                   <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Help &amp; Support
@@ -256,6 +261,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/tin.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                   <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Feedback

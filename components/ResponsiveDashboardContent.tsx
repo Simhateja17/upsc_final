@@ -574,9 +574,10 @@ const ResponsiveDashboardContent = () => {
           }}
         >
           <div className="flex items-center gap-2 mb-[clamp(0.5rem,0.75vw,0.75rem)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/icons/dashboard/trio-header.png" alt="Today's Trio" className="w-[clamp(18px,1.25vw,22px)] h-[clamp(18px,1.25vw,22px)]" />
             <h2 className="font-inter font-bold text-[clamp(18px,1.2vw,20px)] text-[#1A1A1A]">
-              Today's Trio
+              Today{'\''}s Trio
             </h2>
           </div>
 
@@ -604,6 +605,7 @@ const ResponsiveDashboardContent = () => {
                 <div className="mb-1 py-0 text-[clamp(12px,0.73vw,13px)] invisible">AI Evaluation</div>
 
                 <div className="flex items-center gap-3 mb-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={isMcqCompleted ? '/sidebar-daily-mcq-new.png' : '/icons/dashboard/daily-mcq.png'}
                     alt="MCQ"
@@ -623,6 +625,7 @@ const ResponsiveDashboardContent = () => {
 
                 <div className="w-full flex justify-center" role="button">
                   <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/mcq-completed-icon.png" alt="" className="w-[22px] h-[16px] object-contain flex-shrink-0" />
                     <span>Completed</span>
                   </div>
@@ -645,6 +648,7 @@ const ResponsiveDashboardContent = () => {
                 <div className="mb-1 py-0 text-[clamp(12px,0.73vw,13px)] invisible">Status</div>
 
                 <div className="flex items-center gap-3 mb-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/mains-question-icon.png" alt="Mains" className="w-7 h-7 object-contain" />
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                     Daily Mains Challenge
@@ -660,11 +664,13 @@ const ResponsiveDashboardContent = () => {
 
                 {isMainsCompleted ? (
                   <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/mcq-completed-icon.png" alt="" className="w-[22px] h-[16px] object-contain flex-shrink-0" />
                     Completed
                   </div>
                 ) : (
                   <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/TrioCard (1).png" alt="Attempt" className="w-5 h-5" />
                     Attempt Now
                   </div>
@@ -688,6 +694,7 @@ const ResponsiveDashboardContent = () => {
                 <div className="mb-1 py-0 text-[clamp(12px,0.73vw,13px)] invisible">Status</div>
 
                 <div className="flex items-center gap-3 mb-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/icons/dashboard/editorial.png" alt="Editorial" className="w-7 h-7" />
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                     Daily Editorial
@@ -703,11 +710,13 @@ const ResponsiveDashboardContent = () => {
 
                 {isEditorialCompleted ? (
                   <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/mcq-completed-icon.png" alt="" className="w-[22px] h-[16px] object-contain flex-shrink-0" />
                     Completed
                   </div>
                 ) : (
                   <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/TrioCard.png" alt="Read" className="w-5 h-5" />
                     Read Now
                   </div>
@@ -728,9 +737,10 @@ const ResponsiveDashboardContent = () => {
         >
           <div className="flex items-center justify-between mb-[clamp(1rem,1.25vw,1.5rem)]">
             <div className="flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/icons/dashboard/tasks-header.png" alt="Today's Study Tasks" className="w-[clamp(18px,1.25vw,22px)] h-[clamp(18px,1.25vw,22px)]" />
               <h2 className="font-inter font-bold text-[clamp(18px,1.2vw,20px)] text-[#1A1A1A]">
-                Today's Study Tasks
+                Today{'\''}s Study Tasks
               </h2>
               <Link href="/dashboard/study-planner" className="text-[12px] text-[#4F46E5] font-medium hover:underline">
                 Open Study Planner
@@ -813,6 +823,7 @@ const ResponsiveDashboardContent = () => {
                       </Link>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-blue-600" style={{ background: '#DBEAFE' }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src="/b.png" alt="Type" className="w-3.5 h-3.5" />
                           {task.type || 'Reading'}
                         </span>

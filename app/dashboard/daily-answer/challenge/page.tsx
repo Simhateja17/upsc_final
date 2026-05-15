@@ -178,6 +178,7 @@ export default function DailyMainsChallengeContextPage() {
             className="flex items-center justify-center gap-2 px-4 py-1.5 mb-4"
             style={{ borderRadius: '26px', border: '0.8px solid #E9D4FF', background: '#FAF5FF', width: 'fit-content' }}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/Icon%20(5).png" alt="" style={{ width: '16px', height: '16px' }} />
             <span style={{ color: '#8200DB', fontSize: '14px', fontWeight: 500 }}>Practice. Evaluate. Improve</span>
           </div>
@@ -229,14 +230,17 @@ export default function DailyMainsChallengeContextPage() {
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-8 text-[#4A5565]" style={{ fontSize: '14px' }}>
                 <div className="flex items-center gap-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/Icon%20(8).png" alt="" style={{ width: '20px', height: '20px' }} />
                   <span>Time: {data.timeLimit} minutes</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/Icon%20(7).png" alt="" style={{ width: '20px', height: '20px' }} />
                   <span>Word limit: {data.wordLimit} words</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/Icon%20(6).png" alt="" style={{ width: '20px', height: '20px' }} />
                   <span>Marks: {data.marks}</span>
                 </div>
@@ -255,6 +259,7 @@ export default function DailyMainsChallengeContextPage() {
                     className="bg-[#17223E] text-white flex items-center justify-center gap-2 transition-transform hover:scale-105"
                     style={{ width: '260px', height: '52px', borderRadius: '14px', fontSize: '16px', fontWeight: 700, boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)' }}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/Icon%20(9).png" alt="" style={{ width: '24px', height: '24px' }} />
                     Attempt Challenge on App
                   </button>
@@ -325,14 +330,17 @@ export default function DailyMainsChallengeContextPage() {
             {/* Meta */}
             <div className="flex items-center gap-6 text-[#4A5565]" style={{ fontSize: '13px' }}>
               <div className="flex items-center gap-1.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/Icon%20(8).png" alt="" style={{ width: '16px', height: '16px' }} />
                 <span>{data.timeLimit} min</span>
               </div>
               <div className="flex items-center gap-1.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/Icon%20(7).png" alt="" style={{ width: '16px', height: '16px' }} />
                 <span>{data.wordLimit} words</span>
               </div>
               <div className="flex items-center gap-1.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/Icon%20(6).png" alt="" style={{ width: '16px', height: '16px' }} />
                 <span>{data.marks} marks</span>
               </div>
@@ -427,6 +435,7 @@ export default function DailyMainsChallengeContextPage() {
                 className="flex items-center justify-center gap-1.5 bg-white border border-[#D1D5DB] text-[#374151] font-bold transition-transform hover:scale-105"
                 style={{ width: '80px', height: '40px', borderRadius: '10px', fontSize: '14px' }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/Icon%20(10).png" alt="" style={{ width: '16px', height: '16px' }} />
                 Reset
               </button>
@@ -468,6 +477,7 @@ export default function DailyMainsChallengeContextPage() {
               </>
             ) : (
               <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/upload-icon.png" alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', marginBottom: '12px' }} />
                 <p className="font-bold text-[#101828] mb-1" style={{ fontSize: '15px' }}>Drop your answer script here</p>
                 <p className="text-[#4A5565] mb-3" style={{ fontSize: '13px' }}>Upload handwritten answers for AI evaluation</p>
@@ -542,11 +552,15 @@ export default function DailyMainsChallengeContextPage() {
             {submitting ? (
               <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />Submitting...</>
             ) : (
-              <><img src="/Icon%20(13).png" alt="" style={{ width: '22px', height: '22px' }} />Submit Answer for Evaluation</>
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/Icon%20(13).png" alt="" style={{ width: '22px', height: '22px' }} />Submit Answer for Evaluation
+              </>
             )}
           </button>
 
           <div className="flex items-center justify-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/Text%20(8).png" alt="" style={{ height: '18px' }} />
             <span className="font-bold text-[#364153]" style={{ fontSize: '13px' }}>Get detailed feedback in 60 seconds</span>
           </div>

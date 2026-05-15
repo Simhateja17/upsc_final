@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService, dashboardService, pricingService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
@@ -250,10 +250,10 @@ function MockTestsPageInner() {
       name,
       count: resolveSubjectCount(name),
     }));
-  const availableSubjects = [
+  const availableSubjects = useMemo(() => [
     { name: 'All Subjects', count: subjectCountMap['All Subjects'] ?? subjectOptions.reduce((sum, subject) => sum + subject.count, 0) },
     ...subjectOptions,
-  ];
+  ], [subjectCountMap, subjectOptions]);
   const mainsMarksPattern = selectedExamMode === 'mains' ? buildMainsMarksPattern(questionCount) : [];
 
   /* ─── Load all data from API ─── */
@@ -523,6 +523,7 @@ function MockTestsPageInner() {
       <main className="flex-1 overflow-y-auto font-arimo" style={{ background: '#F9FAFB' }}>
 
         <DashboardPageHero
+          // eslint-disable-next-line @next/next/no-img-element
           badgeIcon={<img src="/badge-mocktest.png" alt="mocktest" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
           badgeText="MOCK TEST PLATFORM"
           title={
@@ -571,6 +572,7 @@ function MockTestsPageInner() {
                 transition: 'all 0.2s ease',
               }}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/9k.png" alt="Prelims" style={{ width: '22px', height: '22px', objectFit: 'contain', flexShrink: 0 }} />
               <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '17px', color: selectedExamMode === 'prelims' ? '#FFFFFF' : '#4A5565' }}>Prelims</span>
             </button>
@@ -590,6 +592,7 @@ function MockTestsPageInner() {
                 transition: 'all 0.2s ease',
               }}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/8k.png" alt="Mains" style={{ width: '22px', height: '22px', objectFit: 'contain', flexShrink: 0 }} />
               <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '17px', color: selectedExamMode === 'mains' ? '#FFFFFF' : '#4A5565' }}>Mains</span>
             </button>
@@ -678,6 +681,7 @@ function MockTestsPageInner() {
                     )}
                     {(paper as { icon?: string }).icon && (
                       <div style={{ marginBottom: '5px' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={(paper as { icon?: string }).icon} alt={paper.label} style={{ width: '24px', height: '28px', objectFit: 'contain' }} />
                       </div>
                     )}
@@ -904,6 +908,7 @@ function MockTestsPageInner() {
                       </span>
                     )}
                     <div style={{ marginBottom: '8px' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={(src as { icon?: string }).icon} alt={src.label} style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
                     </div>
                     <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#101828', marginBottom: '4px' }}>
@@ -1064,6 +1069,7 @@ function MockTestsPageInner() {
                       transition: 'all 0.15s ease',
                     }}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={preset.icon} alt="" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
                     <span style={{
                       fontFamily: 'Inter, sans-serif',

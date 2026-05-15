@@ -142,6 +142,7 @@ export default function LeaderboardPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB] font-arimo">
       <DashboardPageHero
+        // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/icons/trophy.png" alt="trophy" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="COMMUNITY RANKINGS"
         title={
@@ -167,6 +168,7 @@ export default function LeaderboardPage() {
           <div className="absolute -right-16 -top-16 h-[220px] w-[220px] rounded-full bg-[#E8B84B]/8 blur-3xl" />
           <div className="relative flex flex-wrap items-center gap-5">
             {user?.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={user.avatarUrl}
                 alt=""
@@ -473,7 +475,7 @@ export default function LeaderboardPage() {
                 className="rounded-[10px] bg-[#E8B84B] px-[28px] pb-[14px] pt-[12px] text-center text-[14px] font-bold text-[#090E1C] shadow-[0px_4px_10px_rgba(232,184,75,0.28)]"
                 style={{ fontFamily: 'var(--font-dm-sans)' }}
               >
-                Start Today's MCQ →
+                Start Today{'\''}s MCQ →
               </Link>
               <Link
                 href="/dashboard/daily-answer"

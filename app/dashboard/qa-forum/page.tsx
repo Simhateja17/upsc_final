@@ -220,6 +220,7 @@ export default function QAForumPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB] font-arimo text-[#0C1424]">
       <DashboardPageHero
+        // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="DISCUSSION FORUM"
         title={

@@ -205,6 +205,8 @@ export default function ContactPage() {
     setSubmitting(false);
   };
 
+  // eslint-disable-next-line @next/next/no-img-element
+  const capIcon = <img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />;
   return (
     <main className="min-h-screen flex flex-col">
       <ContactHeader />
@@ -212,7 +214,7 @@ export default function ContactPage() {
       {/* Dark wrapper reserves space for the floating ContactHeader (72px tall) */}
       <div style={{ background: '#0F131F', paddingTop: '72px' }}>
         <DashboardPageHero
-          badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+          badgeIcon={capIcon}
           badgeText="HELP & SUPPORT"
           backHref="/"
           backLabel="Back to Home"

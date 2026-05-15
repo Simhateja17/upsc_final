@@ -358,6 +358,7 @@ export default function DailyAnswerAttemptPage() {
                                     </>
                                 ) : (
                                     <>
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img src="/Icon%20(13).png" alt="" style={{ width: '24px', height: '24px' }} />
                                         Submit Answer for Evaluation
                                     </>
@@ -366,6 +367,7 @@ export default function DailyAnswerAttemptPage() {
 
                             {/* Footer Feedback Text */}
                             <div className="flex items-center gap-2">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src="/Text%20(8).png" alt="Flash" style={{ height: '20px' }} />
                                 <span style={{
                                     fontFamily: 'Arimo',
@@ -445,6 +447,7 @@ export default function DailyAnswerAttemptPage() {
                                         fontSize: '16px'
                                     }}
                                 >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img src="/Icon%20(11).png" alt="" style={{ width: '24px', height: '24px', filter: 'brightness(0) invert(1)' }} />
                                     {isActive ? 'Pause' : 'Start Timer'}
                                 </button>
@@ -459,6 +462,7 @@ export default function DailyAnswerAttemptPage() {
                                         fontSize: '16px'
                                     }}
                                 >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img src="/Icon%20(10).png" alt="Reset" style={{ width: '20px', height: '20px' }} />
                                     Reset
                                 </button>
