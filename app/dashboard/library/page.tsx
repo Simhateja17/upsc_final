@@ -505,29 +505,21 @@ export default function LibraryPage() {
             }}
           >
             {/* Decorative ellipses on the container */}
-            <div style={{
-              position: 'absolute',
-              width: '300px',
-              height: '200px',
-              borderRadius: '50%',
-              background: '#DFE8FF50',
-              right: '-20px',
-              top: '-70px',
-              pointerEvents: 'none',
-              zIndex: 0,
-            }} />
-            <div style={{
-              position: 'absolute',
-              width: '240px',
-              height: '200px',
-              borderRadius: '50%',
-              background: '#DFE8FF45',
-              right: '-40px',
-              top: '80px',
-              pointerEvents: 'none',
-              zIndex: 0,
-            }} />
-
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/top_ellipse.svg"
+              alt=""
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                right: '0',
+                top: '0',
+                width: '252px',
+                height: '134px',
+                pointerEvents: 'none',
+                zIndex: 0,
+              }}
+            />
             {/* Subject header */}
             <div
               style={{
@@ -628,8 +620,29 @@ export default function LibraryPage() {
             <div style={{ padding: '0 clamp(24px, 2.5vw, 32px) clamp(24px, 2.5vw, 32px)' }}>
 
             {/* Tab bar */}
-            <div style={{ borderBottom: '2px solid #E5E7EB', marginBottom: 'clamp(20px, 2vw, 28px)' }}>
-              <div className="flex" style={{ gap: 'clamp(20px, 2.5vw, 36px)' }}>
+            <div
+              style={{
+                borderBottom: '2px solid #E5E7EB',
+                marginBottom: 'clamp(20px, 2vw, 28px)',
+                position: 'relative',
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/bottom_ellipse.svg"
+                alt=""
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  right: 'calc(-1 * clamp(24px, 2.5vw, 32px))',
+                  bottom: '0',
+                  width: '187px',
+                  height: '172px',
+                  pointerEvents: 'none',
+                  zIndex: 0,
+                }}
+              />
+              <div className="flex" style={{ gap: 'clamp(20px, 2.5vw, 36px)', position: 'relative', zIndex: 1 }}>
                 {tabs.map((tab) => {
                   const isActive = activeTab === tab;
                   const count = getChaptersForTab(tab).length;
@@ -1234,5 +1247,3 @@ export default function LibraryPage() {
     </div>
   );
 }
-
-
