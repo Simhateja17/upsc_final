@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import PageHeroBackground from '@/components/PageHeroBackground';
 
 export type HeroStat = {
   value: string;
@@ -80,31 +81,27 @@ export default function DashboardPageHero({
   const right = rightElement !== undefined ? rightElement : DefaultYouTubeButton;
 
   return (
-    <div
-      className="relative overflow-hidden flex flex-col"
+    <PageHeroBackground
+      className="flex flex-col"
       style={{
-        background: heroBackground,
-        backgroundImage: heroBackgroundImage,
-        backgroundSize: heroBackgroundImage ? heroBackgroundSize : undefined,
-        backgroundPosition: heroBackgroundImage ? heroBackgroundPosition : undefined,
         padding: '20px 26px 18px',
         marginBottom: 16,
         height: heroHeight,
         minHeight: heroMinHeight,
         marginInline: heroMarginInline,
         borderRadius: heroBorderRadius,
+        // Allow callers to override background for special cases
+        ...(heroBackgroundImage
+          ? {
+              backgroundImage: heroBackgroundImage,
+              backgroundSize: heroBackgroundSize,
+              backgroundPosition: heroBackgroundPosition,
+            }
+          : heroBackground !== '#0F131F'
+          ? { backgroundColor: heroBackground }
+          : {}),
       }}
     >
-      {/* Dot grid background */}
-      {showDotGrid && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: 'radial-gradient(rgba(255,255,255,.035) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
-          }}
-        />
-      )}
 
       {/* Top bar */}
       <div
@@ -229,6 +226,6 @@ export default function DashboardPageHero({
           ))}
         </div>
       </div>
-    </div>
+    </PageHeroBackground>
   );
 }
