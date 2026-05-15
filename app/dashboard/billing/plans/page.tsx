@@ -116,7 +116,7 @@ function RiseCheckoutModal({ cycle, onClose }: { cycle: BillingCycle; onClose: (
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 10, marginBottom: 14 }}>
-              <button type="button" style={{ borderRadius: 12, border: 'none', background: '#F4A91F', color: '#FFFFFF', fontSize: 33, fontFamily: '"Cormorant Garamond", Georgia, serif', fontWeight: 700, padding: '14px 16px', cursor: 'pointer' }}>Set Up My Dashboard -></button>
+              <button type="button" style={{ borderRadius: 12, border: 'none', background: '#F4A91F', color: '#FFFFFF', fontSize: 33, fontFamily: '"Cormorant Garamond", Georgia, serif', fontWeight: 700, padding: '14px 16px', cursor: 'pointer' }}>Set Up My Dashboard {'->'}</button>
               <button type="button" style={{ borderRadius: 12, border: '1.5px solid #D9D5CD', background: '#FFFFFF', color: '#3E4465', fontSize: 32, fontFamily: '"Cormorant Garamond", Georgia, serif', fontWeight: 700, padding: '14px 16px', cursor: 'pointer' }}>Download Receipt</button>
             </div>
 
@@ -282,7 +282,7 @@ function AscentCheckoutModal({ cycle, onClose }: { cycle: BillingCycle; onClose:
               <div style={{ fontSize: 20, marginTop: 2, fontFamily: '"Cormorant Garamond", Georgia, serif' }}>All features unlocked click below to set up your profile</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 10, marginBottom: 14 }}>
-              <button type="button" style={{ borderRadius: 12, border: 'none', background: '#F4A91F', color: '#FFFFFF', fontSize: 26, fontFamily: '"Cormorant Garamond", Georgia, serif', fontWeight: 700, padding: '12px 16px', cursor: 'pointer' }}>Set Up My Dashboard -></button>
+              <button type="button" style={{ borderRadius: 12, border: 'none', background: '#F4A91F', color: '#FFFFFF', fontSize: 26, fontFamily: '"Cormorant Garamond", Georgia, serif', fontWeight: 700, padding: '12px 16px', cursor: 'pointer' }}>Set Up My Dashboard {'->'}</button>
               <button type="button" style={{ borderRadius: 12, border: '1.5px solid #D9D5CD', background: '#FFFFFF', color: '#3E4465', fontSize: 24, fontFamily: '"Cormorant Garamond", Georgia, serif', fontWeight: 700, padding: '12px 16px', cursor: 'pointer' }}>Download Receipt</button>
             </div>
           </div>

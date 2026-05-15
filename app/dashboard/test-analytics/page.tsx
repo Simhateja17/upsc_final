@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { dashboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import Toast from '@/components/Toast';
 
 const UI_FONT_FAMILY = 'var(--font-arimo), Arimo, sans-serif';
 
@@ -190,12 +191,12 @@ export default function TestAnalyticsPage() {
             </div>
           )}
           {error && (
-            <div
-              className="mb-6 rounded-[12px] px-5 py-4 text-[13px]"
-              style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', fontFamily: UI_FONT_FAMILY }}
-            >
-              {error}
-            </div>
+            <Toast
+              message={error}
+              type="error"
+              onClose={() => setError(null)}
+              autoCloseDuration={4000}
+            />
           )}
 
           <DashboardPageHero
