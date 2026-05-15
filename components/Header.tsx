@@ -132,7 +132,7 @@ const Header = () => {
       {/* Logo Section */}
       <Link href="/" className="flex flex-col items-center flex-shrink-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo...png" alt="RiseWithJeet Logo" className="w-[74px] md:w-[84px] h-auto object-contain" />
+        <img src="/logo.png" alt="RiseWithJeet Logo" className="w-[90px] md:w-[110px] h-auto object-contain" />
       </Link>
 
       {/* Desktop Nav Links */}
@@ -388,3 +388,4 @@ const Header = () => {
 };
 
 export default Header;
+

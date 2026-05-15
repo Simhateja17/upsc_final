@@ -101,9 +101,9 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
         <Link href="/dashboard" className="flex items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo...png"
+            src="/logo.png"
             alt="RiseWithJeet Logo"
-            className="w-[74px] md:w-[84px] h-auto object-contain"
+            className="w-[90px] md:w-[110px] h-auto object-contain"
           />
         </Link>
       </div>
@@ -369,3 +369,4 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
 };
 
 export default DashboardHeader;
+
