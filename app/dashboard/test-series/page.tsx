@@ -147,7 +147,7 @@ export default function TestSeriesPage() {
           <DashboardPageHero
             badgeIcon={<img src="/badge-test-series.png" alt="test series" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />}
             badgeText="TEST SERIES"
-            heroBorderRadius={16}
+
             contentShiftY={-22}
             title={<>Choose Your <em style={{ color: '#e8a820', fontStyle: 'italic' }}>Battle Plan.</em></>}
             subtitle="From NCERT foundations to full Prelims war-room simulations, each series is crafted to mirror real UPSC patterns. Rise every day. Rise with Jeet."
