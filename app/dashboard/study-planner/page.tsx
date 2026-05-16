@@ -28,6 +28,21 @@ function toDateParam(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+function toMinutes(time?: string): number {
+  if (!time) return Number.POSITIVE_INFINITY;
+  const [h, m] = time.split(':').map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return Number.POSITIVE_INFINITY;
+  return h * 60 + m;
+}
+
+function compareTasksByTime(a: Task, b: Task): number {
+  const startDiff = toMinutes(a.startTime) - toMinutes(b.startTime);
+  if (startDiff !== 0) return startDiff;
+  const endDiff = toMinutes(a.endTime) - toMinutes(b.endTime);
+  if (endDiff !== 0) return endDiff;
+  return a.title.localeCompare(b.title);
+}
+
 function pieSlicePath(cx: number, cy: number, r: number, startAngle: number, endAngle: number): string {
   const angleDiff = endAngle - startAngle;
   if (angleDiff >= Math.PI * 2 - 0.0001) {
@@ -234,7 +249,7 @@ export default function StudyPlannerPage() {
   }, []);
 
   const startFocusSession = () => {
-    const pendingTasks = tasks.filter((task) => !task.isCompleted);
+    const pendingTasks = tasks.filter((task) => !task.isCompleted).sort(compareTasksByTime);
     if (pendingTasks.length === 0) return;
     setFocusSessionTasks(pendingTasks);
     setFocusTaskIdx(0);
@@ -390,6 +405,7 @@ export default function StudyPlannerPage() {
     ? `Total Study Time: ${totalStudyMinutes} minutes (${totalStudyHours}h ${totalStudyMins}m)`
     : 'Total Study Time: -';
   const pendingTaskCount = tasks.filter((task) => !task.isCompleted).length;
+  const sortedTasks = [...tasks].sort(compareTasksByTime);
 
   // Time distribution by study type
   const typeConfig = [
@@ -861,7 +877,7 @@ export default function StudyPlannerPage() {
                 ) : (
                 <div className="flex-1 overflow-y-auto" style={{ maxHeight: '477px' }}>
                   <div className="space-y-3">
-                    {tasks.map(task => (
+                    {sortedTasks.map(task => (
                       <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
                         <button onClick={() => handleToggleTask(task.id, task.isCompleted)}
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${task.isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
