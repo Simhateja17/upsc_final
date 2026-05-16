@@ -159,15 +159,20 @@ export default function DashboardPageHero({
         </div>
       </div>
 
-      {/* Content area – fills remaining space and keeps stats at bottom */}
+      {/* Content area – fills remaining space and keeps stats pinned to a fixed baseline */}
       <div
         className="relative z-10 flex flex-col items-center flex-1"
         style={{ maxWidth: '860px', margin: '0 auto', width: '100%' }}
       >
-        {/* Title + subtitle – centered vertically in the upper portion */}
+        {/* Title + subtitle – centered in upper area; bottom space reserved for stats strip */}
         <div
           className="flex flex-col items-center justify-center"
-          style={{ flex: 1, width: '100%', paddingBottom: '12px', transform: `translateY(${typeof effectiveContentShiftY === 'number' ? `${effectiveContentShiftY}px` : effectiveContentShiftY})` }}
+          style={{
+            flex: 1,
+            width: '100%',
+            paddingBottom: '88px',
+            transform: `translateY(${typeof effectiveContentShiftY === 'number' ? `${effectiveContentShiftY}px` : effectiveContentShiftY})`,
+          }}
         >
           <h1
             className="hero-title text-center font-semibold"
@@ -188,10 +193,13 @@ export default function DashboardPageHero({
           <p
             className="font-arimo text-center"
             style={{
-              fontSize: 'clamp(13px, 1.2vw, 16px)',
-              lineHeight: 'clamp(20px, 1.8vw, 24px)',
+              fontSize: 'clamp(12px, 1vw, 16px)',
+              lineHeight: '1.2',
               color: 'rgba(255,255,255,0.5)',
-              maxWidth: '640px',
+              maxWidth: '100%',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
               marginBottom: 0,
             }}
           >
@@ -199,10 +207,14 @@ export default function DashboardPageHero({
           </p>
         </div>
 
-        {/* Stats strip – in normal flow below subtitle, no overlap possible */}
+        {/* Stats strip – anchored for consistent cross-page vertical placement */}
         <div
           className="w-full flex gap-0 overflow-hidden"
           style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
             border: '0.8px solid rgba(255,255,255,0.1)',
             borderRadius: typeof effectiveStatsBorderRadius === 'number' ? `${effectiveStatsBorderRadius}px` : effectiveStatsBorderRadius,
             flexShrink: 0,

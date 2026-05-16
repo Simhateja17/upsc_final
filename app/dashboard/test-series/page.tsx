@@ -150,10 +150,10 @@ export default function TestSeriesPage() {
             badgeText="TEST SERIES"
 
             contentShiftY={-22}
-            title={<>Choose Your <em style={{ color: '#e8a820', fontStyle: 'italic' }}>Battle Plan.</em></>}
+            title={<>Choose Your <em style={{ color: '#E8B84B', fontStyle: 'italic' }}>Battle Plan.</em></>}
             subtitle="From NCERT foundations to full Prelims war-room simulations, each series is crafted to mirror real UPSC patterns. Rise every day. Rise with Jeet."
             stats={[
-              { value: heroStats ? String(heroStats.activeSeries) : '847', label: 'Active Series', color: '#F5A623' },
+              { value: heroStats ? String(heroStats.activeSeries) : '847', label: 'Active Series', color: '#E8B84B' },
               { value: heroStats ? heroStats.totalStudents.toLocaleString('en-IN') : '1.2L+', label: 'Students', color: '#FB7185' },
               { value: heroStats ? heroStats.testsTaken.toLocaleString('en-IN') + (heroStats.testsTaken > 0 ? '+' : '') : '42,980+', label: 'Tests Taken', color: '#FFFFFF' },
               { value: heroStats ? `${heroStats.successRate}%` : '68%', label: 'Success Rate', color: '#22C55E' },

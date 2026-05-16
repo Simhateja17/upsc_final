@@ -400,7 +400,7 @@ export default function VideoLecturesPage() {
         title={
           <>
             Master Your{' '}
-            <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>UPSC Journey</em>
+            <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>UPSC Journey</em>
             <br />
             with Expert Video Lectures
           </>
@@ -750,7 +750,7 @@ export default function VideoLecturesPage() {
                         }}
                       >
                         Never Miss a<br />
-                        <span style={{ color: '#F0B100' }}>Lecture Again.</span>
+                        <span style={{ color: '#E8B84B' }}>Lecture Again.</span>
                       </h3>
                       <p
                         className="font-arimo"

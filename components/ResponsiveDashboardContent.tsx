@@ -407,7 +407,7 @@ const ResponsiveDashboardContent = () => {
         <div
           className="w-full rounded-[16px] p-[clamp(1rem,1.5vw,1.5rem)] mb-[clamp(0.75rem,1vw,1rem)]"
           style={{
-            background: 'linear-gradient(180deg, #0E182D 0%, #17223E 100%)',
+            background: 'linear-gradient(180deg, #090E1C 0%, #10192F 100%)',
           }}
         >
           {/* Greeting Section */}

@@ -8,12 +8,15 @@ interface HeroSectionProps {
   states: TrackerState;
   syllabusData: SyllabusData;
   cms?: Record<string, any>;
+  userFirstName?: string;
 }
 
-export default function HeroSection({ states, syllabusData, cms }: HeroSectionProps) {
+export default function HeroSection({ states, syllabusData, cms, userFirstName }: HeroSectionProps) {
   const badgeText = cms?.hero_badge || 'Personalized Syllabus Tracker';
   const titlePrefix = cms?.hero_title_prefix || 'Know Exactly Where You Stand';
-  const titleSuffix = cms?.hero_title_suffix || '';
+  const cleanFirstName = (userFirstName || '').trim().split(/\s+/)[0] || '';
+  const cmsTitleSuffix = (cms?.hero_title_suffix || '').trim();
+  const hasNamePlaceholder = /{{\s*firstName\s*}}|{{\s*name\s*}}|\{\{\s*userFirstName\s*\}\}/i.test(cmsTitleSuffix);
   const subtitle = (
     cms?.hero_subtitle ||
     "Your UPSC syllabus, fully mapped. Track every topic across Prelims, Mains and Optional, see what's done, what's pending, and what to conquer next."
@@ -80,12 +83,28 @@ export default function HeroSection({ states, syllabusData, cms }: HeroSectionPr
       title={
         <>
           {titlePrefix}
-          {titleSuffix}
+          {cleanFirstName ? (
+            <>
+              {', '}
+              <em>{cleanFirstName}</em>
+              {'.'}
+            </>
+          ) : cmsTitleSuffix ? (
+            <>
+              {hasNamePlaceholder
+                ? cmsTitleSuffix
+                    .replace(/{{\s*firstName\s*}}|{{\s*name\s*}}|{{\s*userFirstName\s*}}/gi, '')
+                    .trim()
+                : cmsTitleSuffix}
+            </>
+          ) : (
+            ''
+          )}
         </>
       }
       subtitle={subtitle}
       stats={[
-        { value: `${overallPct}%`, label: statLabels.overall || 'Overall', color: '#F5A623' },
+        { value: `${overallPct}%`, label: statLabels.overall || 'Overall', color: '#E8B84B' },
         { value: String(allDone), label: statLabels.done || 'Done', color: '#FF7070' },
         { value: String(allRevision), label: statLabels.revising || 'Revising', color: '#FFFFFF' },
         { value: String(Math.max(allTotal - allDone, 0)), label: statLabels.remaining || 'Remaining', color: '#0E8A56' },
@@ -93,4 +112,3 @@ export default function HeroSection({ states, syllabusData, cms }: HeroSectionPr
     />
   );
 }
-

@@ -339,14 +339,14 @@ export default function PyqPage() {
         badgeText="PREVIOUS YEAR QUESTIONS"
         title={
           <>
-            The Complete <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>PYQ Bank</em>
+            The Complete <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>PYQ Bank</em>
             <br />
             for UPSC Success
           </>
         }
         subtitle="Every UPSC question ever asked — Prelims, Mains with instant evaluation, subject filters, and detailed explanations."
         stats={[
-          { value: '6500+', label: 'PYQs', color: '#F5A623' },
+          { value: '6500+', label: 'PYQs', color: '#E8B84B' },
           { value: '30+', label: 'Years', color: '#F87171' },
           { value: '15+', label: 'Subjects', color: '#4ADE80' },
           { value: '∞', label: 'Always Free', color: '#FFFFFF' },
@@ -1879,4 +1879,3 @@ export default function PyqPage() {
     </div>
   );
 }
-

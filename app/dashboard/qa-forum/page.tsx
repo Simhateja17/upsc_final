@@ -225,7 +225,7 @@ export default function QAForumPage() {
         badgeText="DISCUSSION FORUM"
         title={
           <>
-            Ask, <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Discuss</em>, Rise Together
+            Ask, <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>Discuss</em>, Rise Together
           </>
         }
         subtitle="Your community of UPSC aspirants. Every doubt answered, every insight shared."

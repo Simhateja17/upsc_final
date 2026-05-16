@@ -11,7 +11,7 @@ import PurchaseModal from '@/components/PurchaseModal';
 /* ------------------------------------------------------------------ */
 
 const heroStats = [
-  { value: '15K+', label: 'COMMUNITY', color: '#F5C75D' },
+  { value: '15K+', label: 'COMMUNITY', color: '#E8B84B' },
   { value: '400+', label: 'MENTEES', color: '#FB7185' },
   { value: '4.9+', label: 'RATING', color: '#10B981' },
   { value: '∞', label: 'ALWAYS FREE', color: '#FFFFFF' },
@@ -282,7 +282,7 @@ export default function FreeTrialPage() {
         title={
           <>
             The guidance that turns{' '}
-            <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>aspirants</em>
+            <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>Aspirants</em>
             <br />
             into officers.
           </>
@@ -334,7 +334,7 @@ export default function FreeTrialPage() {
               <span style={{ fontSize: '12px', color: '#B5C0D2', fontWeight: 500 }}>Accepting mentees · Limited seats for June 2025 batch</span>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              <span style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, color: '#F5C75D', background: 'rgba(245,199,93,0.1)', border: '1px solid rgba(245,199,93,0.2)' }}>✦ Only {seatsLeft} seats left</span>
+              <span style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, color: '#E8B84B', background: 'rgba(245,199,93,0.1)', border: '1px solid rgba(245,199,93,0.2)' }}>✦ Only {seatsLeft} seats left</span>
               <span style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 500, color: '#9AA8BE', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>Next batch: June 1</span>
               <span style={{ padding: '6px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 500, color: '#9AA8BE', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>Sat &amp; Sun sessions</span>
             </div>
@@ -420,7 +420,7 @@ export default function FreeTrialPage() {
                 { text: 'Full resource access', badge: 'Done', subtext: null },
               ].map((feat, idx) => (
                 <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '12px' }}>
-                  <span style={{ color: '#F5C75D', fontWeight: 700, flexShrink: 0, fontSize: '14px', marginTop: '1px' }}>✓</span>
+                  <span style={{ color: '#E8B84B', fontWeight: 700, flexShrink: 0, fontSize: '14px', marginTop: '1px' }}>✓</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '2px' }}>
                       <span style={{ fontSize: '13px', color: '#334155', lineHeight: 1.5, fontWeight: 500 }}>{feat.text}</span>
@@ -497,12 +497,12 @@ export default function FreeTrialPage() {
       <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px 48px' }}>
         <div style={{ background: '#0A1128', borderRadius: '20px', padding: '36px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px', marginBottom: '32px' }}>
           <div style={{ flex: '1 1 400px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', color: '#F5C75D', textTransform: 'uppercase', marginBottom: '12px' }}>★ WHY MENTORSHIP WORKS</div>
-            <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 32px)', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.3, marginBottom: '12px' }}>A coach who knows you<br />beats a <span style={{ color: '#F5C75D' }}>course that doesn{'\''}t.</span></h2>
+            <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', color: '#E8B84B', textTransform: 'uppercase', marginBottom: '12px' }}>★ WHY MENTORSHIP WORKS</div>
+            <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 32px)', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.3, marginBottom: '12px' }}>A coach who knows you<br />beats a <span style={{ color: '#E8B84B' }}>course that doesn{'\''}t.</span></h2>
             <p style={{ fontSize: '14px', color: '#94A3B8', lineHeight: 1.6, maxWidth: '440px' }}>UPSC prep is personal. Abhijeet Sir mentorship is built around you, not a batch schedule.</p>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 'clamp(48px, 5vw, 64px)', fontWeight: 700, color: '#F5C75D', lineHeight: 1 }}>1-on-1</div>
+            <div style={{ fontSize: 'clamp(48px, 5vw, 64px)', fontWeight: 700, color: '#E8B84B', lineHeight: 1 }}>1-on-1</div>
             <div style={{ fontSize: '13px', color: '#94A3B8', fontWeight: 500, marginTop: '8px' }}>Utterly personal.<br />Never generic.</div>
           </div>
         </div>

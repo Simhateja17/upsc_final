@@ -510,7 +510,7 @@ export default function StudyPlannerPage() {
                       color: '#FFFFFF',
                     }}
                   >
-                    Where <span style={{ color: '#F5A623' }}>planning</span> meets <span style={{ color: '#F5A623' }}>purpose</span>
+                    Where <span style={{ color: '#E8B84B' }}>planning</span> meets <span style={{ color: '#E8B84B' }}>purpose</span>
                   </h1>
                 </div>
 

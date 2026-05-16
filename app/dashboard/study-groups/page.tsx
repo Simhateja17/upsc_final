@@ -235,7 +235,7 @@ export default function StudyGroupsPage() {
         badgeText="STUDY TOGETHER"
         title={
           <>
-            Your Digital <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Study Library</em>
+            Your Digital <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>Study Library</em>
             <br />
             Open 24/7
           </>

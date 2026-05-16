@@ -278,9 +278,9 @@ export default function DailyEditorialPage() {
         badgeText="DAILY NEWS ANALYSIS"
         title={
           <>
-            Where <em style={{ color: '#e8a820', fontStyle: 'italic' }}>news</em> meets
+            Where <em style={{ color: '#E8B84B', fontStyle: 'italic' }}>News</em> Meets
             <br />
-            the <em style={{ color: '#e8a820', fontStyle: 'italic' }}>syllabus</em>
+            The <em style={{ color: '#E8B84B', fontStyle: 'italic' }}>Syllabus</em>
           </>
         }
         subtitle="Every editorial, every perspective mapped to what UPSC asks."

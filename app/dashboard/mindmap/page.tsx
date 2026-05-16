@@ -84,7 +84,7 @@ export default function MindmapPage() {
         badgeText="VISUAL LEARNING"
         title={
           <>
-            Map Your <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Knowledge</em>
+            Map Your <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>Knowledge</em>
             <br />
             with Mindmaps
           </>
@@ -111,7 +111,7 @@ export default function MindmapPage() {
         <div className="flex items-center gap-3 mb-6">
           <div className="w-8 h-8 rounded-full bg-[#10182D] text-white flex items-center justify-center font-semibold text-[14px]">1</div>
           <h2 className="text-[36px] font-bold text-[#10182D] font-serif">
-            Choose a <span className="italic text-[#F0B100]">Subject</span>
+            Choose a <span className="italic text-[#E8B84B]">Subject</span>
           </h2>
         </div>
         <p className="text-[#6A7282] text-[14px] mb-8 ml-11">Select the subject whose mindmaps you want to study today</p>

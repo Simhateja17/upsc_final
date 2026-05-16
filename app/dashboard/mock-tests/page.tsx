@@ -529,7 +529,7 @@ function MockTestsPageInner() {
           title={
             <>
               Build Your{' '}
-              <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Perfect</em>{' '}
+              <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>Perfect</em>{' '}
               Mock Test
             </>
           }

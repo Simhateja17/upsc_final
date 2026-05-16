@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { userService, syllabusService } from '@/lib/services';
 import { useCmsContent } from '@/hooks/useCmsContent';
+import { useAuth } from '@/contexts/AuthContext';
 import { SYLLABUS_DATA } from '@/data/syllabus/syllabusData';
 import HeroSection from './components/HeroSection';
 import StageTabs from './components/StageTabs';
@@ -42,6 +43,7 @@ export interface TrackerState {
 }
 
 export default function SyllabusTrackerPage() {
+  const { user } = useAuth();
   const { content: cms, loading: cmsLoading } = useCmsContent('dashboard/syllabus-tracker', {
     hero_badge: 'Personalized Syllabus Tracker',
     hero_title_prefix: 'Know Exactly Where You Stand',
@@ -281,7 +283,12 @@ export default function SyllabusTrackerPage() {
       <div className="flex-1 overflow-y-auto">
         {/* Hero Section */}
         <div className="pt-0">
-          <HeroSection states={states} syllabusData={syllabusData} cms={cms} />
+          <HeroSection
+            states={states}
+            syllabusData={syllabusData}
+            cms={cmsLoading ? undefined : cms}
+            userFirstName={user?.firstName}
+          />
         </div>
 
         {/* Stage Tabs */}
@@ -362,4 +369,3 @@ export default function SyllabusTrackerPage() {
     </div>
   );
 }
-

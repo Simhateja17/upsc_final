@@ -400,7 +400,7 @@ export default function MentalHealthPage() {
         badgeText="MENTAL HEALTH BUDDY"
         title={
           <>
-            Nurture Your <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Mind</em>,
+            Nurture Your <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>Mind</em>,
             <br />
             Ace Your Exam
           </>

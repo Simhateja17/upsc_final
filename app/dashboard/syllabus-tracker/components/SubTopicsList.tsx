@@ -176,12 +176,12 @@ export default function SubTopicsList({
             </div>
             <div className="flex items-center gap-[8px]">
               <button
-                className="bg-[rgba(232,168,32,.18)] border border-[rgba(232,168,32,.35)] rounded-[8px] px-[10px] py-[4px] text-[10px] font-bold text-[#e8a820] cursor-pointer transition-all duration-200 flex items-center gap-[4px] hover:bg-[rgba(232,168,32,.30)]"
+                className="bg-[rgba(232,168,32,.18)] border border-[rgba(232,168,32,.35)] rounded-[8px] px-[10px] py-[4px] text-[10px] font-bold text-[#E8B84B] cursor-pointer transition-all duration-200 flex items-center gap-[4px] hover:bg-[rgba(232,168,32,.30)]"
                 onClick={() => window.location.href = '/dashboard/pyq?subject=' + encodeURIComponent(topic.name)}
               >
                 {pyqButton}
               </button>
-              <div className="font-playfair text-[20px] text-[#e8a820] font-bold">
+              <div className="font-playfair text-[20px] text-[#E8B84B] font-bold">
                 {pct}%
               </div>
             </div>

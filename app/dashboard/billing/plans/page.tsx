@@ -42,7 +42,7 @@ function BillingHero() {
         <span style={{ display: 'block', whiteSpace: 'nowrap' }}>Your IAS Journey Deserves</span>
         <span style={{ display: 'block', whiteSpace: 'nowrap' }}>
           a{' '}
-          <em style={{ color: '#E8A820', fontStyle: 'italic', fontWeight: 600 }}>Smarter</em>
+          <em style={{ color: '#E8B84B', fontStyle: 'italic', fontWeight: 600 }}>Smarter</em>
           {' '}Foundation
         </span>
       </h1>
@@ -92,7 +92,7 @@ function RiseCheckoutModal({ cycle, onClose }: { cycle: BillingCycle; onClose: (
                 <div style={{ fontSize: 12, letterSpacing: '1px', color: '#8F93AF', fontWeight: 700, textTransform: 'uppercase' }}>Transaction ID</div>
                 <div style={{ fontSize: 28, color: '#22263E', fontWeight: 700, fontFamily: '"Cormorant Garamond", Georgia, serif' }}>RWJ-2026-05-84729</div>
               </div>
-              <button type="button" style={{ border: 'none', background: 'transparent', color: '#E8A820', fontWeight: 700, cursor: 'pointer' }}>Copy</button>
+              <button type="button" style={{ border: 'none', background: 'transparent', color: '#E8B84B', fontWeight: 700, cursor: 'pointer' }}>Copy</button>
             </div>
 
             <div style={{ borderTop: '1px solid #E6E3DE', borderBottom: '1px solid #E6E3DE', marginBottom: 14 }}>
@@ -136,7 +136,7 @@ function RiseCheckoutModal({ cycle, onClose }: { cycle: BillingCycle; onClose: (
         <button type="button" aria-label="Close" onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, width: 34, height: 34, borderRadius: '50%', border: 'none', background: '#ECEBE7', color: '#8B8FA8', fontSize: 24, lineHeight: '24px', cursor: 'pointer', zIndex: 2 }}>×</button>
         <div className="rise-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', minHeight: 560 }}>
           <div className="rise-modal-left" style={{ padding: '20px 18px 16px', borderBottom: '1px solid #E4E2DF' }}>
-            <p style={{ margin: '0 0 12px', display: 'inline-block', borderRadius: 999, padding: '5px 10px', background: '#F8EBCF', color: '#E8A820', fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>Rise Plan</p>
+            <p style={{ margin: '0 0 12px', display: 'inline-block', borderRadius: 999, padding: '5px 10px', background: '#F8EBCF', color: '#E8B84B', fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>Rise Plan</p>
             <h3 style={{ margin: '0 0 6px', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 40, lineHeight: 1, color: '#21243D' }}>Rise</h3>
             <p style={{ margin: '0 0 12px', color: '#8F93AF', fontSize: 11, lineHeight: 1.35 }}>The complete ecosystem for focused, daily UPSC preparation.</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginBottom: 14 }}>
@@ -261,7 +261,7 @@ function AscentCheckoutModal({ cycle, onClose }: { cycle: BillingCycle; onClose:
                 <div style={{ fontSize: 12, letterSpacing: '1px', color: '#8F93AF', fontWeight: 700, textTransform: 'uppercase' }}>Transaction ID</div>
                 <div style={{ fontSize: 32, color: '#22263E', fontWeight: 700, fontFamily: '"Cormorant Garamond", Georgia, serif' }}>RWJ-2026-05-84729</div>
               </div>
-              <button type="button" style={{ border: 'none', background: 'transparent', color: '#E8A820', fontWeight: 700, cursor: 'pointer' }}>Copy</button>
+              <button type="button" style={{ border: 'none', background: 'transparent', color: '#E8B84B', fontWeight: 700, cursor: 'pointer' }}>Copy</button>
             </div>
             <div style={{ borderTop: '1px solid #E6E3DE', borderBottom: '1px solid #E6E3DE', marginBottom: 14 }}>
               {[
@@ -297,7 +297,7 @@ function AscentCheckoutModal({ cycle, onClose }: { cycle: BillingCycle; onClose:
         <button type="button" aria-label="Close" onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, width: 34, height: 34, borderRadius: '50%', border: 'none', background: '#ECEBE7', color: '#8B8FA8', fontSize: 24, lineHeight: '24px', cursor: 'pointer', zIndex: 2 }}>×</button>
         <div className="rise-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', minHeight: 560 }}>
           <div className="rise-modal-left" style={{ padding: '20px 18px 16px', borderBottom: '1px solid #E4E2DF' }}>
-            <p style={{ margin: '0 0 12px', display: 'inline-block', borderRadius: 999, padding: '5px 10px', background: '#F8EBCF', color: '#E8A820', fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>Ascent Plan</p>
+            <p style={{ margin: '0 0 12px', display: 'inline-block', borderRadius: 999, padding: '5px 10px', background: '#F8EBCF', color: '#E8B84B', fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>Ascent Plan</p>
             <h3 style={{ margin: '0 0 6px', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 40, lineHeight: 1, color: '#21243D' }}>Ascent</h3>
             <p style={{ margin: '0 0 12px', color: '#8F93AF', fontSize: 11, lineHeight: 1.35 }}>Unlimited tools, zero limits. For aspirants who leave nothing to chance.</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginBottom: 14 }}>
@@ -921,7 +921,7 @@ export default function ExplorePlansPage() {
           </div>
           <h2 style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 400, color: '#fff', lineHeight: 1.2, margin: '0 0 16px' }}>
             Start Your{' '}
-            <em style={{ color: '#E8A820', fontStyle: 'italic' }}>UPSC Journey</em>
+            <em style={{ color: '#E8B84B', fontStyle: 'italic' }}>UPSC Journey</em>
             <br />the Right Way
           </h2>
           <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.5)', maxWidth: 480, margin: '0 auto 32px', lineHeight: 1.65 }}>

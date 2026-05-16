@@ -267,7 +267,7 @@ export default function LibraryPage() {
         badgeText={heroBadge}
         title={
           <>
-            Master UPSC with <span style={{ color: '#F5C75D' }}>Expert</span> Notes and <span style={{ color: '#F5C75D' }}>Simplified</span> Resources
+            Master UPSC with <em style={{ color: '#E8B84B', fontStyle: 'italic' }}>Expert</em> Notes and <em style={{ color: '#E8B84B', fontStyle: 'italic' }}>Simplified</em> Resources
           </>
         }
         subtitle={heroSubtitle}
@@ -950,7 +950,7 @@ export default function LibraryPage() {
           <div style={{ flexShrink: 0, zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div
               className="font-arimo font-bold"
-              style={{ fontSize: 'clamp(40px, 4.5vw, 64px)', color: '#F5C75D', lineHeight: 1.1 }}
+              style={{ fontSize: 'clamp(40px, 4.5vw, 64px)', color: '#E8B84B', lineHeight: 1.1 }}
             >
               {bannerStatNumber}
             </div>
