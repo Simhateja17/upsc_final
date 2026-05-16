@@ -13,7 +13,8 @@ interface HeroSectionProps {
 
 export default function HeroSection({ states, syllabusData, cms, userFirstName }: HeroSectionProps) {
   const badgeText = cms?.hero_badge || 'Personalized Syllabus Tracker';
-  const titlePrefix = cms?.hero_title_prefix || 'Know Exactly Where You Stand';
+  const rawTitlePrefix = cms?.hero_title_prefix || 'Know Exactly Where You Stand';
+  const titlePrefix = rawTitlePrefix.replace(/[,\s.]+$/g, '').trim();
   const cleanFirstName = (userFirstName || '').trim().split(/\s+/)[0] || '';
   const cmsTitleSuffix = (cms?.hero_title_suffix || '').trim();
   const hasNamePlaceholder = /{{\s*firstName\s*}}|{{\s*name\s*}}|\{\{\s*userFirstName\s*\}\}/i.test(cmsTitleSuffix);
@@ -86,7 +87,7 @@ export default function HeroSection({ states, syllabusData, cms, userFirstName }
           {cleanFirstName ? (
             <>
               {', '}
-              <em>{cleanFirstName}</em>
+              <em style={{ color: '#E8B84B' }}>{cleanFirstName}</em>
               {'.'}
             </>
           ) : cmsTitleSuffix ? (
