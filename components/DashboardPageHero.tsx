@@ -31,6 +31,7 @@ interface DashboardPageHeroProps {
   heroBackgroundPosition?: string;
   showDotGrid?: boolean;
   statsBorderRadius?: number | string;
+  enforceUniformLayout?: boolean;
 }
 
 const DefaultYouTubeButton = (
@@ -77,8 +78,14 @@ export default function DashboardPageHero({
   heroBackgroundPosition = 'center',
   showDotGrid = true,
   statsBorderRadius = 12,
+  enforceUniformLayout = true,
 }: DashboardPageHeroProps) {
   const right = rightElement !== undefined ? rightElement : DefaultYouTubeButton;
+  const canonicalHeroHeight = '352px';
+  const effectiveHeroHeight = enforceUniformLayout ? canonicalHeroHeight : heroHeight;
+  const effectiveContentShiftY = enforceUniformLayout ? 0 : contentShiftY;
+  const effectiveTitleMarginBottom = enforceUniformLayout ? '6px' : titleMarginBottom;
+  const effectiveStatsBorderRadius = enforceUniformLayout ? 12 : statsBorderRadius;
 
   return (
     <PageHeroBackground
@@ -86,8 +93,8 @@ export default function DashboardPageHero({
       style={{
         padding: '20px 26px 18px',
         marginBottom: 16,
-        height: heroHeight,
-        minHeight: heroMinHeight ?? heroHeight,
+        height: effectiveHeroHeight,
+        minHeight: enforceUniformLayout ? canonicalHeroHeight : heroMinHeight ?? heroHeight,
         marginInline: heroMarginInline,
         borderRadius: heroBorderRadius,
         // Allow callers to override background for special cases
@@ -131,7 +138,7 @@ export default function DashboardPageHero({
           </div>
 
           <div
-            className="flex items-center gap-2 font-arimo font-semibold text-[#e8a820]"
+            className="flex items-center gap-2 font-arimo font-semibold text-[#E8B84B]"
             style={{
               background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.1)',
@@ -160,10 +167,10 @@ export default function DashboardPageHero({
         {/* Title + subtitle – centered vertically in the upper portion */}
         <div
           className="flex flex-col items-center justify-center"
-          style={{ flex: 1, width: '100%', paddingBottom: '12px', transform: `translateY(${typeof contentShiftY === 'number' ? `${contentShiftY}px` : contentShiftY})` }}
+          style={{ flex: 1, width: '100%', paddingBottom: '12px', transform: `translateY(${typeof effectiveContentShiftY === 'number' ? `${effectiveContentShiftY}px` : effectiveContentShiftY})` }}
         >
           <h1
-            className="text-center font-semibold"
+            className="hero-title text-center font-semibold"
             style={{
               color: '#FFF',
               textAlign: 'center',
@@ -172,7 +179,7 @@ export default function DashboardPageHero({
               fontStyle: 'normal',
               fontWeight: 600,
               lineHeight: '70.4px',
-              marginBottom: typeof titleMarginBottom === 'number' ? `${titleMarginBottom}px` : titleMarginBottom,
+              marginBottom: typeof effectiveTitleMarginBottom === 'number' ? `${effectiveTitleMarginBottom}px` : effectiveTitleMarginBottom,
             }}
           >
             {title}
@@ -197,7 +204,7 @@ export default function DashboardPageHero({
           className="w-full flex gap-0 overflow-hidden"
           style={{
             border: '0.8px solid rgba(255,255,255,0.1)',
-            borderRadius: typeof statsBorderRadius === 'number' ? `${statsBorderRadius}px` : statsBorderRadius,
+            borderRadius: typeof effectiveStatsBorderRadius === 'number' ? `${effectiveStatsBorderRadius}px` : effectiveStatsBorderRadius,
             flexShrink: 0,
           }}
         >
@@ -227,6 +234,12 @@ export default function DashboardPageHero({
           ))}
         </div>
       </div>
+      <style jsx>{`
+        .hero-title em {
+          color: #E8B84B !important;
+          font-style: italic !important;
+        }
+      `}</style>
     </PageHeroBackground>
   );
 }
