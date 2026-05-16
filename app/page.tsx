@@ -176,8 +176,8 @@ export default function LandingPage() {
           <Image
             src="/logo.png"
             alt="RiseWithJeet"
-            width={110}
-            height={40}
+            width={500}
+            height={500}
             className="w-[90px] md:w-[110px] h-auto object-contain"
           />
         </Link>

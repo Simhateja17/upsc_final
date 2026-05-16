@@ -185,6 +185,12 @@ const PerformanceStatsWidget = () => {
     'in-progress': 'In Progress',
     locked: 'Locked',
   };
+  const sectionTitleStyle: React.CSSProperties = {
+    fontWeight: 700,
+    fontSize: 'clamp(16px,1.04vw,20px)',
+    lineHeight: '1.2',
+    letterSpacing: '0px',
+  };
 
   return (
     <div className="w-full space-y-[clamp(12px,0.83vw,16px)]">
@@ -208,13 +214,7 @@ const PerformanceStatsWidget = () => {
           />
           <h2
             className="font-arimo text-[#101828]"
-            style={{
-              fontWeight: 700,
-              fontSize: '17px',
-              lineHeight: '24px',
-              letterSpacing: '0px',
-              whiteSpace: 'nowrap',
-            }}
+            style={{ ...sectionTitleStyle, whiteSpace: 'nowrap' }}
           >
             Your Performance Stats
           </h2>
@@ -408,12 +408,13 @@ const PerformanceStatsWidget = () => {
               alt="Achievement Badges"
               className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
             />
-            <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(16px,1.04vw,20px)', lineHeight: '1.2' }}>
+            <h3 className="font-arimo text-[#101828] whitespace-nowrap" style={sectionTitleStyle}>
               Achievement Badges
             </h3>
           </div>
-          <Link href="/dashboard/performance" className="font-inter font-semibold text-[12px] text-[#1E2875] hover:underline">
-            View All -&gt;
+          <Link href="/dashboard/performance" className="inline-flex items-center gap-1 whitespace-nowrap font-inter font-semibold text-[12px] text-[#1E2875] hover:underline">
+            All
+            <span aria-hidden="true">→</span>
           </Link>
         </div>
         <div className="grid grid-cols-3 gap-[clamp(8px,0.52vw,12px)]">
@@ -476,7 +477,7 @@ const PerformanceStatsWidget = () => {
             alt="Smart Revision Tools"
             className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
           />
-          <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(16px,1.04vw,20px)', lineHeight: '1.4' }}>
+          <h3 className="font-arimo text-[#101828]" style={sectionTitleStyle}>
             Smart Revision Tools
           </h3>
         </div>
@@ -490,7 +491,7 @@ const PerformanceStatsWidget = () => {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/flashcards-icon.png"
+              src="/flashcards.svg"
               alt="Flashcards"
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
@@ -510,7 +511,7 @@ const PerformanceStatsWidget = () => {
               alt="Wrong Attempts"
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
-            <p className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Wrong Attempts</p>
+            <p className="font-arimo font-bold text-[#101828] whitespace-nowrap" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Wrong Attempts</p>
             <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
           </Link>
           <Link
@@ -538,7 +539,7 @@ const PerformanceStatsWidget = () => {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/paper.png"
+              src="/newspaper-folding.svg"
               alt="Quick Notes"
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
@@ -564,7 +565,7 @@ const PerformanceStatsWidget = () => {
             alt="Quick Settings"
             className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
           />
-          <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(16px,1.04vw,20px)', lineHeight: '1.2' }}>
+          <h3 className="font-arimo text-[#101828]" style={sectionTitleStyle}>
             Quick Settings
           </h3>
         </div>
@@ -723,4 +724,3 @@ const PerformanceStatsWidget = () => {
 };
 
 export default PerformanceStatsWidget;
-

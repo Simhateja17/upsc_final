@@ -505,12 +505,12 @@ export default function StudyPlannerPage() {
                     className="font-bold leading-[1.14]"
                     style={{
                       fontSize: 'clamp(20px, 2.2vw, 45px)',
-                      fontFamily: 'Inter, system-ui, sans-serif',
+                      fontFamily: '"Cormorant Garamond", Georgia, serif',
                       letterSpacing: '-0.4px',
                       color: '#FFFFFF',
                     }}
                   >
-                    Where <span style={{ color: '#E8B84B' }}>planning</span> meets <span style={{ color: '#E8B84B' }}>purpose</span>
+                    Where <span style={{ color: '#E8B84B' }}>Planning</span> meets <span style={{ color: '#E8B84B' }}>Purpose</span>
                   </h1>
                 </div>
 

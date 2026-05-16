@@ -71,6 +71,7 @@ const borderColorsFallback = ['#FF6467', '#22C55E', '#EAB308'];
 const AddTaskModal = ({ onClose, onTaskAdded }: { onClose: () => void; onTaskAdded: (task: StudyTask) => void }) => {
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
+  const [customSubject, setCustomSubject] = useState('');
   const [startTime, setStartTime] = useState('14:00');
   const [endTime, setEndTime] = useState('15:30');
   const [saving, setSaving] = useState(false);
@@ -81,6 +82,7 @@ const AddTaskModal = ({ onClose, onTaskAdded }: { onClose: () => void; onTaskAdd
       setError('Please enter a task title.');
       return;
     }
+    const subjectValue = customSubject.trim() || subject;
     setSaving(true);
     setError('');
     try {
@@ -94,12 +96,12 @@ const AddTaskModal = ({ onClose, onTaskAdded }: { onClose: () => void; onTaskAdd
       }
       const res = await studyPlannerService.createTask({
         title: title.trim(),
-        subject: subject || undefined,
+        subject: subjectValue || undefined,
         startTime: startTime || undefined,
         endTime: endTime || undefined,
         duration,
       });
-      const created: StudyTask = res?.data ?? { title: title.trim(), subject, startTime, endTime, duration };
+      const created: StudyTask = res?.data ?? { title: title.trim(), subject: subjectValue, startTime, endTime, duration };
       onTaskAdded(created);
       onClose();
     } catch {
@@ -159,6 +161,13 @@ const AddTaskModal = ({ onClose, onTaskAdded }: { onClose: () => void; onTaskAdd
             <option value="environment">Environment & Ecology</option>
             <option value="science-tech">Science & Technology</option>
           </select>
+          <input
+            type="text"
+            value={customSubject}
+            onChange={e => setCustomSubject(e.target.value)}
+            placeholder="Or type your own subject"
+            className="mt-3 w-full border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] transition-colors"
+          />
         </div>
 
         {/* Time */}
@@ -223,6 +232,7 @@ const ResponsiveDashboardContent = () => {
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [showLoginToast, setShowLoginToast] = useState(false);
+  const [isReturningLogin, setIsReturningLogin] = useState(true);
   const [selectedTaskDate, setSelectedTaskDate] = useState(() => {
     const date = new Date();
     date.setHours(0, 0, 0, 0);
@@ -276,6 +286,9 @@ const ResponsiveDashboardContent = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (sessionStorage.getItem('rwj_login_success') !== '1') return;
+    const returningFlag = sessionStorage.getItem('rwj_login_returning') === '1';
+    setIsReturningLogin(returningFlag);
+    sessionStorage.removeItem('rwj_login_returning');
     sessionStorage.removeItem('rwj_login_success');
     setShowLoginToast(true);
     const timeout = setTimeout(() => setShowLoginToast(false), 7000);
@@ -394,7 +407,7 @@ const ResponsiveDashboardContent = () => {
           <div>
             <p className="font-inter text-sm font-bold">Success</p>
             <p className="mt-1 font-inter text-sm leading-5 text-white/70">
-              Welcome back{userName ? `, ${userName}` : ''}. Keep your streak going.
+              {isReturningLogin ? 'Welcome back' : 'Welcome'}{userName ? `, ${userName}` : ''}. Keep your streak going.
             </p>
           </div>
         </div>
@@ -648,8 +661,7 @@ const ResponsiveDashboardContent = () => {
                 <div className="mb-1 py-0 text-[clamp(12px,0.73vw,13px)] invisible">Status</div>
 
                 <div className="flex items-center gap-3 mb-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/mains-question-icon.png" alt="Mains" className="w-7 h-7 object-contain" />
+                  <span className="text-[26px] leading-none" aria-hidden="true">✍️</span>
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                     Daily Mains Challenge
                   </h3>
