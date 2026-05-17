@@ -34,29 +34,6 @@ interface DashboardPageHeroProps {
   enforceUniformLayout?: boolean;
 }
 
-const DefaultYouTubeButton = (
-  <a
-    href="https://www.youtube.com/@RiseWithJeet"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="flex items-center gap-2 font-arimo font-semibold text-white"
-    style={{
-      background: 'rgba(255,255,255,0.08)',
-      border: '1px solid rgba(255,255,255,0.15)',
-      borderRadius: '26843500px',
-      padding: 'clamp(8px, 0.75vw, 10px) clamp(16px, 1.5vw, 20px)',
-      fontSize: 'clamp(12px, 1.05vw, 14px)',
-      textDecoration: 'none',
-    }}
-  >
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FF0000"/>
-      <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="white"/>
-    </svg>
-    @RiseWithJeet
-  </a>
-);
-
 export default function DashboardPageHero({
   badgeIcon,
   badgeText,
@@ -80,7 +57,7 @@ export default function DashboardPageHero({
   statsBorderRadius = 12,
   enforceUniformLayout = true,
 }: DashboardPageHeroProps) {
-  const right = rightElement !== undefined ? rightElement : DefaultYouTubeButton;
+  const right = rightElement;
   const canonicalHeroHeight = '352px';
   const effectiveHeroHeight = enforceUniformLayout ? canonicalHeroHeight : heroHeight;
   const effectiveContentShiftY = enforceUniformLayout ? 0 : contentShiftY;
@@ -247,9 +224,8 @@ export default function DashboardPageHero({
         </div>
       </div>
       <style jsx>{`
-        .hero-title em {
-          color: #E8B84B !important;
-          font-style: italic !important;
+        :global(.hero-title *) {
+          font-style: normal !important;
         }
       `}</style>
     </PageHeroBackground>

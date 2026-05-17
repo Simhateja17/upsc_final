@@ -7,7 +7,7 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 
 type DayActivity = { questionsAttempted: number; hours: number };
 type SubjectRow = { name: string; accuracy: number; questions: number; tag?: string; color?: string };
-type DistributionItem = { label: string; value: number; color: string };
+type DistributionItem = { label: string; value: number; color: string; hours: number };
 
 const orderedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const subjectColors = ['#4A7DFF', '#58BE87', '#F4C33F', '#9B51E0', '#F2742F'];
@@ -237,27 +237,18 @@ export default function PerformancePage() {
         color: ['#E02424', '#F2742F', '#111827', '#E8B84B'][index % 4],
       }));
 
-  const subjectQuestionTotal = subjectAccuracy.reduce(
-    (sum: number, subject: any) => sum + Number((subject.correct ?? 0) + (subject.wrong ?? 0)),
-    0,
-  );
-  const distribution: DistributionItem[] = subjectAccuracy.length > 0
-    ? subjectAccuracy.slice(0, 6).map((subject: any, index: number) => {
-      const questions = Number((subject.correct ?? 0) + (subject.wrong ?? 0));
-      return {
-        label: subject.subject,
-        value: subjectQuestionTotal > 0 ? Math.round((questions / subjectQuestionTotal) * 100) : 0,
-        color: ['#F4C33F', '#F28C32', '#4A7DFF', '#E24C91', '#9B51E0', '#55B9AA'][index % 6],
-      };
-    })
+  const distribution: DistributionItem[] = (analyticsData?.studyTypeDistribution?.length
+    ? analyticsData.studyTypeDistribution
     : [
-      { label: 'GS I', value: 0, color: '#F4C33F' },
-      { label: 'GS II', value: 0, color: '#F28C32' },
-      { label: 'GS III', value: 0, color: '#4A7DFF' },
-      { label: 'GS IV', value: 0, color: '#E24C91' },
-      { label: 'Essay', value: 0, color: '#9B51E0' },
-      { label: 'Curr. Affairs', value: 0, color: '#55B9AA' },
-    ];
+      { label: 'Reading', hours: 0, percentage: 0, color: '#55B9AA' },
+      { label: 'Video Lectures', hours: 0, percentage: 0, color: '#E65B64' },
+      { label: 'Practice', hours: 0, percentage: 0, color: '#E8C363' },
+    ]).map((item: any) => ({
+    label: String(item.label ?? ''),
+    value: Number(item.percentage ?? 0),
+    color: String(item.color ?? '#D1D5DB'),
+    hours: Number(item.hours ?? 0),
+  }));
 
   const earnedBadges = [
     { icon: '🔥', title: '30-Day Streak', earned: currentStreak >= 30, note: `${currentStreak} day streak` },
@@ -416,7 +407,7 @@ export default function PerformancePage() {
                         <span className="h-3 w-3 rounded-full" style={{ background: item.color }} />
                         <span className="text-[16px] text-[#4B5563]">{item.label}</span>
                       </div>
-                      <span className="text-[16px] font-bold text-[#101828]">{item.value}%</span>
+                      <span className="text-[16px] font-bold text-[#101828]">{formatHours(item.hours)}</span>
                     </div>
                   ))}
                 </div>

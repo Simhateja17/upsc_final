@@ -5,6 +5,7 @@ import Link from 'next/link';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { pyqService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
+import prelimsSyllabus from '@/data/syllabus/prelimsSyllabus.json';
 
 const AI_EVAL_STEPS = [
   'Reading your answer',
@@ -29,75 +30,39 @@ type SubjectTreeNode = {
   children?: Array<{ label: string; microTopics?: string[] }>;
 };
 
+const SUBJECT_ICONS: Record<string, string> = {
+  History: '🏛️',
+  Geography: '🌍',
+  Polity: '⚖️',
+  Economy: '💰',
+  'Environment & Ecology': '🌿',
+  'Science & Technology': '🔬',
+  'Current Affairs': '📰',
+};
+
+const PRELIMS_SUBJECT_TREE: SubjectTreeNode[] = [
+  ...(prelimsSyllabus as Array<{ subject: string; subSubjects: Array<{ label: string; topics: string[] }> }>).map((node) => ({
+    label: node.subject,
+    icon: SUBJECT_ICONS[node.subject] || '📘',
+    children: node.subSubjects.map((sub) => ({
+      label: sub.label,
+      microTopics: sub.topics,
+    })),
+  })),
+  {
+    label: 'Current Affairs',
+    icon: '📰',
+    children: [
+      {
+        label: 'Current Affairs and Miscellaneous',
+        microTopics: ['Current Affairs and Miscellaneous'],
+      },
+    ],
+  },
+];
+
 const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
-  prelims: [
-    {
-      label: 'History',
-      icon: '🏛️',
-      children: [
-        { label: 'Ancient India', microTopics: ['Indus Valley', 'Vedic Age', 'Mauryan Empire', 'Buddhism & Jainism'] },
-        { label: 'Medieval India', microTopics: ['Delhi Sultanate', 'Mughal Empire', 'Bhakti Movement'] },
-        { label: 'Modern India', microTopics: ['1857 Revolt', 'Freedom Struggle', 'Governor Generals'] },
-        { label: 'Art & Culture', microTopics: ['Architecture', 'Paintings', 'Performing Arts', 'UNESCO Sites'] },
-      ],
-    },
-    {
-      label: 'Geography',
-      icon: '🌍',
-      children: [
-        { label: 'Physical Geography', microTopics: ['Geomorphology', 'Climatology', 'Oceanography'] },
-        { label: 'Indian Geography', microTopics: ['Rivers', 'Resources', 'Agriculture', 'Industries'] },
-        { label: 'World Geography', microTopics: ['Regions', 'Climate Zones', 'Human Geography'] },
-      ],
-    },
-    {
-      label: 'Polity',
-      icon: '⚖️',
-      children: [
-        { label: 'Constitution', microTopics: ['Preamble', 'Schedules', 'Amendments'] },
-        { label: 'Parliament', microTopics: ['Lok Sabha', 'Rajya Sabha', 'Committees'] },
-        { label: 'Judiciary', microTopics: ['Supreme Court', 'Judicial Review', 'Tribunals'] },
-        { label: 'Governance', microTopics: ['Constitutional Bodies', 'Local Government', 'Rights'] },
-      ],
-    },
-    {
-      label: 'Economy',
-      icon: '💰',
-      children: [
-        { label: 'Macroeconomy', microTopics: ['Growth', 'Inflation', 'Unemployment'] },
-        { label: 'Banking & Finance', microTopics: ['RBI', 'Monetary Policy', 'Financial Markets'] },
-        { label: 'External Sector', microTopics: ['BoP', 'Exchange Rate', 'Trade'] },
-        { label: 'Agriculture', microTopics: ['MSP', 'Food Security', 'Cropping'] },
-      ],
-    },
-    {
-      label: 'Environment & Ecology',
-      icon: '🌿',
-      children: [
-        { label: 'Ecology', microTopics: ['Ecosystems', 'Succession', 'Food Chains'] },
-        { label: 'Biodiversity', microTopics: ['Hotspots', 'Species', 'Protected Areas'] },
-        { label: 'Climate Change', microTopics: ['UNFCCC', 'Mitigation', 'Adaptation'] },
-      ],
-    },
-    {
-      label: 'Science & Technology',
-      icon: '🔬',
-      children: [
-        { label: 'Space', microTopics: ['ISRO', 'Satellites', 'Launch Vehicles'] },
-        { label: 'Biotechnology', microTopics: ['Genetics', 'Vaccines', 'Bioethics'] },
-        { label: 'Digital Tech', microTopics: ['AI', 'Cybersecurity', 'Semiconductors'] },
-      ],
-    },
-    {
-      label: 'Current Affairs',
-      icon: '📰',
-      children: [
-        { label: 'Schemes & Policies', microTopics: ['Flagship Schemes', 'Cabinet Decisions'] },
-        { label: 'Reports & Indices', microTopics: ['Global Reports', 'Rankings'] },
-        { label: 'Places & Persons', microTopics: ['Places in News', 'Awards', 'Appointments'] },
-      ],
-    },
-  ],
+  prelims: PRELIMS_SUBJECT_TREE,
   mains: [
     { label: 'History', icon: '🏛️', children: [{ label: 'Ancient India' }, { label: 'Medieval India' }, { label: 'Modern India' }, { label: 'Post-Independence' }, { label: 'Art & Culture' }] },
     { label: 'Geography', icon: '🌍', children: [{ label: 'Physical Geography' }, { label: 'Indian Geography' }, { label: 'World Geography' }] },
@@ -181,6 +146,7 @@ export default function PyqPage() {
   const [selectedYearRange, setSelectedYearRange] = useState<'all' | 'last5' | 'year'>('all');
   const [selectedSubject, setSelectedSubject] = useState('All Papers');
   const [selectedSubtopic, setSelectedSubtopic] = useState<string | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
 
   const fetchQuestions = useCallback(async () => {
@@ -193,6 +159,8 @@ export default function PyqPage() {
         year: selectedYearRange === 'year' ? selectedYear || undefined : undefined,
         yearFrom,
         subject: selectedSubject !== 'All Papers' ? selectedSubject : undefined,
+        subSubject: selectedSubtopic || undefined,
+        topic: selectedTopic || undefined,
         page,
         limit: 20,
       });
@@ -211,16 +179,17 @@ export default function PyqPage() {
     } finally {
       setLoading(false);
     }
-  }, [mode, selectedYear, selectedYearRange, selectedSubject, page]);
+  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic, selectedTopic, page]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic]);
+  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic, selectedTopic]);
 
   useEffect(() => {
     setSelectedSubject('All Papers');
     setSelectedSubtopic(null);
+    setSelectedTopic(null);
     setExpandedSubject(null);
   }, [mode]);
 
@@ -263,9 +232,7 @@ export default function PyqPage() {
     fetchQuestions();
   }, [fetchQuestions]);
 
-  const visibleQuestions = selectedSubtopic
-    ? questions.filter((q) => String(q.topic || q.subtopic || '').toLowerCase().includes(selectedSubtopic.toLowerCase()))
-    : questions;
+  const visibleQuestions = questions;
 
   useLayoutEffect(() => {
     const scroller = document.querySelector('main');
@@ -344,7 +311,7 @@ export default function PyqPage() {
             for UPSC Success
           </>
         }
-        subtitle="Every UPSC question ever asked — Prelims, Mains with instant evaluation, subject filters, and detailed explanations."
+        subtitle="Every UPSC question ever asked Prelims, Mains with instant evaluation, subject filters, and detailed explanations."
         stats={[
           { value: '6500+', label: 'PYQs', color: '#E8B84B' },
           { value: '30+', label: 'Years', color: '#F87171' },
@@ -468,10 +435,10 @@ export default function PyqPage() {
               {!loading && visibleQuestions.map((q, idx) => {
                 const opts: { label: string; text: string }[] = Array.isArray(q.options) ? q.options : [];
                 const diffColor = q.difficulty === 'Hard'
-                  ? { bg: '#FFE2E2', color: '#C10007' }
+                  ? { background: '#FFE2E2', color: '#C10007' }
                   : q.difficulty === 'Easy'
-                  ? { bg: '#DCFCE7', color: '#008236' }
-                  : { bg: '#FFEDD4', color: '#CA3500' };
+                  ? { background: '#DCFCE7', color: '#008236' }
+                  : { background: '#FFEDD4', color: '#CA3500' };
                 return (
                   <div
                     key={q.id}
@@ -487,6 +454,11 @@ export default function PyqPage() {
                       {q.subject && (
                         <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#E0E7FF', color: '#432DD7' }}>
                           {q.subject.toUpperCase()}
+                        </span>
+                      )}
+                      {q.subSubject && (
+                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#E0F2FE', color: '#0369A1' }}>
+                          {q.subSubject.toUpperCase()}
                         </span>
                       )}
                       {q.topic && (
@@ -785,6 +757,11 @@ export default function PyqPage() {
                           {q.subject.toUpperCase()}
                         </span>
                       )}
+                      {q.subSubject && (
+                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#E0F2FE', color: '#0369A1' }}>
+                          {q.subSubject.toUpperCase()}
+                        </span>
+                      )}
                       {q.topic && (
                         <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#EDE9FE', color: '#7E22CE' }}>
                           {q.topic.toUpperCase()}
@@ -876,7 +853,7 @@ export default function PyqPage() {
           </section>
 
           {/* Right: filters */}
-          <aside className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:sticky lg:top-6 lg:self-start">
+          <aside className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-1.5rem)] lg:overflow-y-auto lg:pr-1">
             {/* Exam year card - 307×198, exact shadow & year buttons */}
             <div
               className="rounded-[16px] bg-white flex flex-col"
@@ -937,11 +914,6 @@ export default function PyqPage() {
                     Last 5 yrs
                   </button>
                 </div>
-                <p className="px-1 pt-1 text-[13px] text-[#6A7282]">
-                  {selectedYearRange === 'year' && selectedYear
-                    ? `${selectedYear} questions for ${selectedSubtopic || selectedSubject}`
-                    : `All Years - ${total} questions${selectedSubtopic ? ` for ${selectedSubtopic}` : selectedSubject !== 'All Papers' ? ` for ${selectedSubject}` : ''}`}
-                </p>
                 <div className="grid grid-cols-4 gap-2">
                   {YEAR_OPTIONS.map((year) => {
                     const selected = selectedYearRange === 'year' && selectedYear === year;
@@ -970,6 +942,14 @@ export default function PyqPage() {
                       </button>
                     );
                   })}
+                </div>
+                <div className="flex items-center gap-2 px-1 pt-3 text-[13px] text-[#6A7282]">
+                  <span className="text-[14px] leading-none" aria-hidden>📊</span>
+                  <p>
+                    {selectedYearRange === 'year' && selectedYear
+                      ? `${selectedYear} questions for ${selectedTopic || selectedSubtopic || selectedSubject}`
+                      : `All Years → ${total} questions${selectedTopic ? ` for ${selectedTopic}` : selectedSubtopic ? ` for ${selectedSubtopic}` : selectedSubject !== 'All Papers' ? ` for ${selectedSubject}` : ''}`}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1007,11 +987,12 @@ export default function PyqPage() {
                 </span>
               </div>
 
-              <div className="flex max-h-[65vh] flex-col gap-2 overflow-y-auto px-5 pb-5">
+              <div className="flex flex-col gap-2 px-5 pb-5">
                 <button
                   onClick={() => {
                     setSelectedSubject('All Papers');
                     setSelectedSubtopic(null);
+                    setSelectedTopic(null);
                     setExpandedSubject(null);
                   }}
                   className="w-full flex items-center justify-between rounded-[14px] px-4 py-3 text-left transition-colors"
@@ -1033,6 +1014,7 @@ export default function PyqPage() {
                         onClick={() => {
                           setSelectedSubject(label);
                           setSelectedSubtopic(null);
+                          setSelectedTopic(null);
                           setExpandedSubject(expanded ? null : label);
                         }}
                         className="w-full flex items-center justify-between rounded-[14px] px-4 py-3 text-left transition-colors"
@@ -1054,7 +1036,10 @@ export default function PyqPage() {
                               <div key={child.label} className="rounded-[12px] border border-[#E5E7EB] bg-white p-2.5">
                                 <button
                                   type="button"
-                                  onClick={() => setSelectedSubtopic(childSelected ? null : child.label)}
+                                  onClick={() => {
+                                    setSelectedSubtopic(childSelected ? null : child.label);
+                                    setSelectedTopic(null);
+                                  }}
                                   className="w-full rounded-[10px] px-3 py-2 text-left transition-colors"
                                   style={{ background: childSelected ? '#E0F2FE' : '#FFFFFF', color: childSelected ? '#075985' : '#101828', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700 }}
                                 >
@@ -1063,9 +1048,23 @@ export default function PyqPage() {
                                 {child.microTopics?.length ? (
                                   <div className="mt-2 flex flex-wrap gap-2 px-1 pb-1">
                                     {child.microTopics.map((topic) => (
-                                      <span key={topic} className="rounded-full px-2.5 py-1" style={{ background: '#F3F4F6', color: '#4A5565', fontSize: '11px', fontWeight: 600 }}>
+                                      <button
+                                        key={topic}
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedSubtopic(child.label);
+                                          setSelectedTopic(selectedTopic === topic ? null : topic);
+                                        }}
+                                        className="rounded-full px-2.5 py-1 text-left transition-colors"
+                                        style={{
+                                          background: selectedTopic === topic ? '#0F172B' : '#F3F4F6',
+                                          color: selectedTopic === topic ? '#FFFFFF' : '#4A5565',
+                                          fontSize: '11px',
+                                          fontWeight: 600,
+                                        }}
+                                      >
                                         {topic}
-                                      </span>
+                                      </button>
                                     ))}
                                   </div>
                                 ) : null}

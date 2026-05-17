@@ -483,8 +483,7 @@ export default function FreeTrialPage() {
           <div style={{ fontSize: '14px', color: '#64748B', marginBottom: '16px' }}>Still deciding?</div>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={() => router.push('/dashboard/billing')} style={{ padding: '12px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#0F172B', color: '#FFFFFF', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Compare All Plans →</button>
-            <button onClick={() => { setBookingSuccess(false); setBookingError(''); setShowBookingModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#FFFFFF', color: '#0F172B', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-              <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontSize: '10px', fontWeight: 700 }}>P</div>
+            <button onClick={() => { setBookingSuccess(false); setBookingError(''); setShowBookingModal(true); }} style={{ padding: '12px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#FFFFFF', color: '#0F172B', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
               Free Discovery Call
             </button>
           </div>

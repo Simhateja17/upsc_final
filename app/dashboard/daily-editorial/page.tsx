@@ -41,21 +41,21 @@ const categoryColors: Record<string, { color: string; bg: string }> = {
 };
 
 const subjects = [
-  { id: 'polity', label: 'Polity', emoji: 'PO', bg: '#EDE9FE', border: '#DDD6FE', color: '#7C3AED', terms: ['polity'] },
-  { id: 'history', label: 'History', emoji: 'HI', bg: '#FEF3C7', border: '#FDE68A', color: '#B45309', terms: ['history'] },
-  { id: 'geography', label: 'Geography', emoji: 'GE', bg: '#DBEAFE', border: '#BFDBFE', color: '#1D4ED8', terms: ['geography'] },
-  { id: 'economy', label: 'Economy', emoji: 'EC', bg: '#FFF7ED', border: '#FED7AA', color: '#EA580C', terms: ['economy', 'economic'] },
-  { id: 'environment-ecology', label: 'Environment & Ecology', emoji: 'EN', bg: '#F0FDF4', border: '#BBF7D0', color: '#16A34A', terms: ['environment', 'ecology'] },
-  { id: 'science-technology', label: 'Science & Technology', emoji: 'ST', bg: '#DBEAFE', border: '#BFDBFE', color: '#0369A1', terms: ['science', 'technology'] },
-  { id: 'current-affairs', label: 'Current Affairs', emoji: 'CA', bg: '#FFF7ED', border: '#FED7AA', color: '#C2410C', terms: ['current affairs', 'current-affairs'] },
-  { id: 'society', label: 'Society', emoji: 'SO', bg: '#FDF2F8', border: '#FBCFE8', color: '#BE185D', terms: ['society', 'social'] },
-  { id: 'governance', label: 'Governance', emoji: 'GO', bg: '#EFF6FF', border: '#BFDBFE', color: '#1D4ED8', terms: ['governance'] },
-  { id: 'international-relations', label: 'International Relations', emoji: 'IR', bg: '#F0FDFA', border: '#99F6E4', color: '#0F766E', terms: ['international relations', 'foreign policy'] },
-  { id: 'social-justice', label: 'Social Justice', emoji: 'SJ', bg: '#FFF7ED', border: '#FED7AA', color: '#9A3412', terms: ['social justice'] },
-  { id: 'agriculture', label: 'Agriculture', emoji: 'AG', bg: '#F0FDF4', border: '#BBF7D0', color: '#15803D', terms: ['agriculture', 'agri'] },
-  { id: 'internal-security', label: 'Internal Security', emoji: 'IS', bg: '#FEF2F2', border: '#FECACA', color: '#991B1B', terms: ['internal security', 'security'] },
-  { id: 'disaster-management', label: 'Disaster Management', emoji: 'DM', bg: '#FFFBEB', border: '#FDE68A', color: '#92400E', terms: ['disaster management', 'disaster'] },
-  { id: 'ethics', label: 'Ethics', emoji: 'ET', bg: '#EEF2FF', border: '#C7D2FE', color: '#4338CA', terms: ['ethics', 'integrity'] },
+  { id: 'polity', label: 'Polity', emoji: '⚖️', bg: '#EDE9FE', border: '#DDD6FE', color: '#7C3AED', terms: ['polity'] },
+  { id: 'history', label: 'History', emoji: '📜', bg: '#FEF3C7', border: '#FDE68A', color: '#B45309', terms: ['history'] },
+  { id: 'geography', label: 'Geography', emoji: '🌍', bg: '#DBEAFE', border: '#BFDBFE', color: '#1D4ED8', terms: ['geography'] },
+  { id: 'economy', label: 'Economy', emoji: '💰', bg: '#FFF7ED', border: '#FED7AA', color: '#EA580C', terms: ['economy', 'economic'] },
+  { id: 'environment-ecology', label: 'Environment & Ecology', emoji: '🌿', bg: '#F0FDF4', border: '#BBF7D0', color: '#16A34A', terms: ['environment', 'ecology'] },
+  { id: 'science-technology', label: 'Science & Technology', emoji: '🔬', bg: '#DBEAFE', border: '#BFDBFE', color: '#0369A1', terms: ['science', 'technology'] },
+  { id: 'current-affairs', label: 'Current Affairs', emoji: '📰', bg: '#FFF7ED', border: '#FED7AA', color: '#C2410C', terms: ['current affairs', 'current-affairs'] },
+  { id: 'society', label: 'Society', emoji: '👥', bg: '#FDF2F8', border: '#FBCFE8', color: '#BE185D', terms: ['society', 'social'] },
+  { id: 'governance', label: 'Governance', emoji: '🏛️', bg: '#EFF6FF', border: '#BFDBFE', color: '#1D4ED8', terms: ['governance'] },
+  { id: 'international-relations', label: 'International Relations', emoji: '🤝', bg: '#F0FDFA', border: '#99F6E4', color: '#0F766E', terms: ['international relations', 'foreign policy'] },
+  { id: 'social-justice', label: 'Social Justice', emoji: '⚖️', bg: '#FFF7ED', border: '#FED7AA', color: '#9A3412', terms: ['social justice'] },
+  { id: 'agriculture', label: 'Agriculture', emoji: '🌾', bg: '#F0FDF4', border: '#BBF7D0', color: '#15803D', terms: ['agriculture', 'agri'] },
+  { id: 'internal-security', label: 'Internal Security', emoji: '🚨', bg: '#FEF2F2', border: '#FECACA', color: '#991B1B', terms: ['internal security', 'security'] },
+  { id: 'disaster-management', label: 'Disaster Management', emoji: '🆘', bg: '#FFFBEB', border: '#FDE68A', color: '#92400E', terms: ['disaster management', 'disaster'] },
+  { id: 'ethics', label: 'Ethics', emoji: '🧭', bg: '#EEF2FF', border: '#C7D2FE', color: '#4338CA', terms: ['ethics', 'integrity'] },
 ] as const;
 
 const defaultLearningStats = [
@@ -267,12 +267,9 @@ export default function DailyEditorialPage() {
               justifyContent: 'center',
               borderRadius: '999px',
               background: 'rgba(232,184,75,0.14)',
-              color: '#E8B84B',
-              fontSize: '12px',
-              fontWeight: 700,
             }}
           >
-            +
+            <img src="/✦.svg" alt="" style={{ width: '10px', height: '10px' }} />
           </span>
         }
         badgeText="DAILY NEWS ANALYSIS"
@@ -850,8 +847,7 @@ export default function DailyEditorialPage() {
                           alignItems: 'center',
                           justifyContent: 'center',
                           flexShrink: 0,
-                          fontSize: '11px',
-                          letterSpacing: '0.04em',
+                          fontSize: '14px',
                         }}
                       >
                         {subject.emoji}

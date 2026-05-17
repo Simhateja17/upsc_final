@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Mode, TrackerState, SyllabusData } from '../page';
 
 interface StageTabsProps {
@@ -19,7 +18,6 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData, cm
       return {};
     }
   })();
-  const [hoveredTab, setHoveredTab] = useState<Mode | null>(null);
   const stageMeta: Record<Mode, { accent: string; icon: string }> = {
     prelims: { accent: '#F59E0B', icon: '🎯' },
     mains: { accent: '#F3A312', icon: '✍️' },
@@ -50,7 +48,7 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData, cm
     { key: 'optional' as Mode, label: stageTabs.optional || 'Optional', pct: calculateModePct('optional') },
   ];
 
-  const highlightedTab = hoveredTab ?? mode;
+  const highlightedTab = mode;
   const highlightedIndex = tabs.findIndex((tab) => tab.key === highlightedTab);
   const thumbLeft =
     highlightedIndex === 0
@@ -60,7 +58,7 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData, cm
         : 'calc(18px + 2 * ((100% - 18px) / 3))';
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-start">
       <div
         className="relative inline-flex items-center overflow-hidden min-w-max max-w-full"
         style={{
@@ -88,21 +86,15 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData, cm
 
       {tabs.map((tab) => {
         const isActive = mode === tab.key;
-        const isHovered = hoveredTab === tab.key;
-        const isHighlighted = isActive || isHovered;
 
         return (
           <button
             key={tab.key}
             onClick={() => onModeChange(tab.key)}
-            onMouseEnter={() => setHoveredTab(tab.key)}
-            onMouseLeave={() => setHoveredTab(null)}
-            onFocus={() => setHoveredTab(tab.key)}
-            onBlur={() => setHoveredTab(null)}
             className="relative z-10 flex items-center justify-center gap-2 whitespace-nowrap transition-colors duration-200"
             style={{
               padding: '12px 22px',
-              color: isHighlighted ? '#FFFFFF' : '#17223E',
+              color: isActive ? '#FFFFFF' : '#17223E',
               fontWeight: 700,
               fontSize: '14px',
               lineHeight: '1',
@@ -114,7 +106,7 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData, cm
               style={{
                 fontSize: '16px',
                 lineHeight: 1,
-                filter: isHighlighted ? 'none' : 'saturate(0.95)',
+                filter: isActive ? 'none' : 'saturate(0.95)',
               }}
             >
               {stageMeta[tab.key].icon}

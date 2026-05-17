@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Subject, Mode, TrackerState } from '../page';
 
 interface SubjectListProps {
@@ -46,8 +47,18 @@ export default function SubjectList({
   return (
     <div className="w-full min-w-0 flex-1 bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm">
       <div className="p-[11px_13px_9px] border-b-[1.5px] border-[#e0e8f4] flex-shrink-0">
-        <div className="text-[9px] font-extrabold tracking-[1.6px] text-[#8795ae] uppercase mb-[8px]">
-          Subjects
+        <div className="mb-[10px] flex items-center gap-[8px]">
+          <Image
+            src="/Subjects.svg"
+            alt=""
+            width={22}
+            height={22}
+            className="h-[22px] w-[22px]"
+            aria-hidden="true"
+          />
+          <div className="text-[24px] leading-[1] font-bold tracking-[-1px] text-[#101828]">
+            Subjects
+          </div>
         </div>
         <div className="relative">
           <span className="absolute left-[9px] top-1/2 -translate-y-1/2 text-[#8795ae] text-[9px] font-bold uppercase tracking-[0.8px] pointer-events-none">
@@ -120,7 +131,7 @@ export default function SubjectList({
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="text-[12.5px] font-bold mb-[2px] leading-[1.25] break-words text-[#0f1f3d]">
+                <div className="text-[12.5px] font-bold mb-[2px] leading-[1.25] text-[#0f1f3d] whitespace-nowrap">
                   {subject.name}
                 </div>
                 <div className="text-[10px] text-[#8795ae]">

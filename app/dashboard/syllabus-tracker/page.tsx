@@ -305,7 +305,7 @@ export default function SyllabusTrackerPage() {
         {/* Tracker Area — four side-by-side columns */}
         <div className="flex items-stretch gap-[14px] px-[12px] pb-[18px] pt-[10px] min-w-[1180px]">
           {/* Column A - Subjects */}
-          <div className="w-[230px] shrink-0 flex flex-col">
+          <div className="w-[280px] shrink-0 flex flex-col">
             <SubjectList
               subjects={currentSubjects}
               activeSubject={activeSubject}

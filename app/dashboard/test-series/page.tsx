@@ -147,7 +147,7 @@ export default function TestSeriesPage() {
           <DashboardPageHero
             // eslint-disable-next-line @next/next/no-img-element
             badgeIcon={<img src="/badge-test-series.png" alt="test series" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />}
-            badgeText="TEST SERIES"
+            badgeText="TEST SERIES · ALL PROGRAMS"
 
             contentShiftY={-22}
             title={<>Choose Your <em style={{ color: '#E8B84B', fontStyle: 'italic' }}>Battle Plan.</em></>}
@@ -565,5 +565,4 @@ function ProgramCard({
     </div>
   );
 }
-
 

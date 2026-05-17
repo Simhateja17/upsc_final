@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { dashboardService, studyPlannerService } from '@/lib/services';
+import { getSubjectEmoji } from '@/lib/subjectEmojis';
 
 function fmtTimer(secs: number): string {
   const s = Math.max(0, secs);
@@ -249,10 +250,12 @@ export default function StudyPlannerPage() {
   }, []);
 
   const startFocusSession = () => {
-    const pendingTasks = tasks.filter((task) => !task.isCompleted).sort(compareTasksByTime);
-    if (pendingTasks.length === 0) return;
-    setFocusSessionTasks(pendingTasks);
-    setFocusTaskIdx(0);
+    const orderedTasks = [...tasks].sort(compareTasksByTime);
+    if (orderedTasks.length === 0) return;
+    const firstPendingIdx = orderedTasks.findIndex((task) => !task.isCompleted);
+    if (firstPendingIdx === -1) return;
+    setFocusSessionTasks(orderedTasks);
+    setFocusTaskIdx(firstPendingIdx);
     setFocusTaskSecs(0);
     setFocusTotalSecs(0);
     setJustCompleted(false);
@@ -281,7 +284,10 @@ export default function StudyPlannerPage() {
     setTimeout(() => {
       setJustCompleted(false);
       setFocusTaskIdx(prev => {
-        const newIdx = prev + 1;
+        let newIdx = prev + 1;
+        while (newIdx < updated.length && updated[newIdx].isCompleted) {
+          newIdx += 1;
+        }
         if (newIdx >= updated.length) {
           setFocusDone(true);
         }
@@ -292,7 +298,11 @@ export default function StudyPlannerPage() {
   };
 
   const focusSkip = () => {
-    focusAdvance(focusTaskIdx + 1, focusSessionTasks);
+    let nextIdx = focusTaskIdx + 1;
+    while (nextIdx < focusSessionTasks.length && focusSessionTasks[nextIdx].isCompleted) {
+      nextIdx += 1;
+    }
+    focusAdvance(nextIdx, focusSessionTasks);
   };
 
   const closeFocusSession = () => {
@@ -407,7 +417,7 @@ export default function StudyPlannerPage() {
   const pendingTaskCount = tasks.filter((task) => !task.isCompleted).length;
   const sortedTasks = [...tasks].sort(compareTasksByTime);
 
-  // Time distribution by study type
+  // Time distribution by study type (completed/ticked tasks only)
   const typeConfig = [
     { id: 'reading',  label: 'Reading',        color: '#2DD4BF' },
     { id: 'practice', label: 'Practice',        color: '#FBBF24' },
@@ -420,6 +430,7 @@ export default function StudyPlannerPage() {
   const timeByType = typeConfig.map(tc => {
     const mins = tasks
       .filter(t => {
+        if (!t.isCompleted) return false;
         if (!t.startTime || !t.endTime) return false;
         if (tc.id === 'reading' && (!t.type || t.type === 'study')) return true;
         return t.type === tc.id;
@@ -433,6 +444,7 @@ export default function StudyPlannerPage() {
     return { ...tc, minutes: mins };
   }).filter(x => x.minutes > 0);
   const totalTypeMins = timeByType.reduce((s, x) => s + x.minutes, 0);
+  const hasCompletedTimeDistribution = totalTypeMins > 0;
   const fmtHours = (m: number) => (m / 60 % 1 === 0 ? (m / 60).toFixed(0) : (m / 60).toFixed(1)) + 'h';
 
   // Dynamic month/year display for calendar header
@@ -1186,6 +1198,7 @@ export default function StudyPlannerPage() {
                       textAlign: 'center',
                     }}
                   >
+                    <span style={{ marginRight: '6px' }}>{getSubjectEmoji(item)}</span>
                     {item}
                   </button>
                 ))}
@@ -1213,9 +1226,9 @@ export default function StudyPlannerPage() {
 
               {/* SVG Pie Chart */}
               <div className="flex items-center justify-center" style={{ marginBottom: '12px' }}>
-                {totalTypeMins === 0 ? (
+                {!hasCompletedTimeDistribution ? (
                   <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
-                    No timed tasks today
+                    Complete at least one task to see distribution
                   </div>
                 ) : (
                   <svg viewBox="0 0 220 220" width="160" height="160">
@@ -1241,7 +1254,7 @@ export default function StudyPlannerPage() {
 
               {/* Legend */}
               <div className="space-y-2">
-                {totalTypeMins === 0 ? (
+                {!hasCompletedTimeDistribution ? (
                   typeConfig.slice(0, 3).map(tc => (
                     <div key={tc.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -1386,7 +1399,7 @@ export default function StudyPlannerPage() {
                       <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '20px', lineHeight: '1.3' }}>{task?.title ?? '-'}</h3>
                       {task?.subject && (
                         <span className="inline-block font-arimo text-[#312C85] mt-1" style={{ fontSize: '12px', background: '#EEF2FF', borderRadius: '6px', padding: '2px 8px' }}>
-                          {task.subject}
+                          {getSubjectEmoji(task.subject)} {task.subject}
                         </span>
                       )}
                     </div>
