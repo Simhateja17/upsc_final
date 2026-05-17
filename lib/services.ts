@@ -292,6 +292,8 @@ export const pyqService = {
     yearFrom?: number;
     yearTo?: number;
     subject?: string;
+    subSubject?: string;
+    topic?: string | string[];
     paper?: string;
     page?: number;
     limit?: number;
@@ -302,6 +304,16 @@ export const pyqService = {
     if (params?.yearFrom) query.set('yearFrom', String(params.yearFrom));
     if (params?.yearTo) query.set('yearTo', String(params.yearTo));
     if (params?.subject) query.set('subject', params.subject);
+    if (params?.subSubject) query.set('subSubject', params.subSubject);
+    if (params?.topic) {
+      if (Array.isArray(params.topic)) {
+        params.topic.forEach((t) => {
+          if (t) query.append('topic', t);
+        });
+      } else {
+        query.set('topic', params.topic);
+      }
+    }
     if (params?.paper) query.set('paper', params.paper);
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit));
@@ -872,14 +884,14 @@ export const studyMaterialService = {
 // ==================== Video Lectures ====================
 
 export const videoService = {
-  getSubjects: () => api.get<any>('/videos/subjects'),
-  getVideos: () => api.get<any>('/videos'),
-  getStats: () => api.get<any>('/videos/stats'),
-  getVideosBySubject: (subject: string) => api.get<any>(`/videos?subject=${encodeURIComponent(subject)}`),
-  getQuestions: (videoId: string) => api.get<any>(`/videos/${videoId}/questions`),
+  getSubjects: () => api.get<any>('/videos/subjects', authConfig()),
+  getVideos: () => api.get<any>('/videos', authConfig()),
+  getStats: () => api.get<any>('/videos/stats', authConfig()),
+  getVideosBySubject: (subject: string) => api.get<any>(`/videos/${encodeURIComponent(subject)}`, authConfig()),
+  getQuestions: (videoId: string) => api.get<any>(`/videos/${videoId}/questions`, authConfig()),
   submitQuiz: (videoId: string, answers: Record<string, number>) =>
-    api.post<any>(`/videos/${videoId}/quiz`, { answers }),
-  askMentor: (data: { question: string }) => api.post<any>('/mentor/ask', data),
+    api.post<any>(`/videos/${videoId}/submit`, { answers }, authConfig()),
+  askMentor: (data: { question: string }) => api.post<any>('/videos/mentor/ask', data, authConfig()),
 };
 
 // ==================== Forum ====================

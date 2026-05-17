@@ -50,7 +50,7 @@ export default function PageHeroBackground({
       />
 
       {/* Page content */}
-      <div className="relative z-10 h-full">{children}</div>
+      <div className="relative z-10 flex h-full flex-col">{children}</div>
     </div>
   );
 }

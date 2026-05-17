@@ -177,7 +177,7 @@ function BillingHero() {
         <span style={{ display: 'block', whiteSpace: 'nowrap' }}>Your IAS Journey Deserves</span>
         <span style={{ display: 'block', whiteSpace: 'nowrap' }}>
           a{' '}
-          <em style={{ color: '#E8A820', fontStyle: 'italic', fontWeight: 600 }}>Smarter</em>
+          <em style={{ color: '#E8B84B', fontStyle: 'italic', fontWeight: 600 }}>Smarter</em>
           {' '}Foundation
         </span>
       </h1>

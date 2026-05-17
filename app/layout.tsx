@@ -23,11 +23,9 @@ export const metadata: Metadata = {
   keywords: 'UPSC, IAS, Civil Services, Exam Preparation, AI Learning, MCQs, Answer Evaluation',
   icons: {
     icon: [
-      { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
-      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/favicon.ico', sizes: 'any', type: 'image/x-icon' },
+      { url: '/risewithjeet_favicon.jpg', type: 'image/jpeg' },
     ],
-    shortcut: '/favicon.ico',
+    shortcut: '/risewithjeet_favicon.jpg',
     apple: [
       { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
     ],

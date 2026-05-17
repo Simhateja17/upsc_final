@@ -187,7 +187,7 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
                     <span className="uppercase tracking-[2px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: '#6A7282' }}>
                       Question
                     </span>
-                    <span className="uppercase tracking-[1.5px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: '#F0B100' }}>
+                    <span className="uppercase tracking-[1.5px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: '#E8B84B' }}>
                       {card.difficulty}
                     </span>
                   </div>

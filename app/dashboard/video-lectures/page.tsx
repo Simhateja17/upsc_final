@@ -254,6 +254,13 @@ function getYouTubeEmbedUrl(url: string) {
   return url;
 }
 
+function openVideoInNewTab(video: VideoItem) {
+  const raw = (video.videoUrl || video.youtubeUrl || video.url || '').trim();
+  if (!raw || typeof window === 'undefined') return;
+  const target = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  window.open(target, '_blank', 'noopener,noreferrer');
+}
+
 /* ─── Page Component ─── */
 export default function VideoLecturesPage() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -297,7 +304,10 @@ export default function VideoLecturesPage() {
     if (!selectedSubject) { setSubjectVideos([]); return; }
     setSubjectVideosLoading(true);
     videoService.getVideosBySubject(selectedSubject)
-      .then((res: any) => setSubjectVideos(Array.isArray(res.data) ? res.data : []))
+      .then((res: any) => {
+        const videos = Array.isArray(res.data) ? res.data : res.data?.videos;
+        setSubjectVideos(Array.isArray(videos) ? videos : []);
+      })
       .catch(() => setSubjectVideos([]))
       .finally(() => setSubjectVideosLoading(false));
   }, [selectedSubject]);
@@ -312,11 +322,7 @@ export default function VideoLecturesPage() {
 
   const handleSubjectClick = (name: string) => {
     setSelectedSubject((prev) => {
-      const next = prev === name ? null : name;
-      if (next && typeof window !== 'undefined') {
-        window.open('https://www.youtube.com/@RiseWithJeet', '_blank', 'noopener,noreferrer');
-      }
-      return next;
+      return prev === name ? null : name;
     });
   };
 
@@ -400,14 +406,36 @@ export default function VideoLecturesPage() {
         title={
           <>
             Master Your{' '}
-            <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>UPSC Journey</em>
+            <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>UPSC Journey</em>
             <br />
             with Expert Video Lectures
           </>
         }
         subtitle="Simplified video lectures that make even the toughest topics easy to understand and impossible to forget"
+        rightElement={
+          <a
+            href="https://www.youtube.com/@RiseWithJeet"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 font-arimo font-semibold text-white"
+            style={{
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '26843500px',
+              padding: 'clamp(8px, 0.75vw, 10px) clamp(16px, 1.5vw, 20px)',
+              fontSize: 'clamp(12px, 1.05vw, 14px)',
+              textDecoration: 'none',
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FF0000"/>
+              <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="white"/>
+            </svg>
+            @RiseWithJeet
+          </a>
+        }
         stats={[
-          { value: `${apiStats?.totalLectures ?? '100'}+`, label: 'Video Lectures', color: '#FDC700' },
+          { value: '50+', label: 'Video Lectures', color: '#FDC700' },
           { value: `${apiStats?.totalSubjects ?? '12'}+`, label: 'Core Subjects', color: '#F87171' },
           { value: `${apiStats?.totalHours ?? '15'}K+`, label: 'Subscribers', color: '#4ADE80' },
           { value: '4.9', label: 'Ratings', color: '#FFFFFF' },
@@ -708,7 +736,7 @@ export default function VideoLecturesPage() {
                             Ask Mentor
                           </button>
                           <button
-                            onClick={() => { const u = video.youtubeUrl || video.url || ''; window.open(u.startsWith('http') ? u : `https://${u}`, '_blank'); }}
+                            onClick={() => openVideoInNewTab(video)}
                             className="flex items-center gap-1 font-arimo font-bold text-white"
                             style={{ padding: '5px 8px', borderRadius: '10px', background: '#17223E', border: '1.5px solid #17223E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                           >
@@ -750,7 +778,7 @@ export default function VideoLecturesPage() {
                         }}
                       >
                         Never Miss a<br />
-                        <span style={{ color: '#F0B100' }}>Lecture Again.</span>
+                        <span style={{ color: '#E8B84B' }}>Lecture Again.</span>
                       </h3>
                       <p
                         className="font-arimo"
@@ -774,18 +802,21 @@ export default function VideoLecturesPage() {
                       >
                         Subscribe to Rise with Jeet on YouTube and get instant notifications for new lectures, current affairs drops, and live sessions.
                       </p>
-                      <a
-                        href="https://www.youtube.com/@RiseWithJeet"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 font-arimo font-bold text-white"
-                        style={{
-                          background: '#E7000B',
-                          borderRadius: '26843500px',
-                          padding: 'clamp(12px, 1.2vw, 14px) clamp(24px, 2.25vw, 30px)',
-                          fontSize: 'clamp(13px, 1.12vw, 15px)',
-                          marginBottom: 'clamp(12px, 1.2vw, 16px)',
-                        }}
+                      <div
+                        className="flex items-center"
+                        style={{ gap: 'clamp(12px, 1.4vw, 20px)', flexWrap: 'wrap' }}
+                      >
+                        <a
+                          href="https://www.youtube.com/@RiseWithJeet"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 font-arimo font-bold text-white"
+                          style={{
+                            background: '#E7000B',
+                            borderRadius: '26843500px',
+                            padding: 'clamp(12px, 1.2vw, 14px) clamp(24px, 2.25vw, 30px)',
+                            fontSize: 'clamp(13px, 1.12vw, 15px)',
+                          }}
                         >
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FFFFFF"/>
@@ -793,9 +824,10 @@ export default function VideoLecturesPage() {
                           </svg>
                           Join Our YouTube Family
                         </a>
-                      <p className="font-arimo" style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#FFFFFF' }}>
-                        15K+ join our YouTube family
-                      </p>
+                        <p className="font-arimo font-bold" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#FFFFFF' }}>
+                          Join 15,000+ UPSC Aspirants Here
+                        </p>
+                      </div>
                     </div>
                     <div
                       className="flex items-center justify-center"
@@ -816,6 +848,169 @@ export default function VideoLecturesPage() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Bottom support cards (restored from older layout) */}
+      <div
+        style={{
+          maxWidth: '1338px',
+          margin: '0 auto',
+          padding: '0 clamp(14px, 1.6vw, 24px) clamp(36px, 4vw, 56px)',
+        }}
+      >
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(521.6px, 100%), 521.6px))',
+            justifyContent: 'center',
+            gap: '50px',
+            alignItems: 'start',
+          }}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: '24px',
+              border: '1.6px solid #9AA4B2',
+              padding: '32px',
+              width: '100%',
+              minHeight: '607.188px',
+            }}
+          >
+            <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+              <span style={{ fontSize: '34px' }}>{'\u{1F4E5}'}</span>
+              <button
+                type="button"
+                className="flex items-center justify-center"
+                style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F3F4F6', border: 'none', color: '#6B7280' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <h3 className="font-arimo font-bold" style={{ fontSize: '30px', color: '#101828', lineHeight: '36px', marginBottom: '8px' }}>
+              Login to Download
+            </h3>
+            <p className="font-arimo" style={{ fontSize: '14px', color: '#4A5565', marginBottom: '20px', lineHeight: '20px' }}>
+              Please Sign-in to download <strong>Telegram Accts</strong>
+            </p>
+
+            <div style={{ marginBottom: '12px' }}>
+              <input
+                type="email"
+                placeholder="Email address"
+                className="w-full font-arimo outline-none"
+                style={{ height: '55px', borderRadius: '14px', border: '1.6px solid #D1D5DC', padding: '0 16px', fontSize: '14px' }}
+              />
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <input
+                type="password"
+                placeholder="Password"
+                className="w-full font-arimo outline-none"
+                style={{ height: '55px', borderRadius: '14px', border: '1.6px solid #D1D5DC', padding: '0 16px', fontSize: '14px' }}
+              />
+            </div>
+
+            <button
+              type="button"
+              className="w-full font-arimo font-bold text-white"
+              style={{ height: '60px', borderRadius: '14px', background: '#162456', border: 'none', fontSize: '18px', marginBottom: '16px' }}
+            >
+              Sign In & Download →
+            </button>
+
+            <div className="flex items-center" style={{ gap: '12px', marginBottom: '16px' }}>
+              <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
+              <span className="font-arimo" style={{ fontSize: '14px', color: '#6A7282' }}>— or —</span>
+              <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
+            </div>
+
+            <button
+              type="button"
+              className="w-full flex items-center justify-center gap-2 font-arimo font-semibold"
+              style={{ height: '59px', borderRadius: '14px', border: '1.6px solid #D1D5DC', background: '#FFFFFF', color: '#101828', fontSize: '16px', marginBottom: '16px' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Continue with Google
+            </button>
+
+            <div className="flex items-center justify-between">
+              <span className="font-arimo" style={{ fontSize: '12px', color: '#155DFC' }}>New? Create free account →</span>
+              <span className="font-arimo" style={{ fontSize: '12px', color: '#155DFC' }}>{'\u{1F4E7}'} Forgot?</span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: '24px',
+              border: '1.6px solid #9AA4B2',
+              padding: '32px',
+              width: '100%',
+              minHeight: '607.188px',
+              marginTop: '151.8px',
+            }}
+          >
+            <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+              <span style={{ fontSize: '34px' }}>{'\u{1F914}'}</span>
+              <button
+                type="button"
+                className="flex items-center justify-center"
+                style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F3F4F6', border: 'none', color: '#6B7280' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <h3 className="font-arimo font-bold" style={{ fontSize: '30px', color: '#101828', lineHeight: '36px', marginBottom: '8px' }}>
+              Ask the Mentor
+            </h3>
+            <p className="font-arimo" style={{ fontSize: '14px', color: '#4A5565', marginBottom: '24px', lineHeight: '20px' }}>
+              Have any doubt about <strong>Introduction to Indian Constitution I Historical Background</strong>...Jeet Sir responds within 24 hours.
+            </p>
+
+            <p className="font-arimo font-bold" style={{ fontSize: '14px', color: '#364153', marginBottom: '8px' }}>
+              Your doubt or question
+            </p>
+            <textarea
+              placeholder="e.g. At 18:32, I didn't understand why Article 370 had was mentioned u..."
+              className="w-full font-arimo outline-none resize-none"
+              value={mentorQuestion}
+              onChange={(e) => setMentorQuestion(e.target.value)}
+              style={{ height: '115px', borderRadius: '14px', border: '1.6px solid #D1D5DC', padding: '16px', fontSize: '14px', marginBottom: '12px' }}
+            />
+
+            <p className="font-arimo font-bold" style={{ fontSize: '14px', color: '#364153', marginBottom: '8px' }}>
+              Your name (optional)
+            </p>
+            <input
+              type="text"
+              placeholder="e.g. Rahul from Delhi"
+              className="w-full font-arimo outline-none"
+              style={{ height: '55px', borderRadius: '14px', border: '1.6px solid #D1D5DC', padding: '0 16px', fontSize: '14px', marginBottom: '14px' }}
+            />
+
+            <button
+              type="button"
+              onClick={handleAskMentor}
+              disabled={mentorSubmitting || !mentorQuestion.trim()}
+              className="w-full font-arimo font-bold text-white"
+              style={{ height: '60px', borderRadius: '14px', background: mentorSubmitting || !mentorQuestion.trim() ? '#6A7282' : '#101828', border: 'none', fontSize: '18px', marginBottom: '14px', opacity: !mentorQuestion.trim() ? 0.6 : 1 }}
+            >
+              {mentorSubmitting ? 'Submitting...' : 'Submit Doubt →'}
+            </button>
+
+            <p className="font-arimo text-center" style={{ fontSize: '12px', color: '#6A7282', lineHeight: '16px' }}>
+              Answers posted on <span style={{ color: '#E7000B', fontWeight: 700 }}>YouTube Community</span> & <span style={{ color: '#1E40AF', fontWeight: 700 }}>Telegram</span>
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Watch Video + Quiz Modal */}

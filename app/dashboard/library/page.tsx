@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { libraryService, pricingService } from '@/lib/services';
+import { libraryService } from '@/lib/services';
 import { useCmsContent } from '@/hooks/useCmsContent';
 import DashboardPageHero from '@/components/DashboardPageHero';
 
@@ -35,53 +35,6 @@ const COMING_SOON_SUBJECTS = [
   'History Timeline Archive',
 ];
 
-const PLACEHOLDER_TESTIMONIAL_CONTENT = /^(hello|hi|test|sample|demo)\W*$/i;
-
-const LIBRARY_TESTIMONIAL_FALLBACKS = [
-  {
-    name: 'Priya Sharma',
-    title: 'IAS 2024 - AIR 45',
-    content:
-      'The daily MCQ practice and AI-powered answer evaluation transformed my preparation. The structured approach helped me improve my Prelims score from 95 to 132 within 3 months.',
-  },
-  {
-    name: 'Surendra',
-    title: 'IAS 2029',
-    content:
-      'The daily answer-writing practice and structured revision flow gave me consistency. I stopped wasting time deciding what to study and started improving steadily in both mock accuracy and mains answers.',
-  },
-  {
-    name: 'Rahul Verma',
-    title: 'IPS 2023 - AIR 112',
-    content:
-      'The editorial summaries saved me 2 hours daily. The mock tests are incredibly accurate to the actual exam pattern. I cleared both Prelims and Mains on my first attempt.',
-  },
-];
-
-function normalizeLibraryTestimonials(items: any[]) {
-  return items.map((item, index) => {
-    const fallback = LIBRARY_TESTIMONIAL_FALLBACKS[index % LIBRARY_TESTIMONIAL_FALLBACKS.length];
-    const rawContent = typeof item?.content === 'string' ? item.content.trim() : '';
-    const rawName = typeof item?.name === 'string' ? item.name.trim() : '';
-    const rawTitle = typeof item?.title === 'string' ? item.title.trim() : '';
-
-    return {
-      ...item,
-      name: rawName || fallback.name,
-      title: rawTitle || fallback.title,
-      content:
-        rawContent && !PLACEHOLDER_TESTIMONIAL_CONTENT.test(rawContent)
-          ? rawContent
-          : fallback.content,
-      rating:
-        typeof item?.rating === 'number' && item.rating >= 1 && item.rating <= 5
-          ? item.rating
-          : 5,
-    };
-  });
-}
-
-
 const features = [
   { emoji: '\uD83C\uDFAF', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff, only what earns marks in Prelims and Mains.' },
   { emoji: '\uD83D\uDD04', bg: '#DBEAFE', title: 'Updated Every Week', desc: 'Budget, new schemes, policy shifts, our notes are refreshed weekly so your prep stays current.' },
@@ -103,7 +56,7 @@ const heroStatItems = [
 /* ------------------------------------------------------------------ */
 export default function LibraryPage() {
   const { content: cms } = useCmsContent('dashboard/library', {
-    hero_badge: 'Study Material',
+    hero_badge: 'STUDY MATERIAL',
     hero_title: 'Master UPSC with Expert Notes and Simplified Resources',
     hero_subtitle: 'From PYQ-backed notes to concise summaries, everything you need, simplified.',
     hero_stats: JSON.stringify([
@@ -120,15 +73,13 @@ export default function LibraryPage() {
     banner_subtitle: "Every PDF is designed with one obsession, your selection. Here's what makes us different from every other resource out there.",
     banner_stat_number: '15K+',
     banner_stat_label: "Aspirants trust\nRise with Jeet",
-    testimonials_badge: 'ASPIRANT STORIES',
-    testimonials_title: 'What UPSC Aspirants Say',
     cta_title: 'Ready to start your IAS journey the right way?',
     cta_subtitle: 'Access 100+ PDFs, PYQ notes, and study roadmaps, all designed to help you crack UPSC.',
     cta_button_primary: 'Start Studying',
     cta_button_secondary: 'Watch on YouTube',
   });
 
-  const heroBadge = 'Study Material';
+  const heroBadge = 'STUDY MATERIAL';
   const heroSubtitle = 'From PYQ-backed notes to concise summaries, everything you need, simplified.';
   const sidebarHeaderTitle = cms?.sidebar_header_title || 'CHOOSE A SUBJECT';
   const sectionLabelNotes = cms?.section_label_notes || 'FOUNDATIONAL NOTES';
@@ -137,8 +88,6 @@ export default function LibraryPage() {
   const bannerSubtitle = "Every PDF is designed with one obsession, your selection. Here's what makes us different from every other resource out there.";
   const bannerStatNumber = cms?.banner_stat_number || '15K+';
   const bannerStatLabel = cms?.banner_stat_label || "Aspirants trust\nRise with Jeet";
-  const testimonialsBadge = cms?.testimonials_badge || 'ASPIRANT STORIES';
-  const testimonialsTitle = cms?.testimonials_title || 'What UPSC Aspirants Say';
   const ctaTitle = cms?.cta_title || 'Ready to start your IAS journey the right way?';
   const ctaSubtitle = 'Access 100+ PDFs, PYQ notes, and study roadmaps, all designed to help you crack UPSC.';
   const ctaButtonPrimary = 'Start Studying';
@@ -157,37 +106,9 @@ export default function LibraryPage() {
   const [apiChapters, setApiChapters] = useState<Record<string, any[]>>({});
   const [loadingChapters, setLoadingChapters] = useState(false);
   const [downloadingChapter, setDownloadingChapter] = useState<string | null>(null);
-  const [apiTestimonials, setApiTestimonials] = useState<any[]>([]);
-
-  const defaultTestimonials = [
-    {
-      id: 'default-1',
-      name: 'Priya Rajan',
-      title: 'UPSC Prelims 2024 Cleared - Delhi',
-      content: "Jeet Sir's notes are unmatched. I revised them 3 times before Prelims and cleared with a huge margin. Clear, concise, UPSC-perfect.",
-      rating: 5,
-    },
-    {
-      id: 'default-2',
-      name: 'Ankit Kumar',
-      title: 'UPSC Mains 2024 - Bihar',
-      content: "The connection b/w the YouTube and the PDFs is seamless. I feel like I'm watching and taking notes at the same time. Genuinely the best free resource.",
-      rating: 5,
-    },
-    {
-      id: 'default-3',
-      name: 'Sneha Mishra',
-      title: 'UPSC Mains 2025 - MP',
-      content: "I've tried paid note-making notes — Jeet Sir's free PDFs are better. The Geography notes genuinely saved my Prelims score. Life-changing.",
-      rating: 5,
-    },
-  ];
-
-  const testimonials = apiTestimonials.length > 0 ? apiTestimonials : defaultTestimonials;
-
   const selectedApiSubject = apiSubjects.find(s => s.name === selectedSubject) ?? null;
 
-  // Fetch subjects and testimonials on mount
+  // Fetch subjects on mount
   useEffect(() => {
     libraryService.getSubjects()
       .then((res: any) => {
@@ -199,12 +120,6 @@ export default function LibraryPage() {
       })
       .catch(() => {});
 
-    pricingService.getTestimonials()
-      .then((res: any) => {
-        const items = res?.data ?? [];
-        setApiTestimonials(Array.isArray(items) ? normalizeLibraryTestimonials(items) : []);
-      })
-      .catch(() => {});
   }, []);
 
   // Fetch chapters when a subject is selected
@@ -267,7 +182,7 @@ export default function LibraryPage() {
         badgeText={heroBadge}
         title={
           <>
-            Master UPSC with <span style={{ color: '#F5C75D' }}>Expert</span> Notes and <span style={{ color: '#F5C75D' }}>Simplified</span> Resources
+            Master UPSC with <em style={{ color: '#E8B84B', fontStyle: 'italic' }}>Expert</em> Notes and <em style={{ color: '#E8B84B', fontStyle: 'italic' }}>Simplified</em> Resources
           </>
         }
         subtitle={heroSubtitle}
@@ -504,50 +419,40 @@ export default function LibraryPage() {
               position: 'relative',
             }}
           >
-            {/* Subject header with bluish grid texture */}
+            {/* Decorative ellipses on the container */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/top_ellipse.svg"
+              alt=""
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                right: '0',
+                top: '0',
+                width: '252px',
+                height: '134px',
+                pointerEvents: 'none',
+                zIndex: 0,
+              }}
+            />
+            {/* Subject header */}
             <div
               style={{
-                background: 'linear-gradient(135deg, #E8EEF8 0%, #F0F4FB 100%)',
-                padding: 'clamp(18px, 2vw, 28px)',
+                padding: 'clamp(24px, 2.5vw, 32px)',
                 position: 'relative',
-                overflow: 'hidden',
-                borderBottom: '0.8px solid #E5E7EB',
               }}
             >
-              {/* Grid texture overlay */}
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  opacity: 0.08,
-                  backgroundImage:
-                    'linear-gradient(rgba(59,130,246,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.4) 1px, transparent 1px)',
-                  backgroundSize: '24px 24px',
-                }}
-              />
-
-              {/* Decorative ellipse */}
-              <div style={{
-                position: 'absolute',
-                width: '200px',
-                height: '200px',
-                borderRadius: '50%',
-                background: 'rgba(171,197,255,0.15)',
-                top: '-80px',
-                right: '-40px',
-                pointerEvents: 'none',
-              }} />
-
               <div className="relative z-10">
                 {/* Header area */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'clamp(12px, 1.2vw, 16px)', flexWrap: 'wrap' as const, marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'clamp(12px, 1.2vw, 16px)', flexWrap: 'wrap' as const, marginBottom: 'clamp(8px, 0.8vw, 10px)' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h2
                       className="font-arimo font-bold"
                       style={{
                         fontSize: 'clamp(22px, 2.2vw, 30px)',
                         color: '#101828',
-                        marginBottom: 'clamp(6px, 0.6vw, 10px)',
-                        lineHeight: 1.2,
+                        marginBottom: 'clamp(6px, 0.6vw, 8px)',
+                        lineHeight: '36px',
                       }}
                     >
                       {selectedApiSubject?.name ?? selectedSubject}
@@ -556,7 +461,7 @@ export default function LibraryPage() {
                       className="font-arimo"
                       style={{
                         fontSize: 'clamp(12px, 1.05vw, 14px)',
-                        lineHeight: 'clamp(18px, 1.6vw, 22px)',
+                        lineHeight: '20px',
                         color: '#4A5565',
                         whiteSpace: 'pre-line',
                       }}
@@ -572,51 +477,29 @@ export default function LibraryPage() {
                       borderRadius: '24px',
                       border: '0.8px solid #E5E7EB',
                       boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.08)',
-                      padding: 'clamp(10px, 1vw, 14px) clamp(16px, 1.5vw, 22px)',
+                      padding: '20px 48px',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 'clamp(12px, 1.2vw, 18px)',
+                      gap: '32px',
                       flexShrink: 0,
                       position: 'relative',
-                      overflow: 'hidden',
+                      zIndex: 1,
                     }}
                   >
-                    {/* Decorative ellipses */}
-                    <div style={{
-                      position: 'absolute',
-                      width: '252px',
-                      height: '134px',
-                      borderRadius: '50%',
-                      background: '#ABC5FF30',
-                      top: '-40px',
-                      left: '-60px',
-                      pointerEvents: 'none',
-                    }} />
-                    <div style={{
-                      position: 'absolute',
-                      width: '170.472px',
-                      height: '187.861px',
-                      borderRadius: '50%',
-                      background: '#ABC5FF30',
-                      transform: 'rotate(-90.622deg)',
-                      bottom: '-60px',
-                      right: '-50px',
-                      pointerEvents: 'none',
-                    }} />
                     <div className="flex flex-col items-center">
-                      <div className="font-arimo font-bold" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#101828', lineHeight: 1.2 }}>
+                      <div className="font-arimo font-bold" style={{ fontSize: '40px', color: '#101828', lineHeight: 1.1 }}>
                         {selectedApiSubject?.pdfCount ?? 0}
                       </div>
-                      <div className="font-arimo" style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', color: '#6A7282' }}>
+                      <div className="font-arimo" style={{ fontSize: '14px', color: '#6A7282' }}>
                         PDFs
                       </div>
                     </div>
-                    <div style={{ width: '1px', height: 'clamp(24px, 2.5vw, 36px)', background: '#E5E7EB' }} />
+                    <div style={{ width: '1px', height: '48px', background: '#E5E7EB' }} />
                     <div className="flex flex-col items-center">
-                      <div className="font-arimo font-bold" style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: '#C68A0B', lineHeight: 1.2 }}>
+                      <div className="font-arimo font-bold" style={{ fontSize: '40px', color: '#C68A0B', lineHeight: 1.1 }}>
                         {selectedApiSubject?.pageCount ?? selectedApiSubject?.pages ?? selectedApiSubject?.chapterCount ?? 0}
                       </div>
-                      <div className="font-arimo" style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', color: '#6A7282' }}>
+                      <div className="font-arimo" style={{ fontSize: '14px', color: '#6A7282' }}>
                         Pages
                       </div>
                     </div>
@@ -627,7 +510,7 @@ export default function LibraryPage() {
                 <div
                   className="flex items-center"
                   style={{
-                    gap: 'clamp(10px, 1.2vw, 16px)',
+                    gap: '16px',
                     flexWrap: 'wrap',
                   }}
                 >
@@ -636,8 +519,9 @@ export default function LibraryPage() {
                       key={tag}
                       className="font-arimo"
                       style={{
-                        fontSize: 'clamp(12px, 1.05vw, 14px)',
-                        color: '#4A5565',
+                        fontSize: '14px',
+                        color: '#364153',
+                        lineHeight: '20px',
                       }}
                     >
                       {tag}
@@ -648,14 +532,48 @@ export default function LibraryPage() {
             </div>
 
             {/* Content area below header */}
-            <div style={{ padding: 'clamp(18px, 2vw, 28px)' }}>
+            <div style={{ padding: '0 clamp(24px, 2.5vw, 32px) clamp(24px, 2.5vw, 32px)' }}>
 
             {/* Tab bar */}
-            <div style={{ borderBottom: '2px solid #E5E7EB', marginBottom: 'clamp(20px, 2vw, 28px)' }}>
-              <div className="flex" style={{ gap: 'clamp(20px, 2.5vw, 36px)' }}>
+            <div
+              style={{
+                borderBottom: '2px solid #E5E7EB',
+                marginBottom: 'clamp(20px, 2vw, 28px)',
+                position: 'relative',
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/bottom_ellipse.svg"
+                alt=""
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  right: 'calc(-1 * clamp(24px, 2.5vw, 32px))',
+                  bottom: '0',
+                  width: '187px',
+                  height: '172px',
+                  pointerEvents: 'none',
+                  zIndex: 0,
+                }}
+              />
+              <div className="flex" style={{ gap: 'clamp(20px, 2.5vw, 36px)', position: 'relative', zIndex: 1 }}>
                 {tabs.map((tab) => {
                   const isActive = activeTab === tab;
                   const count = getChaptersForTab(tab).length;
+                  const tabIcon = tab === 'Notes' ? (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <rect x="2" y="1" width="12" height="14" rx="2" stroke={isActive ? '#155DFC' : '#6A7282'} strokeWidth="1.3" fill="none" />
+                      <line x1="5" y1="5" x2="11" y2="5" stroke={isActive ? '#155DFC' : '#6A7282'} strokeWidth="1.2" />
+                      <line x1="5" y1="8" x2="11" y2="8" stroke={isActive ? '#155DFC' : '#6A7282'} strokeWidth="1.2" />
+                      <line x1="5" y1="11" x2="9" y2="11" stroke={isActive ? '#155DFC' : '#6A7282'} strokeWidth="1.2" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <rect x="1" y="2" width="6" height="12" rx="1" stroke={isActive ? '#155DFC' : '#6A7282'} strokeWidth="1.2" fill="none" />
+                      <rect x="9" y="2" width="6" height="12" rx="1" stroke={isActive ? '#155DFC' : '#6A7282'} strokeWidth="1.2" fill="none" />
+                    </svg>
+                  );
                   return (
                     <button
                       key={tab}
@@ -676,6 +594,7 @@ export default function LibraryPage() {
                         transition: 'all 0.2s ease',
                       }}
                     >
+                      {tabIcon}
                       {tab}
                       <span
                         className="font-arimo font-bold"
@@ -697,20 +616,21 @@ export default function LibraryPage() {
 
             {/* Section label */}
             <div
-              className="font-arimo font-bold"
+              className="font-arimo"
               style={{
-                fontSize: 'clamp(10px, 0.82vw, 12px)',
+                fontSize: '12px',
+                lineHeight: '16px',
                 color: '#6A7282',
                 textTransform: 'uppercase',
                 letterSpacing: '0.3px',
-                marginBottom: 'clamp(12px, 1.2vw, 16px)',
+                marginBottom: '16px',
               }}
             >
               {activeTab === 'Notes' ? sectionLabelNotes : sectionLabelPyq}
             </div>
 
             {/* Chapter cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1vw, 14px)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {loadingChapters && (
                 <div className="font-arimo" style={{ textAlign: 'center', padding: '20px', color: '#6A7282' }}>
                   Loading chapters...
@@ -727,10 +647,10 @@ export default function LibraryPage() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 'clamp(12px, 1.2vw, 16px)',
+                    gap: '16px',
                     borderRadius: '14px',
                     border: '0.8px solid #E5E7EB',
-                    padding: 'clamp(12px, 1.2vw, 16px)',
+                    padding: '16px',
                     transition: 'all 0.2s ease',
                   }}
                 >
@@ -738,10 +658,11 @@ export default function LibraryPage() {
                   <div
                     className="font-arimo font-bold"
                     style={{
-                      fontSize: 'clamp(16px, 1.6vw, 22px)',
-                      color: '#9CA3AF',
-                      minWidth: 'clamp(28px, 2.5vw, 36px)',
-                      textAlign: 'center',
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                      color: '#99A1AF',
+                      minWidth: '32px',
+                      textAlign: 'left',
                       flexShrink: 0,
                     }}
                   >
@@ -751,17 +672,22 @@ export default function LibraryPage() {
                   {/* Document icon */}
                   <div
                     style={{
-                      width: 'clamp(36px, 3.2vw, 44px)',
-                      height: 'clamp(36px, 3.2vw, 44px)',
-                      borderRadius: '50%',
-                      background: '#FEE2E2',
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      background: '#FEF2F2',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
                     }}
                   >
-                    <span style={{ fontSize: 'clamp(16px, 1.4vw, 20px)' }}>{'\uD83D\uDCC4'}</span>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M6 2H11L16 7V17C16 17.5523 15.5523 18 15 18H6C5.44772 18 5 17.5523 5 17V3C5 2.44772 5.44772 2 6 2Z" fill="#EF4444" opacity="0.85" />
+                      <path d="M11 2V7H16" fill="#FECACA" />
+                      <path d="M11 2L16 7" stroke="#DC2626" strokeWidth="0.5" />
+                      <path d="M11 2V6C11 6.55228 11.4477 7 12 7H16" stroke="#DC2626" strokeWidth="0.5" fill="#FECACA" />
+                    </svg>
                   </div>
 
                   {/* Title & subtitle */}
@@ -769,9 +695,10 @@ export default function LibraryPage() {
                     <div
                       className="font-arimo font-bold"
                       style={{
-                        fontSize: 'clamp(13px, 1.12vw, 15px)',
+                        fontSize: '16px',
+                        lineHeight: '24px',
                         color: '#101828',
-                        marginBottom: '2px',
+                        marginBottom: '4px',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -782,25 +709,28 @@ export default function LibraryPage() {
                     <div
                       className="font-arimo"
                       style={{
-                        fontSize: 'clamp(11px, 0.9vw, 13px)',
+                        fontSize: '14px',
+                        lineHeight: '20px',
                         color: '#6A7282',
                       }}
                     >
-                      {chapterPages} pages{chapterSize ? ` | ${chapterSize}` : ''}
+                      {'\uD83D\uDCC4'} {chapterPages} pages{chapterSize ? ` | ${chapterSize}` : ''}
                     </div>
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex items-center" style={{ gap: 'clamp(6px, 0.6vw, 10px)', flexShrink: 0 }}>
+                  <div className="flex items-center" style={{ gap: '12px', flexShrink: 0 }}>
                     <button
                       className="font-arimo font-bold"
                       onClick={() => chapterId && handleDownload(chapter)}
                       style={{
-                        fontSize: 'clamp(12px, 1.05vw, 14px)',
+                        fontSize: '14px',
+                        lineHeight: '20px',
                         background: '#FFD274',
                         color: '#17223E',
                         borderRadius: '10px',
-                        padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.3vw, 18px)',
+                        height: '40px',
+                        padding: '10px 24px',
                         border: 'none',
                         cursor: 'pointer',
                         whiteSpace: 'nowrap',
@@ -818,11 +748,13 @@ export default function LibraryPage() {
                       className="font-arimo font-bold"
                       onClick={() => chapterId && handleDownload(chapter)}
                       style={{
-                        fontSize: 'clamp(12px, 1.05vw, 14px)',
+                        fontSize: '14px',
+                        lineHeight: '20px',
                         background: '#17223E',
                         color: '#FFD272',
                         borderRadius: '10px',
-                        padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.3vw, 18px)',
+                        height: '40px',
+                        padding: '10px 24px',
                         border: 'none',
                         cursor: 'pointer',
                         whiteSpace: 'nowrap',
@@ -928,7 +860,7 @@ export default function LibraryPage() {
           <div style={{ flexShrink: 0, zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div
               className="font-arimo font-bold"
-              style={{ fontSize: 'clamp(40px, 4.5vw, 64px)', color: '#F5C75D', lineHeight: 1.1 }}
+              style={{ fontSize: 'clamp(40px, 4.5vw, 64px)', color: '#E8B84B', lineHeight: 1.1 }}
             >
               {bannerStatNumber}
             </div>
@@ -1003,123 +935,7 @@ export default function LibraryPage() {
           ))}
         </div>
         {/* ============================================================ */}
-        {/*  SECTION 6: ASPIRANT STORIES                                   */}
-        {/* ============================================================ */}
-        <div style={{ marginBottom: 'clamp(40px, 4vw, 60px)' }}>
-          {/* Header */}
-          <div className="flex flex-col items-center" style={{ marginBottom: 'clamp(24px, 2.5vw, 32px)' }}>
-            <div
-              className="flex items-center gap-1.5 font-arimo font-bold"
-              style={{
-                fontSize: '12px',
-                color: '#2563EB',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                marginBottom: '8px',
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#DBAC49" stroke="#DBAC49" strokeWidth="1" />
-              </svg>
-              {testimonialsBadge}
-            </div>
-            <h2
-              className="font-arimo font-bold text-center"
-              style={{
-                fontSize: 'clamp(24px, 2.8vw, 36px)',
-                color: '#0F172A',
-                lineHeight: 1.2,
-                fontWeight: 700,
-              }}
-            >
-              {testimonialsTitle}
-            </h2>
-          </div>
-
-          {/* Testimonial cards */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '24px',
-            }}
-          >
-            {testimonials.slice(0, 3).map((t) => {
-              const initials = t.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-              return (
-                <div
-                  key={t.id}
-                  style={{
-                    background: '#FFFBEB',
-                    borderRadius: '20px',
-                    padding: '28px',
-                    border: '1px solid #FDE68A',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}
-                >
-                  {/* Stars */}
-                  <div style={{ marginBottom: '16px', display: 'flex', gap: '2px' }}>
-                    {Array.from({ length: t.rating ?? 5 }).map((_: unknown, i: number) => (
-                      <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#FDC700" />
-                      </svg>
-                    ))}
-                  </div>
-
-                  {/* Quote */}
-                  <p
-                    className="font-arimo italic"
-                    style={{
-                      fontSize: '14px',
-                      lineHeight: '1.75',
-                      color: '#1E293B',
-                      marginBottom: '24px',
-                      flex: 1,
-                    }}
-                  >
-                    &ldquo;{t.content}&rdquo;
-                  </p>
-
-                  {/* Avatar + name */}
-                  <div className="flex items-center" style={{ gap: '12px' }}>
-                    <div
-                      className="flex items-center justify-center font-arimo font-bold"
-                      style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        background: '#1E40AF',
-                        color: '#FFFFFF',
-                        fontSize: '13px',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {initials}
-                    </div>
-                    <div>
-                      <div
-                        className="font-arimo font-bold"
-                        style={{ fontSize: '14px', lineHeight: '1.3', color: '#0F172A', fontWeight: 700 }}
-                      >
-                        {t.name}
-                      </div>
-                      <div
-                        className="font-arimo"
-                        style={{ fontSize: '12px', lineHeight: '1.4', color: '#64748B' }}
-                      >
-                        {t.title}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ============================================================ */}
-        {/*  SECTION 7: CTA BANNER                                         */}
+        {/*  SECTION 6: CTA BANNER                                         */}
         {/* ============================================================ */}
         <div
           style={{
@@ -1225,5 +1041,3 @@ export default function LibraryPage() {
     </div>
   );
 }
-
-

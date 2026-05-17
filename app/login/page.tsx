@@ -105,6 +105,8 @@ function LoginPageContent() {
 
     try {
       await login({ email: loginEmail, password: loginPassword });
+      const isReturningLogin = localStorage.getItem('rwj_has_logged_in') === '1';
+      sessionStorage.setItem('rwj_login_returning', isReturningLogin ? '1' : '0');
       localStorage.setItem('rwj_has_logged_in', '1');
       sessionStorage.setItem('rwj_login_success', '1');
       // Client-side nav preserves the AuthContext so the dashboard sees
@@ -1735,4 +1737,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-

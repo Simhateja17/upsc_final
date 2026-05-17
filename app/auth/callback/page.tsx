@@ -52,10 +52,10 @@ export default function AuthCallback() {
             Number.isFinite(createdAtMs) &&
             Number.isFinite(lastSignInAtMs) &&
             Math.abs(lastSignInAtMs - createdAtMs) < 120000;
+          const isReturningLogin = !isLikelyFirstGoogleSignIn && localStorage.getItem('rwj_has_logged_in') === '1';
+          sessionStorage.setItem('rwj_login_returning', isReturningLogin ? '1' : '0');
 
-          if (!isLikelyFirstGoogleSignIn) {
-            localStorage.setItem('rwj_has_logged_in', '1');
-          }
+          localStorage.setItem('rwj_has_logged_in', '1');
           sessionStorage.setItem('rwj_login_success', '1');
         }
         router.replace(userRole === 'admin' ? '/admin' : '/dashboard');

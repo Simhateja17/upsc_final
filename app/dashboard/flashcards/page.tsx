@@ -101,7 +101,7 @@ export default function FlashcardsPage() {
       <div className="flex-1 overflow-y-auto">
         <DashboardPageHero
           badgeText="Revision - Smart Learning System"
-          title={<>Your <span style={{ color: '#FFCB47', fontStyle: 'italic' }}>Flashcard</span> <span style={{ fontStyle: 'italic', color: '#FFFFFF' }}>Vault.</span></>}
+          title={<>Your <span style={{ color: '#E8B84B', fontStyle: 'italic' }}>Flashcard</span> <span style={{ fontStyle: 'italic', color: '#FFFFFF' }}>Vault.</span></>}
           subtitle="Powered by spaced repetition science. Study smarter each card surfaces exactly when your brain is about to forget it."
           stats={bannerMetrics.map((metric) => ({ value: metric.value, label: metric.label, color: metric.valueColor }))}
         />
@@ -116,7 +116,7 @@ export default function FlashcardsPage() {
                 1
               </div>
               <h2 style={{ fontFamily: 'Georgia', fontWeight: 700, fontSize: 36, lineHeight: '40px', color: '#101828' }}>
-                Choose a <span style={{ fontStyle: 'italic', color: '#F0B100' }}>Subject</span>
+                Choose a <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Subject</span>
               </h2>
             </div>
 

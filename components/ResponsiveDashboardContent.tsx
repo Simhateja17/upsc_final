@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { dashboardService, studyPlannerService } from '@/lib/services';
+import { getSubjectEmoji } from '@/lib/subjectEmojis';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -53,6 +54,21 @@ interface StudyTask {
   priority?: string;
 }
 
+function toMinutes(time?: string) {
+  if (!time) return Number.POSITIVE_INFINITY;
+  const [h, m] = time.split(':').map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return Number.POSITIVE_INFINITY;
+  return h * 60 + m;
+}
+
+function compareTasksByTime(a: StudyTask, b: StudyTask) {
+  const startDiff = toMinutes(a.startTime) - toMinutes(b.startTime);
+  if (startDiff !== 0) return startDiff;
+  const endDiff = toMinutes(a.endTime) - toMinutes(b.endTime);
+  if (endDiff !== 0) return endDiff;
+  return (a.title || '').localeCompare(b.title || '');
+}
+
 function toDateParam(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -68,9 +84,19 @@ const borderColors: Record<string, string> = {
 
 const borderColorsFallback = ['#FF6467', '#22C55E', '#EAB308'];
 
-const AddTaskModal = ({ onClose, onTaskAdded }: { onClose: () => void; onTaskAdded: (task: StudyTask) => void }) => {
+const AddTaskModal = ({
+  onClose,
+  onTaskAdded,
+  selectedTaskDate,
+}: {
+  onClose: () => void;
+  onTaskAdded: (task: StudyTask) => void;
+  selectedTaskDate: Date;
+}) => {
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
+  const [customSubject, setCustomSubject] = useState('');
+  const [taskType, setTaskType] = useState('reading');
   const [startTime, setStartTime] = useState('14:00');
   const [endTime, setEndTime] = useState('15:30');
   const [saving, setSaving] = useState(false);
@@ -81,6 +107,7 @@ const AddTaskModal = ({ onClose, onTaskAdded }: { onClose: () => void; onTaskAdd
       setError('Please enter a task title.');
       return;
     }
+    const subjectValue = customSubject.trim() || subject;
     setSaving(true);
     setError('');
     try {
@@ -94,12 +121,14 @@ const AddTaskModal = ({ onClose, onTaskAdded }: { onClose: () => void; onTaskAdd
       }
       const res = await studyPlannerService.createTask({
         title: title.trim(),
-        subject: subject || undefined,
+        subject: subjectValue || undefined,
+        type: taskType,
+        date: toDateParam(selectedTaskDate),
         startTime: startTime || undefined,
         endTime: endTime || undefined,
         duration,
       });
-      const created: StudyTask = res?.data ?? { title: title.trim(), subject, startTime, endTime, duration };
+      const created: StudyTask = res?.data ?? { title: title.trim(), subject: subjectValue, startTime, endTime, duration };
       onTaskAdded(created);
       onClose();
     } catch {
@@ -158,6 +187,31 @@ const AddTaskModal = ({ onClose, onTaskAdded }: { onClose: () => void; onTaskAdd
             <option value="economy">Economy</option>
             <option value="environment">Environment & Ecology</option>
             <option value="science-tech">Science & Technology</option>
+          </select>
+          <input
+            type="text"
+            value={customSubject}
+            onChange={e => setCustomSubject(e.target.value)}
+            placeholder="Or type your own subject"
+            className="mt-3 w-full border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] transition-colors"
+          />
+        </div>
+
+        {/* Task Type */}
+        <div className="mb-5">
+          <label className="block font-inter font-medium text-[14px] text-[#6366F1] mb-2">Task Type</label>
+          <select
+            value={taskType}
+            onChange={e => setTaskType(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] bg-white transition-colors appearance-auto"
+          >
+            <option value="reading">Reading</option>
+            <option value="practice">Practice</option>
+            <option value="revision">Revision</option>
+            <option value="test">Test</option>
+            <option value="notes">Note Making</option>
+            <option value="answer">Answer Writing</option>
+            <option value="other">Other</option>
           </select>
         </div>
 
@@ -223,6 +277,7 @@ const ResponsiveDashboardContent = () => {
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [showLoginToast, setShowLoginToast] = useState(false);
+  const [isReturningLogin, setIsReturningLogin] = useState(true);
   const [selectedTaskDate, setSelectedTaskDate] = useState(() => {
     const date = new Date();
     date.setHours(0, 0, 0, 0);
@@ -261,7 +316,8 @@ const ResponsiveDashboardContent = () => {
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 7000)),
         ]);
         if (mounted && res?.data) {
-          setTasks(Array.isArray(res.data) ? res.data : res.data.tasks || []);
+          const fetchedTasks = Array.isArray(res.data) ? res.data : res.data.tasks || [];
+          setTasks([...fetchedTasks].sort(compareTasksByTime));
         }
       } catch {
         if (mounted) setTasksError('Could not load tasks quickly. Open Study Planner to sync.');
@@ -276,6 +332,9 @@ const ResponsiveDashboardContent = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (sessionStorage.getItem('rwj_login_success') !== '1') return;
+    const returningFlag = sessionStorage.getItem('rwj_login_returning') === '1';
+    setIsReturningLogin(returningFlag);
+    sessionStorage.removeItem('rwj_login_returning');
     sessionStorage.removeItem('rwj_login_success');
     setShowLoginToast(true);
     const timeout = setTimeout(() => setShowLoginToast(false), 7000);
@@ -300,7 +359,7 @@ const ResponsiveDashboardContent = () => {
   const isTodayView = selectedTaskDate.toDateString() === new Date().toDateString();
   const taskDateStr = selectedTaskDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-  const displayTasks = tasks;
+  const displayTasks = [...tasks].sort(compareTasksByTime);
 
   function normalizeStatus(status?: string | null) {
     const value = (status || '').toLowerCase();
@@ -394,7 +453,7 @@ const ResponsiveDashboardContent = () => {
           <div>
             <p className="font-inter text-sm font-bold">Success</p>
             <p className="mt-1 font-inter text-sm leading-5 text-white/70">
-              Welcome back{userName ? `, ${userName}` : ''}. Keep your streak going.
+              {isReturningLogin ? 'Welcome back' : 'Welcome'}{userName ? `, ${userName}` : ''}. Keep your streak going.
             </p>
           </div>
         </div>
@@ -407,7 +466,7 @@ const ResponsiveDashboardContent = () => {
         <div
           className="w-full rounded-[16px] p-[clamp(1rem,1.5vw,1.5rem)] mb-[clamp(0.75rem,1vw,1rem)]"
           style={{
-            background: 'linear-gradient(180deg, #0E182D 0%, #17223E 100%)',
+            background: 'linear-gradient(180deg, #090E1C 0%, #10192F 100%)',
           }}
         >
           {/* Greeting Section */}
@@ -648,8 +707,7 @@ const ResponsiveDashboardContent = () => {
                 <div className="mb-1 py-0 text-[clamp(12px,0.73vw,13px)] invisible">Status</div>
 
                 <div className="flex items-center gap-3 mb-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/mains-question-icon.png" alt="Mains" className="w-7 h-7 object-contain" />
+                  <span className="text-[26px] leading-none" aria-hidden="true">✍️</span>
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
                     Daily Mains Challenge
                   </h3>
@@ -837,7 +895,7 @@ const ResponsiveDashboardContent = () => {
                           </span>
                         )}
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-purple-700" style={{ background: '#F3E8FF' }}>
-                          {task.subject || 'General'}
+                          {task.subject ? `${getSubjectEmoji(task.subject)} ${task.subject}` : '📚 General'}
                         </span>
                       </div>
                     </div>
@@ -904,7 +962,8 @@ const ResponsiveDashboardContent = () => {
       {showAddTaskModal && (
         <AddTaskModal
           onClose={() => setShowAddTaskModal(false)}
-          onTaskAdded={(task) => setTasks(prev => [...prev, task])}
+          selectedTaskDate={selectedTaskDate}
+          onTaskAdded={(task) => setTasks(prev => [...prev, task].sort(compareTasksByTime))}
         />
       )}
     </>

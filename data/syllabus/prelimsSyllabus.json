@@ -1,0 +1,371 @@
+[
+  {
+    "subject": "History",
+    "subSubjects": [
+      {
+        "label": "Ancient India",
+        "topics": [
+          "Pre History (Stone Age)",
+          "Indus Valley Civilization",
+          "Vedic Society",
+          "Pre Mauryan-Period (Mahajanapadas)",
+          "Mauryan Empire",
+          "Post-Mauryan Age (Shungas, Satavahanas, Kushanas)",
+          "Imperial Guptas",
+          "Harshavardana",
+          "Sangam Age (Cholas, Cheras, Pandyas)",
+          "Jainism",
+          "Buddhism"
+        ]
+      },
+      {
+        "label": "Medieval India",
+        "topics": [
+          "Early Medieval India's Major Dynasties (750–1200 AD)",
+          "Cholas and Other South Indian Kingdoms",
+          "Delhi Sultanate (1206-1526 AD)",
+          "Vijayanagara and Bahmini Kingdom",
+          "Central Asian Politics & Struggle for Empire in North India",
+          "Mughals Empire",
+          "Regional kingdoms (Marathas, Rajputs, Sikhs, Ahoms)",
+          "Bhakti and Sufi Movements"
+        ]
+      },
+      {
+        "label": "Art & Culture",
+        "topics": [
+          "Architecture and Sculpture",
+          "Indian Paintings",
+          "Poery Heritage in India",
+          "Music in India",
+          "Dance in India",
+          "Martial arts",
+          "Indian Theatre",
+          "Indian Puppetry",
+          "Indian Cinema",
+          "Religions in India",
+          "Fairs & Festival in India",
+          "Schools of Philosphy",
+          "Literature and language",
+          "Miscellaneous & Contemporary Topics"
+        ]
+      },
+      {
+        "label": "Modern",
+        "topics": [
+          "Advent of Europeans and British expansion",
+          "Later Mughals & Regional powers",
+          "Revolt of 1857",
+          "Early Nationalism",
+          "INC- Moderate Phase (1885 - 1919)",
+          "Extremist Phase & Revolutionary Activism",
+          "Emergence of Gandhi & Gandhian movements",
+          "National movement (1919 - 1939)",
+          "Freedom to Partition (1939 - 1947)",
+          "Socio - Religious Reform Movements in the 19th and 20th CE India",
+          "Important Lists - Acts, Committee, Congress Sessions, Governor General & Viceroys, Role of Women, Press, Peasants, Tribals, Princely States, Education reforms, Important Personalities"
+        ]
+      }
+    ]
+  },
+  {
+    "subject": "Geography",
+    "subSubjects": [
+      {
+        "label": "Physical Geography of the World",
+        "topics": [
+          "Geomorphology: Solar System & interior of the Earth",
+          "Geomorphology: Distribution of Continents & Oceans",
+          "Geomorphology: Earthquakes, Volcano and Tsunami",
+          "Geomorphology: Landforms and their Evolution",
+          "Climatology: Composition of Atmosphere, Layers",
+          "Climatology: Heat Balance, Temperature, Circulation",
+          "Climatology: Pressure Belts and Wind System",
+          "Climatology: Air Mass, Water in the Atmosphere",
+          "Climatology: Jet Streams, Tropical & Temperate Cyclone",
+          "Climatology: El Nino & La Nina, World Climate",
+          "Oceanography: Oceans, Temperature, Salinity",
+          "Oceanography: Ocean Current, Resources from Ocean",
+          "Biogeography: Soil, Vegetation Resources"
+        ]
+      },
+      {
+        "label": "Physical Geography of India",
+        "topics": [
+          "Physiography of India, Structure",
+          "Drainage System",
+          "Climate",
+          "Soils in India",
+          "Natural Vegetation"
+        ]
+      },
+      {
+        "label": "Economic Geography",
+        "topics": [
+          "Agriculture: Land Resource, Basic terms",
+          "Agriculture: Major cropping patterns in various parts of the country; different types of irrigation and irrigation systems",
+          "Mineral resource",
+          "Energy resources",
+          "Industry",
+          "Transport and Communication"
+        ]
+      },
+      {
+        "label": "Human Geography",
+        "topics": [
+          "Population: distribution, density, growth, migration",
+          "Urbanization: trends, problems",
+          "Census"
+        ]
+      }
+    ]
+  },
+  {
+    "subject": "Polity",
+    "subSubjects": [
+      {
+        "label": "Polity",
+        "topics": [
+          "Historical Evolution & Making of Constitution",
+          "Salient Features, Preamble, Schedules, Amendments",
+          "Citizenship, Union & its Territory",
+          "Basic Structure, Separation of Powers",
+          "Fundamental Rights, Directive Principles, Fundamental Duties",
+          "Union and State Executive",
+          "Parliament and State Legislatures",
+          "Judiciary",
+          "Federalism: Centre-State relations, Emergency provisions, Inter-State Council",
+          "Local government: Panchayati Raj, Municipalities",
+          "Constitutional bodies: Election Commission, UPSC, CAG, Finance Commission",
+          "Statutory bodies: NHRC, NCW, NCSC, NCST, Lokpal",
+          "Non-constitutional bodies: NITI Aayog, CBI, NIA",
+          "Political parties and election process, Anti Defection"
+        ]
+      }
+    ]
+  },
+  {
+    "subject": "Economy",
+    "subSubjects": [
+      {
+        "label": "Basic Economy",
+        "topics": [
+          "Money, Demand and Supply, CRR, SLR",
+          "Monetary policy in India",
+          "Banking and Issues",
+          "Sebi, Share market",
+          "Insurance , Pension and Financial inclusion",
+          "Economic Planning, GDP, GNP, Niti Aayog",
+          "Inflation: types, causes, measures",
+          "Unemployment: types, causes, trends, schemes",
+          "Indian Economy and issues relating to planning"
+        ]
+      },
+      {
+        "label": "Public Finance",
+        "topics": [
+          "Government Budgeting",
+          "Fiscal policy: Budget, Deficits, FRBM Act",
+          "Taxation",
+          "Subsidies, Expenditure, Receipts, Disinvestment"
+        ]
+      },
+      {
+        "label": "External Sector",
+        "topics": [
+          "BOP, Int Trade, Currency Exchange",
+          "WTO, Trade agreements, International Organisations"
+        ]
+      },
+      {
+        "label": "Agriculture",
+        "topics": [
+          "Role of Agriculture in Indian Economy",
+          "Land resource, Land Reforms",
+          "Agricultural Revolutions in India",
+          "Agriculture Finance, Agricultural Credit Institutions, Crop Insurance, MSP, PM - Kisan"
+        ]
+      },
+      {
+        "label": "Sectors of Economy",
+        "topics": [
+          "Industrial Policy and Industrial Development, Issues",
+          "Main features of Industrial development in India",
+          "Manufacturing, Service, LPG Reforms, Make-in-India, MSME, Textile"
+        ]
+      },
+      {
+        "label": "Infrastructure",
+        "topics": [
+          "Transport: roads, railways, ports, airports, logistics",
+          "Investment Models",
+          "Important Schemes, PM-Gati Shakti"
+        ]
+      },
+      {
+        "label": "Human Resource Development",
+        "topics": [
+          "Population, Health, Hunger",
+          "Education, Skill, Poverty",
+          "Weaker section, HDI, SDGs",
+          "Inclusive growth and issues arising from it",
+          "Resource Mobilization"
+        ]
+      }
+    ]
+  },
+  {
+    "subject": "Environment & Ecology",
+    "subSubjects": [
+      {
+        "label": "Ecology & Ecosystem",
+        "topics": [
+          "Ecology",
+          "Ecosystem: structure, types, functions, energy flow",
+          "Food chains, food webs, ecological pyramids",
+          "Biogeochemical Cycles",
+          "Terrestrial Ecosystem",
+          "Aquatic Ecosystems"
+        ]
+      },
+      {
+        "label": "Biodiversity",
+        "topics": [
+          "Biodiversity Basics, levels, flora, fauna, hotspots, threats",
+          "Biodiversity Protection Measures: National Initiative",
+          "Biodiversity Protection Measures: Global Initiative"
+        ]
+      },
+      {
+        "label": "Pollution",
+        "topics": [
+          "Pollutants classification, causes, sources",
+          "Environmental pollution: air, water, soil, noise, e-waste etc",
+          "Solid Waste, e-waste Management",
+          "Environmental Impact Assessment"
+        ]
+      },
+      {
+        "label": "Climate Change",
+        "topics": [
+          "Basics of Climate change, GHG, Ozone, Acid Rain",
+          "Mitigation Strategies: Sequestration, Geo-eng, green building",
+          "Mitigation Strategies: Global initiatives (UNFCCC, REDD, IPCC, GCF)",
+          "Mitigation Strategies: National Initiatives (EPA'86, WPA'72 etc)"
+        ]
+      },
+      {
+        "label": "Conservation Efforts",
+        "topics": [
+          "Environmental Laws, Acts and Policies",
+          "Protected Area Networks: NP, WLS, Ramsar sites etc",
+          "Schemes and Govt. Bodies",
+          "International Environmental Governance",
+          "Environment related Institutions and Organizations"
+        ]
+      }
+    ]
+  },
+  {
+    "subject": "Science & Technology",
+    "subSubjects": [
+      {
+        "label": "General Science",
+        "topics": [
+          "Physics: Motion, Force, Work, Energy, Sound, Light, Electricity, Magnetism, Heat, Modern physics",
+          "Chemistry: Atomic structure, Periodic table, Chemical bonding, Acids-bases, Salts, Environmental chemistry, Polymers, Fertilizers, Drugs",
+          "Biology: Cell structure, Genetics, Evolution, Organ system and Human physiology, Plant and Animal Physiology"
+        ]
+      },
+      {
+        "label": "Biotechnology",
+        "topics": [
+          "Genetic Engineering, Process and Application",
+          "Genomics, Proteomics",
+          "RNA Types & Technology",
+          "Genome sequencing and Its Applications",
+          "Biotechnology and medicine",
+          "Biosafety protocols, Bioethics and Biopiracy",
+          "IPR in Biotechnology",
+          "Recent trends in biotechnology and applied biotechnology"
+        ]
+      },
+      {
+        "label": "Human Health & Diseases",
+        "topics": [
+          "Human Diseases",
+          "Immunity and its types",
+          "Vaccination and Immunisation",
+          "Vaccination program of India",
+          "Medicines"
+        ]
+      },
+      {
+        "label": "Space",
+        "topics": [
+          "Types of orbits, Space terms",
+          "Types of Launch Vehicles and application",
+          "ISRO and its role in national development",
+          "Private sector in space",
+          "Public-private partnership in space sector",
+          "Space tech: satellites, GSLV, PSLV, Gaganyaan, Space Man Mission",
+          "Various Space Observatories",
+          "Various Telemetry",
+          "Navigation"
+        ]
+      },
+      {
+        "label": "Defence",
+        "topics": [
+          "Missile System & Classification",
+          "Ballistics And Cruise Missile",
+          "India’s Missile System",
+          "Integrated Guided Missile Program",
+          "Missile Defence Programmes",
+          "Defense technology: missiles, drones, indigenous weapons",
+          "Defence Reforms",
+          "Defence Organizations and laboratories",
+          "Defence Exercises"
+        ]
+      },
+      {
+        "label": "Nuclear Energy",
+        "topics": [
+          "Types of nuclear reactions",
+          "Nuclear Energy and its application",
+          "Nuclear Fuels and Centrifugation",
+          "Nuclear Reactor",
+          "Nuclear Policy of India",
+          "Nuclear Radiation and Its impact",
+          "Radioactive Waste",
+          "Nuclear & Radiological Disasters",
+          "Institutions involved in Nuclear Energy Development"
+        ]
+      },
+      {
+        "label": "Electronics & Communications & IT",
+        "topics": [
+          "Computers, Mobile Generations",
+          "Information Technology",
+          "Display Technologies",
+          "Internet of Things",
+          "Big Data Initiative and Privacy",
+          "Cyber-crime and cybersecurity",
+          "Robotics",
+          "Emerging trends, blockchain, virtual reality",
+          "Machine Learning & Artificial Intelligence",
+          "Government Initiatives, BHIM, UPI"
+        ]
+      },
+      {
+        "label": "Nano Science & Nano - Technology",
+        "topics": [
+          "Basics of Nano Science and Nano Technology",
+          "Nanomaterial",
+          "Applications & Impacts of Nano Technology",
+          "Nano Science & Nano technology in India"
+        ]
+      }
+    ]
+  }
+]

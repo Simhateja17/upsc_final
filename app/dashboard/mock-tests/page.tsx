@@ -148,6 +148,20 @@ const fallbackDifficulties = [
   { id: 'hard', emoji: '🔥', label: 'Advanced', description: 'High difficulty' },
   { id: 'mixed', emoji: '🎯', label: 'All levels', description: 'Balanced mix' },
 ];
+
+const difficultyMetaById: Record<string, { emoji: string; description: string }> = {
+  easy: { emoji: '🌱', description: 'Build concepts' },
+  medium: { emoji: '⚡', description: 'UPSC pattern' },
+  hard: { emoji: '🔥', description: 'High difficulty' },
+  mixed: { emoji: '🎯', description: 'Balanced mix' },
+};
+
+const humanizeDifficultyId = (id: string) => {
+  if (!id) return '';
+  return id
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+};
 const fallbackUpgradePlans = [
   { name: 'Monthly Pro', price: 299, duration: 'month', features: ['Unlimited tests, all subjects, PYQ, analytics'], isPopular: false },
   { name: '6-Month Pro + Mentorship', price: 1299, duration: '6 months', features: ['Pro + personal mentorship with Jeet Sir'], isPopular: true },
@@ -301,7 +315,27 @@ function MockTestsPageInner() {
           if (cfg.examModes) setExamModes(cfg.examModes);
           if (cfg.mainsPaperTypes) setMainsPaperTypes(cfg.mainsPaperTypes);
           if (cfg.optionalSubjects) setOptionalSubjects(cfg.optionalSubjects);
-          if (cfg.difficulties) setDifficulties(cfg.difficulties);
+          if (Array.isArray(cfg.difficulties)) {
+            const normalizedDifficulties = cfg.difficulties
+              .map((item: any) => {
+                const rawId = String(item?.id ?? item?.value ?? item?.name ?? '').trim();
+                const id = rawId.toLowerCase().replace(/\s+/g, '_');
+                if (!id) return null;
+                const meta = difficultyMetaById[id];
+                const label = String(item?.label ?? item?.name ?? item?.title ?? humanizeDifficultyId(id)).trim();
+                const description = String(item?.description ?? meta?.description ?? '').trim();
+                const emoji = String(item?.emoji ?? meta?.emoji ?? '🎯').trim();
+                return {
+                  id,
+                  label,
+                  description,
+                  emoji,
+                };
+              })
+              .filter(Boolean) as Array<{ id: string; label: string; description: string; emoji: string }>;
+
+            setDifficulties(normalizedDifficulties.length > 0 ? normalizedDifficulties : fallbackDifficulties);
+          }
         }
         if (statsRes.data) setPracticeStats(statsRes.data);
         if (platformRes.data) setPlatformStats(platformRes.data);
@@ -529,7 +563,7 @@ function MockTestsPageInner() {
           title={
             <>
               Build Your{' '}
-              <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Perfect</em>{' '}
+              <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>Perfect</em>{' '}
               Mock Test
             </>
           }

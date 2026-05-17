@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { pyqService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
+import prelimsSyllabus from '@/data/syllabus/prelimsSyllabus.json';
 
 const AI_EVAL_STEPS = [
   'Reading your answer',
@@ -29,75 +30,39 @@ type SubjectTreeNode = {
   children?: Array<{ label: string; microTopics?: string[] }>;
 };
 
+const SUBJECT_ICONS: Record<string, string> = {
+  History: '🏛️',
+  Geography: '🌍',
+  Polity: '⚖️',
+  Economy: '💰',
+  'Environment & Ecology': '🌿',
+  'Science & Technology': '🔬',
+  'Current Affairs': '📰',
+};
+
+const PRELIMS_SUBJECT_TREE: SubjectTreeNode[] = [
+  ...(prelimsSyllabus as Array<{ subject: string; subSubjects: Array<{ label: string; topics: string[] }> }>).map((node) => ({
+    label: node.subject,
+    icon: SUBJECT_ICONS[node.subject] || '📘',
+    children: node.subSubjects.map((sub) => ({
+      label: sub.label,
+      microTopics: sub.topics,
+    })),
+  })),
+  {
+    label: 'Current Affairs',
+    icon: '📰',
+    children: [
+      {
+        label: 'Current Affairs and Miscellaneous',
+        microTopics: ['Current Affairs and Miscellaneous'],
+      },
+    ],
+  },
+];
+
 const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
-  prelims: [
-    {
-      label: 'History',
-      icon: '🏛️',
-      children: [
-        { label: 'Ancient India', microTopics: ['Indus Valley', 'Vedic Age', 'Mauryan Empire', 'Buddhism & Jainism'] },
-        { label: 'Medieval India', microTopics: ['Delhi Sultanate', 'Mughal Empire', 'Bhakti Movement'] },
-        { label: 'Modern India', microTopics: ['1857 Revolt', 'Freedom Struggle', 'Governor Generals'] },
-        { label: 'Art & Culture', microTopics: ['Architecture', 'Paintings', 'Performing Arts', 'UNESCO Sites'] },
-      ],
-    },
-    {
-      label: 'Geography',
-      icon: '🌍',
-      children: [
-        { label: 'Physical Geography', microTopics: ['Geomorphology', 'Climatology', 'Oceanography'] },
-        { label: 'Indian Geography', microTopics: ['Rivers', 'Resources', 'Agriculture', 'Industries'] },
-        { label: 'World Geography', microTopics: ['Regions', 'Climate Zones', 'Human Geography'] },
-      ],
-    },
-    {
-      label: 'Polity',
-      icon: '⚖️',
-      children: [
-        { label: 'Constitution', microTopics: ['Preamble', 'Schedules', 'Amendments'] },
-        { label: 'Parliament', microTopics: ['Lok Sabha', 'Rajya Sabha', 'Committees'] },
-        { label: 'Judiciary', microTopics: ['Supreme Court', 'Judicial Review', 'Tribunals'] },
-        { label: 'Governance', microTopics: ['Constitutional Bodies', 'Local Government', 'Rights'] },
-      ],
-    },
-    {
-      label: 'Economy',
-      icon: '💰',
-      children: [
-        { label: 'Macroeconomy', microTopics: ['Growth', 'Inflation', 'Unemployment'] },
-        { label: 'Banking & Finance', microTopics: ['RBI', 'Monetary Policy', 'Financial Markets'] },
-        { label: 'External Sector', microTopics: ['BoP', 'Exchange Rate', 'Trade'] },
-        { label: 'Agriculture', microTopics: ['MSP', 'Food Security', 'Cropping'] },
-      ],
-    },
-    {
-      label: 'Environment & Ecology',
-      icon: '🌿',
-      children: [
-        { label: 'Ecology', microTopics: ['Ecosystems', 'Succession', 'Food Chains'] },
-        { label: 'Biodiversity', microTopics: ['Hotspots', 'Species', 'Protected Areas'] },
-        { label: 'Climate Change', microTopics: ['UNFCCC', 'Mitigation', 'Adaptation'] },
-      ],
-    },
-    {
-      label: 'Science & Technology',
-      icon: '🔬',
-      children: [
-        { label: 'Space', microTopics: ['ISRO', 'Satellites', 'Launch Vehicles'] },
-        { label: 'Biotechnology', microTopics: ['Genetics', 'Vaccines', 'Bioethics'] },
-        { label: 'Digital Tech', microTopics: ['AI', 'Cybersecurity', 'Semiconductors'] },
-      ],
-    },
-    {
-      label: 'Current Affairs',
-      icon: '📰',
-      children: [
-        { label: 'Schemes & Policies', microTopics: ['Flagship Schemes', 'Cabinet Decisions'] },
-        { label: 'Reports & Indices', microTopics: ['Global Reports', 'Rankings'] },
-        { label: 'Places & Persons', microTopics: ['Places in News', 'Awards', 'Appointments'] },
-      ],
-    },
-  ],
+  prelims: PRELIMS_SUBJECT_TREE,
   mains: [
     { label: 'History', icon: '🏛️', children: [{ label: 'Ancient India' }, { label: 'Medieval India' }, { label: 'Modern India' }, { label: 'Post-Independence' }, { label: 'Art & Culture' }] },
     { label: 'Geography', icon: '🌍', children: [{ label: 'Physical Geography' }, { label: 'Indian Geography' }, { label: 'World Geography' }] },
@@ -181,7 +146,9 @@ export default function PyqPage() {
   const [selectedYearRange, setSelectedYearRange] = useState<'all' | 'last5' | 'year'>('all');
   const [selectedSubject, setSelectedSubject] = useState('All Papers');
   const [selectedSubtopic, setSelectedSubtopic] = useState<string | null>(null);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
+  const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
@@ -193,6 +160,8 @@ export default function PyqPage() {
         year: selectedYearRange === 'year' ? selectedYear || undefined : undefined,
         yearFrom,
         subject: selectedSubject !== 'All Papers' ? selectedSubject : undefined,
+        subSubject: selectedSubtopic || undefined,
+        topic: selectedTopics.length ? selectedTopics : undefined,
         page,
         limit: 20,
       });
@@ -211,17 +180,19 @@ export default function PyqPage() {
     } finally {
       setLoading(false);
     }
-  }, [mode, selectedYear, selectedYearRange, selectedSubject, page]);
+  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic, selectedTopics, page]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic]);
+  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic, selectedTopics]);
 
   useEffect(() => {
     setSelectedSubject('All Papers');
     setSelectedSubtopic(null);
+    setSelectedTopics([]);
     setExpandedSubject(null);
+    setExpandedSubtopic(null);
   }, [mode]);
 
   // Mains writing timer (9-min countdown, auto-submit on expiry)
@@ -263,9 +234,14 @@ export default function PyqPage() {
     fetchQuestions();
   }, [fetchQuestions]);
 
-  const visibleQuestions = selectedSubtopic
-    ? questions.filter((q) => String(q.topic || q.subtopic || '').toLowerCase().includes(selectedSubtopic.toLowerCase()))
-    : questions;
+  const visibleQuestions = useMemo(() => {
+    if (!selectedTopics.length) return questions;
+    const needles = selectedTopics.map((t) => t.trim().toLowerCase());
+    return questions.filter((q) => {
+      const qt = (q?.topic || '').toLowerCase();
+      return needles.some((needle) => qt.includes(needle));
+    });
+  }, [questions, selectedTopics]);
 
   useLayoutEffect(() => {
     const scroller = document.querySelector('main');
@@ -339,14 +315,14 @@ export default function PyqPage() {
         badgeText="PREVIOUS YEAR QUESTIONS"
         title={
           <>
-            The Complete <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>PYQ Bank</em>
+            The Complete <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>PYQ Bank</em>
             <br />
             for UPSC Success
           </>
         }
-        subtitle="Every UPSC question ever asked — Prelims, Mains with instant evaluation, subject filters, and detailed explanations."
+        subtitle="Every UPSC question ever asked Prelims, Mains with instant evaluation, subject filters, and detailed explanations."
         stats={[
-          { value: '6500+', label: 'PYQs', color: '#F5A623' },
+          { value: '6500+', label: 'PYQs', color: '#E8B84B' },
           { value: '30+', label: 'Years', color: '#F87171' },
           { value: '15+', label: 'Subjects', color: '#4ADE80' },
           { value: '∞', label: 'Always Free', color: '#FFFFFF' },
@@ -468,10 +444,10 @@ export default function PyqPage() {
               {!loading && visibleQuestions.map((q, idx) => {
                 const opts: { label: string; text: string }[] = Array.isArray(q.options) ? q.options : [];
                 const diffColor = q.difficulty === 'Hard'
-                  ? { bg: '#FFE2E2', color: '#C10007' }
+                  ? { background: '#FFE2E2', color: '#C10007' }
                   : q.difficulty === 'Easy'
-                  ? { bg: '#DCFCE7', color: '#008236' }
-                  : { bg: '#FFEDD4', color: '#CA3500' };
+                  ? { background: '#DCFCE7', color: '#008236' }
+                  : { background: '#FFEDD4', color: '#CA3500' };
                 return (
                   <div
                     key={q.id}
@@ -487,6 +463,11 @@ export default function PyqPage() {
                       {q.subject && (
                         <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#E0E7FF', color: '#432DD7' }}>
                           {q.subject.toUpperCase()}
+                        </span>
+                      )}
+                      {q.subSubject && (
+                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#E0F2FE', color: '#0369A1' }}>
+                          {q.subSubject.toUpperCase()}
                         </span>
                       )}
                       {q.topic && (
@@ -785,6 +766,11 @@ export default function PyqPage() {
                           {q.subject.toUpperCase()}
                         </span>
                       )}
+                      {q.subSubject && (
+                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#E0F2FE', color: '#0369A1' }}>
+                          {q.subSubject.toUpperCase()}
+                        </span>
+                      )}
                       {q.topic && (
                         <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#EDE9FE', color: '#7E22CE' }}>
                           {q.topic.toUpperCase()}
@@ -876,7 +862,7 @@ export default function PyqPage() {
           </section>
 
           {/* Right: filters */}
-          <aside className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:sticky lg:top-6 lg:self-start">
+          <aside className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-1.5rem)] lg:overflow-y-auto lg:pr-1">
             {/* Exam year card - 307×198, exact shadow & year buttons */}
             <div
               className="rounded-[16px] bg-white flex flex-col"
@@ -937,11 +923,6 @@ export default function PyqPage() {
                     Last 5 yrs
                   </button>
                 </div>
-                <p className="px-1 pt-1 text-[13px] text-[#6A7282]">
-                  {selectedYearRange === 'year' && selectedYear
-                    ? `${selectedYear} questions for ${selectedSubtopic || selectedSubject}`
-                    : `All Years - ${total} questions${selectedSubtopic ? ` for ${selectedSubtopic}` : selectedSubject !== 'All Papers' ? ` for ${selectedSubject}` : ''}`}
-                </p>
                 <div className="grid grid-cols-4 gap-2">
                   {YEAR_OPTIONS.map((year) => {
                     const selected = selectedYearRange === 'year' && selectedYear === year;
@@ -970,6 +951,14 @@ export default function PyqPage() {
                       </button>
                     );
                   })}
+                </div>
+                <div className="flex items-center gap-2 px-1 pt-3 text-[13px] text-[#6A7282]">
+                  <span className="text-[14px] leading-none" aria-hidden>📊</span>
+                  <p>
+                    {selectedYearRange === 'year' && selectedYear
+                      ? `${selectedYear} questions for ${selectedTopics.length ? `${selectedTopics[0]}${selectedTopics.length > 1 ? ` +${selectedTopics.length - 1}` : ''}` : selectedSubtopic || selectedSubject}`
+                      : `All Years → ${total} questions${selectedTopics.length ? ` for ${selectedTopics[0]}${selectedTopics.length > 1 ? ` +${selectedTopics.length - 1}` : ''}` : selectedSubtopic ? ` for ${selectedSubtopic}` : selectedSubject !== 'All Papers' ? ` for ${selectedSubject}` : ''}`}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1007,12 +996,14 @@ export default function PyqPage() {
                 </span>
               </div>
 
-              <div className="flex max-h-[65vh] flex-col gap-2 overflow-y-auto px-5 pb-5">
+              <div className="flex flex-col gap-2 px-5 pb-5">
                 <button
                   onClick={() => {
                     setSelectedSubject('All Papers');
                     setSelectedSubtopic(null);
+                    setSelectedTopics([]);
                     setExpandedSubject(null);
+                    setExpandedSubtopic(null);
                   }}
                   className="w-full flex items-center justify-between rounded-[14px] px-4 py-3 text-left transition-colors"
                   style={{ minHeight: '59.99px', background: selectedSubject === 'All Papers' ? '#0F1A30' : '#F9FAFB' }}
@@ -1028,15 +1019,28 @@ export default function PyqPage() {
                   const selected = selectedSubject === label;
                   const expanded = expandedSubject === label;
                   return (
-                    <React.Fragment key={`tree-${label}`}>
+                    <div
+                      key={`tree-${label}`}
+                      className="overflow-hidden rounded-[14px] border transition-colors"
+                      style={{
+                        borderColor: expanded ? '#E5E7EB' : 'transparent',
+                        background: expanded ? '#F9FAFB' : 'transparent',
+                      }}
+                    >
                       <button
                         onClick={() => {
                           setSelectedSubject(label);
                           setSelectedSubtopic(null);
+                          setSelectedTopics([]);
+                          setExpandedSubtopic(null);
                           setExpandedSubject(expanded ? null : label);
                         }}
-                        className="w-full flex items-center justify-between rounded-[14px] px-4 py-3 text-left transition-colors"
-                        style={{ minHeight: '59.99px', background: selected ? '#0F1A30' : '#F9FAFB' }}
+                        className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors"
+                        style={{
+                          minHeight: '59.99px',
+                          background: selected ? '#0F1A30' : expanded ? '#EEF1F6' : '#F9FAFB',
+                          borderRadius: expanded ? '14px 14px 0 0' : '14px',
+                        }}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-[18px] leading-none flex-shrink-0" aria-hidden>{icon}</span>
@@ -1044,28 +1048,123 @@ export default function PyqPage() {
                             {label}
                           </span>
                         </div>
-                        {children?.length ? <span style={{ color: selected ? '#FFFFFF' : '#6A7282', fontSize: '16px' }}>{expanded ? '−' : '+'}</span> : null}
+                        <div className="flex items-center gap-2">
+                          {children?.length ? (
+                            <span className="rounded-full border border-[#E5E7EB] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
+                              {children.length}
+                            </span>
+                          ) : null}
+                          {children?.length ? (
+                            <span
+                              className="inline-block transition-transform"
+                              style={{
+                                color: selected ? '#FFFFFF' : '#9AA3B2',
+                                fontSize: '12px',
+                                transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                              }}
+                            >
+                              ▾
+                            </span>
+                          ) : null}
+                        </div>
                       </button>
                       {expanded && children?.length ? (
-                        <div className="ml-9 mt-2 flex flex-col gap-2">
+                        <div className="border-t border-[#E5E7EB] bg-[#F7F9FC]">
                           {children.map((child) => {
                             const childSelected = selectedSubtopic === child.label;
+                            const childExpanded = expandedSubtopic === child.label;
+                            const topicCount = child.microTopics?.length || 0;
                             return (
-                              <div key={child.label} className="rounded-[12px] border border-[#E5E7EB] bg-white p-2.5">
+                              <div key={child.label} className="border-b border-[#E8ECF2] last:border-b-0">
                                 <button
                                   type="button"
-                                  onClick={() => setSelectedSubtopic(childSelected ? null : child.label)}
-                                  className="w-full rounded-[10px] px-3 py-2 text-left transition-colors"
-                                  style={{ background: childSelected ? '#E0F2FE' : '#FFFFFF', color: childSelected ? '#075985' : '#101828', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700 }}
+                                  onClick={() => {
+                                    const nextExpanded = childExpanded ? null : child.label;
+                                    setExpandedSubtopic(nextExpanded);
+                                    setSelectedSubtopic(childSelected && !topicCount ? null : child.label);
+                                    setSelectedTopics([]);
+                                  }}
+                                  className="flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors"
+                                  style={{ background: childExpanded ? '#E8F0FD' : 'transparent' }}
                                 >
-                                  {child.label}
-                                </button>
-                                {child.microTopics?.length ? (
-                                  <div className="mt-2 flex flex-wrap gap-2 px-1 pb-1">
-                                    {child.microTopics.map((topic) => (
-                                      <span key={topic} className="rounded-full px-2.5 py-1" style={{ background: '#F3F4F6', color: '#4A5565', fontSize: '11px', fontWeight: 600 }}>
-                                        {topic}
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <span
+                                      className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                                      style={{ background: childExpanded ? '#3B82F6' : '#9AA3B2' }}
+                                    />
+                                    <span
+                                      className="truncate"
+                                      style={{
+                                        color: childSelected || childExpanded ? '#2563EB' : '#5A6478',
+                                        fontFamily: 'Inter, sans-serif',
+                                        fontSize: '12px',
+                                        fontWeight: childSelected || childExpanded ? 700 : 500,
+                                      }}
+                                    >
+                                      {child.label}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {topicCount ? (
+                                      <span className="rounded-full border border-[#E5E7EB] bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
+                                        {topicCount}
                                       </span>
+                                    ) : null}
+                                    {topicCount ? (
+                                      <span
+                                        className="inline-block text-[10px] text-[#9AA3B2] transition-transform"
+                                        style={{ transform: childExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                                      >
+                                        ▾
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </button>
+                                {childExpanded && child.microTopics?.length ? (
+                                  <div className="border-t border-[#E8ECF2] bg-[#F2F5FA]">
+                                    {child.microTopics.map((topic) => (
+                                      <button
+                                        key={topic}
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedSubtopic(child.label);
+                                          setSelectedTopics((prev) =>
+                                            prev.includes(topic)
+                                              ? prev.filter((t) => t !== topic)
+                                              : [...prev, topic]
+                                          );
+                                        }}
+                                        className="flex w-full items-center justify-between border-b border-[#E8ECF2] px-4 py-2 pl-[52px] text-left transition-colors last:border-b-0 hover:bg-[#FFF8E6]"
+                                        style={{
+                                          background: selectedTopics.includes(topic) ? '#FFF3CC' : 'transparent',
+                                        }}
+                                      >
+                                        <span className="flex min-w-0 items-center gap-2">
+                                          <span
+                                            className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-[3px] border text-[9px]"
+                                            style={{
+                                              background: selectedTopics.includes(topic) ? '#FDBA26' : 'transparent',
+                                              borderColor: selectedTopics.includes(topic) ? '#FDBA26' : '#E5E7EB',
+                                              color: '#101828',
+                                            }}
+                                          >
+                                            {selectedTopics.includes(topic) ? '✓' : ''}
+                                          </span>
+                                          <span
+                                            className="break-words"
+                                            style={{
+                                              color: selectedTopics.includes(topic) ? '#B45309' : '#5A6478',
+                                              fontSize: '12px',
+                                              fontWeight: selectedTopics.includes(topic) ? 700 : 500,
+                                            }}
+                                          >
+                                            {topic}
+                                          </span>
+                                        </span>
+                                        <span className="ml-3 rounded-full border border-[#E5E7EB] bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
+                                          -
+                                        </span>
+                                      </button>
                                     ))}
                                   </div>
                                 ) : null}
@@ -1074,7 +1173,7 @@ export default function PyqPage() {
                           })}
                         </div>
                       ) : null}
-                    </React.Fragment>
+                    </div>
                   );
                 })}
               </div>
@@ -1879,4 +1978,3 @@ export default function PyqPage() {
     </div>
   );
 }
-

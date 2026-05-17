@@ -147,9 +147,9 @@ export default function LeaderboardPage() {
         badgeText="COMMUNITY RANKINGS"
         title={
           <>
-            Rise through the{' '}
-            <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>
-              ranks
+            Rise Through the{' '}
+            <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>
+              Ranks
             </em>
           </>
         }

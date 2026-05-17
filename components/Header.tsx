@@ -150,7 +150,7 @@ const Header = () => {
         {/* Jeet AI - Simple link */}
         <Link
           href="/dashboard/jeet-gpt"
-          className="text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap"
+          className="text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap"
         >
           Jeet AI
         </Link>
@@ -158,7 +158,7 @@ const Header = () => {
         {/* Daily Mains Challenge - Simple link */}
         <Link
           href="/dashboard/daily-answer/challenge"
-          className="text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap"
+          className="text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap"
         >
           Daily Mains Challenge
         </Link>
@@ -169,6 +169,7 @@ const Header = () => {
           onMouseEnter={() => handleDropdownEnter('prepare')}
           onMouseLeave={handleDropdownLeave}
         >
+<<<<<<< HEAD
           <button
             type="button"
             onClick={() => handleDropdownToggle('prepare')}
@@ -176,6 +177,9 @@ const Header = () => {
             aria-haspopup="true"
             className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap py-2"
           >
+=======
+          <button className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap">
+>>>>>>> 63d830b2f2647ad5dd456a4de4c09cc17cef49a8
             Prepare
             {icons.chevronDown}
           </button>
@@ -204,6 +208,7 @@ const Header = () => {
           onMouseEnter={() => handleDropdownEnter('practice')}
           onMouseLeave={handleDropdownLeave}
         >
+<<<<<<< HEAD
           <button
             type="button"
             onClick={() => handleDropdownToggle('practice')}
@@ -211,6 +216,9 @@ const Header = () => {
             aria-haspopup="true"
             className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap py-2"
           >
+=======
+          <button className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap">
+>>>>>>> 63d830b2f2647ad5dd456a4de4c09cc17cef49a8
             Practice
             {icons.chevronDown}
           </button>
@@ -239,6 +247,7 @@ const Header = () => {
           onMouseEnter={() => handleDropdownEnter('revision')}
           onMouseLeave={handleDropdownLeave}
         >
+<<<<<<< HEAD
           <button
             type="button"
             onClick={() => handleDropdownToggle('revision')}
@@ -246,6 +255,9 @@ const Header = () => {
             aria-haspopup="true"
             className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap py-2"
           >
+=======
+          <button className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap">
+>>>>>>> 63d830b2f2647ad5dd456a4de4c09cc17cef49a8
             Revision Tools
             {icons.chevronDown}
           </button>
@@ -271,7 +283,7 @@ const Header = () => {
         {/* Community - Simple link */}
         <Link
           href="/community"
-          className="text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap"
+          className="text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap"
         >
           Community
         </Link>
@@ -279,7 +291,7 @@ const Header = () => {
         {/* Pricing - Simple link */}
         <Link
           href="/pricing"
-          className="text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap"
+          className="text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap"
         >
           Pricing
         </Link>
@@ -333,29 +345,29 @@ const Header = () => {
           <Link
             href="/dashboard/jeet-gpt"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-white text-base font-serif font-semibold hover:text-[#F5C75D] hover:bg-white/5 transition-colors px-6 py-3 border-b border-white/5"
+            className="text-white text-base font-serif font-semibold hover:text-[#E8B84B] hover:bg-white/5 transition-colors px-6 py-3 border-b border-white/5"
           >
             Jeet AI
           </Link>
           <Link
             href="/dashboard/daily-answer/challenge"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-white text-base font-serif font-semibold hover:text-[#F5C75D] hover:bg-white/5 transition-colors px-6 py-3 border-b border-white/5"
+            className="text-white text-base font-serif font-semibold hover:text-[#E8B84B] hover:bg-white/5 transition-colors px-6 py-3 border-b border-white/5"
           >
             Daily Mains Challenge
           </Link>
 
           {/* Prepare Section */}
           <div className="border-b border-white/5">
-            <div className="px-6 py-3 text-[#F5C75D] font-semibold text-sm uppercase tracking-wider">Prepare</div>
+            <div className="px-6 py-3 text-[#E8B84B] font-semibold text-sm uppercase tracking-wider">Prepare</div>
             {dropdownMenus.prepare.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-6 py-2.5 text-white/80 hover:text-[#F5C75D] hover:bg-white/5 transition-colors text-sm"
+                className="flex items-center gap-3 px-6 py-2.5 text-white/80 hover:text-[#E8B84B] hover:bg-white/5 transition-colors text-sm"
               >
-                <span className="text-[#F5C75D]">{icons[item.icon as keyof typeof icons]}</span>
+                <span className="text-[#E8B84B]">{icons[item.icon as keyof typeof icons]}</span>
                 {item.label}
               </Link>
             ))}
@@ -363,15 +375,15 @@ const Header = () => {
 
           {/* Practice Section */}
           <div className="border-b border-white/5">
-            <div className="px-6 py-3 text-[#F5C75D] font-semibold text-sm uppercase tracking-wider">Practice</div>
+            <div className="px-6 py-3 text-[#E8B84B] font-semibold text-sm uppercase tracking-wider">Practice</div>
             {dropdownMenus.practice.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-6 py-2.5 text-white/80 hover:text-[#F5C75D] hover:bg-white/5 transition-colors text-sm"
+                className="flex items-center gap-3 px-6 py-2.5 text-white/80 hover:text-[#E8B84B] hover:bg-white/5 transition-colors text-sm"
               >
-                <span className="text-[#F5C75D]">{icons[item.icon as keyof typeof icons]}</span>
+                <span className="text-[#E8B84B]">{icons[item.icon as keyof typeof icons]}</span>
                 {item.label}
               </Link>
             ))}
@@ -379,15 +391,15 @@ const Header = () => {
 
           {/* Revision Tools Section */}
           <div className="border-b border-white/5">
-            <div className="px-6 py-3 text-[#F5C75D] font-semibold text-sm uppercase tracking-wider">Revision Tools</div>
+            <div className="px-6 py-3 text-[#E8B84B] font-semibold text-sm uppercase tracking-wider">Revision Tools</div>
             {dropdownMenus.revision.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-6 py-2.5 text-white/80 hover:text-[#F5C75D] hover:bg-white/5 transition-colors text-sm"
+                className="flex items-center gap-3 px-6 py-2.5 text-white/80 hover:text-[#E8B84B] hover:bg-white/5 transition-colors text-sm"
               >
-                <span className="text-[#F5C75D]">{icons[item.icon as keyof typeof icons]}</span>
+                <span className="text-[#E8B84B]">{icons[item.icon as keyof typeof icons]}</span>
                 {item.label}
               </Link>
             ))}
@@ -397,14 +409,14 @@ const Header = () => {
           <Link
             href="/community"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-white text-base font-serif font-semibold hover:text-[#F5C75D] hover:bg-white/5 transition-colors px-6 py-3 border-b border-white/5"
+            className="text-white text-base font-serif font-semibold hover:text-[#E8B84B] hover:bg-white/5 transition-colors px-6 py-3 border-b border-white/5"
           >
             Community
           </Link>
           <Link
             href="/pricing"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-white text-base font-serif font-semibold hover:text-[#F5C75D] hover:bg-white/5 transition-colors px-6 py-3 border-b border-white/5"
+            className="text-white text-base font-serif font-semibold hover:text-[#E8B84B] hover:bg-white/5 transition-colors px-6 py-3 border-b border-white/5"
           >
             Pricing
           </Link>
