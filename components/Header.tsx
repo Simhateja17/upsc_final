@@ -169,17 +169,13 @@ const Header = () => {
           onMouseEnter={() => handleDropdownEnter('prepare')}
           onMouseLeave={handleDropdownLeave}
         >
-<<<<<<< HEAD
           <button
             type="button"
             onClick={() => handleDropdownToggle('prepare')}
             aria-expanded={activeDropdown === 'prepare'}
             aria-haspopup="true"
-            className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap py-2"
+            className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap py-2"
           >
-=======
-          <button className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap">
->>>>>>> 63d830b2f2647ad5dd456a4de4c09cc17cef49a8
             Prepare
             {icons.chevronDown}
           </button>
@@ -208,17 +204,13 @@ const Header = () => {
           onMouseEnter={() => handleDropdownEnter('practice')}
           onMouseLeave={handleDropdownLeave}
         >
-<<<<<<< HEAD
           <button
             type="button"
             onClick={() => handleDropdownToggle('practice')}
             aria-expanded={activeDropdown === 'practice'}
             aria-haspopup="true"
-            className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap py-2"
+            className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap py-2"
           >
-=======
-          <button className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap">
->>>>>>> 63d830b2f2647ad5dd456a4de4c09cc17cef49a8
             Practice
             {icons.chevronDown}
           </button>
@@ -247,17 +239,13 @@ const Header = () => {
           onMouseEnter={() => handleDropdownEnter('revision')}
           onMouseLeave={handleDropdownLeave}
         >
-<<<<<<< HEAD
           <button
             type="button"
             onClick={() => handleDropdownToggle('revision')}
             aria-expanded={activeDropdown === 'revision'}
             aria-haspopup="true"
-            className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap py-2"
+            className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap py-2"
           >
-=======
-          <button className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap">
->>>>>>> 63d830b2f2647ad5dd456a4de4c09cc17cef49a8
             Revision Tools
             {icons.chevronDown}
           </button>

@@ -185,9 +185,6 @@ export default function LandingPage() {
       {/* ── NAV ── */}
       <nav className="landing-nav" id="lp-main-nav">
         <Link href="/" className="logo">
-<<<<<<< HEAD
-          <Image src="/logo.png" alt="RiseWithJeet" width={140} height={140} style={{ height: '82px', width: 'auto', objectFit: 'contain' }} />
-=======
           <Image
             src="/logo.png"
             alt="RiseWithJeet"
@@ -195,7 +192,6 @@ export default function LandingPage() {
             height={500}
             className="w-[90px] md:w-[110px] h-auto object-contain"
           />
->>>>>>> 63d830b2f2647ad5dd456a4de4c09cc17cef49a8
         </Link>
 
         {/* Desktop nav links */}

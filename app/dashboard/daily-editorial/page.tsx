@@ -269,6 +269,7 @@ export default function DailyEditorialPage() {
               background: 'rgba(232,184,75,0.14)',
             }}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/✦.svg" alt="" style={{ width: '10px', height: '10px' }} />
           </span>
         }
