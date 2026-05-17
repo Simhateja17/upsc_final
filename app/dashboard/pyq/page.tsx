@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { pyqService } from '@/lib/services';
@@ -146,8 +146,9 @@ export default function PyqPage() {
   const [selectedYearRange, setSelectedYearRange] = useState<'all' | 'last5' | 'year'>('all');
   const [selectedSubject, setSelectedSubject] = useState('All Papers');
   const [selectedSubtopic, setSelectedSubtopic] = useState<string | null>(null);
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
+  const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
@@ -160,7 +161,7 @@ export default function PyqPage() {
         yearFrom,
         subject: selectedSubject !== 'All Papers' ? selectedSubject : undefined,
         subSubject: selectedSubtopic || undefined,
-        topic: selectedTopic || undefined,
+        topic: selectedTopics.length ? selectedTopics : undefined,
         page,
         limit: 20,
       });
@@ -179,18 +180,19 @@ export default function PyqPage() {
     } finally {
       setLoading(false);
     }
-  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic, selectedTopic, page]);
+  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic, selectedTopics, page]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic, selectedTopic]);
+  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic, selectedTopics]);
 
   useEffect(() => {
     setSelectedSubject('All Papers');
     setSelectedSubtopic(null);
-    setSelectedTopic(null);
+    setSelectedTopics([]);
     setExpandedSubject(null);
+    setExpandedSubtopic(null);
   }, [mode]);
 
   // Mains writing timer (9-min countdown, auto-submit on expiry)
@@ -232,7 +234,14 @@ export default function PyqPage() {
     fetchQuestions();
   }, [fetchQuestions]);
 
-  const visibleQuestions = questions;
+  const visibleQuestions = useMemo(() => {
+    if (!selectedTopics.length) return questions;
+    const needles = selectedTopics.map((t) => t.trim().toLowerCase());
+    return questions.filter((q) => {
+      const qt = (q?.topic || '').toLowerCase();
+      return needles.some((needle) => qt.includes(needle));
+    });
+  }, [questions, selectedTopics]);
 
   useLayoutEffect(() => {
     const scroller = document.querySelector('main');
@@ -947,8 +956,8 @@ export default function PyqPage() {
                   <span className="text-[14px] leading-none" aria-hidden>📊</span>
                   <p>
                     {selectedYearRange === 'year' && selectedYear
-                      ? `${selectedYear} questions for ${selectedTopic || selectedSubtopic || selectedSubject}`
-                      : `All Years → ${total} questions${selectedTopic ? ` for ${selectedTopic}` : selectedSubtopic ? ` for ${selectedSubtopic}` : selectedSubject !== 'All Papers' ? ` for ${selectedSubject}` : ''}`}
+                      ? `${selectedYear} questions for ${selectedTopics.length ? `${selectedTopics[0]}${selectedTopics.length > 1 ? ` +${selectedTopics.length - 1}` : ''}` : selectedSubtopic || selectedSubject}`
+                      : `All Years → ${total} questions${selectedTopics.length ? ` for ${selectedTopics[0]}${selectedTopics.length > 1 ? ` +${selectedTopics.length - 1}` : ''}` : selectedSubtopic ? ` for ${selectedSubtopic}` : selectedSubject !== 'All Papers' ? ` for ${selectedSubject}` : ''}`}
                   </p>
                 </div>
               </div>
@@ -992,8 +1001,9 @@ export default function PyqPage() {
                   onClick={() => {
                     setSelectedSubject('All Papers');
                     setSelectedSubtopic(null);
-                    setSelectedTopic(null);
+                    setSelectedTopics([]);
                     setExpandedSubject(null);
+                    setExpandedSubtopic(null);
                   }}
                   className="w-full flex items-center justify-between rounded-[14px] px-4 py-3 text-left transition-colors"
                   style={{ minHeight: '59.99px', background: selectedSubject === 'All Papers' ? '#0F1A30' : '#F9FAFB' }}
@@ -1009,16 +1019,28 @@ export default function PyqPage() {
                   const selected = selectedSubject === label;
                   const expanded = expandedSubject === label;
                   return (
-                    <React.Fragment key={`tree-${label}`}>
+                    <div
+                      key={`tree-${label}`}
+                      className="overflow-hidden rounded-[14px] border transition-colors"
+                      style={{
+                        borderColor: expanded ? '#E5E7EB' : 'transparent',
+                        background: expanded ? '#F9FAFB' : 'transparent',
+                      }}
+                    >
                       <button
                         onClick={() => {
                           setSelectedSubject(label);
                           setSelectedSubtopic(null);
-                          setSelectedTopic(null);
+                          setSelectedTopics([]);
+                          setExpandedSubtopic(null);
                           setExpandedSubject(expanded ? null : label);
                         }}
-                        className="w-full flex items-center justify-between rounded-[14px] px-4 py-3 text-left transition-colors"
-                        style={{ minHeight: '59.99px', background: selected ? '#0F1A30' : '#F9FAFB' }}
+                        className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors"
+                        style={{
+                          minHeight: '59.99px',
+                          background: selected ? '#0F1A30' : expanded ? '#EEF1F6' : '#F9FAFB',
+                          borderRadius: expanded ? '14px 14px 0 0' : '14px',
+                        }}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-[18px] leading-none flex-shrink-0" aria-hidden>{icon}</span>
@@ -1026,44 +1048,122 @@ export default function PyqPage() {
                             {label}
                           </span>
                         </div>
-                        {children?.length ? <span style={{ color: selected ? '#FFFFFF' : '#6A7282', fontSize: '16px' }}>{expanded ? '−' : '+'}</span> : null}
+                        <div className="flex items-center gap-2">
+                          {children?.length ? (
+                            <span className="rounded-full border border-[#E5E7EB] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
+                              {children.length}
+                            </span>
+                          ) : null}
+                          {children?.length ? (
+                            <span
+                              className="inline-block transition-transform"
+                              style={{
+                                color: selected ? '#FFFFFF' : '#9AA3B2',
+                                fontSize: '12px',
+                                transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                              }}
+                            >
+                              ▾
+                            </span>
+                          ) : null}
+                        </div>
                       </button>
                       {expanded && children?.length ? (
-                        <div className="ml-9 mt-2 flex flex-col gap-2">
+                        <div className="border-t border-[#E5E7EB] bg-[#F7F9FC]">
                           {children.map((child) => {
                             const childSelected = selectedSubtopic === child.label;
+                            const childExpanded = expandedSubtopic === child.label;
+                            const topicCount = child.microTopics?.length || 0;
                             return (
-                              <div key={child.label} className="rounded-[12px] border border-[#E5E7EB] bg-white p-2.5">
+                              <div key={child.label} className="border-b border-[#E8ECF2] last:border-b-0">
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    setSelectedSubtopic(childSelected ? null : child.label);
-                                    setSelectedTopic(null);
+                                    const nextExpanded = childExpanded ? null : child.label;
+                                    setExpandedSubtopic(nextExpanded);
+                                    setSelectedSubtopic(childSelected && !topicCount ? null : child.label);
+                                    setSelectedTopics([]);
                                   }}
-                                  className="w-full rounded-[10px] px-3 py-2 text-left transition-colors"
-                                  style={{ background: childSelected ? '#E0F2FE' : '#FFFFFF', color: childSelected ? '#075985' : '#101828', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700 }}
+                                  className="flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors"
+                                  style={{ background: childExpanded ? '#E8F0FD' : 'transparent' }}
                                 >
-                                  {child.label}
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <span
+                                      className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                                      style={{ background: childExpanded ? '#3B82F6' : '#9AA3B2' }}
+                                    />
+                                    <span
+                                      className="truncate"
+                                      style={{
+                                        color: childSelected || childExpanded ? '#2563EB' : '#5A6478',
+                                        fontFamily: 'Inter, sans-serif',
+                                        fontSize: '12px',
+                                        fontWeight: childSelected || childExpanded ? 700 : 500,
+                                      }}
+                                    >
+                                      {child.label}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {topicCount ? (
+                                      <span className="rounded-full border border-[#E5E7EB] bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
+                                        {topicCount}
+                                      </span>
+                                    ) : null}
+                                    {topicCount ? (
+                                      <span
+                                        className="inline-block text-[10px] text-[#9AA3B2] transition-transform"
+                                        style={{ transform: childExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                                      >
+                                        ▾
+                                      </span>
+                                    ) : null}
+                                  </div>
                                 </button>
-                                {child.microTopics?.length ? (
-                                  <div className="mt-2 flex flex-wrap gap-2 px-1 pb-1">
+                                {childExpanded && child.microTopics?.length ? (
+                                  <div className="border-t border-[#E8ECF2] bg-[#F2F5FA]">
                                     {child.microTopics.map((topic) => (
                                       <button
                                         key={topic}
                                         type="button"
                                         onClick={() => {
                                           setSelectedSubtopic(child.label);
-                                          setSelectedTopic(selectedTopic === topic ? null : topic);
+                                          setSelectedTopics((prev) =>
+                                            prev.includes(topic)
+                                              ? prev.filter((t) => t !== topic)
+                                              : [...prev, topic]
+                                          );
                                         }}
-                                        className="rounded-full px-2.5 py-1 text-left transition-colors"
+                                        className="flex w-full items-center justify-between border-b border-[#E8ECF2] px-4 py-2 pl-[52px] text-left transition-colors last:border-b-0 hover:bg-[#FFF8E6]"
                                         style={{
-                                          background: selectedTopic === topic ? '#0F172B' : '#F3F4F6',
-                                          color: selectedTopic === topic ? '#FFFFFF' : '#4A5565',
-                                          fontSize: '11px',
-                                          fontWeight: 600,
+                                          background: selectedTopics.includes(topic) ? '#FFF3CC' : 'transparent',
                                         }}
                                       >
-                                        {topic}
+                                        <span className="flex min-w-0 items-center gap-2">
+                                          <span
+                                            className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-[3px] border text-[9px]"
+                                            style={{
+                                              background: selectedTopics.includes(topic) ? '#FDBA26' : 'transparent',
+                                              borderColor: selectedTopics.includes(topic) ? '#FDBA26' : '#E5E7EB',
+                                              color: '#101828',
+                                            }}
+                                          >
+                                            {selectedTopics.includes(topic) ? '✓' : ''}
+                                          </span>
+                                          <span
+                                            className="break-words"
+                                            style={{
+                                              color: selectedTopics.includes(topic) ? '#B45309' : '#5A6478',
+                                              fontSize: '12px',
+                                              fontWeight: selectedTopics.includes(topic) ? 700 : 500,
+                                            }}
+                                          >
+                                            {topic}
+                                          </span>
+                                        </span>
+                                        <span className="ml-3 rounded-full border border-[#E5E7EB] bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
+                                          -
+                                        </span>
                                       </button>
                                     ))}
                                   </div>
@@ -1073,7 +1173,7 @@ export default function PyqPage() {
                           })}
                         </div>
                       ) : null}
-                    </React.Fragment>
+                    </div>
                   );
                 })}
               </div>

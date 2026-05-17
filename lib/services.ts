@@ -293,7 +293,7 @@ export const pyqService = {
     yearTo?: number;
     subject?: string;
     subSubject?: string;
-    topic?: string;
+    topic?: string | string[];
     paper?: string;
     page?: number;
     limit?: number;
@@ -305,7 +305,15 @@ export const pyqService = {
     if (params?.yearTo) query.set('yearTo', String(params.yearTo));
     if (params?.subject) query.set('subject', params.subject);
     if (params?.subSubject) query.set('subSubject', params.subSubject);
-    if (params?.topic) query.set('topic', params.topic);
+    if (params?.topic) {
+      if (Array.isArray(params.topic)) {
+        params.topic.forEach((t) => {
+          if (t) query.append('topic', t);
+        });
+      } else {
+        query.set('topic', params.topic);
+      }
+    }
     if (params?.paper) query.set('paper', params.paper);
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit));
