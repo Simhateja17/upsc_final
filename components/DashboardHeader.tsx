@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,6 +55,11 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationModalRef = useRef<HTMLDivElement>(null);
   const isUpgradeActive = pathname === '/dashboard/free-trial' || pathname.startsWith('/dashboard/free-trial/');
@@ -308,16 +314,16 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
         </div>
       </div>
 
-      {showNotifications && (
+      {showNotifications && mounted && createPortal(
         <div className="fixed inset-0 z-[90] bg-black/35 backdrop-blur-[1px] flex items-center justify-center p-4">
           <div
             ref={notificationModalRef}
-            className="w-full max-w-[520px] rounded-2xl bg-white border border-[#E5E7EB] shadow-[0_20px_60px_rgba(0,0,0,0.18)]"
+            className="w-full max-w-[520px] max-h-[90vh] rounded-2xl bg-white border border-[#E5E7EB] shadow-[0_20px_60px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden"
             role="dialog"
             aria-modal="true"
             aria-label="Notifications"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
+            <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
               <h2 className="font-inter font-semibold text-[20px] leading-[28px] text-[#334155]">Notifications</h2>
               <button
                 onClick={() => setShowNotifications(false)}
@@ -328,26 +334,30 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
               </button>
             </div>
 
-            <div className="px-5 py-4 space-y-3">
-              {notifications.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="rounded-xl px-4 py-3 flex items-start gap-3"
-                  style={{
-                    background: index === 0 ? '#F8F2E8' : '#E9EEF8',
-                    opacity: item.read ? 0.82 : 1,
-                  }}
-                >
-                  <span className="text-[16px] leading-none mt-[2px]">{item.icon}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-inter text-[14px] leading-[20px] text-[#334155] font-medium truncate">{item.title}</p>
-                    <p className="font-inter text-[12px] leading-[16px] text-[#94A3B8] mt-0.5">{item.time}</p>
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-3">
+              {notifications.length === 0 ? (
+                <p className="font-inter text-[14px] text-[#94A3B8] text-center py-6">You&apos;re all caught up.</p>
+              ) : (
+                notifications.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="rounded-xl px-4 py-3 flex items-start gap-3"
+                    style={{
+                      background: index === 0 ? '#F8F2E8' : '#E9EEF8',
+                      opacity: item.read ? 0.82 : 1,
+                    }}
+                  >
+                    <span className="text-[16px] leading-none mt-[2px]">{item.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-inter text-[14px] leading-[20px] text-[#334155] font-medium truncate">{item.title}</p>
+                      <p className="font-inter text-[12px] leading-[16px] text-[#94A3B8] mt-0.5">{item.time}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
-            <div className="px-5 py-4 border-t border-[#E5E7EB] flex justify-end gap-2">
+            <div className="flex-shrink-0 px-5 py-4 border-t border-[#E5E7EB] flex justify-end gap-2">
               <button
                 onClick={() => setShowNotifications(false)}
                 className="px-4 py-2 rounded-lg border border-[#D8DFEC] bg-[#F2F5FB] text-[#64748B] font-inter text-[13px] leading-[18px] font-semibold hover:bg-[#E9EEF8] transition-colors"
@@ -362,7 +372,8 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </header>
   );

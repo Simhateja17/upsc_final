@@ -234,8 +234,16 @@ export default function BillingPage() {
           userService.getSubscription(),
           userService.getOrders(),
         ]);
-        setSub(subRes.data || { plan: 'free', status: 'expired' });
+        const fetched = subRes.data || { plan: 'free', status: 'expired' };
+        setSub(fetched);
         setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
+        // New users without an active paid plan land on the pricing page.
+        const hasActivePlan = (fetched.plan === 'pro' || fetched.plan === 'pro-annual' || fetched.plan === 'trial')
+          && (fetched.status === 'active' || fetched.status === 'trial');
+        if (!hasActivePlan) {
+          router.replace('/dashboard/billing/plans');
+          return;
+        }
       } catch {
         const localPlan = typeof window !== 'undefined' ? (localStorage.getItem('userPlan') as SubscriptionPlan | null) : null;
         const trialEnd = typeof window !== 'undefined' ? localStorage.getItem('proTrialEnd') : null;
@@ -243,17 +251,17 @@ export default function BillingPage() {
           setSub({ plan: 'trial', status: 'trial', trialEndsOn: trialEnd, amount: '7-day free trial' });
         } else {
           setSub({ plan: 'free', status: 'expired' });
+          router.replace('/dashboard/billing/plans');
+          return;
         }
       } finally {
         setLoading(false);
       }
     }
     fetchData();
-  }, []);
+  }, [router]);
 
-  // TODO: remove PREVIEW_PAID — set to false to restore real plan detection
-  const PREVIEW_PAID = true;
-  const isPaidUser = PREVIEW_PAID || sub?.plan === 'pro' || sub?.plan === 'pro-annual' || sub?.plan === 'trial';
+  const isPaidUser = sub?.plan === 'pro' || sub?.plan === 'pro-annual' || sub?.plan === 'trial';
 
   const handleUpgrade = () => router.push('/dashboard/billing/plans');
   const handleCancel = async () => {
@@ -334,11 +342,11 @@ export default function BillingPage() {
                 </div>
                 {/* Subtitle */}
                 <p style={{ margin: '5px 0 0', fontSize: 12.5, color: 'rgba(255,255,255,0.38)', fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.4 }}>
-                  {PREVIEW_PAID ? 'Annual' : (sub?.plan === 'pro-annual' ? 'Annual' : sub?.plan === 'trial' ? 'Trial' : 'Monthly')}
+                  {sub?.plan === 'pro-annual' ? 'Annual' : sub?.plan === 'trial' ? 'Trial' : 'Monthly'}
                   {' · '}
-                  {PREVIEW_PAID ? 'Renews April 15, 2027' : sub?.status === 'trial' ? `Trial ends ${formatDate(sub?.trialEndsOn)}` : sub?.renewsOn ? `Renews ${formatDate(sub.renewsOn)}` : 'No renewal date'}
-                  {(PREVIEW_PAID || (sub?.amount && sub.amount !== 'Free')) && (
-                    <> · <span style={{ color: '#E8B84B', fontWeight: 600 }}>₹{PREVIEW_PAID ? '3588' : sub?.amount} / year</span></>
+                  {sub?.status === 'trial' ? `Trial ends ${formatDate(sub?.trialEndsOn)}` : sub?.renewsOn ? `Renews ${formatDate(sub.renewsOn)}` : 'No renewal date'}
+                  {sub?.amount && sub.amount !== 'Free' && (
+                    <> · <span style={{ color: '#E8B84B', fontWeight: 600 }}>₹{sub.amount} / year</span></>
                   )}
                 </p>
               </div>
@@ -423,7 +431,7 @@ export default function BillingPage() {
               <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, system-ui, sans-serif' }}>
                 Next billing date:{' '}
                 <strong style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
-                  {PREVIEW_PAID ? 'April 15, 2027' : (sub?.renewsOn ? formatDate(sub.renewsOn) : '—')}
+                  {sub?.renewsOn ? formatDate(sub.renewsOn) : '—'}
                 </strong>
                 {' · '}
                 {isPaidUser ? 'Annual Rise Plan renewal' : 'No active subscription'}
@@ -434,7 +442,7 @@ export default function BillingPage() {
                 Update Billing Address
               </button>
               <span style={{ fontSize: 15, fontWeight: 700, color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.3px' }}>
-                {orders.length > 0 ? `INR ${(orders[0].amount / 100).toLocaleString('en-IN')}` : PREVIEW_PAID ? 'INR 11,988' : 'INR 0'}
+                {orders.length > 0 ? `INR ${(orders[0].amount / 100).toLocaleString('en-IN')}` : 'INR 0'}
               </span>
             </div>
           </div>

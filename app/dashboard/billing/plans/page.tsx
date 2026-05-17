@@ -1,9 +1,9 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-// â”€â”€ Hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Hero ──────────────────────────────────────────────────────────────────────
 function BillingHero() {
   return (
     <div
@@ -424,7 +424,7 @@ function AscentCheckoutModal({ cycle, onClose }: { cycle: BillingCycle; onClose:
   );
 }
 
-// â”€â”€ Plans page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Plans page ────────────────────────────────────────────────────────────────
 export default function ExplorePlansPage() {
   const router = useRouter();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
@@ -497,27 +497,27 @@ export default function ExplorePlansPage() {
                 {[
                   { text: 'Daily MCQ Challenge', limited: false },
                   { text: 'Daily Mains Challenge', limited: false },
-                  { text: 'Daily News Analysis â€“ Hindu & IE', limited: false },
+                  { text: 'Daily News Analysis – Hindu & IE', limited: false },
                   { text: '10,000+ Previous Year Questions', limited: false },
                   { text: '2 Mains Evaluations / day', limited: false },
-                  { text: 'Jeet AI â€“ 10 conversations / day', limited: false },
+                  { text: 'Jeet AI – 10 conversations / day', limited: false },
                   { text: 'Study Planner & Time Tracker', limited: false },
                   { text: 'Daily Leaderboard & Discussion Forum', limited: false },
                   { text: 'Mental Health Buddy', limited: false },
-                  { text: 'Mock Tests â€“ Limited access', limited: true },
-                  { text: 'Revision Suite â€“ Limited access', limited: true },
-                  { text: 'Performance Analytics â€“ Limited view', limited: true },
+                  { text: 'Mock Tests – Limited access', limited: true },
+                  { text: 'Revision Suite – Limited access', limited: true },
+                  { text: 'Performance Analytics – Limited view', limited: true },
                 ].map((item) => (
                   <li key={item.text} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#374151', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                    <span style={{ flexShrink: 0, marginTop: 1, color: item.limited ? '#E8B84B' : '#22C55E', fontWeight: 700 }}>{item.limited ? 'â†’' : 'âœ“'}</span>
+                    <span style={{ flexShrink: 0, marginTop: 1, color: item.limited ? '#E8B84B' : '#22C55E', fontWeight: 700 }}>{item.limited ? '→' : '✓'}</span>
                     <span>{item.text}</span>
                   </li>
                 ))}
               </ul>
               <button type="button" onClick={handleUpgrade} style={{ marginTop: 24, width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: '1.5px solid #D1D5DB', background: 'transparent', color: '#0C1424', fontFamily: '"DM Sans", Inter, system-ui, sans-serif' }}>
-                Get Started Free â†’
+                Get Started Free →
               </button>
-              <p style={{ margin: '10px 0 0', fontSize: 11, color: '#9AA3B8', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>No card needed â€¢ Upgrade anytime</p>
+              <p style={{ margin: '10px 0 0', fontSize: 11, color: '#9AA3B8', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>No card needed • Upgrade anytime</p>
             </div>
           </article>
 
@@ -534,38 +534,38 @@ export default function ExplorePlansPage() {
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
                 <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>
-                  â‚¹{cycle === 'monthly' ? '499' : cycle === 'quarterly' ? '399' : '299'}
+                  ₹{cycle === 'monthly' ? '499' : cycle === 'quarterly' ? '399' : '299'}
                 </span>
                 <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', paddingBottom: 6, fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
               </div>
               <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? 'â‚¹1,197 every 3 months - Save 20%' : 'â‚¹3,588 yearly - Save 40%'}
+                {cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? '₹1,197 every 3 months - Save 20%' : '₹3,588 yearly - Save 40%'}
               </p>
               <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '20px 0' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <span style={{ color: '#E8B84B', fontWeight: 700 }}>âœ“</span>
+                <span style={{ color: '#E8B84B', fontWeight: 700 }}>✓</span>
                 <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>Everything in Aspire, plus:</span>
               </div>
               {[
                 { title: 'EVALUATION', items: ['25 Mains Evaluations / day', '25 Mock Test attempts / day'] },
-                { title: 'ANALYTICS', items: ['Full Performance Analytics Dashboard', 'Test Analytics â€“ In-depth insights'] },
-                { title: 'REVISION TOOLS', items: ['Full Revision Suite â€“ Flashcards, Mindmaps, Spaced Rep.', 'Jeet AI â€“ 100 conversations / day', 'Live Study Room 24Ã—7', 'Smart Syllabus Tracker'] },
+                { title: 'ANALYTICS', items: ['Full Performance Analytics Dashboard', 'Test Analytics – In-depth insights'] },
+                { title: 'REVISION TOOLS', items: ['Full Revision Suite – Flashcards, Mindmaps, Spaced Rep.', 'Jeet AI – 100 conversations / day', 'Live Study Room 24Ã—7', 'Smart Syllabus Tracker'] },
               ].map((section) => (
                 <div key={section.title} style={{ marginBottom: 12 }}>
                   <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 800, letterSpacing: '1.6px', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>{section.title}</p>
                   {section.items.map((item) => (
                     <div key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 7, fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                      <span style={{ color: '#E8B84B', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>âœ“</span>
+                      <span style={{ color: '#E8B84B', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
                       <span>{item}</span>
                     </div>
                   ))}
                 </div>
               ))}
               <button type="button" onClick={handleOpenRiseCheckout} style={{ marginTop: 8, width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#E8B84B', color: '#090E1C', fontFamily: '"DM Sans", Inter, system-ui, sans-serif' }}>
-                Unlock Rise Now â†’
+                Unlock Rise Now →
               </button>
               <p style={{ margin: '10px 0 0', fontSize: 11, color: '#22C55E', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                â† 7-day money-back guarantee, no questions asked
+                ← 7-day money-back guarantee, no questions asked
               </p>
             </div>
           </article>
@@ -580,37 +580,37 @@ export default function ExplorePlansPage() {
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
                 <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>
-                  â‚¹{cycle === 'monthly' ? '999' : cycle === 'quarterly' ? '799' : '599'}
+                  ₹{cycle === 'monthly' ? '999' : cycle === 'quarterly' ? '799' : '599'}
                 </span>
                 <span style={{ fontSize: 13, color: '#9AA3B8', paddingBottom: 6, fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
               </div>
               <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9AA3B8', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? 'â‚¹2,397 every 3 months - Save 20%' : 'â‚¹7,188 yearly - Save 40%'}
+                {cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? '₹2,397 every 3 months - Save 20%' : '₹7,188 yearly - Save 40%'}
               </p>
               <div style={{ height: 1, background: '#F0EDE8', margin: '20px 0' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <span style={{ color: '#22C55E', fontWeight: 700 }}>âœ“</span>
+                <span style={{ color: '#22C55E', fontWeight: 700 }}>✓</span>
                 <span style={{ fontSize: 13, color: '#0C1424', fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>Everything in Rise, plus:</span>
               </div>
               {[
-                { title: 'EVALUATION', items: ['Unlimited Mains Evaluations', 'Unlimited Mock Test practice', 'Jeet AI â€“ Unlimited conversations'] },
-                { title: 'MENTOR-LED GROWTH', items: ['Weekly 1-on-1 mentorship (30 min)', 'Personalised Study Roadmap', 'Dedicated Q&A â€“ Priority Responses', 'Monthly Performance Review Call', 'Exclusive Ascent Community', 'Early Access to New Features'] },
+                { title: 'EVALUATION', items: ['Unlimited Mains Evaluations', 'Unlimited Mock Test practice', 'Jeet AI – Unlimited conversations'] },
+                { title: 'MENTOR-LED GROWTH', items: ['Weekly 1-on-1 mentorship (30 min)', 'Personalised Study Roadmap', 'Dedicated Q&A – Priority Responses', 'Monthly Performance Review Call', 'Exclusive Ascent Community', 'Early Access to New Features'] },
               ].map((section) => (
                 <div key={section.title} style={{ marginBottom: 12 }}>
                   <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 800, letterSpacing: '1.6px', color: '#9AA3B8', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>{section.title}</p>
                   {section.items.map((item) => (
                     <div key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 7, fontSize: 13, color: '#374151', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                      <span style={{ color: '#22C55E', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>âœ“</span>
+                      <span style={{ color: '#22C55E', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
                       <span>{item}</span>
                     </div>
                   ))}
                 </div>
               ))}
               <button type="button" onClick={handleOpenAscentCheckout} style={{ marginTop: 8, width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#090E1C', color: '#fff', fontFamily: '"DM Sans", Inter, system-ui, sans-serif' }}>
-                Get Ascent Planâ†’
+                Get Ascent Plan→
               </button>
               <p style={{ margin: '10px 0 0', fontSize: 11, color: '#22C55E', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                â† 7-day money-back guarantee included
+                ← 7-day money-back guarantee included
               </p>
             </div>
           </article>
@@ -620,10 +620,10 @@ export default function ExplorePlansPage() {
         {/* Trust bar */}
         <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12, paddingBottom: 8 }}>
           {[
-            { icon: 'ðŸ”’', text: 'Secure Payments' },
-            { icon: 'â†©', text: '7-Day Money-Back Guarantee' },
-            { icon: 'âœ•', text: 'Cancel Anytime' },
-            { icon: 'ðŸ‘¥', text: '15,000+ UPSC aspirants' },
+            { icon: '🔒', text: 'Secure Payments' },
+            { icon: '↩', text: '7-Day Money-Back Guarantee' },
+            { icon: '✕', text: 'Cancel Anytime' },
+            { icon: '👥', text: '15,000+ UPSC aspirants' },
           ].map((item) => (
             <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 7, borderRadius: 999, border: '1px solid #E5E7EB', background: '#fff', padding: '8px 16px', fontSize: 12, fontWeight: 500, color: '#374151', fontFamily: 'Inter, system-ui, sans-serif', boxShadow: '0 1px 4px rgba(11,22,40,0.06)' }}>
               <span style={{ fontSize: 14 }}>{item.icon}</span>
@@ -632,7 +632,7 @@ export default function ExplorePlansPage() {
           ))}
         </div>
 
-        {/* â”€â”€ Feature Breakdown â”€â”€ */}
+        {/* ── Feature Breakdown ── */}
         <section style={{ paddingBottom: 16 }}>
 
           {/* Header */}
@@ -663,7 +663,7 @@ export default function ExplorePlansPage() {
                   </th>
                   <th style={{ padding: '18px 16px', textAlign: 'center', background: 'rgba(232,184,75,0.12)' }}>
                     <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 44, fontStyle: 'normal', fontWeight: 400, lineHeight: '51.92px', color: '#E8B84B' }}>Rise</span>
-                    <span style={{ marginLeft: 6, fontSize: 20 }}>â­</span>
+                    <span style={{ marginLeft: 6, fontSize: 20 }}>⭐</span>
                   </th>
                   <th style={{ padding: '18px 16px', textAlign: 'center', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 44, fontStyle: 'normal', fontWeight: 400, lineHeight: '51.92px', color: '#fff' }}>
                     Ascent
@@ -673,32 +673,32 @@ export default function ExplorePlansPage() {
               <tbody>
                 {([
                   { feature: 'Daily MCQ Challenge', sub: 'Subject & topic-wise with explanations', aspire: '10 / day', rise: 'Unlimited', ascent: 'Unlimited' },
-                  { feature: 'Daily Mains Challenge', sub: '', aspire: 'âœ“', rise: 'âœ“', ascent: 'âœ“' },
-                  { feature: 'Daily News Analysis', sub: 'The Hindu & Indian Express', aspire: 'âœ“', rise: 'âœ“', ascent: 'âœ“' },
-                  { feature: 'Daily Leaderboard', sub: '', aspire: 'âœ“', rise: 'âœ“', ascent: 'âœ“' },
+                  { feature: 'Daily Mains Challenge', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
+                  { feature: 'Daily News Analysis', sub: 'The Hindu & Indian Express', aspire: '✓', rise: '✓', ascent: '✓' },
+                  { feature: 'Daily Leaderboard', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
                   { feature: 'Mains Evaluations', sub: 'Instant UPSC marking scheme feedback', aspire: '2 / day', rise: '25 / day', ascent: 'Unlimited' },
-                  { feature: '10,000+ Previous Year Questions', sub: '', aspire: 'âœ“', rise: 'âœ“', ascent: 'âœ“' },
+                  { feature: '10,000+ Previous Year Questions', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
                   { feature: 'Mock Test Attempts', sub: 'Full-length Prelims & Mains simulations', aspire: 'Limited', rise: '25 / day', ascent: 'Unlimited' },
                   { feature: 'Syllabus Tracker', sub: 'Personalized UPSC Syllabus Mapping', aspire: 'Limited', rise: 'Unlimited', ascent: 'Unlimited' },
                   { feature: 'Jeet AI Conversations', sub: 'UPSC-preparation partner', aspire: '10 / day', rise: '100 / day', ascent: 'Unlimited' },
-                  { feature: 'Performance Analytics Dashboard', sub: '', aspire: 'Limited', rise: 'âœ“', ascent: 'âœ“' },
-                  { feature: 'Test Analytics', sub: 'Deep score breakdowns', aspire: 'â€”', rise: 'âœ“', ascent: 'âœ“' },
+                  { feature: 'Performance Analytics Dashboard', sub: '', aspire: 'Limited', rise: '✓', ascent: '✓' },
+                  { feature: 'Test Analytics', sub: 'Deep score breakdowns', aspire: '—', rise: '✓', ascent: '✓' },
                   { feature: 'Revision Suite', sub: 'Flashcards, Mindmaps, Spaced Repetition', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
-                  { feature: 'Discussion Forum', sub: '', aspire: 'âœ“', rise: 'âœ“', ascent: 'âœ“' },
-                  { feature: 'Live Study Room 24Ã—7', sub: '', aspire: 'Limited', rise: 'âœ“', ascent: 'âœ“' },
-                  { feature: 'Mental Health Buddy', sub: '', aspire: 'âœ“', rise: 'âœ“', ascent: 'âœ“' },
-                  { feature: 'Weekly 1-on-1 Mentorship', sub: '30 minutes per session', aspire: 'â€”', rise: 'â€”', ascent: 'Weekly' },
-                  { feature: 'Personalised Study Roadmap', sub: '', aspire: 'â€”', rise: 'â€”', ascent: 'âœ“' },
-                  { feature: 'Dedicated Q&A Priority Responses', sub: '', aspire: 'â€”', rise: 'â€”', ascent: 'âœ“' },
-                  { feature: 'Monthly Performance Review Call', sub: '', aspire: 'â€”', rise: 'â€”', ascent: 'âœ“' },
+                  { feature: 'Discussion Forum', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
+                  { feature: 'Live Study Room 24Ã—7', sub: '', aspire: 'Limited', rise: '✓', ascent: '✓' },
+                  { feature: 'Mental Health Buddy', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
+                  { feature: 'Weekly 1-on-1 Mentorship', sub: '30 minutes per session', aspire: '—', rise: '—', ascent: 'Weekly' },
+                  { feature: 'Personalised Study Roadmap', sub: '', aspire: '—', rise: '—', ascent: '✓' },
+                  { feature: 'Dedicated Q&A Priority Responses', sub: '', aspire: '—', rise: '—', ascent: '✓' },
+                  { feature: 'Monthly Performance Review Call', sub: '', aspire: '—', rise: '—', ascent: '✓' },
                 ] as { feature: string; sub: string; aspire: string; rise: string; ascent: string }[]).map((row, i) => {
                   const cellStyle = (val: string, isRise = false): React.CSSProperties => ({
                     padding: '13px 16px',
                     textAlign: 'center' as const,
                     fontSize: 13,
-                    fontWeight: val === 'âœ“' || val === 'â€”' ? 600 : 500,
-                    color: val === 'âœ“' ? '#22C55E'
-                      : val === 'â€”' ? '#CBD5E1'
+                    fontWeight: val === '✓' || val === '—' ? 600 : 500,
+                    color: val === '✓' ? '#22C55E'
+                      : val === '—' ? '#CBD5E1'
                       : val === 'Limited' || val === 'Unlimited' || val === 'Full Access' || val === 'Weekly' ? '#E8B84B'
                       : '#1A2540',
                     background: isRise ? 'rgba(232,184,75,0.04)' : 'transparent',
@@ -742,7 +742,7 @@ export default function ExplorePlansPage() {
           </div>
         </section>
 
-        {/* â”€â”€ Why Rise With Jeet? â”€â”€ */}
+        {/* ── Why Rise With Jeet? ── */}
         <section>
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 36 }}>
@@ -755,21 +755,21 @@ export default function ExplorePlansPage() {
               Why Rise With Jeet?
             </h2>
             <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, color: '#6B7A99', margin: 0, maxWidth: 440, marginInline: 'auto', lineHeight: 1.6, textAlign: 'center' }}>
-              Not just another coaching â€” the complete UPSC operating system for India&apos;s brightest minds.
+              Not just another coaching — the complete UPSC operating system for India&apos;s brightest minds.
             </p>
           </div>
 
           {/* 4Ã—2 feature grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             {[
-              { icon: 'ðŸŽ¯', iconBg: '#FEF3C7', title: 'Daily MCQ Practice', desc: 'Subject-wise & topic-wise MCQs with detailed explanations. New questions every day, curated by experts.' },
-              { icon: 'ðŸ“Š', iconBg: '#EFF6FF', title: 'Deep Analytics', desc: 'Topic-level breakdowns, readiness scores, and weak-area detection.' },
-              { icon: 'ðŸ“…', iconBg: '#FFFBEB', title: 'Smart Planning', desc: 'Syllabus tracker, planner and spaced repetition so nothing slips through.' },
-              { icon: 'ðŸ‘¥', iconBg: '#F0FDF4', title: 'Live Community', desc: 'Study alongside 15,000 aspirants in live rooms and accountability groups.' },
-              { icon: 'ðŸ“°', iconBg: '#F8FAFC', title: 'Daily Current Affairs', desc: 'Hindu & IE analysis connecting today\'s news directly to the UPSC syllabus.' },
-              { icon: 'âœï¸', iconBg: '#FFFBEB', title: 'Daily Answer Writing', desc: 'Daily mains practice with AI-powered instant evaluation and UPSC-style marking schemes.' },
-              { icon: 'ðŸ§ ', iconBg: '#FFF0F3', title: 'Smart Revision', desc: 'Flashcards, mindmaps, spaced repetition â€” study once, remember forever.' },
-              { icon: 'ðŸ“š', iconBg: '#F8FAFC', title: 'Previous Year Questions', desc: '30 years of PYQs with trend analysis, topic clustering, and examiner insights.' },
+              { icon: '🎯', iconBg: '#FEF3C7', title: 'Daily MCQ Practice', desc: 'Subject-wise & topic-wise MCQs with detailed explanations. New questions every day, curated by experts.' },
+              { icon: '📊', iconBg: '#EFF6FF', title: 'Deep Analytics', desc: 'Topic-level breakdowns, readiness scores, and weak-area detection.' },
+              { icon: '📅', iconBg: '#FFFBEB', title: 'Smart Planning', desc: 'Syllabus tracker, planner and spaced repetition so nothing slips through.' },
+              { icon: '👥', iconBg: '#F0FDF4', title: 'Live Community', desc: 'Study alongside 15,000 aspirants in live rooms and accountability groups.' },
+              { icon: '📰', iconBg: '#F8FAFC', title: 'Daily Current Affairs', desc: 'Hindu & IE analysis connecting today\'s news directly to the UPSC syllabus.' },
+              { icon: '✍️', iconBg: '#FFFBEB', title: 'Daily Answer Writing', desc: 'Daily mains practice with AI-powered instant evaluation and UPSC-style marking schemes.' },
+              { icon: '🧠', iconBg: '#FFF0F3', title: 'Smart Revision', desc: 'Flashcards, mindmaps, spaced repetition — study once, remember forever.' },
+              { icon: '📚', iconBg: '#F8FAFC', title: 'Previous Year Questions', desc: '30 years of PYQs with trend analysis, topic clustering, and examiner insights.' },
             ].map((card) => (
               <div key={card.title} style={{ background: '#fff', borderRadius: 14, border: '1px solid #F0EDE8', padding: '20px 18px', boxShadow: '0 1px 4px rgba(11,22,40,0.05)' }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 14 }}>
@@ -782,7 +782,7 @@ export default function ExplorePlansPage() {
           </div>
         </section>
 
-        {/* â”€â”€ What Our Learners Are Saying â”€â”€ */}
+        {/* ── What Our Learners Are Saying ── */}
         <section style={{ paddingBottom: 16 }}>
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
@@ -809,7 +809,7 @@ export default function ExplorePlansPage() {
               },
               {
                 stars: 5,
-                quote: '"Daily MCQs and the leaderboard kept me disciplined across 6 months. Analytics showed me exactly which paper needed attention â€” saved me months of scattered prep."',
+                quote: '"Daily MCQs and the leaderboard kept me disciplined across 6 months. Analytics showed me exactly which paper needed attention — saved me months of scattered prep."',
                 name: 'Rahul',
                 role: 'UPSC CSE 2025 Mains Qualified',
                 initial: 'R',
@@ -825,7 +825,7 @@ export default function ExplorePlansPage() {
               },
             ].map((t) => (
               <div key={t.name} style={{ background: '#fff', borderRadius: 16, border: '1px solid #F0EDE8', padding: '24px 22px', boxShadow: '0 1px 4px rgba(11,22,40,0.05)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ color: '#E8B84B', fontSize: 14, letterSpacing: 2 }}>{'â˜…'.repeat(t.stars)}</div>
+                <div style={{ color: '#E8B84B', fontSize: 14, letterSpacing: 2 }}>{'★'.repeat(t.stars)}</div>
                 <p style={{ margin: 0, fontFamily: 'Inter, system-ui, sans-serif', fontSize: 13, color: '#374151', lineHeight: 1.75, flex: 1 }}>{t.quote}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 36, height: 36, borderRadius: '50%', background: t.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -841,7 +841,7 @@ export default function ExplorePlansPage() {
           </div>
         </section>
 
-        {/* â”€â”€ FAQ â”€â”€ */}
+        {/* ── FAQ ── */}
         <section>
           <div style={{ textAlign: 'center', marginBottom: 36 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
@@ -863,9 +863,9 @@ export default function ExplorePlansPage() {
               { q: 'Is Aspire really free forever?', a: 'Yes! Aspire is completely free with no expiry date, no credit card required, and no hidden charges. You get access to daily MCQs, mains challenge, current affairs, and more.' },
               { q: "What's the difference between Rise and Ascent?", a: 'Rise gives you unlimited AI evaluations, full analytics, and the complete revision suite. Ascent adds weekly 1-on-1 mentorship, a personalised roadmap, priority Q&A support, and monthly performance review calls.' },
               { q: 'Is there a money-back guarantee?', a: 'Yes. All paid plans come with a 7-day money-back guarantee, no questions asked. Just reach out to our support team within 7 days of purchase.' },
-              { q: 'How much do I save on quarterly & yearly plans?', a: 'Quarterly plans save you ~10% compared to monthly billing. Yearly plans give you up to 40% off â€” the best value for committed aspirants.' },
+              { q: 'How much do I save on quarterly & yearly plans?', a: 'Quarterly plans save you ~10% compared to monthly billing. Yearly plans give you up to 40% off — the best value for committed aspirants.' },
               { q: 'Can I upgrade or cancel anytime?', a: 'Absolutely. You can upgrade, downgrade, or cancel your subscription at any time from your billing page. No lock-ins, no penalties.' },
-              { q: 'How does AI Mains Evaluation work?', a: 'Our AI evaluates your mains answers using UPSC-style marking schemes â€” checking structure, content, presentation, and relevance â€” and gives you detailed feedback within seconds.' },
+              { q: 'How does AI Mains Evaluation work?', a: 'Our AI evaluates your mains answers using UPSC-style marking schemes — checking structure, content, presentation, and relevance — and gives you detailed feedback within seconds.' },
               { q: 'What is the refund policy?', a: 'We offer a 7-day full refund on all paid plans. After 7 days, refunds are handled case-by-case. Contact our billing team for assistance.' },
               { q: 'Is this suitable for first-attempt aspirants?', a: 'Absolutely. Aspire is designed for beginners building their foundation. As you progress, Rise and Ascent provide deeper tools for serious, exam-ready preparation.' },
             ];
@@ -883,7 +883,7 @@ export default function ExplorePlansPage() {
                   >
                     <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, fontWeight: 500, color: '#1A2540' }}>{item.q}</span>
                     <span style={{ width: 28, height: 28, borderRadius: '50%', background: '#FEF3C7', border: '1px solid rgba(232,184,75,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#D97706', fontSize: 16, fontWeight: 400 }}>
-                      {isOpen ? 'âˆ’' : '+'}
+                      {isOpen ? '−' : '+'}
                     </span>
                   </button>
                   {isOpen && (
@@ -910,7 +910,7 @@ export default function ExplorePlansPage() {
 
       </div>
 
-      {/* â”€â”€ CTA Banner â€” full width outside the constrained container â”€â”€ */}
+      {/* ── CTA Banner — full width outside the constrained container ── */}
       <section style={{ margin: 0, borderRadius: 0, background: 'linear-gradient(160deg, #0A1120 0%, #0F1C35 100%)', padding: '52px 48px 44px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.025) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
@@ -925,11 +925,11 @@ export default function ExplorePlansPage() {
             <br />the Right Way
           </h2>
           <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.5)', maxWidth: 480, margin: '0 auto 32px', lineHeight: 1.65 }}>
-            Join 15,000+ aspirants. Start free with Aspire â€” no card, no commitment, no expiry. Upgrade only when you feel it.
+            Join 15,000+ aspirants. Start free with Aspire — no card, no commitment, no expiry. Upgrade only when you feel it.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
             <button type="button" onClick={handleUpgrade} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              Start Free with Aspire â†’
+              Start Free with Aspire →
             </button>
             <button type="button" style={{ borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.2)', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 600, color: '#fff', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               Contact Us
@@ -937,19 +937,19 @@ export default function ExplorePlansPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, borderRadius: 999, background: 'rgba(37,211,102,0.15)', border: '1px solid rgba(37,211,102,0.3)', padding: '7px 16px' }}>
-              <span style={{ fontSize: 14 }}>ðŸ’¬</span>
+              <span style={{ fontSize: 14 }}>💬</span>
               <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 12, fontWeight: 600, color: '#25D366' }}>Text on WhatsApp</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <span style={{ fontSize: 14 }}>ðŸ“§</span>
+              <span style={{ fontSize: 14 }}>📧</span>
               <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>together@risewithjeet.com</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <span style={{ fontSize: 14 }}>ðŸ“ž</span>
+              <span style={{ fontSize: 14 }}>📞</span>
               <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>+91 83570 56891</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, borderRadius: 999, background: 'rgba(0,136,204,0.15)', border: '1px solid rgba(0,136,204,0.3)', padding: '7px 16px' }}>
-              <span style={{ fontSize: 14 }}>âœˆï¸</span>
+              <span style={{ fontSize: 14 }}>✈️</span>
               <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 12, fontWeight: 600, color: '#29B6F6' }}>Text on Telegram</span>
             </div>
           </div>

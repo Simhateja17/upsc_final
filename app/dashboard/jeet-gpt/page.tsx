@@ -121,12 +121,7 @@ function UserAvatar({ initials, size = 32 }: { initials: string; size?: number }
 
 function JeetAIAvatar({ size = 32 }: { size?: number }) {
   return (
-    <div
-      className="rounded-[10px] flex items-center justify-center flex-shrink-0"
-      style={{ width: size, height: size, background: '#FFF7E8' }}
-    >
-      <Image src="/sidebar-jeet-gpt.png" alt="Jeet AI" width={Math.round(size * 0.7)} height={Math.round(size * 0.7)} className="object-contain" />
-    </div>
+    <Image src="/jeet-ai-icon.png" alt="Jeet AI" width={size} height={size} className="object-contain flex-shrink-0" />
   );
 }
 
@@ -192,7 +187,7 @@ function MarkdownRenderer({ content }: { content: string }) {
         blockquote: ({ children }) => (
           <blockquote
             className="pl-4 mb-3 italic"
-            style={{ borderLeft: '3px solid #D08700', color: '#4A5565' }}
+            style={{ borderLeft: '3px solid #E8B84B', color: '#4A5565' }}
           >
             {children}
           </blockquote>
@@ -369,7 +364,7 @@ export default function JeetGPTPage() {
       {/* ── Left Sidebar ── */}
       <aside className="flex-shrink-0 flex flex-col overflow-hidden" style={{ width: '266px', background: '#0A1628' }}>
         <div className="px-4 pt-6">
-          <button type="button" onClick={startNewConversation} className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-[10px] font-inter font-semibold text-[14px] leading-5 text-white" style={{ background: 'linear-gradient(90deg, #F0B100 0%, #FF6900 100%)' }}>
+          <button type="button" onClick={startNewConversation} className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-[10px] font-inter font-semibold text-[14px] leading-5 text-white" style={{ background: '#E8B84B' }}>
             ⚡ New Conversation
           </button>
         </div>
@@ -411,7 +406,7 @@ export default function JeetGPTPage() {
               {queriesExhausted && <span className="text-[10px]" style={{ color: '#FB2C36' }}>Limit reached</span>}
             </div>
             <div className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.2)' }}>
-              <div className="h-full rounded-full transition-all duration-300" style={{ width: ((queriesUsed / DAILY_QUERY_LIMIT) * 100) + '%', background: queriesExhausted ? '#FB2C36' : 'linear-gradient(90deg, #FDC700 0%, #FF9E1A 100%)' }} />
+              <div className="h-full rounded-full transition-all duration-300" style={{ width: ((queriesUsed / DAILY_QUERY_LIMIT) * 100) + '%', background: queriesExhausted ? '#FB2C36' : '#E8B84B' }} />
             </div>
           </div>
           <Link href="/dashboard/profile" className="flex items-center gap-2 p-2 rounded-[10px] hover:bg-white/5 transition-colors">
@@ -429,8 +424,8 @@ export default function JeetGPTPage() {
       <main className="flex-1 flex flex-col overflow-hidden" style={{ background: '#FFFFFF' }}>
         <header className="flex-shrink-0 flex flex-col gap-0.5 py-3 px-6" style={{ borderBottom: '0.8px solid #E5E7EB' }}>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-inter font-semibold text-[18px] leading-7" style={{ color: '#101828' }}>
-              Jeet <span style={{ color: '#D08700' }}>AI</span>
+            <span className="font-inter font-semibold text-[18px] leading-7">
+              <span style={{ color: '#1E3A5F' }}>Jeet</span> <span style={{ color: '#E8B84B' }}>AI</span>
             </span>
             <span className="font-inter font-semibold text-[18px] leading-7" style={{ color: '#99A1AF' }}>-</span>
             <span className="font-inter font-semibold text-[18px] leading-7" style={{ color: '#6A7282' }}>Your UPSC Preparation Partner</span>
@@ -444,7 +439,7 @@ export default function JeetGPTPage() {
               <div className="flex items-center justify-between">
                 <span className="font-inter font-bold text-[14px] uppercase tracking-[1.4px]" style={{ color: '#99A1AF' }}>Daily Queries</span>
                 <span className="font-inter font-bold text-[48px] leading-[48px]">
-                  <span style={{ color: '#FDC700' }}>{DAILY_QUERY_LIMIT}</span>
+                  <span style={{ color: '#E8B84B' }}>{DAILY_QUERY_LIMIT}</span>
                   <span style={{ color: '#99A1AF' }}>/{DAILY_QUERY_LIMIT} used</span>
                 </span>
               </div>
@@ -455,14 +450,9 @@ export default function JeetGPTPage() {
         ) : !showChat ? (
           /* Welcome screen */
           <div className="flex-1 flex flex-col items-center justify-center px-6 py-4 overflow-hidden">
-            <div className="w-14 h-14 rounded-[18px] flex items-center justify-center mb-3" style={{ background: '#1E3A5F' }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                <path d="M6 12v5c3 3 9 3 12 0v-5" />
-              </svg>
-            </div>
+            <Image src="/jeet-ai-icon.png" alt="Jeet AI" width={64} height={64} className="object-contain mb-3" />
             <h1 className="font-inter font-bold text-[24px] leading-8 text-center mb-2" style={{ color: '#101828' }}>
-              Hi {user?.firstName || 'there'}, I&apos;m <span className="font-bold italic" style={{ color: '#D08700' }}>Jeet AI</span>.
+              Hi {user?.firstName || 'there'}, I&apos;m <span className="font-bold italic" style={{ color: '#1E3A5F' }}>Jeet</span> <span className="font-bold italic" style={{ color: '#E8B84B' }}>AI</span>.
             </h1>
             <p className="font-inter text-[14px] leading-5 text-center max-w-[561px] mb-2" style={{ color: '#4A5565' }}>
               I&apos;m your intelligent UPSC preparation partner — from ancient history to current affairs, revision strategy, or just thinking through a topic together.
@@ -471,7 +461,7 @@ export default function JeetGPTPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-[800px] w-full mb-5">
               {suggestionCards.map((card, i) => (
-                <button key={i} type="button" onClick={() => setInputValue(card.prompt)} className="text-left p-4 rounded-[14px] border transition-colors hover:border-[#D08700]/50 hover:shadow-md" style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF' }}>
+                <button key={i} type="button" onClick={() => setInputValue(card.prompt)} className="text-left p-4 rounded-[14px] border transition-colors hover:border-[#E8B84B]/50 hover:shadow-md" style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF' }}>
                   <div className="w-8 h-8 rounded-[10px] flex items-center justify-center mb-2" style={{ background: card.iconBg }}>{card.icon}</div>
                   <h3 className="font-inter font-bold text-[15px] leading-5 mb-1" style={{ color: '#101828' }}>{card.title}</h3>
                   <p className="font-inter text-[12px] leading-4" style={{ color: '#6A7282' }}>{card.subtitle}</p>
@@ -526,9 +516,9 @@ export default function JeetGPTPage() {
                     <div className="flex gap-3 items-center">
                       <JeetAIAvatar />
                       <div className="flex gap-1.5">
-                        <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#D08700', animationDelay: '0ms' }} />
-                        <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#D08700', animationDelay: '150ms' }} />
-                        <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#D08700', animationDelay: '300ms' }} />
+                        <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#E8B84B', animationDelay: '0ms' }} />
+                        <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#E8B84B', animationDelay: '150ms' }} />
+                        <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#E8B84B', animationDelay: '300ms' }} />
                       </div>
                     </div>
                   </div>

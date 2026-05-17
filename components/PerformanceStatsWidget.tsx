@@ -412,8 +412,8 @@ const PerformanceStatsWidget = () => {
               Achievement Badges
             </h3>
           </div>
-          <Link href="/dashboard/performance" className="font-inter font-semibold text-[12px] text-[#1E2875] hover:underline">
-            View All -&gt;
+          <Link href="/dashboard/performance" className="font-inter font-semibold text-[12px] text-[#1E2875] hover:underline whitespace-nowrap flex-shrink-0">
+            View All →
           </Link>
         </div>
         <div className="grid grid-cols-3 gap-[clamp(8px,0.52vw,12px)]">

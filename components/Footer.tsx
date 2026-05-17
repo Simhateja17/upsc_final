@@ -109,12 +109,15 @@ export default function Footer() {
   const description = get('footer_description', defaults.footer_description) as string;
 
   return (
-    <footer className="w-full border-t border-[#F4BF4C]/70 bg-[#000E2D]">
+    <footer className="relative w-full bg-[#000E2D] before:absolute before:left-[5%] before:right-[5%] before:top-0 before:h-px before:bg-white/8 before:content-['']">
       <div className="mx-auto max-w-[1320px] px-5 sm:px-8">
-        <div className="grid grid-cols-1 gap-8 border-b border-white/10 py-10 md:grid-cols-2 xl:grid-cols-[1.6fr_1fr_1fr_1fr_1.1fr] xl:gap-0">
+        <div className="relative grid grid-cols-1 gap-8 py-10 md:grid-cols-2 xl:grid-cols-[1.6fr_1fr_1fr_1fr_1.1fr] xl:gap-0 after:absolute after:bottom-0 after:left-[5%] after:right-[5%] after:h-px after:bg-white/8 after:content-['']">
           <div className="pr-0 xl:pr-8">
-            <Image src="/footer-logo.png" alt="RiseWithJeet" width={320} height={128} className="h-auto w-[320px]" />
-            <p className="mt-4 max-w-[320px] text-[37px] leading-[1.45] text-[rgba(255,255,255,0.56)]">{description}</p>
+            <Image src="/footer-logo-new.png" alt="RiseWithJeet" width={320} height={64} className="h-auto w-[260px]" priority />
+            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[rgba(255,255,255,0.55)]">
+              Your IAS dream, powered by Jeet Intelligence.
+            </p>
+            <p className="mt-5 max-w-[320px] text-[15px] leading-[1.6] text-[rgba(255,255,255,0.56)]">{description}</p>
 
             <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[rgba(255,255,255,0.38)]">Download the app</p>
             <div className="mt-3 flex flex-wrap gap-3">
@@ -137,7 +140,7 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="xl:border-l xl:border-white/10 xl:pl-8">
+          <div className="relative xl:pl-8 xl:before:absolute xl:before:left-0 xl:before:top-6 xl:before:bottom-6 xl:before:w-px xl:before:bg-white/8 xl:before:content-['']">
             <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Platform</h3>
             <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
             <ul className="mt-3 space-y-1">
@@ -151,7 +154,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="xl:border-l xl:border-white/10 xl:pl-8">
+          <div className="relative xl:pl-8 xl:before:absolute xl:before:left-0 xl:before:top-6 xl:before:bottom-6 xl:before:w-px xl:before:bg-white/8 xl:before:content-['']">
             <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Revision Tools</h3>
             <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
             <ul className="mt-3 space-y-1">
@@ -165,7 +168,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="xl:border-l xl:border-white/10 xl:pl-8">
+          <div className="relative xl:pl-8 xl:before:absolute xl:before:left-0 xl:before:top-6 xl:before:bottom-6 xl:before:w-px xl:before:bg-white/8 xl:before:content-['']">
             <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Company</h3>
             <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
             <ul className="mt-3 space-y-1">
@@ -179,7 +182,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="xl:border-l xl:border-white/10 xl:pl-8">
+          <div className="relative xl:pl-8 xl:before:absolute xl:before:left-0 xl:before:top-6 xl:before:bottom-6 xl:before:w-px xl:before:bg-white/8 xl:before:content-['']">
             <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Contact Us</h3>
             <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
 

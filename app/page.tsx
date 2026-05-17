@@ -10,9 +10,11 @@ import '@/styles/landing.css';
 
 const NAV_DROPDOWNS = {
   prepare: [
+    { label: 'Study Material', href: '/dashboard/study-material' },
+    { label: 'Video Lectures', href: '/dashboard/video-lectures' },
+    { label: 'Current Affairs', href: '/dashboard/current-affairs' },
     { label: 'Study Planner', href: '/dashboard/study-planner' },
     { label: 'Syllabus Tracker', href: '/dashboard/syllabus-tracker' },
-    { label: 'Video Lectures', href: '/dashboard/video-lectures' },
   ],
   practice: [
     { label: 'Daily MCQs', href: '/dashboard/daily-mcq' },
@@ -25,7 +27,6 @@ const NAV_DROPDOWNS = {
     { label: 'Flashcards', href: '/dashboard/flashcards' },
     { label: 'Mind Maps', href: '/dashboard/mindmap' },
     { label: 'Spaced Repetition', href: '/dashboard/spaced-repetition' },
-    { label: 'Study Planner', href: '/dashboard/study-planner' },
   ],
 };
 
@@ -44,6 +45,7 @@ export default function LandingPage() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState(532);
+  const [aiTypingDone, setAiTypingDone] = useState(false);
 
   // Auth redirect
   useEffect(() => {
@@ -124,9 +126,9 @@ export default function LandingPage() {
       ctx!.clearRect(0, 0, W, H);
       ctx!.fillStyle = '#070e1e';
       ctx!.fillRect(0, 0, W, H);
-      const glow = ctx!.createRadialGradient(W * 0.05, H * 0.5, 0, W * 0.15, H * 0.5, W * 0.55);
-      glow.addColorStop(0, 'rgba(232,184,75,0.18)');
-      glow.addColorStop(0.35, 'rgba(232,184,75,0.07)');
+      const glow = ctx!.createRadialGradient(W * 0.15, H * 0.45, 0, W * 0.15, H * 0.45, W * 0.28);
+      glow.addColorStop(0, 'rgba(232,184,75,0.16)');
+      glow.addColorStop(0.45, 'rgba(232,184,75,0.05)');
       glow.addColorStop(1, 'rgba(7,14,30,0)');
       ctx!.fillStyle = glow;
       ctx!.fillRect(0, 0, W, H);
@@ -139,9 +141,19 @@ export default function LandingPage() {
 
   // AI auto-switcher
   useEffect(() => {
-    const timer = setInterval(() => setActiveSlide(p => (p + 1) % 4), 4000);
+    const timer = setInterval(() => {
+      setActiveSlide(p => (p + 1) % 4);
+      setAiTypingDone(false);
+    }, 10000);
     return () => clearInterval(timer);
   }, []);
+
+  // Show AI reply after 2.5s on the assistant slide
+  useEffect(() => {
+    if (activeSlide !== 1) { setAiTypingDone(false); return; }
+    const t = setTimeout(() => setAiTypingDone(true), 2500);
+    return () => clearTimeout(t);
+  }, [activeSlide]);
 
   // Nav scroll tint
   useEffect(() => {
@@ -173,7 +185,7 @@ export default function LandingPage() {
       {/* ── NAV ── */}
       <nav className="landing-nav" id="lp-main-nav">
         <Link href="/" className="logo">
-          <Image src="/logo.png" alt="RiseWithJeet" width={110} height={110} style={{ height: '60px', width: 'auto', objectFit: 'contain' }} />
+          <Image src="/logo.png" alt="RiseWithJeet" width={140} height={140} style={{ height: '82px', width: 'auto', objectFit: 'contain' }} />
         </Link>
 
         {/* Desktop nav links */}
@@ -193,16 +205,20 @@ export default function LandingPage() {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
                 {activeDropdown === key && (
-                  <div className="absolute top-full left-0 mt-2 rounded-xl shadow-2xl py-1 z-50" style={{ minWidth: 200, background: '#0E182D', border: '1px solid rgba(255,255,255,0.10)' }}>
-                    {NAV_DROPDOWNS[key].map(item => (
-                      <Link key={item.href} href={item.href}
-                        style={{ display: 'block', padding: '10px 16px', fontSize: 13.5, color: 'rgba(255,255,255,0.70)', textDecoration: 'none', fontFamily: "'Outfit',sans-serif", transition: 'color 0.15s, background 0.15s' }}
-                        className="hover:!text-[#E8B84B] hover:!bg-white/5"
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
+                  <>
+                    {/* Transparent bridge prevents mouse-leave gap between button and dropdown */}
+                    <div className="absolute top-full left-0 right-0 h-3 z-40" />
+                    <div className="absolute left-0 rounded-xl shadow-2xl py-1 z-50" style={{ top: 'calc(100% + 10px)', minWidth: 200, background: '#0E182D', border: '1px solid rgba(255,255,255,0.10)' }}>
+                      {NAV_DROPDOWNS[key].map(item => (
+                        <Link key={item.href} href={item.href}
+                          style={{ display: 'block', padding: '10px 16px', fontSize: 13.5, color: 'rgba(255,255,255,0.70)', textDecoration: 'none', fontFamily: "'Outfit',sans-serif", transition: 'color 0.15s, background 0.15s' }}
+                          className="hover:!text-[#E8B84B] hover:!bg-white/5"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             );
@@ -258,11 +274,10 @@ export default function LandingPage() {
         <canvas id="heroCanvas" ref={canvasRef} />
         <div className="hero-grid-marks">
           {[
-            { top: '18%', left: '8%' }, { top: '22%', left: '14%' }, { top: '36%', left: '5%' },
-            { top: '52%', left: '11%' }, { top: '68%', left: '7%' }, { top: '76%', left: '16%' },
-            { top: '18%', right: '8%' }, { top: '28%', right: '14%' }, { top: '44%', right: '6%' },
-            { top: '60%', right: '11%' }, { top: '72%', right: '7%' }, { top: '14%', left: '28%' },
-            { top: '80%', right: '22%' }, { top: '85%', left: '32%' },
+            { top: '18%', left: '8%' }, { top: '36%', left: '5%' }, { top: '68%', left: '7%' },
+            { top: '18%', right: '8%' }, { top: '44%', right: '6%' }, { top: '72%', right: '7%' },
+            { top: '14%', left: '42%' }, { top: '22%', left: '58%' }, { top: '80%', left: '48%' },
+            { top: '85%', right: '22%' }, { top: '28%', right: '32%' }, { top: '60%', left: '28%' },
           ].map((pos, i) => <div key={i} className="hgm" style={pos} />)}
         </div>
 
@@ -400,11 +415,19 @@ export default function LandingPage() {
                       📌 <strong>Conclusion:</strong> Balance separation of powers
                     </div>
                     <div className="chat-bubble cb-user">Give me 3 recent examples for the body?</div>
-                    <div className="chat-bubble cb-ai">
-                      <div className="cb-typing">
-                        <div className="cb-dot" /><div className="cb-dot" /><div className="cb-dot" />
+                    {aiTypingDone ? (
+                      <div className="chat-bubble cb-ai">
+                        1. <strong>NJAC Case (2015)</strong> – SC struck down 99th amendment on judicial appointments<br />
+                        2. <strong>Electoral Bonds Judgment (2024)</strong> – SC invalidated scheme citing transparency<br />
+                        3. <strong>Delhi LG vs AAP (2023)</strong> – SC defined Centre-State limits in Union Territory
                       </div>
-                    </div>
+                    ) : (
+                      <div className="chat-bubble cb-ai">
+                        <div className="cb-typing">
+                          <div className="cb-dot" /><div className="cb-dot" /><div className="cb-dot" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -572,7 +595,7 @@ export default function LandingPage() {
           <div className="mentor-top">
             <div className="reveal">
               <div className="section-eyebrow eyebrow-light">Mentorship</div>
-              <h2 className="section-h2-light">UPSC Mentorship<br />Tailored To Your Journey</h2>
+              <h2 className="section-h2-light">1 on 1 personalized mentorship</h2>
               <p className="section-p-light" style={{ marginTop: 12, maxWidth: 380 }}>
                 UPSC mentorship tailored to your preparation journey and built to help you succeed in Prelims, Mains and interview
               </p>
@@ -590,7 +613,7 @@ export default function LandingPage() {
                 <div className="mqc-av">A</div>
                 <div>
                   <div className="mqc-name">Abhijeet Soni</div>
-                  <div className="mqc-role">Founder &amp; Mentor Rise With Jeet IAS | UPSC Simplified</div>
+                  <div className="mqc-role">Founder &amp; Mentor Rise With Jeet | UPSC Simplified</div>
                 </div>
               </div>
             </div>
@@ -627,7 +650,12 @@ export default function LandingPage() {
           <div className="live-card reveal reveal-delay-1">
             <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
               <div className="live-avatars">
-                {['A', 'R', 'P', 'S'].map(l => <div key={l} className="lavatar">{l}</div>)}
+                {[
+                  { initials: 'NS', bg: 'linear-gradient(135deg,#4F46E5,#7C3AED)' },
+                  { initials: 'RJ', bg: 'linear-gradient(135deg,#10B981,#059669)' },
+                  { initials: 'ML', bg: 'linear-gradient(135deg,#F43F5E,#E11D48)' },
+                  { initials: 'PS', bg: 'linear-gradient(135deg,#06B6D4,#0891B2)' },
+                ].map(a => <div key={a.initials} className="lavatar" style={{ background: a.bg }}>{a.initials}</div>)}
                 <div className="lavatar lavatar-more">+120</div>
               </div>
               <div className="live-info">
@@ -635,11 +663,13 @@ export default function LandingPage() {
                 <p>Currently studying: Modern History · Focus Guard ON</p>
               </div>
             </div>
-            <div className="live-stats">
-              <div className="lstat"><span className="lstat-val">{onlineCount}</span><div className="lstat-label">Online Now</div></div>
-              <div className="lstat"><span className="lstat-val">2h 14m</span><div className="lstat-label">Session</div></div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+              <div className="live-stats">
+                <div className="lstat"><span className="lstat-val">{onlineCount}</span><div className="lstat-label">Online Now</div></div>
+                <div className="lstat"><span className="lstat-val">5hrs+</span><div className="lstat-label">Session</div></div>
+              </div>
+              <button className="btn-join-live" onClick={() => go('/login?tab=signup')}>Join Study Room →</button>
             </div>
-            <button className="btn-join-live" onClick={() => go('/login?tab=signup')}>Join Study Room →</button>
           </div>
 
           <div className="live-tools-grid reveal reveal-delay-2">
@@ -706,7 +736,6 @@ export default function LandingPage() {
                 <div className="phone-screen">
                   <div className="dynamic-island">
                     <div className="di-content">
-                      <span className="di-flame">🔥</span>
                       <span className="di-text">47-day streak!</span>
                       <div className="di-speaker" />
                       <div className="di-camera" />
@@ -800,16 +829,11 @@ export default function LandingPage() {
       {/* ── FOOTER ── */}
       <footer style={{ background: '#060C1C' }}>
         <div className="mx-auto max-w-[1320px] px-5 sm:px-8">
-          <div className="border-t border-[#F4BF4C]/40" />
-          <div className="grid grid-cols-1 gap-8 border-b border-white/5 py-10 md:grid-cols-2 xl:grid-cols-[1.6fr_1fr_1fr_1fr_1.1fr] xl:gap-0">
+          <div className="border-t border-[#F4BF4C]/20 mx-6" />
+          <div className="grid grid-cols-1 gap-8 border-b border-white/[0.04] py-10 md:grid-cols-2 xl:grid-cols-[1.6fr_1fr_1fr_1fr_1.1fr] xl:gap-0">
             {/* Brand Column */}
             <div className="pr-0 xl:pr-8">
-              <div className="flex items-center gap-3">
-                <Image src="/footer-logo.png" alt="RiseWithJeet" width={140} height={56} style={{ height: 56, width: 'auto', objectFit: 'contain' }} />
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.12em] text-white/50">Your IAS Dream, Powered by<br/>Jeet Intelligence</div>
-                </div>
-              </div>
+              <Image src="/footer-logo-new.png" alt="RiseWithJeet" width={320} height={64} className="-ml-6 xl:-ml-8" style={{ height: 56, width: 'auto', objectFit: 'contain' }} priority />
               <p className="mt-4 max-w-[320px] text-[13px] leading-[1.6] text-white/60">
                 Rise With Jeet is redefining UPSC preparation with a simplified, smarter approach. As India&apos;s leading AI-powered platform, we combine cutting-edge technology, high-quality content, expert guidance, and innovative tools to deliver an effective learning experience.
               </p>
@@ -850,7 +874,7 @@ export default function LandingPage() {
             </div>
 
             {/* Platform Column */}
-            <div className="xl:border-l xl:border-white/5 xl:pl-8">
+            <div className="xl:border-l xl:border-white/[0.04] xl:pl-8">
               <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Platform</h3>
               <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
               <ul className="mt-3 space-y-1">
@@ -862,7 +886,7 @@ export default function LandingPage() {
             </div>
 
             {/* Revision Tools Column */}
-            <div className="xl:border-l xl:border-white/5 xl:pl-8">
+            <div className="xl:border-l xl:border-white/[0.04] xl:pl-8">
               <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Revision Tools</h3>
               <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
               <ul className="mt-3 space-y-1">
@@ -875,7 +899,7 @@ export default function LandingPage() {
             </div>
 
             {/* Company Column */}
-            <div className="xl:border-l xl:border-white/5 xl:pl-8">
+            <div className="xl:border-l xl:border-white/[0.04] xl:pl-8">
               <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Company</h3>
               <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
               <ul className="mt-3 space-y-1">
@@ -889,7 +913,7 @@ export default function LandingPage() {
             </div>
 
             {/* Contact Us Column */}
-            <div className="xl:border-l xl:border-white/5 xl:pl-8">
+            <div className="xl:border-l xl:border-white/[0.04] xl:pl-8">
               <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Contact Us</h3>
               <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
 

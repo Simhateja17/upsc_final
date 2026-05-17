@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 
 // Dropdown menu items with Lucide-style icons
@@ -118,13 +118,23 @@ const icons = {
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleDropdownEnter = (dropdown: string) => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
     setActiveDropdown(dropdown);
   };
 
   const handleDropdownLeave = () => {
-    setActiveDropdown(null);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => setActiveDropdown(null), 150);
+  };
+
+  const handleDropdownToggle = (dropdown: string) => {
+    setActiveDropdown((current) => (current === dropdown ? null : dropdown));
   };
 
   return (
@@ -132,7 +142,7 @@ const Header = () => {
       {/* Logo Section */}
       <Link href="/" className="flex flex-col items-center flex-shrink-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="RiseWithJeet Logo" className="w-[90px] md:w-[110px] h-auto object-contain" />
+        <img src="/logo.png" alt="RiseWithJeet Logo" className="h-[75px] w-auto object-contain" />
       </Link>
 
       {/* Desktop Nav Links */}
@@ -159,22 +169,31 @@ const Header = () => {
           onMouseEnter={() => handleDropdownEnter('prepare')}
           onMouseLeave={handleDropdownLeave}
         >
-          <button className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap">
+          <button
+            type="button"
+            onClick={() => handleDropdownToggle('prepare')}
+            aria-expanded={activeDropdown === 'prepare'}
+            aria-haspopup="true"
+            className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap py-2"
+          >
             Prepare
             {icons.chevronDown}
           </button>
           {activeDropdown === 'prepare' && (
-            <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
-              {dropdownMenus.prepare.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                >
-                  <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
-                  <span className="text-sm font-medium">{item.label}</span>
-                </Link>
-              ))}
+            <div className="absolute top-full left-0 pt-2 z-50">
+              <div className="w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2">
+                {dropdownMenus.prepare.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setActiveDropdown(null)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                  >
+                    <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -185,22 +204,31 @@ const Header = () => {
           onMouseEnter={() => handleDropdownEnter('practice')}
           onMouseLeave={handleDropdownLeave}
         >
-          <button className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap">
+          <button
+            type="button"
+            onClick={() => handleDropdownToggle('practice')}
+            aria-expanded={activeDropdown === 'practice'}
+            aria-haspopup="true"
+            className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap py-2"
+          >
             Practice
             {icons.chevronDown}
           </button>
           {activeDropdown === 'practice' && (
-            <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
-              {dropdownMenus.practice.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                >
-                  <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
-                  <span className="text-sm font-medium">{item.label}</span>
-                </Link>
-              ))}
+            <div className="absolute top-full left-0 pt-2 z-50">
+              <div className="w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2">
+                {dropdownMenus.practice.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setActiveDropdown(null)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                  >
+                    <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -211,22 +239,31 @@ const Header = () => {
           onMouseEnter={() => handleDropdownEnter('revision')}
           onMouseLeave={handleDropdownLeave}
         >
-          <button className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap">
+          <button
+            type="button"
+            onClick={() => handleDropdownToggle('revision')}
+            aria-expanded={activeDropdown === 'revision'}
+            aria-haspopup="true"
+            className="flex items-center gap-1 text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#F5C75D] transition-colors whitespace-nowrap py-2"
+          >
             Revision Tools
             {icons.chevronDown}
           </button>
           {activeDropdown === 'revision' && (
-            <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
-              {dropdownMenus.revision.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                >
-                  <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
-                  <span className="text-sm font-medium">{item.label}</span>
-                </Link>
-              ))}
+            <div className="absolute top-full left-0 pt-2 z-50">
+              <div className="w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2">
+                {dropdownMenus.revision.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setActiveDropdown(null)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                  >
+                    <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
