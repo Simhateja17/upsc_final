@@ -57,21 +57,38 @@ export default function TermsContent() {
       <LandingNav />
 
       {/* Hero */}
-      <section className="terms-hero">
-        <div className="terms-hero-bg" />
-        <div className="terms-hero-inner">
-          <div className="terms-badge">Terms &amp; Policies</div>
-          <div className="terms-eyebrow">
-            <div className="terms-ey-line" />
-            <span className="terms-ey-txt">A Quick Read Before You Begin</span>
-            <div className="terms-ey-line" />
+      <section className="relative overflow-hidden bg-[#090e1c] pt-32 pb-20 text-center text-white">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+          }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-32 -top-32 h-[500px] w-[500px]"
+          style={{ background: 'radial-gradient(circle, rgba(232,184,75,0.08) 0%, transparent 65%)' }}
+        />
+        <div className="relative z-10 mx-auto max-w-3xl px-6">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e8b84b]/30 bg-[#e8b84b]/10 px-4 py-1.5 text-xs font-medium text-[#e8b84b]">
+            Terms &amp; Policies
           </div>
-          <h1 className="terms-h1">
-            Terms &amp; <em>Policies</em>
+          <div className="mb-3 flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] text-amber-400/70">
+            <span className="h-px w-8 bg-amber-400/30" />
+            Simple, Transparent &amp; Secure
+            <span className="h-px w-8 bg-amber-400/30" />
+          </div>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '60.80px', fontWeight: 600, lineHeight: '69.92px', color: '#fff' }}>
+            Terms &amp; <em style={{ color: '#E8B84B', fontStyle: 'italic', fontWeight: 400 }}>Policies</em>
           </h1>
-          <p className="terms-meta">
-            <strong>Effective date:</strong> February 1, 2025 &nbsp;&middot;&nbsp;{' '}
-            <strong>Last updated:</strong> 1 May, 2026
+          <p className="mt-4" style={{ fontSize: '13px', fontFamily: "'DM Sans', system-ui, sans-serif", lineHeight: '20.80px' }}>
+            <span style={{ color: 'rgba(255,255,255,0.60)', fontWeight: 500 }}>Effective date:</span>
+            <span style={{ color: 'rgba(255,255,255,0.38)', fontWeight: 400 }}> February 1, 2025 &nbsp;&middot;&nbsp; </span>
+            <span style={{ color: 'rgba(255,255,255,0.60)', fontWeight: 500 }}>Last updated:</span>
+            <span style={{ color: 'rgba(255,255,255,0.38)', fontWeight: 400 }}> 1 May, 2026</span>
           </p>
         </div>
       </section>
@@ -371,9 +388,9 @@ export default function TermsContent() {
       <section className="terms-cta-wrapper">
         <div className="terms-cta-box">
           <h2>
-            Questions about our
+            Your UPSC Journey
             <br />
-            <em>Terms of Service?</em>
+            <em>Starts Today</em>
           </h2>
           <p>We are happy to clarify anything. Reach out and a real person will respond.</p>
           <div className="terms-cta-row">

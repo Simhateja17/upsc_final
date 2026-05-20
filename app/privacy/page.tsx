@@ -83,33 +83,49 @@ export default function PrivacyPolicyPage() {
 
       {/* Hero */}
       <section className="relative bg-[#090e1c] pt-32 pb-20 text-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0c1424] to-[#090e1c] opacity-80" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+          }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-32 -top-32 h-[500px] w-[500px]"
+          style={{ background: 'radial-gradient(circle, rgba(232,184,75,0.08) 0%, transparent 65%)' }}
+        />
         <div className="relative z-10 mx-auto max-w-3xl px-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#e8b84b]/30 bg-[#e8b84b]/10 px-4 py-1.5 text-xs font-medium text-[#e8b84b] mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#e8b84b]/30 bg-[#e8b84b]/10 px-4 py-1.5 text-xs font-medium text-[#e8b84b] mb-4">
             <span>🔏</span> Privacy Policy
           </div>
-          <h1
-            className="text-4xl md:text-5xl font-bold text-white mb-4"
-            style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
-          >
-            Privacy <em className="not-italic text-[#e8b84b]">Policy</em>
+          <div className="mb-3 flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] text-amber-400/70">
+            <span className="h-px w-8 bg-amber-400/30" />
+            Simple, Transparent &amp; Secure
+            <span className="h-px w-8 bg-amber-400/30" />
+          </div>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '60.80px', fontWeight: 600, lineHeight: '69.92px', color: '#fff' }}>
+            Privacy <em style={{ color: '#E8B84B', fontStyle: 'italic', fontWeight: 400 }}>Policy</em>
           </h1>
-          <p className="text-sm text-[#9aa3b8]">
-            <strong className="text-white/80">Effective date:</strong> February 1,
-            2025 &nbsp;&middot;&nbsp;{' '}
-            <strong className="text-white/80">Last updated:</strong> 1 May, 2026
+          <p className="mt-4" style={{ fontSize: '13px', fontFamily: "'DM Sans', system-ui, sans-serif", lineHeight: '20.80px' }}>
+            <span style={{ color: 'rgba(255,255,255,0.60)', fontWeight: 500 }}>Effective date:</span>
+            <span style={{ color: 'rgba(255,255,255,0.38)', fontWeight: 400 }}> February 1, 2025 &nbsp;&middot;&nbsp; </span>
+            <span style={{ color: 'rgba(255,255,255,0.60)', fontWeight: 500 }}>Last updated:</span>
+            <span style={{ color: 'rgba(255,255,255,0.38)', fontWeight: 400 }}> May 1, 2026</span>
           </p>
         </div>
       </section>
 
       {/* Body */}
       <section
-        className="bg-[#faf8f4] py-16 md:py-24"
+        className="bg-white py-16 md:py-24"
         style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
       >
-        <div className="mx-auto max-w-5xl px-6 lg:flex lg:gap-16">
+        <div className="mx-auto max-w-5xl px-6 lg:px-8" style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '56px', alignItems: 'start' }}>
           {/* TOC sidebar */}
-          <aside className="hidden lg:block w-52 shrink-0 sticky top-28 self-start">
+          <aside className="hidden lg:block sticky top-24">
             <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9aa3b8] mb-4">
               Contents
             </p>
@@ -180,10 +196,10 @@ export default function PrivacyPolicyPage() {
               <div className="overflow-x-auto my-5 rounded-xl border border-[rgba(11,22,40,0.09)]">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-[#0c1424] text-white text-left">
-                      <th className="px-5 py-3 font-semibold">Category</th>
-                      <th className="px-5 py-3 font-semibold">What it includes</th>
-                      <th className="px-5 py-3 font-semibold">Why we collect it</th>
+                    <tr className="bg-[#090e1c] text-left">
+                      <th className="px-5 py-3 font-semibold text-amber-500">Category</th>
+                      <th className="px-5 py-3 font-semibold text-white/50">What it includes</th>
+                      <th className="px-5 py-3 font-semibold text-white/50">Why we collect it</th>
                     </tr>
                   </thead>
                   <tbody className="text-[#374560]">
@@ -377,10 +393,10 @@ export default function PrivacyPolicyPage() {
               <div className="overflow-x-auto my-5 rounded-xl border border-[rgba(11,22,40,0.09)]">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-[#0c1424] text-white text-left">
-                      <th className="px-5 py-3 font-semibold">Cookie type</th>
-                      <th className="px-5 py-3 font-semibold">Purpose</th>
-                      <th className="px-5 py-3 font-semibold">Can you opt out</th>
+                    <tr className="bg-[#090e1c] text-left">
+                      <th className="px-5 py-3 font-semibold text-amber-500">Cookie type</th>
+                      <th className="px-5 py-3 font-semibold text-white/50">Purpose</th>
+                      <th className="px-5 py-3 font-semibold text-white/50">Can you opt out</th>
                     </tr>
                   </thead>
                   <tbody className="text-[#374560]">
@@ -487,33 +503,18 @@ export default function PrivacyPolicyPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-[#faf8f4] py-16">
-        <div className="mx-auto max-w-xl px-6">
-          <div className="rounded-2xl bg-[#090e1c] px-8 py-12 text-center">
-            <h2
-              className="text-3xl md:text-4xl font-bold text-white mb-4"
-              style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
-            >
-              Have a question about
-              <br />
-              your <em className="not-italic text-[#e8b84b]">data or privacy?</em>
-            </h2>
-            <p className="text-[#9aa3b8] mb-8">
-              No bots, no templates. A real person reads every message.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <a
-                href="mailto:together@risewithjeet.com"
-                className="inline-flex items-center gap-2 rounded-lg bg-[#e8b84b] px-6 py-3 text-sm font-semibold text-[#090e1c] hover:bg-[#f5ce72] transition-colors"
-              >
-                Email together@risewithjeet.com
-              </a>
-              <Link
-                href="/contact"
-                className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
-              >
-                Contact Us
-              </Link>
+      <section className="bg-white py-16">
+        <div className="mx-auto max-w-2xl px-6">
+          <div className="relative overflow-hidden rounded-2xl bg-[#090e1c] px-8 py-14 text-center">
+            <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-20 h-80 w-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(232,184,75,0.1) 0%, transparent 65%)' }} />
+            <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 -right-16 h-64 w-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(26,53,96,0.5) 0%, transparent 70%)' }} />
+            <div className="relative z-10">
+              <h2 className="font-serif text-3xl font-bold tracking-tight text-white sm:text-4xl">Your UPSC Journey<br />Starts Today</h2>
+              <p className="mt-4 text-slate-400">We keep it simple and honest. Reach out if anything is unclear.</p>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+                <a href="mailto:together@risewithjeet.com" className="rounded-lg bg-amber-500 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-400">Email: together@risewithjeet.com</a>
+                <Link href="/contact" className="rounded-lg border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">Contact Us</Link>
+              </div>
             </div>
           </div>
         </div>

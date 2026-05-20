@@ -58,7 +58,23 @@ export default function CookiePolicyPage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden bg-[#090e1c] pt-32 pb-20 text-center text-white">
-        <div className="mx-auto max-w-3xl px-6">
+        {/* Grid pattern */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+          }}
+        />
+        {/* Golden glow top-left */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-32 -top-32 h-[500px] w-[500px]"
+          style={{ background: 'radial-gradient(circle, rgba(232,184,75,0.08) 0%, transparent 65%)' }}
+        />
+        <div className="relative z-10 mx-auto max-w-3xl px-6">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-1.5 text-sm text-amber-300">
             <span>&#x1F36A;</span> Cookies &amp; Tracking
           </div>
@@ -69,21 +85,21 @@ export default function CookiePolicyPage() {
             <span className="h-px w-8 bg-amber-400/30" />
           </div>
 
-          <h1 className="font-serif text-4xl font-bold tracking-tight sm:text-5xl">
-            Cookie <em className="text-amber-400 not-italic">Policy</em>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '60.80px', fontWeight: 600, lineHeight: '69.92px' }}>
+            Cookie <em style={{ color: '#E8B84B', fontStyle: 'italic', fontWeight: 400 }}>Policy</em>
           </h1>
 
-          <p className="mt-4 text-sm text-slate-400">
-            <strong className="text-slate-300">Effective date:</strong>{' '}
-            February 1, 2025 &nbsp;&middot;&nbsp;{' '}
-            <strong className="text-slate-300">Last updated:</strong> 1 May,
-            2026
+          <p className="mt-4" style={{ fontSize: '13px', fontFamily: "'DM Sans', system-ui, sans-serif", lineHeight: '20.80px' }}>
+            <span style={{ color: 'rgba(255,255,255,0.60)', fontWeight: 500 }}>Effective date:</span>
+            <span style={{ color: 'rgba(255,255,255,0.38)', fontWeight: 400 }}> February 1, 2025 &nbsp;&middot;&nbsp; </span>
+            <span style={{ color: 'rgba(255,255,255,0.60)', fontWeight: 500 }}>Last updated:</span>
+            <span style={{ color: 'rgba(255,255,255,0.38)', fontWeight: 400 }}> May 1, 2026</span>
           </p>
         </div>
       </section>
 
       {/* Body */}
-      <section className="bg-[#faf8f4] py-16 sm:py-24">
+      <section className="bg-white py-16 sm:py-24">
         <div className="mx-auto flex max-w-5xl gap-12 px-6 lg:px-8">
           {/* Table of Contents (desktop sidebar) */}
           <aside className="hidden lg:block w-56 shrink-0 sticky top-24 self-start">
@@ -204,17 +220,17 @@ export default function CookiePolicyPage() {
                 A clear breakdown of every category of cookie we use:
               </p>
 
-              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      <th className="px-5 py-3">Type</th>
-                      <th className="px-5 py-3">What it does</th>
-                      <th className="px-5 py-3">Set by</th>
-                      <th className="px-5 py-3">Can you opt out</th>
+                    <tr className="bg-[#090e1c] text-xs font-semibold uppercase tracking-wider">
+                      <th className="px-5 py-3 text-amber-500">Type</th>
+                      <th className="px-5 py-3 text-white/50">What it does</th>
+                      <th className="px-5 py-3 text-white/50">Set by</th>
+                      <th className="px-5 py-3 text-white/50">Can you opt out</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                  <tbody className="divide-y divide-slate-100 bg-white text-slate-700 [&>tr:nth-child(even)]:bg-[#faf8f4]">
                     <tr>
                       <td className="px-5 py-3 font-medium">Essential</td>
                       <td className="px-5 py-3">
@@ -362,6 +378,8 @@ export default function CookiePolicyPage() {
               </p>
 
               <InfoBox icon="&#x1F4EC;">
+                <strong>RiseWithJeet Edtech Pvt Ltd</strong>
+                <br />
                 Privacy and cookie queries:{' '}
                 <a
                   href="mailto:together@risewithjeet.com"
@@ -370,42 +388,50 @@ export default function CookiePolicyPage() {
                   together@risewithjeet.com
                 </a>
               </InfoBox>
-
-              <p className="text-slate-700 leading-relaxed">
-                This policy may be updated from time to time. The &ldquo;Last updated&rdquo; date at the top of this page will reflect any changes.
-              </p>
             </section>
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="bg-[#faf8f4] py-16">
-        <div className="mx-auto max-w-xl px-6">
-          <div className="rounded-2xl bg-[#090e1c] px-8 py-12 text-center">
-            <h2 className="font-serif text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Questions about
-              <br />
-              <em className="text-amber-400 not-italic">
-                cookies or privacy?
-              </em>
-            </h2>
-            <p className="mt-4 text-slate-400">
-              We keep it simple and honest. Reach out if anything is unclear.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <a
-                href="mailto:together@risewithjeet.com"
-                className="rounded-lg bg-amber-500 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-400"
-              >
-                Email together@risewithjeet.com
-              </a>
-              <Link
-                href="/contact"
-                className="rounded-lg border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-              >
-                Contact Us
-              </Link>
+      <section className="bg-white py-16">
+        <div className="mx-auto max-w-2xl px-6">
+          <div className="relative overflow-hidden rounded-2xl bg-[#090e1c] px-8 py-14 text-center">
+            {/* Decorative overlays */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -left-20 -top-20 h-80 w-80 rounded-full"
+              style={{ background: 'radial-gradient(circle, rgba(232,184,75,0.1) 0%, transparent 65%)' }}
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -bottom-16 -right-16 h-64 w-64 rounded-full"
+              style={{ background: 'radial-gradient(circle, rgba(26,53,96,0.5) 0%, transparent 70%)' }}
+            />
+
+            <div className="relative z-10">
+              <h2 className="font-serif text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                Your UPSC Journey
+                <br />
+                Starts Today
+              </h2>
+              <p className="mt-4 text-slate-400">
+                We keep it simple and honest. Reach out if anything is unclear.
+              </p>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+                <a
+                  href="mailto:together@risewithjeet.com"
+                  className="rounded-lg bg-amber-500 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-400"
+                >
+                  Email: together@risewithjeet.com
+                </a>
+                <Link
+                  href="/contact"
+                  className="rounded-lg border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  Contact Us
+                </Link>
+              </div>
             </div>
           </div>
         </div>

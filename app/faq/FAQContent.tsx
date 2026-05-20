@@ -365,23 +365,23 @@ export default function FAQContent() {
       <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
         .faq-page { --navy: #090e1c; --navy-2: #0c1424; --navy-5: #1e3060; --gold: #e8b84b; --gold-2: #f5ce72; --gold-3: #c99730; --gold-dim: rgba(232,184,75,.12); --gold-ln: rgba(232,184,75,.30); --cream: #faf8f4; --t1: #0c1424; --t2: #374560; --t3: #6b7a99; --b1: rgba(11,22,40,.09); --b2: rgba(11,22,40,.17); --serif: 'Cormorant Garamond', Georgia, serif; --sans: 'DM Sans', system-ui, sans-serif; font-family: var(--sans); }
-        .faq-hero { min-height: 40vh; position: relative; overflow: hidden; display: flex; flex-direction: column; padding-top: 66px; }
-        .faq-hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #090e1c 0%, #101d36 40%, #172444 70%, #0c1424 100%); }
-        .faq-hero-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(9,14,28,.35) 0%, rgba(9,14,28,.28) 35%, rgba(9,14,28,.55) 70%, rgba(9,14,28,.92) 100%); }
+        .faq-hero { min-height: 40vh; position: relative; overflow: hidden; display: flex; flex-direction: column; padding-top: 66px; background: #090e1c; }
+        .faq-hero-bg { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px); background-size: 48px 48px; }
+        .faq-hero-bg::after { content: ''; position: absolute; left: -128px; top: -128px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(232,184,75,0.08) 0%, transparent 65%); }
         .faq-hero-inner { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 48px 32px; text-align: center; }
-        .faq-badge { display: inline-flex; align-items: center; gap: 7px; background: rgba(232,184,75,.08); border: 1px solid rgba(232,184,75,.18); border-radius: 30px; padding: 5px 16px; font-size: 12px; font-weight: 600; color: var(--gold); margin-bottom: 18px; }
+        .faq-badge { display: inline-flex; align-items: center; gap: 7px; background: rgba(232,184,75,.10); border: 1px solid rgba(232,184,75,.30); border-radius: 30px; padding: 5px 16px; font-size: 12px; font-weight: 500; color: var(--gold); margin-bottom: 18px; }
         .faq-eyebrow { display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 14px; }
-        .faq-ey-line { width: 36px; height: 1px; background: rgba(255,255,255,.14); }
-        .faq-ey-txt { font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.38); }
-        .faq-h1 { font-family: var(--serif); font-size: clamp(2rem, 4vw, 3.2rem); font-weight: 600; color: #fff; line-height: 1.15; margin-bottom: 14px; }
-        .faq-h1 em { font-style: italic; color: var(--gold); }
+        .faq-ey-line { width: 36px; height: 1px; background: rgba(232,184,75,.30); }
+        .faq-ey-txt { font-size: 10px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: rgba(232,184,75,.70); }
+        .faq-h1 { font-family: var(--serif); font-size: 60.80px; font-weight: 600; color: #ffffff; line-height: 69.92px; margin-bottom: 14px; }
+        .faq-h1 em { font-style: italic; color: var(--gold); font-weight: 400; }
         .faq-hero-sub { font-size: 15px; color: rgba(255,255,255,.44); max-width: 520px; margin: 0 auto 24px; line-height: 1.85; }
         .faq-search-wrap { position: relative; width: 100%; max-width: 480px; margin: 0 auto; }
         .faq-search-input { width: 100%; padding: 13px 18px 13px 42px; border: 1.5px solid rgba(255,255,255,.1); border-radius: 12px; background: rgba(255,255,255,.06); color: #fff; font-size: 14px; font-family: var(--sans); outline: none; transition: all .2s; }
         .faq-search-input::placeholder { color: rgba(255,255,255,.3); }
         .faq-search-input:focus { border-color: rgba(232,184,75,.35); background: rgba(255,255,255,.08); }
         .faq-search-ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; pointer-events: none; }
-        .faq-body-section { background: var(--cream); padding: 72px 0; }
+        .faq-body-section { background: #ffffff; padding: 72px 0; }
         .faq-inner { max-width: 1060px; margin: 0 auto; padding: 0 48px; display: grid; grid-template-columns: 220px 1fr; gap: 56px; align-items: start; }
         .faq-toc { position: sticky; top: 84px; }
         .faq-toc-label { font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--t3); margin-bottom: 12px; }
@@ -541,7 +541,7 @@ export default function FAQContent() {
         {/* CTA - smaller box with white background */}
         <section className="faq-cta-section">
           <div className="faq-cta-box">
-            <h2>Still have a question?<br /><em>We are here to help.</em></h2>
+            <h2>Your UPSC Journey<br /><em>Starts Today</em></h2>
             <p>Our support team reads every message. No bots, no auto-replies.</p>
             <div className="faq-cta-row">
               <a href="mailto:together@risewithjeet.com" className="faq-btn-gold">Email together@risewithjeet.com</a>
