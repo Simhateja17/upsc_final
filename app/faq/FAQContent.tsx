@@ -381,9 +381,9 @@ export default function FAQContent() {
         .faq-search-input::placeholder { color: rgba(255,255,255,.3); }
         .faq-search-input:focus { border-color: rgba(232,184,75,.35); background: rgba(255,255,255,.08); }
         .faq-search-ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; pointer-events: none; }
-        .faq-body-section { background: #ffffff; padding: 72px 0; }
+        .faq-body-section { background: #faf8f4; padding: 72px 0; }
         .faq-inner { max-width: 1060px; margin: 0 auto; padding: 0 48px; display: grid; grid-template-columns: 220px 1fr; gap: 56px; align-items: start; }
-        .faq-toc { position: sticky; top: 84px; }
+        .faq-toc { position: sticky; top: 96px; align-self: start; max-height: calc(100vh - 112px); overflow: hidden; }
         .faq-toc-label { font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--t3); margin-bottom: 12px; }
         .faq-toc-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 7px; font-size: 13px; color: var(--t3); cursor: pointer; transition: all .15s; margin-bottom: 2px; border-left: 2px solid transparent; }
         .faq-toc-item:hover { color: var(--t1); background: #fff; border-left-color: var(--b2); }
@@ -419,7 +419,7 @@ export default function FAQContent() {
         .faq-a-inner ul li::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex-shrink: 0; margin-top: 8px; }
         .faq-no-results { text-align: center; padding: 48px 24px; color: var(--t3); }
         .faq-no-results .icon { font-size: 36px; margin-bottom: 12px; }
-        .faq-cta-section { background: #fff; padding: 72px 48px; display: flex; flex-direction: column; align-items: center; }
+        .faq-cta-section { background: #faf8f4; padding: 72px 48px; display: flex; flex-direction: column; align-items: center; }
         .faq-cta-box { background: var(--navy-2); border-radius: 18px; padding: 48px 56px; text-align: center; max-width: 620px; width: 100%; position: relative; overflow: hidden; }
         .faq-cta-box::before { content: ''; position: absolute; top: -80px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: radial-gradient(ellipse, rgba(232,184,75,.08) 0%, transparent 65%); }
         .faq-cta-box h2 { font-family: var(--serif); font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 600; color: #fff; line-height: 1.2; margin-bottom: 12px; position: relative; z-index: 1; }

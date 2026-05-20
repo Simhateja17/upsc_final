@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import LandingNav from '@/components/LandingNav';
 import Footer from '@/components/Footer';
+import CompanyPageToc from '@/components/CompanyPageToc';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | RiseWithJeet',
@@ -48,7 +49,7 @@ function InfoBox({ icon, children }: { icon: string; children: React.ReactNode }
 
 function NoteBox({ icon, children }: { icon: string; children: React.ReactNode }) {
   return (
-    <div className="flex gap-3 rounded-xl border border-[rgba(11,22,40,0.09)] bg-white px-5 py-4 my-5">
+    <div className="my-5 flex gap-3 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white px-5 py-4">
       <span className="text-lg shrink-0">{icon}</span>
       <div className="text-sm leading-relaxed text-[#374560]">{children}</div>
     </div>
@@ -120,36 +121,17 @@ export default function PrivacyPolicyPage() {
 
       {/* Body */}
       <section
-        className="bg-white py-16 md:py-24"
+        className="bg-[#FAF8F4] py-16 md:py-24"
         style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
       >
         <div className="mx-auto max-w-5xl px-6 lg:px-8" style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '56px', alignItems: 'start' }}>
-          {/* TOC sidebar */}
-          <aside className="hidden lg:block sticky top-24">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9aa3b8] mb-4">
-              Contents
-            </p>
-            <nav className="flex flex-col gap-1.5">
-              {tocItems.map((item) => (
-                <a
-                  key={item.id}
-                  href={`#${item.id}`}
-                  className="flex items-center gap-2.5 text-[13px] text-[#374560] hover:text-[#0c1424] transition-colors rounded-md px-2 py-1 hover:bg-[#0c1424]/5"
-                >
-                  <span className="text-[10px] font-semibold text-[#9aa3b8] w-5">
-                    {item.num}
-                  </span>
-                  {item.label}
-                </a>
-              ))}
-            </nav>
-            <div className="mt-6 border-t border-[rgba(11,22,40,0.09)] pt-4">
-              <p className="text-[10px] uppercase tracking-widest text-[#9aa3b8] mb-1">
-                Privacy queries
-              </p>
-              <p className="text-xs text-[#374560]">together@risewithjeet.com</p>
-            </div>
-          </aside>
+          <CompanyPageToc
+            ariaLabel="Privacy policy contents"
+            items={tocItems}
+            contactLabel="Privacy queries"
+            contactValue="together@risewithjeet.com"
+            contactHref="mailto:together@risewithjeet.com"
+          />
 
           {/* Main content */}
           <div className="min-w-0 max-w-[800px]">
@@ -503,7 +485,7 @@ export default function PrivacyPolicyPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-white py-16">
+      <section className="bg-[#FAF8F4] py-16">
         <div className="mx-auto max-w-2xl px-6">
           <div className="relative overflow-hidden rounded-2xl bg-[#090e1c] px-8 py-14 text-center">
             <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-20 h-80 w-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(232,184,75,0.1) 0%, transparent 65%)' }} />

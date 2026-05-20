@@ -2,12 +2,22 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import LandingNav from '@/components/LandingNav';
 import Footer from '@/components/Footer';
+import CompanyPageToc from '@/components/CompanyPageToc';
 
 export const metadata: Metadata = {
   title: 'Cookie Policy | RiseWithJeet',
   description:
     'Learn about how RiseWithJeet uses cookies and how you can manage your preferences.',
 };
+
+const tocItems = [
+  { id: 'sec1', num: '01', label: 'What Are Cookies' },
+  { id: 'sec2', num: '02', label: 'What We Use' },
+  { id: 'sec3', num: '03', label: 'Cookie Table' },
+  { id: 'sec4', num: '04', label: 'Your Choices' },
+  { id: 'sec5', num: '05', label: 'Changes' },
+  { id: 'sec6', num: '06', label: 'Contact' },
+];
 
 /* ------------------------------------------------------------------ */
 
@@ -42,7 +52,7 @@ function NoteBox({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex gap-4 rounded-xl border border-slate-200 bg-slate-50/60 p-5 text-[15px] leading-relaxed">
+    <div className="flex gap-4 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5 text-[15px] leading-relaxed">
       <span className="text-xl shrink-0">{icon}</span>
       <div>{children}</div>
     </div>
@@ -99,47 +109,15 @@ export default function CookiePolicyPage() {
       </section>
 
       {/* Body */}
-      <section className="bg-white py-16 sm:py-24">
+      <section className="bg-[#FAF8F4] py-16 sm:py-24">
         <div className="mx-auto flex max-w-5xl gap-12 px-6 lg:px-8">
-          {/* Table of Contents (desktop sidebar) */}
-          <aside className="hidden lg:block w-56 shrink-0 sticky top-24 self-start">
-            <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-              Contents
-            </p>
-            <nav className="flex flex-col gap-1.5 text-sm">
-              {[
-                ['#sec1', '01', 'What Are Cookies'],
-                ['#sec2', '02', 'What We Use'],
-                ['#sec3', '03', 'Cookie Table'],
-                ['#sec4', '04', 'Your Choices'],
-                ['#sec5', '05', 'Changes'],
-                ['#sec6', '06', 'Contact'],
-              ].map(([href, num, label]) => (
-                <a
-                  key={href}
-                  href={href}
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-slate-600 transition hover:bg-white hover:text-slate-900"
-                >
-                  <span className="font-mono text-xs text-amber-600/60">
-                    {num}
-                  </span>
-                  {label}
-                </a>
-              ))}
-            </nav>
-
-            <div className="mt-6 border-t border-slate-200 pt-5">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                Questions?
-              </p>
-              <a
-                href="mailto:together@risewithjeet.com"
-                className="mt-1 block text-sm text-slate-700 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
-              >
-                together@risewithjeet.com
-              </a>
-            </div>
-          </aside>
+          <CompanyPageToc
+            ariaLabel="Cookie policy contents"
+            items={tocItems}
+            contactLabel="Questions?"
+            contactValue="together@risewithjeet.com"
+            contactHref="mailto:together@risewithjeet.com"
+          />
 
           {/* Main content */}
           <div className="min-w-0 max-w-2xl space-y-14">
@@ -394,7 +372,7 @@ export default function CookiePolicyPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-white py-16">
+      <section className="bg-[#FAF8F4] py-16">
         <div className="mx-auto max-w-2xl px-6">
           <div className="relative overflow-hidden rounded-2xl bg-[#090e1c] px-8 py-14 text-center">
             {/* Decorative overlays */}
