@@ -398,7 +398,14 @@ export default function DailyMainsChallengeContextPage() {
                     <img src="/icon-calendar.png" alt="" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
                     <span className="font-bold text-[#101828]" style={{ fontSize: '15px' }}>February 2026</span>
                   </div>
-                  <Link href="#" className="text-[#0F766E] hover:underline" style={{ fontSize: '12px', fontWeight: 500 }}>Month →</Link>
+                  <button
+                    type="button"
+                    disabled
+                    className="text-[#6A7282]"
+                    style={{ fontSize: '12px', fontWeight: 500, cursor: 'not-allowed', opacity: 0.7 }}
+                  >
+                    Month
+                  </button>
                 </div>
                 <div className="grid grid-cols-7" style={{ gap: '6px' }}>
                   {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
@@ -458,7 +465,7 @@ export default function DailyMainsChallengeContextPage() {
                     <img src="/icon-trophy.png" alt="" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
                     <span className="font-bold text-[#101828]" style={{ fontSize: '15px' }}>Achievements</span>
                   </div>
-                  <Link href="#" className="text-[#0F766E] hover:underline" style={{ fontSize: '12px', fontWeight: 500 }}>All Badges →</Link>
+                  <Link href="/dashboard/performance" className="text-[#0F766E] hover:underline" style={{ fontSize: '12px', fontWeight: 500 }}>All Badges →</Link>
                 </div>
                 <div className="grid grid-cols-2" style={{ gap: '10px' }}>
                   {ACHIEVEMENTS.map((a, i) => (
@@ -493,7 +500,7 @@ export default function DailyMainsChallengeContextPage() {
                   <img src="/icon-medal.png" alt="" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
                   <span className="font-bold text-[#101828]" style={{ fontSize: '15px', background: '#E8B84B', padding: '0 6px', borderRadius: '2px' }}>Mains League</span>
                 </div>
-                <Link href="#" className="text-[#0F766E] hover:underline" style={{ fontSize: '12px', fontWeight: 500 }}>View All →</Link>
+                <Link href="/dashboard/leaderboard" className="text-[#0F766E] hover:underline" style={{ fontSize: '12px', fontWeight: 500 }}>View All →</Link>
               </div>
               <div className="flex flex-col gap-2">
                 {LEADERBOARD.map((row, i) => (

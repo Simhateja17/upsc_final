@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Footer from '@/components/Footer';
 import DashboardHeader from '@/components/DashboardHeader';
+import { contactService } from '@/lib/services';
 
 const reachCards = [
   {
@@ -35,12 +36,34 @@ const topicOptions = [
 export default function HelpSupportPage() {
   const [formData, setFormData] = useState({ name: '', email: '', topic: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setFormData({ name: '', email: '', topic: '', message: '' });
-    setTimeout(() => setSubmitted(false), 4000);
+    setSubmitting(true);
+    setSubmitError('');
+    setSubmitted(false);
+
+    const [firstName = '', ...lastNameParts] = formData.name.trim().split(/\s+/);
+    const selectedTopic = topicOptions.find((topic) => topic.value === formData.topic);
+
+    try {
+      await contactService.submit({
+        firstName: firstName || 'Dashboard',
+        lastName: lastNameParts.join(' '),
+        email: formData.email.trim(),
+        subject: selectedTopic?.label || 'Help support',
+        message: formData.message.trim(),
+      });
+      setSubmitted(true);
+      setFormData({ name: '', email: '', topic: '', message: '' });
+      setTimeout(() => setSubmitted(false), 4000);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Could not send your message. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -129,6 +152,12 @@ export default function HelpSupportPage() {
             </div>
           )}
 
+          {submitError && (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {submitError}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
@@ -184,10 +213,11 @@ export default function HelpSupportPage() {
 
             <button
               type="submit"
+              disabled={submitting}
               className="w-full h-[48px] mt-1 text-[14px] font-bold text-[#1a1a2e] rounded-[12px] transition-all hover:opacity-90 active:scale-[0.99]"
-              style={{ background: '#E8B84B' }}
+              style={{ background: '#E8B84B', opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}
             >
-              Send message
+              {submitting ? 'Sending...' : 'Send message'}
             </button>
           </form>
         </div>

@@ -62,7 +62,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   }, []);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationModalRef = useRef<HTMLDivElement>(null);
-  const isUpgradeActive = pathname === '/dashboard/free-trial' || pathname.startsWith('/dashboard/free-trial/');
+  const isUpgradeActive = pathname === '/dashboard/billing/plans' || pathname.startsWith('/dashboard/billing/plans/');
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Close dropdown when clicking outside
@@ -117,7 +117,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
       {/* Right Section - Upgrade + Bell + User Avatar */}
       <div className="flex items-center gap-3 md:gap-[clamp(1rem,1.5vw,2rem)]">
         {/* Upgrade Button */}
-        <Link href="/dashboard/free-trial" className="hidden sm:block">
+        <Link href="/dashboard/billing/plans" className="hidden sm:block">
           <button
             className="inline-flex items-center gap-1.5 group"
             style={{
@@ -380,4 +380,3 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
 };
 
 export default DashboardHeader;
-

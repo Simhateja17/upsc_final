@@ -383,7 +383,7 @@ export default function ExplorePlansPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanKey | null>(null);
 
-  const handleUpgrade = () => router.push('/pricing');
+  const handleUpgrade = () => router.push('/dashboard');
   const handleOpenRiseCheckout = () => setCheckoutPlan('rise');
   const handleOpenAscentCheckout = () => setCheckoutPlan('ascent');
 
@@ -497,7 +497,7 @@ export default function ExplorePlansPage() {
               {[
                 { title: 'EVALUATION', items: ['25 Mains Evaluations / day', '25 Mock Test attempts / day'] },
                 { title: 'ANALYTICS', items: ['Full Performance Analytics Dashboard', 'Test Analytics – In-depth insights'] },
-                { title: 'REVISION TOOLS', items: ['Full Revision Suite – Flashcards, Mindmaps, Spaced Rep.', 'Jeet AI – 100 conversations / day', 'Live Study Room 24Ã—7', 'Smart Syllabus Tracker'] },
+                { title: 'REVISION TOOLS', items: ['Full Revision Suite – Flashcards, Mindmaps, Spaced Rep.', 'Jeet AI – 100 conversations / day', 'Live Study Room 24×7', 'Smart Syllabus Tracker'] },
               ].map((section) => (
                 <div key={section.title} style={{ marginBottom: 12 }}>
                   <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 800, letterSpacing: '1.6px', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>{section.title}</p>
@@ -633,7 +633,7 @@ export default function ExplorePlansPage() {
                   { feature: 'Test Analytics', sub: 'Deep score breakdowns', aspire: '—', rise: '✓', ascent: '✓' },
                   { feature: 'Revision Suite', sub: 'Flashcards, Mindmaps, Spaced Repetition', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
                   { feature: 'Discussion Forum', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
-                  { feature: 'Live Study Room 24Ã—7', sub: '', aspire: 'Limited', rise: '✓', ascent: '✓' },
+                  { feature: 'Live Study Room 24×7', sub: '', aspire: 'Limited', rise: '✓', ascent: '✓' },
                   { feature: 'Mental Health Buddy', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
                   { feature: 'Weekly 1-on-1 Mentorship', sub: '30 minutes per session', aspire: '—', rise: '—', ascent: 'Weekly' },
                   { feature: 'Personalised Study Roadmap', sub: '', aspire: '—', rise: '—', ascent: '✓' },
@@ -707,7 +707,7 @@ export default function ExplorePlansPage() {
             </p>
           </div>
 
-          {/* 4Ã—2 feature grid */}
+          {/* 4×2 feature grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             {[
               { icon: '🎯', iconBg: '#FEF3C7', title: 'Daily MCQ Practice', desc: 'Subject-wise & topic-wise MCQs with detailed explanations. New questions every day, curated by experts.' },
@@ -879,7 +879,7 @@ export default function ExplorePlansPage() {
             <button type="button" onClick={handleUpgrade} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               Start Free with Aspire →
             </button>
-            <button type="button" style={{ borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.2)', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 600, color: '#fff', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <button type="button" onClick={() => router.push('/help-support')} style={{ borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.2)', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 600, color: '#fff', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               Contact Us
             </button>
           </div>
@@ -908,6 +908,5 @@ export default function ExplorePlansPage() {
     </div>
   );
 }
-
 
 

@@ -8,7 +8,7 @@ import '@/styles/landing.css';
 
 const NAV_DROPDOWNS = {
   prepare: [
-    { label: 'Study Material', href: '/dashboard/study-material' },
+    { label: 'Study Material', href: '/dashboard/library' },
     { label: 'Video Lectures', href: '/dashboard/video-lectures' },
     { label: 'Current Affairs', href: '/dashboard/current-affairs' },
     { label: 'Study Planner', href: '/dashboard/study-planner' },
@@ -112,7 +112,7 @@ export default function LandingNav() {
             );
           })}
 
-          <Link href="/community" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Community</Link>
+          <Link href="/dashboard/study-groups" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Community</Link>
           <Link href="/pricing" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Pricing</Link>
         </div>
 
@@ -150,7 +150,7 @@ export default function LandingNav() {
           <div style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Revision Tools</div>
           {NAV_DROPDOWNS.revision.map(i => <a key={i.href} href={i.href} onClick={closeMobileNav} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
         </div>
-        <a href="/community" onClick={closeMobileNav}>Community</a>
+        <a href="/dashboard/study-groups" onClick={closeMobileNav}>Community</a>
         <a href="/pricing" onClick={closeMobileNav}>Pricing</a>
         <div className="mobile-nav-btns">
           <button className="btn-nav-ghost" onClick={() => go('/login?tab=login')}>Login</button>

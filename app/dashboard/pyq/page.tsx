@@ -149,15 +149,6 @@ export default function PyqPage() {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
   const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
-  const [questionCounts, setQuestionCounts] = useState<Record<string, number>>({});
-
-  const yearFilterParams = useMemo(
-    () => ({
-      year: selectedYearRange === 'year' ? selectedYear || undefined : undefined,
-      yearFrom: selectedYearRange === 'last5' ? LATEST_EXAM_YEAR - 4 : undefined,
-    }),
-    [selectedYear, selectedYearRange]
-  );
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
@@ -243,63 +234,6 @@ export default function PyqPage() {
     fetchQuestions();
   }, [fetchQuestions]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const loadCounts = async () => {
-      const tree = PYQ_SUBJECT_TREE[mode];
-      const nextCounts: Record<string, number> = {};
-
-      const fetchCount = async (params: {
-        subject?: string;
-        subSubject?: string;
-        topic?: string | string[];
-      }) => {
-        const res = await pyqService.getQuestions({
-          mode,
-          ...yearFilterParams,
-          ...params,
-          page: 1,
-          limit: 1,
-        });
-        return res?.data?.pagination?.total ?? 0;
-      };
-
-      nextCounts['all'] = await fetchCount({});
-
-      for (const subjectNode of tree) {
-        const subjectKey = `subject:${subjectNode.label}`;
-        nextCounts[subjectKey] = await fetchCount({ subject: subjectNode.label });
-
-        for (const child of subjectNode.children || []) {
-          const subKey = `sub:${subjectNode.label}::${child.label}`;
-          nextCounts[subKey] = await fetchCount({
-            subject: subjectNode.label,
-            subSubject: child.label,
-          });
-          for (const topic of child.microTopics || []) {
-            const topicKey = `topic:${subjectNode.label}::${child.label}::${topic}`;
-            nextCounts[topicKey] = await fetchCount({
-              subject: subjectNode.label,
-              subSubject: child.label,
-              topic,
-            });
-          }
-        }
-      }
-
-      if (!cancelled) setQuestionCounts(nextCounts);
-    };
-
-    loadCounts().catch((err) => {
-      console.error('Failed to load PYQ filter counts:', err);
-      if (!cancelled) setQuestionCounts({});
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [mode, yearFilterParams]);
-
   const visibleQuestions = useMemo(() => {
     if (!selectedTopics.length) return questions;
     const needles = selectedTopics.map((t) => t.trim().toLowerCase());
@@ -308,11 +242,6 @@ export default function PyqPage() {
       return needles.some((needle) => qt.includes(needle));
     });
   }, [questions, selectedTopics]);
-
-  const mainsTimerDisplay =
-    mainsTimerPaused && mainsTimeLeft === MAINS_TIME_LIMIT
-      ? '0:00'
-      : `${Math.floor(mainsTimeLeft / 60)}:${String(mainsTimeLeft % 60).padStart(2, '0')}`;
 
   useLayoutEffect(() => {
     const scroller = document.querySelector('main');
@@ -337,7 +266,7 @@ export default function PyqPage() {
     setAiEvalStepIndex(1);
     const start = Date.now();
 
-    // Visual progress animation (cosmetic â€” doesn't block)
+    // Visual progress animation (cosmetic — doesn't block)
     const progressInterval = setInterval(() => {
       const elapsed = Date.now() - start;
       const pct = Math.min(95, (elapsed / 60000) * 100); // 60s ceiling, cap at 95%
@@ -396,17 +325,17 @@ export default function PyqPage() {
           { value: '6500+', label: 'PYQs', color: '#E8B84B' },
           { value: '30+', label: 'Years', color: '#F87171' },
           { value: '15+', label: 'Subjects', color: '#4ADE80' },
-          { value: 'Unlimited', label: 'Always Free', color: '#FFFFFF' },
+          { value: '∞', label: 'Always Free', color: '#FFFFFF' },
         ]}
       />
 
-      <div className="mx-auto w-full max-w-[1280px] px-4 pt-2 pb-8 md:px-5 md:pt-3">
-        <div className="mb-6 flex w-full justify-center md:mb-7">
+      <div className="w-full max-w-[1400px] mx-auto px-6 pt-14 pb-10">
+        <div className="mb-10 flex w-full justify-center">
           <div
             className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_4px_6px_-4px_rgba(0,0,0,0.1),0_10px_15px_-3px_rgba(0,0,0,0.1)]"
             style={{
-              width: '320px',
-              height: '68px',
+              width: '347.3px',
+              height: '79.9875px',
               padding: 0,
               borderRadius: '26843500px',
               gap: 0,
@@ -416,10 +345,10 @@ export default function PyqPage() {
               className="flex flex-1 items-center justify-center"
               style={{
                 alignSelf: 'stretch',
-                paddingLeft: '24px',
-                paddingRight: '24px',
+                paddingLeft: '32px',
+                paddingRight: '32px',
                 background: mode === 'prelims' ? '#0F172B' : 'transparent',
-                gap: '10px',
+                gap: '12px',
                 borderRadius: mode === 'prelims' ? '9999px' : '0',
               }}
               onClick={() => setMode('prelims')}
@@ -428,14 +357,14 @@ export default function PyqPage() {
               <img
                 src="/9k.png"
                 alt="Prelims"
-                style={{ width: '20px', height: '20px', objectFit: 'contain', flexShrink: 0 }}
+                style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }}
               />
               <span
                 style={{
                   fontFamily: 'Inter, sans-serif',
                   fontWeight: 700,
-                  fontSize: '16px',
-                  lineHeight: '24px',
+                  fontSize: '18px',
+                  lineHeight: '28px',
                   letterSpacing: 0,
                   textAlign: 'center',
                   color: mode === 'prelims' ? '#FFFFFF' : '#4A5565',
@@ -448,10 +377,10 @@ export default function PyqPage() {
               className="flex flex-1 items-center justify-center"
               style={{
                 alignSelf: 'stretch',
-                paddingLeft: '24px',
-                paddingRight: '24px',
+                paddingLeft: '32px',
+                paddingRight: '32px',
                 background: mode === 'mains' ? '#0F172B' : 'transparent',
-                gap: '10px',
+                gap: '12px',
                 borderRadius: mode === 'mains' ? '9999px' : '0',
               }}
               onClick={() => setMode('mains')}
@@ -460,14 +389,14 @@ export default function PyqPage() {
               <img
                 src="/8k.png"
                 alt="Mains"
-                style={{ width: '20px', height: '20px', objectFit: 'contain', flexShrink: 0 }}
+                style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }}
               />
               <span
                 style={{
                   fontFamily: 'Inter, sans-serif',
                   fontWeight: 700,
-                  fontSize: '16px',
-                  lineHeight: '24px',
+                  fontSize: '18px',
+                  lineHeight: '28px',
                   letterSpacing: 0,
                   textAlign: 'center',
                   color: mode === 'mains' ? '#FFFFFF' : '#4A5565',
@@ -480,7 +409,7 @@ export default function PyqPage() {
         </div>
 
         {/* Content area: filters (left on desktop) + questions */}
-        <div className="mb-3 rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-2.5">
+        <div className="mb-4 rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-2.5 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.08)]">
           <nav aria-label="Question filters breadcrumb" className="flex flex-wrap items-center gap-2 text-[12px] md:text-[13px]">
             <button
               type="button"
@@ -491,13 +420,13 @@ export default function PyqPage() {
                 setExpandedSubject(null);
                 setExpandedSubtopic(null);
               }}
-              className="font-semibold text-[#5F8DE8] hover:text-[#3E73DA]"
+              className="font-semibold text-[#5F8DE8] transition-colors hover:text-[#3E73DA]"
             >
               All Papers
             </button>
             {selectedSubject !== 'All Papers' && (
               <>
-                <span className="text-[#98A2B3]">â€º</span>
+                <span className="text-[#98A2B3]">›</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -505,7 +434,7 @@ export default function PyqPage() {
                     setSelectedTopics([]);
                     setExpandedSubtopic(null);
                   }}
-                  className="font-semibold text-[#5F8DE8] hover:text-[#3E73DA]"
+                  className="font-semibold text-[#5F8DE8] transition-colors hover:text-[#3E73DA]"
                 >
                   {selectedSubject}
                 </button>
@@ -513,11 +442,11 @@ export default function PyqPage() {
             )}
             {selectedSubtopic && (
               <>
-                <span className="text-[#98A2B3]">â€º</span>
+                <span className="text-[#98A2B3]">›</span>
                 <button
                   type="button"
                   onClick={() => setSelectedTopics([])}
-                  className="font-semibold text-[#5F8DE8] hover:text-[#3E73DA]"
+                  className="font-semibold text-[#5F8DE8] transition-colors hover:text-[#3E73DA]"
                 >
                   {selectedSubtopic}
                 </button>
@@ -525,25 +454,25 @@ export default function PyqPage() {
             )}
             {selectedTopics[0] && (
               <>
-                <span className="text-[#98A2B3]">â€º</span>
+                <span className="text-[#98A2B3]">›</span>
                 <span className="font-semibold text-[#101828]">{selectedTopics[0]}</span>
               </>
             )}
           </nav>
         </div>
-        <div className="flex flex-col gap-5 lg:flex-row-reverse lg:gap-6">
+        <div className="flex flex-col lg:flex-row-reverse gap-8">
           {/* Questions list */}
           <section className="flex-1 min-w-0">
             {mode === 'prelims' ? (
               <>
               {/* Header */}
-              <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <h3 className="font-bold text-[19px] md:text-[22px] text-[#101828]">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+                <h3 className="font-bold text-[20px] md:text-[24px] text-[#101828]">
                   Prelims Questions
-                  {selectedYearRange === 'year' && selectedYear ? ` ? ${selectedYear}` : ''}
+                  {selectedYearRange === 'year' && selectedYear ? ` · ${selectedYear}` : ''}
                   {selectedYearRange === 'last5' ? ' · Last 5 yrs' : ''}
                 </h3>
-                <p className="text-[12px] text-[#6A7282]">
+                <p className="text-[13px] text-[#6A7282]">
                   {loading ? 'Loading...' : `Showing ${visibleQuestions.length} of ${total} questions`}
                 </p>
               </div>
@@ -573,10 +502,10 @@ export default function PyqPage() {
                 return (
                   <div
                     key={q.id}
-                    className="mb-4 rounded-[16px] bg-white p-4 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.1)] md:p-5"
+                    className="rounded-[16px] bg-white shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.1)] p-6 mb-6"
                   >
                     {/* Tags */}
-                    <div className="mb-3 flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 mb-4">
                       {q.year > 0 && (
                         <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#DBEAFE', color: '#1447E6' }}>
                           UPSC {q.year}
@@ -603,33 +532,33 @@ export default function PyqPage() {
                     </div>
 
                     {/* Meta */}
-                    <div className="mb-2 uppercase text-[11px] tracking-[0.02em] text-[#9CA3AF]">
-                      PRELIMS Â· QUESTION #{idx + 1}
+                    <div className="uppercase mb-2 text-[12px] tracking-[0.02em] text-[#9CA3AF]">
+                      PRELIMS · QUESTION #{idx + 1}
                     </div>
 
                     {/* Question text */}
                     <QuestionTextRenderer
                       text={q.questionText}
-                      className="mb-3 text-[15px] font-[500] leading-[1.4] text-[#111827] md:text-[16px]"
-                      textClassName="text-[15px] font-[500] leading-[1.4] text-[#111827] md:text-[16px]"
+                      className="mb-5 text-[18px] font-[500] leading-[1.5] text-[#111827]"
+                      textClassName="text-[18px] font-[500] leading-[1.5] text-[#111827]"
                     />
 
                     {/* Options */}
                     {opts.length > 0 && (
-                      <div className="mb-4 space-y-2.5">
+                      <div className="space-y-3 mb-6">
                         {opts.map((opt) => (
                           <button
                             key={opt.label}
-                            className="flex w-full items-center gap-3 rounded-[14px] bg-white px-4 py-2.5 text-left transition-colors hover:bg-[#FAFAFA]"
+                            className="w-full flex items-center gap-4 rounded-[14px] bg-white px-5 py-3.5 text-left transition-colors hover:bg-[#FAFAFA]"
                             style={{ border: '1.6px solid #E5E7EB' }}
                           >
                             <div
-                              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[14px] font-bold"
+                              className="w-10 h-10 rounded-full flex items-center justify-center text-[16px] font-bold flex-shrink-0"
                               style={{ background: '#EBECEF', color: '#4A5565' }}
                             >
                               {opt.label}
                             </div>
-                            <span className="text-[15px] md:text-[16px]" style={{ color: '#1A202C', fontWeight: 400 }}>
+                            <span className="text-[16px]" style={{ color: '#1A202C', fontWeight: 400 }}>
                               {opt.text}
                             </span>
                           </button>
@@ -646,7 +575,7 @@ export default function PyqPage() {
                         setHasSubmitted(false);
                         setShowAttemptModal(true);
                       }}
-                      className="flex h-[46px] w-full items-center justify-center rounded-[14px] bg-[#0F172B] text-[16px] font-bold leading-[24px] text-white transition-colors hover:bg-[#111827] md:h-[52px] md:text-[18px]"
+                      className="w-full h-[52px] rounded-[14px] bg-[#0F172B] text-white font-bold text-[18px] leading-[28px] flex items-center justify-center hover:bg-[#111827] transition-colors"
                     >
                       Attempt Question
                     </button>
@@ -695,7 +624,7 @@ export default function PyqPage() {
                 </div>
               )}
 
-              {/* PLACEHOLDER card 3 â€” kept for UI reference until removed */}
+              {/* PLACEHOLDER card 3 — kept for UI reference until removed */}
               {false && <div
               className="rounded-[16px] bg-white shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.1)] p-6 mb-6 w-full max-w-[546px] mx-auto"
               style={{ opacity: 1 }}
@@ -739,7 +668,7 @@ export default function PyqPage() {
                   color: '#6A7282',
                 }}
               >
-                Prelims Â· Question #4
+                Prelims · Question #4
               </div>
 
               {/* Question text */}
@@ -904,7 +833,7 @@ export default function PyqPage() {
                     </div>
 
                     {false && <div className="inline-flex items-center mb-4" style={{ borderRadius: '8px', background: '#17223E', padding: '4px 16px' }}>
-                      <span style={{ fontSize: '14px', marginRight: '8px' }} aria-hidden>âœ¨</span>
+                      <span style={{ fontSize: '14px', marginRight: '8px' }} aria-hidden>✨</span>
                       <span style={{ fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: '14px', lineHeight: '20px', color: '#FFD272' }}>
                         Write &amp; Evaluate
                       </span>
@@ -912,7 +841,7 @@ export default function PyqPage() {
 
                     {/* Meta */}
                     <div className="mb-2 uppercase text-[12px] tracking-[0.3px] text-[#6A7282]">
-                      {`MAINS - ${q.paper || 'GS'} - QUESTION #${idx + 1}`}
+                      MAINS · {q.paper || 'GS'} · QUESTION #{idx + 1}
                     </div>
 
                     {/* Question text */}
@@ -923,23 +852,16 @@ export default function PyqPage() {
                     />
 
                     {/* Stats row */}
-                    <div className="mb-6 flex flex-wrap items-center gap-6">
+                    <div className="flex flex-wrap items-center gap-6 mb-6">
                       {q.year > 0 && (
                         <div className="flex items-center gap-2">
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
-                            <rect x="3" y="3.5" width="10" height="9.5" rx="1.5" stroke="#6A7282" strokeWidth="1.2" />
-                            <path d="M5 2.5v2M11 2.5v2M3 6.25h10" stroke="#6A7282" strokeWidth="1.2" strokeLinecap="round" />
-                          </svg>
+                          <span aria-hidden>📅</span>
                           <span className="text-[14px] text-[#6A7282]">{q.year}</span>
                         </div>
                       )}
                       {q.topic && (
                         <div className="flex items-center gap-2">
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
-                            <path d="M5.333 2.667h4.666L12 5.333v8a.667.667 0 0 1-.667.667H4.667A.667.667 0 0 1 4 13.333V3.333c0-.368.299-.666.667-.666Z" stroke="#6A7282" strokeWidth="1.2"/>
-                            <path d="M9.333 2.667v2.666H12" stroke="#6A7282" strokeWidth="1.2"/>
-                            <path d="M6 8h4M6 10.667h4" stroke="#6A7282" strokeWidth="1.2" strokeLinecap="round"/>
-                          </svg>
+                          <span aria-hidden>📝</span>
                           <span className="text-[14px] text-[#6A7282]">{q.topic}</span>
                         </div>
                       )}
@@ -949,13 +871,11 @@ export default function PyqPage() {
                     <div className="flex items-center gap-3 mb-4">
                       <button
                         type="button"
-                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); setMainsTimerPaused(true); setMainsReadTimeLeft(null); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
                         className="flex items-center justify-center"
                         style={{ height: '59px', borderRadius: '14px', background: '#101828', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden style={{ marginRight: '8px' }}>
-                          <path d="M8 1.5l1.4 3.6L13 6.5l-3.6 1.4L8 11.5 6.6 7.9 3 6.5l3.6-1.4L8 1.5Z" fill="#FFD272" />
-                        </svg>
+                        <span aria-hidden style={{ marginRight: '8px' }}>✨</span>
                         <span>Write &amp; Evaluate</span>
                       </button>
                       <button
@@ -974,11 +894,9 @@ export default function PyqPage() {
                         className="flex items-center justify-center"
                         style={{ width: '59px', height: '59px', borderRadius: '14px', background: '#FFFFFF', border: '1.6px solid #FFC9C9', fontSize: '20px', cursor: 'pointer', flexShrink: 0 }}
                         aria-label="Write answer"
-                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); setMainsTimerPaused(true); setMainsReadTimeLeft(null); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
                       >
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-                          <path d="M14.167 3.333a1.768 1.768 0 1 1 2.5 2.5L7.5 15l-3.333.833L5 12.5l9.167-9.167Z" stroke="#364153" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                        ✏️
                       </button>
                     </div>
 
@@ -995,8 +913,8 @@ export default function PyqPage() {
           </section>
 
           {/* Right: filters */}
-          <aside className="w-full flex-shrink-0 space-y-4 lg:w-[320px] xl:w-[360px] lg:self-start">
-            {/* Exam year card - 307Ã—198, exact shadow & year buttons */}
+          <aside className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-1.5rem)] lg:overflow-y-auto lg:pr-1">
+            {/* Exam year card - 307×198, exact shadow & year buttons */}
             <div
               className="rounded-[16px] bg-white flex flex-col"
               style={{
@@ -1086,21 +1004,17 @@ export default function PyqPage() {
                   })}
                 </div>
                 <div className="flex items-center gap-2 px-1 pt-3 text-[13px] text-[#6A7282]">
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
-                    <rect x="2.5" y="2.5" width="3" height="11" rx="1" fill="#4F46E5"/>
-                    <rect x="6.5" y="5" width="3" height="8.5" rx="1" fill="#22C55E"/>
-                    <rect x="10.5" y="7.5" width="3" height="6" rx="1" fill="#F59E0B"/>
-                  </svg>
+                  <span className="text-[14px] leading-none" aria-hidden>📊</span>
                   <p>
                     {selectedYearRange === 'year' && selectedYear
                       ? `${selectedYear} questions for ${selectedTopics.length ? `${selectedTopics[0]}${selectedTopics.length > 1 ? ` +${selectedTopics.length - 1}` : ''}` : selectedSubtopic || selectedSubject}`
-                      : `All Years -> ${total} questions${selectedTopics.length ? ` for ${selectedTopics[0]}${selectedTopics.length > 1 ? ` +${selectedTopics.length - 1}` : ''}` : selectedSubtopic ? ` for ${selectedSubtopic}` : selectedSubject !== 'All Papers' ? ` for ${selectedSubject}` : ''}`}
+                      : `All Years → ${total} questions${selectedTopics.length ? ` for ${selectedTopics[0]}${selectedTopics.length > 1 ? ` +${selectedTopics.length - 1}` : ''}` : selectedSubtopic ? ` for ${selectedSubtopic}` : selectedSubject !== 'All Papers' ? ` for ${selectedSubject}` : ''}`}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Subject Filter panel - 310Ã—826 */}
+            {/* Subject Filter panel - 310×826 */}
             <div
               className="rounded-[16px] bg-white flex flex-col overflow-hidden"
               style={{
@@ -1133,8 +1047,7 @@ export default function PyqPage() {
                 </span>
               </div>
 
-              <div className="flex-1 overflow-hidden">
-                <div className="flex max-h-[420px] flex-col gap-2 overflow-y-auto px-5 pb-5 pr-4 lg:max-h-[520px]">
+              <div className="flex flex-col gap-2 px-5 pb-5">
                 <button
                   onClick={() => {
                     setSelectedSubject('All Papers');
@@ -1143,23 +1056,19 @@ export default function PyqPage() {
                     setExpandedSubject(null);
                     setExpandedSubtopic(null);
                   }}
-                  className="w-full flex items-center justify-between rounded-[14px] px-4 py-4 text-left transition-colors"
-                  style={{ minHeight: '64px', background: selectedSubject === 'All Papers' ? '#0F1A30' : '#F9FAFB' }}
+                  className="w-full flex items-center justify-between rounded-[14px] px-4 py-3 text-left transition-colors"
+                  style={{ minHeight: '59.99px', background: selectedSubject === 'All Papers' ? '#0F1A30' : '#F9FAFB' }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-[18px] leading-none flex-shrink-0" aria-hidden>ðŸ“˜</span>
-                    <span style={{ fontFamily: selectedSubject === 'All Papers' ? 'Arimo, sans-serif' : 'Inter, sans-serif', fontWeight: selectedSubject === 'All Papers' ? 700 : 500, fontSize: '15px', lineHeight: '24px', color: selectedSubject === 'All Papers' ? '#FFFFFF' : '#101828' }}>
-                          All Papers
-                        </span>
+                    <span className="text-[18px] leading-none flex-shrink-0" aria-hidden>📘</span>
+                    <span style={{ fontFamily: selectedSubject === 'All Papers' ? 'Arimo, sans-serif' : 'Inter, sans-serif', fontWeight: selectedSubject === 'All Papers' ? 700 : 500, fontSize: '14px', lineHeight: '20px', color: selectedSubject === 'All Papers' ? '#FFFFFF' : '#101828' }}>
+                      All Papers
+                    </span>
                   </div>
-                  <span className="rounded-full border border-[#E5E7EB] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
-                    {questionCounts.all ?? total}
-                  </span>
                 </button>
                 {PYQ_SUBJECT_TREE[mode].map(({ label, icon, children }) => {
                   const selected = selectedSubject === label;
                   const expanded = expandedSubject === label;
-                  const subjectCount = questionCounts[`subject:${label}`] ?? 0;
                   return (
                     <div
                       key={`tree-${label}`}
@@ -1177,23 +1086,23 @@ export default function PyqPage() {
                           setExpandedSubtopic(null);
                           setExpandedSubject(expanded ? null : label);
                         }}
-                        className="w-full flex items-center justify-between px-4 py-4 text-left transition-colors"
+                        className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors"
                         style={{
-                          minHeight: '64px',
+                          minHeight: '59.99px',
                           background: selected ? '#0F1A30' : expanded ? '#EEF1F6' : '#F9FAFB',
                           borderRadius: expanded ? '14px 14px 0 0' : '14px',
                         }}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-[18px] leading-none flex-shrink-0" aria-hidden>{icon}</span>
-                          <span style={{ fontFamily: selected ? 'Arimo, sans-serif' : 'Inter, sans-serif', fontWeight: selected ? 700 : 500, fontSize: '15px', lineHeight: '24px', color: selected ? '#FFFFFF' : '#101828' }}>
+                          <span style={{ fontFamily: selected ? 'Arimo, sans-serif' : 'Inter, sans-serif', fontWeight: selected ? 700 : 500, fontSize: '14px', lineHeight: '20px', color: selected ? '#FFFFFF' : '#101828' }}>
                             {label}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           {children?.length ? (
                             <span className="rounded-full border border-[#E5E7EB] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
-                              {subjectCount}
+                              {children.length}
                             </span>
                           ) : null}
                           {children?.length ? (
@@ -1205,7 +1114,7 @@ export default function PyqPage() {
                                 transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
                               }}
                             >
-                              â–¾
+                              ▾
                             </span>
                           ) : null}
                         </div>
@@ -1216,7 +1125,6 @@ export default function PyqPage() {
                             const childSelected = selectedSubtopic === child.label;
                             const childExpanded = expandedSubtopic === child.label;
                             const topicCount = child.microTopics?.length || 0;
-                            const subCount = questionCounts[`sub:${label}::${child.label}`] ?? 0;
                             return (
                               <div key={child.label} className="border-b border-[#E8ECF2] last:border-b-0">
                                 <button
@@ -1248,15 +1156,17 @@ export default function PyqPage() {
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <span className="rounded-full border border-[#D8DFEA] bg-[#EEF1F6] px-2 py-0.5 text-[10px] font-semibold text-[#7C8798]">
-                                      {subCount}
-                                    </span>
+                                    {topicCount ? (
+                                      <span className="rounded-full border border-[#E5E7EB] bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
+                                        {topicCount}
+                                      </span>
+                                    ) : null}
                                     {topicCount ? (
                                       <span
                                         className="inline-block text-[10px] text-[#9AA3B2] transition-transform"
                                         style={{ transform: childExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
                                       >
-                                        â–¾
+                                        ▾
                                       </span>
                                     ) : null}
                                   </div>
@@ -1264,9 +1174,6 @@ export default function PyqPage() {
                                 {childExpanded && child.microTopics?.length ? (
                                   <div className="border-t border-[#E8ECF2] bg-[#F2F5FA]">
                                     {child.microTopics.map((topic) => (
-                                      (() => {
-                                        const topicCountValue = questionCounts[`topic:${label}::${child.label}::${topic}`] ?? 0;
-                                        return (
                                       <button
                                         key={topic}
                                         type="button"
@@ -1278,26 +1185,26 @@ export default function PyqPage() {
                                               : [...prev, topic]
                                           );
                                         }}
-                                        className="flex w-full items-center justify-between border-b border-[#E8ECF2] px-4 py-2 pl-[52px] text-left transition-colors last:border-b-0 hover:bg-[#E9EEF8]"
+                                        className="flex w-full items-center justify-between border-b border-[#E8ECF2] px-4 py-2 pl-[52px] text-left transition-colors last:border-b-0 hover:bg-[#FFF8E6]"
                                         style={{
-                                          background: selectedTopics.includes(topic) ? '#20223B' : '#F2F5FA',
+                                          background: selectedTopics.includes(topic) ? '#FFF3CC' : 'transparent',
                                         }}
                                       >
                                         <span className="flex min-w-0 items-center gap-2">
                                           <span
                                             className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-[3px] border text-[9px]"
                                             style={{
-                                              background: selectedTopics.includes(topic) ? '#E2B84B' : 'transparent',
-                                              borderColor: selectedTopics.includes(topic) ? '#E2B84B' : '#D6DDEA',
+                                              background: selectedTopics.includes(topic) ? '#FDBA26' : 'transparent',
+                                              borderColor: selectedTopics.includes(topic) ? '#FDBA26' : '#E5E7EB',
                                               color: '#101828',
                                             }}
                                           >
-                                            {selectedTopics.includes(topic) ? 'âœ“' : ''}
+                                            {selectedTopics.includes(topic) ? '✓' : ''}
                                           </span>
                                           <span
                                             className="break-words"
                                             style={{
-                                              color: selectedTopics.includes(topic) ? '#FFFFFF' : '#5A6478',
+                                              color: selectedTopics.includes(topic) ? '#B45309' : '#5A6478',
                                               fontSize: '12px',
                                               fontWeight: selectedTopics.includes(topic) ? 700 : 500,
                                             }}
@@ -1305,19 +1212,10 @@ export default function PyqPage() {
                                             {topic}
                                           </span>
                                         </span>
-                                        <span
-                                          className="ml-3 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
-                                          style={{
-                                            borderColor: selectedTopics.includes(topic) ? '#3B4266' : '#D6DDEA',
-                                            background: selectedTopics.includes(topic) ? '#2A2E4D' : '#F2F5FA',
-                                            color: selectedTopics.includes(topic) ? '#E5E7EB' : '#7C8798',
-                                          }}
-                                        >
-                                          {topicCountValue}Q
+                                        <span className="ml-3 rounded-full border border-[#E5E7EB] bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
+                                          -
                                         </span>
                                       </button>
-                                        );
-                                      })()
                                     ))}
                                   </div>
                                 ) : null}
@@ -1329,7 +1227,6 @@ export default function PyqPage() {
                     </div>
                   );
                 })}
-                </div>
               </div>
             </div>
           </aside>
@@ -1362,7 +1259,7 @@ export default function PyqPage() {
               }}
             >
               <span style={{ fontSize: '36px' }} aria-hidden>
-                ðŸŽ¯
+                🎯
               </span>
             </div>
 
@@ -1417,7 +1314,7 @@ export default function PyqPage() {
                 lineHeight: '28px',
               }}
             >
-              <span aria-hidden>ðŸš€</span>
+              <span aria-hidden>🚀</span>
               <span>Create Free Account</span>
             </button>
 
@@ -1439,7 +1336,7 @@ export default function PyqPage() {
                 color: '#101828',
               }}
             >
-              <span aria-hidden>ðŸ”‘</span>
+              <span aria-hidden>🔑</span>
               <span>Login with Google</span>
             </button>
 
@@ -1508,154 +1405,222 @@ export default function PyqPage() {
           onClick={() => setShowMainsWriteModal(false)}
         >
           <div
-            className="my-8 flex flex-col overflow-hidden rounded-[24px] bg-white relative"
+            className="rounded-[24px] bg-white flex flex-col my-8 overflow-hidden"
             style={{
-              width: '860px',
+              width: '896px',
               maxWidth: '100%',
-              maxHeight: 'calc(100vh - 12px)',
+              minHeight: '875px',
+              opacity: 1,
               boxShadow: '0px 4px 6px -4px #0000001A, 0px 10px 15px -3px #0000001A',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              onClick={() => setShowMainsWriteModal(false)}
-              aria-label="Close"
-              className="absolute z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white hover:bg-[#F3F4F6] transition-colors"
-              style={{ top: 16, right: 16, border: '1px solid #E5E7EB' }}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M4 4L12 12M12 4L4 12" stroke="#364153" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-            </button>
-            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto' }}>
-              <div className="flex items-start justify-between gap-4" style={{ width: 832, maxWidth: '100%' }}>
-                <div className="flex flex-wrap items-center gap-3">
+            <div style={{ padding: '32px 32px 32px 32px', display: 'flex', flexDirection: 'column', gap: 0, flex: 1 }}>
+              {/* Header row: 2024, GS Paper I, Modern India, 15M, bookmark */}
+              <div
+                className="flex items-center justify-between flex-wrap gap-2"
+                style={{ width: 832, maxWidth: '100%', height: 40 }}
+              >
+                <div className="flex items-center gap-2 flex-wrap">
                   {selectedQuestion?.year && (
-                    <div className="flex items-center gap-2 rounded-[10px] px-3" style={{ height: 32, background: '#1E2939' }}>
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="4" y="2" width="8" height="2.2" rx="0.6" fill="#FF8904"/><rect x="3.2" y="3.6" width="9.6" height="10.4" rx="1.2" stroke="#FF8904" stroke-width="1.2"/></svg>
-                      <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}>{selectedQuestion.year}</span>
-                    </div>
+                  <div
+                    className="flex items-center justify-center gap-1.5 rounded-[10px] flex-shrink-0 px-3"
+                    style={{ height: 32, background: '#1E2939' }}
+                  >
+                    <span aria-hidden style={{ fontSize: 14 }}>📅</span>
+                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}>{selectedQuestion.year}</span>
+                  </div>
                   )}
                   {selectedQuestion?.paper && (
-                    <div className="flex items-center rounded-[10px] border border-[#D1D5DC] bg-white px-3" style={{ height: 33.6 }}>
-                      <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#364153' }}>{selectedQuestion.paper}</span>
-                    </div>
+                  <div
+                    className="rounded-[10px] flex items-center justify-center flex-shrink-0 px-3"
+                    style={{ height: 33.6, border: '0.8px solid #D1D5DC', background: '#FFFFFF' }}
+                  >
+                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#364153' }}>{selectedQuestion.paper}</span>
+                  </div>
                   )}
-                  <div className="flex items-center rounded-[10px] border border-[#D1D5DC] bg-white px-3" style={{ height: 33.6 }}>
-                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#364153' }}>
-                      {selectedQuestion?.subSubject || selectedQuestion?.subject || 'General Studies'}
-                    </span>
+                  {selectedQuestion?.subject && (
+                  <div
+                    className="rounded-[10px] flex items-center justify-center flex-shrink-0 px-3"
+                    style={{ height: 33.6, border: '0.8px solid #D1D5DC', background: '#FFFFFF' }}
+                  >
+                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#364153' }}>{selectedQuestion.subject}</span>
                   </div>
-                  <div className="flex items-center rounded-[10px] px-3" style={{ height: 32, background: '#FFEDD4' }}>
-                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#F54900' }}>
-                      {selectedQuestion?.marks || selectedQuestion?.maxMarks || 15}M
-                    </span>
-                  </div>
+                  )}
+
                 </div>
-                <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F3F4F6]" aria-label="Bookmark" style={{ marginTop: 44 }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M4 2.667C4 2.298 4.298 2 4.667 2h6.666c.369 0 .667.298.667.667v10.719c0 .526-.591.832-1.02.528L8 11.667l-2.98 2.247c-.429.304-1.02-.002-1.02-.528V2.667Z" stroke="#FF6900" strokeWidth="1.2" />
-                  </svg>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button type="button" className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#F3F4F6' }} aria-label="Bookmark">🔖</button>
+                  <button type="button" onClick={() => { setShowMainsWriteModal(false); }} className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[18px] font-bold" style={{ background: '#1E2939', color: '#FFF' }} aria-label="Close">×</button>
+                </div>
               </div>
 
+              {/* Question text */}
               <QuestionTextRenderer
                 text={selectedQuestion?.questionText || 'Loading question...'}
-                className="mt-4"
-                style={{ width: 754, maxWidth: '100%' }}
-                textClassName="font-[Inter] text-[15px] font-normal leading-[24px] text-[#1E2939]"
+                className="mt-6"
+                style={{ width: 832, maxWidth: '100%' }}
+                textClassName="font-[Inter] font-normal text-[16px] leading-[26px] text-[#1E2939]"
               />
 
-              <div className="mt-4 flex w-full items-center gap-3">
-                {[{ step: 1, label: 'Write', active: true }, { step: 2, label: 'Upload', active: false }, { step: 3, label: 'AI Eval', active: false }].map((item, index) => (
-                  <React.Fragment key={item.step}>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: item.active ? '#3B52D4' : '#E5E7EB' }}>
-                        <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: item.active ? '#FFFFFF' : '#6A7282' }}>{item.step}</span>
-                      </div>
-                      <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: item.active ? '#3B52D4' : '#99A1AF' }}>{item.label}</span>
-                    </div>
-                    {index < 2 ? <div className="h-px flex-1 bg-[#D1D5DC]" /> : null}
-                  </React.Fragment>
-                ))}
+              {/* Steps: 1 Write, 2 Upload, 3 AI Eval */}
+              <div className="flex items-center gap-3" style={{ width: 832, maxWidth: '100%', marginTop: 24, height: 32 }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#3B52D4' }}>
+                    <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}>1</span>
+                  </div>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#3B52D4' }}>Write</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#E5E7EB' }}>
+                    <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>2</span>
+                  </div>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#99A1AF' }}>Upload</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#E5E7EB' }}>
+                    <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>3</span>
+                  </div>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#99A1AF' }}>AI Eval</span>
+                </div>
               </div>
 
-              <div className="mt-4 flex items-center justify-between rounded-[14px] border border-[#E5E7EB] bg-[#F9FAFB] px-4" style={{ width: 832, maxWidth: '100%', minHeight: 60 }}>
-                <div className="flex items-center gap-6">
+              {/* Specs bar */}
+              <div
+                className="flex items-center justify-between rounded-[14px]"
+                style={{ width: 832, maxWidth: '100%', marginTop: 24, height: 69.6, padding: '0 16px', border: '0.8px solid #E5E7EB', background: '#F9FAFB' }}
+              >
+                <div className="flex items-center" style={{ gap: 24 }}>
                   <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#4A5565' }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4A5565" strokeWidth="1"/><path d="M8 4.8V8.4L10.1 10.4" stroke="#4A5565" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4A5565" strokeWidth="1"/><path d="M8 5V8.5L10 10" stroke="#4A5565" strokeWidth="1.2" strokeLinecap="round"/></svg>
                     7–9 min
                   </span>
                   <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#4A5565' }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10.5 2.5L13.5 5.5L5.5 13.5L2 14L2.5 10.5L10.5 2.5Z" stroke="#22C55E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10.5 2.5L13.5 5.5L5.5 13.5L2 14L2.5 10.5L10.5 2.5Z" stroke="#16A34A" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     ~100 words
                   </span>
                   <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#4A5565' }}>
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 2.2 9.4 5h3l-2.2 2.1.6 3.2L8 8.9 5.2 10.3l.6-3.2L3.6 5h3L8 2.2Z" fill="#F59E0B" stroke="#D97706" strokeWidth="0.6"/></svg>
+                    <span style={{ color: '#FF6900' }}>🏆</span>
                     {selectedQuestion?.marks || selectedQuestion?.maxMarks || 15} marks
                   </span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: '#1E2939' }}>{mainsTimerDisplay}</span>
+                <div className="flex items-center" style={{ gap: 16 }}>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, color: mainsTimeLeft <= 60 ? '#DC2626' : '#1E2939' }}>
+                    {Math.floor(mainsTimeLeft / 60)}:{String(mainsTimeLeft % 60).padStart(2, '0')}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => setMainsTimerPaused((prev) => !prev)}
-                    className="flex items-center gap-2 rounded-[10px] bg-[#F3F4F6] px-4"
-                    style={{ height: 36, fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#364153' }}
+                    onClick={() => {
+                      if (mainsReadTimeLeft !== null) {
+                        setMainsReadTimeLeft(null);
+                        setMainsTimerPaused(false);
+                        return;
+                      }
+                      setMainsTimerPaused((p) => !p);
+                    }}
+                    className="flex items-center justify-center gap-2"
+                    style={{ height: 36, padding: '0 16px', borderRadius: 10, background: '#F3F4F6', border: 'none', cursor: 'pointer', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#364153', whiteSpace: 'nowrap' }}
                   >
-                    {mainsTimerPaused ? (
-                      <>
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2L10 6L3 10V2Z" fill="#364153"/></svg>
-                        Resume
-                      </>
-                    ) : (
-                      <>
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="2" width="3" height="8" rx="1" fill="#364153"/><rect x="7" y="2" width="3" height="8" rx="1" fill="#364153"/></svg>
-                        Pause
-                      </>
-                    )}
+                    {mainsReadTimeLeft !== null
+                      ? <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2L10 6L3 10V2Z" fill="#364153"/></svg> Start now</>
+                      : mainsTimerPaused
+                      ? <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2L10 6L3 10V2Z" fill="#364153"/></svg> Resume</>
+                      : <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="2" width="3" height="8" rx="1" fill="#364153"/><rect x="7" y="2" width="3" height="8" rx="1" fill="#364153"/></svg> Pause</>
+                    }
                   </button>
+                  {mainsReadTimeLeft !== null && (
+                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: '#155DFC' }}>Auto-start in {mainsReadTimeLeft}s</span>
+                  )}
+                  {mainsTimeLeft <= 60 && mainsTimeLeft > 0 && (
+                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: '#DC2626' }}>Hurry up!</span>
+                  )}
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap items-start gap-3" style={{ width: 832, maxWidth: '100%' }}>
-                <button type="button" className="flex items-center gap-2 rounded-[14px] border-[1.6px] border-[#D1D5DC] bg-white px-5" style={{ height: 44, fontFamily: 'Inter', fontWeight: 600, fontSize: 15, color: '#364153' }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4.667 2.667h4.666L12 5.333v8a.667.667 0 0 1-.667.667H4.667A.667.667 0 0 1 4 13.333V3.333c0-.368.299-.666.667-.666Z" stroke="#667085" strokeWidth="1.2"/><path d="M9.333 2.667v2.666H12" stroke="#667085" strokeWidth="1.2"/><path d="M6 8h4M6 10.667h4" stroke="#667085" strokeWidth="1.2" strokeLinecap="round"/></svg>
-                  View Key Points
+              {/* Buttons: View Key Points, Ready to Upload */}
+              <div className="flex items-center gap-3 flex-wrap" style={{ width: 832, maxWidth: '100%', marginTop: 24, gap: 12 }}>
+                <button type="button" className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-3" style={{ border: '1.6px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 600, fontSize: 16, lineHeight: '24px', color: '#364153' }}><span aria-hidden>📄</span>View Key Points</button>
+                <button type="button" onClick={() => mainsFileInputRef.current?.click()} className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-3" style={{ background: '#101828', fontFamily: 'Inter', fontWeight: 600, fontSize: 16, lineHeight: '24px', color: '#FFFFFF' }}><span aria-hidden>📷</span>Upload Handwritten Answer</button>
+              </div>
+
+              {/* Answer textarea */}
+              <div style={{ width: 832, maxWidth: '100%', marginTop: 16, order: 2 }}>
+                <button type="button" onClick={() => setTextAnswerExpanded((v) => !v)} className="w-full flex items-center gap-3">
+                  <div className="flex-1 h-px bg-[#E5E7EB]" />
+                  <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#364153' }}>
+                    Type your answer {textAnswerExpanded ? '−' : '+'}
+                  </span>
+                  <div className="flex-1 h-px bg-[#E5E7EB]" />
                 </button>
-                <button type="button" onClick={() => mainsFileInputRef.current?.click()} className="flex items-center gap-2 rounded-[14px] bg-[#101828] px-5" style={{ height: 44, fontFamily: 'Inter', fontWeight: 600, fontSize: 15, color: '#FFFFFF' }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5.333 4.667H7L8 3.333h2.667L12 4.667h1.333c.737 0 1.334.597 1.334 1.333v5.333c0 .737-.597 1.334-1.334 1.334H2.667A1.333 1.333 0 0 1 1.333 11.333V6c0-.736.597-1.333 1.334-1.333h1.333Z" stroke="#FFFFFF" strokeWidth="1.2" strokeLinejoin="round"/><circle cx="8" cy="8.667" r="2" stroke="#FFFFFF" strokeWidth="1.2"/></svg>
-                  Ready to Upload
-                </button>
+                {textAnswerExpanded && (
+                  <div style={{ marginTop: 12 }}>
+                    <textarea
+                      value={mainsAnswerText}
+                      onChange={(e) => setMainsAnswerText(e.target.value)}
+                      placeholder="Write your answer here..."
+                      className="w-full rounded-[14px] p-4 resize-y"
+                      style={{ minHeight: 200, border: '1.6px solid #D1D5DC', fontFamily: 'Inter', fontSize: 15, lineHeight: '24px', color: '#1E2939', outline: 'none' }}
+                    />
+                    <div className="flex justify-end mt-1" style={{ fontFamily: 'Inter', fontSize: 13, color: '#6A7282' }}>
+                      {mainsAnswerText.trim().split(/\s+/).filter(Boolean).length} words
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <input ref={mainsFileInputRef} type="file" accept="image/jpeg,image/png,application/pdf" style={{ display: 'none' }} onChange={(e) => setMainsFile(e.target.files?.[0] || null)} />
-
-              <div className="mt-4 rounded-[16px] border-[1.6px] border-[#D1D5DC] px-8 py-8 text-center" style={{ width: 832, maxWidth: '100%', minHeight: 176, background: '#FFFFFF', cursor: 'pointer' }} onClick={() => mainsFileInputRef.current?.click()}>
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#F3F4F6]">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M11.333 9.333h5.334L18 7.999h3.333l1.334 1.334H24c1.104 0 2 .895 2 2v8c0 1.105-.896 2-2 2H8c-1.105 0-2-.895-2-2v-8c0-1.105.895-2 2-2h3.333Z" stroke="#98A2B3" strokeWidth="1.8" strokeLinejoin="round"/><circle cx="16" cy="15.999" r="4" stroke="#98A2B3" strokeWidth="1.8"/></svg>
+              {/* Upload area */}
+              <input
+                ref={mainsFileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,application/pdf"
+                style={{ display: 'none' }}
+                onChange={(e) => setMainsFile(e.target.files?.[0] || null)}
+              />
+              <div
+                className="rounded-[16px] flex flex-col items-center justify-center text-center cursor-pointer"
+                style={{ width: 832, maxWidth: '100%', marginTop: 16, padding: '50px 50px', border: mainsFile ? '1.6px solid #3B52D4' : '1.6px solid #D1D5DC', background: mainsFile ? '#EFF6FF' : '#FFF', order: 1 }}
+                onClick={() => mainsFileInputRef.current?.click()}
+              >
+                {/* Camera icon in gray square */}
+                <div style={{ width: 64, height: 64, borderRadius: 16, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                  {mainsFile
+                    ? <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M5 27L27 5" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"/><circle cx="16" cy="16" r="10" stroke="#22C55E" strokeWidth="2"/></svg>
+                    : <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M12 8H20L22 11H27C27.55 11 28 11.45 28 12V24C28 24.55 27.55 25 27 25H5C4.45 25 4 24.55 4 24V12C4 11.45 4.45 11 5 11H10L12 8Z" stroke="#9CA3AF" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="16" cy="18" r="4" stroke="#9CA3AF" strokeWidth="1.5"/></svg>
+                  }
                 </div>
-                <p className="mt-4" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '24px', color: '#1E2939' }}>{mainsFile ? mainsFile.name : 'Photograph your handwritten answer & upload'}</p>
-                <p className="mt-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>Take a clear photo of each page. Good lighting = better AI evaluation.</p>
-                <div className="mt-4 flex items-center justify-center gap-3" onClick={(e) => e.stopPropagation()}>
-                  {['JPG', 'PNG', 'PDF'].map((fmt) => (
-                    <button key={fmt} type="button" onClick={() => mainsFileInputRef.current?.click()} className="rounded-[10px] border border-[#BEDBFF] bg-[#EFF6FF] px-[18px]" style={{ height: 37.6, fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#155DFC' }}>{fmt}</button>
-                  ))}
-                </div>
+                <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 18, lineHeight: '28px', color: '#1E2939', marginBottom: 8 }}>
+                  {mainsFile ? mainsFile.name : 'Photograph your handwritten answer & upload'}
+                </p>
+                {!mainsFile && (
+                  <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282', marginBottom: 16 }}>
+                    Take a clear photo of each page. Good lighting = better AI evaluation.
+                  </p>
+                )}
+                {mainsFile
+                  ? <span style={{ fontFamily: 'Inter', fontSize: 13, color: '#6A7282' }}>Click to change file</span>
+                  : (
+                    <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                      {['JPG', 'PNG', 'PDF'].map((fmt) => (
+                        <button
+                          key={fmt}
+                          type="button"
+                          onClick={() => mainsFileInputRef.current?.click()}
+                          style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#155DFC', background: '#EFF6FF', border: '0.8px solid #BEDBFF', borderRadius: 10, height: 37.6, padding: '0 18px', cursor: 'pointer' }}
+                        >{fmt}</button>
+                      ))}
+                    </div>
+                  )
+                }
               </div>
 
+              {/* Submit for AI Evaluation */}
               <button
                 id="pyq-mains-submit-btn"
                 type="button"
+                disabled={mainsSubmitting || (!mainsAnswerText.trim() && !mainsFile)}
                 onClick={async () => {
                   if (!selectedQuestion) return;
-                  if (!mainsAnswerText.trim() && !mainsFile) {
-                    setMainsSubmitError('Upload a handwritten answer before requesting AI evaluation.');
-                    return;
-                  }
                   setMainsSubmitting(true);
-                  setMainsSubmitError(null);
                   try {
                     const res = await pyqService.submitMainsAnswer(selectedQuestion.id, {
                       answerText: mainsAnswerText.trim() || undefined,
@@ -1672,11 +1637,10 @@ export default function PyqPage() {
                     setMainsSubmitting(false);
                   }
                 }}
-                className="mt-4 flex w-full items-center justify-center gap-3 rounded-[16px] bg-[#0F172B]"
-                style={{ width: 832, maxWidth: '100%', height: 54, fontFamily: 'Inter', fontWeight: 700, fontSize: 17, lineHeight: '24px', color: '#F9FAFB' }}
+                className="w-full flex items-center justify-center gap-2 rounded-[16px] py-4 mt-4 disabled:opacity-50"
+                style={{ width: 832, maxWidth: '100%', height: 60, background: '#0F172B', fontFamily: 'Inter', fontWeight: 700, fontSize: 18, lineHeight: '28px', color: '#F9FAFB' }}
               >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M5.5 5.25h1.5l1.125-1.5h2.75L12 5.25h1.5c.828 0 1.5.672 1.5 1.5v6c0 .828-.672 1.5-1.5 1.5h-9c-.828 0-1.5-.672-1.5-1.5v-6c0-.828.672-1.5 1.5-1.5h1.5Z" stroke="#F9FAFB" strokeWidth="1.3" strokeLinejoin="round"/><circle cx="9" cy="9.75" r="2.25" stroke="#F9FAFB" strokeWidth="1.3"/></svg>
-                {mainsSubmitting ? 'Submitting...' : 'Submit Answer for Evaluation'}
+                <span aria-hidden>📤</span>{mainsSubmitting ? 'Submitting...' : 'Submit for AI Evaluation'}
               </button>
 
               {mainsSubmitError && (
@@ -1685,27 +1649,33 @@ export default function PyqPage() {
                 </div>
               )}
 
-              <div className="mt-4 flex items-center justify-between gap-4" style={{ width: 832, maxWidth: '100%' }}>
-                <div className="flex flex-wrap items-center gap-6">
+              {/* Footer: views/evals stats | Save + Get AI Eval */}
+              <div className="flex items-center justify-between flex-wrap gap-3" style={{ width: 832, maxWidth: '100%', marginTop: 16, paddingTop: 16, borderTop: '0.8px solid #E5E7EB' }}>
+                <div className="flex items-center" style={{ gap: 24 }}>
                   <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#6A7282' }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="6.8" ry="4.4" stroke="#98A2B3" strokeWidth="1.1"/><circle cx="8" cy="8" r="1.9" stroke="#98A2B3" strokeWidth="1.1"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="7" ry="4.5" stroke="#6A7282" strokeWidth="1"/><circle cx="8" cy="8" r="2" stroke="#6A7282" strokeWidth="1"/></svg>
                     {(selectedQuestion as any)?.views || 120} views
                   </span>
                   <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#6A7282' }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#22C55E" strokeWidth="1.2"/><circle cx="8" cy="8" r="2" stroke="#22C55E" strokeWidth="1.2"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#16A34A" strokeWidth="1"/><path d="M5 8L7 10.5L11 5.5" stroke="#16A34A" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     {(selectedQuestion as any)?.aiEvalsDone || 34} AI evals done
                   </span>
                   <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#6A7282' }}>
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 2.2 9.4 5h3l-2.2 2.1.6 3.2L8 8.9 5.2 10.3l.6-3.2L3.6 5h3L8 2.2Z" fill="#F5B301"/></svg>
+                    <span>⭐</span>
                     {(selectedQuestion as any)?.avgRating || '3.9'}/5 avg
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button type="button" className="flex items-center gap-2 rounded-[14px] border border-[#D1D5DC] bg-white px-5" style={{ height: 42, fontFamily: 'Inter', fontWeight: 600, fontSize: 15, color: '#364153' }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2.667h8v10.666H4A1.333 1.333 0 0 1 2.667 12V4A1.333 1.333 0 0 1 4 2.667Z" stroke="#667085" strokeWidth="1.2"/><path d="M5.333 6.667h5.334" stroke="#667085" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                  <button type="button" className="flex items-center justify-center gap-2 rounded-[14px]" style={{ height: 45.6, padding: '0 20px', border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 600, fontSize: 16, color: '#364153' }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 14V11L11 2L14 5L5 14H2Z" stroke="#364153" strokeWidth="1.2" strokeLinejoin="round"/><path d="M9 4L12 7" stroke="#364153" strokeWidth="1.2" strokeLinecap="round"/></svg>
                     Save
                   </button>
-                  <button type="button" onClick={() => document.getElementById('pyq-mains-submit-btn')?.click()} className="rounded-[14px] px-6" style={{ height: 42, background: 'linear-gradient(90deg, #FF8904 0%, #FF6900 100%)', boxShadow: '0px 4px 6px rgba(0,0,0,0.1), 0px 2px 4px rgba(0,0,0,0.1)', fontFamily: 'Inter', fontWeight: 700, fontSize: 15, color: '#FFFFFF' }}>
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('pyq-mains-submit-btn')?.click()}
+                    className="flex items-center justify-center rounded-[14px]"
+                    style={{ height: 45.6, padding: '0 20px', background: 'linear-gradient(90deg, #FF8904 0%, #FF6900 100%)', boxShadow: '0px 4px 6px 0px rgba(0,0,0,0.1), 0px 2px 4px 0px rgba(0,0,0,0.1)', fontFamily: 'Inter', fontWeight: 700, fontSize: 16, color: '#FFFFFF' }}
+                  >
                     Submit Answer for Evaluation
                   </button>
                 </div>
@@ -1728,7 +1698,7 @@ export default function PyqPage() {
               boxShadow: '0px 25px 50px -12px rgba(0,0,0,0.5)',
             }}
           >
-            <div className="mb-4" style={{ fontSize: 48 }} aria-hidden>ðŸ§ </div>
+            <div className="mb-4" style={{ fontSize: 48 }} aria-hidden>🧠</div>
             <h2
               className="font-bold mb-2"
               style={{ fontFamily: 'Inter', fontSize: 22, lineHeight: 1.3, color: '#FFFFFF' }}
@@ -1764,7 +1734,7 @@ export default function PyqPage() {
                         color: done ? '#0F172B' : '#64748B',
                       }}
                     >
-                      {done ? 'âœ“' : ''}
+                      {done ? '✓' : ''}
                     </span>
                     <span
                       style={{
@@ -1832,7 +1802,7 @@ export default function PyqPage() {
                 );
               })()}
                 <button type="button" onClick={() => setShowAiEvalCompleteModal(false)} className="h-10 w-10 rounded-full bg-[#0F172B] text-white" aria-label="Close evaluation modal">
-                  Ã—
+                  ×
                 </button>
               </div>
             </div>
@@ -1854,7 +1824,7 @@ export default function PyqPage() {
                     <p style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: '#15803D' }}>Strengths</p>
                     {mainsEvalResults.strengths.map((s: string, i: number) => (
                       <p key={i} style={{ fontFamily: 'Inter', fontSize: 14, lineHeight: 1.5, color: '#334155' }}>
-                        <span className="text-[#15803D]" aria-hidden>âœ“ </span>{s}
+                        <span className="text-[#15803D]" aria-hidden>✓ </span>{s}
                       </p>
                     ))}
                   </div>
@@ -1866,7 +1836,7 @@ export default function PyqPage() {
                     <p style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: '#EA580C' }}>Areas to Improve</p>
                     {mainsEvalResults.improvements.map((s: string, i: number) => (
                       <p key={i} style={{ fontFamily: 'Inter', fontSize: 14, lineHeight: 1.5, color: '#334155' }}>
-                        <span className="text-[#EA580C]" aria-hidden>â†‘ </span>{s}
+                        <span className="text-[#EA580C]" aria-hidden>↑ </span>{s}
                       </p>
                     ))}
                   </div>
@@ -1923,7 +1893,7 @@ export default function PyqPage() {
           <div
             className="rounded-[24px] bg-white flex flex-col my-8"
             style={{
-              width: '860px',
+              width: '896px',
               maxWidth: '100%',
               minHeight: '882px',
               gap: '24px',
@@ -1943,20 +1913,20 @@ export default function PyqPage() {
                   className="rounded-[14px] flex items-center justify-center flex-shrink-0"
                   style={{ width: 48, height: 48, background: '#1E293B', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: '18px', lineHeight: '28px' }}
                 >
-                  {selectedQuestion?.questionNum ?? "?"}
+                  {selectedQuestion?.questionNum ?? '?'}
                 </div>
                 <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: '#1E293B', color: '#FFFFFF' }}>{selectedQuestion?.year}</span>
                 <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: '#FEF3C6', color: '#BB4D00' }}>{selectedQuestion?.subject}</span>
-                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#FFEDD4', color: '#F54900' }}>ðŸ”¥ {selectedQuestion?.difficulty}</span>
+                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#FFEDD4', color: '#F54900' }}>🔥 {selectedQuestion?.difficulty}</span>
                 {hasSubmitted
-                  ? <span className="px-3 py-1 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#DCFCE7', color: '#008236' }}>âœ… Attempted</span>
-                  : <span className="px-3 py-1 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#F3F4F6', color: '#6A7282' }}>ðŸ“ Not Attempted</span>
+                  ? <span className="px-3 py-1 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#DCFCE7', color: '#008236' }}>✅ Attempted</span>
+                  : <span className="px-3 py-1 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#F3F4F6', color: '#6A7282' }}>📝 Not Attempted</span>
                 }
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <button type="button" onClick={() => setShowAttemptModal(false)} className="w-10 h-10 rounded-[14px] flex items-center justify-center text-[18px] font-bold" style={{ background: '#00A63E', color: '#FFFFFF' }} aria-label="Close">Ã—</button>
-                <button type="button" className="w-10 h-10 rounded-[14px] flex items-center justify-center" style={{ background: '#F3F4F6', color: '#364153' }} aria-label="Edit">âœï¸</button>
-                <button type="button" className="w-10 h-10 rounded-[14px] flex items-center justify-center" style={{ background: '#F3F4F6', color: '#364153' }} aria-label="Full screen">â›¶</button>
+                <button type="button" onClick={() => setShowAttemptModal(false)} className="w-10 h-10 rounded-[14px] flex items-center justify-center text-[18px] font-bold" style={{ background: '#00A63E', color: '#FFFFFF' }} aria-label="Close">×</button>
+                <button type="button" className="w-10 h-10 rounded-[14px] flex items-center justify-center" style={{ background: '#F3F4F6', color: '#364153' }} aria-label="Edit">✏️</button>
+                <button type="button" className="w-10 h-10 rounded-[14px] flex items-center justify-center" style={{ background: '#F3F4F6', color: '#364153' }} aria-label="Full screen">⛶</button>
               </div>
             </div>
 
@@ -2004,17 +1974,17 @@ export default function PyqPage() {
               })}
             </div>
 
-            {/* Explanation â€” shown only after submit */}
+            {/* Explanation — shown only after submit */}
             {hasSubmitted && selectedQuestion?.explanation && (
               <div style={{ width: '774.4px', maxWidth: '100%' }}>
                 <div className="flex items-center gap-2 mb-2" style={{ color: '#016630', fontWeight: 700, fontSize: '14px', textTransform: 'uppercase' }}>
-                  <span>âœ…</span><span>Explanation</span>
+                  <span>✅</span><span>Explanation</span>
                 </div>
                 <p style={{ fontSize: '16px', color: '#364153', lineHeight: '26px', marginBottom: 12 }}>
                   {selectedQuestion.explanation}
                 </p>
                 <div className="flex items-center gap-2" style={{ fontSize: '14px', color: '#6A7282' }}>
-                  <span>ðŸ“–</span>
+                  <span>📖</span>
                   <span>UPSC CSE Prelims {selectedQuestion.year}, {selectedQuestion.paper}</span>
                 </div>
               </div>
@@ -2039,16 +2009,16 @@ export default function PyqPage() {
                   className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5"
                   style={{ background: '#DCFCE7', color: '#008236', fontWeight: 600, fontSize: '16px' }}
                 >
-                  <span>âœ…</span><span>Attempted Â· Reset</span>
+                  <span>✅</span><span>Attempted · Reset</span>
                 </button>
               )}
               <div className="flex items-center gap-6">
                 <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#6A7282' }}>
-                  <span aria-hidden>ðŸ‘</span>
+                  <span aria-hidden>👁</span>
                   <span>1,240 views</span>
                 </span>
                 <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#6A7282' }}>
-                  <span aria-hidden>ðŸŽ¯</span>
+                  <span aria-hidden>🎯</span>
                   <span>58% avg accuracy</span>
                 </span>
               </div>

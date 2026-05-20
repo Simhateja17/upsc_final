@@ -85,7 +85,7 @@ const SAMPLE_QUESTIONS: Question[] = [
     id: 2,
     subject: 'History',
     difficulty: 'Easy',
-    text: 'The term â€œSwarajâ€ was first used prominently by:',
+    text: 'The term "Swaraj" was first used prominently by:',
     options: [
       { label: 'A', text: 'Bal Gangadhar Tilak' },
       { label: 'B', text: 'Mahatma Gandhi' },
@@ -93,7 +93,7 @@ const SAMPLE_QUESTIONS: Question[] = [
       { label: 'D', text: 'Subhas Chandra Bose' },
     ],
     correct: 'C',
-    explanation: 'Dadabhai Naoroji used â€œSwarajâ€ prominently; later Tilak popularized it widely.',
+    explanation: 'Dadabhai Naoroji used "Swaraj" prominently; later Tilak popularized it widely.',
   },
   {
     id: 3,
@@ -101,7 +101,7 @@ const SAMPLE_QUESTIONS: Question[] = [
     difficulty: 'Medium',
     text: 'Which one of the following factors most directly influences the formation of monsoon winds over the Indian subcontinent?',
     options: [
-      { label: 'A', text: 'Earthâ€™s rotation alone' },
+      { label: 'A', text: "Earth's rotation alone" },
       { label: 'B', text: 'Seasonal differential heating of land and sea' },
       { label: 'C', text: 'Ocean currents only' },
       { label: 'D', text: 'Mountain building processes' },
@@ -121,13 +121,13 @@ const SAMPLE_QUESTIONS: Question[] = [
       { label: 'D', text: 'SEBI' },
     ],
     correct: 'C',
-    explanation: 'The RBIâ€™s Monetary Policy Committee sets the policy repo rate under the inflation targeting framework.',
+    explanation: "The RBI's Monetary Policy Committee sets the policy repo rate under the inflation targeting framework.",
   },
   {
     id: 5,
     subject: 'Environment',
     difficulty: 'Medium',
-    text: 'â€œBiodiversity hotspotâ€ refers to a region that:',
+    text: '"Biodiversity hotspot" refers to a region that:',
     options: [
       { label: 'A', text: 'Has only high species richness' },
       { label: 'B', text: 'Has high endemism and is under significant threat' },
@@ -147,14 +147,14 @@ function MockTestAttemptInner() {
   const isMains = examMode === 'mains';
   const title = searchParams.get('title') || (isMains ? 'Mains Practice' : 'Prelims Practice');
 
-  /* â”€â”€â”€ API / Loading State â”€â”€â”€ */
+  /* --- API / Loading State --- */
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [totalMarks, setTotalMarks] = useState(0);
 
-  /* â”€â”€â”€ Quiz State â”€â”€â”€ */
+  /* --- Quiz State --- */
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
   const [questionStatuses, setQuestionStatuses] = useState<Record<number, QuestionStatus>>({});
@@ -162,7 +162,7 @@ function MockTestAttemptInner() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [startTime] = useState(Date.now());
 
-  /* â”€â”€â”€ Mains State â”€â”€â”€ */
+  /* --- Mains State --- */
   const [mainsPhase, setMainsPhase] = useState<'questions' | 'evaluating'>('questions');
   const [mainsAnswers, setMainsAnswers] = useState<Record<number, MainsAnswer>>({});
   const [evaluationProgress, setEvaluationProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
@@ -171,7 +171,7 @@ function MockTestAttemptInner() {
   const [mainsEvaluatingElapsed, setMainsEvaluatingElapsed] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  /* â”€â”€â”€ Load questions from API â”€â”€â”€ */
+  /* --- Load questions from API --- */
   useEffect(() => {
     if (!testId) {
       // No testId: fall back to a built-in 5-question set so the UI always opens from "Resume".
@@ -358,7 +358,7 @@ function MockTestAttemptInner() {
     if (currentIdx > 0) goToQuestion(currentIdx - 1);
   };
 
-  /* â”€â”€â”€ Mains handlers â”€â”€â”€ */
+  /* --- Mains handlers --- */
   const currentAnswer: MainsAnswer = mainsAnswers[currentIdx] || { text: '', file: null };
 
   const handleMainsTextChange = (value: string) => {
@@ -400,7 +400,7 @@ function MockTestAttemptInner() {
         const res = await mockTestService.getMainsEvaluationStatus(testId!, attemptId);
         if (res.data?.isComplete) return true;
       } catch {
-        /* transient â€” keep polling */
+        /* transient — keep polling */
       }
       await new Promise(r => setTimeout(r, 2500));
     }
@@ -567,7 +567,7 @@ function MockTestAttemptInner() {
     unattempted: '#314158',
   };
 
-  /* â”€â”€â”€ Loading State â”€â”€â”€ */
+  /* --- Loading State --- */
   if (loading) {
     return (
       <div style={{
@@ -594,7 +594,7 @@ function MockTestAttemptInner() {
     );
   }
 
-  /* â”€â”€â”€ Error State â”€â”€â”€ */
+  /* --- Error State --- */
   if (error && questions.length === 0) {
     return (
       <div style={{
@@ -607,7 +607,7 @@ function MockTestAttemptInner() {
         gap: '16px',
         fontFamily: 'Inter, sans-serif',
       }}>
-        <span style={{ fontSize: '48px' }}>âš ï¸</span>
+        <span style={{ fontSize: '48px' }}>⚠️</span>
         <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#101828', margin: 0 }}>Something went wrong</h2>
         <p style={{ fontSize: '14px', color: '#6B7280', maxWidth: '400px', textAlign: 'center' }}>{error}</p>
         <button
@@ -631,7 +631,7 @@ function MockTestAttemptInner() {
 
   if (!currentQ) return null;
 
-  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MAINS UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ---------------------------- MAINS UI ---------------------------- */
   if (isMains) {
     const mainsPattern = buildMainsQuestionPattern(totalQuestions);
     const currentPattern = mainsPattern[currentIdx] || { marks: 15, minutes: 11, words: 250 };
@@ -644,7 +644,7 @@ function MockTestAttemptInner() {
       return acc + (a && (a.text.trim() || a.file) ? 1 : 0);
     }, 0);
 
-    /* â”€â”€ Evaluating screen â”€â”€ */
+    /* -- Evaluating screen -- */
     if (mainsPhase === 'evaluating') {
       const { done, total } = evaluationProgress;
       const evaluationSteps = [
@@ -784,7 +784,7 @@ function MockTestAttemptInner() {
         {/* Error banner */}
         {error && (
           <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 14 }}>âš ï¸</span>
+            <span style={{ fontSize: 14 }}>⚠️</span>
             <span style={{ fontSize: 14, color: '#991B1B' }}>{error}</span>
           </div>
         )}
@@ -1004,12 +1004,12 @@ function MockTestAttemptInner() {
       </div>
     );
   }
-  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ END MAINS UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* --------------------------- END MAINS UI --------------------------- */
 
   return (
     <div style={{ minHeight: '100vh', background: '#FAFBFE', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
 
-      {/* â”€â”€ Sub-header (matches screenshot strip) â”€â”€ */}
+      {/* -- Sub-header (matches screenshot strip) -- */}
       <div
         style={{
           background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
@@ -1020,20 +1020,20 @@ function MockTestAttemptInner() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span aria-hidden="true" style={{ fontSize: 14, lineHeight: '16px' }}>ðŸ›ï¸</span>
+              <span aria-hidden="true" style={{ fontSize: 14, lineHeight: '16px' }}>🏛️</span>
               <span style={{ fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {title}
               </span>
             </div>
             <div style={{ fontWeight: 500, fontSize: 11, lineHeight: '16px', color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>
-              Today Prelims Mock Test Â· {totalQuestions} Questions Â· +0.67 per wrong
+              Today Prelims Mock Test · {totalQuestions} Questions · +0.67 per wrong
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span aria-hidden="true" style={{ fontSize: 16, lineHeight: '16px' }}>â³</span>
+                <span aria-hidden="true" style={{ fontSize: 16, lineHeight: '16px' }}>⏳</span>
                 <span style={{ fontWeight: 800, fontSize: 18, lineHeight: '22px', color: '#FFFFFF' }}>
                   {formatTime(timeLeft)}
                 </span>
@@ -1046,7 +1046,7 @@ function MockTestAttemptInner() {
         </div>
       </div>
 
-      {/* â”€â”€ Progress row (1116Ã—44) â”€â”€ */}
+      {/* -- Progress row (1116×44) -- */}
       <div
         style={{
           background: '#FFFFFF',
@@ -1082,7 +1082,7 @@ function MockTestAttemptInner() {
         </div>
       </div>
 
-      {/* â”€â”€ Submit Error Banner â”€â”€ */}
+      {/* -- Submit Error Banner -- */}
       {error && (
         <div style={{
           background: '#FEF2F2',
@@ -1092,12 +1092,12 @@ function MockTestAttemptInner() {
           alignItems: 'center',
           gap: '8px',
         }}>
-          <span style={{ fontSize: '14px' }}>âš ï¸</span>
+          <span style={{ fontSize: '14px' }}>⚠️</span>
           <span style={{ fontSize: '14px', color: '#991B1B' }}>{error}</span>
         </div>
       )}
 
-      {/* â”€â”€ Body (centered fixed frame) â”€â”€ */}
+      {/* -- Body (centered fixed frame) -- */}
       <div
         style={{
           flex: 1,
@@ -1119,7 +1119,7 @@ function MockTestAttemptInner() {
             alignItems: 'flex-start',
           }}
         >
-        {/* â”€â”€ Question Panel â”€â”€ */}
+        {/* -- Question Panel -- */}
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
 
           {/* Question Card */}
@@ -1225,7 +1225,7 @@ function MockTestAttemptInner() {
               ) : null}
             </div>
 
-            {/* Options â€” this is a quiz: we show selection only, and reveal
+            {/* Options — this is a quiz: we show selection only, and reveal
                 correctness + explanation only on the results screen. */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {currentQ.options.map(opt => {
@@ -1401,7 +1401,7 @@ function MockTestAttemptInner() {
           </div>
         </main>
 
-        {/* â”€â”€ Right panel (Navigator card) â”€â”€ */}
+        {/* -- Right panel (Navigator card) -- */}
         <aside style={{ width: 360, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E5E7EB', padding: 20, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)' }}>
             <div style={{ fontWeight: 700, fontSize: 12, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 12 }}>
@@ -1512,4 +1512,3 @@ export default function MockTestAttemptPage() {
     </Suspense>
   );
 }
-
