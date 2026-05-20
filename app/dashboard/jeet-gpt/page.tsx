@@ -536,7 +536,7 @@ export default function JeetGPTPage() {
                   <div className="w-9 h-10 rounded-[14px] flex items-center justify-center flex-shrink-0 text-white text-lg" style={{ background: 'linear-gradient(135deg, #FF8904 0%, #FB2C36 100%)' }}>✨</div>
                   <p className="font-inter text-[14px] leading-5 flex-1 min-w-0" style={{ color: '#364153' }}>You&apos;re making great progress! <strong>Pro members</strong> get unlimited queries, saved notes, and priority answer evaluation.</p>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <Link href="/dashboard/free-trial">
+                    <Link href="/dashboard/billing/plans">
                       <button type="button" className="font-inter font-bold text-[14px] text-white py-2.5 px-5 rounded-[14px] whitespace-nowrap" style={{ background: 'linear-gradient(90deg, #FF6900 0%, #FB2C36 100%)' }}>Explore Pro →</button>
                     </Link>
                     <button type="button" onClick={() => setProCardDismissed(true)} className="w-8 h-8 rounded-[10px] flex items-center justify-center hover:bg-gray-100" style={{ background: '#E5E7EB' }}>

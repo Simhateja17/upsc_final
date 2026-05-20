@@ -723,14 +723,14 @@ export default function LandingPage() {
               ))}
             </div>
             <div className="app-store-btns">
-              <a href="#" className="app-store-btn">
+              <button type="button" disabled className="app-store-btn" aria-label="App Store download coming soon">
                 <span className="asb-icon">🍎</span>
                 <div className="asb-text"><span className="asb-sub">Download on the</span><span className="asb-name">App Store</span></div>
-              </a>
-              <a href="#" className="app-store-btn">
+              </button>
+              <button type="button" disabled className="app-store-btn" aria-label="Google Play download coming soon">
                 <span className="asb-icon">▶</span>
                 <div className="asb-text"><span className="asb-sub">Get it on</span><span className="asb-name">Google Play</span></div>
-              </a>
+              </button>
             </div>
           </div>
 

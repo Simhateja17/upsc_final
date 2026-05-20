@@ -383,7 +383,7 @@ export default function ExplorePlansPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanKey | null>(null);
 
-  const handleUpgrade = () => router.push('/pricing');
+  const handleUpgrade = () => router.push('/dashboard');
   const handleOpenRiseCheckout = () => setCheckoutPlan('rise');
   const handleOpenAscentCheckout = () => setCheckoutPlan('ascent');
 
@@ -879,7 +879,7 @@ export default function ExplorePlansPage() {
             <button type="button" onClick={handleUpgrade} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               Start Free with Aspire →
             </button>
-            <button type="button" style={{ borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.2)', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 600, color: '#fff', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <button type="button" onClick={() => router.push('/help-support')} style={{ borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.2)', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 600, color: '#fff', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               Contact Us
             </button>
           </div>
@@ -908,6 +908,5 @@ export default function ExplorePlansPage() {
     </div>
   );
 }
-
 
 

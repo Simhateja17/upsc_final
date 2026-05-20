@@ -266,7 +266,7 @@ export default function BlogPage() {
                 Success Stories
               </h2>
             </div>
-            <Link href="#" className="text-[#d08700] text-sm font-medium hover:text-[#f0b100] transition-colors">
+            <Link href="/blog" className="text-[#d08700] text-sm font-medium hover:text-[#f0b100] transition-colors">
               View all →
             </Link>
           </div>
