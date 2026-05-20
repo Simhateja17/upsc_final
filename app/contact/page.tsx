@@ -2,17 +2,20 @@
 
 import React, { useState } from 'react';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import DashboardHeader from '@/components/DashboardHeader';
+import LandingNav from '@/components/LandingNav';
+import Footer from '@/components/Footer';
 import { contactService } from '@/lib/services';
 
 const subjectOptions = [
-  'General Inquiry',
-  'Technical Issue',
-  'Billing & Subscription',
-  'Mentorship Programs',
-  'Platform Feedback',
-  'Partnership',
-  'Other',
+  'General inquiry',
+  'Technical support',
+  'Billing and payments',
+  'Mentorship queries',
+  'Content and syllabus',
+  'AI evaluator feedback',
+  'Partnership or collaboration',
+  'Press and media',
+  'Report a bug',
 ];
 
 const reachCards = [
@@ -89,7 +92,7 @@ export default function ContactPage() {
   const capIcon = <img src="/help-support-icon.png" alt="help and support" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />;
   return (
     <main className="min-h-screen flex flex-col">
-      <DashboardHeader />
+      <LandingNav />
 
       <div style={{ background: '#0F131F' }}>
         <DashboardPageHero
@@ -103,8 +106,8 @@ export default function ContactPage() {
           stats={[
             { value: '4h',   label: 'Response Time',  color: '#FDC700' },
             { value: '100%', label: 'Response Rate',   color: '#4ADE80' },
-            { value: '3',    label: 'Channels',        color: '#F87171' },
-            { value: '∞',    label: 'Always Free',     color: '#FFFFFF' },
+            { value: '10K+', label: 'Queries Addressed', color: '#F87171' },
+            { value: '3',    label: 'Channels',        color: '#FFFFFF' },
           ]}
         />
       </div>
@@ -131,7 +134,7 @@ export default function ContactPage() {
             <p className="mb-8 text-[14px] leading-[1.8] text-[#6B7A99]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
               No chatbot loops. No automated replies with zero help.
               <br />
-              When you write to us, a real person reads it and responds.
+              Every message is personally read and responded to by someone from our team.
             </p>
 
             <div className="flex flex-col gap-4">
@@ -254,77 +257,52 @@ export default function ContactPage() {
               </button>
 
             </form>
+
+            <p className="mt-4 text-center text-[12px] text-[#9AA3B8]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+              Your message goes directly to the RiseWithJeet team. We don&apos;t use bots for responses.
+            </p>
           </div>
         </div>
       </section>
 
-      <section
-        className="relative w-full overflow-hidden px-6 py-[46px]"
-        style={{ background: 'linear-gradient(93.39deg, #090E1C 18%, #09122A 100%)' }}
-      >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute right-[-80px] top-[-80px] h-[360px] w-[360px]"
-          style={{ background: 'radial-gradient(circle, rgba(232,184,75,0.07) 0%, rgba(232,184,75,0) 65%)' }}
-        />
-
-        <div className="relative max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_567px] gap-10 items-center">
-          <div className="max-w-[430px]">
-            <div className="mb-4 flex items-center gap-2.5">
-              <span className="h-[2px] w-6 rounded-[2px] bg-[#E8B84B]" />
-              <p
-                className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#E8B84B]"
-                style={{ fontFamily: 'var(--font-dm-sans)' }}
-              >
-                Stay connected
+      <section className="bg-[#faf8f4] py-16">
+        <div className="mx-auto max-w-5xl px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+            {/* Left: Stay connected */}
+            <div className="rounded-2xl px-8 py-10 text-white" style={{ background: 'linear-gradient(135deg, #090E1C 0%, #0F1A33 100%)' }}>
+              <div className="mb-3 flex items-center gap-2.5">
+                <span className="h-[2px] w-6 bg-[#E8B84B]" />
+                <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#E8B84B]" style={{ fontFamily: 'var(--font-dm-sans)' }}>Stay connected</span>
+              </div>
+              <h3 className="text-2xl font-semibold leading-tight text-white" style={{ fontFamily: 'var(--font-cormorant)' }}>
+                Join the community<br />that <span className="italic text-[#E8B84B]">never stops learning</span>
+              </h3>
+              <p className="mt-4 text-sm leading-relaxed text-white/50" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                15,000+ aspirants. Daily discussions, live doubt sessions, notes, and the kind of peer support that keeps you going on the tough days.
               </p>
             </div>
 
-            <h2
-              className="text-[clamp(2rem,2.3vw,2.56rem)] leading-[1.3] text-white"
-              style={{ fontFamily: 'var(--font-cormorant)', fontWeight: 600 }}
-            >
-              Join the community
-              <br />
-              that <span className="italic text-[#E8B84B]">never stops learning</span>
-            </h2>
-
-            <p
-              className="mt-4 text-[14px] leading-[1.8] text-[rgba(255,255,255,0.44)]"
-              style={{ fontFamily: 'var(--font-dm-sans)' }}
-            >
-              50,000 aspirants. Daily discussions, live doubt sessions, notes, and the kind of peer
-              support that keeps you going on the tough days.
-            </p>
-          </div>
-
-          <div className="rounded-[22px] bg-white px-8 py-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.1)]">
-            <h3
-              className="text-[clamp(2rem,2.2vw,2.25rem)] leading-[1.3] text-[#0F172B]"
-              style={{ fontFamily: 'var(--font-cormorant)', fontWeight: 500 }}
-            >
-              Looking for quick answers?
-            </h3>
-            <p
-              className="mx-auto mt-4 max-w-[487px] text-[16px] leading-[1.5] text-[#45556C]"
-              style={{ fontFamily: 'var(--font-inter)' }}
-            >
-              Most common questions about the platform, pricing, AI tools, and mentorship are answered
-              in our FAQ section.
-            </p>
-
-            <a
-              href="/faq"
-              className="mx-auto mt-7 inline-flex h-12 items-center justify-center gap-1 rounded-[10px] bg-[#F0B100] px-6 text-[16px] font-semibold text-[#0F172B]"
-              style={{ fontFamily: 'var(--font-inter)' }}
-            >
-              Browse FAQ
-              <span aria-hidden="true">-&gt;</span>
-            </a>
+            {/* Right: FAQ card */}
+            <div className="rounded-2xl px-8 py-10 text-center flex flex-col items-center justify-center" style={{ background: 'linear-gradient(135deg, #0c1830 0%, #111d3a 100%)' }}>
+              <h3 className="text-2xl font-medium text-white" style={{ fontFamily: 'var(--font-cormorant)' }}>
+                Looking for <em className="italic text-[#E8B84B]">quick answers?</em>
+              </h3>
+              <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/60" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                Most common questions about the platform, pricing, AI tools, and mentorship are answered in our FAQ section.
+              </p>
+              <a
+                href="/faq"
+                className="mt-6 inline-flex h-11 items-center gap-1 rounded-lg bg-[#E8B84B] px-6 text-sm font-semibold text-[#090E1C]"
+                style={{ fontFamily: 'var(--font-dm-sans)' }}
+              >
+                Browse FAQ <span aria-hidden="true">-&gt;</span>
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
+      <Footer />
     </main>
   );
 }
