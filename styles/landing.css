@@ -168,8 +168,8 @@
 .eyebrow-dark::before { content: ''; display: inline-block; width: 18px; height: 2px; background: var(--gold-dark); border-radius: 2px; }
 .eyebrow-light { color: var(--gold); }
 .eyebrow-light::before { content: ''; display: inline-block; width: 18px; height: 2px; background: var(--gold); border-radius: 2px; }
-.section-h2-dark { font-family: 'Cormorant Garamond', serif; font-size: clamp(32px,4.5vw,54px); font-weight: 700; letter-spacing: -1.5px; line-height: 1.05; color: var(--navy); }
-.section-h2-light { font-family: 'Cormorant Garamond', serif; font-size: clamp(32px,4.5vw,54px); font-weight: 700; letter-spacing: -1.5px; line-height: 1.05; color: var(--white); }
+.section-h2-dark { font-family: 'Cormorant Garamond', serif; font-size: clamp(32px,4.5vw,54px); font-weight: 700; letter-spacing: -1.5px; line-height: 1.05; color: var(--navy); font-variant-numeric: lining-nums; font-feature-settings: "lnum" 1, "onum" 0; }
+.section-h2-light { font-family: 'Cormorant Garamond', serif; font-size: clamp(32px,4.5vw,54px); font-weight: 700; letter-spacing: -1.5px; line-height: 1.05; color: var(--white); font-variant-numeric: lining-nums; font-feature-settings: "lnum" 1, "onum" 0; }
 .section-p-dark { font-size: 16.5px; color: var(--text-mid); line-height: 1.7; font-family: 'Outfit', sans-serif; }
 .section-p-light { font-size: 16.5px; color: rgba(255,255,255,0.58); line-height: 1.7; font-family: 'Outfit', sans-serif; }
 .digit-token { font-family: 'Outfit', sans-serif; font-style: normal; font-weight: 700; letter-spacing: 0; }

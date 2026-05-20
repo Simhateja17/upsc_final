@@ -45,6 +45,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [retentionChoice, setRetentionChoice] = useState('');
 
   // Profile
   const [firstName, setFirstName] = useState('');
@@ -68,6 +70,7 @@ export default function SettingsPage() {
   const [dailyTarget,     setDailyTarget]     = useState('');
   const [answerReminder,  setAnswerReminder]  = useState('');
   const [language,        setLanguage]        = useState('');
+  const [theme,           setTheme]           = useState('');
 
   // Privacy
   const [privLeader,    setPrivLeader]    = useState(true);
@@ -103,6 +106,7 @@ export default function SettingsPage() {
         setDailyTarget(prefs.dailyTarget    || '');
         setAnswerReminder(prefs.answerReminder || '');
         setLanguage(prefs.language          || '');
+        setTheme(prefs.theme                || '');
 
         setPrivLeader(priv.leaderboard ?? true);
         setPrivStudy(priv.studyRoom    ?? true);
@@ -140,7 +144,7 @@ export default function SettingsPage() {
   const savePreferences = async () => {
     setSaving(true);
     try {
-      await userService.updateSettings({ preferences: { dailyTarget, answerReminder, language } } as any);
+      await userService.updateSettings({ preferences: { dailyTarget, answerReminder, language, theme } } as any);
       notify('Preferences saved.');
     } catch (e: any) {
       notify(e?.message || 'Could not save.', false);
@@ -288,7 +292,7 @@ export default function SettingsPage() {
         {[
           { label: 'Daily MCQ reminder',            desc: 'Remind to complete daily practice', on: nMcq,    toggle: () => setNMcq(v    => !v) },
           { label: 'Answer evaluation complete',     desc: 'When AI finishes evaluating',       on: nAnswer, toggle: () => setNAnswer(v => !v) },
-          { label: 'Current affairs morning digest', desc: 'Daily at 7 AM',                    on: nDigest, toggle: () => setNDigest(v => !v) },
+          { label: 'Current affairs morning digest', desc: 'Daily at 8 AM',                    on: nDigest, toggle: () => setNDigest(v => !v) },
           { label: 'Streak at risk',                 desc: 'Alert before streak breaks',        on: nStreak, toggle: () => setNStreak(v => !v) },
           { label: 'Promotional emails',             desc: 'Updates and offers',                on: nPromo,  toggle: () => setNPromo(v  => !v) },
         ].map((item) => (
@@ -320,15 +324,54 @@ export default function SettingsPage() {
       <div className="flex flex-col gap-5 max-w-[580px]">
         <div>
           <label className={lbl}>Daily MCQ target</label>
-          <input className={inp} value={dailyTarget} onChange={(e) => setDailyTarget(e.target.value)} />
+          <select
+            className={`${inp} appearance-auto`}
+            value={dailyTarget}
+            onChange={(e) => setDailyTarget(e.target.value)}
+          >
+            <option value="">Select target</option>
+            <option value="10">10 MCQs</option>
+            <option value="20">20 MCQs</option>
+            <option value="50">50 MCQs</option>
+            <option value="75">75 MCQs</option>
+            <option value="100">100 MCQs</option>
+          </select>
         </div>
         <div>
           <label className={lbl}>Answer writing reminder</label>
-          <input className={inp} value={answerReminder} onChange={(e) => setAnswerReminder(e.target.value)} />
+          <select
+            className={`${inp} appearance-auto`}
+            value={answerReminder}
+            onChange={(e) => setAnswerReminder(e.target.value)}
+          >
+            <option value="">Select option</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
         </div>
         <div>
           <label className={lbl}>Language</label>
-          <input className={inp} value={language} onChange={(e) => setLanguage(e.target.value)} />
+          <select
+            className={`${inp} appearance-auto`}
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+          >
+            <option value="">Select language</option>
+            <option value="english">English</option>
+            <option value="hindi">Hindi (Beta)</option>
+          </select>
+        </div>
+        <div>
+          <label className={lbl}>Theme</label>
+          <select
+            className={`${inp} appearance-auto`}
+            value={theme}
+            onChange={(e) => setTheme(e.target.value)}
+          >
+            <option value="system">System Default</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
         </div>
       </div>
 
@@ -363,17 +406,9 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="mt-6">
         <button className={primaryBtn} onClick={savePrivacy} disabled={saving}>
           {saving ? 'Saving…' : 'Save'}
-        </button>
-        <button className="inline-flex items-center gap-2 h-[44px] rounded-[10px] border border-[#1D4ED8] px-5 text-[14px] font-semibold text-[#1D4ED8] hover:bg-[#EFF6FF] transition">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Export my data (GDPR)
         </button>
       </div>
     </div>
@@ -456,44 +491,113 @@ export default function SettingsPage() {
       {/* Delete modal */}
       {showDeleteModal && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4 overflow-y-auto py-8"
           onClick={() => setShowDeleteModal(false)}
         >
           <div
-            className="w-full max-w-[500px] rounded-[20px] bg-white p-6 md:p-7"
-            style={{ boxShadow: '0 25px 50px rgba(15,23,42,0.25)' }}
+            className="w-full max-w-[460px] rounded-[20px] bg-white p-6 md:p-7"
+            style={{ boxShadow: '0 25px 50px rgba(15,23,42,0.25)', border: '1.5px solid #162456' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 h-[44px] w-[44px] flex items-center justify-center rounded-full bg-[#FEF3F2] text-[20px]">
-              🗑️
-            </div>
-            <h3 className="text-[22px] font-bold text-[#101828] mb-2">Delete account</h3>
-            <p className="text-[14px] text-[#667085] leading-[1.7] mb-5">
-              This removes access to your current workspace and can erase progress history. If this is a frustration
-              issue rather than a final decision, send feedback first.
-            </p>
-            <div className="rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-4 mb-6">
-              <p className="text-[14px] font-semibold text-[#B42318]">Permanent action</p>
-              <p className="mt-1 text-[13px] text-[#B42318] leading-[1.6]">
-                All account-linked settings, scores and saved progress may be removed once deletion is fully wired.
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-1">
+              <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[#D08700]">Account Settings</p>
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="h-[44px] rounded-[10px] border border-[#D0D5DD] text-[15px] font-semibold text-[#344054] hover:bg-[#F9FAFB] transition"
+                className="-mt-1 -mr-1 w-7 h-7 flex items-center justify-center rounded-md text-[#94A3B8] hover:bg-[#F8FAFC]"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <h3 className="text-[22px] font-bold text-[#101828] mb-4">Delete your account?</h3>
+
+            {/* What they lose */}
+            <div className="rounded-[10px] bg-[#FEF2F2] border-l-[3px] border-[#DC2626] px-4 py-3 mb-5">
+              <p className="text-[13px] font-semibold text-[#B42318] mb-1.5">You will permanently lose:</p>
+              <ul className="text-[13px] text-[#B42318] leading-[1.7] space-y-0.5">
+                <li>✕ All your progress and scores</li>
+                <li>✕ Your saved data and history</li>
+                <li>✕ Your preferences and settings</li>
+                <li>✕ Access to all premium features</li>
+              </ul>
+            </div>
+
+            {/* Reason */}
+            <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">
+              What&apos;s making you leave? <span className="text-[#94A3B8] font-normal">(required)</span>
+            </label>
+            <textarea
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              placeholder="Share what's not working for you — every word helps us improve..."
+              rows={3}
+              className="w-full rounded-[8px] border border-[#D0D5DD] bg-white px-3 py-2 text-[13px] text-[#101828] outline-none placeholder:text-[#98A2B3] focus:border-[#162456] focus:ring-2 focus:ring-[#162456]/10 transition resize-none"
+            />
+            <p className="mt-1 text-right text-[11px] text-[#94A3B8]">min. 20 characters</p>
+
+            {/* Retention options */}
+            <p className="mt-4 mb-2 text-[13px] font-semibold text-[#344054]">
+              Is there anything we could do to keep you?
+            </p>
+            <div className="flex flex-col gap-2 mb-5">
+              {[
+                { value: 'pause',     label: 'Pause my account for 30 days' },
+                { value: 'downgrade', label: 'Downgrade to a free plan' },
+                { value: 'export',    label: 'Export my data first' },
+                { value: 'final',     label: "No, I've made my decision" },
+              ].map((opt) => (
+                <label
+                  key={opt.value}
+                  className={`flex items-center gap-2.5 rounded-[8px] border px-3 py-2 cursor-pointer transition ${
+                    retentionChoice === opt.value
+                      ? 'border-[#162456] bg-[#F4F7FB]'
+                      : 'border-[#D0D5DD] hover:bg-[#F9FAFB]'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="retention"
+                    value={opt.value}
+                    checked={retentionChoice === opt.value}
+                    onChange={(e) => setRetentionChoice(e.target.value)}
+                    className="accent-[#162456]"
+                  />
+                  <span className="text-[13px] text-[#344054]">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 mb-4">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteReason('');
+                  setRetentionChoice('');
+                }}
+                className="flex-1 h-[42px] rounded-[8px] bg-[#101828] text-[13px] font-semibold text-white hover:bg-[#1F2937] transition"
               >
                 Keep my account
               </button>
               <button
-                onClick={() => { setShowDeleteModal(false); router.push('/dashboard/feedback'); }}
-                className="h-[44px] rounded-[10px] border border-[#DBEAFE] bg-[#EFF6FF] text-[15px] font-semibold text-[#1D4ED8] hover:bg-[#DBEAFE] transition"
+                disabled={deleteReason.trim().length < 20}
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  router.push('/dashboard/feedback');
+                }}
+                className="flex-1 h-[42px] rounded-[8px] bg-[#475467] text-[13px] font-semibold text-white hover:bg-[#344054] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Send Feedback
+                Send us feedback →
               </button>
-              <button className="h-[44px] rounded-[10px] bg-[#D92D20] text-[15px] font-semibold text-white hover:bg-[#B42318] transition">
-                Delete account
-              </button>
+            </div>
+
+            {/* Footer note */}
+            <div className="flex items-start gap-2 rounded-[8px] bg-[#EFF6FF] px-3 py-2.5">
+              <span className="text-[#1D4ED8] text-[14px] leading-none mt-0.5">ⓘ</span>
+              <p className="text-[12px] text-[#475467] leading-[1.5]">
+                Your feedback is private and will help us improve the product for everyone.
+              </p>
             </div>
           </div>
         </div>

@@ -52,7 +52,7 @@ const fallbackCards = [
     badgeBg: '#F3E8FF',
     badgeColor: '#8200DB',
     dark: false,
-    href: '/dashboard/free-trial',
+    href: '/dashboard/billing/plans',
   },
 ];
 

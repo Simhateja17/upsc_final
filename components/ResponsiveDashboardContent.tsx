@@ -945,7 +945,7 @@ const ResponsiveDashboardContent = () => {
 
           {/* Start Focus Session Button */}
           <button
-            onClick={() => router.push('/dashboard/study-groups?tab=solo')}
+            onClick={() => router.push('/dashboard/study-groups?tab=solo&autostart=1')}
             className="w-full bg-[#17223E] text-white rounded-lg py-[clamp(0.75rem,1vw,1rem)] font-inter font-semibold text-[clamp(14px,0.94vw,16px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">

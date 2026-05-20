@@ -214,8 +214,6 @@ function MockTestsPageInner() {
   const [selectedOptional, setSelectedOptional] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState(5);
   const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
-  const [showProModal, setShowProModal] = useState(false);
-  const [proModalFeature, setProModalFeature] = useState<string>('Full-Length Tests');
 
   /* ─── API State ─── */
   const [subjects, setSubjects] = useState<{ name: string; count: number }[]>([]);
@@ -376,19 +374,6 @@ function MockTestsPageInner() {
 
   /* ─── Generate Test Handler ─── */
   const handleGenerateTest = async () => {
-    const isPro = typeof window !== 'undefined' && localStorage.getItem('userPlan') === 'pro';
-    // Gate: free users get only 1 test per day. Redirect to free-trial if limit hit.
-    if (!isPro && practiceStats && practiceStats.todayCount >= 1) {
-      router.push('/dashboard/free-trial');
-      return;
-    }
-    // Gate: free tier is capped at 10 questions / test. Send users
-    // above the cap to the pricing page instead of silently failing.
-    const freeCap = selectedExamMode === 'mains' ? 2 : 10;
-    if (questionCount > freeCap && !isPro) {
-      router.push('/dashboard/free-trial?plan=pro&reason=question-cap');
-      return;
-    }
     setGenerating(true);
     setError(null);
     try {
@@ -439,119 +424,6 @@ function MockTestsPageInner() {
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
 
       {/* ── Pro Upgrade Modal ── */}
-      {showProModal && (
-        <div
-          onClick={() => setShowProModal(false)}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000, padding: '16px',
-          }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: '#FFFFFF', borderRadius: '24px',
-              padding: '28px 24px 24px',
-              width: '100%', maxWidth: '360px',
-              position: 'relative', boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
-            }}
-          >
-            {/* Close */}
-            <button
-              onClick={() => setShowProModal(false)}
-              style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#6B7280', lineHeight: 1 }}
-            >×</button>
-
-            {/* Icon */}
-            <div style={{ textAlign: 'center', fontSize: '40px', marginBottom: '12px' }}>📋</div>
-
-            {/* Title */}
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '20px', color: '#101828', textAlign: 'center', marginBottom: '8px' }}>
-              {proModalFeature} Await
-            </h2>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280', textAlign: 'center', lineHeight: 1.5, marginBottom: '18px' }}>
-              Complete 100-question papers replicating real UPSC patterns.{' '}
-              <strong style={{ color: '#101828' }}>Top rankers</strong> swear by this format.
-            </p>
-
-            {/* Usage bar */}
-            <div style={{ background: '#F3F4F6', borderRadius: '10px', padding: '10px 14px', marginBottom: '18px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6B7280' }}>Free today: <strong style={{ color: '#101828' }}>3 / 10</strong> questions used</span>
-              </div>
-              <div style={{ height: '6px', background: '#E5E7EB', borderRadius: '999px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: '30%', background: 'linear-gradient(90deg, #FF6900, #FDC700)', borderRadius: '999px' }} />
-              </div>
-            </div>
-            {/* Plans (admin-driven; fallback defaults) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '18px' }}>
-              {upgradePlans.map((plan, idx) => {
-                const isPopular = Boolean(plan.isPopular);
-                const desc = Array.isArray(plan.features) && plan.features.length > 0
-                  ? String(plan.features[0])
-                  : 'UPSC test practice and analytics';
-                return (
-                  <div
-                    key={`${String(plan.name)}-${idx}`}
-                    style={{
-                      border: isPopular ? '2px solid #101828' : '1.5px solid #E5E7EB',
-                      borderRadius: '14px',
-                      padding: '14px 16px',
-                      background: isPopular ? '#0F172B' : '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      position: 'relative',
-                    }}
-                  >
-                    {isPopular && (
-                      <span style={{
-                        position: 'absolute', top: '-11px', left: '50%', transform: 'translateX(-50%)',
-                        background: '#FDC700', color: '#101828', fontFamily: 'Inter, sans-serif',
-                        fontWeight: 700, fontSize: '10px', padding: '3px 10px', borderRadius: '999px',
-                        whiteSpace: 'nowrap',
-                      }}>MOST POPULAR</span>
-                    )}
-                    <span style={{ fontSize: '20px' }}>{isPopular ? 'Pro' : (idx === 0 ? 'Core' : 'Elite')}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: isPopular ? '#FFFFFF' : '#101828' }}>
-                        {plan.name}
-                      </div>
-                      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: isPopular ? '#94A3B8' : '#6B7280' }}>
-                        {desc}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: isPopular ? '#FDC700' : '#101828' }}>
-                        Rs {Number(plan.price || 0).toLocaleString('en-IN')}
-                      </div>
-                      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: isPopular ? '#94A3B8' : '#6B7280' }}>
-                        {plan.duration ? `/${String(plan.duration).toLowerCase()}` : ''}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {/* CTA */}
-            <a href="/dashboard/free-trial" style={{ display: 'block', textDecoration: 'none' }}>
-              <button style={{
-                width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
-                background: '#101828', color: '#FFFFFF',
-                fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px',
-                cursor: 'pointer', marginBottom: '10px',
-              }}>
-                View All Plans &amp; Start Free Trial →
-              </button>
-            </a>
-            <div style={{ textAlign: 'center', fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9CA3AF', cursor: 'pointer' }}
-              onClick={() => setShowProModal(false)}>
-              Continue with free tier
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main scrollable content */}
       <main className="flex-1 overflow-y-auto font-arimo" style={{ background: '#F9FAFB' }}>
@@ -904,14 +776,7 @@ function MockTestsPageInner() {
                 return (
                   <button
                     key={src.id}
-                    onClick={() => {
-                      if ((src as any).pro) {
-                        setProModalFeature(src.label);
-                        setShowProModal(true);
-                      } else {
-                        setSelectedSource(src.id);
-                      }
-                    }}
+                    onClick={() => setSelectedSource(src.id)}
                     style={{
                       flex: '1 1 0',
                       minWidth: '110px',
@@ -1167,7 +1032,7 @@ function MockTestsPageInner() {
                 </p>
               </div>
               <button
-                onClick={() => router.push('/dashboard/free-trial?plan=pro')}
+                onClick={() => router.push('/dashboard/billing/plans?plan=pro&source=mock-tests')}
                 style={{
                   background: '#FDC700',
                   color: '#101828',

@@ -568,6 +568,65 @@ export default function VideoLecturesPage() {
           </div>
         )}
 
+        {/* YouTube CTA banner — shown below subjects when nothing is selected */}
+        {!selectedSubject && (
+          <div style={{ marginTop: 'clamp(28px, 3vw, 40px)' }}>
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #0E182D, #172240)',
+                borderRadius: '24px',
+                padding: 'clamp(28px, 3vw, 44px) clamp(28px, 3vw, 42px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 'clamp(24px, 3vw, 40px)',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ flex: 1, zIndex: 1 }}>
+                <h3
+                  className="font-arimo font-bold"
+                  style={{ fontSize: 'clamp(28px, 2.7vw, 36px)', lineHeight: 1.2, color: '#FFFFFF', marginBottom: 'clamp(4px, 0.4vw, 6px)' }}
+                >
+                  Never Miss a<br />
+                  <span style={{ color: '#E8B84B' }}>Lecture Again.</span>
+                </h3>
+                <p className="font-arimo" style={{ fontSize: 'clamp(18px, 1.88vw, 25px)', color: '#FFFFFF', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
+                  Stay Consistent. Stay Ahead.
+                </p>
+                <p className="font-arimo" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', lineHeight: 'clamp(20px, 1.88vw, 25px)', color: '#FFFFFF', marginBottom: 'clamp(20px, 2vw, 28px)', maxWidth: '560px' }}>
+                  Subscribe to Rise with Jeet IAS on YouTube and get instant notifications for new lectures, current affairs drops, and live sessions all completely free.
+                </p>
+                <div className="flex items-center" style={{ gap: 'clamp(12px, 1.4vw, 20px)', flexWrap: 'wrap' }}>
+                  <a
+                    href="https://www.youtube.com/@RiseWithJeet"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 font-arimo font-bold text-white"
+                    style={{ background: '#E7000B', borderRadius: '26843500px', padding: 'clamp(12px, 1.2vw, 14px) clamp(24px, 2.25vw, 30px)', fontSize: 'clamp(13px, 1.12vw, 15px)' }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FFFFFF"/>
+                      <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#E7000B"/>
+                    </svg>
+                    Join Our YouTube Family
+                  </a>
+                  <p className="font-arimo font-bold" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#FFFFFF' }}>
+                    Join 15,000+ UPSC Aspirants Here
+                  </p>
+                </div>
+              </div>
+              <div
+                className="flex items-center justify-center"
+                style={{ width: 'clamp(100px, 10vw, 140px)', height: 'clamp(100px, 10vw, 140px)', borderRadius: '50%', background: 'rgba(25,60,184,0.3)', flexShrink: 0 }}
+              >
+                <span style={{ fontSize: 'clamp(48px, 5vw, 68px)' }}>{'\u{1F514}'}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Inline videos for selected subject */}
         {selectedSubject && (
           <div style={{ marginTop: 'clamp(24px, 2.5vw, 36px)' }}>
@@ -752,121 +811,75 @@ export default function VideoLecturesPage() {
                   ))}
                 </div>
 
-                {/* YouTube CTA Banner */}
-                <div style={{ marginTop: 'clamp(28px, 3vw, 40px)' }}>
-                  <div
-                    style={{
-                      background: 'linear-gradient(135deg, #0E182D, #172240)',
-                      borderRadius: '24px',
-                      padding: 'clamp(28px, 3vw, 44px) clamp(28px, 3vw, 42px)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 'clamp(24px, 3vw, 40px)',
-                      position: 'relative',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div style={{ flex: 1, zIndex: 1 }}>
-                      <h3
-                        className="font-arimo font-bold"
-                        style={{
-                          fontSize: 'clamp(28px, 2.7vw, 36px)',
-                          lineHeight: 1.2,
-                          color: '#FFFFFF',
-                          marginBottom: 'clamp(4px, 0.4vw, 6px)',
-                        }}
-                      >
-                        Never Miss a<br />
-                        <span style={{ color: '#E8B84B' }}>Lecture Again.</span>
-                      </h3>
-                      <p
-                        className="font-arimo"
-                        style={{
-                          fontSize: 'clamp(18px, 1.88vw, 25px)',
-                          color: '#FFFFFF',
-                          marginBottom: 'clamp(12px, 1.2vw, 16px)',
-                        }}
-                      >
-                        Stay Consistent. Stay Ahead.
-                      </p>
-                      <p
-                        className="font-arimo"
-                        style={{
-                          fontSize: 'clamp(13px, 1.12vw, 15px)',
-                          lineHeight: 'clamp(20px, 1.88vw, 25px)',
-                          color: '#FFFFFF',
-                          marginBottom: 'clamp(20px, 2vw, 28px)',
-                          maxWidth: '560px',
-                        }}
-                      >
-                        Subscribe to Rise with Jeet on YouTube and get instant notifications for new lectures, current affairs drops, and live sessions.
-                      </p>
-                      <div
-                        className="flex items-center"
-                        style={{ gap: 'clamp(12px, 1.4vw, 20px)', flexWrap: 'wrap' }}
-                      >
-                        <a
-                          href="https://www.youtube.com/@RiseWithJeet"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 font-arimo font-bold text-white"
-                          style={{
-                            background: '#E7000B',
-                            borderRadius: '26843500px',
-                            padding: 'clamp(12px, 1.2vw, 14px) clamp(24px, 2.25vw, 30px)',
-                            fontSize: 'clamp(13px, 1.12vw, 15px)',
-                          }}
-                        >
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FFFFFF"/>
-                            <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#E7000B"/>
-                          </svg>
-                          Join Our YouTube Family
-                        </a>
-                        <p className="font-arimo font-bold" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#FFFFFF' }}>
-                          Join 15,000+ UPSC Aspirants Here
-                        </p>
-                      </div>
-                    </div>
-                    <div
-                      className="flex items-center justify-center"
-                      style={{
-                        width: 'clamp(100px, 10vw, 140px)',
-                        height: 'clamp(100px, 10vw, 140px)',
-                        borderRadius: '50%',
-                        background: 'rgba(25,60,184,0.3)',
-                        flexShrink: 0,
-                        opacity: 0.4,
-                      }}
+              </>
+            )}
+
+            {/* YouTube CTA Banner — always shown below videos when a subject is selected */}
+            {!subjectVideosLoading && (
+              <div style={{ marginTop: 'clamp(28px, 3vw, 40px)' }}>
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #0E182D, #172240)',
+                    borderRadius: '24px',
+                    padding: 'clamp(28px, 3vw, 44px) clamp(28px, 3vw, 42px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 'clamp(24px, 3vw, 40px)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div style={{ flex: 1, zIndex: 1 }}>
+                    <h3
+                      className="font-arimo font-bold"
+                      style={{ fontSize: 'clamp(28px, 2.7vw, 36px)', lineHeight: 1.2, color: '#FFFFFF', marginBottom: 'clamp(4px, 0.4vw, 6px)' }}
                     >
-                      <span style={{ fontSize: 'clamp(48px, 5vw, 68px)' }}>{'\u{1F514}'}</span>
+                      Never Miss a<br />
+                      <span style={{ color: '#E8B84B' }}>Lecture Again.</span>
+                    </h3>
+                    <p className="font-arimo" style={{ fontSize: 'clamp(18px, 1.88vw, 25px)', color: '#FFFFFF', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
+                      Stay Consistent. Stay Ahead.
+                    </p>
+                    <p className="font-arimo" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', lineHeight: 'clamp(20px, 1.88vw, 25px)', color: '#FFFFFF', marginBottom: 'clamp(20px, 2vw, 28px)', maxWidth: '560px' }}>
+                      Subscribe to Rise with Jeet IAS on YouTube and get instant notifications for new lectures, current affairs drops, and live sessions all completely free.
+                    </p>
+                    <div className="flex items-center" style={{ gap: 'clamp(12px, 1.4vw, 20px)', flexWrap: 'wrap' }}>
+                      <a
+                        href="https://www.youtube.com/@RiseWithJeet"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 font-arimo font-bold text-white"
+                        style={{ background: '#E7000B', borderRadius: '26843500px', padding: 'clamp(12px, 1.2vw, 14px) clamp(24px, 2.25vw, 30px)', fontSize: 'clamp(13px, 1.12vw, 15px)' }}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FFFFFF"/>
+                          <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#E7000B"/>
+                        </svg>
+                        Join Our YouTube Family
+                      </a>
+                      <p className="font-arimo font-bold" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#FFFFFF' }}>
+                        Join 15,000+ UPSC Aspirants Here
+                      </p>
                     </div>
                   </div>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{ width: 'clamp(100px, 10vw, 140px)', height: 'clamp(100px, 10vw, 140px)', borderRadius: '50%', background: 'rgba(25,60,184,0.3)', flexShrink: 0 }}
+                  >
+                    <span style={{ fontSize: 'clamp(48px, 5vw, 68px)' }}>{'\u{1F514}'}</span>
+                  </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Bottom support cards (restored from older layout) */}
-      <div
-        style={{
-          maxWidth: '1338px',
-          margin: '0 auto',
-          padding: '0 clamp(14px, 1.6vw, 24px) clamp(36px, 4vw, 56px)',
-        }}
-      >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(521.6px, 100%), 521.6px))',
-            justifyContent: 'center',
-            gap: '50px',
-            alignItems: 'start',
-          }}
-        >
+      {/* Bottom support cards removed — PDF and Ask Mentor open as modals via openVideoActionModal */}
+      {false && (
+      <div style={{ display: 'none' }}>
+        <div>
           <div
             style={{
               background: '#FFFFFF',
@@ -1012,6 +1025,7 @@ export default function VideoLecturesPage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Watch Video + Quiz Modal */}
       {watchVideo && (
