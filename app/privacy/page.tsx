@@ -86,7 +86,7 @@ export default function PrivacyPolicyPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#0c1424] to-[#090e1c] opacity-80" />
         <div className="relative z-10 mx-auto max-w-3xl px-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#e8b84b]/30 bg-[#e8b84b]/10 px-4 py-1.5 text-xs font-medium text-[#e8b84b] mb-6">
-            <span>🔏</span> Legal
+            <span>🔏</span> Privacy Policy
           </div>
           <h1
             className="text-4xl md:text-5xl font-bold text-white mb-4"
@@ -97,7 +97,7 @@ export default function PrivacyPolicyPage() {
           <p className="text-sm text-[#9aa3b8]">
             <strong className="text-white/80">Effective date:</strong> February 1,
             2025 &nbsp;&middot;&nbsp;{' '}
-            <strong className="text-white/80">Last updated:</strong> March 15, 2026
+            <strong className="text-white/80">Last updated:</strong> 1 May, 2026
           </p>
         </div>
       </section>
@@ -131,7 +131,7 @@ export default function PrivacyPolicyPage() {
               <p className="text-[10px] uppercase tracking-widest text-[#9aa3b8] mb-1">
                 Privacy queries
               </p>
-              <p className="text-xs text-[#374560]">privacy@risewithjeet.in</p>
+              <p className="text-xs text-[#374560]">together@risewithjeet.com</p>
             </div>
           </aside>
 
@@ -142,11 +142,10 @@ export default function PrivacyPolicyPage() {
               <SectionHeading num="01" title="Overview" id="s1" />
               <InfoBox icon="💡">
                 <strong>Short version:</strong> We collect only what we need to make
-                RiseWithJeet work well for you. We never sell your data. You are
-                always in control.
+                RiseWithJeet work well for you. We never sell your data.
               </InfoBox>
               <p className={pStyle}>
-                RiseWithJeet Edtech Pvt Ltd (&ldquo;RiseWithJeet&rdquo;,
+                Jeetpath Academy Pvt. Ltd. (&ldquo;RiseWithJeet&rdquo;,
                 &ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;) operates
                 the RiseWithJeet platform available at risewithjeet.in and through our
                 mobile applications. This Privacy Policy explains what personal data
@@ -157,10 +156,10 @@ export default function PrivacyPolicyPage() {
                 We take your privacy seriously and have written this policy in plain
                 language. If anything is unclear, write to us at{' '}
                 <a
-                  href="mailto:privacy@risewithjeet.in"
+                  href="mailto:together@risewithjeet.com"
                   className="underline underline-offset-2 hover:text-[#0c1424]"
                 >
-                  privacy@risewithjeet.in
+                  together@risewithjeet.com
                 </a>{' '}
                 and we will explain it.
               </p>
@@ -190,7 +189,7 @@ export default function PrivacyPolicyPage() {
                   <tbody className="text-[#374560]">
                     <tr className="border-t border-[rgba(11,22,40,0.06)]">
                       <td className="px-5 py-3 font-medium text-[#0c1424]">Account information</td>
-                      <td className="px-5 py-3">Name, email address, phone number, profile photo</td>
+                      <td className="px-5 py-3">Name, email address, phone number</td>
                       <td className="px-5 py-3">To create and manage your account</td>
                     </tr>
                     <tr className="border-t border-[rgba(11,22,40,0.06)] bg-[#f5f3ef]">
@@ -286,31 +285,15 @@ export default function PrivacyPolicyPage() {
               <ul className="list-disc pl-6 space-y-2 mb-5">
                 <li className={liStyle}>
                   <strong>Service providers:</strong> We work with trusted third
-                  parties to operate the platform, including Razorpay (payments), AWS
-                  or Google Cloud (infrastructure), and Firebase (authentication). All
-                  service providers are bound by data processing agreements and may
-                  only use your data to provide services to us.
-                </li>
-                <li className={liStyle}>
-                  <strong>Mentors (Mentorship Pro only):</strong> If you are enrolled
-                  in Mentorship Pro, your name, submitted answers, and progress data
-                  are shared with your assigned mentor to enable personalised sessions.
-                </li>
-                <li className={liStyle}>
-                  <strong>Aggregated statistics:</strong> We may share anonymised,
-                  aggregated data (for example, overall platform accuracy rates). This
-                  data cannot identify you individually.
+                  parties to operate the platform. All service providers are bound by
+                  data processing agreements and may only use your data to provide
+                  services to us.
                 </li>
                 <li className={liStyle}>
                   <strong>Legal requirements:</strong> We may disclose your information
                   if required by law, court order, or government authority, or if we
                   believe in good faith that disclosure is necessary to protect the
                   rights or safety of RiseWithJeet or its users.
-                </li>
-                <li className={liStyle}>
-                  <strong>Business transfers:</strong> In the event of a merger or
-                  acquisition, your data may be transferred to the acquiring entity. We
-                  will make reasonable efforts to inform you of any such change.
                 </li>
               </ul>
             </div>
@@ -322,19 +305,6 @@ export default function PrivacyPolicyPage() {
                 We apply the following safeguards to protect your data:
               </p>
               <ul className="list-disc pl-6 space-y-2 mb-5">
-                <li className={liStyle}>
-                  <strong>Encryption in transit:</strong> All data transmitted between
-                  your device and our servers is encrypted using TLS 1.3.
-                </li>
-                <li className={liStyle}>
-                  <strong>Encryption at rest:</strong> Stored data including your
-                  account information and study records is encrypted using AES-256.
-                </li>
-                <li className={liStyle}>
-                  <strong>Access control:</strong> Only team members who genuinely need
-                  access to perform their duties can access user data. Access is
-                  role-based and logged.
-                </li>
                 <li className={liStyle}>
                   <strong>Payment security:</strong> We do not store your card details.
                   All payment processing is handled by Razorpay, which is PCI-DSS
@@ -348,7 +318,7 @@ export default function PrivacyPolicyPage() {
               </ul>
               <NoteBox icon="🛡️">
                 If you discover a security vulnerability, please report it responsibly
-                to <strong>security@risewithjeet.in</strong> before disclosing it
+                to <strong>together@risewithjeet.com</strong> before disclosing it
                 publicly. We take all responsible disclosures seriously.
               </NoteBox>
             </div>
@@ -362,7 +332,7 @@ export default function PrivacyPolicyPage() {
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-5">
                 {[
-                  { icon: '👁️', title: 'Access', body: 'Request a copy of all personal data we hold about you, in a readable format.' },
+                  { icon: '👁️', title: 'Access', body: 'Access your personal data and information.' },
                   { icon: '✏️', title: 'Correction', body: 'Ask us to correct inaccurate or incomplete data in your account at any time.' },
                   { icon: '🗑️', title: 'Deletion', body: 'Request deletion of your account and all associated personal data. We will process this promptly.' },
                   { icon: '📦', title: 'Portability', body: 'Export your study data, scores, and evaluation history in a portable format.' },
@@ -386,10 +356,10 @@ export default function PrivacyPolicyPage() {
               <p className={pStyle}>
                 To exercise any of these rights, email us at{' '}
                 <a
-                  href="mailto:privacy@risewithjeet.in"
+                  href="mailto:together@risewithjeet.com"
                   className="underline underline-offset-2 hover:text-[#0c1424]"
                 >
-                  privacy@risewithjeet.in
+                  together@risewithjeet.com
                 </a>{' '}
                 from your registered email address. There is no charge for exercising
                 your rights.
@@ -448,17 +418,17 @@ export default function PrivacyPolicyPage() {
             <div className={sectionGap}>
               <SectionHeading num="08" title="Children&rsquo;s Privacy" id="s8" />
               <p className={pStyle}>
-                RiseWithJeet is intended for users who are 18 years of age or older. We
-                do not knowingly collect personal data from anyone under the age of 18.
+                RiseWithJeet is intended for users who are 13 years of age or older. We
+                do not knowingly collect personal data from anyone under the age of 13.
               </p>
               <p className={pStyle}>
                 If you are a parent or guardian and believe your child has provided
                 personal data to us without your consent, please contact us at{' '}
                 <a
-                  href="mailto:privacy@risewithjeet.in"
+                  href="mailto:together@risewithjeet.com"
                   className="underline underline-offset-2 hover:text-[#0c1424]"
                 >
-                  privacy@risewithjeet.in
+                  together@risewithjeet.com
                 </a>{' '}
                 and we will promptly delete that information from our systems.
               </p>
@@ -498,24 +468,12 @@ export default function PrivacyPolicyPage() {
                 privacy, please reach out to us. We take every message seriously.
               </p>
               <InfoBox icon="📬">
-                <strong>RiseWithJeet Edtech Pvt Ltd</strong>
-                <br />
-                Privacy Officer
-                <br />
-                Email:{' '}
+                Privacy and Security Issues:{' '}
                 <a
-                  href="mailto:privacy@risewithjeet.in"
+                  href="mailto:together@risewithjeet.com"
                   className="underline underline-offset-2 hover:text-[#0c1424]"
                 >
-                  privacy@risewithjeet.in
-                </a>
-                <br />
-                Security issues:{' '}
-                <a
-                  href="mailto:security@risewithjeet.in"
-                  className="underline underline-offset-2 hover:text-[#0c1424]"
-                >
-                  security@risewithjeet.in
+                  together@risewithjeet.com
                 </a>
               </InfoBox>
               <p className={pStyle}>
@@ -529,31 +487,35 @@ export default function PrivacyPolicyPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-[#090e1c] py-20 text-center px-6">
-        <h2
-          className="text-3xl md:text-4xl font-bold text-white mb-4"
-          style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
-        >
-          Have a question about
-          <br />
-          your <em className="not-italic text-[#e8b84b]">data or privacy?</em>
-        </h2>
-        <p className="text-[#9aa3b8] mb-8">
-          No bots, no templates. A real person reads every message.
-        </p>
-        <div className="flex flex-wrap justify-center gap-4">
-          <a
-            href="mailto:privacy@risewithjeet.in"
-            className="inline-flex items-center gap-2 rounded-lg bg-[#e8b84b] px-6 py-3 text-sm font-semibold text-[#090e1c] hover:bg-[#f5ce72] transition-colors"
-          >
-            Email privacy@risewithjeet.in
-          </a>
-          <Link
-            href="/contact"
-            className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
-          >
-            Contact Us
-          </Link>
+      <section className="bg-[#faf8f4] py-16">
+        <div className="mx-auto max-w-xl px-6">
+          <div className="rounded-2xl bg-[#090e1c] px-8 py-12 text-center">
+            <h2
+              className="text-3xl md:text-4xl font-bold text-white mb-4"
+              style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
+            >
+              Have a question about
+              <br />
+              your <em className="not-italic text-[#e8b84b]">data or privacy?</em>
+            </h2>
+            <p className="text-[#9aa3b8] mb-8">
+              No bots, no templates. A real person reads every message.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <a
+                href="mailto:together@risewithjeet.com"
+                className="inline-flex items-center gap-2 rounded-lg bg-[#e8b84b] px-6 py-3 text-sm font-semibold text-[#090e1c] hover:bg-[#f5ce72] transition-colors"
+              >
+                Email together@risewithjeet.com
+              </a>
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+              >
+                Contact Us
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

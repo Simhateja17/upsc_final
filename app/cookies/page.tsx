@@ -60,12 +60,12 @@ export default function CookiePolicyPage() {
       <section className="relative overflow-hidden bg-[#090e1c] pt-32 pb-20 text-center text-white">
         <div className="mx-auto max-w-3xl px-6">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-1.5 text-sm text-amber-300">
-            <span>&#x1F36A;</span> Legal
+            <span>&#x1F36A;</span> Cookies &amp; Tracking
           </div>
 
           <div className="mb-3 flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] text-amber-400/70">
             <span className="h-px w-8 bg-amber-400/30" />
-            No surprises
+            Simple, Transparent &amp; Secure
             <span className="h-px w-8 bg-amber-400/30" />
           </div>
 
@@ -76,7 +76,7 @@ export default function CookiePolicyPage() {
           <p className="mt-4 text-sm text-slate-400">
             <strong className="text-slate-300">Effective date:</strong>{' '}
             February 1, 2025 &nbsp;&middot;&nbsp;{' '}
-            <strong className="text-slate-300">Last updated:</strong> March 15,
+            <strong className="text-slate-300">Last updated:</strong> 1 May,
             2026
           </p>
         </div>
@@ -117,10 +117,10 @@ export default function CookiePolicyPage() {
                 Questions?
               </p>
               <a
-                href="mailto:privacy@risewithjeet.in"
+                href="mailto:together@risewithjeet.com"
                 className="mt-1 block text-sm text-slate-700 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
               >
-                privacy@risewithjeet.in
+                together@risewithjeet.com
               </a>
             </div>
           </aside>
@@ -362,47 +362,51 @@ export default function CookiePolicyPage() {
               </p>
 
               <InfoBox icon="&#x1F4EC;">
-                <strong>RiseWithJeet Edtech Pvt Ltd</strong>
-                <br />
                 Privacy and cookie queries:{' '}
                 <a
-                  href="mailto:privacy@risewithjeet.in"
+                  href="mailto:together@risewithjeet.com"
                   className="text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-amber-400"
                 >
-                  privacy@risewithjeet.in
+                  together@risewithjeet.com
                 </a>
               </InfoBox>
+
+              <p className="text-slate-700 leading-relaxed">
+                This policy may be updated from time to time. The &ldquo;Last updated&rdquo; date at the top of this page will reflect any changes.
+              </p>
             </section>
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="bg-[#090e1c] py-20 text-center text-white">
+      <section className="bg-[#faf8f4] py-16">
         <div className="mx-auto max-w-xl px-6">
-          <h2 className="font-serif text-3xl font-bold tracking-tight sm:text-4xl">
-            Questions about
-            <br />
-            <em className="text-amber-400 not-italic">
-              cookies or privacy?
-            </em>
-          </h2>
-          <p className="mt-4 text-slate-400">
-            We keep it simple and honest. Reach out if anything is unclear.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <a
-              href="mailto:privacy@risewithjeet.in"
-              className="rounded-lg bg-amber-500 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-400"
-            >
-              Email privacy@risewithjeet.in
-            </a>
-            <Link
-              href="/privacy"
-              className="rounded-lg border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              Read Privacy Policy
-            </Link>
+          <div className="rounded-2xl bg-[#090e1c] px-8 py-12 text-center">
+            <h2 className="font-serif text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Questions about
+              <br />
+              <em className="text-amber-400 not-italic">
+                cookies or privacy?
+              </em>
+            </h2>
+            <p className="mt-4 text-slate-400">
+              We keep it simple and honest. Reach out if anything is unclear.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+              <a
+                href="mailto:together@risewithjeet.com"
+                className="rounded-lg bg-amber-500 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-400"
+              >
+                Email together@risewithjeet.com
+              </a>
+              <Link
+                href="/contact"
+                className="rounded-lg border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Contact Us
+              </Link>
+            </div>
           </div>
         </div>
       </section>
