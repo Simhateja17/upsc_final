@@ -35,14 +35,14 @@ const SUBJECT_COLORS: Record<string, string> = {
 };
 
 const SUBJECT_CARD_STYLES: Record<string, { bg: string; border: string; bar: string }> = {
-  'indian-polity': { bg: '#FFF7E6', border: '#FED7AA', bar: '#F0AE00' },
-  'modern-history': { bg: '#FFF7ED', border: '#FDBA74', bar: '#D08700' },
-  geography: { bg: '#ECFDF5', border: '#A7F3D0', bar: '#14B8A6' },
-  'indian-economy': { bg: '#F5F3FF', border: '#DDD6FE', bar: '#8B5CF6' },
-  environment: { bg: '#E8FFF3', border: '#BBF7D0', bar: '#22C55E' },
-  'gs-iv-ethics': { bg: '#EEF2FF', border: '#C7D2FE', bar: '#6366F1' },
-  'current-affairs': { bg: '#FEF2F2', border: '#FECACA', bar: '#EF4444' },
-  'science-and-tech': { bg: '#EAF4FF', border: '#BFDBFE', bar: '#3B82F6' },
+  'indian-polity': { bg: 'linear-gradient(145deg, #FFF4E2 0%, #FBE9CC 100%)', border: '#F4CCA0', bar: '#EA580C' },
+  'modern-history': { bg: 'linear-gradient(145deg, #FFF7EC 0%, #FCECD8 100%)', border: '#F2CFA5', bar: '#B45309' },
+  geography: { bg: 'linear-gradient(145deg, #F4ECD2 0%, #ECE3C2 100%)', border: '#D9C88E', bar: '#1D4ED8' },
+  'indian-economy': { bg: 'linear-gradient(145deg, #F3EEFF 0%, #E7DEFF 100%)', border: '#D7C8FF', bar: '#7C3AED' },
+  environment: { bg: 'linear-gradient(145deg, #EEFBF4 0%, #DCF5E8 100%)', border: '#BCE9D1', bar: '#16A34A' },
+  'gs-iv-ethics': { bg: 'linear-gradient(145deg, #EEF4FB 0%, #E4ECF7 100%)', border: '#D1DFF0', bar: '#1D4ED8' },
+  'current-affairs': { bg: 'linear-gradient(145deg, #FFF1F2 0%, #FDE7EA 100%)', border: '#F6C6CF', bar: '#EF4444' },
+  'science-and-tech': { bg: 'linear-gradient(145deg, #E7F0FC 0%, #D7E6F8 100%)', border: '#BED4EE', bar: '#0369A1' },
 };
 
 type SubjectData = {
@@ -80,7 +80,21 @@ export default function MindmapPage() {
 
       <DashboardPageHero
         // eslint-disable-next-line @next/next/no-img-element
-        badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeIcon={
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="3" fill="#E8B84B" />
+            <circle cx="4" cy="6" r="2" fill="#E8B84B" />
+            <circle cx="4" cy="18" r="2" fill="#E8B84B" />
+            <circle cx="20" cy="4" r="2" fill="#E8B84B" />
+            <circle cx="20" cy="12" r="2" fill="#E8B84B" />
+            <circle cx="20" cy="20" r="2" fill="#E8B84B" />
+            <line x1="12" y1="12" x2="4" y2="6" stroke="#E8B84B" strokeWidth="1.5" />
+            <line x1="12" y1="12" x2="4" y2="18" stroke="#E8B84B" strokeWidth="1.5" />
+            <line x1="12" y1="12" x2="20" y2="4" stroke="#E8B84B" strokeWidth="1.5" />
+            <line x1="12" y1="12" x2="20" y2="12" stroke="#E8B84B" strokeWidth="1.5" />
+            <line x1="12" y1="12" x2="20" y2="20" stroke="#E8B84B" strokeWidth="1.5" />
+          </svg>
+        }
         badgeText="VISUAL LEARNING"
         title={
           <>
@@ -89,7 +103,7 @@ export default function MindmapPage() {
             with Mindmaps
           </>
         }
-        subtitle="See the big picture. Every topic structured as a visual tree — revise faster, remember longer."
+        subtitle="See the big picture. Every topic structured as a visual tree, revise faster, remember longer."
         stats={[
           { value: String(totalMaps),      label: 'Total Maps',   color: '#FDC700' },
           { value: String(mastered),        label: 'Mastered',     color: '#4ADE80' },
@@ -134,7 +148,7 @@ export default function MindmapPage() {
               const cardStyle = SUBJECT_CARD_STYLES[subject.slug] ?? { bg: '#FFFFFF', border: '#E5E7EB', bar: color };
               return (
                 <Link key={subject.slug} href={`/dashboard/mindmap/${subject.slug}`} className="block">
-                  <div className="rounded-[16px] overflow-hidden shadow-sm flex flex-col h-[172px] relative group hover:-translate-y-0.5 hover:shadow-md transition-all" style={{ background: cardStyle.bg, border: `1px solid ${cardStyle.border}` }}>
+                  <div className="rounded-[16px] overflow-hidden shadow-sm flex flex-col h-[172px] relative group hover:-translate-y-0.5 hover:shadow-md transition-all" style={{ background: cardStyle.bg, border: `1.5px solid ${cardStyle.border}` }}>
                     <div className="h-[4px] w-full" style={{ backgroundColor: cardStyle.bar }} />
                     <div className="p-5 flex flex-col justify-between h-full">
                       <div>

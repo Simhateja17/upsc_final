@@ -2,8 +2,27 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { userService } from '@/lib/services';
 
 const DONE_KEY = 'rwj_onboarding_complete';
+
+const INDIAN_STATES = [
+  'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
+  'Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh',
+  'Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan',
+  'Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal',
+  'Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry',
+];
+
+const OPTIONAL_SUBJECTS = [
+  'Agriculture','Animal Husbandry and Veterinary Science','Anthropology','Botany',
+  'Chemistry','Civil Engineering','Commerce and Accountancy','Economics',
+  'Electrical Engineering','Geography','Geology','History','Law','Management',
+  'Mathematics','Mechanical Engineering','Medical Science','Philosophy','Physics',
+  'Political Science and International Relations','Psychology','Public Administration',
+  'Sociology','Statistics','Zoology','Literature',
+];
 
 // ── Step 1: prep stage cards ──────────────────────────────────────────────────
 const PREP_STAGES = [
@@ -24,6 +43,7 @@ const REMINDER_OPTIONS = [
 interface FormData {
   targetYear: string;
   optionalSubject: string;
+  state: string;
   background: string;
   hoursPerDay: string;
   biggestChallenge: string;
@@ -32,6 +52,7 @@ interface FormData {
 const DEFAULT_FORM: FormData = {
   targetYear: '',
   optionalSubject: '',
+  state: '',
   background: '',
   hoursPerDay: '',
   biggestChallenge: '',
@@ -315,6 +336,14 @@ export default function OnboardingFlow() {
   function finish() {
     localStorage.setItem(DONE_KEY, '1');
     localStorage.setItem('rwj_onboarding_data', JSON.stringify({ prepStage, form, reminder }));
+    // Persist profile-shared fields so students don't have to re-enter them on the Profile page.
+    if (form.targetYear || form.optionalSubject || form.state) {
+      userService.updateProfile({
+        targetYear: form.targetYear,
+        optionalSubject: form.optionalSubject,
+        state: form.state,
+      }).catch(() => {});
+    }
     setVisible(false);
   }
 
@@ -381,29 +410,50 @@ export default function OnboardingFlow() {
                     style={{ ...inputStyle, paddingRight: 32 }}
                   >
                     <option value="">Select year</option>
-                    <option>UPSC CSE 2025</option>
-                    <option>UPSC CSE 2026</option>
-                    <option>UPSC CSE 2027</option>
-                    <option>UPSC CSE 2028</option>
-                    <option>Still Deciding</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="Later">Later</option>
                   </select>
                   <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#9CA3AF', fontSize: 12 }}>▾</span>
                 </div>
               </div>
               <div>
                 <label style={labelStyle}>Your Optional Subject</label>
-                <input
-                  type="text"
-                  placeholder="e.g. History"
-                  value={form.optionalSubject}
-                  onChange={(e) => setForm({ ...form, optionalSubject: e.target.value })}
-                  style={inputStyle}
-                />
+                <div style={{ position: 'relative' }}>
+                  <select
+                    value={form.optionalSubject}
+                    onChange={(e) => setForm({ ...form, optionalSubject: e.target.value })}
+                    style={{ ...inputStyle, paddingRight: 32 }}
+                  >
+                    <option value="">Select subject</option>
+                    {OPTIONAL_SUBJECTS.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#9CA3AF', fontSize: 12 }}>▾</span>
+                </div>
               </div>
             </div>
 
             {/* Row 2 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div>
+                <label style={labelStyle}>State</label>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    value={form.state}
+                    onChange={(e) => setForm({ ...form, state: e.target.value })}
+                    style={{ ...inputStyle, paddingRight: 32 }}
+                  >
+                    <option value="">Select state</option>
+                    {INDIAN_STATES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#9CA3AF', fontSize: 12 }}>▾</span>
+                </div>
+              </div>
               <div>
                 <label style={labelStyle}>Your Background</label>
                 <div style={{ position: 'relative' }}>
@@ -422,6 +472,10 @@ export default function OnboardingFlow() {
                   <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#9CA3AF', fontSize: 12 }}>▾</span>
                 </div>
               </div>
+            </div>
+
+            {/* Row 3 */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 0 }}>
               <div>
                 <label style={labelStyle}>How many hours do you study per day?</label>
                 <div style={{ position: 'relative' }}>
@@ -439,18 +493,16 @@ export default function OnboardingFlow() {
                   <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#9CA3AF', fontSize: 12 }}>▾</span>
                 </div>
               </div>
-            </div>
-
-            {/* Row 3 */}
-            <div style={{ marginBottom: 0 }}>
-              <label style={labelStyle}>Your biggest challenge right now</label>
-              <input
-                type="text"
-                placeholder="e.g. Current Affairs retention"
-                value={form.biggestChallenge}
-                onChange={(e) => setForm({ ...form, biggestChallenge: e.target.value })}
-                style={{ ...inputStyle, width: '100%' }}
-              />
+              <div>
+                <label style={labelStyle}>Your biggest challenge right now</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Current Affairs retention"
+                  value={form.biggestChallenge}
+                  onChange={(e) => setForm({ ...form, biggestChallenge: e.target.value })}
+                  style={inputStyle}
+                />
+              </div>
             </div>
 
             <FooterButtons

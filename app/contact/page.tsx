@@ -1,124 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import DashboardHeader from '@/components/DashboardHeader';
 import { contactService } from '@/lib/services';
-
-function ContactHeader() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const navLinks = [
-    { label: 'Modules', href: '/#modules' },
-    { label: 'Jeet AI', href: '/dashboard/jeet-gpt' },
-    { label: 'Analytics', href: '/dashboard/performance' },
-    { label: 'Community', href: '/community' },
-    { label: 'Pricing', href: '/pricing' },
-  ];
-
-  return (
-    <header className="absolute top-0 left-0 right-0 z-50">
-      <div className="mx-auto flex h-[72px] max-w-[1280px] items-center justify-between px-6 md:px-10">
-        {/* Logo */}
-        <Link href="/" className="flex items-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.png"
-            alt="RiseWithJeet"
-            className="w-[90px] md:w-[110px] h-auto object-contain"
-          />
-        </Link>
-
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="text-[14px] font-medium text-white/70 transition-colors hover:text-white"
-              style={{ fontFamily: 'var(--font-dm-sans)' }}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Desktop Buttons */}
-        <div className="hidden md:flex items-center gap-3">
-          <Link
-            href="/login?tab=login"
-            className="rounded-[8px] border border-white/20 px-5 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-white/10"
-            style={{ fontFamily: 'var(--font-dm-sans)' }}
-          >
-            Login
-          </Link>
-          <Link
-            href="/login?tab=signup"
-            className="flex items-center gap-1.5 rounded-[8px] bg-[#E8B84B] px-5 py-2 text-[13px] font-bold text-[#0C1424] transition-colors hover:bg-[#F5C75D]"
-            style={{ fontFamily: 'var(--font-dm-sans)' }}
-          >
-            Start Free
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </Link>
-        </div>
-
-        {/* Mobile Hamburger */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg text-white hover:bg-white/10 transition-colors"
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? (
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M2 2L18 18M18 2L2 18" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          ) : (
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-              <path d="M3 6H19M3 11H19M3 16H19" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          )}
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      {mobileOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-[#0C1424]/95 backdrop-blur-md border-t border-white/10 shadow-xl">
-          <div className="flex flex-col px-6 py-4 gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="py-3 text-[15px] font-medium text-white/80 hover:text-[#E8B84B] transition-colors border-b border-white/5"
-                style={{ fontFamily: 'var(--font-dm-sans)' }}
-              >
-                {link.label}
-              </Link>
-            ))}
-            <div className="flex items-center gap-3 pt-4">
-              <Link
-                href="/login?tab=login"
-                onClick={() => setMobileOpen(false)}
-                className="flex-1 rounded-[8px] border border-white/20 py-2.5 text-center text-[13px] font-semibold text-white hover:bg-white/10 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                href="/login?tab=signup"
-                onClick={() => setMobileOpen(false)}
-                className="flex-1 rounded-[8px] bg-[#E8B84B] py-2.5 text-center text-[13px] font-bold text-[#0C1424] hover:bg-[#F5C75D] transition-colors"
-              >
-                Start Free
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-    </header>
-  );
-}
 
 const subjectOptions = [
   'General Inquiry',
@@ -134,13 +19,11 @@ const reachCards = [
   {
     iconBg: 'rgba(232,184,75,0.12)',
     title: 'Email support',
-    link: 'support@risewithjeet.in',
+    link: 'together@risewithjeet.com',
     description: 'For account, billing, and general queries',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <path d="M4 5H20V19H4V5Z" stroke="#0C1424" strokeWidth="1.6" />
-        <path d="M4 7L12 13L20 7" stroke="#0C1424" strokeWidth="1.6" strokeLinecap="round" />
-      </svg>
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src="/icon-gmail.png" alt="Gmail" width={20} height={20} style={{ objectFit: 'contain' }} />
     ),
   },
   {
@@ -149,9 +32,8 @@ const reachCards = [
     link: 't.me/risewithjeet',
     description: 'Live doubt clearing, notes, daily discussion',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <path d="M21 3L3 10L10 12L12 19L21 3Z" stroke="#0C1424" strokeWidth="1.6" strokeLinejoin="round" />
-      </svg>
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src="/icon-telegram.png" alt="Telegram" width={20} height={20} style={{ objectFit: 'contain' }} />
     ),
   },
   {
@@ -160,10 +42,8 @@ const reachCards = [
     link: 'youtube.com/@RisewithJeet',
     description: 'Free lectures, mnemonics, current affairs',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="6" width="18" height="12" rx="3" stroke="#0C1424" strokeWidth="1.6" />
-        <path d="M11 10L15 12L11 14V10Z" fill="#0C1424" />
-      </svg>
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src="/icon-youtube.png" alt="YouTube" width={20} height={20} style={{ objectFit: 'contain' }} />
     ),
   },
 ];
@@ -206,13 +86,12 @@ export default function ContactPage() {
   };
 
   // eslint-disable-next-line @next/next/no-img-element
-  const capIcon = <img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />;
+  const capIcon = <img src="/help-support-icon.png" alt="help and support" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />;
   return (
     <main className="min-h-screen flex flex-col">
-      <ContactHeader />
+      <DashboardHeader />
 
-      {/* Dark wrapper reserves space for the floating ContactHeader (72px tall) */}
-      <div style={{ background: '#0F131F', paddingTop: '72px' }}>
+      <div style={{ background: '#0F131F' }}>
         <DashboardPageHero
           badgeIcon={capIcon}
           badgeText="HELP & SUPPORT"
@@ -223,7 +102,7 @@ export default function ContactPage() {
           subtitle="Have a question, a doubt about your preparation, or just something you want to say? We read every message, every single one."
           stats={[
             { value: '4h',   label: 'Response Time',  color: '#FDC700' },
-            { value: '100%', label: 'Human Reply',     color: '#4ADE80' },
+            { value: '100%', label: 'Response Rate',   color: '#4ADE80' },
             { value: '3',    label: 'Channels',        color: '#F87171' },
             { value: '∞',    label: 'Always Free',     color: '#FFFFFF' },
           ]}
@@ -374,9 +253,6 @@ export default function ContactPage() {
                 <span aria-hidden="true">-&gt;</span>
               </button>
 
-              <p className="pt-1 text-center text-[11px] text-[#9AA3B8]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                We never share your details with anyone. Ever.
-              </p>
             </form>
           </div>
         </div>

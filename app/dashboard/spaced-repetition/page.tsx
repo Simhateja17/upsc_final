@@ -1,8 +1,37 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { dashboardService, spacedRepService, userService } from '@/lib/services';
+import { dashboardService, flashcardService, spacedRepService, userService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
+
+const SUBJECT_LABEL_TO_ID: Record<string, string> = {
+  'Polity': 'polity',
+  'History': 'history',
+  'Geography': 'geography',
+  'Economy': 'economy',
+  'Environment & Ecology': 'environment-ecology',
+  'Science & Technology': 'science-technology',
+  'Current Affairs': 'current-affairs',
+  'Society': 'society',
+  'Governance': 'governance',
+  'International Relations': 'international-relations',
+  'Social Justice': 'social-justice',
+  'Agriculture': 'agriculture',
+  'Internal Security': 'internal-security',
+  'Disaster Management': 'disaster-management',
+  'Ethics': 'ethics',
+  'GS1': 'gs1',
+  'GS2': 'gs2',
+  'GS3': 'gs3',
+  'GS4': 'gs4',
+  'Essay': 'essay',
+  'Optional Paper 1': 'optional-paper-1',
+  'Optional Paper 2': 'optional-paper-2',
+};
+
+function subjectLabelToId(label: string): string {
+  return SUBJECT_LABEL_TO_ID[label] ?? label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
 
 const filterOptions = ['All', 'mcq', 'mains', 'pyq', 'custom'];
 const scheduleOptions = [3, 7, 15, 30];
@@ -150,6 +179,27 @@ export default function SpacedRepetitionPage() {
       mounted = false;
     };
   }, []);
+
+  const addToFlashcards = async (q: SpacedRepItem) => {
+    if (q.addedToFlashcard) return;
+    // Optimistic UI update so the user sees the chip immediately.
+    setItems((prev) => prev.map((i) => (i.id === q.id ? { ...i, addedToFlashcard: true } : i)));
+    try {
+      const subjectId = subjectLabelToId(q.subject);
+      await flashcardService.createCard({
+        subjectId,
+        subject: q.subject,
+        topicId: 'spaced-rep',
+        topic: 'From Spaced Repetition',
+        question: q.questionText,
+        answer: 'Tap to add your answer.',
+      });
+      await spacedRepService.updateItem(q.id, { addedToFlashcard: true });
+    } catch {
+      // Roll back the optimistic update on failure.
+      setItems((prev) => prev.map((i) => (i.id === q.id ? { ...i, addedToFlashcard: false } : i)));
+    }
+  };
 
   const toggleRemind = (id: string, current: boolean) => {
     spacedRepService.updateItem(id, { remindEnabled: !current })
@@ -382,9 +432,7 @@ export default function SpacedRepetitionPage() {
                           type="button"
                           className="font-semibold"
                           style={{ fontFamily: 'Inter', color: '#155DFC' }}
-                          onClick={() => spacedRepService.updateItem(q.id, { addedToFlashcard: true }).then(() => {
-                            setItems((prev) => prev.map((i) => i.id === q.id ? { ...i, addedToFlashcard: true } : i));
-                          })}
+                          onClick={() => addToFlashcards(q)}
                         >
                           + Add to Flashcards
                         </button>

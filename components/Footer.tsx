@@ -20,19 +20,16 @@ const linkClass = 'inline-flex items-center py-1 text-[13px] text-white/60 trans
 
 export default function Footer() {
   return (
-    <footer style={{ background: '#060C1C' }}>
+    <footer className="relative w-full bg-[#000E2D] before:absolute before:left-[5%] before:right-[5%] before:top-0 before:h-px before:bg-white/8 before:content-['']">
       <div className="mx-auto max-w-[1320px] px-5 sm:px-8">
-        <div className="border-t border-[#F4BF4C]/40" />
-        <div className="grid grid-cols-1 gap-8 border-b border-white/5 py-10 md:grid-cols-2 xl:grid-cols-[1.6fr_1fr_1fr_1fr_1.1fr] xl:gap-0">
+        <div className="relative grid grid-cols-1 gap-8 py-10 md:grid-cols-2 xl:grid-cols-[1.6fr_1fr_1fr_1fr_1.1fr] xl:gap-0 after:absolute after:bottom-0 after:left-[5%] after:right-[5%] after:h-px after:bg-white/8 after:content-['']">
           {/* Brand Column */}
           <div className="pr-0 xl:pr-8">
-            <div className="flex items-center gap-3">
-              <Image src="/footer-logo.png" alt="RiseWithJeet" width={140} height={56} style={{ height: 56, width: 'auto', objectFit: 'contain' }} />
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.12em] text-white/50">Your IAS Dream, Powered by<br />Jeet Intelligence</div>
-              </div>
-            </div>
-            <p className="mt-4 max-w-[320px] text-[13px] leading-[1.6] text-white/60">
+            <Image src="/footer-logo-new.png" alt="RiseWithJeet" width={320} height={64} className="h-auto w-[260px]" priority />
+            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[rgba(255,255,255,0.55)]">
+              Your IAS dream, powered by Jeet Intelligence.
+            </p>
+            <p className="mt-5 max-w-[320px] text-[15px] leading-[1.6] text-[rgba(255,255,255,0.56)]">
               Rise With Jeet is redefining UPSC preparation with a simplified, smarter approach. As India&apos;s leading AI-powered platform, we combine cutting-edge technology, high-quality content, expert guidance, and innovative tools to deliver an effective learning experience.
             </p>
 
@@ -72,7 +69,7 @@ export default function Footer() {
           </div>
 
           {/* Platform Column */}
-          <div className="xl:border-l xl:border-white/5 xl:pl-8">
+          <div className="relative xl:pl-8 xl:before:absolute xl:before:left-0 xl:before:top-6 xl:before:bottom-6 xl:before:w-px xl:before:bg-white/8 xl:before:content-['']">
             <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Platform</h3>
             <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
             <ul className="mt-3 space-y-1">
@@ -84,7 +81,7 @@ export default function Footer() {
           </div>
 
           {/* Revision Tools Column */}
-          <div className="xl:border-l xl:border-white/5 xl:pl-8">
+          <div className="relative xl:pl-8 xl:before:absolute xl:before:left-0 xl:before:top-6 xl:before:bottom-6 xl:before:w-px xl:before:bg-white/8 xl:before:content-['']">
             <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Revision Tools</h3>
             <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
             <ul className="mt-3 space-y-1">
@@ -97,7 +94,7 @@ export default function Footer() {
           </div>
 
           {/* Company Column */}
-          <div className="xl:border-l xl:border-white/5 xl:pl-8">
+          <div className="relative xl:pl-8 xl:before:absolute xl:before:left-0 xl:before:top-6 xl:before:bottom-6 xl:before:w-px xl:before:bg-white/8 xl:before:content-['']">
             <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Company</h3>
             <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
             <ul className="mt-3 space-y-1">
@@ -111,7 +108,7 @@ export default function Footer() {
           </div>
 
           {/* Contact Us Column */}
-          <div className="xl:border-l xl:border-white/5 xl:pl-8">
+          <div className="relative xl:pl-8 xl:before:absolute xl:before:left-0 xl:before:top-6 xl:before:bottom-6 xl:before:w-px xl:before:bg-white/8 xl:before:content-['']">
             <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Contact Us</h3>
             <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
 

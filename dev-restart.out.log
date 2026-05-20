@@ -1,0 +1,22 @@
+
+> upsc-platform@0.1.0 dev
+> next dev --port 3000 --hostname 127.0.0.1
+
+   ▲ Next.js 14.1.0
+   - Local:        http://127.0.0.1:3000
+   - Network:      http://127.0.0.1:3000
+   - Environments: .env
+
+ ✓ Ready in 6s
+ ○ Compiling /dashboard/mock-tests/attempt ...
+ ✓ Compiled /dashboard/mock-tests/attempt in 18.6s (610 modules)
+ ✓ Compiled in 2.1s (308 modules)
+ ✓ Compiled in 4.9s (601 modules)
+ ✓ Compiled in 1440ms (308 modules)
+ ○ Compiling /dashboard/mock-tests/attempt/results ...
+ ✓ Compiled /dashboard/mock-tests/attempt/results in 1500ms (607 modules)
+ ✓ Compiled /not-found in 268ms (300 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 1146ms (652 modules)
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1813ms (800 modules)

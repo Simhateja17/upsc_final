@@ -47,6 +47,106 @@ export default function StudyGroupsPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Pomodoro timer state — Solo Session
+  const FOCUS_SECONDS = 25 * 60;
+  const BREAK_SECONDS = 5 * 60;
+  const [pomoSecondsLeft, setPomoSecondsLeft] = useState(FOCUS_SECONDS);
+  const [pomoRunning, setPomoRunning] = useState(false);
+  const [pomoSession, setPomoSession] = useState(1); // 1..4
+  const [pomoMode, setPomoMode] = useState<'focus' | 'break'>('focus');
+  const [todaySeconds, setTodaySeconds] = useState(0);
+  const pomoTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Load today's accumulated focus seconds from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const todayKey = `rwj_solo_focus_${new Date().toISOString().slice(0, 10)}`;
+    const stored = parseInt(localStorage.getItem(todayKey) || '0', 10);
+    if (!Number.isNaN(stored)) setTodaySeconds(stored);
+  }, []);
+
+  const persistTodaySeconds = useCallback((secs: number) => {
+    if (typeof window === 'undefined') return;
+    const todayKey = `rwj_solo_focus_${new Date().toISOString().slice(0, 10)}`;
+    localStorage.setItem(todayKey, String(secs));
+  }, []);
+
+  // Tick interval
+  useEffect(() => {
+    if (!pomoRunning) {
+      if (pomoTickRef.current) { clearInterval(pomoTickRef.current); pomoTickRef.current = null; }
+      return;
+    }
+    pomoTickRef.current = setInterval(() => {
+      setPomoSecondsLeft((prev) => {
+        if (prev <= 1) {
+          setPomoRunning(false);
+          if (pomoMode === 'focus') {
+            setTodaySeconds((t) => {
+              const next = t + FOCUS_SECONDS;
+              persistTodaySeconds(next);
+              return next;
+            });
+            // Move to break, or next focus if session was last
+            if (pomoSession >= 4) {
+              setPomoSession(1);
+              setPomoMode('focus');
+              return FOCUS_SECONDS;
+            }
+            setPomoMode('break');
+            return BREAK_SECONDS;
+          }
+          // break finished → next focus session
+          setPomoMode('focus');
+          setPomoSession((s) => s + 1);
+          return FOCUS_SECONDS;
+        }
+        if (pomoMode === 'focus') {
+          setTodaySeconds((t) => {
+            const next = t + 1;
+            if (next % 30 === 0) persistTodaySeconds(next);
+            return next;
+          });
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => { if (pomoTickRef.current) clearInterval(pomoTickRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pomoRunning, pomoMode]);
+
+  const handlePomoStart = () => setPomoRunning((r) => !r);
+  const handlePomoReset = () => {
+    setPomoRunning(false);
+    setPomoSecondsLeft(pomoMode === 'focus' ? FOCUS_SECONDS : BREAK_SECONDS);
+  };
+  const handlePomoSkip = () => {
+    setPomoRunning(false);
+    if (pomoMode === 'focus') {
+      if (pomoSession >= 4) { setPomoSession(1); setPomoSecondsLeft(FOCUS_SECONDS); return; }
+      setPomoMode('break');
+      setPomoSecondsLeft(BREAK_SECONDS);
+    } else {
+      setPomoMode('focus');
+      setPomoSession((s) => s + 1);
+      setPomoSecondsLeft(FOCUS_SECONDS);
+    }
+  };
+
+  const formatMMSS = (s: number) => {
+    const mm = Math.floor(s / 60).toString().padStart(2, '0');
+    const ss = (s % 60).toString().padStart(2, '0');
+    return `${mm}:${ss}`;
+  };
+  const formatHourMin = (s: number) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+
+  const pomoTotalForMode = pomoMode === 'focus' ? FOCUS_SECONDS : BREAK_SECONDS;
+  const pomoProgress = 1 - pomoSecondsLeft / pomoTotalForMode;
+
   const fetchGroups = useCallback(async () => {
     try {
       const res = await studyGroupService.getGroups();
@@ -83,6 +183,9 @@ export default function StudyGroupsPage() {
     const tab = searchParams.get('tab');
     if (tab === 'solo' || tab === 'my' || tab === 'rooms') {
       setActiveTab(tab);
+    }
+    if (searchParams.get('autostart') === '1' && tab === 'solo') {
+      setPomoRunning(true);
     }
   }, [searchParams]);
 
@@ -298,10 +401,9 @@ export default function StudyGroupsPage() {
           </div>
         </div>
 
-        {/* Solo Focus Tab Content */}
+        {/* Solo Focus Tab Content — Pomodoro timer */}
         {activeTab === 'solo' && (
           <section className="mt-5">
-            {/* Solo Session Header */}
             <div className="mb-4 flex items-center gap-3">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
                 <path d="M3 18v-6a9 9 0 1118 0v6" stroke="#6B7A99" strokeWidth="2" strokeLinecap="round"/>
@@ -309,50 +411,94 @@ export default function StudyGroupsPage() {
               </svg>
               <h2 className="text-[24px] font-bold text-[#0C1424]">Solo Session</h2>
             </div>
-            <div className="overflow-hidden rounded-[14px] border border-[#D7DEE9] bg-[linear-gradient(90deg,#0C1424_0%,#1B2C59_100%)] px-6 py-5 text-white shadow-[0_8px_22px_rgba(12,20,36,0.18)]">
-              <div className="flex flex-wrap items-center gap-5">
-                {/* Avatars */}
-                <div className="flex -space-x-2">
-                  {['A', 'R', 'P', 'B'].map((x, i) => (
-                    <span
-                      key={x}
-                      className="flex size-9 items-center justify-center rounded-full border-2 border-[#0C1424] bg-[#172444] text-[11px] font-bold text-white"
-                      style={{ zIndex: 4 - i }}
+
+            <div className="rounded-[18px] border border-[#E1E6EF] bg-white px-6 py-10 shadow-sm">
+              {/* Circular timer */}
+              <div className="flex flex-col items-center">
+                <div className="relative" style={{ width: 280, height: 280 }}>
+                  <svg width="280" height="280" viewBox="0 0 280 280">
+                    <circle cx="140" cy="140" r="128" stroke="#F1F3F8" strokeWidth="10" fill="none" />
+                    <circle
+                      cx="140"
+                      cy="140"
+                      r="128"
+                      stroke={pomoMode === 'focus' ? '#E8B84B' : '#22C55E'}
+                      strokeWidth="10"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 128}
+                      strokeDashoffset={(2 * Math.PI * 128) * (1 - pomoProgress)}
+                      transform="rotate(-90 140 140)"
+                      style={{ transition: 'stroke-dashoffset 1s linear' }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div
+                      className="text-[#0C1424]"
+                      style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 64, lineHeight: 1, letterSpacing: '-1px' }}
                     >
-                      {x}
-                    </span>
-                  ))}
-                  <span className="flex size-9 items-center justify-center rounded-full border-2 border-[#0C1424] bg-[#E8B84B] text-[9px] font-bold text-[#0C1424]" style={{ zIndex: 0 }}>
-                    +120
-                  </span>
-                </div>
-
-                {/* Info */}
-                <div className="min-w-[200px] flex-1">
-                  <p className="text-[15px] font-bold text-white">
-                    Live Study Room — Silent Mode
-                  </p>
-                  <p className="mt-1 text-[12px] text-white/45">
-                    Currently studying: Modern History · QSL Focus Guard ON
-                  </p>
-                </div>
-
-                {/* Stats */}
-                <div className="flex gap-8 text-center">
-                  <div>
-                    <div className="text-[22px] font-bold leading-none text-[#E8B84B]">124</div>
-                    <div className="mt-1 text-[10px] uppercase tracking-[0.8px] text-white/38">Online Now</div>
-                  </div>
-                  <div>
-                    <div className="text-[22px] font-bold leading-none text-[#E8B84B]">2h 14m</div>
-                    <div className="mt-1 text-[10px] uppercase tracking-[0.8px] text-white/38">Session</div>
+                      {formatMMSS(pomoSecondsLeft)}
+                    </div>
+                    <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[1.5px] text-[#6B7A99]">
+                      {pomoMode === 'focus' ? 'Focus Time' : 'Break Time'}
+                      <span aria-hidden>🎯</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Join Button */}
-                <button className="rounded-[9px] bg-[#E8B84B] px-6 py-[10px] text-[13px] font-bold text-[#0C1424]">
-                  Join Study Room →
-                </button>
+                <div className="mt-4 text-[11px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">
+                  🍅 Pomodoro · Session {pomoSession} of 4
+                </div>
+
+                {/* Controls */}
+                <div className="mt-6 flex items-center gap-3">
+                  <button
+                    onClick={handlePomoReset}
+                    className="flex items-center gap-2 rounded-[10px] border border-[#DDE3EC] bg-white px-5 py-2.5 text-[13px] font-semibold text-[#6B7A99] hover:bg-[#F9FAFB]"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 12a9 9 0 1 0 3-6.7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M3 4v5h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Reset
+                  </button>
+                  <button
+                    onClick={handlePomoStart}
+                    className="flex items-center gap-2 rounded-[10px] bg-[#E8B84B] px-7 py-2.5 text-[14px] font-bold text-[#0C1424] hover:brightness-105"
+                  >
+                    {pomoRunning ? (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+                        Pause
+                      </>
+                    ) : (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg>
+                        Start Focus
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handlePomoSkip}
+                    className="flex items-center gap-2 rounded-[10px] border border-[#DDE3EC] bg-white px-5 py-2.5 text-[13px] font-semibold text-[#6B7A99] hover:bg-[#F9FAFB]"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5v14l8-7-8-7z"/><path d="M13 5v14l8-7-8-7z"/></svg>
+                    Skip
+                  </button>
+                </div>
+
+                {/* Today total */}
+                <div className="mt-8 text-center">
+                  <div
+                    className="text-[#C99730]"
+                    style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', fontWeight: 700, fontSize: 22 }}
+                  >
+                    {formatHourMin(todaySeconds)}
+                  </div>
+                  <div className="mt-1 text-[10px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">
+                    Your Time Today
+                  </div>
+                </div>
               </div>
             </div>
           </section>

@@ -12,7 +12,7 @@ const featureCards = [
   { label: 'Study Planner',         icon: '/icon-study-planner.png' },
   { label: 'Mock Tests',            icon: '/sidebar-mock-tests-new.png' },
   { label: 'Performance Analytics', icon: '/icon-analytics.png' },
-  { label: 'Study Group Forum',     icon: '/sidebar-study-groups.png' },
+  { label: 'Study Group Forum',     icon: '/icon-study-group-forum.png' },
 ];
 
 const avatarColors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444'];
@@ -26,7 +26,7 @@ function LoginPageContent() {
   const tabParam = searchParams.get('tab');
   const initialTab = tabParam === 'signup' ? 'signup' : 'login';
 
-  const [activeTab, setActiveTab] = useState<'login' | 'signup' | 'success' | 'forgot' | 'resetSent'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'login' | 'signup' | 'success' | 'forgot' | 'resetSent' | 'otpRequest' | 'otpVerify'>(initialTab);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +38,11 @@ function LoginPageContent() {
   const [resetLoading, setResetLoading] = useState(false);
   const [resetSentEmail, setResetSentEmail] = useState('');
 
+  // OTP login state
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
+  const [otpLoading, setOtpLoading] = useState(false);
+
   // Signup form state
   const [signupFirstName, setSignupFirstName] = useState('');
   const [signupLastName, setSignupLastName] = useState('');
@@ -46,6 +51,18 @@ function LoginPageContent() {
   const [signupPassword, setSignupPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
+  const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
+  const [dashboardCountdown, setDashboardCountdown] = useState(10);
+
+  const getEmailSuggestions = (val: string): string[] => {
+    if (!val) return [];
+    const atIdx = val.indexOf('@');
+    if (atIdx === -1) return ['@gmail.com', '@yahoo.com'].map(d => val + d);
+    const local = val.slice(0, atIdx);
+    const typed = val.slice(atIdx + 1);
+    const providers = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];
+    return providers.filter(p => p.startsWith(typed)).map(p => `${local}@${p}`);
+  };
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -67,6 +84,19 @@ function LoginPageContent() {
     if (typeof window === 'undefined') return;
     setShowWelcomeBack(localStorage.getItem('rwj_has_logged_in') === '1');
   }, []);
+
+  // Auto-redirect countdown on success screen
+  useEffect(() => {
+    if (activeTab !== 'success') { setDashboardCountdown(10); return; }
+    const interval = setInterval(() => {
+      setDashboardCountdown(c => {
+        if (c <= 1) { clearInterval(interval); goToDashboard(); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,6 +196,52 @@ function LoginPageContent() {
     }
   };
 
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setOtpLoading(true);
+    try {
+      await authService.sendOtp(otpEmail);
+      setOtpCode(['', '', '', '', '', '']);
+      setActiveTab('otpVerify');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not send OTP. Please try again.';
+      if (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('signups not allowed')) {
+        setError('No account found with this email. Please sign up first.');
+      } else if (msg.toLowerCase().includes('rate limit')) {
+        setError('Too many OTP requests. Please wait a minute and try again.');
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const token = otpCode.join('');
+    if (token.length !== 6) {
+      setError('Please enter the full 6-digit code.');
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      await authService.verifyOtp(otpEmail, token);
+      localStorage.setItem('rwj_has_logged_in', '1');
+      sessionStorage.setItem('rwj_login_success', '1');
+      router.replace('/dashboard');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Invalid or expired code.';
+      setError(msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid')
+        ? 'That code is invalid or has expired. Please request a new one.'
+        : msg);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
   const goToDashboard = () => {
     if (typeof window !== 'undefined') {
       window.location.replace(user?.role === 'admin' ? '/admin' : '/dashboard');
@@ -175,9 +251,9 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="flex w-full min-h-screen" style={{ fontFamily: "'Inter', 'Outfit', sans-serif" }}>
+    <div className="flex w-full min-h-screen" style={{ fontFamily: "'Outfit', sans-serif" }}>
       <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
         .success-burst {
           position: absolute;
           left: 50%;
@@ -210,6 +286,8 @@ function LoginPageContent() {
         className="relative flex-shrink-0"
         style={{
           width: 478,
+          height: '100vh',
+          overflow: 'hidden',
           background: '#0F1C2E',
         }}
       >
@@ -229,21 +307,16 @@ function LoginPageContent() {
           className="relative z-10"
           style={{ position: 'absolute', top: 24, left: 26 }}
         >
-          <Image
-            src="/auth-logo-new.png"
-            alt="RiseWithJeet"
-            width={1312}
-            height={194}
-            style={{ objectFit: 'contain', width: 320, height: 'auto' }}
-            priority
-          />
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Image src="/footer-logo-new.png" alt="RiseWithJeet" width={320} height={64} style={{ height: 44, width: 'auto', objectFit: 'contain' }} priority />
+          </div>
         </div>
 
         {/* Main content */}
-        <div className="relative z-10" style={{ width: 382, marginTop: 124, marginLeft: 48, paddingBottom: 40 }}>
+        <div className="relative z-10" style={{ width: 382, marginTop: 96, marginLeft: 48, paddingBottom: 20 }}>
 
           {/* Trusted by badge */}
-          <div className="flex items-center gap-2" style={{ marginBottom: 20 }}>
+          <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
             <div style={{ width: 48, height: 3, background: '#E8B84B', borderRadius: 2, flexShrink: 0 }} />
             <span
               style={{
@@ -261,54 +334,17 @@ function LoginPageContent() {
           </div>
 
           {/* Title */}
-          <div style={{ marginBottom: 16 }}>
-            <div
-              style={{
-                fontFamily: "'Outfit', sans-serif",
-                fontWeight: 700,
-                fontSize: 36,
-                lineHeight: '45px',
-                color: '#FFFFFF',
-              }}
-            >
-              Your UPSC journey
-            </div>
-            <div
-              style={{
-                fontFamily: "'Outfit', sans-serif",
-                fontWeight: 700,
-                fontSize: 36,
-                lineHeight: '45px',
-                color: '#FFFFFF',
-              }}
-            >
-              starts{' '}
-              <span
-                style={{
-                  fontStyle: 'italic',
-                  color: '#E8B84B',
-                }}
-              >
-                right here.
-              </span>
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 38, lineHeight: '44px', letterSpacing: '-1px', color: '#FFFFFF' }}>
+              Your UPSC journey starts{' '}
+              <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>right here.</span>
             </div>
           </div>
 
           {/* Subtitle */}
-          <div style={{ marginBottom: 36 }}>
-            <div
-              style={{
-                fontFamily: "'Outfit', sans-serif",
-                fontWeight: 400,
-                fontSize: 14,
-                lineHeight: '22.75px',
-                color: '#99A1AF',
-              }}
-            >
-              A comprehensive platform offering all resources necessary to excel
-              in the UPSC exam. Including Daily Mains Challenge, Syllabus Tracker, Study Planner, Smart Revision Tools,
-              Simplified Video Lectures, Mock Tests, detailed Performance Analytics, Personalized Mentorship and structured
-              Previous Year Questions.
+          <div style={{ marginBottom: 22 }}>
+            <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 13, lineHeight: '20px', color: '#99A1AF' }}>
+              AI-powered learning, daily MCQs, mains evaluation, mentorship &amp; smart revision — all under one roof.
             </div>
           </div>
 
@@ -317,8 +353,8 @@ function LoginPageContent() {
             style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
-              gap: 16,
-              marginBottom: 32,
+              gap: 10,
+              marginBottom: 20,
             }}
           >
             {featureCards.map((card) => (
@@ -328,8 +364,8 @@ function LoginPageContent() {
                   background: '#1A2738',
                   borderRadius: 10,
                   borderTop: '0.8px solid #364153',
-                  padding: '16px',
-                  minHeight: 98,
+                  padding: '12px',
+                  minHeight: 76,
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
@@ -348,15 +384,7 @@ function LoginPageContent() {
                 >
                   <Image src={card.icon} alt={card.label} width={24} height={24} style={{ objectFit: 'contain' }} />
                 </div>
-                <span
-                  style={{
-                    fontFamily: "'Outfit', sans-serif",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    lineHeight: '20px',
-                    color: '#FFFFFF',
-                  }}
-                >
+                <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '18px', color: '#FFFFFF' }}>
                   {card.label}
                 </span>
               </div>
@@ -456,7 +484,7 @@ function LoginPageContent() {
               style={{
                 flex: 1,
                 height: 45.6,
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 600,
                 fontSize: 14,
                 lineHeight: '20px',
@@ -481,7 +509,7 @@ function LoginPageContent() {
               style={{
                 flex: 1,
                 height: 45.6,
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 600,
                 fontSize: 14,
                 lineHeight: '20px',
@@ -518,7 +546,7 @@ function LoginPageContent() {
               marginBottom: 16,
               color: '#DC2626',
               fontSize: 14,
-              fontFamily: 'Inter',
+              fontFamily: "'Outfit', sans-serif",
             }}
           >
             {error}
@@ -546,7 +574,7 @@ function LoginPageContent() {
             {/* You're in! heading */}
             <h1
               style={{
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 700,
                 fontStyle: 'italic',
                 fontSize: 36,
@@ -563,7 +591,7 @@ function LoginPageContent() {
             {/* Subtitle */}
             <p
               style={{
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 400,
                 fontSize: 14,
                 lineHeight: '22.75px',
@@ -601,7 +629,7 @@ function LoginPageContent() {
                 <Image src="/icon-unlocked.png" alt="" width={16} height={16} style={{ objectFit: 'contain' }} />
                 <span
                   style={{
-                    fontFamily: 'Inter',
+                    fontFamily: "'Outfit', sans-serif",
                     fontWeight: 600,
                     fontSize: 12,
                     lineHeight: '16px',
@@ -626,7 +654,7 @@ function LoginPageContent() {
                     <Image src={item.icon} alt="" width={28} height={28} style={{ objectFit: 'contain', flexShrink: 0 }} />
                     <span
                       style={{
-                        fontFamily: 'Inter',
+                        fontFamily: "'Outfit', sans-serif",
                         fontWeight: 400,
                         fontSize: 14,
                         lineHeight: '20px',
@@ -650,7 +678,7 @@ function LoginPageContent() {
                 background: '#10B981',
                 border: 'none',
                 cursor: 'pointer',
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 600,
                 fontSize: 14,
                 lineHeight: '20px',
@@ -659,7 +687,7 @@ function LoginPageContent() {
                 boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.10), 0px 4px 6px -4px rgba(0,0,0,0.10)',
               }}
             >
-              Go to My Dashboard →
+              Go to My Dashboard → {dashboardCountdown > 0 ? `(${dashboardCountdown}s)` : ''}
             </button>
           </div>
         )}
@@ -670,22 +698,22 @@ function LoginPageContent() {
             {/* Heading */}
             <h1
               style={{
-                fontFamily: 'Inter',
+                fontFamily: "'Cormorant Garamond', serif",
                 fontWeight: 700,
                 fontStyle: 'italic',
-                fontSize: 30,
-                lineHeight: '36px',
+                fontSize: 36,
+                lineHeight: '42px',
                 color: '#0A0A0A',
                 margin: 0,
                 marginBottom: 8,
-                letterSpacing: 0,
+                letterSpacing: '-1px',
               }}
             >
               Welcome to <span style={{ color: '#D9A84F' }}>RiseWithJeet!</span>
             </h1>
             <p
               style={{
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 400,
                 fontSize: 14,
                 lineHeight: '20px',
@@ -717,7 +745,7 @@ function LoginPageContent() {
               }}
             >
               <Image src="/icon-google.png" alt="" width={20} height={20} style={{ objectFit: 'contain' }} />
-              <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#0A0A0A' }}>
+              <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#0A0A0A' }}>
                 Sign up with Google
               </span>
             </button>
@@ -725,7 +753,7 @@ function LoginPageContent() {
             {/* or create with email divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
               <div style={{ flex: 1, height: 1, background: '#D1D5DC' }} />
-              <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, lineHeight: '16px', color: '#99A1AF', whiteSpace: 'nowrap' }}>
+              <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 12, lineHeight: '16px', color: '#99A1AF', whiteSpace: 'nowrap' }}>
                 or create with email
               </span>
               <div style={{ flex: 1, height: 1, background: '#D1D5DC' }} />
@@ -735,7 +763,7 @@ function LoginPageContent() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
               {/* First Name */}
               <div>
-                <label style={{ display: 'block', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
+                <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
                   First Name
                 </label>
                 <div style={{ position: 'relative' }}>
@@ -748,13 +776,13 @@ function LoginPageContent() {
                     value={signupFirstName}
                     onChange={(e) => setSignupFirstName(e.target.value)}
                     required
-                    style={{ width: '100%', height: 45.6, paddingLeft: 36, paddingRight: 16, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }} 
+                    style={{ width: '100%', height: 45.6, paddingLeft: 36, paddingRight: 16, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }} 
                   />
                 </div>
               </div>
               {/* Last Name */}
               <div>
-                <label style={{ display: 'block', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
+                <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
                   Last Name
                 </label>
                 <div style={{ position: 'relative' }}>
@@ -766,7 +794,7 @@ function LoginPageContent() {
                     placeholder="Sharma" 
                     value={signupLastName}
                     onChange={(e) => setSignupLastName(e.target.value)}
-                    style={{ width: '100%', height: 45.6, paddingLeft: 36, paddingRight: 16, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }} 
+                    style={{ width: '100%', height: 45.6, paddingLeft: 36, paddingRight: 16, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }} 
                   />
                 </div>
               </div>
@@ -774,27 +802,40 @@ function LoginPageContent() {
 
             {/* Email Address */}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
                 Email Address
               </label>
               <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex' }}>
+                <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex', zIndex: 1 }}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4l6 5 6-5M2 4h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" stroke="#99A1AF" strokeWidth="1.2" strokeLinejoin="round" fill="none"/></svg>
                 </span>
-                <input 
-                  type="email" 
-                  placeholder="yourname@gmail.com" 
+                <input
+                  type="text"
+                  autoComplete="email"
+                  placeholder="yourname@gmail.com"
                   value={signupEmail}
-                  onChange={(e) => setSignupEmail(e.target.value)}
+                  onChange={(e) => { setSignupEmail(e.target.value); setEmailSuggestions(getEmailSuggestions(e.target.value)); }}
+                  onBlur={() => setTimeout(() => setEmailSuggestions([]), 150)}
                   required
-                  style={{ width: '100%', height: 45.6, paddingLeft: 40, paddingRight: 16, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }} 
+                  style={{ width: '100%', height: 45.6, paddingLeft: 40, paddingRight: 16, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }}
                 />
+                {emailSuggestions.length > 0 && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#FFFFFF', border: '1px solid #D1D5DC', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.10)', zIndex: 50, overflow: 'hidden', marginTop: 4 }}>
+                    {emailSuggestions.map(s => (
+                      <div key={s} onMouseDown={() => { setSignupEmail(s); setEmailSuggestions([]); }}
+                        style={{ padding: '10px 16px', fontSize: 14, fontFamily: "'Outfit', sans-serif", color: '#0A0A0A', cursor: 'pointer', borderBottom: '1px solid #F3F4F6' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
+                        onMouseLeave={e => (e.currentTarget.style.background = '#FFFFFF')}
+                      >{s}</div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Mobile Number */}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
                 Mobile Number
               </label>
               <div style={{ position: 'relative' }}>
@@ -806,14 +847,14 @@ function LoginPageContent() {
                   placeholder="+91 9876543210" 
                   value={signupPhone}
                   onChange={(e) => setSignupPhone(e.target.value)}
-                  style={{ width: '100%', height: 45.6, paddingLeft: 40, paddingRight: 16, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }} 
+                  style={{ width: '100%', height: 45.6, paddingLeft: 40, paddingRight: 16, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }} 
                 />
               </div>
             </div>
 
             {/* Password */}
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
                 Password
               </label>
               <div style={{ position: 'relative' }}>
@@ -827,7 +868,7 @@ function LoginPageContent() {
                   onChange={(e) => setSignupPassword(e.target.value)}
                   required
                   minLength={6}
-                  style={{ width: '100%', height: 45.6, paddingLeft: 40, paddingRight: 40, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }} 
+                  style={{ width: '100%', height: 45.6, paddingLeft: 40, paddingRight: 40, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }} 
                 />
                 <button
                   type="button"
@@ -847,7 +888,7 @@ function LoginPageContent() {
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
                 style={{ marginTop: 3, accentColor: '#155DFC', flexShrink: 0, width: 14, height: 14 }} 
               />
-              <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, lineHeight: '19.5px', color: '#4A5565' }}>
+              <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 500, fontSize: 12, lineHeight: '19.5px', color: '#4A5565' }}>
                 I agree to the{' '}
                 <Link href="/terms" style={{ fontWeight: 600, color: '#155DFC', textDecoration: 'none' }}>Terms of Service</Link>
                 {' '}and{' '}
@@ -868,7 +909,7 @@ function LoginPageContent() {
                 background: isLoading ? '#6B7280' : '#0F1C2E',
                 border: 'none',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 600,
                 fontSize: 14,
                 lineHeight: '20px',
@@ -881,12 +922,12 @@ function LoginPageContent() {
             </button>
 
             {/* Already have account */}
-            <div style={{ textAlign: 'center', fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#0A0A0A' }}>
+            <div style={{ textAlign: 'center', fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#0A0A0A' }}>
               Already have an account?{' '}
               <button 
                 type="button"
                 onClick={() => { setActiveTab('login'); setError(null); }} 
-                style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#155DFC', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 14, color: '#155DFC', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 Login →
               </button>
@@ -914,38 +955,53 @@ function LoginPageContent() {
                   <path d="M2 4l6 5 6-5M2 4h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" stroke="#FFFFFF" strokeWidth="1.4" strokeLinejoin="round" />
                 </svg>
               </div>
-              <h1 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828', margin: 0, marginBottom: 8 }}>
+              <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 30, lineHeight: '36px', letterSpacing: '-0.8px', color: '#101828', margin: 0, marginBottom: 8 }}>
                 Forgot your password?
               </h1>
-              <p style={{ fontFamily: 'Inter', fontSize: 12, lineHeight: '18px', color: '#6A7282', margin: '0 auto', maxWidth: 300 }}>
+              <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, lineHeight: '18px', color: '#6A7282', margin: '0 auto', maxWidth: 300 }}>
                 No worries, enter your email and we&apos;ll send you a secure reset link.
               </p>
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#364153', marginBottom: 8 }}>
+              <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#364153', marginBottom: 8 }}>
                 Email Address
               </label>
-              <input
-                type="email"
-                value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
-                placeholder="yourname@gmail.com"
-                required
-                style={{
-                  width: '100%',
-                  height: 45.6,
-                  padding: '12px 16px',
-                  borderRadius: 10,
-                  border: '0.8px solid #D1D5DC',
-                  background: '#FFFFFF',
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  color: '#0A0A0A',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={forgotEmail}
+                  onChange={(e) => { setForgotEmail(e.target.value); setEmailSuggestions(getEmailSuggestions(e.target.value)); }}
+                  onBlur={() => setTimeout(() => setEmailSuggestions([]), 150)}
+                  placeholder="yourname@gmail.com"
+                  required
+                  style={{
+                    width: '100%',
+                    height: 45.6,
+                    padding: '12px 16px',
+                    borderRadius: 10,
+                    border: '0.8px solid #D1D5DC',
+                    background: '#FFFFFF',
+                    fontFamily: "'Outfit', sans-serif",
+                    fontSize: 14,
+                    color: '#0A0A0A',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                {emailSuggestions.length > 0 && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#FFFFFF', border: '1px solid #D1D5DC', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.10)', zIndex: 50, overflow: 'hidden', marginTop: 4 }}>
+                    {emailSuggestions.map(s => (
+                      <div key={s} onMouseDown={() => { setForgotEmail(s); setEmailSuggestions([]); }}
+                        style={{ padding: '10px 16px', fontSize: 14, fontFamily: "'Outfit', sans-serif", color: '#0A0A0A', cursor: 'pointer', borderBottom: '1px solid #F3F4F6' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
+                        onMouseLeave={e => (e.currentTarget.style.background = '#FFFFFF')}
+                      >{s}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <button
@@ -958,7 +1014,7 @@ function LoginPageContent() {
                 background: resetLoading ? '#9CA3AF' : 'linear-gradient(90deg, #F0B100 0%, #FF6900 100%)',
                 border: 'none',
                 cursor: resetLoading ? 'not-allowed' : 'pointer',
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 700,
                 fontSize: 14,
                 lineHeight: '20px',
@@ -978,7 +1034,7 @@ function LoginPageContent() {
                 borderRadius: 10,
                 border: '0.8px solid #D1D5DC',
                 background: '#FFFFFF',
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 600,
                 fontSize: 13,
                 color: '#364153',
@@ -993,7 +1049,7 @@ function LoginPageContent() {
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M11.667 3.5L5.25 9.917L2.333 7" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span style={{ fontFamily: 'Inter', fontSize: 12, lineHeight: '18px', color: '#6A7282' }}>
+              <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, lineHeight: '18px', color: '#6A7282' }}>
                 Check your spam folder if you don&apos;t see the email within 2 minutes.
               </span>
             </div>
@@ -1019,17 +1075,37 @@ function LoginPageContent() {
                 <path d="M2 4l6 5 6-5M2 4h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" stroke="#FFFFFF" strokeWidth="1.4" strokeLinejoin="round" />
               </svg>
             </div>
-            <h1 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828', margin: 0, marginBottom: 8 }}>
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 30, lineHeight: '36px', letterSpacing: '-0.8px', color: '#101828', margin: 0, marginBottom: 8 }}>
               Check your inbox
             </h1>
-            <p style={{ fontFamily: 'Inter', fontSize: 12, lineHeight: '18px', color: '#6A7282', margin: '0 auto 18px', maxWidth: 320 }}>
+            <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, lineHeight: '18px', color: '#6A7282', margin: '0 auto 18px', maxWidth: 320 }}>
               We sent a secure reset link to <strong>{resetSentEmail}</strong>.
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 18 }}>
               {[0, 1, 2, 3, 4, 5].map((i) => (
-                <div key={i} style={{ width: 28, height: 36, borderRadius: 8, border: '0.8px solid #99A1AF', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#99A1AF', fontWeight: 700 }}>
-                  {'•'}
-                </div>
+                <input
+                  key={i}
+                  id={`otp-${i}`}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  defaultValue=""
+                  style={{ width: 44, height: 52, borderRadius: 10, border: '1.5px solid #D1D5DC', background: '#FFFFFF', textAlign: 'center', fontSize: 20, fontFamily: "'Outfit', sans-serif", fontWeight: 700, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(-1);
+                    e.target.value = val;
+                    if (val) {
+                      const next = document.getElementById(`otp-${i + 1}`);
+                      if (next) (next as HTMLInputElement).focus();
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Backspace' && !e.currentTarget.value && i > 0) {
+                      const prev = document.getElementById(`otp-${i - 1}`);
+                      if (prev) (prev as HTMLInputElement).focus();
+                    }
+                  }}
+                />
               ))}
             </div>
             <button
@@ -1041,7 +1117,7 @@ function LoginPageContent() {
                 borderRadius: 10,
                 background: 'linear-gradient(90deg, #F0B100 0%, #FF6900 100%)',
                 border: 'none',
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 700,
                 fontSize: 14,
                 lineHeight: '20px',
@@ -1055,11 +1131,225 @@ function LoginPageContent() {
             <button
               type="button"
               onClick={() => { setActiveTab('forgot'); setForgotEmail(resetSentEmail); }}
-              style={{ background: 'none', border: 'none', color: '#155DFC', fontFamily: 'Inter', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              style={{ background: 'none', border: 'none', color: '#155DFC', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
             >
               Didn&apos;t get it? Resend code
             </button>
           </div>
+        )}
+
+        {/* ── OTP REQUEST FORM ── */}
+        {activeTab === 'otpRequest' && (
+          <form onSubmit={handleSendOtp} style={{ paddingTop: 54 }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div
+                style={{
+                  width: 54,
+                  height: 54,
+                  borderRadius: '50%',
+                  background: '#364153',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 18,
+                }}
+              >
+                <svg width="22" height="22" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M2 4l6 5 6-5M2 4h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" stroke="#FFFFFF" strokeWidth="1.4" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 30, lineHeight: '36px', letterSpacing: '-0.8px', color: '#101828', margin: 0, marginBottom: 8 }}>
+                Login with OTP
+              </h1>
+              <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, lineHeight: '18px', color: '#6A7282', margin: '0 auto', maxWidth: 320 }}>
+                Enter your registered email and we&apos;ll send you a 6-digit code to sign in.
+              </p>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#364153', marginBottom: 8 }}>
+                Email Address
+              </label>
+              <input
+                type="email"
+                autoComplete="email"
+                value={otpEmail}
+                onChange={(e) => setOtpEmail(e.target.value)}
+                placeholder="yourname@gmail.com"
+                required
+                style={{
+                  width: '100%',
+                  height: 45.6,
+                  padding: '12px 16px',
+                  borderRadius: 10,
+                  border: '0.8px solid #D1D5DC',
+                  background: '#FFFFFF',
+                  fontFamily: "'Outfit', sans-serif",
+                  fontSize: 14,
+                  color: '#0A0A0A',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={otpLoading}
+              style={{
+                width: '100%',
+                height: 44,
+                borderRadius: 10,
+                background: otpLoading ? '#9CA3AF' : 'linear-gradient(90deg, #F0B100 0%, #FF6900 100%)',
+                border: 'none',
+                cursor: otpLoading ? 'not-allowed' : 'pointer',
+                fontFamily: "'Outfit', sans-serif",
+                fontWeight: 700,
+                fontSize: 14,
+                lineHeight: '20px',
+                color: '#101828',
+                marginBottom: 14,
+              }}
+            >
+              {otpLoading ? 'Sending...' : 'Send OTP'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setActiveTab('login'); setError(null); }}
+              style={{
+                width: '100%',
+                height: 42,
+                borderRadius: 10,
+                border: '0.8px solid #D1D5DC',
+                background: '#FFFFFF',
+                fontFamily: "'Outfit', sans-serif",
+                fontWeight: 600,
+                fontSize: 13,
+                color: '#364153',
+                cursor: 'pointer',
+              }}
+            >
+              ← Back to login
+            </button>
+          </form>
+        )}
+
+        {/* ── OTP VERIFY FORM ── */}
+        {activeTab === 'otpVerify' && (
+          <form onSubmit={handleVerifyOtp} style={{ paddingTop: 54 }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div
+                style={{
+                  width: 54,
+                  height: 54,
+                  borderRadius: '50%',
+                  background: '#364153',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 18,
+                }}
+              >
+                <svg width="22" height="22" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M2 4l6 5 6-5M2 4h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" stroke="#FFFFFF" strokeWidth="1.4" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 30, lineHeight: '36px', letterSpacing: '-0.8px', color: '#101828', margin: 0, marginBottom: 8 }}>
+                Enter your code
+              </h1>
+              <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, lineHeight: '18px', color: '#6A7282', margin: '0 auto', maxWidth: 320 }}>
+                We sent a 6-digit code to <strong>{otpEmail}</strong>.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
+              {otpCode.map((digit, i) => (
+                <input
+                  key={i}
+                  id={`otp-login-${i}`}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  style={{ width: 44, height: 52, borderRadius: 10, border: '1.5px solid #D1D5DC', background: '#FFFFFF', textAlign: 'center', fontSize: 20, fontFamily: "'Outfit', sans-serif", fontWeight: 700, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(-1);
+                    const next = [...otpCode];
+                    next[i] = val;
+                    setOtpCode(next);
+                    if (val) {
+                      const nextEl = document.getElementById(`otp-login-${i + 1}`);
+                      if (nextEl) (nextEl as HTMLInputElement).focus();
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Backspace' && !otpCode[i] && i > 0) {
+                      const prev = document.getElementById(`otp-login-${i - 1}`);
+                      if (prev) (prev as HTMLInputElement).focus();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                    if (pasted.length === 6) {
+                      e.preventDefault();
+                      setOtpCode(pasted.split(''));
+                      const last = document.getElementById(`otp-login-5`);
+                      if (last) (last as HTMLInputElement).focus();
+                    }
+                  }}
+                />
+              ))}
+            </div>
+
+            <button
+              type="submit"
+              disabled={otpLoading}
+              style={{
+                width: '100%',
+                height: 44,
+                borderRadius: 10,
+                background: otpLoading ? '#9CA3AF' : 'linear-gradient(90deg, #F0B100 0%, #FF6900 100%)',
+                border: 'none',
+                cursor: otpLoading ? 'not-allowed' : 'pointer',
+                fontFamily: "'Outfit', sans-serif",
+                fontWeight: 700,
+                fontSize: 14,
+                lineHeight: '20px',
+                color: '#101828',
+                marginBottom: 14,
+              }}
+            >
+              {otpLoading ? 'Verifying...' : 'Verify & Sign In'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setActiveTab('otpRequest'); setError(null); }}
+              style={{ display: 'block', margin: '0 auto 10px', background: 'none', border: 'none', color: '#155DFC', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Didn&apos;t get it? Resend code
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setActiveTab('login'); setError(null); }}
+              style={{
+                width: '100%',
+                height: 42,
+                borderRadius: 10,
+                border: '0.8px solid #D1D5DC',
+                background: '#FFFFFF',
+                fontFamily: "'Outfit', sans-serif",
+                fontWeight: 600,
+                fontSize: 13,
+                color: '#364153',
+                cursor: 'pointer',
+              }}
+            >
+              ← Back to login
+            </button>
+          </form>
         )}
 
         {/* ── LOGIN FORM ── */}
@@ -1069,14 +1359,14 @@ function LoginPageContent() {
             <div style={{ marginBottom: 8 }}>
               <h1
                 style={{
-                  fontFamily: 'Inter',
+                  fontFamily: "'Cormorant Garamond', serif",
                   fontWeight: 700,
                   fontStyle: 'italic',
-                  fontSize: 36,
-                  lineHeight: '40px',
+                  fontSize: 42,
+                  lineHeight: '46px',
                   color: '#0A0A0A',
                   margin: 0,
-                  letterSpacing: 0,
+                  letterSpacing: '-1.2px',
                 }}
               >
                 {showWelcomeBack ? (
@@ -1094,7 +1384,7 @@ function LoginPageContent() {
             </div>
             <p
               style={{
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 400,
                 fontSize: 14,
                 lineHeight: '20px',
@@ -1103,7 +1393,7 @@ function LoginPageContent() {
                 marginTop: 0,
               }}
             >
-              Sign in to continue your UPSC preparation
+              Sign in to <strong>simplify</strong> your UPSC preparation
             </p>
 
             {/* Continue with Google */}
@@ -1134,7 +1424,7 @@ function LoginPageContent() {
               </svg>
               <span
                 style={{
-                  fontFamily: 'Inter',
+                  fontFamily: "'Outfit', sans-serif",
                   fontWeight: 600,
                   fontSize: 14,
                   lineHeight: '20px',
@@ -1157,7 +1447,7 @@ function LoginPageContent() {
               <div style={{ flex: 1, height: 1, background: '#D1D5DC' }} />
               <span
                 style={{
-                  fontFamily: 'Inter',
+                  fontFamily: "'Outfit', sans-serif",
                   fontWeight: 400,
                   fontSize: 12,
                   lineHeight: '16px',
@@ -1177,7 +1467,7 @@ function LoginPageContent() {
               <label
                 style={{
                   display: 'block',
-                  fontFamily: 'Inter',
+                  fontFamily: "'Outfit', sans-serif",
                   fontWeight: 600,
                   fontSize: 12,
                   lineHeight: '16px',
@@ -1189,50 +1479,33 @@ function LoginPageContent() {
               >
                 Email Address
               </label>
-              <div
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                <span
-                  style={{
-                    position: 'absolute',
-                    left: 14,
-                    color: '#99A1AF',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <span style={{ position: 'absolute', left: 14, color: '#99A1AF', display: 'flex', alignItems: 'center', zIndex: 1 }}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M2 4l6 5 6-5M2 4h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" stroke="#99A1AF" strokeWidth="1.2" strokeLinejoin="round" fill="none" />
                   </svg>
                 </span>
                 <input
-                  type="email"
+                  type="text"
+                  autoComplete="email"
                   placeholder="yourname@gmail.com"
                   value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
+                  onChange={(e) => { setLoginEmail(e.target.value); setEmailSuggestions(getEmailSuggestions(e.target.value)); }}
+                  onBlur={() => setTimeout(() => setEmailSuggestions([]), 150)}
                   required
-                  style={{
-                    width: '100%',
-                    height: 45.6,
-                    paddingTop: 12,
-                    paddingBottom: 12,
-                    paddingLeft: 40,
-                    paddingRight: 16,
-                    borderRadius: 10,
-                    border: '0.8px solid #D1D5DC',
-                    background: '#FFFFFF',
-                    fontFamily: 'Inter',
-                    fontWeight: 400,
-                    fontSize: 14,
-                    color: '#0A0A0A',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
+                  style={{ width: '100%', height: 45.6, paddingTop: 12, paddingBottom: 12, paddingLeft: 40, paddingRight: 16, borderRadius: 10, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }}
                 />
+                {emailSuggestions.length > 0 && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#FFFFFF', border: '1px solid #D1D5DC', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.10)', zIndex: 50, overflow: 'hidden', marginTop: 4 }}>
+                    {emailSuggestions.map(s => (
+                      <div key={s} onMouseDown={() => { setLoginEmail(s); setEmailSuggestions([]); }}
+                        style={{ padding: '10px 16px', fontSize: 14, fontFamily: "'Outfit', sans-serif", color: '#0A0A0A', cursor: 'pointer', borderBottom: '1px solid #F3F4F6' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
+                        onMouseLeave={e => (e.currentTarget.style.background = '#FFFFFF')}
+                      >{s}</div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1241,7 +1514,7 @@ function LoginPageContent() {
               <label
                 style={{
                   display: 'block',
-                  fontFamily: 'Inter',
+                  fontFamily: "'Outfit', sans-serif",
                   fontWeight: 600,
                   fontSize: 12,
                   lineHeight: '16px',
@@ -1280,7 +1553,7 @@ function LoginPageContent() {
                     borderRadius: 10,
                     border: '0.8px solid #D1D5DC',
                     background: '#FFFFFF',
-                    fontFamily: 'Inter',
+                    fontFamily: "'Outfit', sans-serif",
                     fontWeight: 400,
                     fontSize: 14,
                     color: '#0A0A0A',
@@ -1327,7 +1600,7 @@ function LoginPageContent() {
                   setActiveTab('forgot');
                 }}
                 style={{
-                  fontFamily: 'Inter',
+                  fontFamily: "'Outfit', sans-serif",
                   fontWeight: 600,
                   fontSize: 12,
                   lineHeight: '16px',
@@ -1358,7 +1631,7 @@ function LoginPageContent() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 600,
                 fontSize: 14,
                 lineHeight: '20px',
@@ -1392,7 +1665,7 @@ function LoginPageContent() {
               <Image src="/icon-sparkle.png" alt="" width={20} height={20} style={{ objectFit: 'contain' }} />
               <span
                 style={{
-                  fontFamily: 'Inter',
+                  fontFamily: "'Outfit', sans-serif",
                   fontWeight: 700,
                   fontSize: 14,
                   lineHeight: '28px',
@@ -1408,6 +1681,11 @@ function LoginPageContent() {
             {/* Login with OTP button — no background */}
             <button
               type="button"
+              onClick={() => {
+                setOtpEmail(loginEmail);
+                setError(null);
+                setActiveTab('otpRequest');
+              }}
               style={{
                 width: '100%',
                 height: 44,
@@ -1419,7 +1697,7 @@ function LoginPageContent() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                fontFamily: 'Inter',
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 600,
                 fontSize: 14,
                 lineHeight: '20px',

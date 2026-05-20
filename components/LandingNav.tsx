@@ -8,9 +8,11 @@ import '@/styles/landing.css';
 
 const NAV_DROPDOWNS = {
   prepare: [
+    { label: 'Study Material', href: '/dashboard/study-material' },
+    { label: 'Video Lectures', href: '/dashboard/video-lectures' },
+    { label: 'Current Affairs', href: '/dashboard/current-affairs' },
     { label: 'Study Planner', href: '/dashboard/study-planner' },
     { label: 'Syllabus Tracker', href: '/dashboard/syllabus-tracker' },
-    { label: 'Video Lectures', href: '/dashboard/video-lectures' },
   ],
   practice: [
     { label: 'Daily MCQs', href: '/dashboard/daily-mcq' },
@@ -23,7 +25,6 @@ const NAV_DROPDOWNS = {
     { label: 'Flashcards', href: '/dashboard/flashcards' },
     { label: 'Mind Maps', href: '/dashboard/mindmap' },
     { label: 'Spaced Repetition', href: '/dashboard/spaced-repetition' },
-    { label: 'Study Planner', href: '/dashboard/study-planner' },
   ],
 };
 

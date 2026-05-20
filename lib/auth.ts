@@ -75,11 +75,17 @@ async function syncUserToBackend(accessToken: string, refreshToken: string): Pro
 
 export const authService = {
   signup: async (data: SignupData): Promise<AuthResponse> => {
+    const emailRedirectTo =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/callback`
+        : undefined;
+
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
         data: { first_name: data.firstName, last_name: data.lastName },
+        emailRedirectTo,
       },
     });
 
@@ -190,6 +196,46 @@ export const authService = {
 
     if (error) throw new Error(error.message);
     // Browser redirects to Google — no return value
+  },
+
+  sendOtp: async (email: string): Promise<void> => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  verifyOtp: async (email: string, token: string): Promise<AuthResponse> => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
+    });
+    if (error) throw new Error(error.message);
+    if (!data.user || !data.session) throw new Error('OTP verification failed');
+
+    storeTokens(data.session.access_token, data.session.refresh_token ?? '');
+
+    const synced = await syncUserToBackend(data.session.access_token, data.session.refresh_token ?? '').catch(err => {
+      console.warn('Backend sync failed during OTP login:', err);
+      return null;
+    });
+
+    return synced ?? {
+      user: {
+        id: data.user.id,
+        email: data.user.email!,
+        firstName: data.user.user_metadata?.first_name,
+        lastName: data.user.user_metadata?.last_name,
+        avatarUrl: data.user.user_metadata?.avatar_url,
+      },
+      session: {
+        accessToken: data.session.access_token,
+        refreshToken: data.session.refresh_token ?? '',
+        expiresAt: data.session.expires_at,
+      },
+    };
   },
 
   resetPassword: async (email: string): Promise<void> => {

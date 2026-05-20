@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { dailyMcqService } from '@/lib/services';
+import ConfettiBurst from '@/components/ConfettiBurst';
 
 interface Question {
   id: string;
@@ -34,6 +35,7 @@ export default function DailyMcqChallengePage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
 
@@ -64,6 +66,11 @@ export default function DailyMcqChallengePage() {
     try {
       await dailyMcqService.submit(answerArray, timeTaken);
       setSubmitted(true);
+      const correct = questions.filter((qu) => answers[qu.id] && answers[qu.id] === qu.correctOption).length;
+      if (questions.length > 0 && correct / questions.length > 0.5) {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3500);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -113,6 +120,7 @@ export default function DailyMcqChallengePage() {
       className="flex flex-col overflow-y-auto"
       style={{ minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}
     >
+      <ConfettiBurst active={showConfetti} />
       <main className="flex-1 px-[clamp(1rem,4vw,5rem)] py-4 md:py-6 flex items-start justify-center">
         <div className="w-full max-w-[940px] mx-auto">
           <div style={{ maxWidth: '940px', borderRadius: '16px', background: 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.96) 100%)', boxShadow: '0 22px 55px -32px rgba(15,23,42,0.28), 0 10px 24px -18px rgba(15,23,42,0.2), inset 0 1px 0 rgba(255,255,255,0.92)', padding: '22px', border: '1px solid rgba(226,232,240,0.95)' }}>

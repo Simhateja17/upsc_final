@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
@@ -331,7 +331,7 @@ export default function StudyPlannerPage() {
   const todayNum = today.getMonth() === currentDate.getMonth() && today.getFullYear() === currentDate.getFullYear()
     ? today.getDate() : -1;
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const offset = (firstDayOfMonth.getDay() + 6) % 7; // 0=Mon â€¦ 6=Sun
+  const offset = (firstDayOfMonth.getDay() + 6) % 7; // 0=Mon … 6=Sun
   const emptySlots = Array.from({ length: offset }, (_, i) => ({ day: 0, empty: true, studied: false, today: false }));
   const daySlots = Array.from({ length: daysInMonth }, (_, i) => ({
     day: i + 1,
@@ -463,10 +463,10 @@ export default function StudyPlannerPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-row gap-5 p-4 md:p-6">
 
-          {/* â•â•â•â•â•â•â• Left Column: Main Content â•â•â•â•â•â•â• */}
+          {/* ═══════ Left Column: Main Content ═══════ */}
           <div className="flex-1 min-w-0">
 
-            {/* Hero Banner â€” matches Figma study planner design */}
+            {/* Hero Banner — matches Figma study planner design */}
             <div
               className="rounded-[16px] border border-white/5 overflow-hidden relative"
               style={{
@@ -475,7 +475,7 @@ export default function StudyPlannerPage() {
                 marginBottom: '16px',
               }}
             >
-              {/* Warm radial glow â€” bottom-right like Figma */}
+              {/* Warm radial glow — bottom-right like Figma */}
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
@@ -492,7 +492,7 @@ export default function StudyPlannerPage() {
                   backgroundSize: '48px 48px',
                 }}
               />
-              {/* Subtle gold glow â€” upper-middle */}
+              {/* Subtle gold glow — upper-middle */}
               <div
                 className="absolute left-[28%] -top-[50px] w-[260px] h-[260px] rounded-full pointer-events-none"
                 style={{
@@ -660,7 +660,7 @@ export default function StudyPlannerPage() {
               </button>
             </div>
 
-            {/* â”€â”€ Two Cards Side by Side â”€â”€ */}
+            {/* ── Two Cards Side by Side ── */}
             <div
               style={{
                 borderRadius: '10px',
@@ -949,7 +949,7 @@ export default function StudyPlannerPage() {
             </div>
             </div>
 
-            {/* â”€â”€ Bottom Row: Syllabus Coverage + Weekly Goals + Planner Sync â”€â”€ */}
+            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals + Planner Sync ── */}
             <div className="grid grid-cols-1 gap-4 mt-4 xl:grid-cols-[1fr_1fr_360px]">
 
               {/* Card 0: Syllabus Coverage */}
@@ -1035,7 +1035,7 @@ export default function StudyPlannerPage() {
                 </div>
               </div>
 
-              {/* Card 2: Planner Sync â€” fixed width matches "Your Plan is Empty" above */}
+              {/* Card 2: Planner Sync — fixed width matches "Your Plan is Empty" above */}
               <div
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] flex flex-col justify-between"
                 style={{ width: '100%', padding: '24px' }}
@@ -1092,7 +1092,7 @@ export default function StudyPlannerPage() {
             </div>
           </div>
 
-          {/* â•â•â•â•â•â•â• Right Column (290px): Streak + Quick Add â•â•â•â•â•â•â• */}
+          {/* ═══════ Right Column (290px): Streak + Quick Add ═══════ */}
           <div className="flex-shrink-0 flex flex-col gap-5 w-[290px]">
 
             {/* Study Streak Card */}
@@ -1283,7 +1283,7 @@ export default function StudyPlannerPage() {
       </div>
     </div>
 
-    {/* â”€â”€ Save Plan Popup â”€â”€ */}
+    {/* ── Save Plan Popup ── */}
     {showSaveToast && (
       <div
         className="fixed inset-0 z-[100] flex items-center justify-center px-4"
@@ -1323,7 +1323,7 @@ export default function StudyPlannerPage() {
       </div>
     )}
 
-    {/* â”€â”€ Focus Session Modal â”€â”€ */}
+    {/* ── Focus Session Modal ── */}
     {focusActive && (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center"
@@ -1334,7 +1334,7 @@ export default function StudyPlannerPage() {
           style={{ borderRadius: '24px', width: '520px', maxWidth: '95vw', maxHeight: '90vh', overflow: 'hidden' }}
         >
           {focusDone ? (
-            /* â”€â”€ Summary Screen â”€â”€ */
+            /* ── Summary Screen ── */
             <div className="flex flex-col items-center justify-center p-10 text-center" style={{ minHeight: '360px' }}>
               <div
                 className="flex items-center justify-center mb-6"
@@ -1367,7 +1367,7 @@ export default function StudyPlannerPage() {
               </button>
             </div>
           ) : (
-            /* â”€â”€ Active Session Screen â”€â”€ */
+            /* ── Active Session Screen ── */
             <>
               {/* Header */}
               <div className="flex items-center justify-between px-7 pt-6 pb-4" style={{ borderBottom: '1px solid #F3F4F6' }}>
@@ -1551,7 +1551,7 @@ export default function StudyPlannerPage() {
       </div>
     )}
 
-    {/* â”€â”€ Weekly Goals Edit Modal â”€â”€ */}
+    {/* ── Weekly Goals Edit Modal ── */}
     {showGoalsModal && (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center"

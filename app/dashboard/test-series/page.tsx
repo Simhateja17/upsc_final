@@ -146,7 +146,7 @@ export default function TestSeriesPage() {
           {/* Hero */}
           <DashboardPageHero
             // eslint-disable-next-line @next/next/no-img-element
-            badgeIcon={<img src="/badge-test-series.png" alt="test series" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />}
+            badgeIcon={<img src="/sidebar-test-series.png" alt="test series" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />}
             badgeText="TEST SERIES · ALL PROGRAMS"
 
             contentShiftY={-22}

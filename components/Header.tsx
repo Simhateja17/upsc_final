@@ -170,6 +170,7 @@ const Header = () => {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={() => setActiveDropdown(null)}
                     className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                   >
                     <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
@@ -198,6 +199,7 @@ const Header = () => {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={() => setActiveDropdown(null)}
                     className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                   >
                     <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
@@ -226,6 +228,7 @@ const Header = () => {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={() => setActiveDropdown(null)}
                     className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                   >
                     <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
@@ -394,4 +397,3 @@ const Header = () => {
 };
 
 export default Header;
-

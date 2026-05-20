@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { studyGroupService } from '@/lib/services';
@@ -24,6 +23,7 @@ export default function LandingPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const [onlineCount, setOnlineCount] = useState(532);
+  const [aiTypingDone, setAiTypingDone] = useState(false);
 
   // Auth redirect
   useEffect(() => {
@@ -104,9 +104,9 @@ export default function LandingPage() {
       ctx!.clearRect(0, 0, W, H);
       ctx!.fillStyle = '#070e1e';
       ctx!.fillRect(0, 0, W, H);
-      const glow = ctx!.createRadialGradient(W * 0.05, H * 0.5, 0, W * 0.15, H * 0.5, W * 0.55);
-      glow.addColorStop(0, 'rgba(232,184,75,0.18)');
-      glow.addColorStop(0.35, 'rgba(232,184,75,0.07)');
+      const glow = ctx!.createRadialGradient(W * 0.15, H * 0.45, 0, W * 0.15, H * 0.45, W * 0.28);
+      glow.addColorStop(0, 'rgba(232,184,75,0.16)');
+      glow.addColorStop(0.45, 'rgba(232,184,75,0.05)');
       glow.addColorStop(1, 'rgba(7,14,30,0)');
       ctx!.fillStyle = glow;
       ctx!.fillRect(0, 0, W, H);
@@ -119,9 +119,22 @@ export default function LandingPage() {
 
   // AI auto-switcher
   useEffect(() => {
-    const timer = setInterval(() => setActiveSlide(p => (p + 1) % 4), 4000);
+    const timer = setInterval(() => {
+      setActiveSlide(p => (p + 1) % 4);
+      setAiTypingDone(false);
+    }, 10000);
     return () => clearInterval(timer);
   }, []);
+
+  // Show AI reply after 2.5s on the assistant slide
+  useEffect(() => {
+    if (activeSlide !== 1) {
+      setAiTypingDone(false);
+      return;
+    }
+    const timer = setTimeout(() => setAiTypingDone(true), 2500);
+    return () => clearTimeout(timer);
+  }, [activeSlide]);
 
   const go = useCallback((path: string) => { router.push(path); }, [router]);
 
@@ -144,11 +157,10 @@ export default function LandingPage() {
         <canvas id="heroCanvas" ref={canvasRef} />
         <div className="hero-grid-marks">
           {[
-            { top: '18%', left: '8%' }, { top: '22%', left: '14%' }, { top: '36%', left: '5%' },
-            { top: '52%', left: '11%' }, { top: '68%', left: '7%' }, { top: '76%', left: '16%' },
-            { top: '18%', right: '8%' }, { top: '28%', right: '14%' }, { top: '44%', right: '6%' },
-            { top: '60%', right: '11%' }, { top: '72%', right: '7%' }, { top: '14%', left: '28%' },
-            { top: '80%', right: '22%' }, { top: '85%', left: '32%' },
+            { top: '18%', left: '8%' }, { top: '36%', left: '5%' }, { top: '68%', left: '7%' },
+            { top: '18%', right: '8%' }, { top: '44%', right: '6%' }, { top: '72%', right: '7%' },
+            { top: '14%', left: '42%' }, { top: '22%', left: '58%' }, { top: '80%', left: '48%' },
+            { top: '85%', right: '22%' }, { top: '28%', right: '32%' }, { top: '60%', left: '28%' },
           ].map((pos, i) => <div key={i} className="hgm" style={pos} />)}
         </div>
 
@@ -286,11 +298,19 @@ export default function LandingPage() {
                       📌 <strong>Conclusion:</strong> Balance separation of powers
                     </div>
                     <div className="chat-bubble cb-user">Give me 3 recent examples for the body?</div>
-                    <div className="chat-bubble cb-ai">
-                      <div className="cb-typing">
-                        <div className="cb-dot" /><div className="cb-dot" /><div className="cb-dot" />
+                    {aiTypingDone ? (
+                      <div className="chat-bubble cb-ai">
+                        1. <strong>NJAC Case (2015)</strong> - SC struck down 99th amendment on judicial appointments<br />
+                        2. <strong>Electoral Bonds Judgment (2024)</strong> - SC invalidated scheme citing transparency<br />
+                        3. <strong>Delhi LG vs AAP (2023)</strong> - SC defined Centre-State limits in Union Territory
                       </div>
-                    </div>
+                    ) : (
+                      <div className="chat-bubble cb-ai">
+                        <div className="cb-typing">
+                          <div className="cb-dot" /><div className="cb-dot" /><div className="cb-dot" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -458,7 +478,7 @@ export default function LandingPage() {
           <div className="mentor-top">
             <div className="reveal">
               <div className="section-eyebrow eyebrow-light">Mentorship</div>
-              <h2 className="section-h2-light">UPSC Mentorship<br />Tailored To Your Journey</h2>
+              <h2 className="section-h2-light">1 on 1 personalized mentorship</h2>
               <p className="section-p-light" style={{ marginTop: 12, maxWidth: 380 }}>
                 UPSC mentorship tailored to your preparation journey and built to help you succeed in Prelims, Mains and interview
               </p>
@@ -476,7 +496,7 @@ export default function LandingPage() {
                 <div className="mqc-av">A</div>
                 <div>
                   <div className="mqc-name">Abhijeet Soni</div>
-                  <div className="mqc-role">Founder &amp; Mentor Rise With Jeet IAS | UPSC Simplified</div>
+                  <div className="mqc-role">Founder &amp; Mentor Rise With Jeet | UPSC Simplified</div>
                 </div>
               </div>
             </div>
@@ -513,7 +533,12 @@ export default function LandingPage() {
           <div className="live-card reveal reveal-delay-1">
             <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
               <div className="live-avatars">
-                {['A', 'R', 'P', 'S'].map(l => <div key={l} className="lavatar">{l}</div>)}
+                {[
+                  { initials: 'NS', bg: 'linear-gradient(135deg,#4F46E5,#7C3AED)' },
+                  { initials: 'RJ', bg: 'linear-gradient(135deg,#10B981,#059669)' },
+                  { initials: 'ML', bg: 'linear-gradient(135deg,#F43F5E,#E11D48)' },
+                  { initials: 'PS', bg: 'linear-gradient(135deg,#06B6D4,#0891B2)' },
+                ].map(a => <div key={a.initials} className="lavatar" style={{ background: a.bg }}>{a.initials}</div>)}
                 <div className="lavatar lavatar-more">+120</div>
               </div>
               <div className="live-info">
@@ -521,11 +546,13 @@ export default function LandingPage() {
                 <p>Currently studying: Modern History · Focus Guard ON</p>
               </div>
             </div>
-            <div className="live-stats">
-              <div className="lstat"><span className="lstat-val">{onlineCount}</span><div className="lstat-label">Online Now</div></div>
-              <div className="lstat"><span className="lstat-val">2h 14m</span><div className="lstat-label">Session</div></div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+              <div className="live-stats">
+                <div className="lstat"><span className="lstat-val">{onlineCount}</span><div className="lstat-label">Online Now</div></div>
+                <div className="lstat"><span className="lstat-val">5hrs+</span><div className="lstat-label">Session</div></div>
+              </div>
+              <button className="btn-join-live" onClick={() => go('/login?tab=signup')}>Join Study Room →</button>
             </div>
-            <button className="btn-join-live" onClick={() => go('/login?tab=signup')}>Join Study Room →</button>
           </div>
 
           <div className="live-tools-grid reveal reveal-delay-2">
@@ -592,7 +619,6 @@ export default function LandingPage() {
                 <div className="phone-screen">
                   <div className="dynamic-island">
                     <div className="di-content">
-                      <span className="di-flame">🔥</span>
                       <span className="di-text">47-day streak!</span>
                       <div className="di-speaker" />
                       <div className="di-camera" />

@@ -11,6 +11,15 @@ const MONTHS = [
 ];
 const WEEKDAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
+const INDIAN_STATES = [
+  'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
+  'Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh',
+  'Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan',
+  'Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal',
+  'Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry',
+];
+
 function formatDisplayDate(iso: string) {
   if (!iso) return '';
   const [y, m, d] = iso.split('-').map(Number);
@@ -426,12 +435,16 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">State</label>
-                  <input
-                    type="text"
+                  <select
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
-                  />
+                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                  >
+                    <option value="">Select State</option>
+                    {INDIAN_STATES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -439,12 +452,17 @@ export default function ProfilePage() {
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Target year</label>
-                  <input
-                    type="text"
+                  <select
                     value={targetYear}
                     onChange={(e) => setTargetYear(e.target.value)}
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
-                  />
+                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                  >
+                    <option value="">Select year</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="Later">Later</option>
+                  </select>
                 </div>
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Optional subject</label>
@@ -535,7 +553,19 @@ export default function ProfilePage() {
                 <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Mock tests taken</span>
                 <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{stats?.mockTestsTaken?.toLocaleString() || '0'}</span>
               </div>
-              <div className="flex items-center justify-between border-t border-[#f1f5f9] pt-2">
+              {(() => {
+                const streakDays = stats?.streak?.currentStreak ?? 0;
+                return (
+                  <div className="flex items-center justify-between border-t border-[#f1f5f9] pt-2">
+                    <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Streak</span>
+                    <span className="font-semibold text-[14px] leading-[20px] text-[#d08700] flex items-center gap-1">
+                      {streakDays > 0 && <span>🔥</span>}
+                      {streakDays.toLocaleString()} {streakDays === 1 ? 'day' : 'days'}
+                    </span>
+                  </div>
+                );
+              })()}
+              <div className="flex items-center justify-between">
                 <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Current rank</span>
                 <span className="font-semibold text-[14px] leading-[20px] text-[#d08700]">
                   {stats?.rank ? `#${stats.rank.toLocaleString()} / ${stats.totalUsers?.toLocaleString() || '50,000'}` : '-'}
@@ -557,7 +587,8 @@ export default function ProfilePage() {
 
             {(() => {
               const earned: { icon: string; label: string }[] = [];
-              if ((stats?.streak ?? 0) >= 3) earned.push({ icon: '/icons/fire.png', label: `${stats.streak}-day streak` });
+              const streakDays = stats?.streak?.currentStreak ?? 0;
+              if (streakDays >= 3) earned.push({ icon: '/icons/fire.png', label: `${streakDays}-day streak` });
               const mcqs = stats?.mcqsAttempted ?? 0;
               if (mcqs >= 100) earned.push({ icon: '/icons/target.png', label: `${mcqs.toLocaleString()} MCQs` });
               const answers = stats?.answersEvaluated ?? 0;
