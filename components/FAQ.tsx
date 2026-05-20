@@ -25,9 +25,9 @@ const FEATURED_FAQS = [
       'The Study Planner generates a personalised daily schedule based on your target exam date, available study hours, Syllabus Tracker progress, and weak areas from MCQ and test performance. It adapts every week as your data changes.',
   },
   {
-    question: 'What is Jeet GPT?',
+    question: 'What is Jeet AI?',
     answer:
-      'Jeet GPT is your personal UPSC AI assistant, available 24/7. Ask it to explain any GS concept, help structure a Mains answer, summarise current affairs, or review your strategy. It is trained on UPSC-specific content, not generic AI.',
+      'Jeet AI is your personal UPSC AI assistant, available 24/7. Ask it to explain any GS concept, help structure a Mains answer, summarise current affairs, or review your strategy. It is trained on UPSC-specific content, not generic AI.',
   },
   {
     question: 'How many PYQs are available on the platform?',

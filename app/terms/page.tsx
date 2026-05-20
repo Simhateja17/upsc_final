@@ -1,20 +1,11 @@
-'use client';
+import type { Metadata } from 'next';
+import TermsContent from './TermsContent';
+
+export const metadata: Metadata = {
+  title: 'Terms & Policies | RiseWithJeet',
+  description: 'Read the Terms & Policies for RiseWithJeet — India\'s #1 AI-Powered UPSC Platform.',
+};
 
 export default function TermsOfServicePage() {
-  return (
-    <iframe
-      src="/terms-of-service.html"
-      title="Terms of Use | RiseWithJeet"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        border: 'none',
-        display: 'block',
-        zIndex: 1,
-      }}
-    />
-  );
+  return <TermsContent />;
 }

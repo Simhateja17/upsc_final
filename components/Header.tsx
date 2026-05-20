@@ -164,17 +164,19 @@ const Header = () => {
             {icons.chevronDown}
           </button>
           {activeDropdown === 'prepare' && (
-            <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
-              {dropdownMenus.prepare.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                >
-                  <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
-                  <span className="text-sm font-medium">{item.label}</span>
-                </Link>
-              ))}
+            <div className="absolute top-full left-0 w-56 pt-2 z-50">
+              <div className="bg-white rounded-lg shadow-xl border border-gray-100 py-2">
+                {dropdownMenus.prepare.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                  >
+                    <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -190,17 +192,19 @@ const Header = () => {
             {icons.chevronDown}
           </button>
           {activeDropdown === 'practice' && (
-            <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
-              {dropdownMenus.practice.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                >
-                  <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
-                  <span className="text-sm font-medium">{item.label}</span>
-                </Link>
-              ))}
+            <div className="absolute top-full left-0 w-56 pt-2 z-50">
+              <div className="bg-white rounded-lg shadow-xl border border-gray-100 py-2">
+                {dropdownMenus.practice.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                  >
+                    <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -216,17 +220,19 @@ const Header = () => {
             {icons.chevronDown}
           </button>
           {activeDropdown === 'revision' && (
-            <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
-              {dropdownMenus.revision.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                >
-                  <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
-                  <span className="text-sm font-medium">{item.label}</span>
-                </Link>
-              ))}
+            <div className="absolute top-full left-0 w-56 pt-2 z-50">
+              <div className="bg-white rounded-lg shadow-xl border border-gray-100 py-2">
+                {dropdownMenus.revision.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                  >
+                    <span className="text-blue-600">{icons[item.icon as keyof typeof icons]}</span>
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>

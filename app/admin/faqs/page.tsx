@@ -12,7 +12,7 @@ interface FaqItem {
   isActive: boolean;
 }
 
-const CATEGORIES = ['General', 'Study Planner', 'Jeet GPT', 'Syllabus', 'Daily MCQ', 'Mock Tests', 'Test Series', 'Pricing', 'Technical'];
+const CATEGORIES = ['General', 'Study Planner', 'Jeet AI', 'Syllabus', 'Daily MCQ', 'Mock Tests', 'Test Series', 'Pricing', 'Technical'];
 
 export default function AdminFaqPage() {
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
