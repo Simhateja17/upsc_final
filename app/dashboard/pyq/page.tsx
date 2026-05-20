@@ -409,6 +409,57 @@ export default function PyqPage() {
         </div>
 
         {/* Content area: filters (left on desktop) + questions */}
+        <div className="mb-4 rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-2.5 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.08)]">
+          <nav aria-label="Question filters breadcrumb" className="flex flex-wrap items-center gap-2 text-[12px] md:text-[13px]">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedSubject('All Papers');
+                setSelectedSubtopic(null);
+                setSelectedTopics([]);
+                setExpandedSubject(null);
+                setExpandedSubtopic(null);
+              }}
+              className="font-semibold text-[#5F8DE8] transition-colors hover:text-[#3E73DA]"
+            >
+              All Papers
+            </button>
+            {selectedSubject !== 'All Papers' && (
+              <>
+                <span className="text-[#98A2B3]">›</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSubtopic(null);
+                    setSelectedTopics([]);
+                    setExpandedSubtopic(null);
+                  }}
+                  className="font-semibold text-[#5F8DE8] transition-colors hover:text-[#3E73DA]"
+                >
+                  {selectedSubject}
+                </button>
+              </>
+            )}
+            {selectedSubtopic && (
+              <>
+                <span className="text-[#98A2B3]">›</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTopics([])}
+                  className="font-semibold text-[#5F8DE8] transition-colors hover:text-[#3E73DA]"
+                >
+                  {selectedSubtopic}
+                </button>
+              </>
+            )}
+            {selectedTopics[0] && (
+              <>
+                <span className="text-[#98A2B3]">›</span>
+                <span className="font-semibold text-[#101828]">{selectedTopics[0]}</span>
+              </>
+            )}
+          </nav>
+        </div>
         <div className="flex flex-col lg:flex-row-reverse gap-8">
           {/* Questions list */}
           <section className="flex-1 min-w-0">
