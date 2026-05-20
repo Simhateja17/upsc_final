@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { videoService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
@@ -283,6 +283,10 @@ export default function VideoLecturesPage() {
   const [mentorQuestion, setMentorQuestion] = useState('');
   const [mentorSubmitting, setMentorSubmitting] = useState(false);
   const [mentorSuccess, setMentorSuccess] = useState(false);
+  const selectedVideosRef = useRef<HTMLDivElement | null>(null);
+  const selectedVideoGridRef = useRef<HTMLDivElement | null>(null);
+  const lastAutoScrolledSubjectRef = useRef<string | null>(null);
+  const lastGridAutoScrolledSubjectRef = useRef<string | null>(null);
 
   /* Load subjects & featured videos */
   useEffect(() => {
@@ -322,6 +326,9 @@ export default function VideoLecturesPage() {
 
   const handleSubjectClick = (name: string) => {
     setSelectedSubject((prev) => {
+      const nextSubject = prev === name ? null : name;
+      lastAutoScrolledSubjectRef.current = nextSubject ? null : prev;
+      lastGridAutoScrolledSubjectRef.current = nextSubject ? null : prev;
       return prev === name ? null : name;
     });
   };
@@ -396,6 +403,60 @@ export default function VideoLecturesPage() {
     ? apiVideos.filter((video) => normalizeSubjectKey(video.subject || '') === normalizeSubjectKey(selectedSubject))
     : [];
   const visibleSubjectVideos = subjectVideos.length > 0 ? subjectVideos : fallbackSubjectVideos;
+
+  useEffect(() => {
+    if (!selectedSubject) {
+      lastAutoScrolledSubjectRef.current = null;
+      lastGridAutoScrolledSubjectRef.current = null;
+      return;
+    }
+    if (lastAutoScrolledSubjectRef.current === selectedSubject) return;
+
+    const scrollTimer = window.setTimeout(() => {
+      window.requestAnimationFrame(() => {
+        const section = selectedVideosRef.current;
+        const scrollContainer = section?.closest('main');
+        if (!section || !scrollContainer) return;
+
+        const sectionRect = section.getBoundingClientRect();
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const scrollTop = scrollContainer.scrollTop + sectionRect.top - containerRect.top - 16;
+
+        scrollContainer.scrollTo({
+          top: Math.max(0, scrollTop),
+          behavior: 'smooth',
+        });
+        lastAutoScrolledSubjectRef.current = selectedSubject;
+      });
+    }, 0);
+
+    return () => window.clearTimeout(scrollTimer);
+  }, [selectedSubject]);
+
+  useEffect(() => {
+    if (!selectedSubject || subjectVideosLoading || visibleSubjectVideos.length === 0) return;
+    if (lastGridAutoScrolledSubjectRef.current === selectedSubject) return;
+
+    const scrollTimer = window.setTimeout(() => {
+      window.requestAnimationFrame(() => {
+        const grid = selectedVideoGridRef.current;
+        const scrollContainer = grid?.closest('main');
+        if (!grid || !scrollContainer) return;
+
+        const gridRect = grid.getBoundingClientRect();
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const scrollTop = scrollContainer.scrollTop + gridRect.top - containerRect.top - 16;
+
+        scrollContainer.scrollTo({
+          top: Math.max(0, scrollTop),
+          behavior: 'smooth',
+        });
+        lastGridAutoScrolledSubjectRef.current = selectedSubject;
+      });
+    }, 60);
+
+    return () => window.clearTimeout(scrollTimer);
+  }, [selectedSubject, subjectVideosLoading, visibleSubjectVideos.length]);
 
   return (
     <div className="font-arimo w-full min-h-screen" style={{ background: '#F9FAFB' }}>
@@ -629,7 +690,7 @@ export default function VideoLecturesPage() {
 
         {/* Inline videos for selected subject */}
         {selectedSubject && (
-          <div style={{ marginTop: 'clamp(24px, 2.5vw, 36px)' }}>
+          <div ref={selectedVideosRef} style={{ marginTop: 'clamp(24px, 2.5vw, 36px)' }}>
             <div
               style={{
                 background: 'linear-gradient(180deg, #FCFDFF 0%, #F8FAFD 100%)',
@@ -710,6 +771,7 @@ export default function VideoLecturesPage() {
             ) : (
               <>
                 <div
+                  ref={selectedVideoGridRef}
                   style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))',
