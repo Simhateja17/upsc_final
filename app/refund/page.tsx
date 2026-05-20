@@ -2,11 +2,21 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import LandingNav from '@/components/LandingNav';
 import Footer from '@/components/Footer';
+import CompanyPageToc from '@/components/CompanyPageToc';
 
 export const metadata: Metadata = {
   title: 'Refund and Cancellation Policy | RiseWithJeet',
   description: 'Understand the refund and cancellation policy for RiseWithJeet subscriptions.',
 };
+
+const tocItems = [
+  { id: 'our-approach', num: '01', label: 'Our Approach' },
+  { id: 'cancellations', num: '02', label: 'Cancellations' },
+  { id: 'within-7-days', num: '03', label: 'Within 7 Days' },
+  { id: 'after-7-days', num: '04', label: 'After 7 Days' },
+  { id: 'how-to-request', num: '05', label: 'How to Request' },
+  { id: 'contact-us', num: '06', label: 'Contact Us' },
+];
 
 export default function RefundPolicyPage() {
   return (
@@ -51,39 +61,16 @@ export default function RefundPolicyPage() {
       </section>
 
       {/* Body */}
-      <section className="bg-white py-16">
+      <section className="bg-[#FAF8F4] py-16">
         <div className="mx-auto flex max-w-5xl gap-12 px-6 lg:px-8">
 
-          {/* Table of Contents - sidebar */}
-          <aside className="hidden w-52 shrink-0 lg:block">
-            <div className="sticky top-24">
-              <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6b7a99]">Contents</div>
-              <nav className="flex flex-col gap-1.5 text-sm">
-                <a href="#our-approach" className="rounded-md px-3 py-1.5 text-[#374560] transition hover:bg-[rgba(11,22,40,0.06)]">
-                  <span className="mr-2 text-xs text-[#9aa3b8]">01</span>Our Approach
-                </a>
-                <a href="#cancellations" className="rounded-md px-3 py-1.5 text-[#374560] transition hover:bg-[rgba(11,22,40,0.06)]">
-                  <span className="mr-2 text-xs text-[#9aa3b8]">02</span>Cancellations
-                </a>
-                <a href="#within-7-days" className="rounded-md px-3 py-1.5 text-[#374560] transition hover:bg-[rgba(11,22,40,0.06)]">
-                  <span className="mr-2 text-xs text-[#9aa3b8]">03</span>Within 7 Days
-                </a>
-                <a href="#after-7-days" className="rounded-md px-3 py-1.5 text-[#374560] transition hover:bg-[rgba(11,22,40,0.06)]">
-                  <span className="mr-2 text-xs text-[#9aa3b8]">04</span>After 7 Days
-                </a>
-                <a href="#how-to-request" className="rounded-md px-3 py-1.5 text-[#374560] transition hover:bg-[rgba(11,22,40,0.06)]">
-                  <span className="mr-2 text-xs text-[#9aa3b8]">05</span>How to Request
-                </a>
-                <a href="#contact-us" className="rounded-md px-3 py-1.5 text-[#374560] transition hover:bg-[rgba(11,22,40,0.06)]">
-                  <span className="mr-2 text-xs text-[#9aa3b8]">06</span>Contact Us
-                </a>
-              </nav>
-              <div className="mt-6 border-t border-[rgba(11,22,40,0.09)] pt-4">
-                <div className="text-xs font-medium text-[#6b7a99]">Billing queries</div>
-                <div className="mt-1 text-sm text-[#374560]">together@risewithjeet.com</div>
-              </div>
-            </div>
-          </aside>
+          <CompanyPageToc
+            ariaLabel="Refund policy contents"
+            items={tocItems}
+            contactLabel="Billing queries"
+            contactValue="together@risewithjeet.com"
+            contactHref="mailto:together@risewithjeet.com"
+          />
 
           {/* Main content */}
           <div className="min-w-0 max-w-[800px] flex-1">
@@ -93,7 +80,7 @@ export default function RefundPolicyPage() {
               <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">01</div>
               <h2 className="mb-6 font-serif text-2xl font-bold text-[#0c1424] md:text-3xl">Our Approach</h2>
 
-              <div className="mb-6 flex gap-3 rounded-xl border border-[rgba(11,22,40,0.09)] bg-white p-5">
+              <div className="mb-6 flex gap-3 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5">
                 <div className="text-xl">💛</div>
                 <div className="text-sm leading-relaxed text-[#374560]">
                   <strong className="text-[#0c1424]">We want you to feel confident trying RiseWithJeet.</strong> If the platform is not right for you, we will do our best to make it right. This policy explains exactly how cancellations and refunds work.
@@ -151,7 +138,7 @@ export default function RefundPolicyPage() {
                 </li>
               </ul>
 
-              <div className="flex gap-3 rounded-xl border border-[rgba(11,22,40,0.09)] bg-white p-5">
+              <div className="flex gap-3 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5">
                 <div className="text-xl">💡</div>
                 <div className="text-sm leading-relaxed text-[#374560]">
                   If you are going through a tough period and need a break, consider pausing rather than cancelling. Write to us at <strong className="text-[#0c1424]">together@risewithjeet.com</strong> and we will see what we can do.
@@ -184,7 +171,7 @@ export default function RefundPolicyPage() {
                 </li>
               </ul>
 
-              <div className="flex gap-3 rounded-xl border border-[rgba(11,22,40,0.09)] bg-white p-5">
+              <div className="flex gap-3 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5">
                 <div className="text-xl">📌</div>
                 <div className="text-sm leading-relaxed text-[#374560]">
                   The 7-day window starts from the date of your initial payment, not from when you first log in or activate features.
@@ -227,7 +214,7 @@ export default function RefundPolicyPage() {
                 </div>
               </div>
 
-              <div className="flex gap-3 rounded-xl border border-[rgba(11,22,40,0.09)] bg-white p-5">
+              <div className="flex gap-3 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5">
                 <div className="text-xl">📋</div>
                 <div className="text-sm leading-relaxed text-[#374560]">
                   If your situation is not listed here, please write to us anyway. We look at each request individually and respond fairly.
@@ -245,7 +232,7 @@ export default function RefundPolicyPage() {
               </p>
 
               <div className="space-y-4">
-                <div className="flex gap-4 rounded-xl border border-[rgba(11,22,40,0.09)] bg-white p-5">
+                <div className="flex gap-4 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#090e1c] text-sm font-bold text-[#e8b84b]">1</div>
                   <div>
                     <div className="mb-1 font-semibold text-[#0c1424]">Email us</div>
@@ -255,7 +242,7 @@ export default function RefundPolicyPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 rounded-xl border border-[rgba(11,22,40,0.09)] bg-white p-5">
+                <div className="flex gap-4 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#090e1c] text-sm font-bold text-[#e8b84b]">2</div>
                   <div>
                     <div className="mb-1 font-semibold text-[#0c1424]">We review and respond</div>
@@ -265,7 +252,7 @@ export default function RefundPolicyPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 rounded-xl border border-[rgba(11,22,40,0.09)] bg-white p-5">
+                <div className="flex gap-4 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#090e1c] text-sm font-bold text-[#e8b84b]">3</div>
                   <div>
                     <div className="mb-1 font-semibold text-[#0c1424]">Refund processed</div>
@@ -286,7 +273,7 @@ export default function RefundPolicyPage() {
                 For any billing or refund queries, please reach out directly. We respond as quickly as possible on working days.
               </p>
 
-              <div className="mb-6 flex gap-3 rounded-xl border border-[rgba(11,22,40,0.09)] bg-white p-5">
+              <div className="mb-6 flex gap-3 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5">
                 <div className="text-xl">📬</div>
                 <div className="text-sm leading-relaxed text-[#374560]">
                   Billing and refunds:{' '}
@@ -304,7 +291,7 @@ export default function RefundPolicyPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-white py-16">
+      <section className="bg-[#FAF8F4] py-16">
         <div className="mx-auto max-w-2xl px-6">
           <div className="relative overflow-hidden rounded-2xl bg-[#090e1c] px-8 py-14 text-center">
             <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-20 h-80 w-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(232,184,75,0.1) 0%, transparent 65%)' }} />

@@ -320,6 +320,20 @@ export const pyqService = {
     const qs = query.toString();
     return api.get<any>(`/pyq/questions${qs ? `?${qs}` : ''}`);
   },
+  getCounts: (params?: {
+    mode?: 'prelims' | 'mains';
+    year?: number;
+    yearFrom?: number;
+    yearTo?: number;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.mode) query.set('mode', params.mode);
+    if (params?.year) query.set('year', String(params.year));
+    if (params?.yearFrom) query.set('yearFrom', String(params.yearFrom));
+    if (params?.yearTo) query.set('yearTo', String(params.yearTo));
+    const qs = query.toString();
+    return api.get<any>(`/pyq/counts${qs ? `?${qs}` : ''}`);
+  },
 
   // Mains AI evaluation
   submitMainsAnswer: async (

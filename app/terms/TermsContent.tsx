@@ -513,7 +513,7 @@ export default function TermsContent() {
 
         /* ── BODY ── */
         .terms-body {
-          background: var(--white);
+          background: var(--cream);
           padding: 64px 0;
         }
         .terms-inner {
@@ -529,9 +529,10 @@ export default function TermsContent() {
         /* ── TOC ── */
         .terms-toc {
           position: sticky;
-          top: 84px;
-          max-height: calc(100vh - 100px);
-          overflow-y: auto;
+          top: 96px;
+          align-self: start;
+          max-height: calc(100vh - 112px);
+          overflow: hidden;
         }
         .terms-toc-label {
           font-size: 10px;
@@ -556,12 +557,12 @@ export default function TermsContent() {
         }
         .terms-toc-item:hover {
           color: var(--t1);
-          background: var(--cream);
-          border-left-color: var(--b2);
+          background: var(--white);
+          border-left-color: var(--gold);
         }
         .terms-toc-item.active {
           color: var(--navy-5);
-          background: var(--cream);
+          background: var(--white);
           border-left-color: var(--gold);
           font-weight: 600;
         }
@@ -579,7 +580,7 @@ export default function TermsContent() {
           margin: 12px 0;
         }
         .terms-toc-contact {
-          background: var(--cream);
+          background: var(--white);
           border: 1.5px solid var(--b1);
           border-radius: 10px;
           padding: 14px;

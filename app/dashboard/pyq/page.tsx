@@ -30,6 +30,20 @@ type SubjectTreeNode = {
   children?: Array<{ label: string; microTopics?: string[] }>;
 };
 
+type PYQCountData = {
+  total: number;
+  bySubject: Array<{ subject: string | null; count: number }>;
+  bySubSubject: Array<{ subject: string | null; subSubject: string | null; count: number }>;
+  byTopic: Array<{ subject: string | null; subSubject: string | null; topic: string | null; count: number }>;
+};
+
+const EMPTY_COUNTS: PYQCountData = {
+  total: 0,
+  bySubject: [],
+  bySubSubject: [],
+  byTopic: [],
+};
+
 const SUBJECT_ICONS: Record<string, string> = {
   History: '🏛️',
   Geography: '🌍',
@@ -39,6 +53,9 @@ const SUBJECT_ICONS: Record<string, string> = {
   'Science & Technology': '🔬',
   'Current Affairs': '📰',
 };
+
+const countKey = (...parts: Array<string | null | undefined>) =>
+  parts.map((part) => (part || '').trim().toLowerCase()).join('||');
 
 const PRELIMS_SUBJECT_TREE: SubjectTreeNode[] = [
   ...(prelimsSyllabus as Array<{ subject: string; subSubjects: Array<{ label: string; topics: string[] }> }>).map((node) => ({
@@ -149,6 +166,7 @@ export default function PyqPage() {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
   const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
+  const [questionCounts, setQuestionCounts] = useState<PYQCountData>(EMPTY_COUNTS);
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
@@ -233,6 +251,60 @@ export default function PyqPage() {
   useEffect(() => {
     fetchQuestions();
   }, [fetchQuestions]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchCounts = async () => {
+      try {
+        const yearFrom = selectedYearRange === 'last5' ? LATEST_EXAM_YEAR - 4 : undefined;
+        const res = await pyqService.getCounts({
+          mode,
+          year: selectedYearRange === 'year' ? selectedYear || undefined : undefined,
+          yearFrom,
+        });
+        if (active && res.status === 'success') {
+          setQuestionCounts(res.data || EMPTY_COUNTS);
+        }
+      } catch (err) {
+        console.error('Failed to fetch PYQ counts:', err);
+        if (active) setQuestionCounts(EMPTY_COUNTS);
+      }
+    };
+
+    fetchCounts();
+    return () => {
+      active = false;
+    };
+  }, [mode, selectedYear, selectedYearRange]);
+
+  const subjectQuestionCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    questionCounts.bySubject.forEach((row) => {
+      counts.set(countKey(row.subject), row.count);
+    });
+    return counts;
+  }, [questionCounts.bySubject]);
+
+  const subSubjectQuestionCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    questionCounts.bySubSubject.forEach((row) => {
+      counts.set(countKey(row.subject, row.subSubject), row.count);
+    });
+    return counts;
+  }, [questionCounts.bySubSubject]);
+
+  const getTopicQuestionCount = useCallback(
+    (subject: string, subSubject: string | null, topic: string) => {
+      const needle = topic.trim().toLowerCase();
+      return questionCounts.byTopic.reduce((sum, row) => {
+        const sameSubject = countKey(row.subject) === countKey(subject);
+        const sameSubSubject = !subSubject || countKey(row.subSubject) === countKey(subSubject);
+        const topicText = (row.topic || '').toLowerCase();
+        return sameSubject && sameSubSubject && topicText.includes(needle) ? sum + row.count : sum;
+      }, 0);
+    },
+    [questionCounts.byTopic]
+  );
 
   const visibleQuestions = useMemo(() => {
     if (!selectedTopics.length) return questions;
@@ -1069,6 +1141,7 @@ export default function PyqPage() {
                 {PYQ_SUBJECT_TREE[mode].map(({ label, icon, children }) => {
                   const selected = selectedSubject === label;
                   const expanded = expandedSubject === label;
+                  const subjectCount = subjectQuestionCounts.get(countKey(label)) || 0;
                   return (
                     <div
                       key={`tree-${label}`}
@@ -1100,11 +1173,9 @@ export default function PyqPage() {
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {children?.length ? (
-                            <span className="rounded-full border border-[#E5E7EB] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
-                              {children.length}
-                            </span>
-                          ) : null}
+                          <span className="rounded-full border border-[#E5E7EB] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
+                            {subjectCount}
+                          </span>
                           {children?.length ? (
                             <span
                               className="inline-block transition-transform"
@@ -1125,6 +1196,7 @@ export default function PyqPage() {
                             const childSelected = selectedSubtopic === child.label;
                             const childExpanded = expandedSubtopic === child.label;
                             const topicCount = child.microTopics?.length || 0;
+                            const childQuestionCount = subSubjectQuestionCounts.get(countKey(label, child.label)) || 0;
                             return (
                               <div key={child.label} className="border-b border-[#E8ECF2] last:border-b-0">
                                 <button
@@ -1156,11 +1228,9 @@ export default function PyqPage() {
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    {topicCount ? (
-                                      <span className="rounded-full border border-[#E5E7EB] bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
-                                        {topicCount}
-                                      </span>
-                                    ) : null}
+                                    <span className="rounded-full border border-[#E5E7EB] bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
+                                      {childQuestionCount}
+                                    </span>
                                     {topicCount ? (
                                       <span
                                         className="inline-block text-[10px] text-[#9AA3B2] transition-transform"
@@ -1213,7 +1283,7 @@ export default function PyqPage() {
                                           </span>
                                         </span>
                                         <span className="ml-3 rounded-full border border-[#E5E7EB] bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
-                                          -
+                                          {getTopicQuestionCount(label, child.label, topic)}
                                         </span>
                                       </button>
                                     ))}
