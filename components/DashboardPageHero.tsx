@@ -171,12 +171,9 @@ export default function DashboardPageHero({
             className="font-arimo text-center"
             style={{
               fontSize: 'clamp(12px, 1vw, 16px)',
-              lineHeight: '1.2',
+              lineHeight: '1.4',
               color: 'rgba(255,255,255,0.5)',
-              maxWidth: '100%',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              maxWidth: '780px',
               marginBottom: 0,
             }}
           >

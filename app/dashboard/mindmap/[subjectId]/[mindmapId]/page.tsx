@@ -49,6 +49,7 @@ export default function MindmapViewPage({ params }: PageParams) {
   const [showProModal, setShowProModal] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [exploredBranchNames, setExploredBranchNames] = useState<Set<string>>(new Set());
 
   // Pricing/features pulled from admin pricing API (falls back to defaults).
   const [proPricing, setProPricing] = useState<{
@@ -110,7 +111,14 @@ export default function MindmapViewPage({ params }: PageParams) {
       .then((res) => {
         if (res.status === 'success') {
           setData(res.data);
-          // Mark as viewed
+          // Pre-populate explored branches based on saved mastery
+          if (res.data.mastery > 0 && Array.isArray(res.data.branches) && res.data.branches.length > 0) {
+            const exploredCount = Math.round((res.data.branches.length * res.data.mastery) / 100);
+            const initialExplored = new Set<string>(
+              res.data.branches.slice(0, exploredCount).map((b: Branch) => b.name)
+            );
+            setExploredBranchNames(initialExplored);
+          }
           if (!res.data.viewed) {
             mindmapService.updateProgress(res.data.id, res.data.mastery, true).catch(() => {});
           }
@@ -119,6 +127,23 @@ export default function MindmapViewPage({ params }: PageParams) {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [subjectId, mindmapId]);
+
+  const handleBranchClick = (branchName: string) => {
+    if (!data) return;
+    setExploredBranchNames((prev) => {
+      const next = new Set(prev);
+      if (next.has(branchName)) {
+        next.delete(branchName);
+      } else {
+        next.add(branchName);
+      }
+      const branches: Branch[] = Array.isArray(data.branches) ? data.branches : [];
+      const newMastery = branches.length > 0 ? Math.round((next.size / branches.length) * 100) : 0;
+      setData((d) => d ? { ...d, mastery: newMastery } : d);
+      mindmapService.updateProgress(data.id, newMastery, true).catch(() => {});
+      return next;
+    });
+  };
 
   const handleAnswer = () => {
     const questions = data?.quizData ?? [];
@@ -157,7 +182,7 @@ export default function MindmapViewPage({ params }: PageParams) {
   const nodes: NodeData = data.nodes as NodeData;
   const quizQuestions: QuizQuestion[] = data.quizData ?? [];
   const currentQuestion = quizQuestions[currentQuestionIndex];
-  const exploredBranches = Math.min(branches.length, Math.round((branches.length * data.mastery) / 100));
+  const exploredBranches = exploredBranchNames.size;
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] text-[#101828] font-inter">
@@ -242,11 +267,12 @@ export default function MindmapViewPage({ params }: PageParams) {
             {quizQuestions.length > 0 && (
               <button
                 type="button"
-                onClick={() => setShowQuiz((value) => !value)}
-                className="rounded-full px-4 py-2 text-[12px] font-bold text-white"
+                onClick={() => setShowProModal(true)}
+                className="rounded-full px-4 py-2 text-[12px] font-bold text-white flex items-center gap-1.5"
                 style={{ background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)' }}
               >
-                {showQuiz ? 'Hide Quiz' : 'Quiz'}
+                <span>Quiz</span>
+                <span className="text-[10px] font-extrabold bg-white/20 rounded-full px-1.5 py-0.5 leading-none tracking-wide">PRO</span>
               </button>
             )}
           </div>
@@ -282,20 +308,26 @@ export default function MindmapViewPage({ params }: PageParams) {
 
                 {/* Branch nodes */}
                 <div className="absolute inset-0 pointer-events-none">
-                  {nodes?.branches?.map((node, i) => (
-                    <div key={i} className="absolute pointer-events-auto" style={{ top: node.y, left: node.x, transform: 'translate(-50%, -50%)' }}>
-                      <div
-                        className="px-5 py-2.5 rounded-[12px] text-[14px] font-semibold shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 min-w-[100px] text-center border"
-                        style={{
-                          background: `${node.color}15`,
-                          color: node.color,
-                          borderColor: node.color,
-                        }}
-                      >
-                        {node.label}
+                  {nodes?.branches?.map((node, i) => {
+                    const isExplored = exploredBranchNames.has(node.label);
+                    return (
+                      <div key={i} className="absolute pointer-events-auto" style={{ top: node.y, left: node.x, transform: 'translate(-50%, -50%)' }}>
+                        <div
+                          onClick={() => handleBranchClick(node.label)}
+                          className="px-5 py-2.5 rounded-[12px] text-[14px] font-semibold shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 min-w-[100px] text-center border select-none"
+                          style={{
+                            background: isExplored ? node.color : `${node.color}15`,
+                            color: isExplored ? '#fff' : node.color,
+                            borderColor: node.color,
+                            opacity: isExplored ? 1 : 0.85,
+                          }}
+                        >
+                          {isExplored && <span className="mr-1 text-[11px]">✓</span>}
+                          {node.label}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {/* Fallback: show branches without node positions */}
                   {(!nodes?.branches || nodes.branches.length === 0) && branches.map((b, i) => {
@@ -307,12 +339,19 @@ export default function MindmapViewPage({ params }: PageParams) {
                       { top: '75%', left: '65%' },
                     ];
                     const pos = positions[i % positions.length];
+                    const isExplored = exploredBranchNames.has(b.name);
                     return (
                       <div key={b.name} className="absolute pointer-events-auto" style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}>
                         <div
-                          className="px-5 py-2.5 rounded-[12px] text-[14px] font-semibold shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 min-w-[100px] text-center border"
-                          style={{ background: `${b.color}15`, color: b.color, borderColor: b.color }}
+                          onClick={() => handleBranchClick(b.name)}
+                          className="px-5 py-2.5 rounded-[12px] text-[14px] font-semibold shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 min-w-[100px] text-center border select-none"
+                          style={{
+                            background: isExplored ? b.color : `${b.color}15`,
+                            color: isExplored ? '#fff' : b.color,
+                            borderColor: b.color,
+                          }}
                         >
+                          {isExplored && <span className="mr-1 text-[11px]">✓</span>}
                           {b.name}
                         </div>
                       </div>
@@ -330,38 +369,6 @@ export default function MindmapViewPage({ params }: PageParams) {
               </div>
             </div>
 
-            {/* Quick Quiz */}
-            {showQuiz && quizQuestions.length > 0 && (
-              <div className="bg-white rounded-[16px] p-6 shadow-sm border border-gray-100 mt-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-[16px]">🧩</span>
-                  <h3 className="text-[14px] font-bold text-[#101828]">Quick Quiz</h3>
-                </div>
-                {!quizCompleted && currentQuestion ? (
-                  <div className="space-y-4">
-                    <p className="text-[16px] font-bold text-[#101828] leading-snug">
-                      {currentQuestion.question}
-                    </p>
-                    <div className="space-y-3">
-                      {currentQuestion.options.map((option, idx) => (
-                        <button
-                          key={option}
-                          onClick={handleAnswer}
-                          className="w-full text-left p-4 rounded-[8px] border border-gray-200 text-[#374151] hover:bg-gray-50 hover:border-gray-300 transition-all text-[14px]"
-                        >
-                          <span className="font-semibold mr-2">{String.fromCharCode(65 + idx)}.</span> {option}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-[12px] text-[#9CA3AF] mt-4">
-                      Question {currentQuestionIndex + 1} of {quizQuestions.length}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-center text-green-600 font-semibold py-4">Quiz completed! 🎉</p>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Branches sidebar */}
@@ -374,15 +381,27 @@ export default function MindmapViewPage({ params }: PageParams) {
               <p className="text-gray-400 text-sm">No branch data available.</p>
             ) : (
               <ul className="space-y-4">
-                {branches.map((branch) => (
-                  <li key={branch.name} className="flex justify-between items-center text-[13px]">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: branch.color }} />
-                      <span className="text-[#374151]">{branch.name}</span>
-                    </div>
-                    <span className="text-[#9CA3AF] text-[11px]">{branch.count}</span>
-                  </li>
-                ))}
+                {branches.map((branch) => {
+                  const isExplored = exploredBranchNames.has(branch.name);
+                  return (
+                    <li
+                      key={branch.name}
+                      onClick={() => handleBranchClick(branch.name)}
+                      className="flex justify-between items-center text-[13px] cursor-pointer rounded-[8px] px-2 py-1 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: branch.color }} />
+                        <span className={isExplored ? 'text-[#101828] font-semibold' : 'text-[#374151]'}>{branch.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#9CA3AF] text-[11px]">{branch.count}</span>
+                        {isExplored && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: branch.color }}>✓</span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

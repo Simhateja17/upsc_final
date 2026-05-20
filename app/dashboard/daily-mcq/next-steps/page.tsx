@@ -12,18 +12,13 @@ interface Recommendation {
   link: string;
 }
 
-const bgColors: Record<string, string> = {
-  study: 'linear-gradient(135deg, #C27AFF 0%, #AD46FF 100%)',
-  practice: 'linear-gradient(135deg, #05DF72 0%, #00C950 100%)',
-  editorial: '#FF9500',
-  answer: '#FFF6D4',
-};
+const ICON_BG = '#F3F4F6';
 
 const icons: Record<string, string> = {
   study: '/📚.png',
   practice: '/🎯.png',
   editorial: '/📰.png',
-  answer: '/📅.png',
+  answer: '/answer-writing-hand.png',
 };
 
 export default function NextStepsPage() {
@@ -71,7 +66,7 @@ export default function NextStepsPage() {
                 <div className="bg-white border border-[#E5E7EB] rounded-[clamp(8px,0.52vw,10px)] hover:shadow-md transition-all cursor-pointer relative"
                   style={{ padding: 'clamp(1.1rem,1.2vw,1.4rem) clamp(1rem,1.1vw,1.3rem)' }}>
                   <div className="rounded-[clamp(12px,0.83vw,16px)] flex items-center justify-center mb-[clamp(1rem,1.25vw,1.5rem)] mx-auto"
-                    style={{ width: 'clamp(52px,3.33vw,64px)', height: 'clamp(52px,3.33vw,64px)', background: bgColors[item.type] || '#E5E7EB' }}>
+                    style={{ width: 'clamp(52px,3.33vw,64px)', height: 'clamp(52px,3.33vw,64px)', background: ICON_BG }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={icons[item.type] || '/🎯.png'} alt={item.title}
                       style={{ width: 'clamp(24px,1.56vw,30px)', height: 'clamp(29px,1.88vw,36px)', objectFit: 'contain' }} />

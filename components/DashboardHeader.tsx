@@ -227,7 +227,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 </Link>
 
                 <Link
-                  href="/dashboard/saved-notes"
+                  href="/dashboard/bookmarks"
                   className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >

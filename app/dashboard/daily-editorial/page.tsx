@@ -50,11 +50,11 @@ const subjects = [
   { id: 'current-affairs', label: 'Current Affairs', emoji: '📰', bg: '#FFF7ED', border: '#FED7AA', color: '#C2410C', terms: ['current affairs', 'current-affairs'] },
   { id: 'society', label: 'Society', emoji: '👥', bg: '#FDF2F8', border: '#FBCFE8', color: '#BE185D', terms: ['society', 'social'] },
   { id: 'governance', label: 'Governance', emoji: '🏛️', bg: '#EFF6FF', border: '#BFDBFE', color: '#1D4ED8', terms: ['governance'] },
-  { id: 'international-relations', label: 'International Relations', emoji: '🤝', bg: '#F0FDFA', border: '#99F6E4', color: '#0F766E', terms: ['international relations', 'foreign policy'] },
+  { id: 'international-relations', label: 'Int. Relations', emoji: '🤝', bg: '#F0FDFA', border: '#99F6E4', color: '#0F766E', terms: ['international relations', 'foreign policy'] },
   { id: 'social-justice', label: 'Social Justice', emoji: '⚖️', bg: '#FFF7ED', border: '#FED7AA', color: '#9A3412', terms: ['social justice'] },
   { id: 'agriculture', label: 'Agriculture', emoji: '🌾', bg: '#F0FDF4', border: '#BBF7D0', color: '#15803D', terms: ['agriculture', 'agri'] },
   { id: 'internal-security', label: 'Internal Security', emoji: '🚨', bg: '#FEF2F2', border: '#FECACA', color: '#991B1B', terms: ['internal security', 'security'] },
-  { id: 'disaster-management', label: 'Disaster Management', emoji: '🆘', bg: '#FFFBEB', border: '#FDE68A', color: '#92400E', terms: ['disaster management', 'disaster'] },
+  { id: 'disaster-management', label: 'Disaster Mgmt', emoji: '🆘', bg: '#FFFBEB', border: '#FDE68A', color: '#92400E', terms: ['disaster management', 'disaster'] },
   { id: 'ethics', label: 'Ethics', emoji: '🧭', bg: '#EEF2FF', border: '#C7D2FE', color: '#4338CA', terms: ['ethics', 'integrity'] },
 ] as const;
 
@@ -250,29 +250,16 @@ export default function DailyEditorialPage() {
     else setCalMonth(calMonth + 1);
   };
 
+  // eslint-disable-next-line @next/next/no-img-element
+  const newspaperIcon = <img src="/icon-newspaper.png" alt="newspaper" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />;
+
   return (
     <div
       className="font-arimo w-full min-h-screen"
       style={{ background: '#F9FAFB' }}
     >
       <DashboardPageHero
-        badgeIcon={
-          <span
-            aria-hidden="true"
-            style={{
-              width: '18px',
-              height: '18px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '999px',
-              background: 'rgba(232,184,75,0.14)',
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/✦.svg" alt="" style={{ width: '10px', height: '10px' }} />
-          </span>
-        }
+        badgeIcon={newspaperIcon}
         badgeText="DAILY NEWS ANALYSIS"
         title={
           <>
@@ -797,19 +784,25 @@ export default function DailyEditorialPage() {
                   <button
                     key={s.id}
                     onClick={() => setSelectedSubject(active ? null : s.id)}
-                    className="flex items-center gap-2 font-arimo font-bold"
+                    className="flex items-center gap-2 font-arimo font-bold relative"
                     style={{
-                      padding: '12px 16px',
+                      padding: '10px 12px',
                       borderRadius: '14px',
                       background: active ? '#17223E' : s.bg,
                       border: `0.8px solid ${active ? '#17223E' : s.border}`,
                       color: active ? '#FFFFFF' : s.color,
-                      fontSize: '14px',
+                      fontSize: '13px',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
+                      lineHeight: 1.3,
+                      wordBreak: 'break-word',
                     }}
                   >
-                    <span style={{ fontSize: '16px' }}>{s.emoji}</span>
+                    {active ? (
+                      <span style={{ fontSize: '15px', flexShrink: 0 }}>✓</span>
+                    ) : (
+                      <span style={{ fontSize: '15px', flexShrink: 0 }}>{s.emoji}</span>
+                    )}
                     {s.label}
                   </button>
                 );
@@ -848,10 +841,10 @@ export default function DailyEditorialPage() {
                           alignItems: 'center',
                           justifyContent: 'center',
                           flexShrink: 0,
-                          fontSize: '14px',
+                          fontSize: active ? '15px' : '14px',
                         }}
                       >
-                        {subject.emoji}
+                        {active ? '✓' : subject.emoji}
                       </span>
                       <span style={{ lineHeight: 1.3 }}>{subject.label}</span>
                     </button>
@@ -1276,8 +1269,7 @@ export default function DailyEditorialPage() {
                     },
                     {
                       emoji: '✏️',
-                      label: 'Practice MCQ (Pro)',
-                      premium: true,
+                      label: 'Practice MCQ',
                       action: () => {
                         if (!summaryModal.editorial) return;
                         setSummaryModal(prev => ({ ...prev, open: false }));
@@ -1286,8 +1278,7 @@ export default function DailyEditorialPage() {
                     },
                     {
                       emoji: '📝',
-                      label: 'Practice Potential Exam Qs (Pro)',
-                      premium: true,
+                      label: 'Practice Potential Exam Qs',
                       action: () => {
                         if (!summaryModal.editorial) return;
                         setSummaryModal(prev => ({ ...prev, open: false }));
@@ -1304,8 +1295,8 @@ export default function DailyEditorialPage() {
                       key={btn.label}
                       onClick={btn.action}
                       style={{
-                        background: btn.premium ? 'linear-gradient(90deg, rgba(253,199,0,0.12), rgba(255,255,255,0.06))' : 'rgba(255,255,255,0.06)',
-                        border: btn.premium ? '1px solid rgba(253,199,0,0.4)' : '1px solid rgba(255,255,255,0.1)',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.1)',
                         borderRadius: '12px',
                         padding: '12px 8px',
                         color: '#CBD5E1',
@@ -1319,9 +1310,6 @@ export default function DailyEditorialPage() {
                         position: 'relative',
                       }}
                     >
-                      {btn.premium && (
-                        <span style={{ position: 'absolute', top: 6, right: 6, fontSize: '10px', color: '#FDC700' }}>★</span>
-                      )}
                       <span style={{ fontSize: '22px' }}>{btn.emoji}</span>
                       {btn.label}
                     </button>

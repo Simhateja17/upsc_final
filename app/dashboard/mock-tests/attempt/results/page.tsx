@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { mockTestService } from '@/lib/services';
+import { flashcardService, mockTestService, spacedRepService } from '@/lib/services';
 
 interface Question {
   id: number;
@@ -147,6 +147,7 @@ interface MainsPerQuestion {
 
 const NEXT_STEP_CARDS = [
   {
+    icon: '↻',
     title: 'Retake this test',
     desc: 'Same config, fresh attempt. Ideal for reinforcing weak areas.',
     href: '/dashboard/mock-tests/attempt',
@@ -154,6 +155,7 @@ const NEXT_STEP_CARDS = [
     badge: 'Recommended',
   },
   {
+    icon: '+',
     title: 'Build a new test',
     desc: 'Change subject, difficulty or source. Keep the variety going.',
     href: '/dashboard/mock-tests',
@@ -161,6 +163,7 @@ const NEXT_STEP_CARDS = [
     badge: 'Most popular',
   },
   {
+    icon: '✍',
     title: 'Try Mains Writing',
     desc: 'Practice answer writing with AI feedback and timed structure.',
     href: '/dashboard/daily-answer',
@@ -168,9 +171,10 @@ const NEXT_STEP_CARDS = [
     badge: 'Mains prep',
   },
   {
+    icon: '↑',
     title: 'Unlock Pro Practice',
     desc: 'Remove limits with full-length papers, PYQ archives, and analytics.',
-    href: '/dashboard/free-trial',
+    href: '/dashboard/billing/plans',
     dark: false,
     badge: 'Upgrade',
   },
@@ -191,6 +195,7 @@ function MockTestResultsInner() {
   const [error, setError] = useState<string | null>(null);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(1);
   const [mainsData, setMainsData] = useState<MainsPerQuestion[] | null>(null);
+  const [savedActions, setSavedActions] = useState<Record<string, boolean>>({});
 
   /* ─── Mains results loader ─── */
   useEffect(() => {
@@ -346,6 +351,33 @@ function MockTestResultsInner() {
             delta: !q.selectedOption && !q.selected ? 0 : (q.isCorrect ? 2 : -0.67),
             timeSec: '-',
           })));
+        } else if (typeof window !== 'undefined') {
+          const rawReview = sessionStorage.getItem(`mockTestReview:${testId}`);
+          if (rawReview) {
+            const cached = JSON.parse(rawReview) as {
+              questions?: Question[];
+              selectedOptions?: Record<number, string>;
+            };
+            if (Array.isArray(cached.questions)) {
+              setReviewQuestions(cached.questions.map((q, i) => {
+                const selected = cached.selectedOptions?.[i] ?? null;
+                const isCorrect = !!selected && selected === q.correct;
+                return {
+                  idx: i + 1,
+                  text: q.text,
+                  subject: q.subject,
+                  options: q.options,
+                  correct: q.correct,
+                  selected,
+                  isCorrect,
+                  explanation: q.explanation,
+                  status: !selected ? 'skipped' : (isCorrect ? 'correct' : 'wrong'),
+                  delta: !selected ? 0 : (isCorrect ? 2 : -0.67),
+                  timeSec: '-',
+                };
+              }));
+            }
+          }
         }
 
         setResults({
@@ -581,6 +613,71 @@ function MockTestResultsInner() {
   const { total, correct, wrong, skipped, scorePct } = results!;
   const sample = (results as any)._sample as any | undefined;
   const showConfetti = scorePct > 50;
+  const subjectToId = (subject: string) =>
+    (subject || 'general-studies').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const currentReviewRows = sample?.review ?? reviewQuestions;
+  const rememberAction = (key: string) => setSavedActions((prev) => ({ ...prev, [key]: true }));
+  const saveStudyNote = (q: Question, rowIdx: number) => {
+    if (typeof window === 'undefined') return;
+    const key = 'mock-test-study-notes';
+    const existing = JSON.parse(window.localStorage.getItem(key) || '[]');
+    const next = Array.isArray(existing) ? existing.filter((item: any) => item?.id !== `note-${testId ?? 'sample'}-${rowIdx}`) : [];
+    next.unshift({
+      id: `note-${testId ?? 'sample'}-${rowIdx}`,
+      title: q.text.split('\n')[0],
+      subject: q.subject || 'General Studies',
+      note: q.explanation || 'Review this question again before your next mock test.',
+      createdAt: new Date().toISOString(),
+      source: 'Mock Test Review',
+    });
+    window.localStorage.setItem(key, JSON.stringify(next.slice(0, 50)));
+    rememberAction(`note-${rowIdx}`);
+  };
+  const addToFlashcards = async (q: Question, rowIdx: number) => {
+    const subject = q.subject || 'General Studies';
+    const answer = q.explanation || `Correct answer: ${q.correct}`;
+    rememberAction(`flashcard-${rowIdx}`);
+    try {
+      await flashcardService.createCard({
+        subjectId: subjectToId(subject),
+        subject,
+        topicId: 'mock-test-review',
+        topic: 'Mock Test Review',
+        question: q.text,
+        answer,
+        difficulty: q.difficulty,
+      });
+    } catch {
+      if (typeof window !== 'undefined') {
+        const key = 'mock-test-flashcard-queue';
+        const existing = JSON.parse(window.localStorage.getItem(key) || '[]');
+        const next = Array.isArray(existing) ? existing : [];
+        next.unshift({ id: `flashcard-${testId ?? 'sample'}-${rowIdx}`, subject, question: q.text, answer });
+        window.localStorage.setItem(key, JSON.stringify(next.slice(0, 50)));
+      }
+    }
+  };
+  const markWeak = async (q: Question, rowIdx: number) => {
+    const subject = q.subject || 'General Studies';
+    rememberAction(`weak-${rowIdx}`);
+    try {
+      await spacedRepService.addItem({
+        questionText: q.text,
+        subject,
+        source: 'Mock Test Review',
+        sourceType: 'mock-test',
+        scheduleDay: 1,
+      });
+    } catch {
+      if (typeof window !== 'undefined') {
+        const key = 'mock-test-weak-queue';
+        const existing = JSON.parse(window.localStorage.getItem(key) || '[]');
+        const next = Array.isArray(existing) ? existing : [];
+        next.unshift({ id: `weak-${testId ?? 'sample'}-${rowIdx}`, subject, questionText: q.text });
+        window.localStorage.setItem(key, JSON.stringify(next.slice(0, 50)));
+      }
+    }
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: '#FAFBFE', fontFamily: 'Inter, sans-serif' }}>
@@ -712,6 +809,21 @@ function MockTestResultsInner() {
                 <div style={{ fontSize: 11, fontWeight: 800, color: card.dark ? '#DBEAFE' : '#7C3AED', marginBottom: 8 }}>
                   {card.badge}
                 </div>
+                <div style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 10,
+                  background: card.dark ? 'rgba(255,255,255,0.12)' : '#F3F4F6',
+                  color: card.dark ? '#FDC700' : '#17223E',
+                  fontSize: 22,
+                  fontWeight: 900,
+                }}>
+                  {card.icon}
+                </div>
                 <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>{card.title}</div>
                 <div style={{ fontSize: 13, lineHeight: '20px', color: card.dark ? 'rgba(255,255,255,0.72)' : '#4B5563' }}>
                   {card.desc}
@@ -728,7 +840,7 @@ function MockTestResultsInner() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {(sample?.review ?? reviewQuestions).map((row: any) => {
+            {currentReviewRows.map((row: any) => {
               const questions: Question[] = (sample?.questions as Question[] | undefined) ?? SAMPLE_QUESTIONS;
               const selectedOptions: Record<number, string> = (sample?.selectedOptions as Record<number, string> | undefined) ?? {};
               // For real tests, row itself contains full question data
@@ -893,24 +1005,24 @@ function MockTestResultsInner() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14, fontSize: 12 }}>
                         <button
                           type="button"
-                          onClick={() => router.push('/dashboard/flashcards')}
+                          onClick={() => addToFlashcards(q as Question, row.idx)}
                           style={{ background: 'transparent', border: 'none', color: '#DC2626', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                         >
-                          Add to Flashcards
+                          {savedActions[`flashcard-${row.idx}`] ? 'Added to Flashcards' : 'Add to Flashcards'}
                         </button>
                         <button
                           type="button"
-                          onClick={() => router.push('/dashboard/spaced-repetition')}
+                          onClick={() => markWeak(q as Question, row.idx)}
                           style={{ background: 'transparent', border: 'none', color: '#D97706', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                         >
-                          Mark Weak
+                          {savedActions[`weak-${row.idx}`] ? 'Marked Weak' : 'Mark Weak'}
                         </button>
                         <button
                           type="button"
-                          onClick={() => router.push('/dashboard/library')}
+                          onClick={() => saveStudyNote(q as Question, row.idx)}
                           style={{ background: 'transparent', border: 'none', color: '#2563EB', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                         >
-                          Study Notes
+                          {savedActions[`note-${row.idx}`] ? 'Saved Note' : 'Study Notes'}
                         </button>
                       </div>
                     </div>
