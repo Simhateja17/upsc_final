@@ -291,17 +291,17 @@
 }
 .ai-section::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px); background-size: 56px 56px; pointer-events: none; }
 .ai-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: center; position: relative; z-index: 1; }
-.ai-features-switcher { margin-top: 44px; display: flex; flex-direction: column; gap: 4px; }
+.ai-features-switcher { margin-top: 44px; display: flex; flex-direction: column; gap: 4px; min-height: 420px; }
 .ai-feat { padding: 18px 20px; border-radius: 14px; border: 1px solid transparent; cursor: pointer; transition: all 0.3s; }
 .ai-feat.active { background: rgba(255,255,255,0.05); border-color: rgba(232,184,75,0.22); }
 .ai-feat-header { display: flex; align-items: center; gap: 14px; }
 .ai-feat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; overflow: hidden; }
 .ai-feat-icon img { width: 28px; height: 28px; object-fit: contain; }
 .ai-feat-title { font-size: 15.5px; font-weight: 700; color: var(--white); font-family: 'Outfit', sans-serif; }
-.ai-feat-desc { font-size: 13.5px; color: rgba(255,255,255,0.55); line-height: 1.6; margin-top: 9px; margin-left: 54px; overflow: hidden; transition: opacity 0.3s; opacity: 0; font-family: 'Outfit', sans-serif; }
-.ai-feat.active .ai-feat-desc { opacity: 1; }
-.ai-feat-progress { height: 2px; background: rgba(255,255,255,0.07); border-radius: 2px; margin-top: 9px; margin-left: 54px; opacity: 0; transition: opacity 0.3s; }
-.ai-feat.active .ai-feat-progress { opacity: 1; }
+.ai-feat-desc { font-size: 13.5px; color: rgba(255,255,255,0.55); line-height: 1.6; margin-top: 9px; margin-left: 54px; max-height: 0; overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s; opacity: 0; font-family: 'Outfit', sans-serif; }
+.ai-feat.active .ai-feat-desc { max-height: 80px; opacity: 1; }
+.ai-feat-progress { height: 2px; background: rgba(255,255,255,0.07); border-radius: 2px; margin-top: 9px; margin-left: 54px; display: none; }
+.ai-feat.active .ai-feat-progress { display: block; }
 .ai-feat-progress-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg,var(--gold),var(--gold-light)); animation: progressFill 4s linear infinite; }
 @keyframes progressFill { from { width: 0% } to { width: 100% } }
 .demo-device {

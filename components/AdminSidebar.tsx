@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 interface NavItem {
-  id: string;
+  id: string; //
   label: string;
   path: string;
   icon: string;
