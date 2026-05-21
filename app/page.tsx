@@ -369,6 +369,7 @@ export default function LandingPage() {
                 <div
                   key={i}
                   className={`ai-feat${activeSlide === i ? ' active' : ''}`}
+                  onMouseEnter={() => setActiveSlide(i)}
                   onClick={() => setActiveSlide(i)}
                 >
                   <div className="ai-feat-header">
