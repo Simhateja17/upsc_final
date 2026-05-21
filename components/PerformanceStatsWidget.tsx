@@ -412,7 +412,7 @@ const PerformanceStatsWidget = () => {
               Achievement Badges
             </h3>
           </div>
-          <Link href="/dashboard/performance" className="font-inter font-semibold text-[12px] text-[#1E2875] hover:underline whitespace-nowrap flex-shrink-0">
+          <Link href="/dashboard/achievement-badges" className="font-inter font-semibold text-[12px] text-[#1E2875] hover:underline whitespace-nowrap flex-shrink-0">
             All →
           </Link>
         </div>

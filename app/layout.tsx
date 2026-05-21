@@ -1,13 +1,21 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
-import { Cormorant_Garamond } from 'next/font/google'
+import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
   variable: '--font-cormorant-garamond',
+  display: 'swap',
+})
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  style: ['normal', 'italic'],
+  variable: '--font-dm-sans',
   display: 'swap',
 })
 
@@ -39,7 +47,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={cormorant.variable}>
+      <body className={`${cormorant.variable} ${dmSans.variable}`}>
         <AuthProvider>
           {children}
         </AuthProvider>
