@@ -19,22 +19,22 @@ interface MilestonePopupProps {
 const defaultConfig: Record<MilestoneType, { icon: string; subtitle: string; color: string }> = {
   streak: {
     icon: '🔥',
-    subtitle: 'Day streak — keep it up!',
+    subtitle: 'Day streak – keep it up!',
     color: '#F59E0B',
   },
   'tests-completed': {
     icon: '📝',
-    subtitle: 'Tests completed — amazing work!',
+    subtitle: 'Tests completed – amazing work!',
     color: '#3B82F6',
   },
   rank: {
     icon: '🏆',
-    subtitle: 'Rank achieved — keep pushing!',
+    subtitle: 'Rank achieved – keep pushing!',
     color: '#F59E0B',
   },
   'study-hours': {
     icon: '⏰',
-    subtitle: 'Hours studied — incredible focus!',
+    subtitle: 'Hours studied – incredible focus!',
     color: '#8B5CF6',
   },
 };

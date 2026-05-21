@@ -12,7 +12,7 @@ interface PageHeroBackgroundProps {
  * Reusable hero section background used across all inner dashboard pages.
  * Renders the dark navy base, rectangular grid overlay, and gold glow in the
  * top-left corner. Drop any page-specific content (heading, badge, stats)
- * as children — they'll layer on top.
+ * as children – they'll layer on top.
  */
 export default function PageHeroBackground({
   children,
@@ -39,7 +39,7 @@ export default function PageHeroBackground({
         }}
       />
 
-      {/* Gold / amber glow — top-left corner */}
+      {/* Gold / amber glow – top-left corner */}
       <div
         aria-hidden="true"
         className="absolute inset-0 pointer-events-none"

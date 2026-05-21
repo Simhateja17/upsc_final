@@ -374,7 +374,7 @@ export default function TestAnalyticsPage() {
                       label: 'Improvement',
                       value: mainsStats.improvement != null
                         ? `${mainsStats.improvement >= 0 ? '+' : ''}${mainsStats.improvement}`
-                        : '—',
+                        : '–',
                       color: mainsStats.improvement > 0 ? '#22C55E' : mainsStats.improvement < 0 ? '#EF4444' : '#6A7282',
                     },
                   ].map(item => (
@@ -398,7 +398,7 @@ export default function TestAnalyticsPage() {
               </div>
             </div>
 
-            {/* Time Spent per Question — Daily */}
+            {/* Time Spent per Question – Daily */}
             <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
               <div className="px-8 pt-8 pb-6">
                 <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
@@ -414,7 +414,7 @@ export default function TestAnalyticsPage() {
                         style={{ background: d.avgSeconds > 0 ? timeColor(d.avgSeconds) + '22' : '#F3F4F6' }}
                       >
                         <span className="text-[11px] font-semibold leading-tight" style={{ color: timeColor(d.avgSeconds) }}>
-                          {d.avgSeconds > 0 ? formatSeconds(d.avgSeconds) : '—'}
+                          {d.avgSeconds > 0 ? formatSeconds(d.avgSeconds) : '–'}
                         </span>
                       </div>
                       <span className="text-[11px] text-[#6A7282]">{d.day}</span>
@@ -438,7 +438,7 @@ export default function TestAnalyticsPage() {
                     <div className="rounded-[10px] px-4 py-3" style={{ background: '#FEF2F2' }}>
                       <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: '#EF4444' }}>Lowest Accuracy</div>
                       <div className="text-[13px] font-semibold" style={{ color: '#1A1F36' }}>
-                        {subjectAccuracy.at(-1)?.subject ?? '—'}
+                        {subjectAccuracy.at(-1)?.subject ?? '–'}
                       </div>
                       <div className="text-[12px]" style={{ color: '#EF4444' }}>
                         {subjectAccuracy.at(-1)?.accuracy ?? 0}%
@@ -447,7 +447,7 @@ export default function TestAnalyticsPage() {
                     <div className="rounded-[10px] px-4 py-3" style={{ background: '#F0FDF4' }}>
                       <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: '#22C55E' }}>Highest Accuracy</div>
                       <div className="text-[13px] font-semibold" style={{ color: '#1A1F36' }}>
-                        {subjectAccuracy[0]?.subject ?? '—'}
+                        {subjectAccuracy[0]?.subject ?? '–'}
                       </div>
                       <div className="text-[12px]" style={{ color: '#22C55E' }}>
                         {subjectAccuracy[0]?.accuracy ?? 0}%

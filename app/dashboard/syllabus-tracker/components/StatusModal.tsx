@@ -53,7 +53,7 @@ const statusOptions = [
     value: 'none' as Status,
     icon: '○',
     title: 'Not Started',
-    description: 'Clear status — mark as pending.',
+    description: 'Clear status – mark as pending.',
     bg: '#f3f6fb',
     iconBg: 'rgba(15,31,61,.08)',
     border: '#e0e8f4',
@@ -160,7 +160,7 @@ export default function StatusModal({
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Add a note (optional) — e.g. 'read from NCERT Ch 6-7'…"
+            placeholder="Add a note (optional) – e.g. 'read from NCERT Ch 6-7'…"
             className="w-full bg-[#f3f6fb] border-[1.5px] border-[#e0e8f4] rounded-[10px] p-[10px_13px] text-[12.5px] text-[#0f1f3d] font-inter outline-none resize-none h-[66px] mt-[8px] mb-[13px] transition-all duration-200 focus:border-[rgba(201,146,26,.30)]"
           />
 

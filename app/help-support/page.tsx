@@ -137,7 +137,7 @@ export default function HelpSupportPage() {
           </div>
         </div>
 
-        {/* Right — Form */}
+        {/* Right – Form */}
         <div className="bg-white border border-[#f0eeea] rounded-[20px] p-9 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
           <h3
             className="text-[22px] font-semibold text-[#0C1424] mb-6"

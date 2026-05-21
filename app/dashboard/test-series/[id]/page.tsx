@@ -30,7 +30,7 @@ const getSeriesData = (id: string) => {
       gradient: 'linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%)',
       whyEnroll: [
         { t: 'Foundation First', d: 'UPSC Prelims requires 70% NCERT clarity. We test every line, every table.' },
-        { t: 'Chapter-wise Design', d: '60 tests — 1 test per chapter. Finish NCERT with confidence.' },
+        { t: 'Chapter-wise Design', d: '60 tests – 1 test per chapter. Finish NCERT with confidence.' },
         { t: 'Video Explanations', d: 'Every question explained by UPSC CSE rankers. No confusion.' },
         { t: 'Adaptive Learning', d: 'Weak topics auto-marked. Custom revision tests generated.' },
       ],
@@ -41,24 +41,24 @@ const getSeriesData = (id: string) => {
         'Unlock Prelims-level PYQ integration',
       ],
       schedule: [
-        { num: 1, name: 'NCERT Class 6 History — Ancient Civilizations', date: '1 Mar', qs: 20, time: '30 min', status: 'done', score: 18 },
-        { num: 2, name: 'NCERT Class 6 Geography — Globe & Maps', date: '3 Mar', qs: 20, time: '30 min', status: 'done', score: 17 },
-        { num: 3, name: 'NCERT Class 7 History — Medieval India', date: '5 Mar', qs: 20, time: '30 min', status: 'open', score: null },
-        { num: 4, name: 'NCERT Class 7 Geography — Environment', date: '7 Mar', qs: 20, time: '30 min', status: 'open', score: null },
-        { num: 5, name: 'NCERT Class 8 History — Modern India Begins', date: '9 Mar', qs: 20, time: '30 min', status: 'upcoming', score: null },
+        { num: 1, name: 'NCERT Class 6 History – Ancient Civilizations', date: '1 Mar', qs: 20, time: '30 min', status: 'done', score: 18 },
+        { num: 2, name: 'NCERT Class 6 Geography – Globe & Maps', date: '3 Mar', qs: 20, time: '30 min', status: 'done', score: 17 },
+        { num: 3, name: 'NCERT Class 7 History – Medieval India', date: '5 Mar', qs: 20, time: '30 min', status: 'open', score: null },
+        { num: 4, name: 'NCERT Class 7 Geography – Environment', date: '7 Mar', qs: 20, time: '30 min', status: 'open', score: null },
+        { num: 5, name: 'NCERT Class 8 History – Modern India Begins', date: '9 Mar', qs: 20, time: '30 min', status: 'upcoming', score: null },
       ],
       syllabus: [
-        { t: 'Ancient India — NCERT Class 6 & 11', n: '12 tests', topics: ['Indus Valley Civilization', 'Vedic Age & Literature', 'Mahajanapadas & Rise of Magadha', 'Mauryan Empire', 'Gupta Age & Art', 'Sangam Period & South India'] },
-        { t: 'Medieval India — NCERT Class 7 & 11', n: '10 tests', topics: ['Delhi Sultanate — All Dynasties', 'Mughal Empire — Akbar to Aurangzeb', 'Bhakti & Sufi Movements', 'Architecture & Art', 'Regional Kingdoms'] },
-        { t: 'Modern India — NCERT Class 8, 12', n: '18 tests', topics: ['British Rule — Company to Crown', '1857 Revolt', 'Freedom Movement 1885–1947', 'Social Reform Movements', 'Partition & Independence'] },
+        { t: 'Ancient India – NCERT Class 6 & 11', n: '12 tests', topics: ['Indus Valley Civilization', 'Vedic Age & Literature', 'Mahajanapadas & Rise of Magadha', 'Mauryan Empire', 'Gupta Age & Art', 'Sangam Period & South India'] },
+        { t: 'Medieval India – NCERT Class 7 & 11', n: '10 tests', topics: ['Delhi Sultanate – All Dynasties', 'Mughal Empire – Akbar to Aurangzeb', 'Bhakti & Sufi Movements', 'Architecture & Art', 'Regional Kingdoms'] },
+        { t: 'Modern India – NCERT Class 8, 12', n: '18 tests', topics: ['British Rule – Company to Crown', '1857 Revolt', 'Freedom Movement 1885–1947', 'Social Reform Movements', 'Partition & Independence'] },
       ],
       faqs: [
         { q: 'Is this enough for Prelims History?', a: 'NCERT alone = 50% of History. Combine with our PYQ series for 100% coverage.' },
         { q: 'Do I get explanations?', a: 'Every question has a detailed text explanation + 2-min video solution.' },
-        { q: 'Can I access on mobile?', a: 'Yes — Android, iOS & Web. Syncs across all devices.' },
+        { q: 'Can I access on mobile?', a: 'Yes – Android, iOS & Web. Syncs across all devices.' },
       ],
       reviews: [
-        { name: 'Ananya Sharma', rank: 'AIR 142, CSE 2023', stars: 5, text: 'NCERT was my weakness. This series changed everything. Cleared Prelims with 122/200 — NCERT alone gave me 60.' },
+        { name: 'Ananya Sharma', rank: 'AIR 142, CSE 2023', stars: 5, text: 'NCERT was my weakness. This series changed everything. Cleared Prelims with 122/200 – NCERT alone gave me 60.' },
         { name: 'Rajesh Kumar', rank: 'AIR 324, CSE 2023', stars: 5, text: 'Chapter-wise tests are gold. I used to skip NCERT. This forced me to read every line.' },
       ],
       leaderboard: [
@@ -73,13 +73,13 @@ const getSeriesData = (id: string) => {
         'All-India Rank after every test',
         'Weak Topic Tracker & Revision Tests',
         'Mobile App + Web Access',
-        'Lifetime Validity — No Expiry',
+        'Lifetime Validity – No Expiry',
       ],
     },
     current: {
       id: 'current',
       name: 'Rozana Ladon Series',
-      tagline: 'Every day is a new battle — fight it with knowledge.',
+      tagline: 'Every day is a new battle – fight it with knowledge.',
       cat: 'current-affairs',
       icon: '📰',
       tests: 365,
@@ -94,20 +94,20 @@ const getSeriesData = (id: string) => {
       whyEnroll: [
         { t: 'Daily Discipline', d: '10 MCQs every morning. Just 10 minutes. No excuses.' },
         { t: 'The Hindu + PIB', d: 'Questions directly from The Hindu editorial, PIB releases, Yojana.' },
-        { t: 'Weekly Recaps', d: 'Every Sunday — 40 Q weekly recap test to consolidate.' },
+        { t: 'Weekly Recaps', d: 'Every Sunday – 40 Q weekly recap test to consolidate.' },
         { t: 'Monthly Mega Test', d: '100 Q full test at month-end. Track All-India Rank monthly.' },
       ],
       achieve: [
-        '365 daily tests — 3,650+ MCQs across the year',
+        '365 daily tests – 3,650+ MCQs across the year',
         'The Hindu, PIB, Yojana coverage with source links',
         '52 weekly recap tests (40 Qs each)',
         '12 monthly mega tests (100 Qs each) with All-India Rank',
       ],
       schedule: [
-        { num: 1, name: 'Daily CA — 1 March 2026', date: '1 Mar', qs: 10, time: '15 min', status: 'done', score: 9 },
-        { num: 2, name: 'Daily CA — 2 March 2026', date: '2 Mar', qs: 10, time: '15 min', status: 'done', score: 8 },
-        { num: 3, name: 'Daily CA — 3 March 2026', date: '3 Mar', qs: 10, time: '15 min', status: 'live', score: null },
-        { num: 4, name: 'Daily CA — 4 March 2026', date: '4 Mar', qs: 10, time: '15 min', status: 'upcoming', score: null },
+        { num: 1, name: 'Daily CA – 1 March 2026', date: '1 Mar', qs: 10, time: '15 min', status: 'done', score: 9 },
+        { num: 2, name: 'Daily CA – 2 March 2026', date: '2 Mar', qs: 10, time: '15 min', status: 'done', score: 8 },
+        { num: 3, name: 'Daily CA – 3 March 2026', date: '3 Mar', qs: 10, time: '15 min', status: 'live', score: null },
+        { num: 4, name: 'Daily CA – 4 March 2026', date: '4 Mar', qs: 10, time: '15 min', status: 'upcoming', score: null },
       ],
       syllabus: [
         { t: 'Economy & Business', n: '80 days', topics: ['Budget Analysis', 'RBI Policy', 'Banking & Finance', 'Stock Market & IPOs', 'Trade & Commerce'] },
@@ -115,7 +115,7 @@ const getSeriesData = (id: string) => {
         { t: 'International Relations', n: '50 days', topics: ['India-Bilateral', 'UN & Multilateral', 'Geopolitics', 'Conflicts & Treaties'] },
       ],
       faqs: [
-        { q: 'Do I get daily tests automatically?', a: 'Yes — every morning at 6 AM IST, new test unlocks. Email & app notification sent.' },
+        { q: 'Do I get daily tests automatically?', a: 'Yes – every morning at 6 AM IST, new test unlocks. Email & app notification sent.' },
         { q: 'What if I miss a day?', a: 'No worries. All tests remain accessible. Attempt anytime within the year.' },
       ],
       reviews: [
@@ -152,9 +152,9 @@ const getSeriesData = (id: string) => {
       tags: ['PYQ 1979–2025', 'Trend Analysis', 'All Subjects'],
       gradient: 'linear-gradient(135deg, #713f12 0%, #92400e 100%)',
       whyEnroll: [
-        { t: 'Complete Bank', d: '47 years of UPSC questions — every single one.' },
+        { t: 'Complete Bank', d: '47 years of UPSC questions – every single one.' },
         { t: 'Trend Mapping', d: 'See what UPSC loves to repeat. Pattern revealed.' },
-        { t: 'Topic-wise', d: 'Test by topic (Polity — Fundamental Rights) or by year.' },
+        { t: 'Topic-wise', d: 'Test by topic (Polity – Fundamental Rights) or by year.' },
         { t: 'Must-Do PYQs', d: 'AI flags 400 "must-do" questions for shortcut prep.' },
       ],
       achieve: [
@@ -164,15 +164,15 @@ const getSeriesData = (id: string) => {
         'Must-do question bank (AI-curated)',
       ],
       schedule: [
-        { num: 1, name: 'Polity PYQs — Fundamental Rights', date: '1 Mar', qs: 25, time: '30 min', status: 'open', score: null },
-        { num: 2, name: 'History PYQs — Ancient India', date: '3 Mar', qs: 30, time: '40 min', status: 'upcoming', score: null },
+        { num: 1, name: 'Polity PYQs – Fundamental Rights', date: '1 Mar', qs: 25, time: '30 min', status: 'open', score: null },
+        { num: 2, name: 'History PYQs – Ancient India', date: '3 Mar', qs: 30, time: '40 min', status: 'upcoming', score: null },
       ],
       syllabus: [
         { t: 'Polity PYQs', n: '8 tests', topics: ['Fundamental Rights', 'DPSP', 'Parliament', 'Judiciary', 'Centre-State Relations'] },
         { t: 'History PYQs', n: '10 tests', topics: ['Ancient', 'Medieval', 'Modern', 'Art & Culture'] },
       ],
       faqs: [
-        { q: 'Are answers UPSC official?', a: 'Yes — all answer keys verified from UPSC official answer sheets.' },
+        { q: 'Are answers UPSC official?', a: 'Yes – all answer keys verified from UPSC official answer sheets.' },
       ],
       reviews: [
         { name: 'Rohit Sharma', rank: 'AIR 67, CSE 2024', stars: 5, text: 'PYQs = blueprint. I solved 2000+ PYQs from this series. Cleared Prelims with ease.' },
@@ -284,7 +284,7 @@ export default function TestSeriesDetailPage() {
                 <span>📝 {s.totalTests ?? apiData.schedule.length} Tests</span>
                 <span>⏱ {s.durationLabel || 'Ongoing'}</span>
                 <span>👥 {(s.enrollmentCount ?? 0).toLocaleString('en-IN')} enrolled</span>
-                <span>★ {s.rating ?? '—'}</span>
+                <span>★ {s.rating ?? '–'}</span>
                 <span>📊 {s.difficulty}</span>
               </div>
               {cmsTags.length > 0 && (
@@ -396,7 +396,7 @@ export default function TestSeriesDetailPage() {
               )}
             </div>
 
-            {/* Right sidebar — Pricing card */}
+            {/* Right sidebar – Pricing card */}
             <div style={{ position: 'sticky', top: 20 }}>
               <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid var(--border)', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
                 <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--ink)', marginBottom: 4 }}>
@@ -811,7 +811,7 @@ export default function TestSeriesDetailPage() {
               <div className="rev-row" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '24px' }}>
                 <div>
                   <div className="rev-big" style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--ink)', marginBottom: '8px' }}>
-                    {series.rating || '—'}
+                    {series.rating || '–'}
                   </div>
                   <div className="rev-stars" style={{ fontSize: '1.2rem', color: 'var(--gold2)', marginBottom: '6px' }}>
                     {series.rating ? '★'.repeat(Math.floor(series.rating)) + '☆'.repeat(5 - Math.floor(series.rating)) : '☆☆☆☆☆'}
@@ -947,7 +947,7 @@ export default function TestSeriesDetailPage() {
                       marginBottom: '12px',
                     }}
                   >
-                    ▶ Start Free — No Signup
+                    ▶ Start Free – No Signup
                   </button>
                 ) : isEnrolled ? (
                   <>
@@ -1012,7 +1012,7 @@ export default function TestSeriesDetailPage() {
                         cursor: 'pointer',
                       }}
                     >
-                      💳 Enroll Now — ₹{series.price}
+                      💳 Enroll Now – ₹{series.price}
                     </button>
                     <button
                       className="ec-btn-demo"
@@ -1036,7 +1036,7 @@ export default function TestSeriesDetailPage() {
                 )}
 
                 <div className="ec-terms" style={{ fontSize: '0.65rem', color: 'var(--ink4)', lineHeight: 1.5, marginBottom: '16px' }}>
-                  By enrolling you agree to our <a style={{ color: 'var(--sky)', cursor: 'pointer' }}>Terms & Conditions</a> and <a style={{ color: 'var(--sky)', cursor: 'pointer' }}>Refund Policy</a>. Digital product — access granted instantly after payment.
+                  By enrolling you agree to our <a style={{ color: 'var(--sky)', cursor: 'pointer' }}>Terms & Conditions</a> and <a style={{ color: 'var(--sky)', cursor: 'pointer' }}>Refund Policy</a>. Digital product – access granted instantly after payment.
                 </div>
 
                 <hr className="ec-divider" style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '16px 0' }} />

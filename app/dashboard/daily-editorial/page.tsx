@@ -122,7 +122,7 @@ export default function DailyEditorialPage() {
           setEditorials(articles);
           setLastFetched(new Date());
         } else {
-          // DB empty — fall back to live News API (only for today)
+          // DB empty – fall back to live News API (only for today)
           const isToday = selectedDate === new Date().toISOString().slice(0, 10);
           if (isToday) {
             return editorialService.getLiveNews(source).then(liveRes => {
@@ -191,7 +191,7 @@ export default function DailyEditorialPage() {
   };
 
   const handleSummarize = async (card: EditorialCard) => {
-    // Use cached summary if available — no AI call needed
+    // Use cached summary if available – no AI call needed
     if (card.aiSummary) {
       setSummaryModal({ open: true, loading: false, editorial: card, summary: card.aiSummary, loadStep: 4 });
       return;
@@ -299,7 +299,7 @@ export default function DailyEditorialPage() {
         }}
       >
         {/* ========================================================== */}
-        {/*  LEFT COLUMN — News Cards                                   */}
+        {/*  LEFT COLUMN – News Cards                                   */}
         {/* ========================================================== */}
         <div>
           {/* Top controls row */}
@@ -643,7 +643,7 @@ export default function DailyEditorialPage() {
         </div>
 
         {/* ========================================================== */}
-        {/*  RIGHT COLUMN — Sidebar Widgets                             */}
+        {/*  RIGHT COLUMN – Sidebar Widgets                             */}
         {/* ========================================================== */}
         <div className="flex flex-col" style={{ gap: 'clamp(14px, 1.5vw, 20px)' }}>
           {/* -------------------------------------------------------- */}
@@ -1011,7 +1011,7 @@ export default function DailyEditorialPage() {
                     </svg>
                   ),
                   label: 'Total reading time',
-                  value: '—',
+                  value: '–',
                 },
                 {
                   icon: (
@@ -1021,7 +1021,7 @@ export default function DailyEditorialPage() {
                     </svg>
                   ),
                   label: "This week's target",
-                  value: '—',
+                  value: '–',
                 },
                 {
                   icon: (
@@ -1030,7 +1030,7 @@ export default function DailyEditorialPage() {
                     </svg>
                   ),
                   label: 'Longest streak',
-                  value: '—',
+                  value: '–',
                 },
               ].map((stat) => (
                 <div key={stat.label} className="flex items-center justify-between">
@@ -1259,7 +1259,7 @@ export default function DailyEditorialPage() {
                       action: async () => {
                         if (!summaryModal.editorial) return;
                         if (summaryModal.editorial.isSaved) {
-                          // Already saved — jump to bookmarks
+                          // Already saved – jump to bookmarks
                           router.push('/dashboard/saved-notes?tab=bookmarks');
                           return;
                         }

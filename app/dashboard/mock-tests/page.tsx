@@ -10,7 +10,7 @@ import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
 /* ─── Static Config (UI structure only, not data) ─── */
 
 const prelimsPaperTypes = [
-  { id: 'gs1', icon: '/2k.png', label: 'GS Paper I', description: 'General Studies — History, Geography, Polity, Economy, Science', isDefault: true },
+  { id: 'gs1', icon: '/2k.png', label: 'GS Paper I', description: 'General Studies – History, Geography, Polity, Economy, Science', isDefault: true },
   { id: 'csat', icon: '/3k.png', label: 'CSAT', description: 'Aptitude · Comprehension · Logical Reasoning' },
 ];
 

@@ -297,7 +297,7 @@ export default function LandingPage() {
         </h1>
 
         <p className="hero-sub">
-          Trusted by 15,000+ aspirants. AI-powered learning, daily MCQs, instant mains evaluation, expert mentorship &amp; smart revision — all under one roof.
+          Trusted by 15,000+ aspirants. AI-powered learning, daily MCQs, instant mains evaluation, expert mentorship &amp; smart revision – all under one roof.
         </p>
 
         <div className="hero-ctas">
@@ -362,7 +362,7 @@ export default function LandingPage() {
               Experience the Power<br />of <span style={{ color: '#E8B84B' }}>AI-First Learning</span>
             </h2>
             <p className="section-p-light" style={{ marginTop: 12 }}>
-              Our AI doesn&apos;t just grade. It understands your gaps, adapts your plan, and coaches you like a personal mentor — 24/7.
+              Our AI doesn&apos;t just grade. It understands your gaps, adapts your plan, and coaches you like a personal mentor – 24/7.
             </p>
             <div className="ai-features-switcher">
               {AI_SLIDES.map((slide, i) => (
@@ -440,7 +440,7 @@ export default function LandingPage() {
                 {/* Slide 2: Mock Tests */}
                 <div className={`demo-slide${activeSlide === 2 ? ' active' : ''}`}>
                   <div className="tgen-header">
-                    <div className="tgen-title">Adaptive Test — Weak Areas</div>
+                    <div className="tgen-title">Adaptive Test – Weak Areas</div>
                     <div className="tgen-badge">Modern History · 10Q</div>
                   </div>
                   <div className="tg-q">
@@ -461,15 +461,15 @@ export default function LandingPage() {
                   <div className="ca-wrap">
                     <div className="ca-item">
                       <div><div className="ca-dot-item" style={{ background: '#C8960A' }} /></div>
-                      <div><div className="ca-text">RBI&apos;s MPC holds repo rate at 6.5% amid inflation concerns — GS3 Economy</div><div className="ca-tag" style={{ color: '#C8960A' }}>Economy · Prelims + Mains</div></div>
+                      <div><div className="ca-text">RBI&apos;s MPC holds repo rate at 6.5% amid inflation concerns – GS3 Economy</div><div className="ca-tag" style={{ color: '#C8960A' }}>Economy · Prelims + Mains</div></div>
                     </div>
                     <div className="ca-item">
                       <div><div className="ca-dot-item" style={{ background: '#06B6D4' }} /></div>
-                      <div><div className="ca-text">SC upholds Right to Privacy in digital data — link to PDPA 2023</div><div className="ca-tag" style={{ color: '#06B6D4' }}>Polity · Ethics</div></div>
+                      <div><div className="ca-text">SC upholds Right to Privacy in digital data – link to PDPA 2023</div><div className="ca-tag" style={{ color: '#06B6D4' }}>Polity · Ethics</div></div>
                     </div>
                     <div className="ca-item">
                       <div><div className="ca-dot-item" style={{ background: '#10B981' }} /></div>
-                      <div><div className="ca-text">India&apos;s forest cover increases by 1540 sq km — State of Forest Report 2025</div><div className="ca-tag" style={{ color: '#10B981' }}>Environment · Geography</div></div>
+                      <div><div className="ca-text">India&apos;s forest cover increases by 1540 sq km – State of Forest Report 2025</div><div className="ca-tag" style={{ color: '#10B981' }}>Environment · Geography</div></div>
                     </div>
                   </div>
                 </div>
@@ -493,7 +493,7 @@ export default function LandingPage() {
             {[
               { card: 'tc-gold', ib: 'tib-gold', img: '/sidebar-flashcards-new.png', title: 'Flashcards', desc: '1,000+ pre-built smart cards across all GS topics. Scheduled by difficulty, never boring.', delay: 1 },
               { card: 'tc-cyan', ib: 'tib-cyan', img: '/sidebar-mindmap-new.png', title: 'Mind Maps', desc: 'Visual concept maps linking ideas across GS. Build connections, not isolated notes.', delay: 2 },
-              { card: 'tc-emerald', ib: 'tib-emerald', img: '/sidebar-spaced-repetition.png', title: 'Spaced Repetition', desc: 'Ebbinghaus-powered review scheduling. Study smarter — revisit topics exactly when needed.', delay: 3 },
+              { card: 'tc-emerald', ib: 'tib-emerald', img: '/sidebar-spaced-repetition.png', title: 'Spaced Repetition', desc: 'Ebbinghaus-powered review scheduling. Study smarter – revisit topics exactly when needed.', delay: 3 },
               { card: 'tc-violet', ib: 'tib-violet', img: '/sidebar-study-planner.png', title: 'Study Planner', desc: 'AI-generated daily plans adapting to your pace, goals, and exam date. Zero manual planning.', delay: 4 },
             ].map(t => (
               <div key={t.title} className={`tool-card ${t.card} reveal reveal-delay-${t.delay}`}>
@@ -578,7 +578,7 @@ export default function LandingPage() {
               {[
                 { bg: '#FEF3C7', img: '/sidebar-analytics-new.png', title: 'Test Analytics', desc: 'Question-level breakdown, time-per-question, and rank prediction after every mock.' },
                 { bg: '#E0F7FA', img: '/sidebar-performance-new.png', title: 'Weak Area Identification', desc: 'AI pinpoints your weakest sub-topics and auto-schedules targeted revision sessions.' },
-                { bg: '#D1FAE5', img: '/sidebar-overview-new.png', title: 'UPSC Readiness Score', desc: 'A composite score updated daily — telling you how ready you are for the actual exam.' },
+                { bg: '#D1FAE5', img: '/sidebar-overview-new.png', title: 'UPSC Readiness Score', desc: 'A composite score updated daily – telling you how ready you are for the actual exam.' },
               ].map(p => (
                 <div key={p.title} className="apoint">
                   <div className="apoint-icon" style={{ background: p.bg }}>
@@ -665,7 +665,7 @@ export default function LandingPage() {
                 <div className="lavatar lavatar-more">+120</div>
               </div>
               <div className="live-info">
-                <h4>Live Study Room — Silent Mode</h4>
+                <h4>Live Study Room – Silent Mode</h4>
                 <p>Currently studying: Modern History · Focus Guard ON</p>
               </div>
             </div>
@@ -702,13 +702,13 @@ export default function LandingPage() {
             <div className="section-eyebrow eyebrow-dark">Mobile App</div>
             <h2 className="section-h2-dark">Your UPSC Prep,<br />Always in Your Pocket</h2>
             <p className="section-p-dark" style={{ marginTop: 12, marginBottom: 32 }}>
-              Practice on the go. The full platform, beautifully optimised for mobile — so you never miss a day.
+              Practice on the go. The full platform, beautifully optimised for mobile – so you never miss a day.
             </p>
             <div className="app-features">
               {[
                 { bg: '#FEF3C7', img: '/jjjjjj.png', title: 'Daily MCQ Notifications', desc: 'Never miss your daily practice with smart reminders' },
                 { bg: '#E0F7FA', img: '/hjj.png', title: 'Click & Evaluate Answers', desc: 'Photograph handwritten answers for instant AI evaluation' },
-                { bg: '#D1FAE5', img: '/ree.png', title: 'Offline Flashcards', desc: 'Study even without internet — all flashcards work offline' },
+                { bg: '#D1FAE5', img: '/ree.png', title: 'Offline Flashcards', desc: 'Study even without internet – all flashcards work offline' },
                 { bg: '#EDE9FE', img: '/belllllll.png', title: 'Streak & Goal Reminders', desc: 'Stay accountable with intelligent habit-building nudges' },
               ].map(f => (
                 <div key={f.title} className="app-feat">
@@ -795,7 +795,7 @@ export default function LandingPage() {
                         { done: true, text: 'Current Affairs Reading', chip: 'chip-ca' },
                         { done: true, text: 'Flashcard Review (50)', chip: 'chip-rev' },
                         { done: false, text: 'Mains Answer Writing', chip: 'chip-mains' },
-                        { done: false, text: 'Mock Test — GS2 Paper', chip: 'chip-mcq' },
+                        { done: false, text: 'Mock Test – GS2 Paper', chip: 'chip-mcq' },
                       ].map((t, i) => (
                         <div key={i} className="ps-task-row">
                           <div className={`ps-task-check ${t.done ? 'tc-done' : 'tc-pending'}`}>{t.done ? '✓' : ''}</div>

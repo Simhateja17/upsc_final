@@ -464,7 +464,7 @@ export default function MentalHealthPage() {
               One thing on your mind <span style={{ fontWeight: 400, textTransform: 'none' as const, letterSpacing: 0 }}>(optional)</span>
             </div>
             <textarea value={note} onChange={e => setNote(e.target.value)} rows={4}
-              placeholder="Write anything — a worry, a win, a thought, or simply how you feel right now. No one else sees this."
+              placeholder="Write anything – a worry, a win, a thought, or simply how you feel right now. No one else sees this."
               style={{ width: '100%', background: 'rgba(255,255,255,0.8)', border: '1px solid #8fa4be', borderRadius: 12, padding: '14px 17px', fontFamily: cg, fontStyle: 'italic', fontSize: 16, lineHeight: '27.2px', color: '#0c1424', outline: 'none', resize: 'vertical', boxSizing: 'border-box' as const }} />
           </div>
 
@@ -512,7 +512,7 @@ export default function MentalHealthPage() {
                       <span style={{ fontSize: 18, color: isToday ? '#e8b84b' : 'inherit' }}>{emoji}</span>
                       <span style={{ fontFamily: dm, fontSize: 10, color: isToday ? 'rgba(255,255,255,0.5)' : '#6b7a99', textAlign: 'center' as const, lineHeight: '14px', whiteSpace: 'pre-line' as const, minHeight: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{label}</span>
                       <span style={{ fontFamily: dm, fontSize: 13, color: isToday ? '#e8b84b' : '#000', textAlign: 'center' as const, minHeight: 18, display: 'flex', alignItems: 'center' }}>
-                        {isDone ? '✅' : isToday ? '○' : '—'}
+                        {isDone ? '✅' : isToday ? '○' : '–'}
                       </span>
                     </div>
                   );
@@ -571,8 +571,8 @@ export default function MentalHealthPage() {
             </div>
 
             <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column' }}>
-              {(stress.tips.slice(1).length ? stress.tips.slice(1) : ['Take 5 minutes of box breathing before your study session', 'Spend 10 min outside — sunlight resets cortisol naturally', "Write tomorrow's 3 tasks tonight — reduces morning anxiety"]).map((tip, i, arr) => {
-                const cleanTip = tip.replace(/ — /g, '. ').replace(/—/g, '. ');
+              {(stress.tips.slice(1).length ? stress.tips.slice(1) : ['Take 5 minutes of box breathing before your study session', 'Spend 10 min outside – sunlight resets cortisol naturally', "Write tomorrow's 3 tasks tonight – reduces morning anxiety"]).map((tip, i, arr) => {
+                const cleanTip = tip.replace(/ – /g, '. ').replace(/–/g, '. ');
                 return (
                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '7px 0', borderBottom: i < arr.length - 1 ? '1px solid rgba(11,22,40,0.08)' : 'none' }}>
                   <span style={{ fontSize: 14, lineHeight: '21.7px', flexShrink: 0 }}>{['🧘','🌿',''][i]}</span>
@@ -623,7 +623,7 @@ export default function MentalHealthPage() {
               Tools for Your Mind
             </h2>
             <p style={{ fontFamily: dm, fontSize: 14, color: '#6b7a99', margin: 0 }}>
-              Quick practices designed for UPSC aspirants — do them between study sessions.
+              Quick practices designed for UPSC aspirants – do them between study sessions.
             </p>
           </div>
 
@@ -672,7 +672,7 @@ export default function MentalHealthPage() {
                     <span style={{ fontSize: 28 }}>🫁</span>
                     <h3 style={{ fontFamily: cg, fontWeight: 600, fontSize: 28, color: '#0c1424', margin: 0 }}>Box Breathing</h3>
                   </div>
-                  <p style={{ fontFamily: dm, fontSize: 14, color: '#6b7a99', marginBottom: 20 }}>Used by Navy SEALs and IAS toppers alike — 4 counts in, 4 hold, 4 out, 4 hold.</p>
+                  <p style={{ fontFamily: dm, fontSize: 14, color: '#6b7a99', marginBottom: 20 }}>Used by Navy SEALs and IAS toppers alike – 4 counts in, 4 hold, 4 out, 4 hold.</p>
 
                   <div className="flex items-center justify-center gap-3 mb-8">
                     {['IN · 4s', 'HOLD · 4s', 'OUT · 4s', 'HOLD · 4s'].map((phase, i) => {
@@ -822,11 +822,11 @@ export default function MentalHealthPage() {
 
                   <div className="flex flex-col gap-3">
                     {[
-                      { step: 'STEP 1 — SEE', title: 'Name 5 things you can see right now', hint: 'Your phone, a book, the ceiling light... look around slowly.' },
-                      { step: 'STEP 2 — TOUCH', title: 'Name 4 things you can physically feel', hint: 'Chair under you, clothes on your skin, your breath...' },
-                      { step: 'STEP 3 — HEAR', title: 'Name 3 things you can hear right now', hint: 'Fan noise, distant traffic, your own breathing...' },
-                      { step: 'STEP 4 — SMELL', title: 'Name 2 things you can smell', hint: 'Paper, tea, fresh air — even subtle scents count.' },
-                      { step: 'STEP 5 — TASTE', title: 'Name 1 thing you can taste', hint: 'Water, a recent meal, or just the sensation of your mouth.' },
+                      { step: 'STEP 1 – SEE', title: 'Name 5 things you can see right now', hint: 'Your phone, a book, the ceiling light... look around slowly.' },
+                      { step: 'STEP 2 – TOUCH', title: 'Name 4 things you can physically feel', hint: 'Chair under you, clothes on your skin, your breath...' },
+                      { step: 'STEP 3 – HEAR', title: 'Name 3 things you can hear right now', hint: 'Fan noise, distant traffic, your own breathing...' },
+                      { step: 'STEP 4 – SMELL', title: 'Name 2 things you can smell', hint: 'Paper, tea, fresh air – even subtle scents count.' },
+                      { step: 'STEP 5 – TASTE', title: 'Name 1 thing you can taste', hint: 'Water, a recent meal, or just the sensation of your mouth.' },
                     ].map((item, i) => (
                       <div key={i} style={{ background: '#fff', borderRadius: 12, padding: '16px 20px', border: '1px solid rgba(11,22,40,0.08)', borderLeft: i === 0 ? '4px solid #4a7c59' : '4px solid transparent' }}>
                         <p style={{ fontFamily: dm, fontWeight: 700, fontSize: 11, letterSpacing: '0.5px', color: '#4a7c59', marginBottom: 4 }}>{item.step}</p>
@@ -859,7 +859,7 @@ export default function MentalHealthPage() {
                       <li>Close the app immediately</li>
                       <li>Write one thing you did well today</li>
                       <li>Remember your unique reasons for attempting this exam</li>
-                      <li>Come back to your own study plan — not theirs</li>
+                      <li>Come back to your own study plan – not theirs</li>
                     </ol>
                   </div>
 

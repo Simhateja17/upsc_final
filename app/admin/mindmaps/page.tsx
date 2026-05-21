@@ -324,7 +324,7 @@ export default function MindmapManager() {
                 {maps.map((m) => (
                   <tr key={m.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                     <td className="px-4 py-3 font-medium text-[#111827]">{m.title}</td>
-                    <td className="px-4 py-3 text-[#6B7280]">{m.subject?.name ?? '—'}</td>
+                    <td className="px-4 py-3 text-[#6B7280]">{m.subject?.name ?? '–'}</td>
                     <td className="px-4 py-3 text-[#6B7280] font-mono text-xs">{m.slug}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">

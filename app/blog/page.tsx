@@ -51,7 +51,7 @@ const blogPosts = [
   {
     category: 'Answer Writing',
     title: '10 examples every UPSC aspirant should have ready for Ethics answers',
-    description: 'From Mahatma Gandhi to Dr. B.R. Ambedkar to contemporary examples — the real-world cases that bring your Ethics answers to life.',
+    description: 'From Mahatma Gandhi to Dr. B.R. Ambedkar to contemporary examples – the real-world cases that bring your Ethics answers to life.',
     author: 'Priya Singh',
     readTime: '5 min',
     image: '/blog-answer-2.png',
@@ -83,7 +83,7 @@ const blogPosts = [
   {
     category: 'GS Concepts',
     title: 'Monetary policy transmission in India: why rate cuts do not always reach borrowers',
-    description: 'A simplified explanation of how RBI decisions travel through the banking system — and where the transmission breaks down.',
+    description: 'A simplified explanation of how RBI decisions travel through the banking system – and where the transmission breaks down.',
     author: 'Abhijeet Soni',
     readTime: '5 min',
     image: '/blog-gs-3.png',
@@ -99,7 +99,7 @@ const blogPosts = [
   {
     category: 'GS Concepts',
     title: "India's space economy target of $44 billion by 2033: policy, players, and UPSC relevance",
-    description: 'IN-SPACe, NSIL, ISRO reforms, and the commercialisation of India\'s space sector — everything you need for GS III.',
+    description: 'IN-SPACe, NSIL, ISRO reforms, and the commercialisation of India\'s space sector – everything you need for GS III.',
     author: 'Abhijeet Soni',
     readTime: '6 min',
     image: '/blog-ca-2.png',
@@ -123,7 +123,7 @@ const blogPosts = [
   {
     category: 'Platform Tips',
     title: 'How to read your Performance Analytics dashboard and act on what it tells you',
-    description: 'Your readiness score, weak area heatmap, and test comparison charts — a complete guide to using data to improve.',
+    description: 'Your readiness score, weak area heatmap, and test comparison charts – a complete guide to using data to improve.',
     author: 'Abhijeet Soni',
     readTime: '5 min',
     image: '/blog-tips-2.png',

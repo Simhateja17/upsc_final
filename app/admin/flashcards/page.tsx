@@ -296,7 +296,7 @@ export default function FlashcardManager() {
                 <tbody>
                   {cards.map((c) => (
                     <tr key={c.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                      <td className="px-4 py-3 text-[#6B7280] text-xs">{c.deck?.subject ?? '—'}</td>
+                      <td className="px-4 py-3 text-[#6B7280] text-xs">{c.deck?.subject ?? '–'}</td>
                       <td className="px-4 py-3 text-[#374151]">{c.topic}</td>
                       <td className="px-4 py-3 text-[#111827] max-w-xs">
                         <p className="truncate">{c.question}</p>

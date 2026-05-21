@@ -274,7 +274,7 @@ function InvoiceModal({ data, onClose }: { data: InvoiceData; onClose: () => voi
               borderRadius: 20, padding: '8px 24px',
               fontSize: 13.5, color: '#0F5132', fontWeight: 500,
             }}>
-              ✓ PAID — {data.date} · {data.paymentMethod}
+              ✓ PAID – {data.date} · {data.paymentMethod}
             </div>
           </div>
         </div>
@@ -364,7 +364,7 @@ function PaymentSuccessDialog({
           }}>Payment Successful! 🎉</p>
         </div>
         <p style={{ margin: 0, fontSize: 12.5, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>
-          Welcome to the {data.planName} Plan — your journey to the civil services starts now.
+          Welcome to the {data.planName} Plan – your journey to the civil services starts now.
         </p>
       </div>
 
@@ -387,7 +387,7 @@ function PaymentSuccessDialog({
         {/* Detail rows */}
         <div style={{ display: 'flex', flexDirection: 'column', paddingTop: 6 }}>
           {[
-            { label: 'Plan',            value: `${data.planName} — ${data.planLabel}`,  color: '#1a1a2e' },
+            { label: 'Plan',            value: `${data.planName} – ${data.planLabel}`,  color: '#1a1a2e' },
             { label: 'Amount Paid',     value: `₹${parseFloat(data.amountTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (incl. GST)`, color: '#d4900a' },
             { label: 'Next Billing Date', value: data.nextBilling,                      color: '#1a1a2e' },
             { label: 'Billed To',       value: data.billedToEmail,                      color: '#1a1a2e' },
@@ -412,7 +412,7 @@ function PaymentSuccessDialog({
           <span style={{ fontSize: 22 }}>🚀</span>
           <div>
             <p style={{ margin: '0 0 2px', fontSize: 13.5, fontWeight: 700, color: '#15803d' }}>Your {data.planName} access is now live</p>
-            <p style={{ margin: 0, fontSize: 11.5, color: '#15803d', opacity: 0.85 }}>All features unlocked — click below to go to your dashboard</p>
+            <p style={{ margin: 0, fontSize: 11.5, color: '#15803d', opacity: 0.85 }}>All features unlocked – click below to go to your dashboard</p>
           </div>
         </div>
 
@@ -538,7 +538,7 @@ function PaymentFailureDialog({
         {/* Detail rows */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {[
-            { label: 'Plan',            value: `${data.planName} — ${data.planLabel}`, color: '#1a1a2e' },
+            { label: 'Plan',            value: `${data.planName} – ${data.planLabel}`, color: '#1a1a2e' },
             { label: 'Amount',          value: `₹${parseFloat(data.amountTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (incl. GST)`, color: '#dc2626' },
             { label: 'Failure Reason',  value: data.errorReason || 'Payment failed', color: '#1a1a2e' },
             { label: 'Billed To',       value: data.billedToEmail, color: '#1a1a2e' },
@@ -1003,7 +1003,7 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
             background: '#FEF5DC', borderRadius: 10, padding: '10px 12px', marginBottom: 14,
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: '#475569' }}>{plan.name} Plan — {active.label}</span>
+              <span style={{ fontSize: 12, color: '#475569' }}>{plan.name} Plan – {active.label}</span>
               <span style={{ fontSize: 12, fontWeight: 600, color: '#0F172B' }}>₹{active.perMonth}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1360,23 +1360,23 @@ export default function ExplorePlansPage() {
                   { feature: 'Syllabus Tracker', sub: 'Personalized UPSC Syllabus Mapping', aspire: 'Limited', rise: 'Unlimited', ascent: 'Unlimited' },
                   { feature: 'Jeet AI Conversations', sub: 'UPSC-preparation partner', aspire: '10 / day', rise: '100 / day', ascent: 'Unlimited' },
                   { feature: 'Performance Analytics Dashboard', sub: '', aspire: 'Limited', rise: '✓', ascent: '✓' },
-                  { feature: 'Test Analytics', sub: 'Deep score breakdowns', aspire: '—', rise: '✓', ascent: '✓' },
+                  { feature: 'Test Analytics', sub: 'Deep score breakdowns', aspire: '–', rise: '✓', ascent: '✓' },
                   { feature: 'Revision Suite', sub: 'Flashcards, Mindmaps, Spaced Repetition', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
                   { feature: 'Discussion Forum', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
                   { feature: 'Live Study Room 24×7', sub: '', aspire: 'Limited', rise: '✓', ascent: '✓' },
                   { feature: 'Mental Health Buddy', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
-                  { feature: 'Weekly 1-on-1 Mentorship', sub: '30 minutes per session', aspire: '—', rise: '—', ascent: 'Weekly' },
-                  { feature: 'Personalised Study Roadmap', sub: '', aspire: '—', rise: '—', ascent: '✓' },
-                  { feature: 'Dedicated Q&A Priority Responses', sub: '', aspire: '—', rise: '—', ascent: '✓' },
-                  { feature: 'Monthly Performance Review Call', sub: '', aspire: '—', rise: '—', ascent: '✓' },
+                  { feature: 'Weekly 1-on-1 Mentorship', sub: '30 minutes per session', aspire: '–', rise: '–', ascent: 'Weekly' },
+                  { feature: 'Personalised Study Roadmap', sub: '', aspire: '–', rise: '–', ascent: '✓' },
+                  { feature: 'Dedicated Q&A Priority Responses', sub: '', aspire: '–', rise: '–', ascent: '✓' },
+                  { feature: 'Monthly Performance Review Call', sub: '', aspire: '–', rise: '–', ascent: '✓' },
                 ] as { feature: string; sub: string; aspire: string; rise: string; ascent: string }[]).map((row, i) => {
                   const cellStyle = (val: string, isRise = false): React.CSSProperties => ({
                     padding: '13px 16px',
                     textAlign: 'center' as const,
                     fontSize: 13,
-                    fontWeight: val === '✓' || val === '—' ? 600 : 500,
+                    fontWeight: val === '✓' || val === '–' ? 600 : 500,
                     color: val === '✓' ? '#22C55E'
-                      : val === '—' ? '#CBD5E1'
+                      : val === '–' ? '#CBD5E1'
                       : val === 'Limited' || val === 'Unlimited' || val === 'Full Access' || val === 'Weekly' ? '#E8B84B'
                       : '#1A2540',
                     background: isRise ? 'rgba(232,184,75,0.04)' : 'transparent',
@@ -1433,7 +1433,7 @@ export default function ExplorePlansPage() {
               Why Rise With Jeet?
             </h2>
             <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, color: '#6B7A99', margin: 0, maxWidth: 440, marginInline: 'auto', lineHeight: 1.6, textAlign: 'center' }}>
-              Not just another coaching — the complete UPSC operating system for India&apos;s brightest minds.
+              Not just another coaching – the complete UPSC operating system for India&apos;s brightest minds.
             </p>
           </div>
 
@@ -1446,7 +1446,7 @@ export default function ExplorePlansPage() {
               { icon: '👥', iconBg: '#F0FDF4', title: 'Live Community', desc: 'Study alongside 15,000 aspirants in live rooms and accountability groups.' },
               { icon: '📰', iconBg: '#F8FAFC', title: 'Daily Current Affairs', desc: 'Hindu & IE analysis connecting today\'s news directly to the UPSC syllabus.' },
               { icon: '✍️', iconBg: '#FFFBEB', title: 'Daily Answer Writing', desc: 'Daily mains practice with AI-powered instant evaluation and UPSC-style marking schemes.' },
-              { icon: '🧠', iconBg: '#FFF0F3', title: 'Smart Revision', desc: 'Flashcards, mindmaps, spaced repetition — study once, remember forever.' },
+              { icon: '🧠', iconBg: '#FFF0F3', title: 'Smart Revision', desc: 'Flashcards, mindmaps, spaced repetition – study once, remember forever.' },
               { icon: '📚', iconBg: '#F8FAFC', title: 'Previous Year Questions', desc: '30 years of PYQs with trend analysis, topic clustering, and examiner insights.' },
             ].map((card) => (
               <div key={card.title} style={{ background: '#fff', borderRadius: 14, border: '1px solid #F0EDE8', padding: '20px 18px', boxShadow: '0 1px 4px rgba(11,22,40,0.05)' }}>
@@ -1487,7 +1487,7 @@ export default function ExplorePlansPage() {
               },
               {
                 stars: 5,
-                quote: '"Daily MCQs and the leaderboard kept me disciplined across 6 months. Analytics showed me exactly which paper needed attention — saved me months of scattered prep."',
+                quote: '"Daily MCQs and the leaderboard kept me disciplined across 6 months. Analytics showed me exactly which paper needed attention – saved me months of scattered prep."',
                 name: 'Rahul',
                 role: 'UPSC CSE 2025 Mains Qualified',
                 initial: 'R',
@@ -1541,9 +1541,9 @@ export default function ExplorePlansPage() {
               { q: 'Is Aspire really free forever?', a: 'Yes! Aspire is completely free with no expiry date, no credit card required, and no hidden charges. You get access to daily MCQs, mains challenge, current affairs, and more.' },
               { q: "What's the difference between Rise and Ascent?", a: 'Rise gives you unlimited AI evaluations, full analytics, and the complete revision suite. Ascent adds weekly 1-on-1 mentorship, a personalised roadmap, priority Q&A support, and monthly performance review calls.' },
               { q: 'Is there a money-back guarantee?', a: 'Yes. All paid plans come with a 7-day money-back guarantee, no questions asked. Just reach out to our support team within 7 days of purchase.' },
-              { q: 'How much do I save on quarterly & yearly plans?', a: 'Quarterly plans save you ~10% compared to monthly billing. Yearly plans give you up to 40% off — the best value for committed aspirants.' },
+              { q: 'How much do I save on quarterly & yearly plans?', a: 'Quarterly plans save you ~10% compared to monthly billing. Yearly plans give you up to 40% off – the best value for committed aspirants.' },
               { q: 'Can I upgrade or cancel anytime?', a: 'Absolutely. You can upgrade, downgrade, or cancel your subscription at any time from your billing page. No lock-ins, no penalties.' },
-              { q: 'How does AI Mains Evaluation work?', a: 'Our AI evaluates your mains answers using UPSC-style marking schemes — checking structure, content, presentation, and relevance — and gives you detailed feedback within seconds.' },
+              { q: 'How does AI Mains Evaluation work?', a: 'Our AI evaluates your mains answers using UPSC-style marking schemes – checking structure, content, presentation, and relevance – and gives you detailed feedback within seconds.' },
               { q: 'What is the refund policy?', a: 'We offer a 7-day full refund on all paid plans. After 7 days, refunds are handled case-by-case. Contact our billing team for assistance.' },
               { q: 'Is this suitable for first-attempt aspirants?', a: 'Absolutely. Aspire is designed for beginners building their foundation. As you progress, Rise and Ascent provide deeper tools for serious, exam-ready preparation.' },
             ];
@@ -1588,7 +1588,7 @@ export default function ExplorePlansPage() {
 
       </div>
 
-      {/* ── CTA Banner — full width outside the constrained container ── */}
+      {/* ── CTA Banner – full width outside the constrained container ── */}
       <section style={{ margin: 0, borderRadius: 0, background: 'linear-gradient(160deg, #0A1120 0%, #0F1C35 100%)', padding: '52px 48px 44px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.025) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
@@ -1603,7 +1603,7 @@ export default function ExplorePlansPage() {
             <br />the Right Way
           </h2>
           <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.5)', maxWidth: 480, margin: '0 auto 32px', lineHeight: 1.65 }}>
-            Join 15,000+ aspirants. Start free with Aspire — no card, no commitment, no expiry. Upgrade only when you feel it.
+            Join 15,000+ aspirants. Start free with Aspire – no card, no commitment, no expiry. Upgrade only when you feel it.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
             <button type="button" onClick={handleUpgrade} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>

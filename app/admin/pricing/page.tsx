@@ -375,7 +375,7 @@ export default function PricingManager() {
       <div className="bg-white rounded-2xl p-6 border border-[#E5E7EB]">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-[#111827]">All Plans ({plans.length})</h2>
-          <p className="text-xs text-[#6B7280]">Click Edit to modify any plan — all fields are configurable</p>
+          <p className="text-xs text-[#6B7280]">Click Edit to modify any plan – all fields are configurable</p>
         </div>
 
         {loading ? (

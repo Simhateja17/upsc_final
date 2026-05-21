@@ -47,7 +47,7 @@ const fallbackCards = [
     iconBg: '#FCE7F3',
     imgSrc: '/emoji-13.png',
     title: 'Unlock Pro Practice',
-    desc: 'Remove limits — full 100-Q papers, unlimited subjects, PYQ archives.',
+    desc: 'Remove limits – full 100-Q papers, unlimited subjects, PYQ archives.',
     badge: 'Upgrade',
     badgeBg: '#F3E8FF',
     badgeColor: '#8200DB',
@@ -346,8 +346,8 @@ function NextStepsInner() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172B', margin: 0, lineHeight: '28px' }}>
               {streak
-                ? `${streak.days}-day streak — you're in the top ${streak.percentile}%!`
-                : "12-day streak — you're in the top 18%!"}
+                ? `${streak.days}-day streak – you're in the top ${streak.percentile}%!`
+                : "12-day streak – you're in the top 18%!"}
             </h3>
             <p style={{ fontSize: '16px', color: '#364153', margin: 0, lineHeight: '26px' }}>
               {streak?.message || (

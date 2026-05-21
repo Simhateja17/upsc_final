@@ -324,7 +324,7 @@ export default function BillingPage() {
             position: 'relative',
             overflow: 'visible',
           }}>
-            {/* Left — icon + plan info */}
+            {/* Left – icon + plan info */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 68, height: 68, borderRadius: 14, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111827', border: '1.5px solid rgba(232,184,75,0.45)' }}>
                 <Image src="/ksp.png" alt="Plan" width={26} height={26} style={{ objectFit: 'contain' }} />
@@ -352,7 +352,7 @@ export default function BillingPage() {
               </div>
             </div>
 
-            {/* Right — buttons */}
+            {/* Right – buttons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {isPaidUser && (
                 <button type="button" onClick={() => setShowCancelModal(true)} style={{ borderRadius: 12, border: '1.5px solid rgba(255,255,255,0.22)', padding: '13px 26px', fontFamily: '"DM Sans", system-ui, sans-serif', fontSize: 13, fontStyle: 'normal', fontWeight: 600, lineHeight: 'normal', textAlign: 'center', color: 'rgba(255,255,255,0.70)', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
@@ -367,7 +367,7 @@ export default function BillingPage() {
 
           {/* Usage + Features two-column */}
           <div style={{ background: '#fff', border: '1px solid #ECEAE4', borderRadius: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
-            {/* Left — YOUR USAGE THIS MONTH */}
+            {/* Left – YOUR USAGE THIS MONTH */}
             <div style={{ padding: '28px 28px', borderRight: '1px solid #ECEAE4' }}>
               <p style={{ margin: '0 0 18px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', color: '#9B9590', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>
                 Your usage this month
@@ -393,7 +393,7 @@ export default function BillingPage() {
               </div>
             </div>
 
-            {/* Right — INCLUDED IN RISE */}
+            {/* Right – INCLUDED IN RISE */}
             <div style={{ padding: '28px 28px' }}>
               <p style={{ margin: '0 0 18px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', color: '#9B9590', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>
                 Included in Rise
@@ -431,7 +431,7 @@ export default function BillingPage() {
               <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, system-ui, sans-serif' }}>
                 Next billing date:{' '}
                 <strong style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
-                  {sub?.renewsOn ? formatDate(sub.renewsOn) : '—'}
+                  {sub?.renewsOn ? formatDate(sub.renewsOn) : '–'}
                 </strong>
                 {' · '}
                 {isPaidUser ? 'Annual Rise Plan renewal' : 'No active subscription'}

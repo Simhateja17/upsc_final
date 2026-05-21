@@ -356,7 +356,7 @@ export default function PerformancePage() {
             <AnalyticsCard className="px-6 py-7">
               <h2 className="mb-8 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
                 <span className="h-2 w-2 rounded-full bg-[#8B35F6]" />
-                Study Time — This Week
+                Study Time – This Week
               </h2>
 
               <div className="mb-16 grid grid-cols-2 gap-5 sm:grid-cols-4">
@@ -393,7 +393,7 @@ export default function PerformancePage() {
             <AnalyticsCard className="px-6 py-7">
               <h2 className="mb-9 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
                 <span className="h-2 w-2 rounded-full bg-[#F28C32]" />
-                Time Distribution — This Week
+                Time Distribution – This Week
               </h2>
 
               <div className="grid items-center gap-8 sm:grid-cols-[220px_1fr]">
@@ -451,7 +451,7 @@ export default function PerformancePage() {
               <div className="mb-7 flex items-center justify-between gap-4">
                 <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
                   <span aria-hidden>📅</span>
-                  Study Streak — April 2026
+                  Study Streak – April 2026
                 </h2>
                 <span className="font-bold text-[#F2742F]">🔥 {currentStreak} Days!</span>
               </div>
@@ -511,7 +511,7 @@ export default function PerformancePage() {
             <AnalyticsCard className="px-6 py-7">
               <h2 className="mb-7 flex items-center gap-3 text-[20px] font-bold text-[#101828]">
                 <span aria-hidden>⚡</span>
-                Daily Trio — This Week
+                Daily Trio – This Week
               </h2>
 
               {[

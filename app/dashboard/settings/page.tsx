@@ -530,7 +530,7 @@ export default function SettingsPage() {
             <textarea
               value={deleteReason}
               onChange={(e) => setDeleteReason(e.target.value)}
-              placeholder="Share what's not working for you — every word helps us improve..."
+              placeholder="Share what's not working for you – every word helps us improve..."
               rows={3}
               className="w-full rounded-[8px] border border-[#D0D5DD] bg-white px-3 py-2 text-[13px] text-[#101828] outline-none placeholder:text-[#98A2B3] focus:border-[#162456] focus:ring-2 focus:ring-[#162456]/10 transition resize-none"
             />

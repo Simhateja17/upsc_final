@@ -64,7 +64,7 @@ const PerformanceStatsWidget = () => {
     return () => { mounted = false; };
   }, []);
 
-  // Display values — null/undefined when API hasn't returned data
+  // Display values – null/undefined when API hasn't returned data
   const currentStreak = streak?.currentStreak ?? (loading ? null : 0);
   const weekDays = streak?.weekDays ?? [false, false, false, false, false, false, false];
   const streakLabel = streak?.streakLabel ?? '';

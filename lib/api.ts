@@ -50,7 +50,7 @@ async function request<T>(
     clearTimeout(timeoutId);
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        throw new Error('Request timeout — backend server may be unavailable');
+        throw new Error('Request timeout – backend server may be unavailable');
       }
       throw error;
     }

@@ -338,7 +338,7 @@ export default function PyqPage() {
     setAiEvalStepIndex(1);
     const start = Date.now();
 
-    // Visual progress animation (cosmetic — doesn't block)
+    // Visual progress animation (cosmetic – doesn't block)
     const progressInterval = setInterval(() => {
       const elapsed = Date.now() - start;
       const pct = Math.min(95, (elapsed / 60000) * 100); // 60s ceiling, cap at 95%
@@ -696,7 +696,7 @@ export default function PyqPage() {
                 </div>
               )}
 
-              {/* PLACEHOLDER card 3 — kept for UI reference until removed */}
+              {/* PLACEHOLDER card 3 – kept for UI reference until removed */}
               {false && <div
               className="rounded-[16px] bg-white shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.1)] p-6 mb-6 w-full max-w-[546px] mx-auto"
               style={{ opacity: 1 }}
@@ -2044,7 +2044,7 @@ export default function PyqPage() {
               })}
             </div>
 
-            {/* Explanation — shown only after submit */}
+            {/* Explanation – shown only after submit */}
             {hasSubmitted && selectedQuestion?.explanation && (
               <div style={{ width: '774.4px', maxWidth: '100%' }}>
                 <div className="flex items-center gap-2 mb-2" style={{ color: '#016630', fontWeight: 700, fontSize: '14px', textTransform: 'uppercase' }}>

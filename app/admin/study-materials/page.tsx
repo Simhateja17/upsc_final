@@ -99,7 +99,7 @@ export default function StudyMaterialsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Study Materials</h1>
         <p className="text-gray-500 mt-1">
-          Upload PDFs here. They are chunked &amp; vectorized — when a student generates a mock test
+          Upload PDFs here. They are chunked &amp; vectorized – when a student generates a mock test
           for this subject, Claude uses these chunks to create questions via the RAG pipeline.
         </p>
       </div>
@@ -241,7 +241,7 @@ export default function StudyMaterialsPage() {
                         {m.file_name}
                       </td>
                       <td className="px-4 py-3 font-medium text-gray-900">{m.subject}</td>
-                      <td className="px-4 py-3 text-gray-500">{m.topic || '—'}</td>
+                      <td className="px-4 py-3 text-gray-500">{m.topic || '–'}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -256,7 +256,7 @@ export default function StudyMaterialsPage() {
                           {m.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-500">{m.chunk_count ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-500">{m.chunk_count ?? '–'}</td>
                       <td className="px-4 py-3 text-gray-400">
                         {new Date(m.created_at).toLocaleDateString('en-IN')}
                       </td>

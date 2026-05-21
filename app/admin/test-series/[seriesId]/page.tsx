@@ -215,7 +215,7 @@ export default function AdminTestSeriesDetailPage() {
       </div>
       <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Manage tests</h1>
       <p style={{ color: '#6B7280', fontSize: 14, marginBottom: 24 }}>
-        Series ID: <code style={{ fontSize: 12 }}>{seriesId}</code> — upload PDFs, extract text, then map questions manually or paste JSON.
+        Series ID: <code style={{ fontSize: 12 }}>{seriesId}</code> – upload PDFs, extract text, then map questions manually or paste JSON.
       </p>
 
       {msg && (

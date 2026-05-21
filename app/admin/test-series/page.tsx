@@ -158,7 +158,7 @@ export default function AdminTestSeriesPage() {
       fd.append('seriesId', editingId);
       const up = await testSeriesService.uploadAsset(fd);
       setForm((f) => ({ ...f, thumbnailUrl: up.data.url }));
-      setMsg('Thumbnail uploaded — click Update to persist URL if needed.');
+      setMsg('Thumbnail uploaded – click Update to persist URL if needed.');
     } catch (e: unknown) {
       setMsg(e instanceof Error ? e.message : 'Upload failed');
     }
@@ -307,7 +307,7 @@ export default function AdminTestSeriesPage() {
         pending.done = true;
         setProgress([...steps]);
       }
-      setMsg('Partial creation — use "Manage Tests" to fix remaining steps. Error: ' + errMsg);
+      setMsg('Partial creation – use "Manage Tests" to fix remaining steps. Error: ' + errMsg);
       await loadSeries();
     } finally {
       setSaving(false);
@@ -884,7 +884,7 @@ export default function AdminTestSeriesPage() {
                     </div>
                   </td>
                   <td style={cellStyle}>
-                    {s.published ? 'Yes' : 'No'} · {s.listingStatus ?? '—'}
+                    {s.published ? 'Yes' : 'No'} · {s.listingStatus ?? '–'}
                   </td>
                   <td style={cellStyle}>{s.totalTests}</td>
                   <td style={cellStyle}>{s.price === 0 ? <span style={{ color: '#065F46', fontWeight: 600 }}>Free</span> : `₹${s.price}`}</td>

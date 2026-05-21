@@ -29,7 +29,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: '2',
     icon: '✅',
-    title: 'Your answer has been evaluated — Score: 7.5/10',
+    title: 'Your answer has been evaluated – Score: 7.5/10',
     time: '2 hours ago',
     read: false,
   },
@@ -43,7 +43,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: '4',
     icon: '📌',
-    title: 'New mock test available — GS Prelims Test 15',
+    title: 'New mock test available – GS Prelims Test 15',
     time: 'Yesterday',
     read: true,
   },
@@ -93,7 +93,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
     <header className="w-full h-[clamp(56px,5.78vw,111px)] flex items-center justify-between px-3 md:px-[clamp(1rem,2vw,2.5rem)] sticky top-0 z-50" style={{ background: 'rgba(7,14,30,0.98)', backdropFilter: 'blur(24px) saturate(200%)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
       {/* Left: Hamburger (mobile) + Logo */}
       <div className="flex items-center gap-2 md:gap-3">
-        {/* Hamburger button — visible on mobile/tablet only */}
+        {/* Hamburger button – visible on mobile/tablet only */}
         <button
           onClick={onMenuClick}
           className="lg:hidden flex items-center justify-center w-11 h-11 rounded-lg text-white hover:bg-white/10 transition-colors flex-shrink-0"

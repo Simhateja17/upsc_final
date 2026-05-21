@@ -2,7 +2,7 @@
 /* Converted from the HTML design system */
 
 :root {
-  /* Neutrals — warm not cold */
+  /* Neutrals – warm not cold */
   --bg: #F7F7F5;
   --bg2: #EFEFEC;
   --bg3: #E8E8E4;
@@ -15,33 +15,33 @@
   --text3: #71717A;
   --text4: #A1A1AA;
 
-  /* Brand — deep slate navy */
+  /* Brand – deep slate navy */
   --navy: #1B2340;
   --navy2: #232D52;
   --navy3: #2E3B68;
 
-  /* Accent — warm saffron */
+  /* Accent – warm saffron */
   --amber: #D97706;
   --amber2: #F59E0B;
   --amberp: #FFFBEB;
   --amberb: #FDE68A;
 
-  /* Success — muted jade */
+  /* Success – muted jade */
   --jade: #059669;
   --jadep: #ECFDF5;
   --jadem: #6EE7B7;
 
-  /* Danger — warm rose */
+  /* Danger – warm rose */
   --rose: #E11D48;
   --rosep: #FFF1F2;
   --rosem: #FDA4AF;
 
-  /* Info — slate blue */
+  /* Info – slate blue */
   --indigo: #4F46E5;
   --indigop: #EEF2FF;
   --indigom: #C7D2FE;
 
-  /* Warn — warm sand */
+  /* Warn – warm sand */
   --sand: #B45309;
   --sandp: #FFFBEB;
 

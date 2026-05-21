@@ -63,7 +63,7 @@ export default function MindmapViewPage({ params }: PageParams) {
     annualTotal: 2388,
     features: [
       'All 42+ Mindmaps across 8 subjects',
-      'Custom Mindmap Builder — unlimited saves',
+      'Custom Mindmap Builder – unlimited saves',
       'Topic Quizzes + Branch-by-Branch Revision',
       'Send maps to Flashcards + Spaced Repetition',
       'Schedule Revision + Planner sync',
@@ -233,7 +233,7 @@ export default function MindmapViewPage({ params }: PageParams) {
               </button>
               <div className="text-center">
                 <button onClick={() => { setShowProModal(false); setQuizCompleted(false); }} className="text-[#6B7280] text-[13px] hover:text-[#111827] transition-colors">
-                  Maybe later — keep free plan
+                  Maybe later – keep free plan
                 </button>
               </div>
             </div>

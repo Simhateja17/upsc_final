@@ -99,7 +99,7 @@ async function parseChunk(
 - prompt: the full question text
 - options: array of exactly 4 option strings (the text of each option, without A/B/C/D prefix)
 - correct_index: index of the correct option (0-3). If determinable from the text, set it. If an answer key is provided elsewhere, use it. Otherwise make your best judgment.
-- explanation: a clear, concise explanation (2-4 sentences) of why the correct answer is correct. Generate your own explanation by analyzing the question — do NOT copy from the PDF.
+- explanation: a clear, concise explanation (2-4 sentences) of why the correct answer is correct. Generate your own explanation by analyzing the question – do NOT copy from the PDF.
 
 Text to parse:
 ${chunk}

@@ -11,7 +11,7 @@ export default function DashboardPage() {
           <ResponsiveDashboardContent />
         </main>
 
-        {/* Right Sidebar — visible on lg+ screens */}
+        {/* Right Sidebar – visible on lg+ screens */}
         <aside
           className="hidden lg:block flex-shrink-0"
           style={{

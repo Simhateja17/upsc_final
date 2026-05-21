@@ -326,8 +326,8 @@ export default function RAGManagerPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-900">{m.subject}</td>
-                    <td className="px-4 py-3 text-gray-500">{m.topic || '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{m.source || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500">{m.topic || '–'}</td>
+                    <td className="px-4 py-3 text-gray-500">{m.source || '–'}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                         m.type === 'study' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'
@@ -348,7 +348,7 @@ export default function RAGManagerPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-500 tabular-nums">
-                      {m.chunk_count ?? '—'}
+                      {m.chunk_count ?? '–'}
                     </td>
                     <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
                       {new Date(m.created_at).toLocaleDateString('en-IN')}
@@ -374,7 +374,7 @@ export default function RAGManagerPage() {
       <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
         <strong>How RAG works:</strong> Uploaded PDFs are split into ~1000-char chunks and embedded as 1536-dim vectors (Gemini).
         When a student asks Jeet GPT a question or generates a mock test, the system finds the most similar chunks via cosine search
-        and injects them as context — grounding AI responses in your actual study material.
+        and injects them as context – grounding AI responses in your actual study material.
       </div>
     </div>
   );

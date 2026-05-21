@@ -24,7 +24,7 @@ async function fetchMe(): Promise<User> {
     const { user } = await authService.getMe();
     return user;
   } catch {
-    // Retry once — token may not have been fully propagated yet
+    // Retry once – token may not have been fully propagated yet
     await new Promise(r => setTimeout(r, 500));
     const { user } = await authService.getMe();
     return user;
@@ -77,10 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Use Supabase's onAuthStateChange as the single source of truth.
     // It fires INITIAL_SESSION on page load (including hard refresh) with the
-    // current session — no race condition with manual token checks.
+    // current session – no race condition with manual token checks.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'TOKEN_REFRESHED') {
-        // Just update stored tokens — don't re-fetch user or risk clearing state
+        // Just update stored tokens – don't re-fetch user or risk clearing state
         if (session) {
           storeTokens(session.access_token, session.refresh_token ?? '');
         }
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const freshUser = await fetchMe();
           setUser(freshUser);
         } catch {
-          // getMe failed even after retry — fall back to Supabase session data
+          // getMe failed even after retry – fall back to Supabase session data
           // (includes role from app_metadata) so user isn't logged out.
           setUser(prev => prev ?? userFromSession(session));
         }
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { user: fullUser } = await authService.getMe();
           setUser(fullUser);
         } catch (err) {
-          // Backend may be unavailable — use user from login response
+          // Backend may be unavailable – use user from login response
           console.warn('Could not fetch full user profile:', err);
         }
       }
@@ -153,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.session) {
         setUser(response.user);
       }
-      // If requiresEmailVerification, don't set user — login page shows success tab
+      // If requiresEmailVerification, don't set user – login page shows success tab
     } catch (err) {
       setIsLoading(false);
       throw err; // Re-throw to let the component handle it
@@ -163,7 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginWithGoogle = async () => {
-    // This triggers a browser redirect to Google — no loading state needed
+    // This triggers a browser redirect to Google – no loading state needed
     await authService.loginWithGoogle();
   };
 

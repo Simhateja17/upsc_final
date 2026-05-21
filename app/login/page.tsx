@@ -110,7 +110,7 @@ function LoginPageContent() {
       localStorage.setItem('rwj_has_logged_in', '1');
       sessionStorage.setItem('rwj_login_success', '1');
       // Client-side nav preserves the AuthContext so the dashboard sees
-      // isAuthenticated:true immediately — no full-page reload race condition.
+      // isAuthenticated:true immediately – no full-page reload race condition.
       router.replace('/dashboard');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed. Please try again.';
@@ -174,7 +174,7 @@ function LoginPageContent() {
     try {
       setError(null);
       await loginWithGoogle();
-      // Browser redirects to Google — execution stops here
+      // Browser redirects to Google – execution stops here
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to initialize Google login');
     }
@@ -302,7 +302,7 @@ function LoginPageContent() {
           }}
         />
 
-        {/* Logo / Branding — absolutely positioned */}
+        {/* Logo / Branding – absolutely positioned */}
         <div
           className="relative z-10"
           style={{ position: 'absolute', top: 24, left: 26 }}
@@ -344,7 +344,7 @@ function LoginPageContent() {
           {/* Subtitle */}
           <div style={{ marginBottom: 22 }}>
             <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 13, lineHeight: '20px', color: '#99A1AF' }}>
-              AI-powered learning, daily MCQs, mains evaluation, mentorship &amp; smart revision — all under one roof.
+              AI-powered learning, daily MCQs, mains evaluation, mentorship &amp; smart revision – all under one roof.
             </div>
           </div>
 
@@ -478,7 +478,7 @@ function LoginPageContent() {
               boxSizing: 'border-box',
             }}
           >
-            {/* Log In — active tab */}
+            {/* Log In – active tab */}
             <button
               onClick={() => { setActiveTab('login'); setError(null); }}
               style={{
@@ -503,7 +503,7 @@ function LoginPageContent() {
               Log In
             </button>
 
-            {/* Sign Up Free — inactive tab */}
+            {/* Sign Up Free – inactive tab */}
             <button
               onClick={() => { setActiveTab('signup'); setError(null); }}
               style={{
@@ -1643,7 +1643,7 @@ function LoginPageContent() {
               {!isLoading && <Image src="/icon-login-arrow.png" alt="" width={18} height={18} style={{ objectFit: 'contain' }} />}
             </button>
 
-            {/* New Here — theme CTA button */}
+            {/* New Here – theme CTA button */}
             <button
               type="button"
               onClick={() => { setActiveTab('signup'); setError(null); }}
@@ -1678,7 +1678,7 @@ function LoginPageContent() {
               </span>
             </button>
 
-            {/* Login with OTP button — no background */}
+            {/* Login with OTP button – no background */}
             <button
               type="button"
               onClick={() => {

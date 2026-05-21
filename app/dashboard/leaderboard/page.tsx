@@ -191,7 +191,7 @@ export default function LeaderboardPage() {
                 )}
               </p>
               <p className="mt-[2px] text-[12px] text-white/45" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                {myRankLoading ? 'Loading stats…' : 'Keep pushing — every point counts'}
+                {myRankLoading ? 'Loading stats…' : 'Keep pushing – every point counts'}
               </p>
             </div>
 

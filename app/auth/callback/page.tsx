@@ -34,7 +34,7 @@ export default function AuthCallback() {
           });
           userRole = res.data?.user?.role || 'user';
         } catch {
-          // User might already exist — try getMe to get role
+          // User might already exist – try getMe to get role
           try {
             const meRes = await api.get<{ user: { role?: string } }>('/auth/me', {
               headers: { Authorization: `Bearer ${session.access_token}` } as any,

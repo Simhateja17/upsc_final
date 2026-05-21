@@ -17,7 +17,7 @@ const FEATURED_FAQS = [
   {
     question: 'How does the AI answer evaluation work?',
     answer:
-      'You submit a typed or handwritten answer (via photo upload). The AI evaluates it across 8 parameters — content accuracy, structure, introduction, conclusion, depth of analysis, examples, language clarity, and question relevance — and returns a score out of 10 with actionable feedback in under 60 seconds.',
+      'You submit a typed or handwritten answer (via photo upload). The AI evaluates it across 8 parameters – content accuracy, structure, introduction, conclusion, depth of analysis, examples, language clarity, and question relevance – and returns a score out of 10 with actionable feedback in under 60 seconds.',
   },
   {
     question: 'How does the AI Study Planner work?',
@@ -32,7 +32,7 @@ const FEATURED_FAQS = [
   {
     question: 'How many PYQs are available on the platform?',
     answer:
-      'The PYQ bank covers over 3,200 questions from UPSC Prelims across the last 30 years, plus Mains questions tagged by paper and year — each with detailed explanations and syllabus tags.',
+      'The PYQ bank covers over 3,200 questions from UPSC Prelims across the last 30 years, plus Mains questions tagged by paper and year – each with detailed explanations and syllabus tags.',
   },
 ];
 

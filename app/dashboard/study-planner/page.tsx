@@ -466,7 +466,7 @@ export default function StudyPlannerPage() {
           {/* ═══════ Left Column: Main Content ═══════ */}
           <div className="flex-1 min-w-0">
 
-            {/* Hero Banner — matches Figma study planner design */}
+            {/* Hero Banner – matches Figma study planner design */}
             <div
               className="rounded-[16px] border border-white/5 overflow-hidden relative"
               style={{
@@ -475,7 +475,7 @@ export default function StudyPlannerPage() {
                 marginBottom: '16px',
               }}
             >
-              {/* Warm radial glow — bottom-right like Figma */}
+              {/* Warm radial glow – bottom-right like Figma */}
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
@@ -492,7 +492,7 @@ export default function StudyPlannerPage() {
                   backgroundSize: '48px 48px',
                 }}
               />
-              {/* Subtle gold glow — upper-middle */}
+              {/* Subtle gold glow – upper-middle */}
               <div
                 className="absolute left-[28%] -top-[50px] w-[260px] h-[260px] rounded-full pointer-events-none"
                 style={{
@@ -1035,7 +1035,7 @@ export default function StudyPlannerPage() {
                 </div>
               </div>
 
-              {/* Card 2: Planner Sync — fixed width matches "Your Plan is Empty" above */}
+              {/* Card 2: Planner Sync – fixed width matches "Your Plan is Empty" above */}
               <div
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] flex flex-col justify-between"
                 style={{ width: '100%', padding: '24px' }}

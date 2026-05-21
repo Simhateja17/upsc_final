@@ -400,7 +400,7 @@ function MockTestAttemptInner() {
         const res = await mockTestService.getMainsEvaluationStatus(testId!, attemptId);
         if (res.data?.isComplete) return true;
       } catch {
-        /* transient — keep polling */
+        /* transient – keep polling */
       }
       await new Promise(r => setTimeout(r, 2500));
     }
@@ -1225,7 +1225,7 @@ function MockTestAttemptInner() {
               ) : null}
             </div>
 
-            {/* Options — this is a quiz: we show selection only, and reveal
+            {/* Options – this is a quiz: we show selection only, and reveal
                 correctness + explanation only on the results screen. */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {currentQ.options.map(opt => {

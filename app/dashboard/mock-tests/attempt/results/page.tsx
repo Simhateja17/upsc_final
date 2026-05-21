@@ -263,7 +263,7 @@ function MockTestResultsInner() {
           skipped: data.skipped ?? 0,
           netScore: (Number(data.correct ?? 0) * 2 - Number(data.wrong ?? 0) * 0.67).toFixed(2),
           scorePct: data.accuracyPct ?? 0,
-          perfLabel: 'Keep Going — Every Attempt Makes You Better!',
+          perfLabel: 'Keep Going – Every Attempt Makes You Better!',
           subjectStats: [],
           analysis: [],
           testLabel: title,
@@ -329,8 +329,8 @@ function MockTestResultsInner() {
           const strongest = subjectStats.reduce((a: SubjectStat, b: SubjectStat) => (a.correct / (a.total || 1)) >= (b.correct / (b.total || 1)) ? a : b);
           const weakest = subjectStats.reduce((a: SubjectStat, b: SubjectStat) => (a.correct / (a.total || 1)) <= (b.correct / (b.total || 1)) ? a : b);
           analysis = [
-            { emoji: '💪', text: `Your strongest area is ${strongest.subject} — maintain momentum here.` },
-            { emoji: '🔥', text: `Focus on ${weakest.subject} — 20 min daily for two weeks will show major gains.` },
+            { emoji: '💪', text: `Your strongest area is ${strongest.subject} – maintain momentum here.` },
+            { emoji: '🔥', text: `Focus on ${weakest.subject} – 20 min daily for two weeks will show major gains.` },
             { emoji: '🎯', text: 'Accuracy is improving. Attempt similar difficulty tests to consolidate.' },
             { emoji: '🏆', text: 'Top rankers average 82%+. You\'re building momentum!' },
           ];
@@ -475,8 +475,8 @@ function MockTestResultsInner() {
     const pct = Math.round((totalScore / totalMax) * 100);
     const headline =
       pct >= 70 ? 'Strong attempt across all questions'
-      : pct >= 50 ? 'Good attempt — solid foundation'
-      : 'Keep practising — real progress ahead';
+      : pct >= 50 ? 'Good attempt – solid foundation'
+      : 'Keep practising – real progress ahead';
 
     const gradeFor = (s: number, m: number): string => {
       const p = m > 0 ? (s / m) * 100 : 0;
@@ -597,7 +597,7 @@ function MockTestResultsInner() {
               </li>
               <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
                 <span>📖</span>
-                <span>Layer in recent policy / current-affairs examples — examiners consistently reward contemporary linkage on mains.</span>
+                <span>Layer in recent policy / current-affairs examples – examiners consistently reward contemporary linkage on mains.</span>
               </li>
               <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
                 <span>🎯</span>
@@ -978,7 +978,7 @@ function MockTestResultsInner() {
                         <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>
                           You picked:{' '}
                           <span style={{ fontWeight: 800, color: row.status === 'wrong' ? '#DC2626' : '#16A34A' }}>
-                            {selected} — {(q.options.find((o: any) => o.label === selected)?.text ?? '')}
+                            {selected} – {(q.options.find((o: any) => o.label === selected)?.text ?? '')}
                           </span>
                         </div>
                       ) : (

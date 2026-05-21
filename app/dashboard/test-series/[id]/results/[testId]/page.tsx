@@ -113,9 +113,9 @@ export default function TestResultsPage() {
   const getGrade = (score: number) => {
     if (score >= 8) return { g: 'A+', c: '#22C55E', lbl: 'Outstanding Performance!' };
     if (score >= 6) return { g: 'A', c: '#3B82F6', lbl: 'Excellent Work!' };
-    if (score >= 4) return { g: 'B+', c: '#F59E0B', lbl: 'Good Effort — Keep Improving!' };
+    if (score >= 4) return { g: 'B+', c: '#F59E0B', lbl: 'Good Effort – Keep Improving!' };
     if (score >= 2) return { g: 'B', c: '#F97316', lbl: 'Room to Improve!' };
-    return { g: 'C', c: '#EF4444', lbl: 'Keep Going — Every Attempt Makes You Better!' };
+    return { g: 'C', c: '#EF4444', lbl: 'Keep Going – Every Attempt Makes You Better!' };
   };
 
   const grade = getGrade(score);
@@ -523,7 +523,7 @@ export default function TestResultsPage() {
 
                     {!isSkipped && (
                       <div style={{ fontSize: '0.72rem', color: 'var(--ink3)', marginBottom: '8px' }}>
-                        You picked: <strong style={{ color: isCorrect ? 'var(--jade)' : 'var(--rose)' }}>{['A', 'B', 'C', 'D'][userAns]} — {q.opts[userAns]}</strong>
+                        You picked: <strong style={{ color: isCorrect ? 'var(--jade)' : 'var(--rose)' }}>{['A', 'B', 'C', 'D'][userAns]} – {q.opts[userAns]}</strong>
                       </div>
                     )}
 
@@ -592,7 +592,7 @@ export default function TestResultsPage() {
               <div className="ai-logo" style={{ fontSize: '2rem' }}>🤖</div>
               <div>
                 <div className="ai-name" style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--ink)' }}>
-                  Jeet AI — Post-Test Intelligence Report
+                  Jeet AI – Post-Test Intelligence Report
                 </div>
                 <div className="ai-sub" style={{ fontSize: '0.7rem', color: 'var(--ink4)' }}>
                   Analysed {totalQuestions} answers · time patterns · compared against your last 6 tests
@@ -619,7 +619,7 @@ export default function TestResultsPage() {
                 <div>
                   <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>Modern India needs focused revision</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--ink3)', lineHeight: 1.5, marginBottom: '6px' }}>
-                    60% accuracy on 4 questions. Doctrine of Lapse, chronology errors — these need dedicated work.
+                    60% accuracy on 4 questions. Doctrine of Lapse, chronology errors – these need dedicated work.
                   </div>
                   <span style={{ display: 'inline-block', padding: '2px 8px', background: 'var(--rosebg)', color: 'var(--rose)', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700 }}>
                     HIGH IMPACT
@@ -640,9 +640,9 @@ export default function TestResultsPage() {
               <div className="ai-item" style={{ marginBottom: '12px', padding: '12px', background: '#fff', borderRadius: 'var(--r)', display: 'flex', gap: '10px' }}>
                 <div style={{ fontSize: '1.3rem', flexShrink: 0 }}>🎯</div>
                 <div>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>Geography — Perfect score!</div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>Geography – Perfect score!</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--ink3)', lineHeight: 1.5, marginBottom: '6px' }}>
-                    100% on Indian Geography. Tropic of Cancer, states — absolutely solid. This is your strength.
+                    100% on Indian Geography. Tropic of Cancer, states – absolutely solid. This is your strength.
                   </div>
                   <span style={{ display: 'inline-block', padding: '2px 8px', background: 'var(--jadebg)', color: 'var(--jade)', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700 }}>
                     STRENGTH
@@ -682,7 +682,7 @@ export default function TestResultsPage() {
             <div style={{ background: 'var(--bg)', borderRadius: 'var(--r2)', padding: '24px', textAlign: 'center', border: '1px solid var(--border)' }}>
               <div style={{ fontSize: '2rem', marginBottom: '10px' }}>📝</div>
               <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--ink)', marginBottom: '6px' }}>Next Test</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--ink4)', marginBottom: '14px' }}>NCERT Class 7 Geography — Due 7 Mar</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--ink4)', marginBottom: '14px' }}>NCERT Class 7 Geography – Due 7 Mar</div>
               <button
                 onClick={() => router.push(`/dashboard/test-series/${seriesId}/attempt?test=${parseInt(testId) + 1}`)}
                 style={{

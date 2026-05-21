@@ -1,12 +1,12 @@
-# RiseWithJeet — AI-Powered UPSC Preparation Platform
+# RiseWithJeet – AI-Powered UPSC Preparation Platform
 
-**India's #1 AI-Powered UPSC Platform** — trusted by 50,000+ aspirants preparing for the Union Public Service Commission (UPSC) Civil Services Examination. RiseWithJeet combines artificial intelligence, structured content, and community-driven learning to deliver a complete preparation ecosystem.
+**India's #1 AI-Powered UPSC Platform** – trusted by 50,000+ aspirants preparing for the Union Public Service Commission (UPSC) Civil Services Examination. RiseWithJeet combines artificial intelligence, structured content, and community-driven learning to deliver a complete preparation ecosystem.
 
 ---
 
 ## Overview
 
-RiseWithJeet is a full-stack web application built for serious UPSC aspirants. It offers personalized study planning, AI-driven answer evaluation, daily practice tools, comprehensive test series, and a vibrant community — all in one place. The platform is split into a **student dashboard** (rich learning environment) and an **admin panel** (content & user management).
+RiseWithJeet is a full-stack web application built for serious UPSC aspirants. It offers personalized study planning, AI-driven answer evaluation, daily practice tools, comprehensive test series, and a vibrant community – all in one place. The platform is split into a **student dashboard** (rich learning environment) and an **admin panel** (content & user management).
 
 ---
 
@@ -120,18 +120,18 @@ RiseWithJeet is a full-stack web application built for serious UPSC aspirants. I
 
 Core tables include:
 
-- `profiles` — user profiles & roles
-- `test_series` — test series catalog
-- `test_series_tests` — individual tests within a series
-- `test_series_questions` — questions with options & explanations
-- `test_series_enrollments` — user enrollments
-- `test_attempts` & `test_responses` — attempt history & answers
-- `daily_mcqs` — daily question pool
-- `flashcards` — user flashcard decks
-- `mindmaps` — subject mind map data
-- `study_plans` — generated study schedules
-- `editorials` & `current_affairs` — content tables
-- `cms_content` — dynamic landing page content
+- `profiles` – user profiles & roles
+- `test_series` – test series catalog
+- `test_series_tests` – individual tests within a series
+- `test_series_questions` – questions with options & explanations
+- `test_series_enrollments` – user enrollments
+- `test_attempts` & `test_responses` – attempt history & answers
+- `daily_mcqs` – daily question pool
+- `flashcards` – user flashcard decks
+- `mindmaps` – subject mind map data
+- `study_plans` – generated study schedules
+- `editorials` & `current_affairs` – content tables
+- `cms_content` – dynamic landing page content
 
 See `supabase/test-series-schema.sql` for detailed DDL.
 
@@ -214,10 +214,10 @@ The marketing landing page is **static HTML** (`public/riswithjeet-landing.html`
 
 ## AI Integrations
 
-- **Answer Evaluation** — OpenAI models evaluate descriptive answers against UPSC marking rubrics.
-- **JeetGPT** — Conversational AI for doubt resolution and guidance.
-- **Study Planner** — AI generates personalized schedules based on syllabus coverage and user performance.
-- **Smart Analytics** — Predictive scoring and weak-area identification.
+- **Answer Evaluation** – OpenAI models evaluate descriptive answers against UPSC marking rubrics.
+- **JeetGPT** – Conversational AI for doubt resolution and guidance.
+- **Study Planner** – AI generates personalized schedules based on syllabus coverage and user performance.
+- **Smart Analytics** – Predictive scoring and weak-area identification.
 
 ---
 

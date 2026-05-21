@@ -517,7 +517,7 @@ export default function OnboardingFlow() {
         {step === 2 && (
           <div style={{ background: '#fff', padding: '24px 28px 28px', ...bodyStyle }}>
             <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 500, color: '#374151', marginBottom: 16 }}>
-              Set your daily reminder time — consistency is everything
+              Set your daily reminder time – consistency is everything
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 0 }}>
               {REMINDER_OPTIONS.map((o) => (
@@ -536,7 +536,7 @@ export default function OnboardingFlow() {
         {step === 3 && (
           <div style={{ background: '#fff', padding: '24px 28px 28px', ...bodyStyle }}>
             <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 500, color: '#374151', marginBottom: 16 }}>
-              Your personalised dashboard is ready — here&apos;s a preview
+              Your personalised dashboard is ready – here&apos;s a preview
             </p>
             <DashboardPreview firstName={firstName} />
             <FooterButtons

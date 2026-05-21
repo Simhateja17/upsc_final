@@ -168,7 +168,7 @@ export default function SpacedRepManager() {
               {seeds.map((s) => (
                 <tr key={s.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                   <td className="px-4 py-3 font-medium text-[#111827]">{s.subject}</td>
-                  <td className="px-4 py-3 text-[#6B7280]">{s.topic ?? '—'}</td>
+                  <td className="px-4 py-3 text-[#6B7280]">{s.topic ?? '–'}</td>
                   <td className="px-4 py-3 text-[#374151] max-w-xs">
                     <p className="truncate" title={s.questionText}>{s.questionText}</p>
                   </td>

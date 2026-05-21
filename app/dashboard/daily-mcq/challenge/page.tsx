@@ -20,7 +20,7 @@ const FIXED_TIME_LIMIT_MINUTES = 10;
 
 function normalizeQuestionText(text: string): string {
   return text
-    .replace(/[–—]/g, '-')
+    .replace(/[––]/g, '-')
     .replace(/\s+(\d+\.)\s+/g, '\n$1 ')
     .replace(/\s+-\s+/g, ' ');
 }

@@ -38,7 +38,7 @@ export interface LoginData {
   password: string;
 }
 
-// Token storage — used by services.ts to attach Bearer tokens to API calls
+// Token storage – used by services.ts to attach Bearer tokens to API calls
 const ACCESS_TOKEN_KEY = 'accessToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
@@ -195,7 +195,7 @@ export const authService = {
     });
 
     if (error) throw new Error(error.message);
-    // Browser redirects to Google — no return value
+    // Browser redirects to Google – no return value
   },
 
   sendOtp: async (email: string): Promise<void> => {
@@ -282,7 +282,7 @@ export const authService = {
     };
   },
 
-  // Legacy — kept for backward compat, now replaced by loginWithGoogle
+  // Legacy – kept for backward compat, now replaced by loginWithGoogle
   getGoogleAuthUrl: async (): Promise<string> => {
     const response = await api.get<{ url: string }>('/auth/google');
     return response.data!.url;

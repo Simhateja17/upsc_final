@@ -455,7 +455,7 @@ export default function JeetGPTPage() {
               Hi {user?.firstName || 'there'}, I&apos;m <span className="font-bold italic" style={{ color: '#1E3A5F' }}>Jeet</span> <span className="font-bold italic" style={{ color: '#E8B84B' }}>AI</span>.
             </h1>
             <p className="font-inter text-[14px] leading-5 text-center max-w-[561px] mb-2" style={{ color: '#4A5565' }}>
-              I&apos;m your intelligent UPSC preparation partner — from ancient history to current affairs, revision strategy, or just thinking through a topic together.
+              I&apos;m your intelligent UPSC preparation partner – from ancient history to current affairs, revision strategy, or just thinking through a topic together.
             </p>
             <p className="font-inter text-[15px] leading-5 mb-5" style={{ color: '#99A1AF' }}>How can I help you today in your preparation?</p>
 

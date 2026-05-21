@@ -1,9 +1,9 @@
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   DESIGN SYSTEM — Warm Slate + Saffron + Jade
+   DESIGN SYSTEM – Warm Slate + Saffron + Jade
    Inspiration: Linear, Notion, Vercel EdTech
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 :root {
-  /* Neutrals — warm not cold */
+  /* Neutrals – warm not cold */
   --bg: #f7f7f5;
   --bg2: #efefec;
   --bg3: #e8e8e4;
@@ -16,30 +16,30 @@
   --text3: #71717a;
   --text4: #a1a1aa;
 
-  /* Brand — deep slate navy */
+  /* Brand – deep slate navy */
   --navy: #1b2340;
   --navy2: #232d52;
   --navy3: #2e3b68;
 
-  /* Accent — warm saffron (not yellow, not orange) */
+  /* Accent – warm saffron (not yellow, not orange) */
   --amber: #d97706;
   --amber2: #f59e0b;
   --amberp: #fffbeb;
   --amberb: #fde68a;
 
-  /* Success — muted jade */
+  /* Success – muted jade */
   --jade: #059669;
   --jadep: #ecfdf5;
   --jadem: #6ee7b7;
   --jadebg: #d1fae5;
 
-  /* Danger — warm rose */
+  /* Danger – warm rose */
   --rose: #e11d48;
   --rosep: #fff1f2;
   --rosem: #fda4af;
   --rosebg: #ffe4e6;
 
-  /* Info — slate blue (not electric) */
+  /* Info – slate blue (not electric) */
   --indigo: #4f46e5;
   --indigop: #eef2ff;
   --indigom: #c7d2fe;
@@ -63,11 +63,11 @@
   --ink3: #71717a;
   --ink4: #a1a1aa;
 
-  /* Warn — warm sand */
+  /* Warn – warm sand */
   --sand: #b45309;
   --sandp: #fffbeb;
 
-  /* Series accent palette — muted, sophisticated */
+  /* Series accent palette – muted, sophisticated */
   --s1: #2d6a4f; /* forest green */
   --s2: #b45309; /* warm caramel */
   --s3: #1d4ed8; /* royal blue */
@@ -157,7 +157,7 @@
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   CATALOG HERO — refined
+   CATALOG HERO – refined
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 .cat-hero {
   background: var(--navy);
@@ -508,7 +508,7 @@
   overflow: hidden;
 }
 
-/* Stats row — TESTS / DONE / LEFT */
+/* Stats row – TESTS / DONE / LEFT */
 .sc-stats {
   display: flex;
   gap: 18px;

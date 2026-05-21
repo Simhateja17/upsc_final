@@ -96,21 +96,21 @@ export default function DashboardLayout({
     if (isLoading || isAuthenticated) return;
 
     // Always check the Supabase session before redirecting.
-    // A valid session means auth state just hasn't hydrated yet — never
+    // A valid session means auth state just hasn't hydrated yet – never
     // redirect a user who has a live session to the login page.
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        // Truly unauthenticated — send to login.
+        // Truly unauthenticated – send to login.
         router.push('/login');
       } else if (!didTryRefreshRef.current) {
-        // Session exists but user state not resolved — try once to hydrate it.
+        // Session exists but user state not resolved – try once to hydrate it.
         didTryRefreshRef.current = true;
         refreshUser().catch(() => {});
       }
-      // If didTryRefreshRef is already true and session still exists, do nothing —
+      // If didTryRefreshRef is already true and session still exists, do nothing –
       // refreshUser is likely still in flight; wait for the next render cycle.
     }).catch(() => {
-      // Network error — don't redirect, let the user stay on the dashboard.
+      // Network error – don't redirect, let the user stay on the dashboard.
     });
   }, [isLoading, isAuthenticated, refreshUser, router]);
 
@@ -153,10 +153,10 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      {/* Onboarding flow — shown once for new users */}
+      {/* Onboarding flow – shown once for new users */}
       <OnboardingFlow />
 
-      {/* Milestone Popup — WIP placeholder */}
+      {/* Milestone Popup – WIP placeholder */}
       <MilestonePopup
         isOpen={showMilestone}
         onClose={() => setShowMilestone(false)}

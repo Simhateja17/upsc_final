@@ -296,7 +296,7 @@ const ResponsiveDashboardContent = () => {
           setDashboardData(res.data);
         }
       } catch {
-        // Graceful degradation — keep defaults
+        // Graceful degradation – keep defaults
       } finally {
         if (mounted) setLoading(false);
       }
@@ -513,7 +513,7 @@ const ResponsiveDashboardContent = () => {
                 letterSpacing: '0px',
               }}
             >
-              UPSC Prelims 2026: {daysRemaining !== null ? `${daysRemaining} days remaining` : '— days remaining'}.
+              UPSC Prelims 2026: {daysRemaining !== null ? `${daysRemaining} days remaining` : '– days remaining'}.
             </p>
           </div>
         </div>
@@ -717,7 +717,7 @@ const ResponsiveDashboardContent = () => {
                   <span className={`font-medium ${isMainsCompleted ? 'text-green-600' : ''}`}>Status: {normalizeStatus(mainsStatus)}</span>
                 </p>
                 <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-3 flex-grow">
-                  {mainsTopic || '—'}
+                  {mainsTopic || '–'}
                 </p>
 
                 {isMainsCompleted ? (
@@ -763,7 +763,7 @@ const ResponsiveDashboardContent = () => {
                   <span className={`font-medium ${isEditorialCompleted ? 'text-green-600' : ''}`}>Status: {normalizeStatus(editorialStatus)}</span>
                 </p>
                 <p className="font-inter text-[clamp(14px,0.83vw,15px)] text-[#1A1A1A] font-medium mb-3 flex-grow">
-                  {editorialTopic || '—'}
+                  {editorialTopic || '–'}
                 </p>
 
                 {isEditorialCompleted ? (

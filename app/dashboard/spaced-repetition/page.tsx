@@ -235,7 +235,7 @@ export default function SpacedRepetitionPage() {
                 });
               }
             } catch {
-              // ignore — backend will still deliver the reminder
+              // ignore – backend will still deliver the reminder
             }
           }
         }

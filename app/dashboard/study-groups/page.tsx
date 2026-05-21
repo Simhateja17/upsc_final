@@ -47,7 +47,7 @@ export default function StudyGroupsPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Pomodoro timer state — Solo Session
+  // Pomodoro timer state – Solo Session
   const FOCUS_SECONDS = 25 * 60;
   const BREAK_SECONDS = 5 * 60;
   const [pomoSecondsLeft, setPomoSecondsLeft] = useState(FOCUS_SECONDS);
@@ -401,7 +401,7 @@ export default function StudyGroupsPage() {
           </div>
         </div>
 
-        {/* Solo Focus Tab Content — Pomodoro timer */}
+        {/* Solo Focus Tab Content – Pomodoro timer */}
         {activeTab === 'solo' && (
           <section className="mt-5">
             <div className="mb-4 flex items-center gap-3">
@@ -772,7 +772,7 @@ export default function StudyGroupsPage() {
                   type="text"
                   value={createForm.focusTopic || ''}
                   onChange={(e) => setCreateForm((p) => ({ ...p, focusTopic: e.target.value }))}
-                  placeholder="e.g., GS2 — Parliament & Governance"
+                  placeholder="e.g., GS2 – Parliament & Governance"
                   className="w-full rounded-[12px] border border-[#DDE3EC] bg-white px-4 py-3 text-[14px] text-[#0C1424] outline-none placeholder:text-[#9CA3AF] focus:border-[#E8B84B]"
                 />
               </div>

@@ -9,7 +9,7 @@ function dayOfYear(d: Date) {
   return Math.floor((now - start) / 86_400_000);
 }
 
-// Mulberry32 — small, deterministic PRNG
+// Mulberry32 – small, deterministic PRNG
 function mulberry32(seed: number) {
   let t = seed >>> 0;
   return () => {

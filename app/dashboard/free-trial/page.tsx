@@ -46,7 +46,7 @@ function transformPlan(plan: any, index: number) {
   const planSubtitles = [
     "If your test is 12+ months away",
     "If test is 6–12 months away",
-    "Interview & revision — highest intensity"
+    "Interview & revision – highest intensity"
   ];
   
   const planFeatures = [
@@ -116,17 +116,17 @@ const whyFeatures = [
   {
     icon: '🎯',
     title: 'A Real Roadmap',
-    description: 'A specific, tailored plan built on your stage, background, and timeline — not generic advice.',
+    description: 'A specific, tailored plan built on your stage, background, and timeline – not generic advice.',
   },
   {
     icon: '✍️',
     title: 'Answer Writing That Improves',
-    description: "Jeet Sir's actual line-by-line reviews — not AI-generated nonsense. Real feedback, real improvement.",
+    description: "Jeet Sir's actual line-by-line reviews – not AI-generated nonsense. Real feedback, real improvement.",
   },
   {
     icon: '🎤',
     title: 'Interview Stage Support',
-    description: 'DAF analysis, mock interviews, and confidence coaching — the stage most aspirants ignore.',
+    description: 'DAF analysis, mock interviews, and confidence coaching – the stage most aspirants ignore.',
   },
   {
     icon: '💬',
@@ -141,7 +141,7 @@ const whyFeatures = [
   {
     icon: '🧠',
     title: 'Someone Spots Your Gaps',
-    description: 'The biggest UPSC mistakes are invisible to the aspirant. Jeet Sir sees them — and fixes them.',
+    description: 'The biggest UPSC mistakes are invisible to the aspirant. Jeet Sir sees them – and fixes them.',
   },
 ];
 
@@ -161,23 +161,23 @@ function transformTestimonial(t: any, index: number) {
 const faqItems = [
   {
     question: 'How is this different from just watching Jeet Sir on YouTube?',
-    answer: 'YouTube gives you the "what" — mentorship gives you the "how, when, and why for YOU." In 1-on-1 sessions, we analyze your specific weak areas, build a personalized roadmap around your schedule, and adjust it every week based on your progress. YouTube is a broadcast; mentorship is a conversation.',
+    answer: 'YouTube gives you the "what" – mentorship gives you the "how, when, and why for YOU." In 1-on-1 sessions, we analyze your specific weak areas, build a personalized roadmap around your schedule, and adjust it every week based on your progress. YouTube is a broadcast; mentorship is a conversation.',
   },
   {
     question: '₹12,999 is a lot. How do I know it\'s worth it?',
-    answer: 'Most aspirants spend ₹1–2 lakh on coaching that treats everyone the same. Here, every rupee goes toward strategy built for your stage — whether you\'re 6 months or 18 months from the exam. Plus, the free discovery call lets you experience the approach before committing a single rupee.',
+    answer: 'Most aspirants spend ₹1–2 lakh on coaching that treats everyone the same. Here, every rupee goes toward strategy built for your stage – whether you\'re 6 months or 18 months from the exam. Plus, the free discovery call lets you experience the approach before committing a single rupee.',
   },
   {
     question: 'What if I don\'t clear even with mentorship?',
-    answer: 'No one can guarantee a rank — and anyone who does is lying. What mentorship guarantees is that you\'ll prepare smarter, waste less time, and give your best attempt. Many of our mentees say the biggest value was clarity and confidence, even beyond the result.',
+    answer: 'No one can guarantee a rank – and anyone who does is lying. What mentorship guarantees is that you\'ll prepare smarter, waste less time, and give your best attempt. Many of our mentees say the biggest value was clarity and confidence, even beyond the result.',
   },
   {
     question: 'I\'m a working professional with 2–3 hours a day. Is this realistic for me?',
-    answer: 'Absolutely — in fact, that\'s where mentorship shines most. We\'ll build a plan that fits your 2–3 hour window, prioritize high-yield topics, and cut the noise so you\'re studying what actually matters for your target year. Several of our working-professional mentees have cleared Prelims on their first attempt.',
+    answer: 'Absolutely – in fact, that\'s where mentorship shines most. We\'ll build a plan that fits your 2–3 hour window, prioritize high-yield topics, and cut the noise so you\'re studying what actually matters for your target year. Several of our working-professional mentees have cleared Prelims on their first attempt.',
   },
   {
     question: 'Is the free discovery call actually free with no catch?',
-    answer: 'Yes, 100%. It\'s a 20-minute call where we understand your background, your target, and your current preparation. You\'ll walk away with a rough strategy outline whether you join or not. There\'s no hard sell — if it\'s not a fit, we\'ll tell you honestly.',
+    answer: 'Yes, 100%. It\'s a 20-minute call where we understand your background, your target, and your current preparation. You\'ll walk away with a rough strategy outline whether you join or not. There\'s no hard sell – if it\'s not a fit, we\'ll tell you honestly.',
   },
 ];
 
@@ -538,14 +538,14 @@ export default function FreeTrialPage() {
               initials: 'AK',
               name: 'Ankit Kumar',
               title: 'UPSC Mains 2024 · Bihar · Serious Attempt Plan',
-              content: "The answer writing feedback was the game-changer. My GS-II score jumped significantly. Jeet Sir marks exactly where you're losing marks — not vaguely.",
+              content: "The answer writing feedback was the game-changer. My GS-II score jumped significantly. Jeet Sir marks exactly where you're losing marks – not vaguely.",
               color: '#EA580C',
             },
             {
               initials: 'SM',
               name: 'Sneha Mishra',
               title: 'UPSC Interview Stage 2024 · MP · Final Mile Plan',
-              content: "The mock interview sessions gave me confidence I didn't have. Jeet Sir's DAF analysis was so thorough — half the board questions I'd already answered in our mocks.",
+              content: "The mock interview sessions gave me confidence I didn't have. Jeet Sir's DAF analysis was so thorough – half the board questions I'd already answered in our mocks.",
               color: '#2563EB',
             },
           ]).map((t: any, idx: number) => (
@@ -578,7 +578,7 @@ export default function FreeTrialPage() {
           <div style={{ position: 'absolute', right: '60px', bottom: '-60px', width: '160px', height: '160px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', pointerEvents: 'none' }} />
           <div style={{ flex: '1 1 400px', position: 'relative', zIndex: 1 }}>
             <h2 style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 700, color: '#0F172B', lineHeight: 1.3, marginBottom: '12px' }}>Limited seats. Real results.<br />Start with a free call.</h2>
-            <p style={{ fontSize: '14px', color: '#1C1C1C', lineHeight: 1.6, marginBottom: '20px', maxWidth: '400px' }}>Book a free 15-minute discovery call with Jeet Sir — no pressure, no sales pitch. Just an honest conversation about your prep and what you actually need.</p>
+            <p style={{ fontSize: '14px', color: '#1C1C1C', lineHeight: 1.6, marginBottom: '20px', maxWidth: '400px' }}>Book a free 15-minute discovery call with Jeet Sir – no pressure, no sales pitch. Just an honest conversation about your prep and what you actually need.</p>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <button onClick={() => { setBookingSuccess(false); setBookingError(''); setShowBookingModal(true); }} style={{ padding: '12px 24px', borderRadius: '10px', border: 'none', background: '#0F172B', color: '#FFFFFF', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>📞 Book Free Discovery Call</button>
               <a href="https://www.youtube.com/@RiseWithJeet" target="_blank" rel="noopener noreferrer" style={{ padding: '12px 24px', borderRadius: '10px', border: '2px solid #DC2626', background: '#DC2626', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>

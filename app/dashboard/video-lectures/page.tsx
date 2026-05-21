@@ -53,7 +53,7 @@ function getFallbackViewCount(seed: string): number {
   return 20000 + (hash % 10001);
 }
 
-/* Subject card background colors — one per subject, cycling */
+/* Subject card background colors – one per subject, cycling */
 const SUBJECT_COLORS: Record<string, { bg: string; border: string; accent: string }> = {
   'History': { bg: '#FEF3C7', border: '#FDE68A', accent: '#B45309' },
   'Geography': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#1D4ED8' },
@@ -629,7 +629,7 @@ export default function VideoLecturesPage() {
           </div>
         )}
 
-        {/* YouTube CTA banner — shown below subjects when nothing is selected */}
+        {/* YouTube CTA banner – shown below subjects when nothing is selected */}
         {!selectedSubject && (
           <div style={{ marginTop: 'clamp(28px, 3vw, 40px)' }}>
             <div
@@ -876,7 +876,7 @@ export default function VideoLecturesPage() {
               </>
             )}
 
-            {/* YouTube CTA Banner — always shown below videos when a subject is selected */}
+            {/* YouTube CTA Banner – always shown below videos when a subject is selected */}
             {!subjectVideosLoading && (
               <div style={{ marginTop: 'clamp(28px, 3vw, 40px)' }}>
                 <div
@@ -938,7 +938,7 @@ export default function VideoLecturesPage() {
         )}
       </div>
 
-      {/* Bottom support cards removed — PDF and Ask Mentor open as modals via openVideoActionModal */}
+      {/* Bottom support cards removed – PDF and Ask Mentor open as modals via openVideoActionModal */}
       {false && (
       <div style={{ display: 'none' }}>
         <div>
@@ -997,7 +997,7 @@ export default function VideoLecturesPage() {
 
             <div className="flex items-center" style={{ gap: '12px', marginBottom: '16px' }}>
               <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
-              <span className="font-arimo" style={{ fontSize: '14px', color: '#6A7282' }}>— or —</span>
+              <span className="font-arimo" style={{ fontSize: '14px', color: '#6A7282' }}>– or –</span>
               <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
             </div>
 

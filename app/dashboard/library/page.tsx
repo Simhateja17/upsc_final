@@ -836,7 +836,7 @@ export default function LibraryPage() {
             </p>
           </div>
 
-          {/* Books image — absolute, center-top of banner, bleeds from top */}
+          {/* Books image – absolute, center-top of banner, bleeds from top */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/books-stack.png"
@@ -856,7 +856,7 @@ export default function LibraryPage() {
             }}
           />
 
-          {/* Right side — Stats only */}
+          {/* Right side – Stats only */}
           <div style={{ flexShrink: 0, zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div
               className="font-arimo font-bold"
