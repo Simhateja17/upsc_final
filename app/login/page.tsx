@@ -344,7 +344,7 @@ function LoginPageContent() {
           {/* Subtitle */}
           <div style={{ marginBottom: 22 }}>
             <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 13, lineHeight: '20px', color: '#99A1AF' }}>
-              AI-powered learning, daily MCQs, mains evaluation, mentorship &amp; smart revision – all under one roof.
+              A comprehensive platform offering all resources necessary to excel in the UPSC exam. Including Daily Mains Challenge, Syllabus Tracker, Study Planner, Smart Revision Tools, Simplified Video Lectures, Mock Tests, detailed Performance Analytics, Personalized Mentorship and structured Previous Year Questions.
             </div>
           </div>
 
