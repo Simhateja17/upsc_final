@@ -249,6 +249,19 @@ export const pricingService = {
     api.post<any>('/pricing/orders', data, authConfig()),
 };
 
+export const billingService = {
+  createRazorpayOrder: (data: { planKey: 'rise' | 'ascent'; cycle: 'monthly' | 'quarterly' | 'yearly' }) =>
+    api.post<any>('/create-order', data, authConfig()),
+  verifyRazorpayPayment: (data: {
+    paymentId: string;
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+  }) => api.post<any>('/verify-payment', data, authConfig()),
+  markRazorpayPaymentFailed: (data: { paymentId: string; status: 'failed'; failureReason?: string }) =>
+    api.post<any>('/verify-payment', data, authConfig()),
+};
+
 // ==================== Jeet AI Chat ====================
 
 export const aiService = {

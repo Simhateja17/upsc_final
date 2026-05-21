@@ -1,7 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Script from 'next/script';
 import { useRouter } from 'next/navigation';
+import { billingService } from '@/lib/services';
+import { useAuth } from '@/contexts/AuthContext';
 
 // ── Hero ──────────────────────────────────────────────────────────────────────
 function BillingHero() {
@@ -54,6 +57,552 @@ function BillingHero() {
 }
 
 type BillingCycle = 'monthly' | 'quarterly' | 'yearly';
+type RazorpaySuccessResponse = {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => {
+      open: () => void;
+      on: (event: string, callback: (response: any) => void) => void;
+    };
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function addMonths(date: Date, months: number): Date {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function nextBillingDate(cycle: BillingCycle): string {
+  const months = cycle === 'monthly' ? 1 : cycle === 'quarterly' ? 3 : 12;
+  return formatDate(addMonths(new Date(), months));
+}
+
+function invoiceNumber(razorpayPaymentId: string): string {
+  const suffix = razorpayPaymentId.replace(/\D/g, '').slice(-6) || Math.floor(Math.random() * 999999).toString().padStart(6, '0');
+  return `RWJ-INV-${new Date().getFullYear()}-${suffix}`;
+}
+
+function subtotalFromTotal(total: string): number {
+  return parseFloat(total) / 1.18;
+}
+
+function gstFromTotal(total: string): number {
+  return parseFloat(total) - subtotalFromTotal(total);
+}
+
+// ── Invoice Modal ─────────────────────────────────────────────────────────────
+interface InvoiceData {
+  invoiceNo: string;
+  date: string;
+  planName: string;
+  planLabel: string;
+  total: string;
+  subtotal: number;
+  gst: number;
+  billedToName: string;
+  billedToEmail: string;
+  periodStart: string;
+  periodEnd: string;
+  razorpayPaymentId: string;
+  paymentMethod: string;
+}
+
+function InvoiceModal({ data, onClose }: { data: InvoiceData; onClose: () => void }) {
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    const content = printRef.current;
+    if (!content) return;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Invoice ${data.invoiceNo}</title>
+      <style>
+        body { margin: 0; padding: 32px; font-family: Inter, sans-serif; background: #f4f6fa; }
+        @media print { body { padding: 0; } }
+      </style></head>
+      <body>${content.innerHTML}</body></html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(8,15,35,0.65)', backdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24, overflowY: 'auto',
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 680,
+          background: '#f4f6fa', borderRadius: 24,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          padding: '40px 40px 32px',
+          fontFamily: 'Inter, system-ui, sans-serif',
+          position: 'relative',
+        }}
+      >
+        {/* Close */}
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            position: 'absolute', top: 16, right: 16,
+            width: 32, height: 32, borderRadius: '50%',
+            border: '1px solid #D1D5DB', background: '#fff',
+            color: '#6B7280', fontSize: 18, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >×</button>
+
+        <div ref={printRef}>
+          {/* Header row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+            {/* Logo + company */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#0D1B2E', letterSpacing: '-0.3px', fontFamily: 'Sora, Inter, sans-serif' }}>
+                  Rise<span style={{ color: '#0D1B2E' }}>With</span><span style={{ color: '#F5A623' }}>Jeet</span>
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: 13.5, color: '#364153' }}>JeetPath Academy Pvt. Ltd.</p>
+              <p style={{ margin: '2px 0 0', fontSize: 13.5, color: '#364153' }}>GSTIN: 29AABCR1234A1Z5</p>
+            </div>
+            {/* Invoice meta */}
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ margin: '0 0 8px', fontSize: 24, fontWeight: 500, color: '#0A0A0A', letterSpacing: '1px' }}>INVOICE</p>
+              <p style={{ margin: '0 0 3px', fontSize: 13.5, color: '#6A7282' }}>
+                Invoice #: <span style={{ color: '#364153', fontWeight: 600 }}>{data.invoiceNo}</span>
+              </p>
+              <p style={{ margin: '0 0 3px', fontSize: 13.5, color: '#6A7282' }}>
+                Date: <span style={{ color: '#364153' }}>{data.date}</span>
+              </p>
+              <p style={{ margin: 0, fontSize: 13.5, color: '#6A7282' }}>
+                Due: <span style={{ color: '#364153' }}>{data.date}</span>
+              </p>
+            </div>
+          </div>
+
+          <div style={{ height: 1, background: '#E5E7EB', marginBottom: 20 }} />
+
+          {/* Bill To */}
+          <div style={{ marginBottom: 24 }}>
+            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '1px', color: '#6A7282', textTransform: 'uppercase' }}>Bill To</p>
+            <p style={{ margin: '0 0 2px', fontSize: 18, fontWeight: 500, color: '#0A0A0A' }}>{data.billedToName || 'Aspirant'}</p>
+            <p style={{ margin: 0, fontSize: 13.5, color: '#4A5565' }}>{data.billedToEmail}</p>
+          </div>
+
+          {/* Table header */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '2fr 1.5fr 60px 100px',
+            padding: '8px 0 10px', borderBottom: '0.8px solid #E5E7EB',
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.8px', color: '#6A7282', textTransform: 'uppercase',
+          }}>
+            <span>Description</span>
+            <span>Period</span>
+            <span style={{ textAlign: 'center' }}>Qty</span>
+            <span style={{ textAlign: 'right' }}>Amount</span>
+          </div>
+
+          {/* Plan row */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '2fr 1.5fr 60px 100px',
+            padding: '16px 0', borderBottom: '0.8px solid #E5E7EB', alignItems: 'start',
+          }}>
+            <div>
+              <p style={{ margin: '0 0 4px', fontSize: 13.5, color: '#0A0A0A' }}>{data.planName} Plan – {data.planLabel}</p>
+              <p style={{ margin: 0, fontSize: 11.5, color: '#6A7282' }}>Unlimited MCQs, AI Evaluator, UPSC GPT, Revision Suite</p>
+            </div>
+            <span style={{ fontSize: 13.5, color: '#0A0A0A', paddingTop: 2 }}>{data.periodStart} – {data.periodEnd}</span>
+            <span style={{ fontSize: 13.5, color: '#0A0A0A', textAlign: 'center', paddingTop: 2 }}>1</span>
+            <span style={{ fontSize: 13.5, color: '#0A0A0A', textAlign: 'right', paddingTop: 2 }}>₹{data.subtotal.toFixed(2)}</span>
+          </div>
+
+          {/* GST row */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '2fr 1.5fr 60px 100px',
+            padding: '14px 0', borderBottom: '0.8px solid #E5E7EB', alignItems: 'center',
+          }}>
+            <span style={{ fontSize: 13.5, color: '#0A0A0A' }}>GST (18%)</span>
+            <span style={{ fontSize: 13.5, color: '#0A0A0A' }}>–</span>
+            <span style={{ fontSize: 13.5, color: '#0A0A0A', textAlign: 'center' }}>1</span>
+            <span style={{ fontSize: 13.5, color: '#0A0A0A', textAlign: 'right' }}>₹{data.gst.toFixed(2)}</span>
+          </div>
+
+          {/* Totals */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '20px 0 0' }}>
+            <div style={{ width: 256, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: '#4A5565' }}>
+                <span>Subtotal</span><span>₹{data.subtotal.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: '#4A5565' }}>
+                <span>GST (18%)</span><span>₹{data.gst.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: '#4A5565' }}>
+                <span>Discount</span><span>₹0.00</span>
+              </div>
+              <div style={{ height: '0.8px', background: '#E5E7EB', margin: '4px 0' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, color: '#0A0A0A', fontWeight: 500 }}>
+                <span>Total</span><span>₹{parseFloat(data.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Paid badge */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 28 }}>
+            <div style={{
+              background: 'linear-gradient(90deg, #D4F4DD 0%, #C8F3D9 100%)',
+              borderRadius: 20, padding: '8px 24px',
+              fontSize: 13.5, color: '#0F5132', fontWeight: 500,
+            }}>
+              ✓ PAID — {data.date} · {data.paymentMethod}
+            </div>
+          </div>
+        </div>
+
+        {/* Print button */}
+        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <button
+            type="button"
+            onClick={handlePrint}
+            style={{
+              border: '1px solid rgba(11,22,40,0.17)', background: '#fff',
+              borderRadius: 6, padding: '8px 20px',
+              fontSize: 15, fontWeight: 600, color: '#6B7A99', cursor: 'pointer',
+            }}
+          >
+            🖨 Print / Download PDF
+          </button>
+          <p style={{ margin: 0, fontSize: 11, color: '#9AA3B8' }}>together@risewithjeet.com</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Payment Success Dialog ────────────────────────────────────────────────────
+interface SuccessData {
+  razorpayPaymentId: string;
+  planName: string;
+  planLabel: string;
+  amountTotal: string;
+  nextBilling: string;
+  billedToEmail: string;
+  paymentMethod: string;
+  cycle: BillingCycle;
+  subtotal: number;
+  gst: number;
+}
+
+function PaymentSuccessDialog({
+  data,
+  onDashboard,
+  onReceipt,
+  onClose,
+}: {
+  data: SuccessData;
+  onDashboard: () => void;
+  onReceipt: () => void;
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const txId = `RWJ-${new Date().getFullYear()}-${data.razorpayPaymentId.slice(-5).toUpperCase()}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(txId).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div
+      style={{
+        background: '#fff', borderRadius: 22,
+        boxShadow: '0 32px 96px rgba(0,0,0,0.25)',
+        overflow: 'hidden', width: '100%', maxWidth: 440,
+        fontFamily: 'Inter, system-ui, sans-serif',
+      }}
+    >
+      {/* Dark header */}
+      <div style={{
+        background: '#050b19', padding: '32px 36px 28px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+      }}>
+        <div style={{
+          width: 64, height: 64, borderRadius: 32,
+          background: '#166534',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <div style={{ paddingTop: 10, textAlign: 'center' }}>
+          <p style={{
+            margin: 0, fontSize: 27, fontWeight: 700, color: '#fff',
+            fontFamily: '"Cormorant Garamond", Georgia, serif', letterSpacing: '-0.3px',
+          }}>Payment Successful! 🎉</p>
+        </div>
+        <p style={{ margin: 0, fontSize: 12.5, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>
+          Welcome to the {data.planName} Plan — your journey to the civil services starts now.
+        </p>
+      </div>
+
+      {/* White body */}
+      <div style={{ padding: '28px 36px 32px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Transaction ID */}
+        <div style={{
+          background: '#faf6ef', borderRadius: 10, padding: '12px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div>
+            <p style={{ margin: '0 0 3px', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', color: '#8a8aaa', textTransform: 'uppercase' }}>Transaction ID</p>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#1a1a2e', fontFamily: '"Inter", monospace' }}>{txId}</p>
+          </div>
+          <button type="button" onClick={handleCopy} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: copied ? '#16a34a' : '#d4900a', padding: 0 }}>
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+
+        {/* Detail rows */}
+        <div style={{ display: 'flex', flexDirection: 'column', paddingTop: 6 }}>
+          {[
+            { label: 'Plan',            value: `${data.planName} — ${data.planLabel}`,  color: '#1a1a2e' },
+            { label: 'Amount Paid',     value: `₹${parseFloat(data.amountTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (incl. GST)`, color: '#d4900a' },
+            { label: 'Next Billing Date', value: data.nextBilling,                      color: '#1a1a2e' },
+            { label: 'Billed To',       value: data.billedToEmail,                      color: '#1a1a2e' },
+            { label: 'Payment Method',  value: data.paymentMethod,                      color: '#1a1a2e' },
+          ].map((row, i, arr) => (
+            <div key={row.label} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '11px 0',
+              borderBottom: i < arr.length - 1 ? '1px solid #f0ece4' : 'none',
+            }}>
+              <span style={{ fontSize: 13, color: '#8a8aaa' }}>{row.label}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: row.color }}>{row.value}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Access banner */}
+        <div style={{
+          background: '#dcfce7', borderRadius: 11, padding: '14px 16px 14px 16px',
+          display: 'flex', alignItems: 'flex-start', gap: 12,
+        }}>
+          <span style={{ fontSize: 22 }}>🚀</span>
+          <div>
+            <p style={{ margin: '0 0 2px', fontSize: 13.5, fontWeight: 700, color: '#15803d' }}>Your {data.planName} access is now live</p>
+            <p style={{ margin: 0, fontSize: 11.5, color: '#15803d', opacity: 0.85 }}>All features unlocked — click below to go to your dashboard</p>
+          </div>
+        </div>
+
+        {/* CTAs */}
+        <div style={{ display: 'flex', gap: 10, paddingTop: 6 }}>
+          <button
+            type="button"
+            onClick={onDashboard}
+            style={{
+              flex: 1, padding: '13px 12px', borderRadius: 10, border: 'none',
+              background: '#f5a623', color: '#fff', fontSize: 13.5, fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Go To My Dashboard →
+          </button>
+          <button
+            type="button"
+            onClick={onReceipt}
+            style={{
+              padding: '13px 16px', borderRadius: 10,
+              border: '1px solid #e8e4da', background: '#fff',
+              fontSize: 13.5, fontWeight: 600, color: '#4a4a68', cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Download Receipt
+          </button>
+        </div>
+
+        {/* Footer */}
+        <p style={{ margin: 0, fontSize: 11, color: '#8a8aaa', textAlign: 'center', lineHeight: 1.6 }}>
+          A confirmation email &amp; receipt has been sent to{' '}
+          <strong style={{ fontWeight: 700 }}>{data.billedToEmail}</strong>.<br />
+          Keep your transaction ID safe for any queries.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Payment Failure Dialog ────────────────────────────────────────────────────
+interface FailureData {
+  razorpayPaymentId: string;
+  planName: string;
+  planLabel: string;
+  amountTotal: string;
+  errorReason: string;
+  billedToEmail: string;
+  paymentMethod: string;
+}
+
+function PaymentFailureDialog({
+  data,
+  onRetry,
+  onClose,
+}: {
+  data: FailureData;
+  onRetry: () => void;
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const txId = `RWJ-${new Date().getFullYear()}-${data.razorpayPaymentId.slice(-5).toUpperCase()}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(txId).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div
+      style={{
+        background: '#fff', borderRadius: 22,
+        boxShadow: '0 32px 96px rgba(0,0,0,0.25)',
+        overflow: 'hidden', width: '100%', maxWidth: 440,
+        fontFamily: 'Inter, system-ui, sans-serif',
+      }}
+    >
+      {/* Dark header */}
+      <div style={{
+        background: '#050b19', padding: '32px 36px 28px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+      }}>
+        <div style={{
+          width: 64, height: 64, borderRadius: 32,
+          background: '#dc2626',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </div>
+        <div style={{ paddingTop: 10, textAlign: 'center' }}>
+          <p style={{
+            margin: 0, fontSize: 27, fontWeight: 700, color: '#fff',
+            fontFamily: '"Cormorant Garamond", Georgia, serif', letterSpacing: '-0.3px',
+          }}>Payment Failed 😞</p>
+        </div>
+        <p style={{ margin: 0, fontSize: 12.5, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>
+          We couldn&apos;t process your payment. No amount has been deducted.
+        </p>
+      </div>
+
+      {/* White body */}
+      <div style={{ padding: '28px 36px 32px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Transaction ID */}
+        <div style={{
+          borderBottom: '1px solid #f0ece4', paddingBottom: 14,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div>
+            <p style={{ margin: '0 0 3px', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.8px', color: '#8a8aaa', textTransform: 'uppercase' }}>Transaction ID</p>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#1a1a2e' }}>{txId}</p>
+          </div>
+          <button type="button" onClick={handleCopy} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: copied ? '#16a34a' : '#dc2626', padding: 0 }}>
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+
+        {/* Detail rows */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {[
+            { label: 'Plan',            value: `${data.planName} — ${data.planLabel}`, color: '#1a1a2e' },
+            { label: 'Amount',          value: `₹${parseFloat(data.amountTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (incl. GST)`, color: '#dc2626' },
+            { label: 'Failure Reason',  value: data.errorReason || 'Payment failed', color: '#1a1a2e' },
+            { label: 'Billed To',       value: data.billedToEmail, color: '#1a1a2e' },
+            { label: 'Payment Method',  value: data.paymentMethod, color: '#1a1a2e' },
+          ].map((row, i, arr) => (
+            <div key={row.label} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '11px 0',
+              borderBottom: i < arr.length - 1 ? '1px solid #f0ece4' : 'none',
+            }}>
+              <span style={{ fontSize: 13, color: '#8a8aaa' }}>{row.label}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: row.color }}>{row.value}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Warning banner */}
+        <div style={{
+          background: '#fef2f2', borderRadius: 11, padding: '14px 16px',
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          border: '1px solid rgba(220,38,38,0.15)',
+        }}>
+          <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>⊙</span>
+          <div>
+            <p style={{ margin: '0 0 2px', fontSize: 13.5, fontWeight: 700, color: '#b91c1c' }}>Your access has not been activated</p>
+            <p style={{ margin: 0, fontSize: 11.5, color: '#b91c1c', opacity: 0.85 }}>Retry with a different payment method to unlock {data.planName} features</p>
+          </div>
+        </div>
+
+        {/* CTAs */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 4 }}>
+          <button
+            type="button"
+            onClick={onRetry}
+            style={{
+              width: '100%', padding: '14px 12px', borderRadius: 50, border: 'none',
+              background: '#f5a623', color: '#fff', fontSize: 14, fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Retry Payment →
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              width: '100%', padding: '14px 12px', borderRadius: 50,
+              border: '1.5px solid #d1d5db', background: '#fff',
+              fontSize: 14, fontWeight: 600, color: '#1a1a2e', cursor: 'pointer',
+            }}
+          >
+            Try a Different Method
+          </button>
+        </div>
+
+        <p style={{ margin: 0, fontSize: 11, color: '#8a8aaa', textAlign: 'center', lineHeight: 1.6 }}>
+          Need help? Contact us at{' '}
+          <strong style={{ fontWeight: 600 }}>together@risewithjeet.com</strong><br />
+          Keep your transaction ID safe for any queries.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // ── Checkout modal (shared by Rise & Ascent) ─────────────────────────────────
 type PlanKey = 'rise' | 'ascent';
@@ -114,11 +663,185 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
   },
 };
 
+type CheckoutStep = 'checkout' | 'success' | 'failed';
+
 function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => void }) {
+  const router = useRouter();
+  const { user } = useAuth();
   const plan = PLAN_CONFIGS[planKey];
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [coupon, setCoupon] = useState('');
+  const [isPaying, setIsPaying] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+  const [step, setStep] = useState<CheckoutStep>('checkout');
+  const [successData, setSuccessData] = useState<SuccessData | null>(null);
+  const [failureData, setFailureData] = useState<FailureData | null>(null);
+  const [showInvoice, setShowInvoice] = useState(false);
   const active = plan.cycles[cycle];
+
+  const startCheckout = async () => {
+    setIsPaying(true);
+    setPaymentError('');
+
+    try {
+      if (!window.Razorpay) {
+        throw new Error('Payment checkout is still loading. Please try again in a moment.');
+      }
+
+      const orderResponse = await billingService.createRazorpayOrder({ planKey, cycle });
+      const order = orderResponse.data;
+
+      if (!order?.order_id || !order?.paymentId || !order?.key) {
+        throw new Error('Unable to start payment. Please try again.');
+      }
+
+      const checkout = new window.Razorpay({
+        key: order.key,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'RiseWithJeet',
+        description: `${plan.name} Plan - ${active.label}`,
+        order_id: order.order_id,
+        prefill: {
+          name: user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : '',
+          email: user?.email ?? '',
+        },
+        handler: async (response: RazorpaySuccessResponse) => {
+          try {
+            await billingService.verifyRazorpayPayment({
+              paymentId: order.paymentId,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            const subtotal = subtotalFromTotal(active.total);
+            setSuccessData({
+              razorpayPaymentId: response.razorpay_payment_id,
+              planName: plan.name,
+              planLabel: active.label,
+              amountTotal: active.total,
+              nextBilling: nextBillingDate(cycle),
+              billedToEmail: user?.email ?? '',
+              paymentMethod: 'Razorpay',
+              cycle,
+              subtotal,
+              gst: gstFromTotal(active.total),
+            });
+            setStep('success');
+          } catch (err: any) {
+            setFailureData({
+              razorpayPaymentId: response.razorpay_payment_id,
+              planName: plan.name, planLabel: active.label,
+              amountTotal: active.total,
+              errorReason: err?.message || 'Payment verification failed. Please contact support.',
+              billedToEmail: user?.email ?? '',
+              paymentMethod: 'Razorpay',
+            });
+            setStep('failed');
+          } finally {
+            setIsPaying(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsPaying(false);
+          },
+        },
+        theme: { color: '#E8B84B' },
+      });
+
+      checkout.on('payment.failed', async (response: any) => {
+        const reason = response?.error?.description || 'Payment failed. Please try another payment method.';
+        setFailureData({
+          razorpayPaymentId: order.paymentId,
+          planName: plan.name, planLabel: active.label,
+          amountTotal: active.total,
+          errorReason: reason,
+          billedToEmail: user?.email ?? '',
+          paymentMethod: 'Razorpay',
+        });
+        setStep('failed');
+        setIsPaying(false);
+        try {
+          await billingService.markRazorpayPaymentFailed({
+            paymentId: order.paymentId,
+            status: 'failed',
+            failureReason: reason,
+          });
+        } catch {
+          // UI shows gateway failure even if backend logging is unavailable.
+        }
+      });
+
+      checkout.open();
+    } catch (err: any) {
+      setPaymentError(err?.message || 'Unable to start payment. Please try again.');
+      setIsPaying(false);
+    }
+  };
+
+  // ── Success step ──
+  if (step === 'success' && successData) {
+    return (
+      <>
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 100,
+            background: 'rgba(8,15,35,0.65)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 16, overflowY: 'auto',
+          }}
+        >
+          <PaymentSuccessDialog
+            data={successData}
+            onDashboard={() => { onClose(); router.push('/dashboard'); }}
+            onReceipt={() => setShowInvoice(true)}
+            onClose={onClose}
+          />
+        </div>
+        {showInvoice && (
+          <InvoiceModal
+            data={{
+              invoiceNo: invoiceNumber(successData.razorpayPaymentId),
+              date: formatDate(new Date()),
+              planName: successData.planName,
+              planLabel: successData.planLabel,
+              total: successData.amountTotal,
+              subtotal: successData.subtotal,
+              gst: successData.gst,
+              billedToName: user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : '',
+              billedToEmail: successData.billedToEmail,
+              periodStart: formatDate(new Date()),
+              periodEnd: successData.nextBilling,
+              razorpayPaymentId: successData.razorpayPaymentId,
+              paymentMethod: successData.paymentMethod,
+            }}
+            onClose={() => setShowInvoice(false)}
+          />
+        )}
+      </>
+    );
+  }
+
+  // ── Failure step ──
+  if (step === 'failed' && failureData) {
+    return (
+      <div
+        style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(8,15,35,0.65)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 16, overflowY: 'auto',
+        }}
+      >
+        <PaymentFailureDialog
+          data={failureData}
+          onRetry={() => { setStep('checkout'); setFailureData(null); }}
+          onClose={onClose}
+        />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -330,17 +1053,23 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
           {/* CTA */}
           <button
             type="button"
+            onClick={startCheckout}
+            disabled={isPaying}
             style={{
               width: '100%', height: 42, borderRadius: 10, border: 'none',
-              background: '#E8B84B', color: '#FFFFFF',
-              fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              background: isPaying ? '#D7DCE5' : '#E8B84B', color: '#FFFFFF',
+              fontSize: 13, fontWeight: 700, cursor: isPaying ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/crd.png" alt="" width={22} height={22} style={{ width: 22, height: 'auto', objectFit: 'contain' }} />
-            <span>Continue to Payment →</span>
+            <span>{isPaying ? 'Opening Razorpay...' : 'Continue to Payment →'}</span>
           </button>
+
+          {paymentError && (
+            <p style={{ margin: '10px 0 0', fontSize: 11.5, lineHeight: 1.5, color: '#DC2626' }}>{paymentError}</p>
+          )}
 
           {/* Footer */}
           <div style={{
@@ -403,6 +1132,7 @@ export default function ExplorePlansPage() {
 
   return (
     <div className="min-h-screen" style={{ background: '#E9EAEE', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
       <BillingHero />
 
       <div className="mx-auto mt-3 flex w-full max-w-[1120px] flex-col gap-8 px-4 pb-20 sm:px-6 lg:px-8">
@@ -908,5 +1638,4 @@ export default function ExplorePlansPage() {
     </div>
   );
 }
-
 
