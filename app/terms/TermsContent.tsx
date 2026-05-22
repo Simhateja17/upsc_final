@@ -158,14 +158,17 @@ export default function TermsContent() {
               </p>
               <ul className="lc-list">
                 <li>
-                  <strong>Accurate information:</strong> You agree to provide accurate, current, and complete information when creating your account and to keep it updated.
+                  <strong>Accurate information:</strong>
+                  <span>You agree to provide accurate, current, and complete information when creating your account and to keep it updated.</span>
                 </li>
                 <li>
-                  <strong>One account per person:</strong> You may not create multiple accounts or share a single account with other individuals.
+                  <strong>One account per person:</strong>
+                  <span>You may not create multiple accounts or share a single account with other individuals.</span>
                 </li>
                 <li>
-                  <strong>Account Security &amp; Unauthorised Access:</strong> If you suspect any unauthorised access, security breach, or misuse of your account, please notify us immediately at{' '}
-                  <a href="mailto:together@risewithjeet.com">together@risewithjeet.com</a>
+                  <strong>Account Security &amp; Unauthorised Access:</strong>
+                  <span>If you suspect any unauthorised access, security breach, or misuse of your account, please notify us immediately at{' '}
+                  <a href="mailto:together@risewithjeet.com">together@risewithjeet.com</a></span>
                 </li>
               </ul>
             </div>
@@ -179,25 +182,32 @@ export default function TermsContent() {
               </p>
               <ul className="lc-list">
                 <li>
-                  <strong>Billing:</strong> Subscriptions may be offered on a monthly, quarterly, or annual basis, depending on the plan selected at checkout. Payments are charged in advance for the chosen billing period. Applicable taxes, including GST (where required), will be displayed at checkout and charged in accordance with applicable laws.
+                  <strong>Billing:</strong>
+                  <span>Subscriptions may be offered on a monthly, quarterly, or annual basis, depending on the plan selected at checkout. Payments are charged in advance for the chosen billing period. Applicable taxes, including GST (where required), will be displayed at checkout and charged in accordance with applicable laws.</span>
                 </li>
                 <li>
-                  <strong>Renewal of Subscription:</strong> Where auto-renewal is enabled, your subscription may automatically renew at the end of the Subscription Period at the prevailing rate unless cancelled before the renewal date. If pricing changes affect your subscription, we will provide prior notice wherever reasonably possible.
+                  <strong>Renewal of Subscription:</strong>
+                  <span>Where auto-renewal is enabled, your subscription may automatically renew at the end of the Subscription Period at the prevailing rate unless cancelled before the renewal date. If pricing changes affect your subscription, we will provide prior notice wherever reasonably possible.</span>
                 </li>
                 <li>
-                  <strong>Cancellation:</strong> You may manage or cancel your subscription at any time through your Account Settings or by contacting our support team. Cancellation will take effect at the end of your current Subscription Period, and you will continue to have access to paid features until then.
+                  <strong>Cancellation:</strong>
+                  <span>You may manage or cancel your subscription at any time through your Account Settings or by contacting our support team. Cancellation will take effect at the end of your current Subscription Period, and you will continue to have access to paid features until then.</span>
                 </li>
                 <li>
-                  <strong>Refunds:</strong> We want learners to have a fair and transparent experience. Refund eligibility, timelines, and conditions are governed by our <Link href="/refund">Refund Policy</Link>. As RiseWithJeet provides access to digital educational content and platform features, refunds for partially used subscription periods may not be available unless required by applicable law or explicitly stated in our policies.
+                  <strong>Refunds:</strong>
+                  <span>We want learners to have a fair and transparent experience. Refund eligibility, timelines, and conditions are governed by our <Link href="/refund">Refund Policy</Link>. As RiseWithJeet provides access to digital educational content and platform features, refunds for partially used subscription periods may not be available unless required by applicable law or explicitly stated in our policies.</span>
                 </li>
                 <li>
-                  <strong>Failed or Unsuccessful Payments:</strong> If a payment is declined, unsuccessful, or overdue, we may temporarily suspend or limit access to paid features until payment is successfully completed.
+                  <strong>Failed or Unsuccessful Payments:</strong>
+                  <span>If a payment is declined, unsuccessful, or overdue, we may temporarily suspend or limit access to paid features until payment is successfully completed.</span>
                 </li>
                 <li>
-                  <strong>Promotional Pricing &amp; Discounts:</strong> From time to time, RiseWithJeet may offer promotional pricing, scholarships, discounts, or special offers. Such offers are valid only for the stated period and may not automatically apply to future renewals unless explicitly mentioned.
+                  <strong>Promotional Pricing &amp; Discounts:</strong>
+                  <span>From time to time, RiseWithJeet may offer promotional pricing, scholarships, discounts, or special offers. Such offers are valid only for the stated period and may not automatically apply to future renewals unless explicitly mentioned.</span>
                 </li>
                 <li>
-                  <strong>Changes to Plans or Pricing:</strong> We may update our subscription plans or pricing from time to time to improve the platform and learning experience. If a change affects an active subscription, we will provide reasonable notice in advance. Continued use of the Service after such changes take effect constitutes acceptance of the updated pricing or plan.
+                  <strong>Changes to Plans or Pricing:</strong>
+                  <span>We may update our subscription plans or pricing from time to time to improve the platform and learning experience. If a change affects an active subscription, we will provide reasonable notice in advance. Continued use of the Service after such changes take effect constitutes acceptance of the updated pricing or plan.</span>
                 </li>
               </ul>
             </div>
@@ -237,25 +247,32 @@ export default function TermsContent() {
               </p>
               <ul className="lc-list">
                 <li>
-                  <strong>Content Copying, Scraping &amp; Redistribution:</strong> Copying, reproducing, scraping, downloading in bulk, recording, redistributing, or otherwise using any platform content &mdash; including questions, explanations, videos, notes, analytics, model answers, or study material, without prior written permission from RiseWithJeet.
+                  <strong>Content Copying, Scraping &amp; Redistribution:</strong>
+                  <span>Copying, reproducing, scraping, downloading in bulk, recording, redistributing, or otherwise using any platform content &mdash; including questions, explanations, videos, notes, analytics, model answers, or study material, without prior written permission from RiseWithJeet.</span>
                 </li>
                 <li>
-                  <strong>Account Sharing &amp; Unauthorised Access:</strong> Sharing login credentials, allowing another person to access your account, or using another user&rsquo;s account without permission.
+                  <strong>Account Sharing &amp; Unauthorised Access:</strong>
+                  <span>Sharing login credentials, allowing another person to access your account, or using another user&rsquo;s account without permission.</span>
                 </li>
                 <li>
-                  <strong>Misuse of AI or Evaluation Systems:</strong> Submitting fully AI-generated responses as your own work in assessments, answer evaluators, or learning tools for the purpose of manipulating scores, rankings, analytics, or performance tracking. Our tools are intended to support learning and improvement, not misuse or unfair advantage.
+                  <strong>Misuse of AI or Evaluation Systems:</strong>
+                  <span>Submitting fully AI-generated responses as your own work in assessments, answer evaluators, or learning tools for the purpose of manipulating scores, rankings, analytics, or performance tracking. Our tools are intended to support learning and improvement, not misuse or unfair advantage.</span>
                 </li>
                 <li>
-                  <strong>Impersonation &amp; Misrepresentation:</strong> Impersonating RiseWithJeet team members, mentors, moderators, or other users, or falsely representing an affiliation with the platform.
+                  <strong>Impersonation &amp; Misrepresentation:</strong>
+                  <span>Impersonating RiseWithJeet team members, mentors, moderators, or other users, or falsely representing an affiliation with the platform.</span>
                 </li>
                 <li>
-                  <strong>Harmful, Fraudulent, or Disruptive Activity:</strong> Uploading malicious software, attempting unauthorized access, disrupting platform functionality, exploiting vulnerabilities, engaging in fraudulent activity, or otherwise interfering with the security, stability, or experience of other users.
+                  <strong>Harmful, Fraudulent, or Disruptive Activity:</strong>
+                  <span>Uploading malicious software, attempting unauthorized access, disrupting platform functionality, exploiting vulnerabilities, engaging in fraudulent activity, or otherwise interfering with the security, stability, or experience of other users.</span>
                 </li>
                 <li>
-                  <strong>Commercial or Unauthorised Use:</strong> Using RiseWithJeet, its content, or services for resale, coaching, redistribution, institutional teaching, business purposes, or any unauthorised commercial activity without prior written consent.
+                  <strong>Commercial or Unauthorised Use:</strong>
+                  <span>Using RiseWithJeet, its content, or services for resale, coaching, redistribution, institutional teaching, business purposes, or any unauthorised commercial activity without prior written consent.</span>
                 </li>
                 <li>
-                  <strong>Academic Integrity &amp; Fair Usage:</strong> Engaging in behaviour intended to unfairly manipulate rankings, streaks, evaluations, analytics, or platform performance metrics.
+                  <strong>Academic Integrity &amp; Fair Usage:</strong>
+                  <span>Engaging in behaviour intended to unfairly manipulate rankings, streaks, evaluations, analytics, or platform performance metrics.</span>
                 </li>
               </ul>
               <div className="lc-note">
@@ -337,10 +354,12 @@ export default function TermsContent() {
               <p className="lc-p">Either party may terminate the relationship at any time:</p>
               <ul className="lc-list">
                 <li>
-                  <strong>By you:</strong> You may delete your account at any time from Account Settings. This ends your access to paid features at the close of your current billing period.
+                  <strong>By you:</strong>
+                  <span>You may delete your account at any time from Account Settings. This ends your access to paid features at the close of your current billing period.</span>
                 </li>
                 <li>
-                  <strong>By us:</strong> We may suspend or terminate your account if you violate these Terms, engage in prohibited activity, or if we have reason to believe your account has been compromised. We will notify you where reasonably possible.
+                  <strong>By us:</strong>
+                  <span>We may suspend or terminate your account if you violate these Terms, engage in prohibited activity, or if we have reason to believe your account has been compromised. We will notify you where reasonably possible.</span>
                 </li>
               </ul>
               <p className="lc-p">
@@ -513,7 +532,7 @@ export default function TermsContent() {
 
         /* ── BODY ── */
         .terms-body {
-          background: var(--cream);
+          background: var(--white);
           padding: 64px 0;
         }
         .terms-inner {
@@ -557,12 +576,12 @@ export default function TermsContent() {
         }
         .terms-toc-item:hover {
           color: var(--t1);
-          background: var(--white);
+          background: var(--cream);
           border-left-color: var(--gold);
         }
         .terms-toc-item.active {
           color: var(--navy-5);
-          background: var(--white);
+          background: var(--cream);
           border-left-color: var(--gold);
           font-weight: 600;
         }
@@ -580,7 +599,7 @@ export default function TermsContent() {
           margin: 12px 0;
         }
         .terms-toc-contact {
-          background: var(--white);
+          background: var(--cream);
           border: 1.5px solid var(--b1);
           border-radius: 10px;
           padding: 14px;
@@ -703,13 +722,11 @@ export default function TermsContent() {
           gap: 9px;
         }
         .lc-list li {
-          display: flex;
-          align-items: flex-start;
-          gap: 11px;
+          position: relative;
           font-size: 14px;
           color: var(--t2);
           line-height: 1.7;
-          padding: 11px 15px;
+          padding: 11px 15px 11px 32px;
           background: var(--cream);
           border: 1.5px solid var(--b1);
           border-radius: 9px;
@@ -720,8 +737,14 @@ export default function TermsContent() {
           height: 6px;
           border-radius: 50%;
           background: var(--gold);
-          flex-shrink: 0;
-          margin-top: 7px;
+          position: absolute;
+          left: 15px;
+          top: 19px;
+        }
+        .lc-list li:has(strong) {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          column-gap: 8px;
         }
         .lc-list li strong {
           color: var(--t1);
@@ -730,8 +753,8 @@ export default function TermsContent() {
 
         /* ── CTA ── */
         .terms-cta-wrapper {
-          background: var(--cream);
-          padding: 64px 48px 0;
+          background: var(--white);
+          padding: 64px 48px;
           display: flex;
           justify-content: center;
         }
@@ -835,7 +858,7 @@ export default function TermsContent() {
             padding: 32px 22px 24px;
           }
           .terms-cta-wrapper {
-            padding: 48px 22px 0;
+            padding: 48px 22px;
           }
           .terms-cta-box {
             padding: 40px 28px;

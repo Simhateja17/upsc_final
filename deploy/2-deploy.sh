@@ -14,9 +14,11 @@ git clean -fd
 
 echo "=== Installing dependencies ==="
 npm ci
+test -x node_modules/.bin/next
 
 echo "=== Building Next.js ==="
 npm run build
+test -d .next
 
 echo "=== Restarting PM2 ==="
 pm2 startOrReload "$APP_DIR/deploy/ecosystem.config.js" --env production

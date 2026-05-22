@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "upsc-frontend",
-      script: "node_modules/.bin/next",
+      script: "npm",
       args: "start",
       cwd: "/var/www/frontend",
       instances: 1,
