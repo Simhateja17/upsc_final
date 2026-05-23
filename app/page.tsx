@@ -297,7 +297,7 @@ export default function LandingPage() {
         </h1>
 
         <p className="hero-sub">
-          RiseWithJeet is trusted by 15,000+ aspirants for AI-powered learning, daily MCQs, instant mains evaluation, expert mentorship &amp; smart revision – all under one roof.
+          Trusted by 15,000+ aspirants. AI-powered learning, daily MCQs, instant mains evaluation, expert mentorship &amp; smart revision – all under one roof.
         </p>
 
         <div className="hero-ctas">
