@@ -139,14 +139,6 @@ export default function LandingPage() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // AI auto-switcher
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveSlide(p => (p + 1) % 4);
-      setAiTypingDone(false);
-    }, 10000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Show AI reply after 2.5s on the assistant slide
   useEffect(() => {
@@ -769,7 +761,7 @@ export default function LandingPage() {
                     <div className="ps-progress-row">
                       <div className="ps-mini-card">
                         <div className="ps-mini-card-top">
-                          <span className="ps-mini-icon"><Image src="/sidebar-daily-mcq-new.png" alt="MCQ" width={18} height={18} /></span>
+                          <span className="ps-mini-icon"><Image src="/target-icon.png" alt="MCQ" width={18} height={18} /></span>
                           <span className="ps-mini-badge badge-up">↑ +6%</span>
                         </div>
                         <div className="ps-mini-val">84%</div>
@@ -840,7 +832,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 gap-8 border-b border-white/[0.04] py-10 md:grid-cols-2 xl:grid-cols-[1.6fr_1fr_1fr_1fr_1.1fr] xl:gap-0">
             {/* Brand Column */}
             <div className="pr-0 xl:pr-8">
-              <Image src="/footer-logo-new.png" alt="RiseWithJeet" width={320} height={64} className="-ml-6 xl:-ml-8" style={{ height: 56, width: 'auto', objectFit: 'contain' }} priority />
+              <Image src="/footer-logo-new.png" alt="RiseWithJeet" width={320} height={64} className="-ml-10 xl:-ml-12" style={{ height: 56, width: 'auto', objectFit: 'contain' }} priority />
               <p className="mt-4 max-w-[320px] text-[13px] leading-[1.6] text-white/60">
                 RiseWithJeet is an AI-powered UPSC preparation platform redefining preparation with a simplified, smarter approach. As India&apos;s leading AI-powered platform, we combine cutting-edge technology, high-quality content, expert guidance, and innovative tools to deliver an effective learning experience.
               </p>

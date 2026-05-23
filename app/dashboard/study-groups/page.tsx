@@ -48,14 +48,23 @@ export default function StudyGroupsPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Pomodoro timer state – Solo Session
-  const FOCUS_SECONDS = 25 * 60;
   const BREAK_SECONDS = 5 * 60;
-  const [pomoSecondsLeft, setPomoSecondsLeft] = useState(FOCUS_SECONDS);
+  const [focusMinutes, setFocusMinutes] = useState(25);
+  const focusMinutesRef = useRef(25);
+  const [pomoSecondsLeft, setPomoSecondsLeft] = useState(25 * 60);
   const [pomoRunning, setPomoRunning] = useState(false);
   const [pomoSession, setPomoSession] = useState(1); // 1..4
   const [pomoMode, setPomoMode] = useState<'focus' | 'break'>('focus');
   const [todaySeconds, setTodaySeconds] = useState(0);
   const pomoTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const handleSetFocusMinutes = (m: number) => {
+    if (pomoRunning) return;
+    const clamped = Math.max(1, Math.min(180, m));
+    focusMinutesRef.current = clamped;
+    setFocusMinutes(clamped);
+    if (pomoMode === 'focus') setPomoSecondsLeft(clamped * 60);
+  };
 
   // Load today's accumulated focus seconds from localStorage
   useEffect(() => {
@@ -79,11 +88,12 @@ export default function StudyGroupsPage() {
     }
     pomoTickRef.current = setInterval(() => {
       setPomoSecondsLeft((prev) => {
+        const focusSecs = focusMinutesRef.current * 60;
         if (prev <= 1) {
           setPomoRunning(false);
           if (pomoMode === 'focus') {
             setTodaySeconds((t) => {
-              const next = t + FOCUS_SECONDS;
+              const next = t + focusSecs;
               persistTodaySeconds(next);
               return next;
             });
@@ -91,7 +101,7 @@ export default function StudyGroupsPage() {
             if (pomoSession >= 4) {
               setPomoSession(1);
               setPomoMode('focus');
-              return FOCUS_SECONDS;
+              return focusSecs;
             }
             setPomoMode('break');
             return BREAK_SECONDS;
@@ -99,7 +109,7 @@ export default function StudyGroupsPage() {
           // break finished → next focus session
           setPomoMode('focus');
           setPomoSession((s) => s + 1);
-          return FOCUS_SECONDS;
+          return focusSecs;
         }
         if (pomoMode === 'focus') {
           setTodaySeconds((t) => {
@@ -118,18 +128,19 @@ export default function StudyGroupsPage() {
   const handlePomoStart = () => setPomoRunning((r) => !r);
   const handlePomoReset = () => {
     setPomoRunning(false);
-    setPomoSecondsLeft(pomoMode === 'focus' ? FOCUS_SECONDS : BREAK_SECONDS);
+    setPomoSecondsLeft(pomoMode === 'focus' ? focusMinutesRef.current * 60 : BREAK_SECONDS);
   };
   const handlePomoSkip = () => {
     setPomoRunning(false);
+    const focusSecs = focusMinutesRef.current * 60;
     if (pomoMode === 'focus') {
-      if (pomoSession >= 4) { setPomoSession(1); setPomoSecondsLeft(FOCUS_SECONDS); return; }
+      if (pomoSession >= 4) { setPomoSession(1); setPomoSecondsLeft(focusSecs); return; }
       setPomoMode('break');
       setPomoSecondsLeft(BREAK_SECONDS);
     } else {
       setPomoMode('focus');
       setPomoSession((s) => s + 1);
-      setPomoSecondsLeft(FOCUS_SECONDS);
+      setPomoSecondsLeft(focusSecs);
     }
   };
 
@@ -144,7 +155,7 @@ export default function StudyGroupsPage() {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
-  const pomoTotalForMode = pomoMode === 'focus' ? FOCUS_SECONDS : BREAK_SECONDS;
+  const pomoTotalForMode = pomoMode === 'focus' ? focusMinutes * 60 : BREAK_SECONDS;
   const pomoProgress = 1 - pomoSecondsLeft / pomoTotalForMode;
 
   const fetchGroups = useCallback(async () => {
@@ -183,9 +194,6 @@ export default function StudyGroupsPage() {
     const tab = searchParams.get('tab');
     if (tab === 'solo' || tab === 'my' || tab === 'rooms') {
       setActiveTab(tab);
-    }
-    if (searchParams.get('autostart') === '1' && tab === 'solo') {
-      setPomoRunning(true);
     }
   }, [searchParams]);
 
@@ -334,7 +342,7 @@ export default function StudyGroupsPage() {
     <div className="min-h-screen bg-[#F9FAFB] font-arimo text-[#0C1424]">
       <DashboardPageHero
         // eslint-disable-next-line @next/next/no-img-element
-        badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+        badgeIcon={<img src="/study-together-icon.png" alt="Study Together" style={{ width: '26px', height: '26px', objectFit: 'contain' }} />}
         badgeText="STUDY TOGETHER"
         title={
           <>
@@ -413,6 +421,40 @@ export default function StudyGroupsPage() {
             </div>
 
             <div className="rounded-[18px] border border-[#E1E6EF] bg-white px-6 py-10 shadow-sm">
+              {/* Time picker – shown when timer is idle */}
+              {!pomoRunning && (
+                <div className="mb-8 flex flex-col items-center gap-3">
+                  <p className="text-[12px] font-bold uppercase tracking-[1.2px] text-[#6B7A99]">Set Focus Duration</p>
+                  <div className="flex items-center gap-2">
+                    {[15, 25, 45, 60].map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => handleSetFocusMinutes(m)}
+                        className="rounded-[8px] border px-4 py-1.5 text-[13px] font-semibold transition"
+                        style={{
+                          background: focusMinutes === m ? '#E8B84B' : '#F9FAFB',
+                          borderColor: focusMinutes === m ? '#E8B84B' : '#DDE3EC',
+                          color: focusMinutes === m ? '#0C1424' : '#6B7A99',
+                        }}
+                      >
+                        {m}m
+                      </button>
+                    ))}
+                    <div className="flex items-center gap-1 rounded-[8px] border border-[#DDE3EC] bg-[#F9FAFB] px-3 py-1.5">
+                      <input
+                        type="number"
+                        min={1}
+                        max={180}
+                        value={focusMinutes}
+                        onChange={(e) => handleSetFocusMinutes(Number(e.target.value))}
+                        className="w-12 bg-transparent text-center text-[13px] font-semibold text-[#0C1424] outline-none"
+                      />
+                      <span className="text-[12px] text-[#6B7A99]">min</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Circular timer */}
               <div className="flex flex-col items-center">
                 <div className="relative" style={{ width: 280, height: 280 }}>

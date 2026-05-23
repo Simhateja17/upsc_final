@@ -407,14 +407,13 @@ export default function TermsContent() {
       <section className="terms-cta-wrapper">
         <div className="terms-cta-box">
           <h2>
-            Your UPSC Journey
-            <br />
-            <em>Starts Today</em>
+            Questions about our
+            <em>Terms of Service?</em>
           </h2>
-          <p>We are happy to clarify anything. Reach out and a real person will respond.</p>
+          <p>We are happy to clarify anything. Reach out to us and our team will respond.</p>
           <div className="terms-cta-row">
             <a href="mailto:together@risewithjeet.com" className="terms-btn-gold">
-              Email together@risewithjeet.com
+              Email: together@risewithjeet.com
             </a>
             <Link href="/contact" className="terms-btn-outline">
               Contact Us
@@ -743,27 +742,35 @@ export default function TermsContent() {
         }
         .lc-list li:has(strong) {
           display: grid;
-          grid-template-columns: auto 1fr;
-          column-gap: 8px;
+          grid-template-columns: 178px 1fr;
+          column-gap: 18px;
+          align-items: start;
         }
         .lc-list li strong {
           color: var(--t1);
           font-weight: 600;
+          line-height: 1.55;
+        }
+        .lc-list li span {
+          min-width: 0;
         }
 
         /* ── CTA ── */
         .terms-cta-wrapper {
           background: var(--white);
-          padding: 64px 48px;
+          padding: 64px 48px 104px;
           display: flex;
           justify-content: center;
         }
         .terms-cta-box {
-          background: var(--navy);
-          border-radius: 22px;
-          padding: 56px 64px;
+          background: linear-gradient(135deg, #0b1530 0%, #0f2050 100%);
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 24px;
+          box-shadow: 0 40px 80px rgba(11, 29, 58, 0.24);
+          min-height: 384px;
+          padding: 69px 76px 79px;
           text-align: center;
-          max-width: 680px;
+          max-width: 700px;
           width: 100%;
           position: relative;
           overflow: hidden;
@@ -772,75 +779,102 @@ export default function TermsContent() {
           content: '';
           position: absolute;
           top: -80px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 600px;
-          height: 400px;
-          background: radial-gradient(ellipse, rgba(232, 184, 75, 0.08) 0%, transparent 65%);
+          left: -80px;
+          width: 320px;
+          height: 320px;
+          border-radius: 160px;
+          background: rgba(232, 184, 75, 0.06);
+        }
+        .terms-cta-box::after {
+          content: '';
+          position: absolute;
+          right: -82px;
+          bottom: -50px;
+          width: 250px;
+          height: 250px;
+          border-radius: 125px;
+          background: rgba(46, 93, 179, 0.08);
         }
         .terms-cta-box h2 {
           font-family: var(--serif);
-          font-size: clamp(1.6rem, 3vw, 2.4rem);
+          font-size: 44.8px;
           font-weight: 600;
           color: #fff;
-          line-height: 1.2;
-          margin-bottom: 12px;
+          line-height: 53.76px;
+          letter-spacing: -1.2px;
+          margin: 0 0 18px;
           position: relative;
           z-index: 1;
         }
         .terms-cta-box h2 em {
+          display: block;
           font-style: italic;
           color: var(--gold);
+          font-weight: 600;
         }
         .terms-cta-box p {
-          font-size: 15px;
-          color: rgba(255, 255, 255, 0.44);
-          max-width: 420px;
-          margin: 0 auto 26px;
-          line-height: 1.8;
+          font-family: 'Outfit', var(--sans);
+          font-size: 16px;
+          color: rgba(255, 255, 255, 0.58);
+          max-width: 489px;
+          margin: 0 auto 23px;
+          line-height: 26.4px;
           position: relative;
           z-index: 1;
         }
         .terms-cta-row {
           display: flex;
-          gap: 11px;
+          gap: 14px;
           justify-content: center;
           flex-wrap: wrap;
           position: relative;
           z-index: 1;
         }
         .terms-btn-gold {
-          background: var(--gold);
-          color: var(--navy);
-          padding: 12px 28px;
-          border-radius: 10px;
-          font-size: 14px;
+          min-width: 286px;
+          height: 53px;
+          background: linear-gradient(144deg, #e8b84b 0%, #b8780a 100%);
+          color: #0b1530;
+          padding: 0 24px;
+          border-radius: 12px;
+          font-size: 15.5px;
           font-weight: 700;
           cursor: pointer;
           border: none;
-          font-family: var(--sans);
+          font-family: 'Outfit', var(--sans);
           transition: all 0.2s;
           text-decoration: none;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 8px 14px rgba(232, 184, 75, 0.38);
         }
         .terms-btn-gold:hover {
-          background: var(--gold-2);
+          filter: brightness(1.06);
           transform: translateY(-2px);
         }
         .terms-btn-outline {
-          background: transparent;
-          color: rgba(255, 255, 255, 0.65);
-          padding: 12px 28px;
-          border-radius: 10px;
-          font-size: 14px;
-          font-weight: 500;
+          min-width: 189px;
+          height: 52px;
+          background: rgba(255, 255, 255, 0.06);
+          color: #fff;
+          padding: 0 24px;
+          border-radius: 12px;
+          font-size: 15.5px;
+          font-weight: 600;
           cursor: pointer;
-          border: 1.5px solid rgba(255, 255, 255, 0.14);
-          font-family: var(--sans);
+          border: 1px solid rgba(255, 255, 255, 0.20);
+          font-family: 'Outfit', var(--sans);
           transition: all 0.2s;
           text-decoration: none;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          backdrop-filter: blur(4px);
         }
         .terms-btn-outline:hover {
-          border-color: rgba(255, 255, 255, 0.28);
+          border-color: rgba(255, 255, 255, 0.32);
+          background: rgba(255, 255, 255, 0.09);
           color: #fff;
         }
 
@@ -861,7 +895,26 @@ export default function TermsContent() {
             padding: 48px 22px;
           }
           .terms-cta-box {
-            padding: 40px 28px;
+            min-height: auto;
+            padding: 52px 24px;
+          }
+          .terms-cta-box h2 {
+            font-size: 36px;
+            line-height: 42px;
+            letter-spacing: -0.6px;
+          }
+          .terms-cta-box p {
+            font-size: 15px;
+            line-height: 24px;
+          }
+          .terms-btn-gold,
+          .terms-btn-outline {
+            width: 100%;
+            min-width: 0;
+          }
+          .lc-list li:has(strong) {
+            grid-template-columns: 1fr;
+            row-gap: 4px;
           }
         }
       `}</style>

@@ -319,7 +319,7 @@ export default function SyllabusTrackerPage() {
           </div>
 
           {/* Column B - Topics */}
-          <div className="w-[210px] shrink-0 flex flex-col">
+          <div className="w-[240px] shrink-0 flex flex-col">
             <TopicList
               subject={currentSubject}
               openTopics={openTopics}

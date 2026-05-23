@@ -21,6 +21,7 @@ interface Badge {
 interface BadgeCategory {
   key: string;
   emoji: string;
+  iconKey: string;
   title: string;
   earned: number;
   total: number;
@@ -40,6 +41,7 @@ const CATEGORIES: BadgeCategory[] = [
   {
     key: 'streak',
     emoji: '🔥',
+    iconKey: 'ignition',
     title: 'Streak & Consistency',
     earned: 1,
     total: 8,
@@ -137,6 +139,7 @@ const CATEGORIES: BadgeCategory[] = [
   {
     key: 'learning',
     emoji: '📚',
+    iconKey: 'page-turner',
     title: 'Learning Lectures, Materials & Current Affairs',
     earned: 1,
     total: 14,
@@ -300,6 +303,7 @@ const CATEGORIES: BadgeCategory[] = [
   {
     key: 'practice',
     emoji: '🎯',
+    iconKey: 'quarter-done',
     title: 'Practice MCQ, Writing, Mocks & PYQ',
     earned: 1,
     total: 16,
@@ -485,6 +489,7 @@ const CATEGORIES: BadgeCategory[] = [
   {
     key: 'revision',
     emoji: '🔄',
+    iconKey: 'review-streak',
     title: 'Revision Tools — Flashcards, Mindmaps & Spaced Repetition',
     earned: 0,
     total: 8,
@@ -582,6 +587,7 @@ const CATEGORIES: BadgeCategory[] = [
   {
     key: 'analytics',
     emoji: '📊',
+    iconKey: 'data-driven',
     title: 'Performance Analytics',
     earned: 1,
     total: 4,
@@ -635,6 +641,7 @@ const CATEGORIES: BadgeCategory[] = [
   {
     key: 'community',
     emoji: '🤝',
+    iconKey: 'peer-mentor',
     title: 'Community Groups, Leaderboard & Q&A',
     earned: 0,
     total: 4,
@@ -687,6 +694,51 @@ const CATEGORIES: BadgeCategory[] = [
   },
 ];
 
+function BadgeIcon({ badgeKey, title, locked }: { badgeKey: string; title: string; locked: boolean }) {
+  const src = `/icons/achievement/${badgeKey}.png`;
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      srcSet={`${src} 4x`}
+      alt={title}
+      width={56}
+      height={56}
+      decoding="async"
+      loading="lazy"
+      className="rounded-[14px] shrink-0"
+      style={{
+        width: 56,
+        height: 56,
+        objectFit: 'contain',
+        filter: locked ? 'grayscale(0.6) opacity(0.85)' : 'none',
+      }}
+    />
+  );
+}
+
+function CategoryIcon({ iconKey, title }: { iconKey: string; title: string }) {
+  const src = `/icons/achievement/${iconKey}.png`;
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      srcSet={`${src} 4x`}
+      alt=""
+      width={18}
+      height={18}
+      decoding="async"
+      loading="lazy"
+      aria-hidden="true"
+      className="shrink-0 rounded-[5px]"
+      style={{ width: 18, height: 18, objectFit: 'contain' }}
+      title={title}
+    />
+  );
+}
+
 function LockIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -722,19 +774,7 @@ function BadgeCard({ badge }: { badge: Badge }) {
       </div>
 
       <div className="flex gap-[14px] p-5 pb-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={`/icons/achievement/${badge.key}.png`}
-          alt={badge.title}
-          width={56}
-          height={56}
-          className="rounded-[14px] shrink-0"
-          style={{
-            width: 56,
-            height: 56,
-            filter: isLocked ? 'grayscale(0.6) opacity(0.85)' : 'none',
-          }}
-        />
+        <BadgeIcon badgeKey={badge.key} title={badge.title} locked={isLocked} />
         <div className="flex flex-1 min-w-0 flex-col gap-[3px]">
           <div
             className="pr-7"
@@ -782,7 +822,7 @@ function CategorySection({ category }: { category: BadgeCategory }) {
       <div className="mb-5 flex items-center justify-center gap-3">
         <div className="h-[1px] flex-1 bg-[rgba(0,0,0,0.08)]" />
         <div className="flex items-center gap-2 rounded-full bg-white px-[14px] py-[6px] shadow-[0_1px_2px_rgba(15,23,42,0.06)]">
-          <span className="text-[14px]" aria-hidden>{category.emoji}</span>
+          <CategoryIcon iconKey={category.iconKey} title={category.title} />
           <span className="font-arimo text-[13.5px] font-bold text-[#1E2875]">{category.title}</span>
           <span className="ml-1 rounded-full bg-[#F4F5F8] px-[10px] py-[2px] text-[11px] font-semibold text-[#4B5563]">
             {category.earned} / {category.total} earned

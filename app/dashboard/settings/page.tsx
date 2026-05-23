@@ -38,7 +38,7 @@ function Toggle({ on, toggle }: { on: boolean; toggle: () => void }) {
 }
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
 
   const [tab, setTab] = useState<TabId>('profile');
@@ -474,6 +474,17 @@ export default function SettingsPage() {
             >
               <span className="text-[18px] leading-none">🗑️</span>
               Delete Account
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => { await logout(); }}
+              className="flex h-[48px] w-full items-center gap-3 rounded-[10px] px-3 text-left text-[15px] font-semibold text-[#D92D20] hover:bg-[#FEF3F2] transition"
+            >
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+              </svg>
+              Sign Out
             </button>
           </aside>
 

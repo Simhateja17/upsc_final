@@ -139,6 +139,7 @@ export default function SpacedRepetitionPage() {
   const [items, setItems] = useState<SpacedRepItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [streakDays, setStreakDays] = useState(0);
+  const [flashcardToast, setFlashcardToast] = useState<{ subjectId: string; subject: string } | null>(null);
   const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -182,7 +183,6 @@ export default function SpacedRepetitionPage() {
 
   const addToFlashcards = async (q: SpacedRepItem) => {
     if (q.addedToFlashcard) return;
-    // Optimistic UI update so the user sees the chip immediately.
     setItems((prev) => prev.map((i) => (i.id === q.id ? { ...i, addedToFlashcard: true } : i)));
     try {
       const subjectId = subjectLabelToId(q.subject);
@@ -192,11 +192,15 @@ export default function SpacedRepetitionPage() {
         topicId: 'spaced-rep',
         topic: 'From Spaced Repetition',
         question: q.questionText,
-        answer: 'Tap to add your answer.',
+        answer: 'Review this question.',
       });
-      await spacedRepService.updateItem(q.id, { addedToFlashcard: true });
-    } catch {
-      // Roll back the optimistic update on failure.
+      // Persist flag — non-critical, don't rollback if this fails
+      spacedRepService.updateItem(q.id, { addedToFlashcard: true }).catch(() => {});
+      // Show success toast with link to deck
+      setFlashcardToast({ subjectId, subject: q.subject });
+      setTimeout(() => setFlashcardToast(null), 5000);
+    } catch (err) {
+      console.error('[addToFlashcards] createCard failed:', err);
       setItems((prev) => prev.map((i) => (i.id === q.id ? { ...i, addedToFlashcard: false } : i)));
     }
   };
@@ -333,6 +337,20 @@ export default function SpacedRepetitionPage() {
 
   return (
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: '100%' }}>
+      {/* Flashcard success toast */}
+      {flashcardToast && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, background: '#101828', color: '#fff', borderRadius: 14, padding: '14px 18px', boxShadow: '0 8px 32px rgba(0,0,0,0.22)', display: 'flex', alignItems: 'center', gap: 12, maxWidth: 340 }}>
+          <span style={{ fontSize: 20 }}>✅</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3 }}>Added to Flashcards!</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
+              Card saved to your <strong style={{ color: '#E8B84B' }}>{flashcardToast.subject}</strong> deck.{' '}
+              <a href={`/dashboard/flashcards/${flashcardToast.subjectId}`} style={{ color: '#E8B84B', textDecoration: 'underline', fontWeight: 600 }}>View deck →</a>
+            </div>
+          </div>
+          <button onClick={() => setFlashcardToast(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 16, marginLeft: 4 }}>✕</button>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto">
         <DashboardPageHero
           // eslint-disable-next-line @next/next/no-img-element

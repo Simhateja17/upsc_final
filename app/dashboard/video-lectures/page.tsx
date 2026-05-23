@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { videoService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 
@@ -263,6 +264,7 @@ function openVideoInNewTab(video: VideoItem) {
 
 /* ─── Page Component ─── */
 export default function VideoLecturesPage() {
+  const router = useRouter();
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [apiSubjects, setApiSubjects] = useState<SubjectItem[]>([]);
   const [apiVideos, setApiVideos] = useState<VideoItem[]>([]);
@@ -281,6 +283,7 @@ export default function VideoLecturesPage() {
   const [showMentorModal, setShowMentorModal] = useState(false);
   const [modalVideo, setModalVideo] = useState<VideoItem | null>(null);
   const [mentorQuestion, setMentorQuestion] = useState('');
+  const [mentorName, setMentorName] = useState('');
   const [mentorSubmitting, setMentorSubmitting] = useState(false);
   const [mentorSuccess, setMentorSuccess] = useState(false);
   const selectedVideosRef = useRef<HTMLDivElement | null>(null);
@@ -336,7 +339,7 @@ export default function VideoLecturesPage() {
   const openVideoActionModal = (type: 'pdf' | 'mentor', video: VideoItem) => {
     setModalVideo(video);
     if (type === 'pdf') {
-      setShowLoginModal(true);
+      router.push('/dashboard/library');
       return;
     }
     setShowMentorModal(true);
@@ -356,9 +359,10 @@ export default function VideoLecturesPage() {
     if (!mentorQuestion.trim()) return;
     setMentorSubmitting(true);
     try {
-      await videoService.askMentor({ question: mentorQuestion.trim() });
+      await videoService.askMentor({ question: mentorQuestion.trim(), name: mentorName.trim() || undefined });
       setMentorSuccess(true);
       setMentorQuestion('');
+      setMentorName('');
       setTimeout(() => setMentorSuccess(false), 3000);
     } catch {}
     setMentorSubmitting(false);
@@ -407,56 +411,24 @@ export default function VideoLecturesPage() {
   useEffect(() => {
     if (!selectedSubject) {
       lastAutoScrolledSubjectRef.current = null;
-      lastGridAutoScrolledSubjectRef.current = null;
       return;
     }
     if (lastAutoScrolledSubjectRef.current === selectedSubject) return;
+    lastAutoScrolledSubjectRef.current = selectedSubject;
 
-    const scrollTimer = window.setTimeout(() => {
-      window.requestAnimationFrame(() => {
-        const section = selectedVideosRef.current;
-        const scrollContainer = section?.closest('main');
-        if (!section || !scrollContainer) return;
+    // Scroll immediately on next paint — no delay, no re-scroll after API loads
+    window.requestAnimationFrame(() => {
+      const section = selectedVideosRef.current;
+      const scrollContainer = section?.closest('main');
+      if (!section || !scrollContainer) return;
 
-        const sectionRect = section.getBoundingClientRect();
-        const containerRect = scrollContainer.getBoundingClientRect();
-        const scrollTop = scrollContainer.scrollTop + sectionRect.top - containerRect.top - 16;
+      const sectionRect = section.getBoundingClientRect();
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const scrollTop = scrollContainer.scrollTop + sectionRect.top - containerRect.top - 12;
 
-        scrollContainer.scrollTo({
-          top: Math.max(0, scrollTop),
-          behavior: 'smooth',
-        });
-        lastAutoScrolledSubjectRef.current = selectedSubject;
-      });
-    }, 0);
-
-    return () => window.clearTimeout(scrollTimer);
+      scrollContainer.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' });
+    });
   }, [selectedSubject]);
-
-  useEffect(() => {
-    if (!selectedSubject || subjectVideosLoading || visibleSubjectVideos.length === 0) return;
-    if (lastGridAutoScrolledSubjectRef.current === selectedSubject) return;
-
-    const scrollTimer = window.setTimeout(() => {
-      window.requestAnimationFrame(() => {
-        const grid = selectedVideoGridRef.current;
-        const scrollContainer = grid?.closest('main');
-        if (!grid || !scrollContainer) return;
-
-        const gridRect = grid.getBoundingClientRect();
-        const containerRect = scrollContainer.getBoundingClientRect();
-        const scrollTop = scrollContainer.scrollTop + gridRect.top - containerRect.top - 16;
-
-        scrollContainer.scrollTo({
-          top: Math.max(0, scrollTop),
-          behavior: 'smooth',
-        });
-        lastGridAutoScrolledSubjectRef.current = selectedSubject;
-      });
-    }, 60);
-
-    return () => window.clearTimeout(scrollTimer);
-  }, [selectedSubject, subjectVideosLoading, visibleSubjectVideos.length]);
 
   return (
     <div className="font-arimo w-full min-h-screen" style={{ background: '#F9FAFB' }}>
@@ -496,7 +468,7 @@ export default function VideoLecturesPage() {
           </a>
         }
         stats={[
-          { value: '50+', label: 'Video Lectures', color: '#FDC700' },
+          { value: '100+', label: 'Video Lectures', color: '#FDC700' },
           { value: `${apiStats?.totalSubjects ?? '12'}+`, label: 'Core Subjects', color: '#F87171' },
           { value: `${apiStats?.totalHours ?? '15'}K+`, label: 'Subscribers', color: '#4ADE80' },
           { value: '4.9', label: 'Ratings', color: '#FFFFFF' },
@@ -1276,23 +1248,25 @@ export default function VideoLecturesPage() {
         </div>
       )}
 
-      {/* Ask Our Team Modal */}
+      {/* Ask the Mentor Modal */}
       {showMentorModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.5)' }}
-          onClick={() => setShowMentorModal(false)}
+          style={{ background: 'rgba(0,0,0,0.45)' }}
+          onClick={() => { setShowMentorModal(false); setMentorQuestion(''); setMentorName(''); }}
         >
           <div
-            style={{ background: '#FFFFFF', borderRadius: '24px', border: '1.6px solid #6A7282', padding: '28px', width: '100%', maxWidth: '480px', margin: '0 16px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}
+            style={{ background: '#FFFFFF', borderRadius: '20px', padding: '28px 28px 24px', width: '100%', maxWidth: '420px', margin: '0 16px', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+            {/* Header row */}
+            <div className="flex items-start justify-between" style={{ marginBottom: '14px' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/mentor-icon.png" alt="Ask Our Team" style={{ width: '56px', height: '56px', objectFit: 'contain' }} />
-              <button onClick={() => setShowMentorModal(false)}
+              <img src="/ask-mentor-icon.png" alt="Ask Mentor" style={{ width: '52px', height: '52px', objectFit: 'contain' }} />
+              <button
+                onClick={() => { setShowMentorModal(false); setMentorQuestion(''); setMentorName(''); }}
                 className="flex items-center justify-center"
-                style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#F3F4F6', border: 'none', cursor: 'pointer' }}
+                style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F3F4F6', border: 'none', cursor: 'pointer', flexShrink: 0 }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <path d="M18 6L6 18M6 6L18 18" stroke="#4A5565" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1300,70 +1274,93 @@ export default function VideoLecturesPage() {
               </button>
             </div>
 
-            <h3 className="font-arimo font-bold" style={{ fontSize: '20px', color: '#101828', marginBottom: '8px' }}>
-              Ask Our Team
+            <h3 className="font-arimo font-bold" style={{ fontSize: '22px', color: '#101828', marginBottom: '8px' }}>
+              Ask the Mentor
             </h3>
-            <p className="font-arimo" style={{ fontSize: '14px', color: '#6A7282', marginBottom: '20px' }}>
-              {modalVideo ? `Ask our team about "${modalVideo.title}" and get a clear answer.` : 'Got a doubt? Ask our team and get a clear answer.'}
+            <p className="font-arimo" style={{ fontSize: '13.5px', color: '#4A5565', marginBottom: '20px', lineHeight: '1.5' }}>
+              Have any doubt about{' '}
+              {modalVideo && <strong>{modalVideo.title}</strong>}
+              {!modalVideo && 'this video'}
+              {'...'}Jeet Sir responds within 24 hours.
             </p>
 
             {mentorSuccess && (
-              <div className="flex items-center gap-2 mb-4 p-3 rounded-lg" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
-                <span style={{ fontSize: '18px' }}>{'\u2705'}</span>
-                <span className="font-arimo font-medium" style={{ fontSize: '14px', color: '#065F46' }}>
-                  Question submitted successfully!
-                </span>
+              <div className="flex items-center gap-2 mb-4 p-3 rounded-xl" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
+                <span style={{ fontSize: '16px' }}>\u2705</span>
+                <span className="font-arimo font-medium" style={{ fontSize: '13px', color: '#065F46' }}>Doubt submitted! Jeet Sir will respond soon.</span>
               </div>
             )}
 
+            {/* Doubt textarea */}
+            <label className="font-arimo font-semibold" style={{ fontSize: '13px', color: '#101828', display: 'block', marginBottom: '6px' }}>
+              Your doubt or question
+            </label>
             <textarea
               value={mentorQuestion}
               onChange={(e) => setMentorQuestion(e.target.value)}
-              placeholder="Type your question here..."
+              placeholder="e.g. At 18:32, I didn't understand why Article 370 had was mentioned under..."
               className="w-full font-arimo outline-none resize-none"
               style={{
-                height: '120px',
+                height: '110px',
                 borderRadius: '12px',
-                border: '1.6px solid #E5E7EB',
-                padding: '14px 16px',
-                fontSize: '14px',
+                border: '1.5px solid #E5E7EB',
+                padding: '12px 14px',
+                fontSize: '13.5px',
                 color: '#101828',
-                marginBottom: '16px',
+                marginBottom: '14px',
+                lineHeight: '1.5',
               }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = '#4F78F6'; }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = '#101828'; }}
               onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; }}
             />
 
+            {/* Name input */}
+            <label className="font-arimo font-semibold" style={{ fontSize: '13px', color: '#101828', display: 'block', marginBottom: '6px' }}>
+              Your name <span style={{ color: '#9CA3AF', fontWeight: 400 }}>(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={mentorName}
+              onChange={(e) => setMentorName(e.target.value)}
+              placeholder="e.g. Rahul from Delhi"
+              className="w-full font-arimo outline-none"
+              style={{
+                borderRadius: '12px',
+                border: '1.5px solid #E5E7EB',
+                padding: '11px 14px',
+                fontSize: '13.5px',
+                color: '#101828',
+                marginBottom: '20px',
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = '#101828'; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; }}
+            />
+
+            {/* Submit button */}
             <button
               onClick={handleAskMentor}
               disabled={mentorSubmitting || !mentorQuestion.trim()}
               className="w-full font-arimo font-bold text-white"
               style={{
-                height: '48px',
-                borderRadius: '12px',
-                background: mentorSubmitting || !mentorQuestion.trim() ? '#9CA3AF' : '#162456',
+                height: '52px',
+                borderRadius: '14px',
+                background: mentorSubmitting || !mentorQuestion.trim() ? '#9CA3AF' : '#101828',
                 border: 'none',
                 cursor: mentorSubmitting || !mentorQuestion.trim() ? 'not-allowed' : 'pointer',
-                fontSize: '15px',
+                fontSize: '15.5px',
+                marginBottom: '16px',
               }}
             >
-              {mentorSubmitting ? 'Submitting...' : 'Submit Question'}
+              {mentorSubmitting ? 'Submitting\u2026' : 'Submit Doubt \u2192'}
             </button>
 
-            <div className="mt-4 text-center">
-              <p className="font-arimo" style={{ fontSize: '12px', marginBottom: '6px' }}>
-                <Link href="/dashboard/free-trial" className="text-[#162456] font-semibold hover:underline">
-                  Go to Mentorship Module
-                </Link>
-              </p>
-              <p className="font-arimo" style={{ fontSize: '12px', color: '#6A7282' }}>
-                {'\u2192'}{' '}
-                <a href="https://www.youtube.com/@RiseWithJeet/community" target="_blank" rel="noopener noreferrer" className="text-[#162456] font-medium hover:underline">Join our YouTube Community</a>
-                {' & '}
-                <a href="https://t.me/togetherrisewithjeet" target="_blank" rel="noopener noreferrer" className="text-[#162456] font-medium hover:underline">Telegram</a>
-                {' for Doubts Discussion'}
-              </p>
-            </div>
+            {/* Footer */}
+            <p className="font-arimo text-center" style={{ fontSize: '12px', color: '#9CA3AF' }}>
+              Answers posted on{' '}
+              <a href="https://www.youtube.com/@RiseWithJeet/community" target="_blank" rel="noopener noreferrer" style={{ color: '#E8351A', fontWeight: 600 }}>YouTube Community</a>
+              {' & '}
+              <a href="https://t.me/togetherrisewithjeet" target="_blank" rel="noopener noreferrer" style={{ color: '#0088CC', fontWeight: 600 }}>Telegram</a>
+            </p>
           </div>
         </div>
       )}
@@ -1379,12 +1376,15 @@ export default function VideoLecturesPage() {
             style={{ background: '#FFFFFF', borderRadius: '24px', padding: '32px', width: '100%', maxWidth: '420px', margin: '0 16px', textAlign: 'center' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>{'\u{1F512}'}</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/sidebar-study-material-new2.png" alt="Study Material" style={{ width: '56px', height: '56px', objectFit: 'contain', marginBottom: '16px' }} />
             <h3 className="font-arimo font-bold" style={{ fontSize: '20px', color: '#101828', marginBottom: '8px' }}>
-              PDF Access
+              Download PDF
             </h3>
             <p className="font-arimo" style={{ fontSize: '14px', color: '#6A7282', marginBottom: '24px' }}>
-              {modalVideo ? `Please subscribe to download the PDF for "${modalVideo.title}".` : 'Please subscribe to access downloadable PDFs.'}
+              {modalVideo
+                ? `Please navigate to study material to download the PDF for "${modalVideo.title}".`
+                : 'Please navigate to study material to download the PDF.'}
             </p>
             <button
               onClick={() => setShowLoginModal(false)}

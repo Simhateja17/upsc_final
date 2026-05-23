@@ -124,10 +124,8 @@ const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
 
 export default function PyqPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showAttemptModal, setShowAttemptModal] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [questionStates, setQuestionStates] = useState<Record<string, { selected: string | null; submitted: boolean }>>({});
   const [showMainsWriteModal, setShowMainsWriteModal] = useState(false);
   const [showModelAnswerModal, setShowModelAnswerModal] = useState(false);
   const [showAiEvalModal, setShowAiEvalModal] = useState(false);
@@ -167,6 +165,7 @@ export default function PyqPage() {
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
   const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
   const [questionCounts, setQuestionCounts] = useState<PYQCountData>(EMPTY_COUNTS);
+  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
@@ -401,7 +400,7 @@ export default function PyqPage() {
         ]}
       />
 
-      <div className="w-full max-w-[1400px] mx-auto px-6 pt-14 pb-10">
+      <div className="w-full max-w-[1400px] mx-auto px-6 pt-6 pb-10">
         <div className="mb-10 flex w-full justify-center">
           <div
             className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_4px_6px_-4px_rgba(0,0,0,0.1),0_10px_15px_-3px_rgba(0,0,0,0.1)]"
@@ -481,8 +480,7 @@ export default function PyqPage() {
         </div>
 
         {/* Content area: filters (left on desktop) + questions */}
-        <div className="mb-4 rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-2.5 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.08)]">
-          <nav aria-label="Question filters breadcrumb" className="flex flex-wrap items-center gap-2 text-[12px] md:text-[13px]">
+        <nav aria-label="Question filters breadcrumb" className="mb-4 flex flex-wrap items-center gap-2 text-[12px] md:text-[13px]">
             <button
               type="button"
               onClick={() => {
@@ -530,8 +528,7 @@ export default function PyqPage() {
                 <span className="font-semibold text-[#101828]">{selectedTopics[0]}</span>
               </>
             )}
-          </nav>
-        </div>
+        </nav>
         <div className="flex flex-col lg:flex-row-reverse gap-8">
           {/* Questions list */}
           <section className="flex-1 min-w-0">
@@ -571,10 +568,22 @@ export default function PyqPage() {
                   : q.difficulty === 'Easy'
                   ? { background: '#DCFCE7', color: '#008236' }
                   : { background: '#FFEDD4', color: '#CA3500' };
+                const qState = questionStates[q.id] ?? { selected: null, submitted: false };
+                const setSelected = (label: string) => {
+                  if (qState.submitted) return;
+                  setQuestionStates(s => ({ ...s, [q.id]: { ...qState, selected: label } }));
+                };
+                const submitAnswer = () => {
+                  if (!qState.selected) return;
+                  setQuestionStates(s => ({ ...s, [q.id]: { ...qState, submitted: true } }));
+                };
+                const resetAnswer = () => {
+                  setQuestionStates(s => ({ ...s, [q.id]: { selected: null, submitted: false } }));
+                };
                 return (
                   <div
                     key={q.id}
-                    className="rounded-[16px] bg-white shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.1)] p-6 mb-6"
+                    className="rounded-[16px] bg-white shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.1)] mb-6 p-6"
                   >
                     {/* Tags */}
                     <div className="flex flex-wrap gap-2 mb-4">
@@ -615,42 +624,82 @@ export default function PyqPage() {
                       textClassName="text-[18px] font-[500] leading-[1.5] text-[#111827]"
                     />
 
-                    {/* Options */}
+                    {/* Options — inline interactive */}
                     {opts.length > 0 && (
-                      <div className="space-y-3 mb-6">
-                        {opts.map((opt) => (
-                          <button
-                            key={opt.label}
-                            className="w-full flex items-center gap-4 rounded-[14px] bg-white px-5 py-3.5 text-left transition-colors hover:bg-[#FAFAFA]"
-                            style={{ border: '1.6px solid #E5E7EB' }}
-                          >
-                            <div
-                              className="w-10 h-10 rounded-full flex items-center justify-center text-[16px] font-bold flex-shrink-0"
-                              style={{ background: '#EBECEF', color: '#4A5565' }}
+                      <div className="space-y-3 mb-4">
+                        {opts.map((opt) => {
+                          const isSelected = qState.selected === opt.label;
+                          const isCorrect = opt.label === q.correctOption;
+                          let bg = '#F9FAFB', border = '1.6px solid #E5E7EB', labelBg = '#D1D5DC', labelColor = '#364153';
+                          if (!qState.submitted && isSelected) {
+                            bg = '#EFF6FF'; border = '1.6px solid #3B82F6'; labelBg = '#3B82F6'; labelColor = '#fff';
+                          }
+                          if (qState.submitted && isCorrect) {
+                            bg = '#F0FDF4'; border = '1.6px solid #00C950'; labelBg = '#00A63E'; labelColor = '#fff';
+                          }
+                          if (qState.submitted && isSelected && !isCorrect) {
+                            bg = '#FEF2F2'; border = '1.6px solid #FB2C36'; labelBg = '#E7000B'; labelColor = '#fff';
+                          }
+                          return (
+                            <button
+                              key={opt.label}
+                              type="button"
+                              disabled={qState.submitted}
+                              onClick={() => setSelected(opt.label)}
+                              className="w-full flex items-center gap-4 rounded-[14px] px-5 py-3.5 text-left transition-colors"
+                              style={{ background: bg, border }}
                             >
-                              {opt.label}
-                            </div>
-                            <span className="text-[16px]" style={{ color: '#1A202C', fontWeight: 400 }}>
-                              {opt.text}
-                            </span>
-                          </button>
-                        ))}
+                              <div
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-[16px] font-bold flex-shrink-0"
+                                style={{ background: labelBg, color: labelColor }}
+                              >
+                                {opt.label}
+                              </div>
+                              <span className="text-[16px]" style={{ color: '#1A202C', fontWeight: qState.submitted && (isCorrect || isSelected) ? 500 : 400 }}>
+                                {opt.text}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
 
-                    {/* CTA */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedQuestion(q);
-                        setSelectedAnswer(null);
-                        setHasSubmitted(false);
-                        setShowAttemptModal(true);
-                      }}
-                      className="w-full h-[52px] rounded-[14px] bg-[#0F172B] text-white font-bold text-[18px] leading-[28px] flex items-center justify-center hover:bg-[#111827] transition-colors"
-                    >
-                      Attempt Question
-                    </button>
+                    {/* Submit / Reset */}
+                    {!qState.submitted ? (
+                      <button
+                        type="button"
+                        onClick={submitAnswer}
+                        disabled={!qState.selected}
+                        className="rounded-[12px] px-5 py-2.5 text-[15px] font-semibold transition-colors"
+                        style={{
+                          background: qState.selected ? '#0F172B' : '#E5E7EB',
+                          color: qState.selected ? '#fff' : '#9CA3AF',
+                          cursor: qState.selected ? 'pointer' : 'not-allowed',
+                        }}
+                      >
+                        {qState.selected ? 'Submit Answer' : 'Select an option'}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={resetAnswer}
+                        className="rounded-[12px] px-5 py-2.5 text-[15px] font-semibold"
+                        style={{ background: '#F3F4F6', color: '#364153' }}
+                      >
+                        Try Again
+                      </button>
+                    )}
+
+                    {/* Explanation inline */}
+                    {qState.submitted && q.explanation && (
+                      <div className="mt-4 rounded-[14px] p-4" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                        <div className="flex items-center gap-2 mb-1" style={{ color: '#016630', fontWeight: 700, fontSize: '13px', textTransform: 'uppercase' }}>
+                          <span>✅</span><span>Explanation</span>
+                        </div>
+                        <p style={{ fontSize: '15px', color: '#364153', lineHeight: '26px' }}>{q.explanation}</p>
+                        <p className="mt-2" style={{ fontSize: '13px', color: '#6A7282' }}>📖 UPSC CSE Prelims {q.year}</p>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -986,13 +1035,12 @@ export default function PyqPage() {
 
           {/* Right: filters */}
           <aside className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-1.5rem)] lg:overflow-y-auto lg:pr-1">
-            {/* Exam year card - 307×198, exact shadow & year buttons */}
+            {/* Exam year card - dropdown */}
             <div
               className="rounded-[16px] bg-white flex flex-col"
               style={{
                 width: '100%',
                 position: 'relative',
-                minHeight: '280px',
                 opacity: 1,
                 boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
               }}
@@ -1005,76 +1053,78 @@ export default function PyqPage() {
                   EXAM YEAR
                 </div>
               </div>
-              <div className="px-5 pb-5 space-y-2">
-                <div className="grid grid-cols-2 gap-2">
+              <div className="px-5 pb-5">
+                <div className="relative">
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedYear(null);
-                      setSelectedYearRange('all');
-                    }}
-                    className="rounded-[10px] flex items-center justify-center"
+                    onClick={() => setYearDropdownOpen(o => !o)}
+                    className="w-full flex items-center justify-between rounded-[10px] px-4"
                     style={{
-                      height: '40px',
-                      background: selectedYearRange === 'all' ? '#0F172B' : '#F3F4F6',
+                      height: '44px',
+                      background: '#F3F4F6',
                       fontFamily: 'Inter, sans-serif',
                       fontWeight: 600,
                       fontSize: '14px',
-                      lineHeight: '20px',
-                      color: selectedYearRange === 'all' ? '#FFFFFF' : '#364153',
+                      color: '#101828',
+                      border: yearDropdownOpen ? '1.5px solid #0F172B' : '1.5px solid transparent',
                     }}
                   >
-                    All Years
+                    <span>
+                      {selectedYearRange === 'all' ? 'All Years' : selectedYearRange === 'last5' ? 'Last 5 yrs' : String(selectedYear)}
+                    </span>
+                    <svg
+                      width="16" height="16" viewBox="0 0 16 16" fill="none"
+                      style={{ transform: yearDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}
+                    >
+                      <path d="M4 6l4 4 4-4" stroke="#6A7282" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedYear(null);
-                      setSelectedYearRange('last5');
-                    }}
-                    className="rounded-[10px] flex items-center justify-center"
-                    style={{
-                      height: '40px',
-                      background: selectedYearRange === 'last5' ? '#FDBA26' : '#F3F4F6',
-                      fontFamily: 'Inter, sans-serif',
-                      fontWeight: 600,
-                      fontSize: '14px',
-                      lineHeight: '20px',
-                      color: selectedYearRange === 'last5' ? '#FFFFFF' : '#364153',
-                    }}
-                  >
-                    Last 5 yrs
-                  </button>
+
+                  {yearDropdownOpen && (
+                    <div
+                      className="absolute z-50 left-0 right-0 mt-1 rounded-[12px] bg-white py-1 overflow-hidden"
+                      style={{ boxShadow: '0px 8px 24px rgba(0,0,0,0.12)', border: '1px solid #E5E7EB' }}
+                    >
+                      {[
+                        { label: 'All Years', range: 'all' as const, year: null },
+                        { label: 'Last 5 yrs', range: 'last5' as const, year: null },
+                        ...YEAR_OPTIONS.map(y => ({ label: String(y), range: 'year' as const, year: y })),
+                      ].map(opt => {
+                        const isActive =
+                          opt.range === 'all' ? selectedYearRange === 'all' :
+                          opt.range === 'last5' ? selectedYearRange === 'last5' :
+                          selectedYearRange === 'year' && selectedYear === opt.year;
+                        return (
+                          <button
+                            key={opt.label}
+                            type="button"
+                            onClick={() => {
+                              setSelectedYear(opt.year);
+                              setSelectedYearRange(opt.range);
+                              setYearDropdownOpen(false);
+                            }}
+                            className="w-full flex items-center justify-between px-4 py-2.5 text-left"
+                            style={{
+                              fontFamily: 'Inter, sans-serif',
+                              fontWeight: isActive ? 600 : 400,
+                              fontSize: '14px',
+                              color: isActive ? '#101828' : '#4A5565',
+                              background: isActive ? '#F3F4F6' : 'transparent',
+                            }}
+                          >
+                            <span>{opt.label}</span>
+                            {isActive && (
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M3 8l4 4 6-6" stroke="#0F172B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {YEAR_OPTIONS.map((year) => {
-                    const selected = selectedYearRange === 'year' && selectedYear === year;
-                    return (
-                      <button
-                        key={year}
-                        type="button"
-                        onClick={() => {
-                          setSelectedYear(year);
-                          setSelectedYearRange('year');
-                        }}
-                        className="rounded-[10px] flex items-center justify-center"
-                        style={{
-                          height: '36px',
-                          background: selected ? '#FDBA26' : '#F3F4F6',
-                          fontFamily: 'Inter, sans-serif',
-                          fontWeight: 600,
-                          fontSize: '14px',
-                          lineHeight: '20px',
-                          letterSpacing: 0,
-                          textAlign: 'center',
-                          color: selected ? '#FFFFFF' : '#364153',
-                        }}
-                      >
-                        {year}
-                      </button>
-                    );
-                  })}
-                </div>
+
                 <div className="flex items-center gap-2 px-1 pt-3 text-[13px] text-[#6A7282]">
                   <span className="text-[14px] leading-none" aria-hidden>📊</span>
                   <p>
@@ -1953,149 +2003,6 @@ export default function PyqPage() {
         </div>
       )}
 
-      {/* Attempt / Question review modal - Prelims only; opens from Attempt Question in Prelims tab */}
-      {showAttemptModal && mode === 'prelims' && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
-          style={{ background: 'rgba(15,23,42,0.5)' }}
-          onClick={() => setShowAttemptModal(false)}
-        >
-          <div
-            className="rounded-[24px] bg-white flex flex-col my-8"
-            style={{
-              width: '896px',
-              maxWidth: '100%',
-              minHeight: '882px',
-              gap: '24px',
-              padding: '32px 32px 32px 40px',
-              borderLeft: '8px solid #00A63E',
-              boxShadow: '0px 4px 6px -4px #0000001A, 0px 10px 15px -3px #0000001A',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header: question #, tags, actions */}
-            <div
-              className="flex items-center justify-between flex-wrap gap-2 flex-shrink-0"
-              style={{ width: '824px', maxWidth: '100%', minHeight: '48px' }}
-            >
-              <div className="flex items-center gap-2 flex-wrap">
-                <div
-                  className="rounded-[14px] flex items-center justify-center flex-shrink-0"
-                  style={{ width: 48, height: 48, background: '#1E293B', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: '18px', lineHeight: '28px' }}
-                >
-                  {selectedQuestion?.questionNum ?? '?'}
-                </div>
-                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: '#1E293B', color: '#FFFFFF' }}>{selectedQuestion?.year}</span>
-                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: '#FEF3C6', color: '#BB4D00' }}>{selectedQuestion?.subject}</span>
-                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#FFEDD4', color: '#F54900' }}>🔥 {selectedQuestion?.difficulty}</span>
-                {hasSubmitted
-                  ? <span className="px-3 py-1 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#DCFCE7', color: '#008236' }}>✅ Attempted</span>
-                  : <span className="px-3 py-1 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#F3F4F6', color: '#6A7282' }}>📝 Not Attempted</span>
-                }
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button type="button" onClick={() => setShowAttemptModal(false)} className="w-10 h-10 rounded-[14px] flex items-center justify-center text-[18px] font-bold" style={{ background: '#00A63E', color: '#FFFFFF' }} aria-label="Close">×</button>
-                <button type="button" className="w-10 h-10 rounded-[14px] flex items-center justify-center" style={{ background: '#F3F4F6', color: '#364153' }} aria-label="Edit">✏️</button>
-                <button type="button" className="w-10 h-10 rounded-[14px] flex items-center justify-center" style={{ background: '#F3F4F6', color: '#364153' }} aria-label="Full screen">⛶</button>
-              </div>
-            </div>
-
-            {/* Question text */}
-            <QuestionTextRenderer
-              text={selectedQuestion?.questionText}
-              style={{ width: '824px', maxWidth: '100%' }}
-              textClassName="font-[Inter] font-normal text-[18px] leading-[29.25px] text-[#1E2939]"
-            />
-
-            {/* Options */}
-            <div style={{ width: '824px', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {(selectedQuestion?.options ?? []).map((opt: any) => {
-                const isSelected = selectedAnswer === opt.label;
-                const isCorrect  = opt.label === selectedQuestion?.correctOption;
-
-                let bg = '#F9FAFB', border = '0.8px solid #E5E7EB', labelBg = '#D1D5DC', labelColor = '#364153';
-                if (!hasSubmitted && isSelected) {
-                  bg = '#EFF6FF'; border = '1.6px solid #3B82F6'; labelBg = '#3B82F6'; labelColor = '#fff';
-                }
-                if (hasSubmitted && isCorrect) {
-                  bg = '#F0FDF4'; border = '1.6px solid #00C950'; labelBg = '#00A63E'; labelColor = '#fff';
-                }
-                if (hasSubmitted && isSelected && !isCorrect) {
-                  bg = '#FEF2F2'; border = '1.6px solid #FB2C36'; labelBg = '#E7000B'; labelColor = '#fff';
-                }
-
-                return (
-                  <button
-                    key={opt.label}
-                    disabled={hasSubmitted}
-                    onClick={() => setSelectedAnswer(opt.label)}
-                    className="w-full flex items-center gap-3 rounded-[14px] pl-4 py-3 text-left transition-colors"
-                    style={{ minHeight: 65, background: bg, border }}
-                  >
-                    <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[16px] font-bold"
-                         style={{ background: labelBg, color: labelColor }}>
-                      {opt.label}
-                    </div>
-                    <span style={{ fontWeight: (hasSubmitted && (isCorrect || isSelected)) ? 500 : 400, fontSize: '16px', color: '#1E2939' }}>
-                      {opt.text}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Explanation – shown only after submit */}
-            {hasSubmitted && selectedQuestion?.explanation && (
-              <div style={{ width: '774.4px', maxWidth: '100%' }}>
-                <div className="flex items-center gap-2 mb-2" style={{ color: '#016630', fontWeight: 700, fontSize: '14px', textTransform: 'uppercase' }}>
-                  <span>✅</span><span>Explanation</span>
-                </div>
-                <p style={{ fontSize: '16px', color: '#364153', lineHeight: '26px', marginBottom: 12 }}>
-                  {selectedQuestion.explanation}
-                </p>
-                <div className="flex items-center gap-2" style={{ fontSize: '14px', color: '#6A7282' }}>
-                  <span>📖</span>
-                  <span>UPSC CSE Prelims {selectedQuestion.year}, {selectedQuestion.paper}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Bottom bar */}
-            <div className="flex items-center justify-between flex-wrap gap-4" style={{ width: '824px', maxWidth: '100%', marginTop: 'auto', paddingTop: 8 }}>
-              {!hasSubmitted ? (
-                <button
-                  type="button"
-                  onClick={() => { if (selectedAnswer) setHasSubmitted(true); }}
-                  disabled={!selectedAnswer}
-                  className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5"
-                  style={{ background: selectedAnswer ? '#0F172B' : '#E5E7EB', color: selectedAnswer ? '#fff' : '#9CA3AF', fontWeight: 600, fontSize: '16px', cursor: selectedAnswer ? 'pointer' : 'not-allowed' }}
-                >
-                  {selectedAnswer ? 'Submit Answer' : 'Select an answer first'}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => { setHasSubmitted(false); setSelectedAnswer(null); }}
-                  className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5"
-                  style={{ background: '#DCFCE7', color: '#008236', fontWeight: 600, fontSize: '16px' }}
-                >
-                  <span>✅</span><span>Attempted · Reset</span>
-                </button>
-              )}
-              <div className="flex items-center gap-6">
-                <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#6A7282' }}>
-                  <span aria-hidden>👁</span>
-                  <span>1,240 views</span>
-                </span>
-                <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#6A7282' }}>
-                  <span aria-hidden>🎯</span>
-                  <span>58% avg accuracy</span>
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

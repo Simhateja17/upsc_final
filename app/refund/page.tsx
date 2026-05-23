@@ -18,6 +18,15 @@ const tocItems = [
   { id: 'contact-us', num: '06', label: 'Contact Us' },
 ];
 
+const policyHeadingStyle = {
+  color: '#0C1424',
+  fontFamily: '"Cormorant Garamond", Georgia, serif',
+  fontSize: '25.6px',
+  fontStyle: 'normal',
+  fontWeight: 600,
+  lineHeight: '32px',
+};
+
 export default function RefundPolicyPage() {
   return (
     <>
@@ -78,7 +87,7 @@ export default function RefundPolicyPage() {
             {/* Section 1: Our Approach */}
             <section id="our-approach" className="mb-14 scroll-mt-24">
               <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">01</div>
-              <h2 className="mb-6 font-serif text-2xl font-bold text-[#0c1424] md:text-3xl">Our Approach</h2>
+              <h2 className="mb-6" style={policyHeadingStyle}>Our Approach</h2>
 
               <div className="mb-6 flex gap-3 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5">
                 <div className="text-xl">💛</div>
@@ -117,7 +126,7 @@ export default function RefundPolicyPage() {
             {/* Section 2: Cancellations */}
             <section id="cancellations" className="mb-14 scroll-mt-24">
               <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">02</div>
-              <h2 className="mb-6 font-serif text-2xl font-bold text-[#0c1424] md:text-3xl">Cancellations</h2>
+              <h2 className="mb-6" style={policyHeadingStyle}>Cancellations</h2>
 
               <p className="mb-4 text-base leading-relaxed text-[#374560]">
                 You can cancel your subscription at any time with no questions asked.
@@ -149,7 +158,7 @@ export default function RefundPolicyPage() {
             {/* Section 3: Within the 7-Day Window */}
             <section id="within-7-days" className="mb-14 scroll-mt-24">
               <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">03</div>
-              <h2 className="mb-6 font-serif text-2xl font-bold text-[#0c1424] md:text-3xl">Within the 7-Day Window</h2>
+              <h2 className="mb-6" style={policyHeadingStyle}>Within the 7-Day Window</h2>
 
               <p className="mb-4 text-base leading-relaxed text-[#374560]">
                 If you request a refund within 7 days of your initial subscription payment, we will process it in full with no questions asked. This applies to both the Rise and Ascent plans.
@@ -182,7 +191,7 @@ export default function RefundPolicyPage() {
             {/* Section 4: After the 7-Day Window */}
             <section id="after-7-days" className="mb-14 scroll-mt-24">
               <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">04</div>
-              <h2 className="mb-6 font-serif text-2xl font-bold text-[#0c1424] md:text-3xl">After the 7-Day Window</h2>
+              <h2 className="mb-6" style={policyHeadingStyle}>After the 7-Day Window</h2>
 
               <p className="mb-6 text-base leading-relaxed text-[#374560]">
                 After the initial 7 days, we do not offer pro-rated refunds for unused subscription time. However, we review every situation with common sense. We will evaluate refund requests case by case for the following:
@@ -225,7 +234,7 @@ export default function RefundPolicyPage() {
             {/* Section 5: How to Request a Refund */}
             <section id="how-to-request" className="mb-14 scroll-mt-24">
               <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">05</div>
-              <h2 className="mb-6 font-serif text-2xl font-bold text-[#0c1424] md:text-3xl">How to Request a Refund</h2>
+              <h2 className="mb-6" style={policyHeadingStyle}>How to Request a Refund</h2>
 
               <p className="mb-6 text-base leading-relaxed text-[#374560]">
                 The process is simple and handled by a real person, not a bot.
@@ -267,7 +276,7 @@ export default function RefundPolicyPage() {
             {/* Section 6: Contact Us */}
             <section id="contact-us" className="mb-14 scroll-mt-24">
               <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">06</div>
-              <h2 className="mb-6 font-serif text-2xl font-bold text-[#0c1424] md:text-3xl">Contact Us</h2>
+              <h2 className="mb-6" style={policyHeadingStyle}>Contact Us</h2>
 
               <p className="mb-4 text-base leading-relaxed text-[#374560]">
                 For any billing or refund queries, please reach out directly. We respond as quickly as possible on working days.

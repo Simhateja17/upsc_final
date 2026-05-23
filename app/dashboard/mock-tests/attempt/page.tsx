@@ -629,6 +629,57 @@ function MockTestAttemptInner() {
     );
   }
 
+  /* --- Prelims submitting screen (prevents blank white flash) --- */
+  if (submitting && !isMains) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arimo, Inter, sans-serif', padding: 24 }}>
+        <div style={{ width: 768, maxWidth: '100%', borderRadius: 16, background: '#FFFFFF', boxShadow: '0px 8px 10px -6px #0000001A, 0px 20px 25px -5px #0000001A', padding: '32px 40px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/eval-header.png" alt="Evaluating" style={{ width: 64, height: 64, objectFit: 'contain', marginBottom: 12 }} />
+            <h1 style={{ fontFamily: 'Arimo', fontWeight: 700, fontSize: 26, lineHeight: '32px', color: '#1E2939', textAlign: 'center', margin: '0 0 6px' }}>
+              Submitting Your Answers
+            </h1>
+            <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: 15, lineHeight: '22px', color: '#4A5565', textAlign: 'center', margin: '0 0 2px' }}>
+              Calculating your score
+            </p>
+            <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: 13, lineHeight: '18px', color: '#6A7282', textAlign: 'center', margin: 0 }}>
+              This usually takes a few seconds
+            </p>
+          </div>
+          {[
+            { emoji: '📋', bg: '#FEF3C7', title: 'Locking your responses', subtitle: 'Saving all selected answers' },
+            { emoji: '🧮', bg: '#DBEAFE', title: 'Calculating score', subtitle: 'Applying +2 / −0.67 marking scheme' },
+            { emoji: '📊', bg: '#DCFCE7', title: 'Preparing results', subtitle: 'Generating accuracy and performance data' },
+          ].map((step, idx) => (
+            <div key={idx}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ width: 36, height: 36, borderRadius: 10, background: step.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{step.emoji}</span>
+                  <div>
+                    <p style={{ fontFamily: 'Arimo', fontWeight: 700, fontSize: 15, color: '#17223E', margin: 0 }}>{step.title}</p>
+                    <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: 13, color: '#4A5565', margin: 0 }}>{step.subtitle}</p>
+                  </div>
+                </div>
+                {idx === 0
+                  ? <div style={{ width: 24, height: 24, borderRadius: '50%', border: '3px solid #D1D5DB', borderTopColor: '#17223E', animation: 'spin 0.8s linear infinite' }} />
+                  : <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid #D1D5DB' }} />
+                }
+              </div>
+              {idx < 2 && <div style={{ width: '100%', height: 1, background: '#B1B1B1' }} />}
+            </div>
+          ))}
+          <div style={{ borderRadius: 10, borderLeft: '4px solid #FDC700', background: '#FEFCE8', padding: '18px 28px', marginTop: 20 }}>
+            <p style={{ textAlign: 'center', fontFamily: 'Arimo', fontStyle: 'italic', fontSize: 11, lineHeight: '15px', color: '#6A7282', margin: 0 }}>
+              &quot;Consistency matters more than perfection. You&apos;re building a skill that compounds.&quot;
+            </p>
+          </div>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   if (!currentQ) return null;
 
   /* ---------------------------- MAINS UI ---------------------------- */

@@ -495,7 +495,6 @@ const PerformanceStatsWidget = () => {
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
             <p className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Flashcards</p>
-            <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
           </Link>
           <Link
             href="/dashboard/spaced-repetition"
@@ -511,7 +510,6 @@ const PerformanceStatsWidget = () => {
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
             <p className="font-arimo font-bold text-[#101828] whitespace-nowrap" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Wrong Attempts</p>
-            <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
           </Link>
           <Link
             href="/dashboard/mindmap"
@@ -527,7 +525,6 @@ const PerformanceStatsWidget = () => {
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
             <p className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Mindmaps</p>
-            <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
           </Link>
           <Link
             href="/dashboard/saved-notes"
@@ -543,7 +540,6 @@ const PerformanceStatsWidget = () => {
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
             <p className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Quick Notes</p>
-            <p className="font-arimo text-[#00A63E]" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.33' }}>Earned</p>
           </Link>
         </div>
       </div>
