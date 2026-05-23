@@ -140,12 +140,15 @@ export default function LibraryPage() {
   }, [selectedSubject, apiSubjects]);
 
   // Handle PDF download via API
-  const handleDownload = async (chapter: any) => {
-    const chapterId = chapter._id || chapter.id;
-    if (!chapterId) return;
-    setDownloadingChapter(chapterId);
+  const handleDownload = async (material: any) => {
+    const materialId = material._id || material.id;
+    if (!materialId || material.isLocked) {
+      if (material.isLocked) window.location.href = '/dashboard/billing/plans?source=library';
+      return;
+    }
+    setDownloadingChapter(materialId);
     try {
-      const res: any = await libraryService.getDownloadUrl(chapterId);
+      const res: any = await libraryService.getMaterialDownloadUrl(materialId);
       const url = res.data?.url || res.data?.downloadUrl || res.data;
       if (url && typeof url === 'string') {
         window.open(url, '_blank');
@@ -160,15 +163,18 @@ export default function LibraryPage() {
   const tabs = ['Notes', 'PYQ Notes'] as const;
 
   const getChaptersForTab = (tab: string) => {
-    const apiChapterList = apiChapters[selectedSubject];
-    if (apiChapterList && apiChapterList.length > 0) {
-      const filtered = apiChapterList.filter(
-        (c: any) => c.category === tab || c.type === tab
-      );
-      if (filtered.length > 0) return filtered;
-      if (tab === 'Notes') return apiChapterList;
-    }
-    return [];
+    const subSubjects = apiChapters[selectedSubject] || [];
+    return subSubjects.flatMap((subSubject: any) =>
+      (subSubject.topics || []).flatMap((topic: any) =>
+        (topic.materials || [])
+          .filter((material: any) => (tab === 'PYQ Notes' ? material.type === 'PYQ Notes' : material.type !== 'PYQ Notes'))
+          .map((material: any) => ({
+            ...material,
+            subSubjectTitle: subSubject.title || subSubject.name,
+            topicTitle: topic.title || topic.name,
+          }))
+      )
+    );
   };
 
   return (
@@ -629,21 +635,28 @@ export default function LibraryPage() {
               {activeTab === 'Notes' ? sectionLabelNotes : sectionLabelPyq}
             </div>
 
-            {/* Chapter cards */}
+            {/* PDF cards */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {loadingChapters && (
                 <div className="font-arimo" style={{ textAlign: 'center', padding: '20px', color: '#6A7282' }}>
-                  Loading chapters...
+                  Loading syllabus PDFs...
                 </div>
               )}
-              {getChaptersForTab(activeTab).map((chapter: any, idx: number) => {
-                const chapterId = chapter._id || chapter.id;
-                const chapterTitle = chapter.title || chapter.name || '';
-                const chapterPages = chapter.pages || 0;
-                const chapterSize = chapter.size || '';
+              {!loadingChapters && getChaptersForTab(activeTab).length === 0 && (
+                <div className="font-arimo" style={{ textAlign: 'center', padding: '20px', color: '#6A7282' }}>
+                  No published PDFs in this section yet.
+                </div>
+              )}
+              {getChaptersForTab(activeTab).map((material: any, idx: number) => {
+                const materialId = material._id || material.id;
+                const materialTitle = material.title || material.name || '';
+                const materialPages = material.pageCount || material.pages || 0;
+                const materialSize = material.fileSize
+                  ? `${(material.fileSize / (1024 * 1024)).toFixed(1)} MB`
+                  : material.size || '';
                 return (
                 <div
-                  key={chapterTitle + idx}
+                  key={materialId || materialTitle + idx}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -654,7 +667,7 @@ export default function LibraryPage() {
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  {/* Chapter number */}
+                  {/* PDF number */}
                   <div
                     className="font-arimo font-bold"
                     style={{
@@ -666,7 +679,7 @@ export default function LibraryPage() {
                       flexShrink: 0,
                     }}
                   >
-                    {String(idx + 1).padStart(2, '0')}
+                      {String(idx + 1).padStart(2, '0')}
                   </div>
 
                   {/* Document icon */}
@@ -704,7 +717,7 @@ export default function LibraryPage() {
                         textOverflow: 'ellipsis',
                       }}
                     >
-                      {chapterTitle}
+                      {materialTitle}
                     </div>
                     <div
                       className="font-arimo"
@@ -714,7 +727,10 @@ export default function LibraryPage() {
                         color: '#6A7282',
                       }}
                     >
-                      {'\uD83D\uDCC4'} {chapterPages} pages{chapterSize ? ` | ${chapterSize}` : ''}
+                      {'\uD83D\uDCC4'} {material.topicTitle} · {material.subSubjectTitle}
+                      {materialPages ? ` · ${materialPages} pages` : ''}
+                      {materialSize ? ` · ${materialSize}` : ''}
+                      {material.isLocked ? ' · Locked' : ''}
                     </div>
                   </div>
 
@@ -722,7 +738,7 @@ export default function LibraryPage() {
                   <div className="flex items-center" style={{ gap: '12px', flexShrink: 0 }}>
                     <button
                       className="font-arimo font-bold"
-                      onClick={() => chapterId && handleDownload(chapter)}
+                      onClick={() => materialId && handleDownload(material)}
                       style={{
                         fontSize: '14px',
                         lineHeight: '20px',
@@ -737,16 +753,16 @@ export default function LibraryPage() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
-                        opacity: downloadingChapter === chapterId ? 0.6 : 1,
+                        opacity: downloadingChapter === materialId ? 0.6 : 1,
                       }}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src="/bbook.png" alt="read" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-                      {downloadingChapter === chapterId ? 'Opening...' : 'Read'}
+                      {material.isLocked ? 'Unlock' : downloadingChapter === materialId ? 'Opening...' : 'Read'}
                     </button>
                     <button
                       className="font-arimo font-bold"
-                      onClick={() => chapterId && handleDownload(chapter)}
+                      onClick={() => materialId && handleDownload(material)}
                       style={{
                         fontSize: '14px',
                         lineHeight: '20px',
@@ -761,12 +777,12 @@ export default function LibraryPage() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
-                        opacity: downloadingChapter === chapterId ? 0.6 : 1,
+                        opacity: downloadingChapter === materialId ? 0.6 : 1,
                       }}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src="/get pdf.png" alt="get pdf" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-                      {downloadingChapter === chapterId ? 'Loading...' : 'Get PDF'}
+                      {material.isLocked ? 'Upgrade' : downloadingChapter === materialId ? 'Loading...' : 'Get PDF'}
                     </button>
                   </div>
                 </div>

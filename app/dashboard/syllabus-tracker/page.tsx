@@ -5,6 +5,7 @@ import { userService, syllabusService } from '@/lib/services';
 import { useCmsContent } from '@/hooks/useCmsContent';
 import { useAuth } from '@/contexts/AuthContext';
 import { SYLLABUS_DATA } from '@/data/syllabus/syllabusData';
+import { PRELIMS_CSV_SUBJECTS } from '@/data/syllabus/prelimsCsvSyllabus';
 import HeroSection from './components/HeroSection';
 import StageTabs from './components/StageTabs';
 import SubjectList from './components/SubjectList';
@@ -97,7 +98,7 @@ export default function SyllabusTrackerPage() {
     }
 
     return {
-      prelims: raw.prelims || [],
+      prelims: raw.prelims?.length ? raw.prelims : PRELIMS_CSV_SUBJECTS,
       mains,
       optional: raw.optional || [],
     };
@@ -106,7 +107,7 @@ export default function SyllabusTrackerPage() {
   // Load syllabus structure from API
   useEffect(() => {
     let mounted = true;
-    const cacheKey = 'rwj_syllabus_cache_v1';
+    const cacheKey = 'rwj_syllabus_cache_v3_admin_live_csv_fallback';
 
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem(cacheKey);

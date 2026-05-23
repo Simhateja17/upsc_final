@@ -119,6 +119,10 @@ export default function StudyPlannerPage() {
   const [adding, setAdding] = useState(false);
   const [studiedDays, setStudiedDays] = useState<number[]>([]);
   const [showSaveToast, setShowSaveToast] = useState(false);
+  const [calendarSyncEnabled, setCalendarSyncEnabled] = useState(false);
+  const [calendarSyncConnected, setCalendarSyncConnected] = useState(false);
+  const [calendarSyncLoading, setCalendarSyncLoading] = useState(false);
+  const [calendarSyncError, setCalendarSyncError] = useState('');
   const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Focus session state
@@ -182,6 +186,16 @@ export default function StudyPlannerPage() {
   }, [currentDate]);
 
   useEffect(() => {
+    studyPlannerService.getCalendarSyncStatus()
+      .then(res => {
+        setCalendarSyncEnabled(!!res.data?.enabled);
+        setCalendarSyncConnected(!!res.data?.connected);
+        setCalendarSyncError(res.data?.lastSyncError || '');
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     studyPlannerService.getMonthlyActivity(currentDate.getFullYear(), currentDate.getMonth() + 1)
       .then(res => {
         if (res.data?.studiedDays) setStudiedDays(res.data.studiedDays);
@@ -222,6 +236,43 @@ export default function StudyPlannerPage() {
       await studyPlannerService.deleteTask(id);
       setTasks(prev => prev.filter(t => t.id !== id));
     } catch {}
+  };
+
+  const handleGoogleCalendarToggle = async () => {
+    if (calendarSyncLoading) return;
+    setCalendarSyncLoading(true);
+    setCalendarSyncError('');
+
+    try {
+      if (calendarSyncEnabled) {
+        const res = await studyPlannerService.updateCalendarSync(false);
+        setCalendarSyncEnabled(!!res.data?.enabled);
+        setCalendarSyncConnected(!!res.data?.connected);
+        setCalendarSyncError(res.data?.lastSyncError || '');
+        return;
+      }
+
+      if (!calendarSyncConnected) {
+        const res = await studyPlannerService.getGoogleCalendarAuthUrl();
+        if (res.data?.url) {
+          window.location.href = res.data.url;
+          return;
+        }
+      }
+
+      const res = await studyPlannerService.updateCalendarSync(true);
+      if (res.data?.needsAuth && res.data?.authUrl) {
+        window.location.href = res.data.authUrl;
+        return;
+      }
+      setCalendarSyncEnabled(!!res.data?.enabled);
+      setCalendarSyncConnected(!!res.data?.connected);
+      setCalendarSyncError(res.data?.lastSyncError || '');
+    } catch (error) {
+      setCalendarSyncError(error instanceof Error ? error.message : 'Google Calendar sync failed');
+    } finally {
+      setCalendarSyncLoading(false);
+    }
   };
 
   const showSaveAcknowledgement = () => {
@@ -1055,12 +1106,27 @@ export default function StudyPlannerPage() {
                         <div className="flex items-center gap-3">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src="/Container%20(3).png" alt="GCal" style={{ width: '20px', height: '20px', objectFit: 'contain', flexShrink: 0 }} />
-                          <span className="font-arimo text-[#101828]" style={{ fontSize: '14px' }}>Google Calendar</span>
+                          <div>
+                            <span className="font-arimo text-[#101828]" style={{ fontSize: '14px' }}>Google Calendar</span>
+                            {calendarSyncError && (
+                              <p className="font-arimo text-[#DC2626] mt-1 max-w-[180px]" style={{ fontSize: '11px', lineHeight: '14px' }}>
+                                {calendarSyncError}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        {/* Toggle ON */}
-                        <div className="w-10 h-6 bg-[#101828] rounded-full relative cursor-pointer">
-                          <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-transform"></div>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={handleGoogleCalendarToggle}
+                          disabled={calendarSyncLoading}
+                          aria-pressed={calendarSyncEnabled}
+                          aria-label={`${calendarSyncEnabled ? 'Disable' : 'Enable'} Google Calendar sync`}
+                          className={`w-10 h-6 rounded-full relative cursor-pointer transition-colors disabled:cursor-wait disabled:opacity-60 ${calendarSyncEnabled ? 'bg-[#101828]' : 'bg-[#D1D5DB]'}`}
+                        >
+                          <span
+                            className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${calendarSyncEnabled ? 'translate-x-4' : 'translate-x-0'}`}
+                          />
+                        </button>
                       </div>
 
                       {/* Smart Notifications */}

@@ -227,14 +227,23 @@ export const studyPlannerService = {
   getSyllabusCoverage: () => api.get<any>('/study-plan/syllabus-coverage', authConfig()),
   getMonthlyActivity: (year: number, month: number) =>
     api.get<any>(`/study-plan/monthly-activity?year=${year}&month=${month}`, authConfig()),
+  getCalendarSyncStatus: () =>
+    api.get<any>('/study-plan/calendar-sync/status', authConfig()),
+  getGoogleCalendarAuthUrl: () =>
+    api.get<{ url: string }>('/study-plan/calendar-sync/google/auth-url', authConfig()),
+  completeGoogleCalendarCallback: (code: string, state: string) =>
+    api.post<any>('/study-plan/calendar-sync/google/callback', { code, state }, authConfig()),
+  updateCalendarSync: (enabled: boolean) =>
+    api.put<any>('/study-plan/calendar-sync', { enabled }, authConfig()),
 };
 
 // ==================== Library ====================
 
 export const libraryService = {
-  getSubjects: () => api.get<any>('/library/subjects'),
-  getChapters: (subjectId: string) => api.get<any>(`/library/subjects/${subjectId}/chapters`),
+  getSubjects: () => api.get<any>('/library/subjects', authConfig()),
+  getChapters: (subjectId: string) => api.get<any>(`/library/subjects/${subjectId}/chapters`, authConfig()),
   getDownloadUrl: (chapterId: string) => api.get<any>(`/library/download/${chapterId}`, authConfig()),
+  getMaterialDownloadUrl: (materialId: string) => api.get<any>(`/library/download/material/${materialId}`, authConfig()),
 };
 
 // ==================== Pricing & Mentorship ====================
@@ -707,6 +716,7 @@ export const adminService = {
   deleteSpacedRepSeed: (id: string) => api.delete<any>(`/admin/spaced-rep/seeds/${id}`, authConfig()),
 
   // Library
+  getLibraryTree: (stage = 'prelims') => api.get<any>(`/admin/library/tree?stage=${encodeURIComponent(stage)}`, authConfig()),
   getLibrarySubjects: () => api.get<any>('/admin/library/subjects', authConfig()),
   createLibrarySubject: (data: any) => api.post<any>('/admin/library/subjects', data, authConfig()),
   updateLibrarySubject: (id: string, data: any) => api.put<any>(`/admin/library/subjects/${id}`, data, authConfig()),
@@ -718,12 +728,22 @@ export const adminService = {
   deleteLibraryChapter: (id: string) => api.delete<any>(`/admin/library/chapters/${id}`, authConfig()),
   getLibraryMaterials: (chapterId?: string) =>
     api.get<any>(`/admin/library/materials${chapterId ? `?chapterId=${encodeURIComponent(chapterId)}` : ''}`, authConfig()),
-  uploadLibraryMaterial: async (file: File, chapterId: string, title: string, type?: string) => {
+  uploadLibraryMaterial: async (
+    file: File,
+    topicId: string,
+    title: string,
+    type?: string,
+    options?: { description?: string; accessLevel?: string; isPublished?: boolean; order?: number }
+  ) => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('chapterId', chapterId);
+    formData.append('topicId', topicId);
     formData.append('title', title);
     if (type) formData.append('type', type);
+    if (options?.description) formData.append('description', options.description);
+    if (options?.accessLevel) formData.append('accessLevel', options.accessLevel);
+    if (options?.isPublished !== undefined) formData.append('isPublished', String(options.isPublished));
+    if (options?.order !== undefined) formData.append('order', String(options.order));
 
     const token = getToken();
     const res = await fetch(
