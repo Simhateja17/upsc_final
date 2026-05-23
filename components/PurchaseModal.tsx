@@ -1,7 +1,9 @@
 ﻿'use client';
 
 import React, { useMemo, useState } from 'react';
-import { pricingService } from '@/lib/services';
+import Script from 'next/script';
+import { billingService, pricingService } from '@/lib/services';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PurchaseModalProps {
   open: boolean;
@@ -15,6 +17,20 @@ interface PurchaseModalProps {
 
 type PaymentMethod = 'upi' | 'card' | 'netbanking' | 'wallet';
 type PlanKey = 'monthly' | 'quarterly' | 'yearly';
+type RazorpaySuccessResponse = {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => {
+      open: () => void;
+      on: (event: string, callback: (response: any) => void) => void;
+    };
+  }
+}
 
 const PLAN_OPTIONS: Array<{ key: PlanKey; label: string; price: number; subtitle?: string }> = [
   { key: 'monthly', label: 'Monthly', price: 499 },
@@ -61,7 +77,219 @@ const listItems = [
   'Syllabus Tracker',
 ];
 
-export default function PurchaseModal({ open, onClose, itemType, itemId, itemName, amount, onSuccess }: PurchaseModalProps) {
+export default function PurchaseModal(props: PurchaseModalProps) {
+  if (props.itemType === 'test_series') {
+    return <TestSeriesCheckoutModal {...props} />;
+  }
+
+  return <LegacyPurchaseModal {...props} />;
+}
+
+function TestSeriesCheckoutModal({ open, onClose, itemId, itemName, amount, onSuccess }: PurchaseModalProps) {
+  const { user } = useAuth();
+  const [isPaying, setIsPaying] = useState(false);
+  const [status, setStatus] = useState<'checkout' | 'success' | 'failed'>('checkout');
+  const [error, setError] = useState('');
+
+  if (!open) return null;
+
+  const displayName = itemName?.trim() || 'Test Series';
+  const payableAmount = Math.max(0, amount);
+  const gst = payableAmount > 0 ? payableAmount - payableAmount / 1.18 : 0;
+  const baseAmount = payableAmount - gst;
+
+  const closeModal = () => {
+    if (!isPaying) onClose();
+  };
+
+  const handlePayment = async () => {
+    setError('');
+    setIsPaying(true);
+
+    try {
+      const orderResponse = await billingService.createRazorpayOrder({
+        itemType: 'test_series',
+        itemId,
+      });
+      const order = orderResponse?.data ?? orderResponse;
+
+      if (order?.alreadyPurchased) {
+        setStatus('success');
+        onSuccess?.();
+        return;
+      }
+
+      if (!window.Razorpay) {
+        throw new Error('Razorpay checkout is still loading. Please try again.');
+      }
+
+      const checkout = new window.Razorpay({
+        key: order.key,
+        amount: order.amount,
+        currency: order.currency || 'INR',
+        name: 'RiseWithJeet',
+        description: displayName,
+        order_id: order.order_id || order.providerOrderId,
+        prefill: {
+          name: [user?.firstName, user?.lastName].filter(Boolean).join(' '),
+          email: user?.email || '',
+        },
+        notes: {
+          itemType: 'test_series',
+          itemId,
+        },
+        handler: async (response: RazorpaySuccessResponse) => {
+          try {
+            await billingService.verifyRazorpayPayment({
+              paymentId: order.paymentId,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            setStatus('success');
+            onSuccess?.();
+          } catch (err: any) {
+            setStatus('failed');
+            setError(err?.message || 'Payment succeeded, but unlocking the test series failed.');
+          } finally {
+            setIsPaying(false);
+          }
+        },
+        modal: {
+          ondismiss: () => setIsPaying(false),
+        },
+        theme: { color: '#E8B84B' },
+      });
+
+      checkout.on('payment.failed', async (response: any) => {
+        const reason = response?.error?.description || 'Payment failed';
+        try {
+          if (order.paymentId) {
+            await billingService.markRazorpayPaymentFailed({
+              paymentId: order.paymentId,
+              status: 'failed',
+              failureReason: reason,
+            });
+          }
+        } catch {
+          // Razorpay has already surfaced the failure to the buyer.
+        }
+        setError(reason);
+        setStatus('failed');
+        setIsPaying(false);
+      });
+
+      checkout.open();
+    } catch (err: any) {
+      setError(err?.message || 'Unable to start payment. Please try again.');
+      setStatus('failed');
+      setIsPaying(false);
+    }
+  };
+
+  return (
+    <>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
+      <div
+        onClick={e => {
+          if (e.target === e.currentTarget) closeModal();
+        }}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1000,
+          background: 'rgba(15, 23, 42, 0.62)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '18px',
+        }}
+      >
+        <div style={{ width: '100%', maxWidth: '980px', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 26px 70px rgba(15, 23, 42, 0.32)', overflow: 'hidden', border: '1px solid #E6E8ED' }}>
+          {status === 'success' ? (
+            <div style={{ padding: '56px 28px', textAlign: 'center' }}>
+              <div style={{ width: 68, height: 68, borderRadius: '50%', background: '#ECFDF3', color: '#16A34A', display: 'grid', placeItems: 'center', margin: '0 auto 18px', fontSize: 34, fontWeight: 800 }}>✓</div>
+              <h2 style={{ margin: '0 0 8px', color: '#111827', fontSize: 30, fontWeight: 800 }}>Test Series Unlocked</h2>
+              <p style={{ margin: '0 auto 22px', maxWidth: 520, color: '#667085', fontSize: 16, lineHeight: 1.5 }}>{displayName} is now available in your enrolled series.</p>
+              <button onClick={onClose} style={{ height: 48, border: 'none', borderRadius: 10, background: '#E8B84B', color: '#111827', fontWeight: 800, padding: '0 24px', cursor: 'pointer' }}>
+                Continue
+              </button>
+            </div>
+          ) : (
+            <div className="purchase-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+              <div style={{ padding: '34px 30px', borderRight: '1px solid #E3E7EE', background: '#FBFBFC' }}>
+                <span style={{ display: 'inline-block', border: '1px solid #E5B642', color: '#B7791F', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 800, letterSpacing: '2px' }}>TEST SERIES</span>
+                <h2 style={{ margin: '18px 0 8px', color: '#101828', fontSize: 38, lineHeight: 1.08, fontWeight: 800 }}>{displayName}</h2>
+                <p style={{ margin: 0, color: '#667085', fontSize: 17, lineHeight: 1.45 }}>One-time access to this battle plan, including all published tests, explanations, analytics, and future updates in the series.</p>
+
+                <div style={{ marginTop: 28, borderTop: '1px solid #E5E7EB', paddingTop: 22 }}>
+                  <h3 style={{ margin: '0 0 14px', color: '#98A2B3', fontSize: 13, letterSpacing: '3px', fontWeight: 800 }}>WHAT'S INCLUDED</h3>
+                  {['Permanent access to this series', 'All tests inside the series', 'Attempt history and performance analytics', 'Future additions to the same series'].map(item => (
+                    <div key={item} style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 13, color: '#475467', fontSize: 16 }}>
+                      <span style={{ color: '#16A34A', fontWeight: 900 }}>✓</span>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: 24, borderRadius: 10, background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 14, color: '#667085', fontSize: 14 }}>
+                  Secured by Razorpay. Your payment details are handled by Razorpay and are not stored on our servers.
+                </div>
+              </div>
+
+              <div style={{ padding: '34px 30px 28px', position: 'relative' }}>
+                <button onClick={closeModal} disabled={isPaying} style={{ position: 'absolute', top: 18, right: 18, width: 38, height: 38, borderRadius: '50%', border: '1px solid #DFE3EB', background: '#FFFFFF', color: '#667085', fontSize: 22, lineHeight: '30px', cursor: isPaying ? 'not-allowed' : 'pointer' }} aria-label="Close">×</button>
+                <h3 style={{ margin: '0 0 26px', fontSize: 26, color: '#111827', fontWeight: 800 }}>Order Summary</h3>
+
+                <div style={{ borderRadius: 14, background: '#F8FAFC', padding: 18, marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#667085', fontSize: 15, marginBottom: 10 }}>
+                    <span>Product</span>
+                    <strong style={{ color: '#111827' }}>Test Series</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#667085', fontSize: 15 }}>
+                    <span>Access</span>
+                    <strong style={{ color: '#111827' }}>Permanent</strong>
+                  </div>
+                </div>
+
+                <div style={{ borderRadius: 14, background: '#FFF8E5', border: '1px solid #F2E2B8', padding: 18 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475467', fontSize: 16, marginBottom: 12 }}>
+                    <span>{displayName}</span>
+                    <strong style={{ color: '#111827' }}>₹{baseAmount.toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#667085', fontSize: 15, marginBottom: 12 }}>
+                    <span>GST (18% included)</span>
+                    <span>₹{gst.toFixed(2)}</span>
+                  </div>
+                  <div style={{ borderTop: '1px solid #E8D8AD', paddingTop: 14, display: 'flex', justifyContent: 'space-between', color: '#111827', fontSize: 20, fontWeight: 900 }}>
+                    <span>Total Payable</span>
+                    <span>₹{payableAmount.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {error ? <p style={{ margin: '14px 0 0', color: '#B42318', fontSize: 14 }}>{error}</p> : null}
+
+                <button onClick={handlePayment} disabled={isPaying} style={{ width: '100%', marginTop: 22, height: 52, borderRadius: 10, border: 'none', background: isPaying ? '#CBD5E1' : '#E8B84B', color: '#111827', fontWeight: 900, fontSize: 17, cursor: isPaying ? 'not-allowed' : 'pointer' }}>
+                  {isPaying ? 'Opening Razorpay...' : `Continue to Payment →`}
+                </button>
+                <p style={{ margin: '14px 0 0', textAlign: 'center', color: '#98A2B3', fontSize: 13 }}>256-bit SSL Secure · Powered by Razorpay · PCI DSS Compliant</p>
+              </div>
+            </div>
+          )}
+        </div>
+        <style>{`
+          @media (max-width: 900px) {
+            .purchase-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
+      </div>
+    </>
+  );
+}
+
+function LegacyPurchaseModal({ open, onClose, itemType, itemId, itemName, amount, onSuccess }: PurchaseModalProps) {
   const [step, setStep] = useState<'details' | 'processing' | 'success'>('details');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>('monthly');

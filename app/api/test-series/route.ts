@@ -4,6 +4,15 @@ import { getBearerFromRequest, getBearerUser, isAdminUser } from '@/lib/test-ser
 import { mapSeriesToCard } from '@/lib/test-series/mappers';
 import * as repo from '@/lib/test-series/repo';
 
+function errorMessage(e: unknown, fallback: string) {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === 'object' && 'message' in e) {
+    const message = (e as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+  return fallback;
+}
+
 export async function GET(req: NextRequest) {
   const admin = getSupabaseAdmin();
   if (!admin) {
@@ -29,8 +38,7 @@ export async function GET(req: NextRequest) {
     );
     return NextResponse.json({ status: 'success', data });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Query failed';
-    return NextResponse.json({ status: 'error', message: msg }, { status: 500 });
+    return NextResponse.json({ status: 'error', message: errorMessage(e, 'Query failed') }, { status: 500 });
   }
 }
 
@@ -85,7 +93,6 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ status: 'success', data });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Create failed';
-    return NextResponse.json({ status: 'error', message: msg }, { status: 500 });
+    return NextResponse.json({ status: 'error', message: errorMessage(e, 'Create failed') }, { status: 500 });
   }
 }

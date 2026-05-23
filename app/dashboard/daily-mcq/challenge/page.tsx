@@ -36,23 +36,37 @@ export default function DailyMcqChallengePage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [error, setError] = useState('');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
 
   useEffect(() => {
     dailyMcqService.getQuestions()
       .then((res) => {
-        setQuestions(res.data.questions || []);
+        const nextQuestions = res.data.questions || [];
+        if (nextQuestions.length !== 10) {
+          setError(`Today's challenge is not ready yet. Expected 10 questions, found ${nextQuestions.length}.`);
+          return;
+        }
+        setQuestions(nextQuestions);
         setTimeLimit(FIXED_TIME_LIMIT_MINUTES);
         setTimeLeft(FIXED_TIME_LIMIT_MINUTES * 60);
         startTimeRef.current = Date.now();
       })
-      .catch(() => router.push('/dashboard/daily-mcq'))
+      .catch((err) => setError(err instanceof Error ? err.message : "Unable to load today's MCQ challenge."))
       .finally(() => setLoading(false));
-  }, [router]);
+  }, []);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(async (skipUnansweredConfirm = false) => {
     if (submitting || submitted) return;
+    const unansweredCount = questions.filter((q) => !answers[q.id]).length;
+    if (unansweredCount > 0 && !skipUnansweredConfirm) {
+      const shouldSubmit = window.confirm(
+        `${unansweredCount} question${unansweredCount === 1 ? ' is' : 's are'} unanswered. Submit anyway?`
+      );
+      if (!shouldSubmit) return;
+    }
+
     setSubmitting(true);
     if (timerRef.current) clearInterval(timerRef.current);
 
@@ -82,7 +96,7 @@ export default function DailyMcqChallengePage() {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           if (timerRef.current) clearInterval(timerRef.current);
-          handleSubmit();
+          handleSubmit(true);
           return 0;
         }
         return prev - 1;
@@ -108,7 +122,22 @@ export default function DailyMcqChallengePage() {
   }
 
   const q = questions[currentQuestion];
-  if (!q) return null;
+  if (error || !q) {
+    return (
+      <div className="flex flex-col items-center justify-center px-6 text-center" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
+        <div className="max-w-md rounded-2xl border border-red-100 bg-white p-6 shadow-sm">
+          <h1 className="font-arimo text-xl font-bold text-[#101828]">Daily MCQ Challenge unavailable</h1>
+          <p className="mt-3 text-sm leading-6 text-[#667085]">{error || "Unable to load today's questions."}</p>
+          <button
+            className="mt-5 rounded-lg bg-[#17223E] px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-[#1E2875]"
+            onClick={() => router.push('/dashboard/daily-mcq')}
+          >
+            Back to Daily MCQ
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
@@ -354,7 +383,7 @@ export default function DailyMcqChallengePage() {
               ) : currentQuestion === questions.length - 1 ? (
                 <button
                   className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                  onClick={handleSubmit}
+                  onClick={() => handleSubmit(false)}
                   disabled={submitting}
                 >
                   <span className="font-arimo font-bold text-sm">{submitting ? 'Submitting...' : 'Submit'}</span>

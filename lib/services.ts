@@ -150,6 +150,13 @@ export const editorialService = {
     const suffix = qs.length ? `?${qs.join('&')}` : '';
     return api.get<any>(`/editorials/live-news${suffix}`, authConfig());
   },
+  getAvailability: (source?: string, month?: string) => {
+    const qs: string[] = [];
+    if (source && source !== 'all') qs.push(`source=${encodeURIComponent(source)}`);
+    if (month) qs.push(`month=${encodeURIComponent(month)}`);
+    const suffix = qs.length ? `?${qs.join('&')}` : '';
+    return api.get<any>(`/editorials/availability${suffix}`, authConfig());
+  },
   getById: (id: string) => api.get<any>(`/editorials/${id}`, authConfig()),
   markRead: (id: string) => api.post<any>(`/editorials/${id}/mark-read`, {}, authConfig()),
   toggleSave: (id: string) => api.post<any>(`/editorials/${id}/save`, {}, authConfig()),
@@ -259,7 +266,10 @@ export const pricingService = {
 };
 
 export const billingService = {
-  createRazorpayOrder: (data: { planKey: 'rise' | 'ascent'; cycle: 'monthly' | 'quarterly' | 'yearly' }) =>
+  createRazorpayOrder: (data:
+    | { planKey: 'rise' | 'ascent'; cycle: 'monthly' | 'quarterly' | 'yearly' }
+    | { itemType: 'test_series'; itemId: string }
+  ) =>
     api.post<any>('/create-order', data, authConfig()),
   verifyRazorpayPayment: (data: {
     paymentId: string;
@@ -356,6 +366,8 @@ export const pyqService = {
     const qs = query.toString();
     return api.get<any>(`/pyq/counts${qs ? `?${qs}` : ''}`);
   },
+  submitPrelimsAnswer: (questionId: string, selectedOption: string) =>
+    api.post<any>(`/pyq/prelims/${questionId}/submit`, { selectedOption }, authConfig()),
 
   // Mains AI evaluation
   submitMainsAnswer: async (

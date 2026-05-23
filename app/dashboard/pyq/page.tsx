@@ -128,6 +128,7 @@ export default function PyqPage() {
   const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [prelimsSubmitError, setPrelimsSubmitError] = useState<string | null>(null);
   const [showMainsWriteModal, setShowMainsWriteModal] = useState(false);
   const [showModelAnswerModal, setShowModelAnswerModal] = useState(false);
   const [showAiEvalModal, setShowAiEvalModal] = useState(false);
@@ -645,6 +646,7 @@ export default function PyqPage() {
                         setSelectedQuestion(q);
                         setSelectedAnswer(null);
                         setHasSubmitted(false);
+                        setPrelimsSubmitError(null);
                         setShowAttemptModal(true);
                       }}
                       className="w-full h-[52px] rounded-[14px] bg-[#0F172B] text-white font-bold text-[18px] leading-[28px] flex items-center justify-center hover:bg-[#111827] transition-colors"
@@ -2065,7 +2067,16 @@ export default function PyqPage() {
               {!hasSubmitted ? (
                 <button
                   type="button"
-                  onClick={() => { if (selectedAnswer) setHasSubmitted(true); }}
+                  onClick={async () => {
+                    if (!selectedAnswer || !selectedQuestion?.id) return;
+                    setHasSubmitted(true);
+                    setPrelimsSubmitError(null);
+                    try {
+                      await pyqService.submitPrelimsAnswer(selectedQuestion.id, selectedAnswer);
+                    } catch (err) {
+                      setPrelimsSubmitError(err instanceof Error ? err.message : 'Could not save attempt');
+                    }
+                  }}
                   disabled={!selectedAnswer}
                   className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5"
                   style={{ background: selectedAnswer ? '#0F172B' : '#E5E7EB', color: selectedAnswer ? '#fff' : '#9CA3AF', fontWeight: 600, fontSize: '16px', cursor: selectedAnswer ? 'pointer' : 'not-allowed' }}
@@ -2075,13 +2086,19 @@ export default function PyqPage() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => { setHasSubmitted(false); setSelectedAnswer(null); }}
+                  onClick={() => { setHasSubmitted(false); setSelectedAnswer(null); setPrelimsSubmitError(null); }}
                   className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5"
                   style={{ background: '#DCFCE7', color: '#008236', fontWeight: 600, fontSize: '16px' }}
                 >
                   <span>✅</span><span>Attempted · Reset</span>
                 </button>
-              )}
+            )}
+
+            {hasSubmitted && prelimsSubmitError && (
+              <div className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[13px] text-[#B91C1C]">
+                Attempt shown locally, but could not be saved for leaderboard: {prelimsSubmitError}
+              </div>
+            )}
               <div className="flex items-center gap-6">
                 <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#6A7282' }}>
                   <span aria-hidden>👁</span>
