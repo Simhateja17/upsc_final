@@ -482,7 +482,7 @@ export default function PyqPage() {
         </div>
 
         {/* Content area: filters (left on desktop) + questions */}
-        <div className="mb-4 rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-2.5 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.08)]">
+        <div className="mb-4">
           <nav aria-label="Question filters breadcrumb" className="flex flex-wrap items-center gap-2 text-[12px] md:text-[13px]">
             <button
               type="button"
