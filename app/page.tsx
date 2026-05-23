@@ -842,7 +842,7 @@ export default function LandingPage() {
             <div className="pr-0 xl:pr-8">
               <Image src="/footer-logo-new.png" alt="RiseWithJeet" width={320} height={64} className="-ml-6 xl:-ml-8" style={{ height: 56, width: 'auto', objectFit: 'contain' }} priority />
               <p className="mt-4 max-w-[320px] text-[13px] leading-[1.6] text-white/60">
-                RiseWithJeet is an AI-powered UPSC preparation platform redefining preparation with a simplified, smarter approach. As India&apos;s leading AI-powered platform, we combine cutting-edge technology, high-quality content, expert guidance, and innovative tools to deliver an effective learning experience.
+                Rise With Jeet is redefining UPSC preparation with a simplified, smarter approach. As India&apos;s leading AI-powered platform, we combine cutting-edge technology, high-quality content, expert guidance, and innovative tools to deliver an effective learning experience.
               </p>
 
               <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Download the app</p>
