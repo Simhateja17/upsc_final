@@ -288,11 +288,11 @@ export default function LandingPage() {
         </div>
 
         <div className="hero-badge" style={{ position: 'relative', zIndex: 2, display: 'inline-flex' }}>
-          <span className="badge-star">✦</span> RiseWithJeet: India&apos;s #1 AI-Powered UPSC Platform
+          <span className="badge-star">✦</span> India&apos;s #1 AI-Powered UPSC Platform
         </div>
 
         <h1>
-          <span className="line1">RiseWithJeet gives you everything you need to crack UPSC,</span>
+          <span className="line1">Everything you need to crack UPSC,</span>
           <span className="line2"><span className="gold-word">Simplified</span></span>
         </h1>
 
