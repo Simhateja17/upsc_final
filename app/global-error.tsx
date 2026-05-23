@@ -11,6 +11,10 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error('Global error:', error);
+    // Stale deployment: server action IDs changed after new build
+    if (error.message?.includes('Failed to find Server Action') || error.message?.includes('Missing \'next-action\' header')) {
+      window.location.reload();
+    }
   }, [error]);
 
   return (
