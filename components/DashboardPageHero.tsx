@@ -199,7 +199,7 @@ export default function DashboardPageHero({
               key={stat.label}
               className="flex-1 text-center"
               style={{
-                background: 'rgba(255,255,255,0.05)',
+                background: '#0D1121',
                 borderRight: i < stats.length - 1 ? '0.8px solid rgba(255,255,255,0.08)' : undefined,
                 padding: '10px 16px',
               }}
@@ -220,11 +220,7 @@ export default function DashboardPageHero({
           ))}
         </div>
       </div>
-      <style jsx>{`
-        :global(.hero-title *) {
-          font-style: normal !important;
-        }
-      `}</style>
+      <style>{`.hero-title * { font-style: normal !important; }`}</style>
     </PageHeroBackground>
   );
 }

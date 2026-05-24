@@ -321,6 +321,7 @@ export const pyqService = {
   getQuestions: (params?: {
     mode?: 'prelims' | 'mains';
     year?: number;
+    years?: number[];
     yearFrom?: number;
     yearTo?: number;
     subject?: string;
@@ -332,7 +333,11 @@ export const pyqService = {
   }) => {
     const query = new URLSearchParams();
     if (params?.mode) query.set('mode', params.mode);
-    if (params?.year) query.set('year', String(params.year));
+    if (params?.years && params.years.length > 0) {
+      params.years.forEach((y) => query.append('years', String(y)));
+    } else if (params?.year) {
+      query.set('year', String(params.year));
+    }
     if (params?.yearFrom) query.set('yearFrom', String(params.yearFrom));
     if (params?.yearTo) query.set('yearTo', String(params.yearTo));
     if (params?.subject) query.set('subject', params.subject);
@@ -355,12 +360,17 @@ export const pyqService = {
   getCounts: (params?: {
     mode?: 'prelims' | 'mains';
     year?: number;
+    years?: number[];
     yearFrom?: number;
     yearTo?: number;
   }) => {
     const query = new URLSearchParams();
     if (params?.mode) query.set('mode', params.mode);
-    if (params?.year) query.set('year', String(params.year));
+    if (params?.years && params.years.length > 0) {
+      params.years.forEach((y) => query.append('years', String(y)));
+    } else if (params?.year) {
+      query.set('year', String(params.year));
+    }
     if (params?.yearFrom) query.set('yearFrom', String(params.yearFrom));
     if (params?.yearTo) query.set('yearTo', String(params.yearTo));
     const qs = query.toString();

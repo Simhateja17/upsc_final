@@ -161,25 +161,23 @@ export default function PyqPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [selectedYearRange, setSelectedYearRange] = useState<'all' | 'last5' | 'year'>('all');
+  const [selectedYears, setSelectedYears] = useState<number[]>([]);
+  const [yearMode, setYearMode] = useState<'all' | 'custom'>('all');
+  const [yearSearch, setYearSearch] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('All Papers');
   const [selectedSubtopic, setSelectedSubtopic] = useState<string | null>(null);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
   const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
   const [questionCounts, setQuestionCounts] = useState<PYQCountData>(EMPTY_COUNTS);
-  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const yearFrom = selectedYearRange === 'last5' ? LATEST_EXAM_YEAR - 4 : undefined;
       const res = await pyqService.getQuestions({
         mode,
-        year: selectedYearRange === 'year' ? selectedYear || undefined : undefined,
-        yearFrom,
+        years: yearMode === 'custom' && selectedYears.length > 0 ? selectedYears : undefined,
         subject: selectedSubject !== 'All Papers' ? selectedSubject : undefined,
         subSubject: selectedSubtopic || undefined,
         topic: selectedTopics.length ? selectedTopics : undefined,
@@ -201,12 +199,12 @@ export default function PyqPage() {
     } finally {
       setLoading(false);
     }
-  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic, selectedTopics, page]);
+  }, [mode, yearMode, selectedYears, selectedSubject, selectedSubtopic, selectedTopics, page]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic, selectedTopics]);
+  }, [mode, yearMode, selectedYears, selectedSubject, selectedSubtopic, selectedTopics]);
 
   useEffect(() => {
     setSelectedSubject('All Papers');
@@ -259,11 +257,9 @@ export default function PyqPage() {
     let active = true;
     const fetchCounts = async () => {
       try {
-        const yearFrom = selectedYearRange === 'last5' ? LATEST_EXAM_YEAR - 4 : undefined;
         const res = await pyqService.getCounts({
           mode,
-          year: selectedYearRange === 'year' ? selectedYear || undefined : undefined,
-          yearFrom,
+          years: yearMode === 'custom' && selectedYears.length > 0 ? selectedYears : undefined,
         });
         if (active && res.status === 'success') {
           setQuestionCounts(res.data || EMPTY_COUNTS);
@@ -278,7 +274,7 @@ export default function PyqPage() {
     return () => {
       active = false;
     };
-  }, [mode, selectedYear, selectedYearRange]);
+  }, [mode, yearMode, selectedYears]);
 
   const subjectQuestionCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -542,8 +538,7 @@ export default function PyqPage() {
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
                 <h3 className="font-bold text-[20px] md:text-[24px] text-[#101828]">
                   Prelims Questions
-                  {selectedYearRange === 'year' && selectedYear ? ` · ${selectedYear}` : ''}
-                  {selectedYearRange === 'last5' ? ' · Last 5 yrs' : ''}
+                  {yearMode === 'custom' && selectedYears.length > 0 ? ` · ${selectedYears.length === 1 ? selectedYears[0] : `${selectedYears.length} years`}` : ''}
                 </h3>
                 <p className="text-[13px] text-[#6A7282]">
                   {loading ? 'Loading...' : `Showing ${visibleQuestions.length} of ${total} questions`}
@@ -889,8 +884,7 @@ export default function PyqPage() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-6">
                   <h3 className="font-bold text-[24px] text-[#101828]">
                     Mains Questions
-                    {selectedYearRange === 'year' && selectedYear ? ` · ${selectedYear}` : ''}
-                    {selectedYearRange === 'last5' ? ' · Last 5 yrs' : ' - All Papers'}
+                    {yearMode === 'custom' && selectedYears.length > 0 ? ` · ${selectedYears.length === 1 ? selectedYears[0] : `${selectedYears.length} years`}` : ' - All Papers'}
                   </h3>
                   <p className="text-[14px] text-[#6A7282]">
                     {loading ? 'Loading...' : `Showing ${visibleQuestions.length} of ${total} questions`}
@@ -1039,105 +1033,128 @@ export default function PyqPage() {
 
           {/* Right: filters */}
           <aside className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-1.5rem)] lg:overflow-y-auto lg:pr-1">
-            {/* Exam year card - dropdown */}
+            {/* Exam year card */}
             <div
               className="rounded-[16px] bg-white flex flex-col"
               style={{
                 width: '100%',
-                position: 'relative',
-                opacity: 1,
                 boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
               }}
             >
-              <div className="flex items-center gap-3 pt-5 pl-5 pr-5 pb-3">
-                <div className="w-7 h-7 rounded-full bg-[#0F172B] flex items-center justify-center text-[12px] font-bold text-white flex-shrink-0">
-                  1
+              {/* Header */}
+              <div className="flex items-center justify-between pt-5 pl-5 pr-5 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full bg-[#0F172B] flex items-center justify-center text-[12px] font-bold text-white flex-shrink-0">
+                    1
+                  </div>
+                  <div className="text-[12px] font-bold tracking-[0.06em] uppercase text-[#4A5565]">
+                    EXAM YEAR
+                  </div>
                 </div>
-                <div className="text-[12px] font-bold tracking-[0.06em] uppercase text-[#4A5565]">
-                  EXAM YEAR
+                <span className="text-[12px] font-medium text-[#6A7282]">
+                  {yearMode === 'custom' ? `${selectedYears.length} selected` : '0 selected'}
+                </span>
+              </div>
+
+              {/* All / Custom toggle */}
+              <div className="px-5 pb-4">
+                <div className="flex rounded-[10px] p-1" style={{ background: '#F3F4F6' }}>
+                  {(['all', 'custom'] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => {
+                        setYearMode(m);
+                        if (m === 'all') { setSelectedYears([]); setYearSearch(''); }
+                      }}
+                      className="flex-1 rounded-[8px] py-2 text-[13px] font-semibold transition-all"
+                      style={{
+                        background: yearMode === m ? '#0F172B' : 'transparent',
+                        color: yearMode === m ? '#fff' : '#4A5565',
+                      }}
+                    >
+                      {m === 'all' ? 'All' : 'Custom'}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="px-5 pb-5">
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setYearDropdownOpen(o => !o)}
-                    className="w-full flex items-center justify-between rounded-[10px] px-4"
-                    style={{
-                      height: '44px',
-                      background: '#F3F4F6',
-                      fontFamily: 'Inter, sans-serif',
-                      fontWeight: 600,
-                      fontSize: '14px',
-                      color: '#101828',
-                      border: yearDropdownOpen ? '1.5px solid #0F172B' : '1.5px solid transparent',
-                    }}
-                  >
-                    <span>
-                      {selectedYearRange === 'all' ? 'All Years' : selectedYearRange === 'last5' ? 'Last 5 yrs' : String(selectedYear)}
-                    </span>
-                    <svg
-                      width="16" height="16" viewBox="0 0 16 16" fill="none"
-                      style={{ transform: yearDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}
-                    >
-                      <path d="M4 6l4 4 4-4" stroke="#6A7282" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
 
-                  {yearDropdownOpen && (
-                    <div
-                      className="absolute z-50 left-0 right-0 mt-1 rounded-[12px] bg-white py-1 overflow-hidden"
-                      style={{ boxShadow: '0px 8px 24px rgba(0,0,0,0.12)', border: '1px solid #E5E7EB' }}
-                    >
-                      {[
-                        { label: 'All Years', range: 'all' as const, year: null },
-                        { label: 'Last 5 yrs', range: 'last5' as const, year: null },
-                        ...YEAR_OPTIONS.map(y => ({ label: String(y), range: 'year' as const, year: y })),
-                      ].map(opt => {
-                        const isActive =
-                          opt.range === 'all' ? selectedYearRange === 'all' :
-                          opt.range === 'last5' ? selectedYearRange === 'last5' :
-                          selectedYearRange === 'year' && selectedYear === opt.year;
+              {/* Custom panel */}
+              {yearMode === 'custom' && (
+                <div className="px-5 pb-5 flex flex-col gap-3">
+                  {/* Search */}
+                  <div
+                    className="flex items-center gap-2 rounded-[10px] px-3"
+                    style={{ height: '40px', background: '#F3F4F6', border: '1.5px solid #E5E7EB' }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                      <circle cx="6.5" cy="6.5" r="5" stroke="#6A7282" strokeWidth="1.4"/>
+                      <path d="M10.5 10.5L13 13" stroke="#6A7282" strokeWidth="1.4" strokeLinecap="round"/>
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Search year..."
+                      value={yearSearch}
+                      onChange={(e) => setYearSearch(e.target.value)}
+                      className="flex-1 bg-transparent outline-none text-[13px] text-[#101828] placeholder:text-[#9CA3AF]"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    />
+                  </div>
+
+                  {/* All / Clear row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedYears(YEAR_OPTIONS)}
+                        className="rounded-full px-3 py-1 text-[12px] font-semibold"
+                        style={{ background: '#EEF2FF', color: '#4338CA' }}
+                      >
+                        All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedYears([])}
+                        className="rounded-full px-3 py-1 text-[12px] font-semibold"
+                        style={{ background: '#F3F4F6', color: '#4A5565' }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <span className="text-[12px] font-medium text-[#9CA3AF]">
+                      {selectedYears.length} selected
+                    </span>
+                  </div>
+
+                  {/* Year grid */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {YEAR_OPTIONS
+                      .filter((y) => !yearSearch || String(y).includes(yearSearch))
+                      .map((y) => {
+                        const active = selectedYears.includes(y);
                         return (
                           <button
-                            key={opt.label}
+                            key={y}
                             type="button"
-                            onClick={() => {
-                              setSelectedYear(opt.year);
-                              setSelectedYearRange(opt.range);
-                              setYearDropdownOpen(false);
-                            }}
-                            className="w-full flex items-center justify-between px-4 py-2.5 text-left"
+                            onClick={() =>
+                              setSelectedYears((prev) =>
+                                active ? prev.filter((v) => v !== y) : [...prev, y]
+                              )
+                            }
+                            className="rounded-[8px] py-2 text-[13px] font-semibold transition-all"
                             style={{
-                              fontFamily: 'Inter, sans-serif',
-                              fontWeight: isActive ? 600 : 400,
-                              fontSize: '14px',
-                              color: isActive ? '#101828' : '#4A5565',
-                              background: isActive ? '#F3F4F6' : 'transparent',
+                              background: active ? '#0F172B' : '#F3F4F6',
+                              color: active ? '#fff' : '#374151',
+                              border: active ? '1.5px solid #0F172B' : '1.5px solid #E5E7EB',
                             }}
                           >
-                            <span>{opt.label}</span>
-                            {isActive && (
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M3 8l4 4 6-6" stroke="#0F172B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            )}
+                            {y}
                           </button>
                         );
                       })}
-                    </div>
-                  )}
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-2 px-1 pt-3 text-[13px] text-[#6A7282]">
-                  <span className="text-[14px] leading-none" aria-hidden>📊</span>
-                  <p>
-                    {selectedYearRange === 'year' && selectedYear
-                      ? `${selectedYear} questions for ${selectedTopics.length ? `${selectedTopics[0]}${selectedTopics.length > 1 ? ` +${selectedTopics.length - 1}` : ''}` : selectedSubtopic || selectedSubject}`
-                      : `All Years → ${total} questions${selectedTopics.length ? ` for ${selectedTopics[0]}${selectedTopics.length > 1 ? ` +${selectedTopics.length - 1}` : ''}` : selectedSubtopic ? ` for ${selectedSubtopic}` : selectedSubject !== 'All Papers' ? ` for ${selectedSubject}` : ''}`}
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Subject Filter panel - 310×826 */}
