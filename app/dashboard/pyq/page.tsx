@@ -125,13 +125,11 @@ const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
 export default function PyqPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
-<<<<<<< HEAD
   const [questionStates, setQuestionStates] = useState<Record<string, { selected: string | null; submitted: boolean }>>({});
-=======
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [showAttemptModal, setShowAttemptModal] = useState(false);
   const [prelimsSubmitError, setPrelimsSubmitError] = useState<string | null>(null);
->>>>>>> 022f686fc16f5245efe4c31a4fa8f368c6d191ac
   const [showMainsWriteModal, setShowMainsWriteModal] = useState(false);
   const [showModelAnswerModal, setShowModelAnswerModal] = useState(false);
   const [showAiEvalModal, setShowAiEvalModal] = useState(false);
@@ -670,7 +668,6 @@ export default function PyqPage() {
                       </div>
                     )}
 
-<<<<<<< HEAD
                     {/* Submit / Reset */}
                     {!qState.submitted ? (
                       <button
@@ -707,22 +704,6 @@ export default function PyqPage() {
                         <p className="mt-2" style={{ fontSize: '13px', color: '#6A7282' }}>📖 UPSC CSE Prelims {q.year}</p>
                       </div>
                     )}
-=======
-                    {/* CTA */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedQuestion(q);
-                        setSelectedAnswer(null);
-                        setHasSubmitted(false);
-                        setPrelimsSubmitError(null);
-                        setShowAttemptModal(true);
-                      }}
-                      className="w-full h-[52px] rounded-[14px] bg-[#0F172B] text-white font-bold text-[18px] leading-[28px] flex items-center justify-center hover:bg-[#111827] transition-colors"
-                    >
-                      Attempt Question
-                    </button>
->>>>>>> 022f686fc16f5245efe4c31a4fa8f368c6d191ac
                   </div>
                 );
               })}
@@ -2026,9 +2007,7 @@ export default function PyqPage() {
         </div>
       )}
 
-<<<<<<< HEAD
-=======
-      {/* Attempt / Question review modal - Prelims only; opens from Attempt Question in Prelims tab */}
+      {/* Attempt / Question review modal - Prelims only */}
       {showAttemptModal && mode === 'prelims' && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
@@ -2186,7 +2165,6 @@ export default function PyqPage() {
           </div>
         </div>
       )}
->>>>>>> 022f686fc16f5245efe4c31a4fa8f368c6d191ac
     </div>
   );
 }
