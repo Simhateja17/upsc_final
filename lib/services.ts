@@ -307,6 +307,12 @@ export const mentalHealthService = {
   getDailyContent: () => api.get<any>('/mental-health/daily-content', authConfig()),
   getStressIndex: (days?: number) =>
     api.get<any>(`/mental-health/stress-index${days ? `?days=${days}` : ''}`, authConfig()),
+  saveJournalEntry: (data: { type: string; text: string; moodEmoji?: string }) =>
+    api.post<any>('/mental-health/journal', data, authConfig()),
+  getJournalEntries: (days?: number) =>
+    api.get<any>(`/mental-health/journal${days ? `?days=${days}` : ''}`, authConfig()),
+  deleteJournalEntry: (id: string) =>
+    api.delete<any>(`/mental-health/journal/${id}`, authConfig()),
 };
 
 // ==================== CMS (Public) ====================

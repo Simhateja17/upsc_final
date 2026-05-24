@@ -195,7 +195,7 @@ export default function MentalHealthPage() {
   const [loading, setLoading] = useState(true);
   const [affIdx, setAffIdx] = useState(0);
   const [showCustomize, setShowCustomize] = useState(false);
-  const [wellnessPlan, setWellnessPlan] = useState([
+  const defaultWellnessPlan = [
     { emoji: '🧘', label: 'Morning meditation' },
     { emoji: '📔', label: 'Journaling' },
     { emoji: '🚶', label: '10 min walk' },
@@ -203,7 +203,14 @@ export default function MentalHealthPage() {
     { emoji: '📔', label: 'Weekly review' },
     { emoji: '🌿', label: 'Rest + Nature' },
     { emoji: '📋', label: 'Week planning' },
-  ]);
+  ];
+  const [wellnessPlan, setWellnessPlan] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('mh_wellness_plan');
+      if (stored) try { return JSON.parse(stored); } catch {}
+    }
+    return defaultWellnessPlan;
+  });
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const [breathingPhase, setBreathingPhase] = useState<'idle' | 'inhale' | 'hold' | 'exhale' | 'hold2'>('idle');
   const [breathingCount, setBreathingCount] = useState(4);
@@ -211,16 +218,15 @@ export default function MentalHealthPage() {
   const [breathingActive, setBreathingActive] = useState(false);
   const [journalTab, setJournalTab] = useState('Gratitude');
   const [journalEntry, setJournalEntry] = useState('');
-  const [journalEntries, setJournalEntries] = useState<any[]>([
-    { date: 'Apr 22 · WED', text: '"Today was better than I expected. I finished the entire Polity chapter and actually understood the nuances of the Emergency provisions..."', mood: '🙂' },
-    { date: 'Apr 21 · TUE', text: '"Had a really rough day. Couldn\'t focus at all. Mock score was 60/200 which felt like a failure. But I know one bad test doesn\'t define..."', mood: '😔' },
-    { date: 'Apr 20 · MON', text: '"Grateful for waking up with purpose. The study room session with Rahul and Priya was so motivating. Finished 4 pomodoro sessions..."', mood: '🔥' },
-  ]);
+  const [journalEntries, setJournalEntries] = useState<any[]>([]);
   const [affirmationIdx, setAffirmationIdx] = useState(0);
-  const [savedAffirmations, setSavedAffirmations] = useState<string[]>([
-    '"Failure is feedback. Every wrong answer teaches me something right."',
-    '"I study with intention. I rest without guilt. I trust the process."',
-  ]);
+  const [savedAffirmations, setSavedAffirmations] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('mh_saved_affirmations');
+      if (stored) try { return JSON.parse(stored); } catch {}
+    }
+    return [];
+  });
   const [pressureRelieved, setPressureRelieved] = useState(false);
 
   const dm = 'var(--font-dm-sans), Inter, sans-serif';
@@ -268,6 +274,30 @@ export default function MentalHealthPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Load journal entries from API
+  const loadJournalEntries = useCallback(async () => {
+    try {
+      const res = await mentalHealthService.getJournalEntries(30);
+      setJournalEntries(res.data ?? []);
+    } catch (err) {
+      console.error('Failed to load journal entries', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadJournalEntries();
+  }, [loadJournalEntries]);
+
+  // Persist wellness plan to localStorage
+  useEffect(() => {
+    localStorage.setItem('mh_wellness_plan', JSON.stringify(wellnessPlan));
+  }, [wellnessPlan]);
+
+  // Persist saved affirmations to localStorage
+  useEffect(() => {
+    localStorage.setItem('mh_saved_affirmations', JSON.stringify(savedAffirmations));
+  }, [savedAffirmations]);
 
   useEffect(() => {
     if (!breathingActive) return;
@@ -755,22 +785,50 @@ export default function MentalHealthPage() {
 
                   <p style={{ fontFamily: dm, fontSize: 11, color: '#9aa3b8', marginBottom: 12 }}>Your journal is encrypted and private.</p>
 
-                  <button onClick={() => { if (journalEntry.trim()) { setJournalEntries(prev => [{ date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' }).toUpperCase(), text: `"${journalEntry}"`, mood: '🙂' }, ...prev]); setJournalEntry(''); } }} style={{ background: 'rgba(232,184,75,0.15)', border: '1px solid rgba(232,184,75,0.3)', borderRadius: 8, padding: '8px 20px', fontFamily: dm, fontWeight: 600, fontSize: 13, color: '#c99730', cursor: 'pointer' }}>
+                  <button onClick={async () => {
+                    if (!journalEntry.trim()) return;
+                    try {
+                      const moodEntry = moods.find(m => m.label === mood);
+                      await mentalHealthService.saveJournalEntry({
+                        type: journalTab,
+                        text: journalEntry.trim(),
+                        moodEmoji: moodEntry?.emoji,
+                      });
+                      setJournalEntry('');
+                      await loadJournalEntries();
+                    } catch (err) {
+                      console.error('Failed to save journal entry', err);
+                      alert('Failed to save journal entry. Please try again.');
+                    }
+                  }} style={{ background: 'rgba(232,184,75,0.15)', border: '1px solid rgba(232,184,75,0.3)', borderRadius: 8, padding: '8px 20px', fontFamily: dm, fontWeight: 600, fontSize: 13, color: '#c99730', cursor: 'pointer' }}>
                     Save Entry →
                   </button>
 
                   <div style={{ marginTop: 24 }}>
                     <p style={{ fontFamily: dm, fontWeight: 700, fontSize: 11, letterSpacing: '1px', textTransform: 'uppercase', color: '#9aa3b8', marginBottom: 12 }}>Past Entries</p>
                     <div className="flex flex-col gap-3">
-                      {journalEntries.map((entry, i) => (
-                        <div key={i} style={{ background: '#fff', borderRadius: 12, padding: '16px', border: '1px solid rgba(11,22,40,0.08)', borderLeft: `4px solid ${entry.mood === '🔥' ? '#e8b84b' : entry.mood === '🙂' ? '#4ade80' : '#fca5a5'}` }}>
-                          <div className="flex items-center justify-between mb-2">
-                            <span style={{ fontFamily: dm, fontWeight: 600, fontSize: 11, color: '#9aa3b8' }}>{entry.date}</span>
-                            <span style={{ fontSize: 14 }}>{entry.mood}</span>
+                      {journalEntries.length === 0 && (
+                        <p style={{ fontFamily: dm, fontSize: 13, color: '#9aa3b8', textAlign: 'center', padding: '16px 0' }}>No journal entries yet. Write your first one above.</p>
+                      )}
+                      {journalEntries.map((entry) => {
+                        const entryDate = new Date(entry.createdAt || entry.date);
+                        const dateLabel = entryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' }).toUpperCase();
+                        const emoji = entry.moodEmoji || '🙂';
+                        return (
+                          <div key={entry.id} style={{ background: '#fff', borderRadius: 12, padding: '16px', border: '1px solid rgba(11,22,40,0.08)', borderLeft: `4px solid ${emoji === '🔥' ? '#e8b84b' : emoji === '🙂' || emoji === '😄' ? '#4ade80' : '#fca5a5'}` }}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span style={{ fontFamily: dm, fontWeight: 600, fontSize: 11, color: '#9aa3b8' }}>{dateLabel}</span>
+                                {entry.type && entry.type !== 'Free write' && (
+                                  <span style={{ fontFamily: dm, fontSize: 10, color: '#c99730', background: 'rgba(232,184,75,0.11)', borderRadius: 4, padding: '2px 6px' }}>{entry.type}</span>
+                                )}
+                              </div>
+                              <span style={{ fontSize: 14 }}>{emoji}</span>
+                            </div>
+                            <p style={{ fontFamily: cg, fontStyle: 'italic', fontSize: 14, color: '#374560', lineHeight: '22px', margin: 0 }}>&ldquo;{entry.text}&rdquo;</p>
                           </div>
-                          <p style={{ fontFamily: cg, fontStyle: 'italic', fontSize: 14, color: '#374560', lineHeight: '22px', margin: 0 }}>{entry.text}</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -905,7 +963,10 @@ export default function MentalHealthPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {communityCards.map((card, i) => (
-              <div key={i} style={{ background: '#fff', border: '1px solid rgba(11,22,40,0.08)', borderRadius: 18, boxShadow: '0px 2px 7px rgba(11,22,40,0.07)', display: 'flex', flexDirection: 'column', padding: '24px 22px 22px', gap: 12 }}>
+              <div key={i} style={{ background: '#fff', border: '1px solid rgba(11,22,40,0.08)', borderRadius: 18, boxShadow: '0px 2px 7px rgba(11,22,40,0.07)', display: 'flex', flexDirection: 'column', padding: '24px 22px 22px', gap: 12, position: 'relative', opacity: 0.75 }}>
+                <div style={{ position: 'absolute', top: 12, right: 12, background: '#090e1c', borderRadius: 6, padding: '3px 10px', fontFamily: dm, fontWeight: 700, fontSize: 10, letterSpacing: '0.5px', color: '#e8b84b' }}>
+                  COMING SOON
+                </div>
                 <span style={{ fontSize: 28, lineHeight: '28px' }}>{card.icon}</span>
                 <span style={{ fontFamily: dm, fontWeight: 700, fontSize: 16, color: '#0c1424' }}>{card.title}</span>
                 <p style={{ fontFamily: dm, fontSize: 13.5, color: '#6b7a99', lineHeight: '21px', margin: 0, flex: 1 }}>{card.desc}</p>
@@ -934,7 +995,7 @@ export default function MentalHealthPage() {
                       value={wellnessPlan[idx].emoji + '|' + wellnessPlan[idx].label}
                       onChange={e => {
                         const [emoji, ...labelParts] = e.target.value.split('|');
-                        setWellnessPlan(prev => prev.map((item, i) => i === idx ? { emoji, label: labelParts.join('|') } : item));
+                        setWellnessPlan((prev: { emoji: string; label: string }[]) => prev.map((item: { emoji: string; label: string }, i: number) => i === idx ? { emoji, label: labelParts.join('|') } : item));
                       }}
                       style={{ flex: 1, borderRadius: 8, border: '1px solid rgba(11,22,40,0.12)', padding: '8px 12px', fontFamily: dm, fontSize: 13, color: '#0c1424', background: '#fff', cursor: 'pointer' }}
                     >
