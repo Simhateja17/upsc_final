@@ -416,7 +416,7 @@ export const flashcardService = {
   getTopics: (subjectId: string) => api.get<any>(`/flashcards/${subjectId}/topics`, authConfig()),
   getCards: (subjectId: string, topicId: string) =>
     api.get<any>(`/flashcards/${subjectId}/${topicId}`, authConfig()),
-  createCard: (data: {
+  createCard: async (data: {
     subjectId: string;
     subject?: string;
     topicId?: string;
@@ -424,7 +424,7 @@ export const flashcardService = {
     question: string;
     answer: string;
     difficulty?: string;
-  }) => api.post<any>('/flashcards', data, authConfig()),
+  }) => api.post<any>('/flashcards', data, await freshAuthConfig()),
   updateProgress: (cardId: string, mastered: boolean) =>
     api.patch<any>(`/flashcards/${cardId}/progress`, { mastered }, authConfig()),
 };
@@ -956,7 +956,7 @@ export const videoService = {
   getQuestions: (videoId: string) => api.get<any>(`/videos/${videoId}/questions`, authConfig()),
   submitQuiz: (videoId: string, answers: Record<string, number>) =>
     api.post<any>(`/videos/${videoId}/submit`, { answers }, authConfig()),
-  askMentor: (data: { question: string }) => api.post<any>('/videos/mentor/ask', data, authConfig()),
+  askMentor: (data: { question: string; name?: string }) => api.post<any>('/videos/mentor/ask', data, authConfig()),
 };
 
 // ==================== Forum ====================

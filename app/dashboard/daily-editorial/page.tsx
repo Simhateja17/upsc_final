@@ -1106,71 +1106,92 @@ export default function DailyEditorialPage() {
       </div>
 
       {/* ============================================================ */}
-      {/*  JEET AI SUMMARY MODAL                                        */}
+      {/*  JEET AI SUMMARY MODAL  – new structured design               */}
       {/* ============================================================ */}
-      {summaryModal.open && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'rgba(0,0,0,0.7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '16px',
-          }}
-          onClick={(e) => { if (e.target === e.currentTarget) setSummaryModal(prev => ({ ...prev, open: false })); }}
-        >
-          <div
-            style={{
-              background: '#151C2C',
-              borderRadius: '20px',
-              width: '100%',
-              maxWidth: '640px',
-              maxHeight: '85vh',
-              overflowY: 'auto',
-              padding: '28px',
-              position: 'relative',
-            }}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => setSummaryModal(prev => ({ ...prev, open: false }))}
-              style={{
-                position: 'absolute', top: '16px', right: '16px',
-                width: '36px', height: '36px', borderRadius: '50%',
-                background: 'rgba(255,255,255,0.1)',
-                border: 'none', color: '#fff', fontSize: '18px',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >✕</button>
+      {summaryModal.open && (() => {
+        const ed = summaryModal.editorial;
+        const closeModal = () => setSummaryModal(prev => ({ ...prev, open: false }));
 
-            {/* Header */}
-            <div className="flex items-center gap-3" style={{ marginBottom: '16px' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#1E2A40', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🧠</div>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '20px', fontWeight: 700, color: '#fff' }}>
-                <span style={{ color: '#FFD273' }}>Jeet AI</span> Summary
-              </span>
-            </div>
+        /* ── parse markdown into named sections ── */
+        const parseSections = (md: string) => {
+          const sections: { title: string; body: string }[] = [];
+          const lines = md.split('\n');
+          let cur: { title: string; lines: string[] } | null = null;
+          for (const line of lines) {
+            if (/^#{1,2} /.test(line)) {
+              if (cur) sections.push({ title: cur.title, body: cur.lines.join('\n').trim() });
+              cur = { title: line.replace(/^#{1,2} /, '').trim(), lines: [] };
+            } else {
+              cur?.lines.push(line);
+            }
+          }
+          if (cur) sections.push({ title: cur.title, body: cur.lines.join('\n').trim() });
+          return sections;
+        };
 
-            {/* Source badge */}
-            {summaryModal.editorial && (
-              <div style={{ marginBottom: '10px' }}>
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '6px',
-                  background: summaryModal.editorial.source.includes('Hindu') ? '#DC2626' : '#1E3A5F',
-                  color: '#fff', borderRadius: '8px',
-                  padding: '5px 12px', fontSize: '13px', fontWeight: 600,
-                }}>
-                  🗞️ {summaryModal.editorial.source}
-                </span>
+        const sectionIcons: Record<string, string> = {
+          'key arguments': '💬',
+          'upsc relevance': '🎯',
+          'key terms': '🔑',
+          'potential exam': '📝',
+          'critical analysis': '🔬',
+        };
+        const getSectionIcon = (title: string) => {
+          const key = Object.keys(sectionIcons).find(k => title.toLowerCase().includes(k));
+          return key ? sectionIcons[key] : '📌';
+        };
+
+        /* ── render section body by type ── */
+        const renderSectionBody = (title: string, body: string) => {
+          const tl = title.toLowerCase();
+
+          if (tl.includes('key arguments')) {
+            const blocks = body.split(/\n(?=\*\*|###)/).filter(Boolean);
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {blocks.map((block, i) => {
+                  const lines = block.trim().split('\n');
+                  const heading = lines[0].replace(/\*\*/g, '').replace(/^###?\s*/, '').replace(/:$/, '').trim();
+                  const text = lines.slice(1).join(' ').replace(/\*\*/g, '').trim() || lines[0].replace(/\*\*/g, '').trim();
+                  return (
+                    <div key={i} style={{ paddingLeft: 12, borderLeft: '2.5px solid #dce3ef' }}>
+                      {lines.length > 1 && <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2233', marginBottom: 4 }}>{heading}</div>}
+                      <div style={{ fontSize: 13, color: '#4a5a72', lineHeight: 1.65 }} dangerouslySetInnerHTML={{ __html: text.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#1a2233;font-weight:700">$1</strong>') }} />
+                    </div>
+                  );
+                })}
               </div>
-            )}
+            );
+          }
 
-            {/* Title */}
-            {summaryModal.editorial && (
-              <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, lineHeight: '1.4', marginBottom: '12px' }}>
-                {summaryModal.editorial.title}
-              </h2>
-            )}
+          if (tl.includes('upsc relevance')) {
+            const blocks = body.split(/\n(?=\*\*|###|-\s)/).filter(Boolean);
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {blocks.map((block, i) => {
+                  const lines = block.trim().split('\n');
+                  const label = lines[0].replace(/\*\*/g, '').replace(/^-\s*/, '').replace(/:$/, '').trim();
+                  const text = lines.slice(1).join(' ').replace(/^-\s*/, '').trim() || label;
+                  const isLabelOnly = lines.length === 1;
+                  return (
+                    <div key={i} style={{ padding: '10px 12px', background: '#f0f4fa', borderRadius: 9, border: '1px solid #dce3ef' }}>
+                      {!isLabelOnly && <div style={{ fontSize: 12, fontWeight: 700, color: '#2563c7', marginBottom: 3 }}>{label}</div>}
+                      <div style={{ fontSize: 13, color: '#4a5a72', lineHeight: 1.6 }}>{isLabelOnly ? label : text}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          }
 
+<<<<<<< HEAD
+          if (tl.includes('key term')) {
+            const terms = body.split(/[\n,]/).map(t => t.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').trim()).filter(Boolean);
+            return (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {terms.map((term, i) => (
+                  <span key={i} style={{ display: 'inline-flex', alignItems: 'center', background: '#eef2fb', border: '1px solid #c8d7f5', color: '#2a4a8a', fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 8 }}>{term}</span>
+=======
             {/* Tags */}
             {summaryModal.editorial && (
               <div className="flex flex-wrap" style={{ gap: '8px', marginBottom: '20px' }}>
@@ -1184,185 +1205,173 @@ export default function DailyEditorialPage() {
                   }),
                 ].slice(0, 3).map(t => (
                   <span key={t} style={{ background: 'rgba(255,255,255,0.08)', color: '#CBD5E1', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', fontWeight: 500 }}>{t}</span>
+>>>>>>> 022f686fc16f5245efe4c31a4fa8f368c6d191ac
                 ))}
               </div>
-            )}
+            );
+          }
 
-            {/* Loading state */}
-            {summaryModal.loading && (
-              <div>
-                <div className="flex flex-col items-center" style={{ padding: '20px 0 28px', gap: '8px' }}>
-                  <span style={{ fontSize: '40px' }}>🧠</span>
-                  <span style={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>Analyzing editorial...</span>
-                  <span style={{ color: '#64748B', fontSize: '13px' }}>UPSC lens activated</span>
+          if (tl.includes('exam question') || tl.includes('potential')) {
+            const qs = body.split('\n').map(l => l.replace(/^[-*"'0-9.\s]+/, '').replace(/['"]/g, '').trim()).filter(Boolean);
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {qs.map((q, i) => (
+                  <div key={i} style={{ padding: '11px 13px', background: '#f0f4fa', border: '1px solid #dce3ef', borderLeft: '3px solid #f0a500', borderRadius: '0 9px 9px 0', fontSize: 13, color: '#3a4a62', fontStyle: 'italic', lineHeight: 1.6 }}>
+                    &ldquo;{q}&rdquo;
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
+          /* default / critical analysis */
+          const html = body
+            .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#1a2233;font-weight:700">$1</strong>')
+            .replace(/\n\n/g, '<br/><br/>');
+          return (
+            <div>
+              <div style={{ fontSize: 13, color: '#4a5a72', lineHeight: 1.75 }} dangerouslySetInnerHTML={{ __html: html }} />
+              {tl.includes('critical') && (
+                <div style={{ display: 'inline-block', background: '#fff8e6', border: '1px solid #f5d98a', color: '#8a5a00', fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 6, marginTop: 10 }}>
+                  💡 Key UPSC Takeaway: Balance and nuance in every answer
                 </div>
-                <div className="flex flex-col" style={{ gap: '12px' }}>
-                  {[
-                    { icon: '📄', label: 'Reading full article', color: '#3B82F6' },
-                    { icon: '🔍', label: 'Extracting key arguments', color: '#06B6D4' },
-                    { icon: '🎯', label: 'Mapping to UPSC syllabus', color: '#EC4899' },
-                    { icon: '✏️', label: 'Generating practice questions', color: '#F97316' },
-                  ].map((step, i) => (
-                    <div key={step.label} className="flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '12px 16px' }}>
-                      <div className="flex items-center gap-3">
-                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: step.color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-                          {step.icon}
+              )}
+            </div>
+          );
+        };
+
+        const sections = summaryModal.summary ? parseSections(summaryModal.summary) : [];
+        const tags: string[] = ed?.tags?.length ? ed.tags : ed?.category ? [ed.category] : [];
+
+        return (
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+            onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+          >
+            <div style={{ width: '100%', maxWidth: 580, background: '#f0f4fa', borderRadius: 20, overflow: 'hidden', boxShadow: '0 20px 60px rgba(18,36,68,.18), 0 4px 16px rgba(18,36,68,.1)', border: '1px solid #dce3ef', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+
+              {/* ── HEADER ── */}
+              <div style={{ background: '#12192b', padding: '20px 22px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', flexShrink: 0 }}>
+                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px)', backgroundSize: '36px 36px', pointerEvents: 'none' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, zIndex: 1 }}>
+                  <div style={{ width: 38, height: 38, background: '#1e2d45', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: '1px solid #2a3d58', flexShrink: 0 }}>🧠</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: '#e8edf5', letterSpacing: '-.01em' }}>
+                    <span style={{ color: '#f0a500' }}>Jeet AI</span> Summary
+                  </div>
+                </div>
+                <button onClick={closeModal} style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid #2a3d58', background: '#1a2540', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: '#8a97b0', zIndex: 1, flexShrink: 0 }}>✕</button>
+              </div>
+
+              {/* ── META BAR ── */}
+              {ed && (
+                <div style={{ background: '#1a2540', padding: '14px 22px 16px', borderBottom: '1px solid #dce3ef', flexShrink: 0 }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#e05050', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 7, marginBottom: 10, letterSpacing: '.03em' }}>
+                    📰 {ed.source}
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#e8edf5', lineHeight: 1.4, marginBottom: 10 }}>{ed.title}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {tags.map(t => (
+                      <span key={t} style={{ display: 'inline-block', background: '#243352', border: '1px solid #2e4268', color: '#8fb3e8', fontSize: 11, fontWeight: 500, padding: '4px 10px', borderRadius: 6 }}>{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── LOADING ── */}
+              {summaryModal.loading && (
+                <div style={{ padding: '24px 22px', background: '#fff', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 0 20px', gap: 8 }}>
+                    <span style={{ fontSize: 36 }}>🧠</span>
+                    <span style={{ fontSize: 17, fontWeight: 700, color: '#1a2233' }}>Analyzing editorial...</span>
+                    <span style={{ fontSize: 12, color: '#9aa8bc' }}>UPSC lens activated</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {[
+                      { icon: '📄', label: 'Reading full article', color: '#3B82F6' },
+                      { icon: '🔍', label: 'Extracting key arguments', color: '#06B6D4' },
+                      { icon: '🎯', label: 'Mapping to UPSC syllabus', color: '#EC4899' },
+                      { icon: '✏️', label: 'Generating practice questions', color: '#F97316' },
+                    ].map((step, i) => (
+                      <div key={step.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0f4fa', borderRadius: 10, padding: '11px 14px', border: '1px solid #dce3ef' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: 18 }}>{step.icon}</span>
+                          <span style={{ fontSize: 13, fontWeight: 500, color: i <= summaryModal.loadStep ? '#1a2233' : '#9aa8bc' }}>{step.label}</span>
                         </div>
-                        <span style={{ color: i <= summaryModal.loadStep ? '#fff' : '#475569', fontSize: '14px', fontWeight: 500 }}>{step.label}</span>
+                        {i < summaryModal.loadStep && <span style={{ color: '#22C55E' }}>✓</span>}
+                        {i === summaryModal.loadStep && <div style={{ width: 16, height: 16, border: '2px solid #dce3ef', borderTopColor: '#2563c7', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />}
                       </div>
-                      {i < summaryModal.loadStep && <span style={{ color: '#22C55E', fontSize: '18px' }}>✓</span>}
-                      {i === summaryModal.loadStep && (
-                        <div style={{ width: '18px', height: '18px', border: '2px solid #64748B', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                      )}
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── BODY sections ── */}
+              {!summaryModal.loading && summaryModal.summary && (
+                <div style={{ overflowY: 'auto', flex: 1, scrollBehavior: 'smooth' }}>
+                  {sections.map((sec, idx) => (
+                    <div key={idx} style={{ padding: '18px 22px', borderBottom: '1px solid #dce3ef', background: idx % 2 === 0 ? '#fff' : '#f7f9fd' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#2563c7', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 7, letterSpacing: '.01em' }}>
+                        <div style={{ width: 22, height: 22, background: '#e8f0fd', border: '1px solid #c0d4f7', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#2563c7', flexShrink: 0 }}>{idx + 1}</div>
+                        {getSectionIcon(sec.title)} {sec.title}
+                      </div>
+                      {renderSectionBody(sec.title, sec.body)}
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Summary result */}
-            {!summaryModal.loading && summaryModal.summary && (
-              <div className="flex flex-col" style={{ gap: '16px' }}>
-                <div
-                  style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    borderRadius: '14px',
-                    padding: '20px',
-                    color: '#CBD5E1',
-                    fontSize: '14px',
-                    lineHeight: '1.8',
-                  }}
-                >
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      h1: ({ children }) => (
-                        <h1 style={{ color: '#FFD273', fontSize: '17px', fontWeight: 700, marginBottom: '4px', marginTop: '0' }}>{children}</h1>
-                      ),
-                      h2: ({ children }) => (
-                        <h2 style={{ color: '#F97316', fontSize: '15px', fontWeight: 700, marginTop: '18px', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '6px' }}>{children}</h2>
-                      ),
-                      h3: ({ children }) => (
-                        <h3 style={{ color: '#60A5FA', fontSize: '14px', fontWeight: 600, marginTop: '14px', marginBottom: '6px' }}>{children}</h3>
-                      ),
-                      p: ({ children }) => (
-                        <p style={{ color: '#CBD5E1', marginBottom: '10px', marginTop: '0' }}>{children}</p>
-                      ),
-                      strong: ({ children }) => (
-                        <strong style={{ color: '#fff', fontWeight: 700 }}>{children}</strong>
-                      ),
-                      ul: ({ children }) => (
-                        <ul style={{ paddingLeft: '18px', marginBottom: '10px', marginTop: '4px' }}>{children}</ul>
-                      ),
-                      ol: ({ children }) => (
-                        <ol style={{ paddingLeft: '18px', marginBottom: '10px', marginTop: '4px' }}>{children}</ol>
-                      ),
-                      li: ({ children }) => (
-                        <li style={{ color: '#CBD5E1', marginBottom: '6px' }}>{children}</li>
-                      ),
-                      hr: () => (
-                        <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '14px 0' }} />
-                      ),
-                      blockquote: ({ children }) => (
-                        <blockquote style={{ borderLeft: '3px solid #3B82F6', paddingLeft: '12px', margin: '10px 0', background: 'rgba(59,130,246,0.08)', borderRadius: '0 8px 8px 0', padding: '10px 14px' }}>{children}</blockquote>
-                      ),
-                      code: ({ children }) => (
-                        <code style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '4px', padding: '2px 6px', fontSize: '13px', color: '#FACC15' }}>{children}</code>
-                      ),
-                      table: ({ children }) => (
-                        <div style={{ overflowX: 'auto', marginBottom: '12px' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>{children}</table>
-                        </div>
-                      ),
-                      thead: ({ children }) => (
-                        <thead style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>{children}</thead>
-                      ),
-                      tbody: ({ children }) => <tbody>{children}</tbody>,
-                      tr: ({ children }) => (
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{children}</tr>
-                      ),
-                      th: ({ children }) => (
-                        <th style={{ padding: '8px 14px', textAlign: 'left', color: '#94A3B8', fontWeight: 600, whiteSpace: 'nowrap' }}>{children}</th>
-                      ),
-                      td: ({ children }) => (
-                        <td style={{ padding: '8px 14px', color: '#CBD5E1', verticalAlign: 'top' }}>{children}</td>
-                      ),
-                    }}
-                  >
-                    {summaryModal.summary}
-                  </ReactMarkdown>
-                </div>
-
-                {/* Action buttons */}
-                <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginTop: '8px' }}>
-                  {[
-                    {
-                      emoji: summaryModal.editorial?.isSaved ? '✅' : '📌',
-                      label: summaryModal.editorial?.isSaved ? 'Saved · View in Profile' : 'Save Note',
-                      action: async () => {
-                        if (!summaryModal.editorial) return;
-                        if (summaryModal.editorial.isSaved) {
-                          // Already saved – jump to bookmarks
-                          router.push('/dashboard/saved-notes?tab=bookmarks');
-                          return;
-                        }
-                        await handleSave(summaryModal.editorial.id);
-                        setSummaryModal(prev => prev.editorial ? { ...prev, editorial: { ...prev.editorial!, isSaved: !prev.editorial!.isSaved } } : prev);
+              {/* ── FOOTER ACTIONS ── */}
+              {!summaryModal.loading && summaryModal.summary && (
+                <>
+                  <div style={{ background: '#f0f4fa', borderTop: '1px solid #dce3ef', padding: '14px 16px', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, flexShrink: 0 }}>
+                    {[
+                      {
+                        icon: ed?.isSaved ? '✅' : '📌',
+                        label: ed?.isSaved ? 'Saved' : 'Save Note',
+                        action: async () => {
+                          if (!ed) return;
+                          if (ed.isSaved) { router.push('/dashboard/saved-notes?tab=bookmarks'); return; }
+                          await handleSave(ed.id);
+                          setSummaryModal(prev => prev.editorial ? { ...prev, editorial: { ...prev.editorial!, isSaved: true } } : prev);
+                        },
                       },
-                    },
-                    {
-                      emoji: '✏️',
-                      label: 'Practice MCQ',
-                      action: () => {
-                        if (!summaryModal.editorial) return;
-                        setSummaryModal(prev => ({ ...prev, open: false }));
-                        router.push(`/dashboard/mock-tests?from=editorial&editorialId=${summaryModal.editorial.id}&mode=prelims`);
+                      {
+                        icon: '✏️', label: 'Practice MCQ',
+                        action: () => { if (!ed) return; closeModal(); router.push(`/dashboard/mock-tests?from=editorial&editorialId=${ed.id}&mode=prelims`); },
                       },
-                    },
-                    {
-                      emoji: '📝',
-                      label: 'Practice Potential Exam Qs',
-                      action: () => {
-                        if (!summaryModal.editorial) return;
-                        setSummaryModal(prev => ({ ...prev, open: false }));
-                        router.push(`/dashboard/mock-tests?from=editorial&editorialId=${summaryModal.editorial.id}&mode=mains&intent=potential-questions`);
+                      {
+                        icon: '📝', label: 'Practice Exam Qs',
+                        action: () => { if (!ed) return; closeModal(); router.push(`/dashboard/mock-tests?from=editorial&editorialId=${ed.id}&mode=mains&intent=potential-questions`); },
                       },
-                    },
-                    {
-                      emoji: '🔗',
-                      label: 'Source',
-                      action: () => summaryModal.editorial?.sourceUrl && window.open(summaryModal.editorial.sourceUrl, '_blank'),
-                    },
-                  ].map((btn: any) => (
-                    <button
-                      key={btn.label}
-                      onClick={btn.action}
-                      style={{
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '12px',
-                        padding: '12px 8px',
-                        color: '#CBD5E1',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '6px',
-                        position: 'relative',
-                      }}
-                    >
-                      <span style={{ fontSize: '22px' }}>{btn.emoji}</span>
-                      {btn.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+                      {
+                        icon: '🔗', label: 'Source',
+                        action: () => ed?.sourceUrl && window.open(ed.sourceUrl, '_blank'),
+                      },
+                    ].map(btn => (
+                      <button key={btn.label} onClick={btn.action} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '12px 8px', borderRadius: 11, border: '1px solid #dce3ef', background: '#fff', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: '#4a5a72', transition: 'all .15s' }}>
+                        <span style={{ fontSize: 20 }}>{btn.icon}</span>
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Secure row */}
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 16, padding: '10px 16px 12px', background: '#f0f4fa', flexShrink: 0 }}>
+                    {[
+                      { icon: <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1L1.5 3v3.5C1.5 9.1 3.5 11 6 11s4.5-1.9 4.5-4.5V3L6 1z" stroke="#9aa8bc" strokeWidth="1.2" fill="none"/></svg>, text: '256-bit SSL encrypted' },
+                      { icon: null, text: '· Powered by Jeet AI ·' },
+                      { icon: <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#9aa8bc" strokeWidth="1.2"/><path d="M4 6l1.5 1.5L8 4" stroke="#9aa8bc" strokeWidth="1.2" strokeLinecap="round"/></svg>, text: 'UPSC Verified Content' },
+                    ].map((item, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#9aa8bc' }}>
+                        {item.icon}{item.text}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

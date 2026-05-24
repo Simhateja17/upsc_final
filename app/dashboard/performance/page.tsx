@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { dashboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardPageHero from '@/components/DashboardPageHero';
@@ -555,7 +556,7 @@ export default function PerformancePage() {
                   <span className="rounded-[4px] bg-[#E8B84B] px-2 py-1 text-[12px] font-semibold text-white">
                     {earnedBadgeCount} Earned
                   </span>
-                  <span className="text-[14px] text-[#4B5563]">All →</span>
+                  <Link href="/dashboard/achievement-badges" className="text-[14px] text-[#4B5563] hover:underline">All →</Link>
                 </div>
               </div>
 

@@ -130,12 +130,12 @@ export default function SubjectList({
                 {subject.icon}
               </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="text-[12.5px] font-bold mb-[2px] leading-[1.25] text-[#0f1f3d] whitespace-nowrap">
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="text-[12.5px] font-bold mb-[2px] leading-[1.25] text-[#0f1f3d] whitespace-nowrap overflow-hidden text-ellipsis" title={subject.name}>
                   {subject.name}
                 </div>
-                <div className="text-[10px] text-[#8795ae]">
-                  {subject.topics.length} topics | {stats.done}/{stats.total}
+                <div className="text-[10px] text-[#8795ae] whitespace-nowrap overflow-hidden text-ellipsis">
+                  {subject.topics.length} Sub-subject{subject.topics.length !== 1 ? 's' : ''} | {stats.done}/{stats.total} topics
                 </div>
               </div>
 

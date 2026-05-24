@@ -236,6 +236,7 @@ export default function QAForumPage() {
           { value: '∞', label: 'Always Free', color: '#FFFFFF' },
         ]}
         contentShiftY={-30}
+        enforceUniformLayout={false}
       />
 
       <main className="mx-auto mt-2 grid max-w-[1180px] grid-cols-1 gap-6 px-4 pb-14 lg:grid-cols-[220px_1fr]">

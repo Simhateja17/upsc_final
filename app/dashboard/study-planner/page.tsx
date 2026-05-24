@@ -99,6 +99,31 @@ const SUBJECT_OPTIONS = [
   'Optional Paper 2',
 ];
 
+const SUBJECT_ICON_MAP: Record<string, string> = {
+  Polity: '/study-planner-icons/polity.png',
+  Economy: '/study-planner-icons/economy.png',
+  Society: '/study-planner-icons/society.png',
+  'Indian Society': '/study-planner-icons/society.png',
+  Governance: '/study-planner-icons/governance.png',
+  'Social Justice': '/study-planner-icons/social-justice.png',
+  'International Relations': '/study-planner-icons/international-relations.png',
+  'Disaster Management': '/study-planner-icons/disaster-management.png',
+  Ethics: '/study-planner-icons/ethics.png',
+  'Ethics & Human Values': '/study-planner-icons/ethics.png',
+  CSAT: '/study-planner-icons/csat.png',
+  'Case Studies': '/study-planner-icons/case-studies.png',
+};
+
+const quickAddIconBoxStyle: React.CSSProperties = {
+  width: '24px',
+  height: '24px',
+  minWidth: '24px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  overflow: 'hidden',
+};
+
 export default function StudyPlannerPage() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskSubject, setTaskSubject] = useState('');
@@ -332,20 +357,21 @@ export default function StudyPlannerPage() {
     const updated = focusSessionTasks.map((t, i) => i === focusTaskIdx ? { ...t, isCompleted: true } : t);
     setFocusSessionTasks(updated);
     setJustCompleted(true);
-    setTimeout(() => {
-      setJustCompleted(false);
-      setFocusTaskIdx(prev => {
-        let newIdx = prev + 1;
-        while (newIdx < updated.length && updated[newIdx].isCompleted) {
-          newIdx += 1;
-        }
-        if (newIdx >= updated.length) {
-          setFocusDone(true);
-        }
-        return newIdx;
-      });
-      setFocusTaskSecs(0);
-    }, 1400);
+  };
+
+  const focusNextTask = () => {
+    setJustCompleted(false);
+    setFocusTaskIdx(prev => {
+      let newIdx = prev + 1;
+      while (newIdx < focusSessionTasks.length && focusSessionTasks[newIdx].isCompleted) {
+        newIdx += 1;
+      }
+      if (newIdx >= focusSessionTasks.length) {
+        setFocusDone(true);
+      }
+      return newIdx;
+    });
+    setFocusTaskSecs(0);
   };
 
   const focusSkip = () => {
@@ -468,32 +494,31 @@ export default function StudyPlannerPage() {
   const pendingTaskCount = tasks.filter((task) => !task.isCompleted).length;
   const sortedTasks = [...tasks].sort(compareTasksByTime);
 
-  // Time distribution by study type (completed/ticked tasks only)
-  const typeConfig = [
-    { id: 'reading',  label: 'Reading',        color: '#2DD4BF' },
-    { id: 'practice', label: 'Practice',        color: '#FBBF24' },
-    { id: 'revision', label: 'Revision',        color: '#312C85' },
-    { id: 'test',     label: 'Test',            color: '#FF6900' },
-    { id: 'notes',    label: 'Note Making',     color: '#818CF8' },
-    { id: 'answer',   label: 'Answer Writing',  color: '#34D399' },
-    { id: 'other',    label: 'Other',           color: '#9CA3AF' },
+  // Time distribution by subject (completed/ticked tasks only)
+  const subjectColorPalette = [
+    '#3B82F6', '#F59E0B', '#10B981', '#8B5CF6', '#059669',
+    '#06B6D4', '#F97316', '#EC4899', '#6366F1', '#0EA5E9',
+    '#F43F5E', '#84CC16', '#EF4444', '#EAB308', '#7C3AED',
+    '#14B8A6', '#E8B84B', '#FF6900', '#2DD4BF', '#34D399',
   ];
-  const timeByType = typeConfig.map(tc => {
-    const mins = tasks
-      .filter(t => {
-        if (!t.isCompleted) return false;
-        if (!t.startTime || !t.endTime) return false;
-        if (tc.id === 'reading' && (!t.type || t.type === 'study')) return true;
-        return t.type === tc.id;
-      })
-      .reduce((sum, t) => {
-        const [sh, sm] = t.startTime!.split(':').map(Number);
-        const [eh, em] = t.endTime!.split(':').map(Number);
-        const diff = (eh * 60 + em) - (sh * 60 + sm);
-        return sum + (diff > 0 ? diff : 0);
-      }, 0);
-    return { ...tc, minutes: mins };
-  }).filter(x => x.minutes > 0);
+  const completedTasksWithTime = tasks.filter(t => t.isCompleted && t.startTime && t.endTime);
+  const subjectMinutesMap = new Map<string, number>();
+  completedTasksWithTime.forEach(t => {
+    const subj = t.subject?.trim() || 'General';
+    const [sh, sm] = t.startTime!.split(':').map(Number);
+    const [eh, em] = t.endTime!.split(':').map(Number);
+    const diff = (eh * 60 + em) - (sh * 60 + sm);
+    if (diff > 0) subjectMinutesMap.set(subj, (subjectMinutesMap.get(subj) ?? 0) + diff);
+  });
+  const timeByType = Array.from(subjectMinutesMap.entries())
+    .map(([subj, mins], idx) => ({
+      id: subj,
+      label: subj,
+      color: subjectColorPalette[idx % subjectColorPalette.length],
+      minutes: mins,
+    }))
+    .sort((a, b) => b.minutes - a.minutes);
+  const typeConfig = timeByType;
   const totalTypeMins = timeByType.reduce((s, x) => s + x.minutes, 0);
   const hasCompletedTimeDistribution = totalTypeMins > 0;
   const fmtHours = (m: number) => (m / 60 % 1 === 0 ? (m / 60).toFixed(0) : (m / 60).toFixed(1)) + 'h';
@@ -854,7 +879,11 @@ export default function StudyPlannerPage() {
                       <div className="relative">
                         <select
                           value={startTime}
-                          onChange={(e) => setStartTime(e.target.value)}
+                          onChange={(e) => {
+                            const newStart = e.target.value;
+                            setStartTime(newStart);
+                            setEndTime(newStart);
+                          }}
                           className="w-full font-arimo outline-none appearance-none cursor-pointer transition-colors"
                           style={{ height: '44px', borderRadius: '10px', border: '0.8px solid #E5E7EB', padding: '0 36px 0 14px', fontSize: '16px', color: '#0A0A0A', background: '#FFFFFF' }}
                           onFocus={(e) => { e.currentTarget.style.borderColor = '#4F78F6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(79, 120, 246, 0.15)'; }}
@@ -918,7 +947,6 @@ export default function StudyPlannerPage() {
                 <div
                   className="flex-1 flex flex-col items-center justify-center text-center"
                   style={{
-                    height: '477px',
                     borderRadius: '14px',
                     border: '1px dashed #D1D5DC',
                     padding: '20px',
@@ -1261,10 +1289,29 @@ export default function StudyPlannerPage() {
                       color: '#374151',
                       padding: '8px 10px',
                       flex: '1 1 120px',
-                      textAlign: 'center',
+                      textAlign: 'left',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
                     }}
                   >
-                    <span style={{ marginRight: '6px' }}>{getSubjectEmoji(item)}</span>
+                    {SUBJECT_ICON_MAP[item] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={SUBJECT_ICON_MAP[item]}
+                        alt=""
+                        aria-hidden="true"
+                        style={{ ...quickAddIconBoxStyle, objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        style={{ ...quickAddIconBoxStyle, fontSize: '18px', lineHeight: '24px' }}
+                      >
+                        {getSubjectEmoji(item)}
+                      </span>
+                    )}
                     {item}
                   </button>
                 ))}
@@ -1321,15 +1368,9 @@ export default function StudyPlannerPage() {
               {/* Legend */}
               <div className="space-y-2">
                 {!hasCompletedTimeDistribution ? (
-                  typeConfig.slice(0, 3).map(tc => (
-                    <div key={tc.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: tc.color }}></span>
-                        <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{tc.label}</span>
-                      </div>
-                      <span className="font-arimo font-bold text-[#9CA3AF]" style={{ fontSize: '13px' }}>-</span>
-                    </div>
-                  ))
+                  <div className="font-arimo text-[#9CA3AF] text-center" style={{ fontSize: '13px', paddingTop: '4px' }}>
+                    Complete tasks to see subject-wise distribution
+                  </div>
                 ) : (
                   timeByType.map(slice => (
                     <div key={slice.id} className="flex items-center justify-between">
@@ -1582,8 +1623,7 @@ export default function StudyPlannerPage() {
                   Skip
                 </button>
                 <button
-                  onClick={focusMarkDone}
-                  disabled={justCompleted}
+                  onClick={justCompleted ? focusNextTask : focusMarkDone}
                   className="flex-1 font-arimo font-bold text-white"
                   style={{
                     height: '44px',
@@ -1591,15 +1631,12 @@ export default function StudyPlannerPage() {
                     background: justCompleted ? '#15803D' : '#00BC7D',
                     fontSize: '14px',
                     transition: 'all 0.25s ease',
-                    transform: justCompleted ? 'scale(1.04)' : 'scale(1)',
-                    boxShadow: justCompleted ? '0 0 0 4px rgba(0,188,125,0.25)' : 'none',
-                    letterSpacing: justCompleted ? '0.02em' : '0',
                   }}
                 >
                   {justCompleted ? (
                     <span className="flex items-center justify-center gap-2">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      Task Marked Done!
+                      Next Task →
                     </span>
                   ) : 'Mark Done & Next'}
                 </button>

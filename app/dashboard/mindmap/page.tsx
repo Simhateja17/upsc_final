@@ -81,19 +81,8 @@ export default function MindmapPage() {
       <DashboardPageHero
         // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="3" fill="#E8B84B" />
-            <circle cx="4" cy="6" r="2" fill="#E8B84B" />
-            <circle cx="4" cy="18" r="2" fill="#E8B84B" />
-            <circle cx="20" cy="4" r="2" fill="#E8B84B" />
-            <circle cx="20" cy="12" r="2" fill="#E8B84B" />
-            <circle cx="20" cy="20" r="2" fill="#E8B84B" />
-            <line x1="12" y1="12" x2="4" y2="6" stroke="#E8B84B" strokeWidth="1.5" />
-            <line x1="12" y1="12" x2="4" y2="18" stroke="#E8B84B" strokeWidth="1.5" />
-            <line x1="12" y1="12" x2="20" y2="4" stroke="#E8B84B" strokeWidth="1.5" />
-            <line x1="12" y1="12" x2="20" y2="12" stroke="#E8B84B" strokeWidth="1.5" />
-            <line x1="12" y1="12" x2="20" y2="20" stroke="#E8B84B" strokeWidth="1.5" />
-          </svg>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src="/mindmap-badge-icon.png" alt="Mindmaps" style={{ width: 16, height: 16, objectFit: 'contain' }} />
         }
         badgeText="VISUAL LEARNING"
         title={

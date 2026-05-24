@@ -114,7 +114,7 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
           </div>
         </div>
         <div className="text-[10px] text-[#8795ae] mt-[1px]">
-          {subject.topics.length} topics · {totalDone}/{totalSubs} done · {overallPct}%
+          {subject.topics.length} topics | {totalDone}/{totalSubs} done
         </div>
         <div className="h-[3px] bg-[#d8e4f5] rounded-[4px] mt-[7px] overflow-hidden">
           <div 
@@ -220,23 +220,18 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
                 
                 {/* Topic Info */}
                 <div className="flex-1 min-w-0">
-                  <div className={`text-[13px] font-bold leading-tight ${
-                    isSelected ? 'text-[#0f1f3d]' : 'text-[#0f1f3d]'
-                  }`}>
+                  <div
+                    title={topic.name}
+                    className="text-[13px] font-bold leading-tight text-[#0f1f3d] whitespace-nowrap overflow-hidden text-ellipsis"
+                  >
                     {topic.name}
                   </div>
-                  <div className="text-[10px] text-[#8795ae] mt-[1px]">
-                    {topicStats.total} topics · {topicStats.done} done · {topicStats.pct}%
+                  <div className="text-[10px] text-[#8795ae] mt-[1px] whitespace-nowrap overflow-hidden text-ellipsis">
+                    {topicStats.total} topics | {topicStats.done}/{topicStats.total} done
                   </div>
                 </div>
                 
                 {/* Progress Count */}
-                <div className={`text-[12px] font-bold flex-shrink-0 ${
-                  topicStats.pct === 100 ? 'text-[#16a34a]' : topicStats.pct > 0 ? subject.color : '#8795ae'
-                }`}>
-                  {topicStats.done}/{topicStats.total}
-                  <div className="text-[9px] font-normal text-[#8795ae]">topics</div>
-                </div>
                 
                 <span 
                   className="text-[12px] text-[#8795ae] transition-transform duration-200 inline-block flex-shrink-0"

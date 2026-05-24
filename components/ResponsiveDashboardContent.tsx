@@ -98,7 +98,33 @@ const AddTaskModal = ({
   const [customSubject, setCustomSubject] = useState('');
   const [taskType, setTaskType] = useState('reading');
   const [startTime, setStartTime] = useState('14:00');
-  const [endTime, setEndTime] = useState('15:30');
+  const [endTime, setEndTime] = useState('14:30');
+
+  const TIME_SLOTS = (() => {
+    const slots: string[] = [];
+    for (let h = 5; h < 24; h++) {
+      slots.push(`${String(h).padStart(2, '0')}:00`);
+      slots.push(`${String(h).padStart(2, '0')}:30`);
+    }
+    return slots;
+  })();
+
+  const fmtSlot = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h < 12 ? 'AM' : 'PM';
+    const hh = h % 12 === 0 ? 12 : h % 12;
+    return `${hh}:${String(m).padStart(2, '0')} ${ampm}`;
+  };
+
+  const handleStartChange = (val: string) => {
+    setStartTime(val);
+    const [h, m] = val.split(':').map(Number);
+    const nextMin = h * 60 + m + 30;
+    const nh = Math.floor(nextMin / 60) % 24;
+    const nm = nextMin % 60;
+    const next = `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+    if (TIME_SLOTS.includes(next)) setEndTime(next);
+  };
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -217,21 +243,66 @@ const AddTaskModal = ({
 
         {/* Time */}
         <div className="mb-7">
-          <label className="block font-inter font-medium text-[14px] text-[#6366F1] mb-2">Time</label>
-          <div className="flex gap-4">
-            <input
-              type="time"
-              value={startTime}
-              onChange={e => setStartTime(e.target.value)}
-              className="flex-1 border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] transition-colors"
-            />
-            <input
-              type="time"
-              value={endTime}
-              onChange={e => setEndTime(e.target.value)}
-              className="flex-1 border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] transition-colors"
-            />
+          <label className="block font-inter font-medium text-[14px] text-[#6366F1] mb-3">Time</label>
+          <div className="flex items-center gap-3">
+            {/* Start time */}
+            <div className="flex-1">
+              <p className="font-inter text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Start</p>
+              <div className="relative">
+                <select
+                  value={startTime}
+                  onChange={e => handleStartChange(e.target.value)}
+                  className="w-full appearance-none border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/10 transition-colors bg-white cursor-pointer pr-10"
+                >
+                  {TIME_SLOTS.map(t => (
+                    <option key={t} value={t}>{fmtSlot(t)}</option>
+                  ))}
+                </select>
+                <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+            </div>
+
+            {/* Arrow divider */}
+            <div className="mt-5 text-gray-300">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+
+            {/* End time */}
+            <div className="flex-1">
+              <p className="font-inter text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">End</p>
+              <div className="relative">
+                <select
+                  value={endTime}
+                  onChange={e => setEndTime(e.target.value)}
+                  className="w-full appearance-none border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/10 transition-colors bg-white cursor-pointer pr-10"
+                >
+                  {TIME_SLOTS.map(t => (
+                    <option key={t} value={t}>{fmtSlot(t)}</option>
+                  ))}
+                </select>
+                <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+            </div>
           </div>
+
+          {/* Duration pill */}
+          {(() => {
+            const [sh, sm] = startTime.split(':').map(Number);
+            const [eh, em] = endTime.split(':').map(Number);
+            const diff = (eh * 60 + em) - (sh * 60 + sm);
+            if (diff <= 0) return null;
+            const hrs = Math.floor(diff / 60);
+            const mins = diff % 60;
+            const label = hrs > 0 ? (mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`) : `${mins}m`;
+            return (
+              <div className="mt-2.5 flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#6366F1]/10 px-3 py-1 font-inter text-[12px] font-semibold text-[#6366F1]">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  {label} session
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Actions */}
@@ -277,7 +348,7 @@ const ResponsiveDashboardContent = () => {
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [showLoginToast, setShowLoginToast] = useState(false);
-  const [isReturningLogin, setIsReturningLogin] = useState(true);
+  const [isReturningLogin, setIsReturningLogin] = useState(false);
   const [selectedTaskDate, setSelectedTaskDate] = useState(() => {
     const date = new Date();
     date.setHours(0, 0, 0, 0);

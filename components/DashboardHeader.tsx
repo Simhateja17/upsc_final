@@ -208,7 +208,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   onClick={() => setShowDropdown(false)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/human.png" alt="" className="w-4 h-4 object-contain opacity-60" />
+                  <img src="/nav-profile.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                   <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     My Profile
                   </span>
@@ -220,7 +220,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   onClick={() => setShowDropdown(false)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/card.png" alt="" className="w-4 h-4 object-contain opacity-60" />
+                  <img src="/nav-billing.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                   <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Billing &amp; Plan
                   </span>
@@ -232,7 +232,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   onClick={() => setShowDropdown(false)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/paper.png" alt="" className="w-4 h-4 object-contain opacity-60" />
+                  <img src="/nav-bookmark.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                   <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Bookmarks
                   </span>
@@ -244,7 +244,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   onClick={() => setShowDropdown(false)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/sett.png" alt="" className="w-4 h-4 object-contain opacity-60" />
+                  <img src="/nav-settings.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                   <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Account Settings
                   </span>
@@ -256,7 +256,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   onClick={() => setShowDropdown(false)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/question-help-message--Streamline-Ultimate.png" alt="" className="w-4 h-4 object-contain opacity-60" />
+                  <img src="/nav-sos.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                   <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Help &amp; Support
                   </span>
@@ -268,7 +268,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                   onClick={() => setShowDropdown(false)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/tin.png" alt="" className="w-4 h-4 object-contain opacity-60" />
+                  <img src="/nav-feedback.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                   <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                     Feedback
                   </span>
@@ -280,9 +280,8 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                     className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                     onClick={() => setShowDropdown(false)}
                   >
-                    <svg className="w-4 h-4 opacity-60" fill="none" viewBox="0 0 24 24" stroke="#374151" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
-                    </svg>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/nav-admin.png" alt="" className="w-4 h-4 object-contain opacity-60" />
                     <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
                       Admin Panel
                     </span>

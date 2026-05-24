@@ -419,22 +419,26 @@ export default function FAQContent() {
         .faq-a-inner ul li::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex-shrink: 0; margin-top: 8px; }
         .faq-no-results { text-align: center; padding: 48px 24px; color: var(--t3); }
         .faq-no-results .icon { font-size: 36px; margin-bottom: 12px; }
-        .faq-cta-section { background: #faf8f4; padding: 72px 48px; display: flex; flex-direction: column; align-items: center; }
-        .faq-cta-box { background: var(--navy-2); border-radius: 18px; padding: 48px 56px; text-align: center; max-width: 620px; width: 100%; position: relative; overflow: hidden; }
-        .faq-cta-box::before { content: ''; position: absolute; top: -80px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: radial-gradient(ellipse, rgba(232,184,75,.08) 0%, transparent 65%); }
-        .faq-cta-box h2 { font-family: var(--serif); font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 600; color: #fff; line-height: 1.2; margin-bottom: 12px; position: relative; z-index: 1; }
-        .faq-cta-box h2 em { font-style: italic; color: var(--gold); }
-        .faq-cta-box p { font-size: 14px; color: rgba(255,255,255,.44); max-width: 420px; margin: 0 auto 22px; line-height: 1.8; position: relative; z-index: 1; }
-        .faq-cta-row { display: flex; gap: 11px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
-        .faq-btn-gold { background: var(--gold); color: var(--navy-2); padding: 12px 28px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; font-family: var(--sans); transition: all .2s; text-decoration: none; display: inline-block; }
-        .faq-btn-gold:hover { background: var(--gold-2); transform: translateY(-2px); }
-        .faq-btn-outline { background: transparent; color: rgba(255,255,255,.65); padding: 12px 28px; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; border: 1.5px solid rgba(255,255,255,.14); font-family: var(--sans); transition: all .2s; text-decoration: none; display: inline-block; }
-        .faq-btn-outline:hover { border-color: rgba(255,255,255,.28); color: #fff; }
+        .faq-cta-section { background: #faf8f4; padding: 72px 48px 104px; display: flex; flex-direction: column; align-items: center; }
+        .faq-cta-box { background: linear-gradient(135deg, #0b1530 0%, #0f2050 100%); border: 1px solid rgba(255,255,255,.07); border-radius: 24px; box-shadow: 0 40px 80px rgba(11,29,58,.24); min-height: 384px; max-width: 700px; width: 100%; padding: 69px 76px 79px; text-align: center; position: relative; overflow: hidden; }
+        .faq-cta-box::before { content: ''; position: absolute; left: -80px; top: -80px; width: 320px; height: 320px; border-radius: 160px; background: rgba(232,184,75,.06); }
+        .faq-cta-box::after { content: ''; position: absolute; right: -60px; bottom: -60px; width: 250px; height: 250px; border-radius: 125px; background: rgba(46,93,179,.08); }
+        .faq-cta-box h2 { font-family: var(--serif); font-size: 50px; font-weight: 700; color: #fff; line-height: 54px; letter-spacing: -1.2px; margin: 0 0 30px; position: relative; z-index: 1; }
+        .faq-cta-box h2 em { display: block; font-style: italic; color: var(--gold); font-weight: 700; }
+        .faq-cta-box p { font-family: 'Outfit', var(--sans); font-size: 16px; font-weight: 400; color: rgba(255,255,255,.58); max-width: 489px; margin: 0 auto 30px; line-height: 26.4px; position: relative; z-index: 1; }
+        .faq-cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+        .faq-btn-gold { min-width: 286px; height: 53px; background: linear-gradient(144deg, #e8b84b 0%, #b8780a 100%); color: #0b1530; padding: 0 24px; border-radius: 12px; font-size: 15.5px; font-weight: 700; cursor: pointer; border: none; font-family: 'Outfit', var(--sans); transition: all .2s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 8px 14px rgba(232,184,75,.38); }
+        .faq-btn-gold:hover { filter: brightness(1.06); transform: translateY(-2px); }
+        .faq-btn-outline { min-width: 189px; height: 52px; background: rgba(255,255,255,.06); color: #fff; padding: 0 24px; border-radius: 12px; font-size: 15.5px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,.20); font-family: 'Outfit', var(--sans); transition: all .2s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .faq-btn-outline:hover { border-color: rgba(255,255,255,.32); background: rgba(255,255,255,.09); color: #fff; }
         @media(max-width: 860px) {
           .faq-inner { grid-template-columns: 1fr; padding: 0 22px; }
           .faq-toc { display: none; }
           .faq-hero-inner { padding: 32px 22px 28px; }
-          .faq-cta-box { padding: 36px 24px; }
+          .faq-cta-box { min-height: auto; padding: 52px 24px; }
+          .faq-cta-box h2 { font-size: 38px; line-height: 42px; letter-spacing: -0.6px; }
+          .faq-cta-box p { font-size: 15px; line-height: 24px; }
+          .faq-btn-gold, .faq-btn-outline { width: 100%; min-width: 0; }
           .faq-cta-section { padding: 48px 22px; }
         }
       ` }} />
@@ -541,10 +545,10 @@ export default function FAQContent() {
         {/* CTA - smaller box with white background */}
         <section className="faq-cta-section">
           <div className="faq-cta-box">
-            <h2>Your UPSC Journey<br /><em>Starts Today</em></h2>
+            <h2>Still have a question?<em>We are here to help</em></h2>
             <p>Our support team reads every message. No bots, no auto-replies.</p>
             <div className="faq-cta-row">
-              <a href="mailto:together@risewithjeet.com" className="faq-btn-gold">Email together@risewithjeet.com</a>
+              <a href="mailto:together@risewithjeet.com" className="faq-btn-gold">Email: together@risewithjeet.com</a>
               <Link href="/contact" className="faq-btn-outline">Contact Us</Link>
             </div>
           </div>
