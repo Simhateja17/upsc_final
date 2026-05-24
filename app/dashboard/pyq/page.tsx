@@ -153,6 +153,7 @@ export default function PyqPage() {
   const [mainsReadTimeLeft, setMainsReadTimeLeft] = useState<number | null>(null);
   const [textAnswerExpanded, setTextAnswerExpanded] = useState(false);
   const mainsAutoSubmitRef = useRef(false);
+  const questionsRequestSeqRef = useRef(0);
 
   // Data state
   const [questions, setQuestions] = useState<any[]>([]);
@@ -172,6 +173,7 @@ export default function PyqPage() {
   const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
 
   const fetchQuestions = useCallback(async () => {
+    const requestSeq = ++questionsRequestSeqRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -186,6 +188,7 @@ export default function PyqPage() {
         page,
         limit: 20,
       });
+      if (requestSeq !== questionsRequestSeqRef.current) return;
       if (res.status === 'success') {
         setQuestions(res.data.questions);
         setTotal(res.data.pagination.total);
@@ -195,11 +198,14 @@ export default function PyqPage() {
         setQuestions([]);
       }
     } catch (e: any) {
+      if (requestSeq !== questionsRequestSeqRef.current) return;
       console.error('Failed to fetch PYQ questions:', e);
       setError('Unable to load questions. Please check your connection and try again.');
       setQuestions([]);
     } finally {
-      setLoading(false);
+      if (requestSeq === questionsRequestSeqRef.current) {
+        setLoading(false);
+      }
     }
   }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic, selectedTopics, page]);
 
@@ -209,6 +215,14 @@ export default function PyqPage() {
   }, [mode, selectedYear, selectedYearRange, selectedSubject, selectedSubtopic, selectedTopics]);
 
   useEffect(() => {
+    questionsRequestSeqRef.current += 1;
+    setQuestions([]);
+    setTotal(0);
+    setTotalPages(0);
+    setSelectedQuestion(null);
+    setShowMainsWriteModal(false);
+    setShowModelAnswerModal(false);
+    setShowAttemptModal(false);
     setSelectedSubject('All Papers');
     setSelectedSubtopic(null);
     setSelectedTopics([]);
