@@ -223,7 +223,7 @@ export default function LandingPage() {
           })}
 
           <Link href="/community" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Community</Link>
-          <Link href="/pricing" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Pricing</Link>
+          <Link href="/dashboard/billing/plans" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Pricing</Link>
         </div>
 
         <div className="nav-btns hidden md:flex">
@@ -260,7 +260,7 @@ export default function LandingPage() {
           {NAV_DROPDOWNS.revision.map(i => <a key={i.href} href={i.href} onClick={closeMobileNav} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
         </div>
         <a href="/community" onClick={closeMobileNav}>Community</a>
-        <a href="/pricing" onClick={closeMobileNav}>Pricing</a>
+        <a href="/dashboard/billing/plans" onClick={closeMobileNav}>Pricing</a>
         <div className="mobile-nav-btns">
           <button className="btn-nav-ghost" onClick={() => go('/login?tab=login')}>Login</button>
           <button className="btn-nav-gold" onClick={() => go('/login?tab=signup')}>Start Free →</button>
