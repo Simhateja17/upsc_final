@@ -68,6 +68,7 @@ interface EnrolledItem {
 }
 
 export default function TestSeriesPage() {
+  const router = useRouter();
   const [allSeries, setAllSeries] = useState<SeriesItem[]>([]);
   const [enrollments, setEnrollments] = useState<EnrolledItem[]>([]);
   const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
@@ -126,6 +127,15 @@ export default function TestSeriesPage() {
       console.error('Enroll failed:', err);
     } finally {
       setEnrolling(null);
+    }
+  };
+
+  const refreshEnrollments = async () => {
+    const enrolled = await testSeriesService.getEnrolled();
+    if (enrolled.data) {
+      const items = enrolled.data as EnrolledItem[];
+      setEnrollments(items);
+      setEnrolledIds(new Set(items.map((e) => e.series.id)));
     }
   };
 
@@ -303,6 +313,51 @@ export default function TestSeriesPage() {
                     )}
                   </div>
 
+                  {/* Available Series */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: '50%',
+                          border: '4px solid #E8B84B',
+                          color: '#E8B84B',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 22,
+                          fontWeight: 700,
+                          lineHeight: '24px',
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        {'\u{1F4DA}'}
+                      </span>
+                      <h2 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: '#101828', margin: 0 }}>
+                        Available Series
+                      </h2>
+                    </div>
+                    {allSeries.length === 0 ? (
+                      <div style={{ color: '#6B7280', fontSize: 14, padding: '20px 0 4px' }}>
+                        No published test series are available yet.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 24, width: '100%' }}>
+                        {allSeries.map((s) => (
+                          <ProgramCard
+                            key={s.id}
+                            series={s}
+                            isEnrolled={enrolledIds.has(s.id)}
+                            enrolling={enrolling === s.id}
+                            onEnroll={() => handleEnroll(s.id)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                 </>
               )}
             </div>
@@ -319,7 +374,13 @@ export default function TestSeriesPage() {
         amount={purchaseModal.series?.price || 0}
         onSuccess={() => {
           if (purchaseModal.series) {
-            handleEnroll(purchaseModal.series.id);
+            const seriesId = purchaseModal.series.id;
+            refreshEnrollments().finally(() => {
+              setTimeout(() => {
+                setPurchaseModal({ open: false, series: null });
+                router.push(`/dashboard/test-series/${seriesId}`);
+              }, 900);
+            });
           }
         }}
       />
@@ -502,7 +563,7 @@ function ProgramCard({
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'var(--font-playfair), "Playfair Display", serif', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: '#101828' }}>{priceDisplay}</span>
           {compare != null && compare > series.price && (
-            <span style={{ fontFamily: 'Inter', fontSize: 14, color: '#9CA3AF', textDecoration: 'line-through' }}>\u20B9{compare.toLocaleString('en-IN')}</span>
+            <span style={{ fontFamily: 'Inter', fontSize: 14, color: '#9CA3AF', textDecoration: 'line-through' }}>₹{compare.toLocaleString('en-IN')}</span>
           )}
           {series.discountPercent != null && series.discountPercent > 0 && (
             <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, color: '#DC2626', background: '#FEE2E2', padding: '4px 8px', borderRadius: 8 }}>
@@ -565,4 +626,3 @@ function ProgramCard({
     </div>
   );
 }
-

@@ -289,7 +289,7 @@ export default function LandingPage() {
         </h1>
 
         <p className="hero-sub">
-          RiseWithJeet is trusted by 15,000+ aspirants for AI-powered learning, daily MCQs, instant mains evaluation, expert mentorship &amp; smart revision – all under one roof.
+          Trusted by 15,000+ aspirants. AI-powered learning, daily MCQs, instant mains evaluation, expert mentorship &amp; smart revision – all under one roof.
         </p>
 
         <div className="hero-ctas">
@@ -321,7 +321,7 @@ export default function LandingPage() {
         </div>
         <div className="modules-grid-full">
           {[
-            { card: 'mc-gold', wrap: 'mw-gold', title: 'Daily MCQ Practice', desc: 'Subject-wise & topic-wise MCQs with detailed explanations. New questions every day, curated by experts.', tag: 'tag-gold', tagLabel: 'Daily Practice', delay: 1, icon: '/assets/daily-mcq-practice.png' },
+            { card: 'mc-gold', wrap: 'mw-gold', title: 'Daily MCQ Practice', desc: 'Subject-wise & topic-wise MCQs with detailed explanations. New questions every day, curated by experts.', tag: 'tag-gold', tagLabel: 'Daily Practice', delay: 1, icon: '/target-icon.png' },
             { card: 'mc-cyan', wrap: 'mw-cyan', title: 'Mock Tests', desc: 'Full-length Prelims & Mains simulations in UPSC pattern. Timed, scored, ranked.', tag: 'tag-cyan', tagLabel: 'Test Series', delay: 2, icon: '/sidebar-mock-tests-new.png' },
             { card: 'mc-violet', wrap: 'mw-violet', title: 'Previous Year Questions', desc: '30 years of PYQs with trend analysis, topic clustering, and examiner insights.', tag: 'tag-violet', tagLabel: 'PYQ Bank', delay: 3, icon: '/sidebar-pyq-new.png' },
             { card: 'mc-emerald', wrap: 'mw-emerald', title: 'Answer Writing', desc: 'Daily mains practice with AI-powered instant evaluation and UPSC-style marking schemes.', tag: 'tag-emerald', tagLabel: 'AI Evaluated', delay: 4, icon: '/sidebar-daily-answer-new.png' },
@@ -834,7 +834,7 @@ export default function LandingPage() {
             <div className="pr-0 xl:pr-8">
               <Image src="/footer-logo-new.png" alt="RiseWithJeet" width={320} height={64} className="-ml-10 xl:-ml-12" style={{ height: 56, width: 'auto', objectFit: 'contain' }} priority />
               <p className="mt-4 max-w-[320px] text-[13px] leading-[1.6] text-white/60">
-                RiseWithJeet is an AI-powered UPSC preparation platform redefining preparation with a simplified, smarter approach. As India&apos;s leading AI-powered platform, we combine cutting-edge technology, high-quality content, expert guidance, and innovative tools to deliver an effective learning experience.
+                Rise With Jeet is redefining UPSC preparation with a simplified, smarter approach. As India&apos;s leading AI-powered platform, we combine cutting-edge technology, high-quality content, expert guidance, and innovative tools to deliver an effective learning experience.
               </p>
 
               <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Download the app</p>

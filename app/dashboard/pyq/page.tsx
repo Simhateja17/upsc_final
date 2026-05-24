@@ -125,7 +125,13 @@ const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
 export default function PyqPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
+<<<<<<< HEAD
   const [questionStates, setQuestionStates] = useState<Record<string, { selected: string | null; submitted: boolean }>>({});
+=======
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [prelimsSubmitError, setPrelimsSubmitError] = useState<string | null>(null);
+>>>>>>> 022f686fc16f5245efe4c31a4fa8f368c6d191ac
   const [showMainsWriteModal, setShowMainsWriteModal] = useState(false);
   const [showModelAnswerModal, setShowModelAnswerModal] = useState(false);
   const [showAiEvalModal, setShowAiEvalModal] = useState(false);
@@ -664,6 +670,7 @@ export default function PyqPage() {
                       </div>
                     )}
 
+<<<<<<< HEAD
                     {/* Submit / Reset */}
                     {!qState.submitted ? (
                       <button
@@ -700,6 +707,22 @@ export default function PyqPage() {
                         <p className="mt-2" style={{ fontSize: '13px', color: '#6A7282' }}>📖 UPSC CSE Prelims {q.year}</p>
                       </div>
                     )}
+=======
+                    {/* CTA */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedQuestion(q);
+                        setSelectedAnswer(null);
+                        setHasSubmitted(false);
+                        setPrelimsSubmitError(null);
+                        setShowAttemptModal(true);
+                      }}
+                      className="w-full h-[52px] rounded-[14px] bg-[#0F172B] text-white font-bold text-[18px] leading-[28px] flex items-center justify-center hover:bg-[#111827] transition-colors"
+                    >
+                      Attempt Question
+                    </button>
+>>>>>>> 022f686fc16f5245efe4c31a4fa8f368c6d191ac
                   </div>
                 );
               })}
@@ -2003,6 +2026,167 @@ export default function PyqPage() {
         </div>
       )}
 
+<<<<<<< HEAD
+=======
+      {/* Attempt / Question review modal - Prelims only; opens from Attempt Question in Prelims tab */}
+      {showAttemptModal && mode === 'prelims' && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+          style={{ background: 'rgba(15,23,42,0.5)' }}
+          onClick={() => setShowAttemptModal(false)}
+        >
+          <div
+            className="rounded-[24px] bg-white flex flex-col my-8"
+            style={{
+              width: '896px',
+              maxWidth: '100%',
+              minHeight: '882px',
+              gap: '24px',
+              padding: '32px 32px 32px 40px',
+              borderLeft: '8px solid #00A63E',
+              boxShadow: '0px 4px 6px -4px #0000001A, 0px 10px 15px -3px #0000001A',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header: question #, tags, actions */}
+            <div
+              className="flex items-center justify-between flex-wrap gap-2 flex-shrink-0"
+              style={{ width: '824px', maxWidth: '100%', minHeight: '48px' }}
+            >
+              <div className="flex items-center gap-2 flex-wrap">
+                <div
+                  className="rounded-[14px] flex items-center justify-center flex-shrink-0"
+                  style={{ width: 48, height: 48, background: '#1E293B', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: '18px', lineHeight: '28px' }}
+                >
+                  {selectedQuestion?.questionNum ?? '?'}
+                </div>
+                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: '#1E293B', color: '#FFFFFF' }}>{selectedQuestion?.year}</span>
+                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: '#FEF3C6', color: '#BB4D00' }}>{selectedQuestion?.subject}</span>
+                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#FFEDD4', color: '#F54900' }}>🔥 {selectedQuestion?.difficulty}</span>
+                {hasSubmitted
+                  ? <span className="px-3 py-1 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#DCFCE7', color: '#008236' }}>✅ Attempted</span>
+                  : <span className="px-3 py-1 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#F3F4F6', color: '#6A7282' }}>📝 Not Attempted</span>
+                }
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button type="button" onClick={() => setShowAttemptModal(false)} className="w-10 h-10 rounded-[14px] flex items-center justify-center text-[18px] font-bold" style={{ background: '#00A63E', color: '#FFFFFF' }} aria-label="Close">×</button>
+                <button type="button" className="w-10 h-10 rounded-[14px] flex items-center justify-center" style={{ background: '#F3F4F6', color: '#364153' }} aria-label="Edit">✏️</button>
+                <button type="button" className="w-10 h-10 rounded-[14px] flex items-center justify-center" style={{ background: '#F3F4F6', color: '#364153' }} aria-label="Full screen">⛶</button>
+              </div>
+            </div>
+
+            {/* Question text */}
+            <QuestionTextRenderer
+              text={selectedQuestion?.questionText}
+              style={{ width: '824px', maxWidth: '100%' }}
+              textClassName="font-[Inter] font-normal text-[18px] leading-[29.25px] text-[#1E2939]"
+            />
+
+            {/* Options */}
+            <div style={{ width: '824px', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {(selectedQuestion?.options ?? []).map((opt: any) => {
+                const isSelected = selectedAnswer === opt.label;
+                const isCorrect  = opt.label === selectedQuestion?.correctOption;
+
+                let bg = '#F9FAFB', border = '0.8px solid #E5E7EB', labelBg = '#D1D5DC', labelColor = '#364153';
+                if (!hasSubmitted && isSelected) {
+                  bg = '#EFF6FF'; border = '1.6px solid #3B82F6'; labelBg = '#3B82F6'; labelColor = '#fff';
+                }
+                if (hasSubmitted && isCorrect) {
+                  bg = '#F0FDF4'; border = '1.6px solid #00C950'; labelBg = '#00A63E'; labelColor = '#fff';
+                }
+                if (hasSubmitted && isSelected && !isCorrect) {
+                  bg = '#FEF2F2'; border = '1.6px solid #FB2C36'; labelBg = '#E7000B'; labelColor = '#fff';
+                }
+
+                return (
+                  <button
+                    key={opt.label}
+                    disabled={hasSubmitted}
+                    onClick={() => setSelectedAnswer(opt.label)}
+                    className="w-full flex items-center gap-3 rounded-[14px] pl-4 py-3 text-left transition-colors"
+                    style={{ minHeight: 65, background: bg, border }}
+                  >
+                    <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[16px] font-bold"
+                         style={{ background: labelBg, color: labelColor }}>
+                      {opt.label}
+                    </div>
+                    <span style={{ fontWeight: (hasSubmitted && (isCorrect || isSelected)) ? 500 : 400, fontSize: '16px', color: '#1E2939' }}>
+                      {opt.text}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Explanation – shown only after submit */}
+            {hasSubmitted && selectedQuestion?.explanation && (
+              <div style={{ width: '774.4px', maxWidth: '100%' }}>
+                <div className="flex items-center gap-2 mb-2" style={{ color: '#016630', fontWeight: 700, fontSize: '14px', textTransform: 'uppercase' }}>
+                  <span>✅</span><span>Explanation</span>
+                </div>
+                <p style={{ fontSize: '16px', color: '#364153', lineHeight: '26px', marginBottom: 12 }}>
+                  {selectedQuestion.explanation}
+                </p>
+                <div className="flex items-center gap-2" style={{ fontSize: '14px', color: '#6A7282' }}>
+                  <span>📖</span>
+                  <span>UPSC CSE Prelims {selectedQuestion.year}, {selectedQuestion.paper}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Bottom bar */}
+            <div className="flex items-center justify-between flex-wrap gap-4" style={{ width: '824px', maxWidth: '100%', marginTop: 'auto', paddingTop: 8 }}>
+              {!hasSubmitted ? (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!selectedAnswer || !selectedQuestion?.id) return;
+                    setHasSubmitted(true);
+                    setPrelimsSubmitError(null);
+                    try {
+                      await pyqService.submitPrelimsAnswer(selectedQuestion.id, selectedAnswer);
+                    } catch (err) {
+                      setPrelimsSubmitError(err instanceof Error ? err.message : 'Could not save attempt');
+                    }
+                  }}
+                  disabled={!selectedAnswer}
+                  className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5"
+                  style={{ background: selectedAnswer ? '#0F172B' : '#E5E7EB', color: selectedAnswer ? '#fff' : '#9CA3AF', fontWeight: 600, fontSize: '16px', cursor: selectedAnswer ? 'pointer' : 'not-allowed' }}
+                >
+                  {selectedAnswer ? 'Submit Answer' : 'Select an answer first'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setHasSubmitted(false); setSelectedAnswer(null); setPrelimsSubmitError(null); }}
+                  className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-2.5"
+                  style={{ background: '#DCFCE7', color: '#008236', fontWeight: 600, fontSize: '16px' }}
+                >
+                  <span>✅</span><span>Attempted · Reset</span>
+                </button>
+            )}
+
+            {hasSubmitted && prelimsSubmitError && (
+              <div className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[13px] text-[#B91C1C]">
+                Attempt shown locally, but could not be saved for leaderboard: {prelimsSubmitError}
+              </div>
+            )}
+              <div className="flex items-center gap-6">
+                <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#6A7282' }}>
+                  <span aria-hidden>👁</span>
+                  <span>1,240 views</span>
+                </span>
+                <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#6A7282' }}>
+                  <span aria-hidden>🎯</span>
+                  <span>58% avg accuracy</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+>>>>>>> 022f686fc16f5245efe4c31a4fa8f368c6d191ac
     </div>
   );
 }

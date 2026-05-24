@@ -93,6 +93,8 @@ export default function DailyEditorialPage() {
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [availableDates, setAvailableDates] = useState<Set<string>>(new Set());
+  const [availabilityLoading, setAvailabilityLoading] = useState(true);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   // Streak data pulled from /editorials/stats
   const [streakData, setStreakData] = useState<{ streak: number; weekChecks: boolean[]; readToday: number; targetToday: number }>({
@@ -110,6 +112,20 @@ export default function DailyEditorialPage() {
     summary: string | null;
     loadStep: number;
   }>({ open: false, loading: false, editorial: null, summary: null, loadStep: 0 });
+
+  useEffect(() => {
+    const source = activeNewspaper === 'hindu' ? 'The Hindu' : 'Indian Express';
+    const month = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
+    setAvailabilityLoading(true);
+    setAvailableDates(new Set());
+    editorialService.getAvailability(source, month)
+      .then(res => {
+        const dates = Array.isArray(res.data?.availableDates) ? res.data.availableDates : [];
+        setAvailableDates(new Set(dates));
+      })
+      .catch(() => setAvailableDates(new Set()))
+      .finally(() => setAvailabilityLoading(false));
+  }, [activeNewspaper, calMonth, calYear]);
 
   useEffect(() => {
     const source = activeNewspaper === 'hindu' ? 'The Hindu' : 'Indian Express';
@@ -449,7 +465,13 @@ export default function DailyEditorialPage() {
                 );
               }
               return paginatedEditorials.map((card) => {
-              const tagList = card.tags?.length > 0 ? card.tags : [card.category];
+              const secondaryTags = (card.tags || []).filter((tag) => {
+                const normalized = tag.toLowerCase();
+                return normalized !== card.category.toLowerCase()
+                  && normalized !== 'the hindu'
+                  && normalized !== 'indian express';
+              });
+              const tagList = [card.category, ...secondaryTags].slice(0, 3);
               return (
               <div
                 key={card.id}
@@ -725,13 +747,15 @@ export default function DailyEditorialPage() {
                 }
                 const iso = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const isFuture = new Date(iso) > new Date();
-                const isSelected = iso === selectedDate;
+                const hasArticles = availableDates.has(iso);
+                const isUnavailable = !availabilityLoading && !hasArticles;
+                const isSelected = iso === selectedDate && !isFuture && !isUnavailable;
                 return (
                   <button
                     key={idx}
-                    disabled={isFuture}
-                    onClick={() => !isFuture && setSelectedDate(iso)}
-                    className="flex items-center justify-center font-arimo"
+                    disabled={isFuture || isUnavailable}
+                    onClick={() => !(isFuture || isUnavailable) && setSelectedDate(iso)}
+                    className="flex flex-col items-center justify-center font-arimo"
                     style={{
                       width: '100%',
                       aspectRatio: '1',
@@ -739,13 +763,24 @@ export default function DailyEditorialPage() {
                       fontSize: '14px',
                       borderRadius: '10px',
                       background: isSelected ? '#162456' : 'transparent',
-                      color: isSelected ? '#FFFFFF' : isFuture ? '#99A1AF' : '#364153',
+                      color: isSelected ? '#FFFFFF' : (isFuture || isUnavailable) ? '#B8C0CC' : '#364153',
                       fontWeight: isSelected ? 700 : 400,
-                      cursor: isFuture ? 'not-allowed' : 'pointer',
+                      cursor: (isFuture || isUnavailable) ? 'not-allowed' : 'pointer',
                       border: 'none',
+                      gap: '2px',
                     }}
+                    aria-label={`${iso}${hasArticles ? ', articles available' : ', no articles available'}`}
                   >
-                    {day}
+                    <span style={{ lineHeight: '14px' }}>{day}</span>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: '4px',
+                        height: '4px',
+                        borderRadius: '999px',
+                        background: hasArticles ? (isSelected ? '#FFFFFF' : '#1D4ED8') : 'transparent',
+                      }}
+                    />
                   </button>
                 );
               })}
@@ -1149,12 +1184,28 @@ export default function DailyEditorialPage() {
             );
           }
 
+<<<<<<< HEAD
           if (tl.includes('key term')) {
             const terms = body.split(/[\n,]/).map(t => t.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').trim()).filter(Boolean);
             return (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {terms.map((term, i) => (
                   <span key={i} style={{ display: 'inline-flex', alignItems: 'center', background: '#eef2fb', border: '1px solid #c8d7f5', color: '#2a4a8a', fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 8 }}>{term}</span>
+=======
+            {/* Tags */}
+            {summaryModal.editorial && (
+              <div className="flex flex-wrap" style={{ gap: '8px', marginBottom: '20px' }}>
+                {[
+                  summaryModal.editorial.category,
+                  ...(summaryModal.editorial.tags || []).filter((tag) => {
+                    const normalized = tag.toLowerCase();
+                    return normalized !== summaryModal.editorial!.category.toLowerCase()
+                      && normalized !== 'the hindu'
+                      && normalized !== 'indian express';
+                  }),
+                ].slice(0, 3).map(t => (
+                  <span key={t} style={{ background: 'rgba(255,255,255,0.08)', color: '#CBD5E1', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', fontWeight: 500 }}>{t}</span>
+>>>>>>> 022f686fc16f5245efe4c31a4fa8f368c6d191ac
                 ))}
               </div>
             );

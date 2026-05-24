@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { dailyAnswerService } from '@/lib/services';
+import { dailyAnswerService, leaderboardService } from '@/lib/services';
 import Link from 'next/link';
 
 interface QuestionData {
@@ -14,6 +14,14 @@ interface QuestionData {
   wordLimit: number;
   timeLimit: number;
   attemptCount: number;
+}
+
+interface MainsLeagueUser {
+  rank: number;
+  userId: string;
+  name: string;
+  mainsAvg: number;
+  streak: number;
 }
 
 type DailyAnswerSubmitResponse = {
@@ -86,24 +94,13 @@ const ACHIEVEMENTS = [
   { icon: '/badge-most-improved.png', name: 'Most Improved', desc: 'Week 2 Progress champion', locked: true },
 ];
 
-const LEADERBOARD: Array<{ rank: number; name: string; score: string; medal?: string }> = [
-  { rank: 1, name: 'John Doe', score: '998.5', medal: '/medal-gold.png' },
-  { rank: 2, name: 'Shubham Bharti', score: '948', medal: '/medal-silver.png' },
-  { rank: 3, name: 'Manish Singh', score: '931.5', medal: '/medal-bronze.png' },
-  { rank: 4, name: 'John Doe', score: '998.5' },
-  { rank: 5, name: 'Shubham Bharti', score: '948' },
-  { rank: 6, name: 'Manish Singh', score: '931.5' },
-  { rank: 7, name: 'John Doe', score: '998.5' },
-  { rank: 8, name: 'Shubham Bharti', score: '948' },
-  { rank: 9, name: 'Manish Singh', score: '931.5' },
-  { rank: 10, name: 'Manish Singh', score: '931.5' },
-];
-
 export default function DailyMainsChallengeContextPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [data, setData] = useState<QuestionData | null>(null);
+  const [mainsLeague, setMainsLeague] = useState<MainsLeagueUser[]>([]);
+  const [myMainsRank, setMyMainsRank] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -130,6 +127,32 @@ export default function DailyMainsChallengeContextPage() {
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    leaderboardService.getLeaderboard('mains', 'all')
+      .then(res => {
+        if (!cancelled && Array.isArray(res.data)) {
+          setMainsLeague((res.data as MainsLeagueUser[]).slice(0, 10));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMainsLeague([]);
+      });
+
+    leaderboardService.getMyRank('all')
+      .then(res => {
+        if (!cancelled) setMyMainsRank(res.data);
+      })
+      .catch(() => {
+        if (!cancelled) setMyMainsRank(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -500,26 +523,26 @@ export default function DailyMainsChallengeContextPage() {
                   <img src="/icon-medal.png" alt="" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
                   <span className="font-bold text-[#101828]" style={{ fontSize: '15px', background: '#E8B84B', padding: '0 6px', borderRadius: '2px' }}>Mains League</span>
                 </div>
-                <Link href="/dashboard/leaderboard" className="text-[#0F766E] hover:underline" style={{ fontSize: '12px', fontWeight: 500 }}>View All →</Link>
+                <Link href="/dashboard/leaderboard?tab=mains" className="text-[#0F766E] hover:underline" style={{ fontSize: '12px', fontWeight: 500 }}>View All →</Link>
               </div>
               <div className="flex flex-col gap-2">
-                {LEADERBOARD.map((row, i) => (
+                {mainsLeague.map((row, i) => (
                   <div
-                    key={i}
+                    key={row.userId}
                     className="flex items-center justify-between rounded-lg"
                     style={{ background: '#F9FAFB', padding: '8px 14px' }}
                   >
                     <div className="flex items-center gap-3">
                       <span style={{ width: '24px', height: '24px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {row.medal && (
+                        {i < 3 && (
                           /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={row.medal} alt="" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                          <img src={i === 0 ? '/medal-gold.png' : i === 1 ? '/medal-silver.png' : '/medal-bronze.png'} alt="" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
                         )}
                       </span>
                       <div className="rounded-full bg-[#2B7FFF] text-white flex items-center justify-center font-bold" style={{ width: '28px', height: '28px', fontSize: '12px' }}>{row.rank}</div>
                       <span className="font-bold text-[#101828]" style={{ fontSize: '13px' }}>{row.name}</span>
                     </div>
-                    <span className="font-bold text-[#0F766E]" style={{ fontSize: '13px' }}>{row.score}</span>
+                    <span className="font-bold text-[#0F766E]" style={{ fontSize: '13px' }}>{Math.round(row.mainsAvg * 10) / 10}</span>
                   </div>
                 ))}
                 <div
@@ -528,10 +551,10 @@ export default function DailyMainsChallengeContextPage() {
                 >
                   <div className="flex items-center gap-3">
                     <span style={{ width: '22px', display: 'inline-block' }} />
-                    <div className="rounded-full bg-[#2B7FFF] text-white flex items-center justify-center font-bold" style={{ width: '28px', height: '28px', fontSize: '12px' }}>53</div>
-                    <span className="text-[#101828]" style={{ fontSize: '13px' }}>You · 7.2 avg · 14 streak</span>
+                    <div className="rounded-full bg-[#2B7FFF] text-white flex items-center justify-center font-bold" style={{ width: '28px', height: '28px', fontSize: '12px' }}>{myMainsRank?.mainsRank ?? '-'}</div>
+                    <span className="text-[#101828]" style={{ fontSize: '13px' }}>You · {Math.round((myMainsRank?.mainsAvg ?? 0) * 10) / 10} avg · {myMainsRank?.streak ?? 0} streak</span>
                   </div>
-                  <span className="font-bold text-[#15803D]" style={{ fontSize: '13px' }}>+2 ↑</span>
+                  <span className="font-bold text-[#15803D]" style={{ fontSize: '13px' }}>Live</span>
                 </div>
               </div>
             </div>

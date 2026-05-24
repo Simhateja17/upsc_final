@@ -41,7 +41,7 @@ const emptyForm = {
   totalTests: 10,
   questionsPerTest: 20,
   price: 0,
-  published: false,
+  published: true,
   listingStatus: 'open',
   thumbnailUrl: '',
   categoryLabel: 'GENERAL',
@@ -54,7 +54,7 @@ const emptyForm = {
   featureAi: false,
   featureVideo: false,
   // PDF upload (create mode only)
-  pdfFile: null as File | null,
+  pdfFiles: [] as File[],
   testTitle: 'Test 1',
   testTimeLimit: 60,
   // Detail page CMS
@@ -138,7 +138,7 @@ export default function AdminTestSeriesPage() {
       syllabus: (s as any).syllabus ?? [],
       faqs: (s as any).faqs ?? [],
       includes: (s as any).includes ?? [],
-      pdfFile: null,
+      pdfFiles: [],
       testTitle: 'Test 1',
       testTimeLimit: 60,
     });
@@ -222,7 +222,7 @@ export default function AdminTestSeriesPage() {
     }
 
     // ── Create mode WITHOUT PDF: simple create ──
-    if (!form.pdfFile) {
+    if (form.pdfFiles.length === 0) {
       try {
         const created = await testSeriesService.createSeries(payload);
         setMsg('Series created successfully.');
@@ -242,7 +242,7 @@ export default function AdminTestSeriesPage() {
       return;
     }
 
-    // ── Create mode WITH PDF: full pipeline ──
+    // ── Create mode WITH PDFs: create one test per PDF ──
     const steps: ProgressStep[] = [];
     const track = (name: string, done: boolean, error?: string) => {
       const idx = steps.findIndex((s) => s.step === name);
@@ -259,44 +259,55 @@ export default function AdminTestSeriesPage() {
       if (!newSeriesId) throw new Error('Series created but no ID returned');
       track('Creating series...', true);
 
-      // 2. Create test
-      track('Creating test...', false);
-      const testRes = await testSeriesService.createTest(newSeriesId, {
-        title: form.testTitle || 'Test 1',
-        sortOrder: 1,
-      });
-      const newTestId = (testRes.data as { id?: string })?.id;
-      if (!newTestId) throw new Error('Test created but no ID returned');
-      track('Creating test...', true);
+      let totalQuestions = 0;
+      for (let index = 0; index < form.pdfFiles.length; index += 1) {
+        const pdfFile = form.pdfFiles[index];
+        const testNumber = index + 1;
+        const testLabel = form.pdfFiles.length === 1
+          ? (form.testTitle || 'Test 1')
+          : (form.testTitle && form.testTitle !== 'Test 1' ? `${form.testTitle} ${testNumber}` : `Test ${testNumber}`);
+        const fileLabel = `${testLabel} (${pdfFile.name})`;
 
-      // 3. Upload PDF
-      track('Uploading PDF...', false);
-      const fd = new FormData();
-      fd.append('file', form.pdfFile);
-      fd.append('kind', 'pdf');
-      fd.append('seriesId', newSeriesId);
-      fd.append('testId', newTestId);
-      const uploadRes = await testSeriesService.uploadAsset(fd);
-      const upData = uploadRes.data as { url?: string; path?: string };
-      await testSeriesService.updateTest(newSeriesId, newTestId, {
-        pdfUrl: upData.url,
-        pdfPath: upData.path,
-        timeLimitMinutes: form.testTimeLimit || 60,
-      });
-      track('Uploading PDF...', true);
+        // 2. Create test
+        track(`Creating ${fileLabel}...`, false);
+        const testRes = await testSeriesService.createTest(newSeriesId, {
+          title: testLabel,
+          sortOrder: testNumber,
+        });
+        const newTestId = (testRes.data as { id?: string })?.id;
+        if (!newTestId) throw new Error('Test created but no ID returned');
+        track(`Creating ${fileLabel}...`, true);
 
-      // 4. Extract text
-      track('Extracting text from PDF...', false);
-      await testSeriesService.extractPdfText(newSeriesId, newTestId);
-      track('Extracting text from PDF...', true);
+        // 3. Upload PDF
+        track(`Uploading ${pdfFile.name}...`, false);
+        const fd = new FormData();
+        fd.append('file', pdfFile);
+        fd.append('kind', 'pdf');
+        fd.append('seriesId', newSeriesId);
+        fd.append('testId', newTestId);
+        const uploadRes = await testSeriesService.uploadAsset(fd);
+        const upData = uploadRes.data as { url?: string; path?: string };
+        await testSeriesService.updateTest(newSeriesId, newTestId, {
+          pdfUrl: upData.url,
+          pdfPath: upData.path,
+          timeLimitMinutes: form.testTimeLimit || 60,
+        });
+        track(`Uploading ${pdfFile.name}...`, true);
 
-      // 5. AI parse questions (auto-save)
-      track('Parsing questions with AI (may take a minute)...', false);
-      const parseRes = await testSeriesService.parsePdfQuestions(newSeriesId, newTestId, true);
-      const qCount = (parseRes.data as { totalParsed?: number })?.totalParsed ?? 0;
-      track(`Parsed ${qCount} questions!`, true);
+        // 4. Extract text
+        track(`Extracting ${pdfFile.name}...`, false);
+        await testSeriesService.extractPdfText(newSeriesId, newTestId);
+        track(`Extracting ${pdfFile.name}...`, true);
 
-      setMsg(`Series created successfully with ${qCount} questions!`);
+        // 5. AI parse questions (auto-save)
+        track(`Parsing ${pdfFile.name} with AI...`, false);
+        const parseRes = await testSeriesService.parsePdfQuestions(newSeriesId, newTestId, true);
+        const qCount = (parseRes.data as { totalParsed?: number })?.totalParsed ?? 0;
+        totalQuestions += qCount;
+        track(`Parsed ${qCount} questions from ${pdfFile.name}`, true);
+      }
+
+      setMsg(`Series created successfully with ${form.pdfFiles.length} test${form.pdfFiles.length === 1 ? '' : 's'} and ${totalQuestions} questions!`);
       setShowForm(false);
       await loadSeries();
     } catch (err: unknown) {
@@ -615,27 +626,62 @@ export default function AdminTestSeriesPage() {
             {!editingId && (
               <div style={{ gridColumn: '1 / -1', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 12, padding: 16, marginTop: 4 }}>
                 <label style={{ ...labelStyle, fontSize: 14, color: '#047857', marginBottom: 8 }}>
-                  Upload PDF with MCQ Questions
+                  Upload PDFs with MCQ Questions
                 </label>
                 <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 12px' }}>
-                  Upload a PDF and questions will be automatically extracted and parsed by AI. The test will be ready for users immediately.
+                  Upload one or more PDFs. Each PDF becomes a separate test, and questions will be automatically extracted and parsed by AI.
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px' }}>
                   <div style={{ gridColumn: '1 / -1' }}>
                     <input
                       type="file"
                       accept="application/pdf"
-                      onChange={(e) => setForm((f) => ({ ...f, pdfFile: e.target.files?.[0] ?? null }))}
+                      multiple
+                      onChange={(e) => setForm((f) => ({ ...f, pdfFiles: Array.from(e.target.files ?? []) }))}
                       style={{ fontSize: 13 }}
                     />
-                    {form.pdfFile && (
-                      <span style={{ marginLeft: 12, fontSize: 12, color: '#047857', fontWeight: 600 }}>
-                        {form.pdfFile.name} ({(form.pdfFile.size / 1024 / 1024).toFixed(1)} MB)
-                      </span>
+                    {form.pdfFiles.length > 0 && (
+                      <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
+                        {form.pdfFiles.map((file, index) => (
+                          <div
+                            key={`${file.name}-${file.lastModified}-${index}`}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 12,
+                              background: '#ECFDF5',
+                              border: '1px solid #BBF7D0',
+                              borderRadius: 8,
+                              padding: '8px 10px',
+                            }}
+                          >
+                            <span style={{ fontSize: 12, color: '#047857', fontWeight: 600, overflowWrap: 'anywhere' }}>
+                              {index + 1}. {file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setForm((f) => ({ ...f, pdfFiles: f.pdfFiles.filter((_, i) => i !== index) }))}
+                              style={{
+                                background: '#DCFCE7',
+                                color: '#166534',
+                                border: 'none',
+                                borderRadius: 6,
+                                padding: '4px 8px',
+                                cursor: 'pointer',
+                                fontSize: 12,
+                                flex: '0 0 auto',
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                   <div>
-                    <label style={labelStyle}>Test Title</label>
+                    <label style={labelStyle}>Test Title {form.pdfFiles.length > 1 ? 'Prefix' : ''}</label>
                     <input
                       style={inputStyle}
                       value={form.testTitle}
@@ -762,11 +808,11 @@ export default function AdminTestSeriesPage() {
               }}
             >
               {saving
-                ? (form.pdfFile && !editingId ? 'Processing...' : 'Saving...')
+                ? (form.pdfFiles.length > 0 && !editingId ? 'Processing...' : 'Saving...')
                 : editingId
                   ? 'Update Series'
-                  : form.pdfFile
-                    ? 'Create Series & Parse PDF'
+                  : form.pdfFiles.length > 0
+                    ? `Create Series & Parse ${form.pdfFiles.length} PDF${form.pdfFiles.length === 1 ? '' : 's'}`
                     : 'Create Series'}
             </button>
             {editingId && (

@@ -25,6 +25,13 @@ interface LeaderboardUser {
   handle: string;
 }
 
+interface CommunityStats {
+  totalAspirants: number;
+  activeToday: number;
+  questionsSolved: number;
+  avgAccuracy: number;
+}
+
 const avatarColorByInitial: Record<string, string> = {
   S: '#D98A0A',
   A: '#EF4444',
@@ -46,12 +53,21 @@ export default function LeaderboardPage() {
   const [range, setRange] = useState<Range>('all');
   const [showRangeMenu, setShowRangeMenu] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
+  const [communityStats, setCommunityStats] = useState<CommunityStats | null>(null);
   const [myRank, setMyRank] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [myRankLoading, setMyRankLoading] = useState(true);
 
   const rangeLabel =
     range === 'all' ? '🏆 All Time' : range === 'week' ? '📅 This Week' : '📅 This Month';
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam === 'overall' || tabParam === 'mcq' || tabParam === 'mains') {
+      setTab(tabParam);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,10 +77,14 @@ export default function LeaderboardPage() {
       .then((res) => {
         if (!cancelled && res.data) {
           setLeaderboard(res.data as LeaderboardUser[]);
+          setCommunityStats((res as any).meta?.communityStats ?? null);
         }
       })
       .catch(() => {
-        if (!cancelled) setLeaderboard([]);
+        if (!cancelled) {
+          setLeaderboard([]);
+          setCommunityStats(null);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -108,7 +128,7 @@ export default function LeaderboardPage() {
         initial: item.initial || getInitial(item.name),
         name: item.name,
         city: '',
-        points: String(Math.round(item.totalScore)),
+        points: (Math.round(item.totalScore * 10) / 10).toString(),
         accuracy: `${item.accuracy}%`,
         winner,
       };
@@ -122,7 +142,7 @@ export default function LeaderboardPage() {
       name: item.name,
       handle: item.handle || '',
       city: '',
-      score: String(Math.round(item.totalScore)),
+      score: (Math.round(item.totalScore * 10) / 10).toString(),
       accuracy: item.accuracy,
       streak: String(item.streak),
       hours: `${Math.round(item.studyHours)}h`,
@@ -139,6 +159,14 @@ export default function LeaderboardPage() {
     return avatarColorByInitial[myInitial] || '#7B61FF';
   }, [myInitial]);
 
+  const formatCompact = (value: number) => {
+    if (value >= 1000) {
+      const compact = value / 1000;
+      return `${compact >= 100 ? compact.toFixed(1) : Math.round(compact)}K`;
+    }
+    return String(value);
+  };
+
   return (
     <div className="min-h-screen bg-[#F9FAFB] font-arimo">
       <DashboardPageHero
@@ -153,12 +181,12 @@ export default function LeaderboardPage() {
             </em>
           </>
         }
-        subtitle="Compete, improve, and see where you stand among 15,000+ UPSC aspirants preparing with RiseWithJeet."
+        subtitle="Compete, improve, and see where you stand among UPSC aspirants preparing with RiseWithJeet."
         stats={[
-          { value: '15K+', label: 'Aspirants', color: '#FDC700' },
-          { value: '50K+', label: 'Tests Taken', color: '#F87171' },
-          { value: '547', label: 'Active Right Now', color: '#4ADE80' },
-          { value: '∞', label: 'Always Free', color: '#FFFFFF' },
+          { value: formatCompact(communityStats?.totalAspirants ?? 937), label: 'Total Aspirants', color: '#FDC700' },
+          { value: formatCompact(communityStats?.activeToday ?? 621), label: 'Active Today', color: '#F87171' },
+          { value: `${formatCompact(communityStats?.questionsSolved ?? 311300)}`, label: 'Questions Solved', color: '#4ADE80' },
+          { value: `${communityStats?.avgAccuracy ?? 60}%`, label: 'Avg Accuracy', color: '#FFFFFF' },
         ]}
       />
 
@@ -191,7 +219,11 @@ export default function LeaderboardPage() {
                 )}
               </p>
               <p className="mt-[2px] text-[12px] text-white/45" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                {myRankLoading ? 'Loading stats…' : 'Keep pushing – every point counts'}
+                {myRankLoading
+                  ? 'Loading stats…'
+                  : myRank?.isRankUnlocked === false
+                    ? `${myRank?.attemptsToUnlockRank ?? 3} more attempts to unlock official rank`
+                    : 'Keep pushing – every point counts'}
               </p>
             </div>
 
