@@ -1184,28 +1184,12 @@ export default function DailyEditorialPage() {
             );
           }
 
-<<<<<<< HEAD
           if (tl.includes('key term')) {
             const terms = body.split(/[\n,]/).map(t => t.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').trim()).filter(Boolean);
             return (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {terms.map((term, i) => (
                   <span key={i} style={{ display: 'inline-flex', alignItems: 'center', background: '#eef2fb', border: '1px solid #c8d7f5', color: '#2a4a8a', fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 8 }}>{term}</span>
-=======
-            {/* Tags */}
-            {summaryModal.editorial && (
-              <div className="flex flex-wrap" style={{ gap: '8px', marginBottom: '20px' }}>
-                {[
-                  summaryModal.editorial.category,
-                  ...(summaryModal.editorial.tags || []).filter((tag) => {
-                    const normalized = tag.toLowerCase();
-                    return normalized !== summaryModal.editorial!.category.toLowerCase()
-                      && normalized !== 'the hindu'
-                      && normalized !== 'indian express';
-                  }),
-                ].slice(0, 3).map(t => (
-                  <span key={t} style={{ background: 'rgba(255,255,255,0.08)', color: '#CBD5E1', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', fontWeight: 500 }}>{t}</span>
->>>>>>> 022f686fc16f5245efe4c31a4fa8f368c6d191ac
                 ))}
               </div>
             );
