@@ -415,7 +415,26 @@ export default function TermsContent() {
             <a href="mailto:together@risewithjeet.com" className="terms-btn-gold">
               Email: together@risewithjeet.com
             </a>
-            <Link href="/contact" className="terms-btn-outline">
+            <Link
+              href="/contact"
+              className="terms-btn-outline"
+              style={{
+                background: '#243878',
+                border: '1.5px solid rgba(255,255,255,0.35)',
+                color: '#fff',
+                minWidth: '189px',
+                height: '52px',
+                borderRadius: '12px',
+                fontSize: '15.5px',
+                fontWeight: 600,
+                fontFamily: "'Outfit', sans-serif",
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 24px',
+                textDecoration: 'none',
+              }}
+            >
               Contact Us
             </Link>
           </div>
@@ -718,14 +737,14 @@ export default function TermsContent() {
           margin: 14px 0;
           display: flex;
           flex-direction: column;
-          gap: 9px;
+          gap: 3px;
         }
         .lc-list li {
           position: relative;
           font-size: 14px;
           color: var(--t2);
           line-height: 1.7;
-          padding: 11px 15px 11px 32px;
+          padding: 6px 15px 6px 32px;
           background: var(--cream);
           border: 1.5px solid var(--b1);
           border-radius: 9px;
@@ -738,21 +757,23 @@ export default function TermsContent() {
           background: var(--gold);
           position: absolute;
           left: 15px;
-          top: 19px;
+          top: 14px;
         }
         .lc-list li:has(strong) {
           display: grid;
-          grid-template-columns: 178px 1fr;
-          column-gap: 18px;
+          grid-template-columns: 110px 1fr;
+          column-gap: 14px;
           align-items: start;
         }
         .lc-list li strong {
           color: var(--t1);
           font-weight: 600;
           line-height: 1.55;
+          word-break: break-word;
         }
         .lc-list li span {
           min-width: 0;
+          padding-top: 0;
         }
 
         /* ── CTA ── */
@@ -856,25 +877,24 @@ export default function TermsContent() {
         .terms-btn-outline {
           min-width: 189px;
           height: 52px;
-          background: rgba(255, 255, 255, 0.06);
+          background: #1e3060;
           color: #fff;
           padding: 0 24px;
           border-radius: 12px;
           font-size: 15.5px;
           font-weight: 600;
           cursor: pointer;
-          border: 1px solid rgba(255, 255, 255, 0.20);
+          border: 1.5px solid rgba(255, 255, 255, 0.18);
           font-family: 'Outfit', var(--sans);
           transition: all 0.2s;
           text-decoration: none;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          backdrop-filter: blur(4px);
         }
         .terms-btn-outline:hover {
-          border-color: rgba(255, 255, 255, 0.32);
-          background: rgba(255, 255, 255, 0.09);
+          background: #253d78;
+          border-color: rgba(255, 255, 255, 0.35);
           color: #fff;
         }
 
