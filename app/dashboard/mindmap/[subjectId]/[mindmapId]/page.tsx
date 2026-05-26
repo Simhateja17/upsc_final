@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { mindmapService, userService, pricingService } from '@/lib/services';
+import { MindmapRenderer, MindmapListView, NodeDetailPanel, findTreeNodeById } from '@/lib/mindmap';
+import type { MindmapTree, TreeNode, MindmapNodeData } from '@/lib/mindmap';
 
 const CheckmarkIcon = () => (
   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -11,31 +13,84 @@ const CheckmarkIcon = () => (
   </svg>
 );
 
-const TrophyIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M8 21H16" stroke="#CA8A04" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M12 17V21" stroke="#CA8A04" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M17 4H7C5.89543 4 5 4.89543 5 6V10C5 13.866 8.13401 17 12 17C15.866 17 19 13.866 19 10V6C19 4.89543 18.1046 4 17 4Z" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M19 4H20C21.1046 4 22 4.89543 22 6V9C22 10.1046 21.1046 11 20 11H19" stroke="#CA8A04" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M5 4H4C2.89543 4 2 4.89543 2 6V9C2 10.1046 2.89543 11 4 11H5" stroke="#CA8A04" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 type Branch = { name: string; count: number; color: string };
 type QuizQuestion = { question: string; options: string[]; correctAnswer: string };
-type NodeDef = { x: string; y: string; label: string; color: string };
-type NodeData = { center: string; branches: NodeDef[] };
 
-type MindmapData = {
+// New recursive tree format
+type NewFormatData = {
   id: string;
   title: string;
   subject: string;
-  branches: Branch[];
-  nodes: NodeData;
+  color?: string;
+  root: TreeNode;
   quizData: QuizQuestion[] | null;
   mastery: number;
   viewed: boolean;
 };
+
+// Legacy flat format
+type LegacyNodeDef = { x: string; y: string; label: string; color: string };
+type LegacyNodeData = { center: string; branches: LegacyNodeDef[] };
+type LegacyFormatData = {
+  id: string;
+  title: string;
+  subject: string;
+  branches: Branch[];
+  nodes: LegacyNodeData;
+  quizData: QuizQuestion[] | null;
+  mastery: number;
+  viewed: boolean;
+};
+
+/**
+ * Convert legacy flat format to new tree format for backwards compatibility.
+ */
+function legacyToTree(data: LegacyFormatData): NewFormatData {
+  const branches = Array.isArray(data.branches) ? data.branches : [];
+  return {
+    id: data.id,
+    title: data.title,
+    subject: data.subject,
+    root: {
+      label: data.nodes?.center || data.title,
+      children: branches.map((b) => ({
+        label: b.name,
+      })),
+    },
+    quizData: data.quizData,
+    mastery: data.mastery,
+    viewed: data.viewed,
+  };
+}
+
+function isNewFormat(data: any): data is NewFormatData {
+  // Direct new format: data.root exists at top level
+  if (data && typeof data.root === 'object' && data.root !== null && 'label' in data.root) return true;
+  // Migrated format: root lives inside the nodes JSON column
+  if (data?.nodes?.root && typeof data.nodes.root === 'object' && 'label' in data.nodes.root) return true;
+  return false;
+}
+
+function parseData(raw: any): NewFormatData {
+  // Direct new format
+  if (raw.root && typeof raw.root === 'object' && 'label' in raw.root) {
+    return raw as NewFormatData;
+  }
+  // Migrated format: root is inside nodes column
+  if (raw.nodes?.root && typeof raw.nodes.root === 'object' && 'label' in raw.nodes.root) {
+    return {
+      id: raw.id,
+      title: raw.title,
+      subject: raw.subject,
+      root: raw.nodes.root,
+      quizData: raw.quizData,
+      mastery: raw.mastery,
+      viewed: raw.viewed,
+    };
+  }
+  // Legacy flat format
+  return legacyToTree(raw);
+}
 
 type PageParams = { params: { subjectId: string; mindmapId: string } };
 
@@ -43,21 +98,18 @@ export default function MindmapViewPage({ params }: PageParams) {
   const { subjectId, mindmapId } = params;
   const router = useRouter();
 
-  const [data, setData] = useState<MindmapData | null>(null);
+  const [data, setData] = useState<NewFormatData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [quizCompleted, setQuizCompleted] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
-  const [showQuiz, setShowQuiz] = useState(false);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [exploredBranchNames, setExploredBranchNames] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<'mindmap' | 'list'>('mindmap');
 
-  // Pricing/features pulled from admin pricing API (falls back to defaults).
-  const [proPricing, setProPricing] = useState<{
-    monthly: number;
-    annualMonthly: number;
-    annualTotal: number;
-    features: string[];
-  }>({
+  // Detail panel state
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedNodeData, setSelectedNodeData] = useState<MindmapNodeData | null>(null);
+  const [selectedTreeNode, setSelectedTreeNode] = useState<TreeNode | null>(null);
+
+  // Pricing
+  const [proPricing, setProPricing] = useState({
     monthly: 299,
     annualMonthly: 199,
     annualTotal: 2388,
@@ -70,8 +122,6 @@ export default function MindmapViewPage({ params }: PageParams) {
     ],
   });
 
-  // Load admin-defined pricing if available so the modal stays editable
-  // from /admin/pricing without code changes.
   useEffect(() => {
     pricingService.getPlans()
       .then((res: any) => {
@@ -110,17 +160,11 @@ export default function MindmapViewPage({ params }: PageParams) {
     mindmapService.getMindmap(subjectId, mindmapId)
       .then((res) => {
         if (res.status === 'success') {
-          setData(res.data);
-          // Pre-populate explored branches based on saved mastery
-          if (res.data.mastery > 0 && Array.isArray(res.data.branches) && res.data.branches.length > 0) {
-            const exploredCount = Math.round((res.data.branches.length * res.data.mastery) / 100);
-            const initialExplored = new Set<string>(
-              res.data.branches.slice(0, exploredCount).map((b: Branch) => b.name)
-            );
-            setExploredBranchNames(initialExplored);
-          }
-          if (!res.data.viewed) {
-            mindmapService.updateProgress(res.data.id, res.data.mastery, true).catch(() => {});
+          const raw = res.data;
+          const parsed = parseData(raw);
+          setData(parsed);
+          if (!raw.viewed) {
+            mindmapService.updateProgress(raw.id, raw.mastery, true).catch(() => {});
           }
         }
       })
@@ -128,36 +172,31 @@ export default function MindmapViewPage({ params }: PageParams) {
       .finally(() => setLoading(false));
   }, [subjectId, mindmapId]);
 
-  const handleBranchClick = (branchName: string) => {
-    if (!data) return;
-    setExploredBranchNames((prev) => {
-      const next = new Set(prev);
-      if (next.has(branchName)) {
-        next.delete(branchName);
-      } else {
-        next.add(branchName);
-      }
-      const branches: Branch[] = Array.isArray(data.branches) ? data.branches : [];
-      const newMastery = branches.length > 0 ? Math.round((next.size / branches.length) * 100) : 0;
-      setData((d) => d ? { ...d, mastery: newMastery } : d);
-      mindmapService.updateProgress(data.id, newMastery, true).catch(() => {});
-      return next;
-    });
-  };
+  const handleNodeClick = useCallback(
+    (nodeId: string, nodeData: MindmapNodeData) => {
+      if (!data) return;
+      const treeNode = findTreeNodeById(data.root, nodeId);
+      setSelectedNodeId(nodeId);
+      setSelectedNodeData(nodeData);
+      setSelectedTreeNode(treeNode);
+    },
+    [data]
+  );
 
-  const handleAnswer = () => {
-    const questions = data?.quizData ?? [];
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1);
-    } else {
-      setQuizCompleted(true);
-      setShowProModal(true);
-      // Save mastery on quiz complete
-      if (data) {
-        mindmapService.updateProgress(data.id, 100, true).catch(() => {});
-      }
+  const handleClosePanel = useCallback(() => {
+    setSelectedNodeId(null);
+    setSelectedNodeData(null);
+    setSelectedTreeNode(null);
+  }, []);
+
+  // Count total nodes for progress
+  function countNodes(node: TreeNode): number {
+    let count = 1;
+    if (node.children) {
+      for (const child of node.children) count += countNodes(child);
     }
-  };
+    return count;
+  }
 
   if (loading) {
     return (
@@ -172,27 +211,32 @@ export default function MindmapViewPage({ params }: PageParams) {
       <div className="min-h-screen bg-[#F5F6FA] text-[#101828] flex flex-col items-center justify-center gap-4">
         <p className="text-gray-400">Mindmap not found.</p>
         <Link href={`/dashboard/mindmap/${subjectId}`} className="text-blue-400 underline text-sm">
-          ← Back to subject
+          &larr; Back to subject
         </Link>
       </div>
     );
   }
 
-  const branches: Branch[] = Array.isArray(data.branches) ? data.branches : [];
-  const nodes: NodeData = data.nodes as NodeData;
-  const quizQuestions: QuizQuestion[] = data.quizData ?? [];
-  const currentQuestion = quizQuestions[currentQuestionIndex];
-  const exploredBranches = exploredBranchNames.size;
+  const tree: MindmapTree = {
+    title: data.title,
+    subject: data.subject,
+    color: data.color,
+    root: data.root,
+  };
+
+  const totalNodes = countNodes(data.root);
+  const topBranches = data.root.children?.length ?? 0;
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] text-[#101828] font-inter">
+      {/* PRO Modal */}
       {showProModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 font-inter">
           <div className="absolute inset-0 bg-[#0A0F1C]/80 backdrop-blur-sm" />
           <div className="relative bg-white rounded-[24px] overflow-hidden w-full max-w-[500px] shadow-2xl">
             <div className="bg-[#10182D] p-6 pb-8 text-center relative">
               <button
-                onClick={() => { setShowProModal(false); setQuizCompleted(false); }}
+                onClick={() => setShowProModal(false)}
                 className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
               >
                 ✕
@@ -200,7 +244,7 @@ export default function MindmapViewPage({ params }: PageParams) {
               <div className="flex justify-center mb-3"><span className="text-[32px]">👑</span></div>
               <h2 className="text-[24px] font-bold text-white mb-2">Unlock Pro Access</h2>
               <p className="text-[#9CA3AF] text-[14px] leading-relaxed max-w-[340px] mx-auto">
-                You&apos;ve completed this mindmap! Upgrade for unlimited access to all maps, the builder, quizzes and more.
+                Upgrade for unlimited access to all maps, the builder, quizzes and more.
               </p>
             </div>
             <div className="p-6 -mt-4 bg-white rounded-t-[24px] relative z-10">
@@ -232,7 +276,7 @@ export default function MindmapViewPage({ params }: PageParams) {
                 <span>⭐</span> Start Free 7-day Trial
               </button>
               <div className="text-center">
-                <button onClick={() => { setShowProModal(false); setQuizCompleted(false); }} className="text-[#6B7280] text-[13px] hover:text-[#111827] transition-colors">
+                <button onClick={() => setShowProModal(false)} className="text-[#6B7280] text-[13px] hover:text-[#111827] transition-colors">
                   Maybe later – keep free plan
                 </button>
               </div>
@@ -241,7 +285,8 @@ export default function MindmapViewPage({ params }: PageParams) {
         </div>
       )}
 
-      <div className="max-w-[1200px] mx-auto py-6 px-8">
+      <div className="max-w-[1400px] mx-auto py-6 px-8">
+        {/* Back link */}
         <Link href={`/dashboard/mindmap/${subjectId}`} className="inline-flex items-center text-[#6B7280] text-[13px] hover:text-[#111827] mb-4">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-1">
             <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -250,21 +295,49 @@ export default function MindmapViewPage({ params }: PageParams) {
           Back to {data.subject}
         </Link>
 
+        {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-[24px] font-bold text-[#101828] mb-1">{data.title}</h1>
             <p className="text-[#6B7280] text-[13px]">
-              {data.subject} · {branches.length} branches
+              {data.subject} · {topBranches} branches · {totalNodes} nodes
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* View toggle */}
+            <div className="flex items-center bg-white border border-gray-200 rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode('mindmap')}
+                className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors ${
+                  viewMode === 'mindmap'
+                    ? 'bg-[#10182D] text-white'
+                    : 'text-[#6B7280] hover:text-[#101828]'
+                }`}
+              >
+                Mindmap
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-[#10182D] text-white'
+                    : 'text-[#6B7280] hover:text-[#101828]'
+                }`}
+              >
+                List
+              </button>
+            </div>
+
+            {/* Mastery badge */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#DCFCE7] shadow-sm">
               <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
                 <CheckmarkIcon />
               </div>
               <span className="text-[12px] text-[#047857] font-medium">{data.mastery}% mastered</span>
             </div>
-            {quizQuestions.length > 0 && (
+
+            {/* Quiz PRO button */}
+            {data.quizData && data.quizData.length > 0 && (
               <button
                 type="button"
                 onClick={() => setShowProModal(true)}
@@ -278,133 +351,31 @@ export default function MindmapViewPage({ params }: PageParams) {
           </div>
         </div>
 
-        <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)] gap-6 items-start">
-          <div>
-            {/* Mindmap visualization */}
-            <div className="bg-white rounded-[20px] p-6 shadow-sm border border-gray-100 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-[16px]">🧠</span>
-                  <h2 className="text-[14px] font-semibold text-[#101828]">Mindmap View</h2>
-                </div>
-                <div className="flex items-center gap-2 text-[11px] text-[#9CA3AF]">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span>Interactive branches</span>
-                </div>
+        {/* Main content */}
+        <div className="flex gap-6 items-start">
+          {/* Mindmap / List view */}
+          <div className="flex-1 min-w-0">
+            {viewMode === 'mindmap' ? (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" style={{ height: 520 }}>
+                <MindmapRenderer
+                  tree={tree}
+                  onNodeClick={handleNodeClick}
+                />
               </div>
-
-              <div className="relative bg-[#F8FAFC] rounded-[16px] border border-[#E5E7EB] overflow-hidden h-[360px] flex items-center justify-center">
-                {/* Center node */}
-                <div className="z-20 bg-[#10182D] text-white flex items-center justify-center font-bold shadow-lg border-[#1E2939] text-[12px] text-center px-2" style={{ width: 159, height: 47, borderRadius: 16, borderWidth: 1.6, position: 'relative' }}>
-                  {data.title.length > 18 ? data.title.slice(0, 16) + '...' : data.title}
-                </div>
-
-                {/* SVG lines */}
-                <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none">
-                  {nodes?.branches?.map((node, i) => (
-                    <line key={i} x1="50%" y1="50%" x2={node.x} y2={node.y} stroke={node.color} strokeWidth="2" />
-                  ))}
-                </svg>
-
-                {/* Branch nodes */}
-                <div className="absolute inset-0 pointer-events-none">
-                  {nodes?.branches?.map((node, i) => {
-                    const isExplored = exploredBranchNames.has(node.label);
-                    return (
-                      <div key={i} className="absolute pointer-events-auto" style={{ top: node.y, left: node.x, transform: 'translate(-50%, -50%)' }}>
-                        <div
-                          onClick={() => handleBranchClick(node.label)}
-                          className="px-5 py-2.5 rounded-[12px] text-[14px] font-semibold shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 min-w-[100px] text-center border select-none"
-                          style={{
-                            background: isExplored ? node.color : `${node.color}15`,
-                            color: isExplored ? '#fff' : node.color,
-                            borderColor: node.color,
-                            opacity: isExplored ? 1 : 0.85,
-                          }}
-                        >
-                          {isExplored && <span className="mr-1 text-[11px]">✓</span>}
-                          {node.label}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Fallback: show branches without node positions */}
-                  {(!nodes?.branches || nodes.branches.length === 0) && branches.map((b, i) => {
-                    const positions = [
-                      { top: '25%', left: '30%' },
-                      { top: '25%', left: '70%' },
-                      { top: '50%', left: '15%' },
-                      { top: '75%', left: '35%' },
-                      { top: '75%', left: '65%' },
-                    ];
-                    const pos = positions[i % positions.length];
-                    const isExplored = exploredBranchNames.has(b.name);
-                    return (
-                      <div key={b.name} className="absolute pointer-events-auto" style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}>
-                        <div
-                          onClick={() => handleBranchClick(b.name)}
-                          className="px-5 py-2.5 rounded-[12px] text-[14px] font-semibold shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 min-w-[100px] text-center border select-none"
-                          style={{
-                            background: isExplored ? b.color : `${b.color}15`,
-                            color: isExplored ? '#fff' : b.color,
-                            borderColor: b.color,
-                          }}
-                        >
-                          {isExplored && <span className="mr-1 text-[11px]">✓</span>}
-                          {b.name}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between text-[12px] font-medium text-[#9CA3AF]">
-                <span>Branches explored</span>
-                <span className="text-[#22C55E]">{exploredBranches} / {branches.length}</span>
-              </div>
-              <div className="mt-2 w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-[#22C55E] rounded-full" style={{ width: `${data.mastery}%` }} />
-              </div>
-            </div>
-
-          </div>
-
-          {/* Branches sidebar */}
-          <div className="w-full max-w-[300px] bg-white rounded-[16px] p-6 shadow-sm border border-gray-100 h-fit">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-[16px]">📂</span>
-              <h3 className="text-[14px] font-bold text-[#101828]">Branches</h3>
-            </div>
-            {branches.length === 0 ? (
-              <p className="text-gray-400 text-sm">No branch data available.</p>
             ) : (
-              <ul className="space-y-4">
-                {branches.map((branch) => {
-                  const isExplored = exploredBranchNames.has(branch.name);
-                  return (
-                    <li
-                      key={branch.name}
-                      onClick={() => handleBranchClick(branch.name)}
-                      className="flex justify-between items-center text-[13px] cursor-pointer rounded-[8px] px-2 py-1 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: branch.color }} />
-                        <span className={isExplored ? 'text-[#101828] font-semibold' : 'text-[#374151]'}>{branch.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#9CA3AF] text-[11px]">{branch.count}</span>
-                        {isExplored && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: branch.color }}>✓</span>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+              <MindmapListView root={data.root} />
             )}
           </div>
+
+          {/* Detail panel (only in mindmap mode) */}
+          {viewMode === 'mindmap' && (
+            <NodeDetailPanel
+              nodeId={selectedNodeId}
+              nodeData={selectedNodeData}
+              treeNode={selectedTreeNode}
+              onClose={handleClosePanel}
+            />
+          )}
         </div>
       </div>
     </div>

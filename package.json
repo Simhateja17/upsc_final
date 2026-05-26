@@ -12,6 +12,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^3.0.0",
     "@floating-ui/dom": "^1.7.6",
     "@supabase/supabase-js": "^2.39.0",
     "@tiptap/extension-image": "^3.20.1",
@@ -21,6 +22,8 @@
     "@tiptap/extension-underline": "^3.20.1",
     "@tiptap/react": "^3.20.1",
     "@tiptap/starter-kit": "^3.20.1",
+    "@xyflow/react": "^12.10.2",
+    "framer-motion": "^12.40.0",
     "next": "14.1.0",
     "openai": "^6.34.0",
     "pdf-parse": "^2.4.5",
