@@ -27,28 +27,13 @@ type SubjectCatalogItem = {
 };
 
 const SUBJECT_CATALOG: SubjectCatalogItem[] = [
-  { id: 'polity', subject: 'Polity', shortLabel: 'Indian Polity', icon: '⚖️', viewsLabel: '3.2L views', card: { bg: '#FDF0DE', border: '#C0D9F5', bar: '#E9A12D' } },
-  { id: 'economy', subject: 'Economy', shortLabel: 'Indian Economy', icon: '📈', viewsLabel: '1.9L views', card: { bg: 'linear-gradient(139deg, #F3EFFD 0%, #EDE7FB 100%)', border: '#E8E1FD', bar: '#F16CB0' } },
+  { id: 'polity', subject: 'Polity', icon: '⚖️', viewsLabel: '3.2L views', card: { bg: '#FDF0DE', border: '#C0D9F5', bar: '#E9A12D' } },
+  { id: 'history', subject: 'History', icon: '📜', viewsLabel: '2.8L views', card: { bg: '#FFF8EE', border: '#FFD5A8', bar: '#E8B164' } },
   { id: 'geography', subject: 'Geography', icon: '🌍', viewsLabel: '2.1L views', card: { bg: 'rgba(201, 168, 76, 0.19)', border: '#B2EDD0', bar: '#D5A53C' } },
-  { id: 'history', subject: 'History', icon: '🏛️', viewsLabel: '2.8L views', card: { bg: '#FFF8EE', border: '#FFD5A8', bar: '#E8B164' } },
+  { id: 'economy', subject: 'Economy', icon: '📈', viewsLabel: '1.9L views', card: { bg: 'linear-gradient(139deg, #F3EFFD 0%, #EDE7FB 100%)', border: '#E8E1FD', bar: '#F16CB0' } },
   { id: 'environment-ecology', subject: 'Environment & Ecology', shortLabel: 'Environment', icon: '🌿', viewsLabel: '2.4L views', card: { bg: 'linear-gradient(139deg, #EDF9F3 0%, #E0F5EA 100%)', border: '#B2EDD0', bar: '#D6A437' } },
-  { id: 'ethics', subject: 'Ethics', shortLabel: 'Ethics GS4', icon: '🤝', viewsLabel: '96K views', card: { bg: 'linear-gradient(139deg, #EEF2F8 0%, #E8EDF6 100%)', border: '#DDE5F0', bar: '#D8A23A' } },
-  { id: 'essay', subject: 'Essay', shortLabel: 'Essay Writing', icon: '✍️', viewsLabel: '3.5L views', card: { bg: 'linear-gradient(139deg, #FEF5EC 0%, #FEF0E0 100%)', border: '#FFD5A8', bar: '#E8B164' } },
-  { id: 'internal-security', subject: 'Internal Security', icon: '🛡️', viewsLabel: '76K views', isNew: true, card: { bg: 'linear-gradient(139deg, #FEF0F0 0%, #FDE8E8 100%)', border: '#FFCECE', bar: '#F0A33E' } },
-  { id: 'international-relations', subject: 'International Relations', shortLabel: "Int'l Relations", icon: '🌐', viewsLabel: '1.1L views', card: { bg: 'linear-gradient(139deg, #F0EBFF 0%, #E8E1FD 100%)', border: '#E8E1FD', bar: '#F2A63D' } },
   { id: 'science-technology', subject: 'Science & Technology', shortLabel: 'Science & Tech', icon: '🔬', viewsLabel: '2.1L views', card: { bg: 'linear-gradient(139deg, #E0EBF9 0%, #D4E4F7 100%)', border: '#C0D9F5', bar: '#E0A446' } },
   { id: 'current-affairs', subject: 'Current Affairs', icon: '📰', viewsLabel: '2.6L views', card: { bg: 'linear-gradient(139deg, #FFF1E8 0%, #FFE6D5 100%)', border: '#FFD1AA', bar: '#F39A3C' } },
-  { id: 'society', subject: 'Society', icon: '👥', viewsLabel: '84K views', card: { bg: 'linear-gradient(139deg, #F8F2FF 0%, #F0E7FF 100%)', border: '#E6D8FF', bar: '#D79A41' } },
-  { id: 'governance', subject: 'Governance', icon: '🏛', viewsLabel: '92K views', card: { bg: 'linear-gradient(139deg, #EFF6FF 0%, #E0EEFF 100%)', border: '#C8DEFF', bar: '#E3A33A' } },
-  { id: 'social-justice', subject: 'Social Justice', icon: '⚖', viewsLabel: '73K views', card: { bg: 'linear-gradient(139deg, #FFF5EF 0%, #FFE9DE 100%)', border: '#FFD8BF', bar: '#E5A246' } },
-  { id: 'agriculture', subject: 'Agriculture', icon: '🌾', viewsLabel: '68K views', card: { bg: 'linear-gradient(139deg, #EDF9F3 0%, #E3F6EC 100%)', border: '#C9EED8', bar: '#D39B37' } },
-  { id: 'disaster-management', subject: 'Disaster Management', icon: '🚨', viewsLabel: '58K views', card: { bg: 'linear-gradient(139deg, #FFF0F1 0%, #FFE4E7 100%)', border: '#FFC9D0', bar: '#E39C4A' } },
-  { id: 'gs1', subject: 'GS1', icon: '📘', viewsLabel: '1.2L views', card: { bg: 'linear-gradient(139deg, #EEF4FF 0%, #E3ECFF 100%)', border: '#C8D7FF', bar: '#D9A13C' } },
-  { id: 'gs2', subject: 'GS2', icon: '📙', viewsLabel: '1.1L views', card: { bg: 'linear-gradient(139deg, #F9F0FF 0%, #F2E6FF 100%)', border: '#E7D2FF', bar: '#E0A13F' } },
-  { id: 'gs3', subject: 'GS3', icon: '📗', viewsLabel: '1.0L views', card: { bg: 'linear-gradient(139deg, #EEF9F2 0%, #E2F4E8 100%)', border: '#C9EBD3', bar: '#D7A038' } },
-  { id: 'gs4', subject: 'GS4', icon: '📕', viewsLabel: '88K views', card: { bg: 'linear-gradient(139deg, #FFF6EE 0%, #FFECDD 100%)', border: '#FFDAB7', bar: '#E2A24A' } },
-  { id: 'optional-paper-1', subject: 'Optional Paper 1', icon: '📓', viewsLabel: '64K views', card: { bg: 'linear-gradient(139deg, #EEF2FF 0%, #E6EBFF 100%)', border: '#D0D9FF', bar: '#DB9F43' } },
-  { id: 'optional-paper-2', subject: 'Optional Paper 2', icon: '📔', viewsLabel: '61K views', card: { bg: 'linear-gradient(139deg, #F8F2FF 0%, #F1E8FF 100%)', border: '#E6D6FF', bar: '#DDA042' } },
 ];
 
 function displaySubjectName(subject: string) {
