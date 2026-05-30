@@ -609,10 +609,9 @@ export default function LandingPage() {
                 &quot;The difference between aspirants and officers is often not knowledge, it is strategy. We help you build the right one.&quot;
               </div>
               <div className="mqc-author">
-                <div className="mqc-av">A</div>
                 <div>
-                  <div className="mqc-name">Abhijeet Soni</div>
-                  <div className="mqc-role">Founder &amp; Mentor Rise With Jeet | UPSC Simplified</div>
+                  <div className="mqc-name">Team Rise With Jeet</div>
+                  <div className="mqc-role">UPSC Simplified</div>
                 </div>
               </div>
             </div>
