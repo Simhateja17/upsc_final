@@ -18,49 +18,45 @@ const Spinner = () => (
 /* ── Suggestion cards ── */
 const suggestionCards = [
   {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-[#92400E]">
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8 7h8M8 11h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    ),
+    iconSrc: '/jeet-gpt-icons/books.png',
+    iconAlt: 'Books',
     iconBg: '#FFF7ED',
+    accent: '#4F46E5',
+    accentSoft: '#EEF2FF',
+    shadow: 'rgba(79, 70, 229, 0.18)',
     title: 'Explain a UPSC topic',
     subtitle: 'Deep explanation with dimensions, UPSC angle & related questions',
     prompt: 'Explain the Bhakti Movement and its socio-religious significance for UPSC preparation',
   },
   {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-[#7C3AED]">
-        <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke="currentColor" strokeWidth="2" />
-        <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    ),
+    iconSrc: '/jeet-gpt-icons/scales.png',
+    iconAlt: 'Ethics scales',
     iconBg: '#FAF5FF',
+    accent: '#E59A0A',
+    accentSoft: '#FFFBEB',
+    shadow: 'rgba(229, 154, 10, 0.18)',
     title: 'Ethics case study I should know',
     subtitle: 'Real-world ethics + how to frame and structure your answer',
     prompt: 'Give me an important ethics case study with stakeholders and how to write a UPSC GS Paper 4 answer',
   },
   {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-[#DC2626]">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
+    iconSrc: '/jeet-gpt-icons/notes.png',
+    iconAlt: 'Study notes',
     iconBg: '#FEF2F2',
+    accent: '#16A34A',
+    accentSoft: '#F0FDF4',
+    shadow: 'rgba(22, 163, 74, 0.16)',
     title: 'Build my study plan',
     subtitle: 'Personalized schedule based on your exam date and syllabus gaps',
     prompt: 'Build me a personalized UPSC study plan for the next 3 months covering all GS papers',
   },
   {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-[#2563EB]">
-        <path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
+    iconSrc: '/jeet-gpt-icons/chart.png',
+    iconAlt: 'Strategy chart',
     iconBg: '#EFF6FF',
+    accent: '#DC2626',
+    accentSoft: '#FEF2F2',
+    shadow: 'rgba(220, 38, 38, 0.16)',
     title: 'Study strategy & planner',
     subtitle: 'Personalized roadmap, daily schedules + all-topic prioritization',
     prompt: 'What is the best study strategy for a UPSC first-time aspirant? Give me a prioritized roadmap',
@@ -364,7 +360,7 @@ export default function JeetGPTPage() {
       {/* ── Left Sidebar ── */}
       <aside className="flex-shrink-0 flex flex-col overflow-hidden" style={{ width: '266px', background: '#0A1628' }}>
         <div className="px-4 pt-6">
-          <button type="button" onClick={startNewConversation} className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-[10px] font-inter font-semibold text-[14px] leading-5 text-white" style={{ background: '#E8B84B' }}>
+          <button type="button" onClick={startNewConversation} className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-[10px] font-inter font-semibold text-[14px] leading-5" style={{ background: '#E8B84B', color: '#155DFC' }}>
             ⚡ New Conversation
           </button>
         </div>
@@ -373,7 +369,10 @@ export default function JeetGPTPage() {
           {sidebarLoading ? (
             <div className="flex justify-center py-8 text-white/50"><Spinner /></div>
           ) : !hasConversations ? (
-            <p className="font-inter text-[12px] text-center py-6" style={{ color: '#6A7282' }}>No conversations yet. Start chatting!</p>
+            <div className="mt-8 rounded-[10px] px-4 py-5 text-center" style={{ background: 'rgba(255,255,255,0.035)', border: '0.8px solid rgba(255,255,255,0.08)' }}>
+              <p className="font-inter font-semibold text-[13px] leading-5" style={{ color: '#D1D5DC' }}>No chats yet</p>
+              <p className="font-inter text-[12px] leading-5 mt-1" style={{ color: '#6A7282' }}>Start a conversation and your history will appear here.</p>
+            </div>
           ) : (
             <>
               {conversations.today.length > 0 && (
@@ -413,7 +412,15 @@ export default function JeetGPTPage() {
             <UserAvatar initials={initials} size={24} />
             <div className="flex-1 min-w-0">
               <div className="font-inter font-semibold text-[12px] leading-4 text-white truncate">{displayName}</div>
-              <div className="font-inter text-[10px] leading-[15px]" style={{ color: '#99A1AF' }}>{userPlan}</div>
+              <div className="font-inter text-[10px] leading-[15px] flex items-center gap-1 min-w-0" style={{ color: '#99A1AF' }}>
+                <span>{userPlan}</span>
+                {user?.role !== 'admin' && (
+                  <>
+                    <span style={{ color: '#4A5565' }}>-</span>
+                    <span className="font-semibold" style={{ color: '#E8B84B' }}>Upgrade ↗</span>
+                  </>
+                )}
+              </div>
             </div>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="flex-shrink-0 text-white/70"><path d="M4.5 3L7.5 6L4.5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </Link>
@@ -429,6 +436,8 @@ export default function JeetGPTPage() {
             </span>
             <span className="font-inter font-semibold text-[18px] leading-7" style={{ color: '#99A1AF' }}>-</span>
             <span className="font-inter font-semibold text-[18px] leading-7" style={{ color: '#6A7282' }}>Your UPSC Preparation Partner</span>
+            <span className="font-inter font-semibold text-[11px] leading-4 px-2.5 py-1 rounded-full whitespace-nowrap" style={{ color: '#1E3A5F', background: 'rgba(30, 58, 95, 0.08)', border: '0.8px solid rgba(30, 58, 95, 0.14)' }}>UPSC Focused</span>
+            <span className="font-inter font-semibold text-[11px] leading-4 px-2.5 py-1 rounded-full whitespace-nowrap" style={{ color: '#A66B00', background: 'rgba(232, 184, 75, 0.16)', border: '0.8px solid rgba(232, 184, 75, 0.28)' }}>NCERT Aligned</span>
           </div>
           <div className="font-inter text-[12px] leading-4" style={{ color: '#99A1AF' }}>Ask anything about UPSC preparation</div>
         </header>
@@ -461,10 +470,34 @@ export default function JeetGPTPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-[800px] w-full mb-5">
               {suggestionCards.map((card, i) => (
-                <button key={i} type="button" onClick={() => setInputValue(card.prompt)} className="text-left p-4 rounded-[14px] border transition-colors hover:border-[#E8B84B]/50 hover:shadow-md" style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF' }}>
-                  <div className="w-8 h-8 rounded-[10px] flex items-center justify-center mb-2" style={{ background: card.iconBg }}>{card.icon}</div>
-                  <h3 className="font-inter font-bold text-[15px] leading-5 mb-1" style={{ color: '#101828' }}>{card.title}</h3>
-                  <p className="font-inter text-[12px] leading-4" style={{ color: '#6A7282' }}>{card.subtitle}</p>
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setInputValue(card.prompt)}
+                  className="group relative text-left p-4 rounded-[16px] transition-all duration-200 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-offset-2 overflow-hidden"
+                  style={{
+                    border: `1.4px solid ${card.accent}`,
+                    background: `linear-gradient(135deg, #FFFFFF 0%, ${card.accentSoft} 100%)`,
+                    boxShadow: `0 14px 28px -20px ${card.shadow}, 0 8px 18px -16px rgba(15, 23, 42, 0.3), inset 4px 0 0 ${card.accent}`,
+                    '--tw-ring-color': card.accent,
+                  } as React.CSSProperties}
+                >
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                    style={{ background: `linear-gradient(135deg, ${card.accentSoft} 0%, rgba(255,255,255,0) 58%)` }}
+                  />
+                  <div className="relative flex items-start gap-3">
+                    <div
+                      className="w-10 h-10 rounded-[12px] flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-105"
+                      style={{ background: '#FFFFFF', border: `1px solid ${card.accent}`, boxShadow: `0 8px 18px -12px ${card.shadow}` }}
+                    >
+                      <Image src={card.iconSrc} alt={card.iconAlt} width={24} height={24} className="object-contain" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-inter font-bold text-[15px] leading-5 mb-1" style={{ color: '#101828' }}>{card.title}</h3>
+                      <p className="font-inter font-semibold text-[12px] leading-4" style={{ color: '#6A7282' }}>{card.subtitle}</p>
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>

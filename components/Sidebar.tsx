@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const COLLAPSED_ROUTE_PREFIXES = [
+  '/dashboard/jeet-gpt',
   '/dashboard/daily-answer/challenge',
   '/dashboard/daily-answer/challenge/attempt',
   '/dashboard/daily-mcq/challenge',

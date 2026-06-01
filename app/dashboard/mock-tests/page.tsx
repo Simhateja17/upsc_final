@@ -51,10 +51,59 @@ const fallbackMainsPaperTypes = [
 ];
 
 const fallbackOptionalSubjects = [
-  'Public Administration', 'Geography', 'History', 'Sociology',
-  'Political Science', 'Philosophy', 'Economics', 'Anthropology',
-  'Psychology', 'Law',
+  'Agriculture',
+  'Animal Husbandry & Veterinary Science',
+  'Anthropology',
+  'Botany',
+  'Chemistry',
+  'Civil Engineering',
+  'Commerce & Accountancy',
+  'Economics',
+  'Electrical Engineering',
+  'Geography',
+  'Geology',
+  'History',
+  'Law',
+  'Management',
+  'Mathematics',
+  'Mechanical Engineering',
+  'Medical Science',
+  'Philosophy',
+  'Physics',
+  'Political Science & International Relations',
+  'Psychology',
+  'Public Administration',
+  'Sociology',
+  'Statistics',
+  'Zoology',
+  'Assamese',
+  'Bengali',
+  'Bodo',
+  'Dogri',
+  'Gujarati',
+  'Hindi',
+  'Kannada',
+  'Kashmiri',
+  'Konkani',
+  'Maithili',
+  'Malayalam',
+  'Manipuri',
+  'Marathi',
+  'Nepali',
+  'Odia',
+  'Punjabi',
+  'Sanskrit',
+  'Santhali',
+  'Sindhi',
+  'Tamil',
+  'Telugu',
+  'Urdu',
+  'English Literature',
 ];
+
+function mergeOptionalSubjects(subjects?: string[]) {
+  return Array.from(new Set([...(subjects || []), ...fallbackOptionalSubjects])).sort((a, b) => a.localeCompare(b));
+}
 
 const fallbackDifficulties = [
   { id: 'easy', emoji: '🌱', label: 'Foundation level', description: 'Build concepts' },
@@ -195,7 +244,7 @@ function MockTestsPageInner() {
           if (cfg.questionSources) setQuestionSources(cfg.questionSources);
           if (cfg.examModes) setExamModes(cfg.examModes);
           if (cfg.mainsPaperTypes) setMainsPaperTypes(cfg.mainsPaperTypes);
-          if (cfg.optionalSubjects) setOptionalSubjects(cfg.optionalSubjects);
+          setOptionalSubjects(mergeOptionalSubjects(cfg.optionalSubjects));
           if (cfg.difficulties) setDifficulties(cfg.difficulties);
         }
         if (statsRes.data) setPracticeStats(statsRes.data);
@@ -236,19 +285,6 @@ function MockTestsPageInner() {
 
   /* ─── Generate Test Handler ─── */
   const handleGenerateTest = async () => {
-    const isPro = typeof window !== 'undefined' && localStorage.getItem('userPlan') === 'pro';
-    // Gate: free users get only 1 test per day. Redirect to free-trial if limit hit.
-    if (!isPro && practiceStats && practiceStats.todayCount >= 1) {
-      router.push('/pricing');
-      return;
-    }
-    // Gate: free tier is capped at 10 questions / test. Send users
-    // above the cap to the pricing page instead of silently failing.
-    const freeCap = selectedExamMode === 'mains' ? 2 : 10;
-    if (questionCount > freeCap && !isPro) {
-      router.push('/pricing');
-      return;
-    }
     setGenerating(true);
     setError(null);
     try {
@@ -257,6 +293,7 @@ function MockTestsPageInner() {
         subject: selectedSubject,
         examMode: selectedExamMode,
         paperType: selectedExamMode === 'mains' ? selectedPaperType : undefined,
+        optionalSubject: selectedExamMode === 'mains' ? selectedOptional || undefined : undefined,
         questionCount,
         difficulty: selectedDifficulty,
       };

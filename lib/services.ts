@@ -171,7 +171,7 @@ export const mockTestService = {
   getSubjects: () => api.get<any>('/mock-tests/subjects'),
   getConfig: () => api.get<any>('/mock-tests/config'),
   getPlatformStats: () => api.get<any>('/mock-tests/platform-stats'),
-  generate: (config: { source: string; subject: string; examMode: string; paperType?: string; questionCount: number; difficulty: string }) =>
+  generate: (config: { source: string; subject: string; examMode: string; paperType?: string; optionalSubject?: string; questionCount: number; difficulty: string }) =>
     api.post<any>('/mock-tests/generate', config, authConfig()),
   getQuestions: (testId: string) => api.get<any>(`/mock-tests/${testId}/questions`, authConfig()),
   submit: (testId: string, answers: Record<string, string>, timeTaken: number) =>
