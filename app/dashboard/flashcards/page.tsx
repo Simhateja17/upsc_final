@@ -136,7 +136,7 @@ export default function FlashcardsPage() {
                 <div
                   key={index}
                   className="animate-pulse rounded-[16px] border"
-                  style={{ border: '0.8px solid #E5E7EB', background: '#F9FAFB', minHeight: 176 }}
+                  style={{ border: '0.8px solid #E5E7EB', background: '#F9FAFB', height: 176 }}
                 />
               ))}
             </div>
@@ -224,8 +224,8 @@ export default function FlashcardsPage() {
                     <Link
                       key={item.id}
                       href={`/dashboard/flashcards/${item.id}`}
-                      className="block rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
-                      style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, minHeight: 176 }}
+                      className="block rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md flex flex-col"
+                      style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, height: 176 }}
                     >
                       {cardContent}
                     </Link>
@@ -240,8 +240,8 @@ export default function FlashcardsPage() {
                       setPrefillSubject(item.subject);
                       setShowAddModal(true);
                     }}
-                    className="rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
-                    style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, minHeight: 176 }}
+                    className="rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md flex flex-col"
+                    style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, height: 176 }}
                   >
                     {cardContent}
                   </button>

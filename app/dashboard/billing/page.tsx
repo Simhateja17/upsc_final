@@ -144,7 +144,7 @@ function BillingHero() {
     <div
       className="relative overflow-hidden flex flex-col items-center justify-center"
       style={{
-        background: 'linear-gradient(180deg, #0B1428 0%, #0F1C35 100%)',
+        background: 'linear-gradient(180deg, #090E1C 0%, #10192F 100%)',
         minHeight: 280,
         padding: '40px 24px 48px',
       }}

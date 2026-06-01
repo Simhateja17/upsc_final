@@ -66,14 +66,16 @@ export default function SavedNotesPage() {
         <div
           className="absolute inset-0 opacity-70"
           style={{
-            backgroundImage:
-              'radial-gradient(circle at 0% 30%, rgba(255,255,255,0.14), transparent 32%), linear-gradient(90deg, rgba(25,43,88,0.55) 1px, transparent 1px), linear-gradient(180deg, rgba(25,43,88,0.45) 1px, transparent 1px)',
-            backgroundSize: 'auto, 36px 36px, 36px 36px',
+            backgroundImage: 'radial-gradient(circle at 0% 30%, rgba(255,255,255,0.14), transparent 32%)',
           }}
         />
 
         <div className="relative mx-auto max-w-5xl text-center">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-[#D6A94F]">Your Bookmarks Vault</p>
+          <p className="flex items-center justify-center gap-3 text-[11px] uppercase tracking-[0.28em] text-[#D6A94F]">
+            <span style={{ display: 'block', width: 44, height: 1, background: 'linear-gradient(to right, transparent, #C8972A)' }} />
+            Your Bookmarks Vault
+            <span style={{ display: 'block', width: 44, height: 1, background: 'linear-gradient(to left, transparent, #C8972A)' }} />
+          </p>
           <h1
             className="mx-auto mt-4 max-w-[920px] text-center text-white"
             style={{

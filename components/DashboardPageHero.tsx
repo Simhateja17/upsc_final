@@ -32,6 +32,7 @@ interface DashboardPageHeroProps {
   showDotGrid?: boolean;
   statsBorderRadius?: number | string;
   enforceUniformLayout?: boolean;
+  buttons?: React.ReactNode;
 }
 
 export default function DashboardPageHero({
@@ -56,6 +57,7 @@ export default function DashboardPageHero({
   showDotGrid = true,
   statsBorderRadius = 12,
   enforceUniformLayout = true,
+  buttons,
 }: DashboardPageHeroProps) {
   const right = rightElement;
   const canonicalHeroHeight = '352px';
@@ -174,11 +176,17 @@ export default function DashboardPageHero({
               lineHeight: '1.4',
               color: 'rgba(255,255,255,0.5)',
               maxWidth: '780px',
-              marginBottom: 0,
+              marginBottom: buttons ? '20px' : 0,
             }}
           >
             {subtitle}
           </p>
+
+          {buttons && (
+            <div className="flex items-center gap-3">
+              {buttons}
+            </div>
+          )}
         </div>
 
         {/* Stats strip – anchored for consistent cross-page vertical placement */}

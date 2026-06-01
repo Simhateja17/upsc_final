@@ -115,7 +115,8 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="xl:border-l xl:border-white/[0.04] xl:pl-8">
+          <div className="relative xl:pl-8 xl:self-start">
+            <div className="hidden xl:block absolute left-0 top-0 w-px h-full" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 50%, transparent 100%)' }} />
             <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Platform</h3>
             <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
             <ul className="mt-3 space-y-1">
@@ -123,7 +124,8 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="xl:border-l xl:border-white/[0.04] xl:pl-8">
+          <div className="relative xl:pl-8 xl:self-start">
+            <div className="hidden xl:block absolute left-0 top-0 w-px h-full" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 50%, transparent 100%)' }} />
             <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Revision Tools</h3>
             <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
             <ul className="mt-3 space-y-1">
@@ -131,7 +133,8 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="xl:border-l xl:border-white/[0.04] xl:pl-8">
+          <div className="relative xl:pl-8 xl:self-start">
+            <div className="hidden xl:block absolute left-0 top-0 w-px h-full" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 50%, transparent 100%)' }} />
             <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Company</h3>
             <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
             <ul className="mt-3 space-y-1">
@@ -139,7 +142,8 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="xl:border-l xl:border-white/[0.04] xl:pl-8">
+          <div className="relative xl:pl-8 xl:self-start">
+            <div className="hidden xl:block absolute left-0 top-0 w-px h-full" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 50%, transparent 100%)' }} />
             <h3 className="pb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-white">Contact Us</h3>
             <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
 

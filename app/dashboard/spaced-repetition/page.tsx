@@ -1,289 +1,67 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { dashboardService, flashcardService, spacedRepService, userService } from '@/lib/services';
+import Link from 'next/link';
+import { dashboardService, spacedRepService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
-
-const SUBJECT_LABEL_TO_ID: Record<string, string> = {
-  'Polity': 'polity',
-  'History': 'history',
-  'Geography': 'geography',
-  'Economy': 'economy',
-  'Environment & Ecology': 'environment-ecology',
-  'Science & Technology': 'science-technology',
-  'Current Affairs': 'current-affairs',
-  'Society': 'society',
-  'Governance': 'governance',
-  'International Relations': 'international-relations',
-  'Social Justice': 'social-justice',
-  'Agriculture': 'agriculture',
-  'Internal Security': 'internal-security',
-  'Disaster Management': 'disaster-management',
-  'Ethics': 'ethics',
-  'GS1': 'gs1',
-  'GS2': 'gs2',
-  'GS3': 'gs3',
-  'GS4': 'gs4',
-  'Essay': 'essay',
-  'Optional Paper 1': 'optional-paper-1',
-  'Optional Paper 2': 'optional-paper-2',
-};
-
-function subjectLabelToId(label: string): string {
-  return SUBJECT_LABEL_TO_ID[label] ?? label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-}
-
-const filterOptions = ['All', 'mcq', 'mains', 'pyq', 'custom'];
-const scheduleOptions = [3, 7, 15, 30];
-const deckOptions = [
-  { id: 'history', label: 'History', icon: '🏛️' },
-  { id: 'geography', label: 'Geography', icon: '🌍' },
-  { id: 'polity', label: 'Polity', icon: '⚖️' },
-  { id: 'economy', label: 'Economy', icon: '💰' },
-  { id: 'environment', label: 'Environment & Ecology', icon: '🌿' },
-  { id: 'science-tech', label: 'Science & Technology', icon: '🔬' },
-];
-
-const difficultyOptions = ['Easy', 'Medium', 'Hard', 'Tricky'];
-
-const subjectOptions = [
-  { id: 'polity', label: 'Polity', icon: '🏛️' },
-  { id: 'history', label: 'History', icon: '🏺' },
-  { id: 'geography', label: 'Geography', icon: '🌍' },
-  { id: 'economy', label: 'Economy', icon: '💰' },
-  { id: 'environment-ecology', label: 'Environment & Ecology', icon: '🌿' },
-  { id: 'science-technology', label: 'Science & Technology', icon: '🔬' },
-  { id: 'current-affairs', label: 'Current Affairs', icon: '📰' },
-  { id: 'society', label: 'Society', icon: '👥' },
-  { id: 'governance', label: 'Governance', icon: '🏢' },
-  { id: 'international-relations', label: 'International Relations', icon: '🌐' },
-  { id: 'social-justice', label: 'Social Justice', icon: '⚖️' },
-  { id: 'agriculture', label: 'Agriculture', icon: '🌾' },
-  { id: 'internal-security', label: 'Internal Security', icon: '🛡️' },
-  { id: 'disaster-management', label: 'Disaster Management', icon: '🚨' },
-  { id: 'ethics', label: 'Ethics', icon: '📘' },
-  { id: 'gs1', label: 'GS1', icon: '1️⃣' },
-  { id: 'gs2', label: 'GS2', icon: '2️⃣' },
-  { id: 'gs3', label: 'GS3', icon: '3️⃣' },
-  { id: 'gs4', label: 'GS4', icon: '4️⃣' },
-  { id: 'essay', label: 'Essay', icon: '✍️' },
-  { id: 'optional-paper-1', label: 'Optional Paper 1', icon: '📗' },
-  { id: 'optional-paper-2', label: 'Optional Paper 2', icon: '📕' },
-];
-
-type SpacedRepItem = {
-  id: string;
-  questionText: string;
-  source: string;
-  sourceType: string;
-  subject: string;
-  scheduleDay: number;
-  scheduleDays?: number[] | null;
-  remindEnabled: boolean;
-  addedToFlashcard: boolean;
-  nextReviewAt: string;
-};
-
-function sourceColor(sourceType: string): string {
-  if (sourceType === 'mcq') return '#F54900';
-  if (sourceType === 'pyq') return '#9810FA';
-  return '#155DFC';
-}
-
-function subjectBg(subject: string): string {
-  const map: Record<string, string> = {
-    Polity: '#EDE9FE',
-    History: '#FEF3C7',
-    Geography: '#DBEAFE',
-    Economy: '#FFF7ED',
-    'Environment & Ecology': '#F0FDF4',
-    'Science & Technology': '#DBEAFE',
-    'Current Affairs': '#FEE2E2',
-    Society: '#FCE7F3',
-    Governance: '#E0E7FF',
-    'International Relations': '#F3E8FF',
-    'Social Justice': '#FDF2F8',
-    Agriculture: '#ECFCCB',
-    'Internal Security': '#FFE4E6',
-    'Disaster Management': '#FEF9C3',
-    Ethics: '#F5F3FF',
-    GS1: '#DBEAFE',
-    GS2: '#EDE9FE',
-    GS3: '#FFF7ED',
-    GS4: '#F0FDF4',
-    Essay: '#FCE7F3',
-    'Optional Paper 1': '#E0E7FF',
-    'Optional Paper 2': '#F3E8FF',
-  };
-  return map[subject] ?? '#F3F4F6';
-}
-
-function isSameLocalDate(left: Date, right: Date) {
-  return (
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
-  );
-}
-
-function normalizeScheduleDays(item: Pick<SpacedRepItem, 'scheduleDay' | 'scheduleDays'>) {
-  const days = Array.isArray(item.scheduleDays) && item.scheduleDays.length > 0
-    ? item.scheduleDays
-    : [item.scheduleDay];
-
-  return Array.from(new Set(days.filter((day): day is number => Number.isFinite(day) && day > 0))).sort((a, b) => a - b);
-}
+import {
+  SUBJECT_HEALTH,
+  difficultyOptions,
+  isSameLocalDate,
+  resolveAccuracy,
+  strengthMeta,
+  subjectBg,
+  subjectOptions,
+  type SpacedRepItem,
+} from './shared';
 
 export default function SpacedRepetitionPage() {
-  const [filter, setFilter] = useState('All');
   const [items, setItems] = useState<SpacedRepItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [streakDays, setStreakDays] = useState(0);
-  const [flashcardToast, setFlashcardToast] = useState<{ subjectId: string; subject: string } | null>(null);
-  const [page, setPage] = useState(1);
+  const [subjectAccuracy, setSubjectAccuracy] = useState<Record<string, number>>({});
   const [showAddModal, setShowAddModal] = useState(false);
 
   // Modal state
   const [modalDeck, setModalDeck] = useState('polity');
   const [modalDifficulty, setModalDifficulty] = useState('Hard');
   const [modalQuestion, setModalQuestion] = useState('');
-  const [modalAnswer, setModalAnswer] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const fetchItems = (sourceType?: string) => {
-    setLoading(true);
-    spacedRepService.getItems(sourceType === 'All' ? undefined : sourceType)
+  useEffect(() => {
+    spacedRepService.getItems()
       .then((res) => {
         if (res.status === 'success') setItems(res.data);
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    fetchItems(filter === 'All' ? undefined : filter);
-  }, [filter]);
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let mounted = true;
     dashboardService.getStreak()
       .then((res) => {
-        if (mounted && res?.data) {
-          setStreakDays(Number(res.data.currentStreak ?? 0));
-        }
+        if (mounted && res?.data) setStreakDays(Number(res.data.currentStreak ?? 0));
       })
       .catch(() => {
         if (mounted) setStreakDays(0);
       });
-
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
-  const addToFlashcards = async (q: SpacedRepItem) => {
-    if (q.addedToFlashcard) return;
-    setItems((prev) => prev.map((i) => (i.id === q.id ? { ...i, addedToFlashcard: true } : i)));
-    try {
-      const subjectId = subjectLabelToId(q.subject);
-      await flashcardService.createCard({
-        subjectId,
-        subject: q.subject,
-        topicId: 'spaced-rep',
-        topic: 'From Spaced Repetition',
-        question: q.questionText,
-        answer: 'Review this question.',
-      });
-      // Persist flag — non-critical, don't rollback if this fails
-      spacedRepService.updateItem(q.id, { addedToFlashcard: true }).catch(() => {});
-      // Show success toast with link to deck
-      setFlashcardToast({ subjectId, subject: q.subject });
-      setTimeout(() => setFlashcardToast(null), 5000);
-    } catch (err) {
-      console.error('[addToFlashcards] createCard failed:', err);
-      setItems((prev) => prev.map((i) => (i.id === q.id ? { ...i, addedToFlashcard: false } : i)));
-    }
-  };
-
-  const toggleRemind = (id: string, current: boolean) => {
-    spacedRepService.updateItem(id, { remindEnabled: !current })
-      .then(async (res: { status: string }) => {
-        if (res.status !== 'success') return;
-        setItems((prev) => prev.map((i) => i.id === id ? { ...i, remindEnabled: !current } : i));
-
-        const item = items.find((i) => i.id === id);
-
-        // When turning the toggle ON, create an in-app notification and request browser permission
-        if (!current && item) {
-          // In-app notification
-          try {
-            await userService.createNotification({
-              title: 'Spaced Repetition Reminder Set',
-              body: `We'll remind you to revise "${item.questionText.slice(0, 60)}${item.questionText.length > 60 ? '...' : ''}" in ${item.scheduleDay} day${item.scheduleDay === 1 ? '' : 's'}.`,
-              type: 'spaced_rep',
-            });
-          } catch {
-            // ignore
-          }
-
-          // Browser push notification
-          if (typeof window !== 'undefined' && 'Notification' in window) {
-            try {
-              if (Notification.permission === 'default') {
-                await Notification.requestPermission();
-              }
-              if (Notification.permission === 'granted') {
-                new Notification('Reminder set', {
-                  body: `We'll remind you to revise this in ${item.scheduleDay} day${item.scheduleDay === 1 ? '' : 's'}.`,
-                  icon: '/favicon.ico',
-                });
-              }
-            } catch {
-              // ignore – backend will still deliver the reminder
-            }
-          }
+  useEffect(() => {
+    let mounted = true;
+    dashboardService.getTestAnalytics()
+      .then((res) => {
+        const rows = res?.data?.subjectAccuracy;
+        if (!mounted || !Array.isArray(rows)) return;
+        const map: Record<string, number> = {};
+        for (const row of rows) {
+          if (row?.subject) map[String(row.subject).toLowerCase()] = Number(row.accuracy ?? 0);
         }
+        setSubjectAccuracy(map);
       })
       .catch(() => {});
-  };
-
-  const toggleSchedule = (id: string, day: number) => {
-    const targetItem = items.find((item) => item.id === id);
-    if (!targetItem) return;
-
-    const currentDays = normalizeScheduleDays(targetItem);
-    const nextDays = currentDays.includes(day)
-      ? currentDays.filter((value) => value !== day)
-      : [...currentDays, day].sort((a, b) => a - b);
-
-    setItems((prev) => prev.map((item) => (
-      item.id === id
-        ? { ...item, scheduleDay: nextDays[0] ?? item.scheduleDay, scheduleDays: nextDays }
-        : item
-    )));
-
-    spacedRepService.updateItem(id, { scheduleDays: nextDays })
-      .then((res: { status: string; data?: SpacedRepItem }) => {
-        if (res.status === 'success' && res.data) {
-          setItems((prev) => prev.map((item) => (
-            item.id === id
-              ? {
-                  ...item,
-                  scheduleDay: res.data?.scheduleDay ?? nextDays[0] ?? item.scheduleDay,
-                  scheduleDays: res.data?.scheduleDays ?? nextDays,
-                }
-              : item
-          )));
-        }
-      })
-      .catch(() => {
-        setItems((prev) => prev.map((item) => (
-          item.id === id
-            ? { ...item, scheduleDay: currentDays[0] ?? item.scheduleDay, scheduleDays: currentDays }
-            : item
-        )));
-      });
-  };
+    return () => { mounted = false; };
+  }, []);
 
   const handleAddItem = () => {
     if (!modalQuestion.trim()) return;
@@ -300,7 +78,6 @@ export default function SpacedRepetitionPage() {
         if (res.status === 'success') {
           setItems((prev) => [res.data, ...prev]);
           setModalQuestion('');
-          setModalAnswer('');
           setShowAddModal(false);
         }
       })
@@ -308,7 +85,7 @@ export default function SpacedRepetitionPage() {
       .finally(() => setSaving(false));
   };
 
-  // Compute subject health pills from real data
+  // Hero subject-health stats from real data
   const heroStats = (() => {
     const now = new Date();
     const startOfToday = new Date(now);
@@ -324,33 +101,22 @@ export default function SpacedRepetitionPage() {
     }).length;
 
     return [
-      { value: overdue, label: 'OVERDUE', valueColor: '#F5A623', valueSize: 16 },
-      { value: scheduled, label: 'SCHEDULED', valueColor: '#FF7070', valueSize: 18 },
-      { value: dueToday, label: 'DUE TODAY', valueColor: '#FFFFFF', valueSize: 18 },
-      { value: streakDays, label: 'DAYS STREAK', valueColor: '#0E8A56', valueSize: 18 },
+      { value: overdue, label: 'OVERDUE', valueColor: '#F5A623' },
+      { value: scheduled, label: 'SCHEDULED', valueColor: '#FF7070' },
+      { value: dueToday, label: 'DUE TODAY', valueColor: '#FFFFFF' },
+      { value: streakDays, label: 'DAYS STREAK', valueColor: '#0E8A56' },
     ];
   })();
 
-  const ITEMS_PER_PAGE = 10;
-  const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
-  const visibleItems = items.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  // Count of pending questions per subject (shown on each card).
+  const subjectCounts = (() => {
+    const counts: Record<string, number> = {};
+    for (const item of items) counts[item.subject] = (counts[item.subject] ?? 0) + 1;
+    return counts;
+  })();
 
   return (
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: '100%' }}>
-      {/* Flashcard success toast */}
-      {flashcardToast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, background: '#101828', color: '#fff', borderRadius: 14, padding: '14px 18px', boxShadow: '0 8px 32px rgba(0,0,0,0.22)', display: 'flex', alignItems: 'center', gap: 12, maxWidth: 340 }}>
-          <span style={{ fontSize: 20 }}>✅</span>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3 }}>Added to Flashcards!</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
-              Card saved to your <strong style={{ color: '#E8B84B' }}>{flashcardToast.subject}</strong> deck.{' '}
-              <a href={`/dashboard/flashcards/${flashcardToast.subjectId}`} style={{ color: '#E8B84B', textDecoration: 'underline', fontWeight: 600 }}>View deck →</a>
-            </div>
-          </div>
-          <button onClick={() => setFlashcardToast(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 16, marginLeft: 4 }}>✕</button>
-        </div>
-      )}
       <div className="flex-1 overflow-y-auto">
         <DashboardPageHero
           // eslint-disable-next-line @next/next/no-img-element
@@ -362,40 +128,23 @@ export default function SpacedRepetitionPage() {
         />
         <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
-          {/* Questions to Revisit - header */}
-          <div
-            className="flex flex-wrap items-center justify-between gap-4 py-4 px-6 rounded-t-[10px]"
-            style={{ borderBottom: '0.8px solid #F3F4F6', background: '#FFFFFF' }}
-          >
-            <div className="flex flex-wrap items-center gap-3">
-              <span aria-hidden>⚠️</span>
-              <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '24px', color: '#101828' }}>Questions to Revisit</span>
-              <span className="rounded px-2.5 py-1" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', background: '#FEF2F2', color: '#E7000B' }}>
-                {items.length} questions
-              </span>
-              <div className="flex items-center gap-2">
-                {filterOptions.map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => { setFilter(f); setPage(1); }}
-                    className="rounded-[10px] px-3 py-2"
-                    style={{
-                      fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px',
-                      background: filter === f ? '#101828' : '#F3F4F6',
-                      color: filter === f ? '#FFFFFF' : '#4A5565',
-                      textTransform: 'capitalize',
-                    }}
-                  >
-                    {f === 'All' ? 'All' : f.toUpperCase()}
-                  </button>
-                ))}
+          {/* Choose a Subject */}
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+                style={{ background: '#101828', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}
+              >
+                1
               </div>
+              <h2 style={{ fontFamily: 'Georgia', fontWeight: 700, fontSize: 36, lineHeight: '40px', color: '#101828' }}>
+                Choose a <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Subject</span>
+              </h2>
             </div>
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 rounded-[10px] px-4 py-2"
+              className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
               style={{
                 background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
                 boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
@@ -405,163 +154,57 @@ export default function SpacedRepetitionPage() {
               <span>+</span> Add Question
             </button>
           </div>
-
-          {/* Table header */}
-          <div
-            className="grid gap-4 px-6 py-3"
-            style={{ background: '#F9FAFB', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.6px', color: '#6A7282', textTransform: 'uppercase' }}
+          <p
+            className="mb-6"
+            style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}
           >
-            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center" style={{ maxWidth: 1130 }}>
-              <span>Question</span>
-              <span>Subject</span>
-              <span>Spaced Rep. Schedule</span>
-              <span>Remind</span>
-            </div>
-          </div>
+            Pick the subject you want to revise today
+          </p>
 
-          {/* Question rows */}
-          <div style={{ background: '#FFFFFF', borderLeft: '1px solid #F3F4F6', borderRight: '1px solid #F3F4F6' }}>
-            {loading ? (
-              [...Array(5)].map((_, i) => (
-                <div key={i} className="px-6 py-4 border-b border-[#F3F4F6] animate-pulse" style={{ minHeight: 83 }}>
-                  <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-gray-100 rounded w-1/4" />
-                </div>
-              ))
-            ) : visibleItems.length === 0 ? (
-              <div className="px-6 py-12 text-center text-gray-400">
-                No items found. Add your first question above.
-              </div>
-            ) : (
-              visibleItems.map((q) => (
-                <div
-                  key={q.id}
-                  className="grid grid-cols-[1fr_auto_auto_auto] gap-4 items-start px-6 py-4 border-b border-[#F3F4F6]"
-                  style={{ minHeight: 83 }}
+          <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {SUBJECT_HEALTH.map((s) => {
+              const acc = resolveAccuracy(subjectAccuracy, s);
+              const meta = strengthMeta(acc);
+              const barWidth = acc <= 0 ? 0 : Math.max(acc, 6);
+              const pending = subjectCounts[s.label] ?? 0;
+              return (
+                <Link
+                  key={s.id}
+                  href={`/dashboard/spaced-repetition/${s.id}`}
+                  className="flex flex-col rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
+                  style={{ border: `1.5px solid ${s.border}`, background: subjectBg(s.label), minHeight: 150 }}
                 >
-                  <div>
-                    <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '22.75px', color: '#101828', marginBottom: 4 }}>{q.questionText}</p>
-                    <div className="flex flex-wrap items-center gap-2 text-[12px]">
-                      <span style={{ fontFamily: 'Inter', fontWeight: 600, color: sourceColor(q.sourceType) }}>{q.source}</span>
-                      {q.addedToFlashcard ? (
-                        <span style={{ fontFamily: 'Inter', fontWeight: 600, color: '#009966' }}>✓ Added to Flashcards</span>
-                      ) : (
-                        <button
-                          type="button"
-                          className="font-semibold"
-                          style={{ fontFamily: 'Inter', color: '#155DFC' }}
-                          onClick={() => addToFlashcards(q)}
-                        >
-                          + Add to Flashcards
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <span
-                      className="inline-block rounded-full px-3 py-1"
-                      style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', background: subjectBg(q.subject), color: '#0A0A0A' }}
-                    >
-                      {q.subject}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="uppercase text-[12px] font-semibold" style={{ fontFamily: 'Inter', color: '#6A7282' }}>Schedule</span>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {(() => {
-                        const activeDays = normalizeScheduleDays(q);
-                        return scheduleOptions.map((day) => {
-                          const isActive = activeDays.includes(day);
-
-                          return (
-                            <button
-                              key={day}
-                              type="button"
-                              onClick={() => toggleSchedule(q.id, day)}
-                              className="rounded px-2 py-1 text-[12px] font-bold transition-colors"
-                              style={{
-                                fontFamily: 'Inter', lineHeight: '16px',
-                                background: isActive ? '#101828' : '#E5E7EB',
-                                color: isActive ? '#FFFFFF' : '#4A5565',
-                              }}
-                            >
-                              {day}d
-                            </button>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={q.remindEnabled}
-                      onClick={() => toggleRemind(q.id, q.remindEnabled)}
-                      className="relative w-11 h-6 rounded-full transition-colors flex items-center"
-                      style={{ background: q.remindEnabled ? '#00BC7D' : '#D1D5DC', paddingLeft: 4, paddingRight: 4 }}
-                    >
+                  <div className="flex items-start justify-between gap-2">
+                    <span aria-hidden style={{ fontSize: 22, lineHeight: '22px' }}>{s.icon}</span>
+                    {pending > 0 && (
                       <span
-                        className="block w-4 h-4 rounded-full bg-white shadow transition-transform"
-                        style={{ transform: q.remindEnabled ? 'translateX(20px)' : 'translateX(0)' }}
-                      />
-                    </button>
+                        className="rounded-full px-2 py-0.5"
+                        style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 10, lineHeight: '14px', background: 'rgba(255,255,255,0.7)', color: '#4A5565' }}
+                      >
+                        {pending} to revisit
+                      </span>
+                    )}
                   </div>
-                </div>
-              ))
-            )}
+                  <h3 className="mt-3" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '20px', color: '#22304D' }}>
+                    {s.shortLabel ?? s.label}
+                  </h3>
+                  <p className="mt-1" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#6A7282' }}>
+                    {acc > 0 ? `${acc}% ${meta.word}` : 'No data yet'}
+                  </p>
+                  <div className="mt-4 h-[4px] w-full rounded-full" style={{ background: 'rgba(0,0,0,0.06)' }}>
+                    <div className="h-full rounded-full transition-all" style={{ width: `${barWidth}%`, background: s.bar }} />
+                  </div>
+                  <p className="mt-2" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 11, lineHeight: '14px', color: meta.color }}>
+                    {meta.status}
+                  </p>
+                </Link>
+              );
+            })}
           </div>
-
-          {/* Add Custom Question/Topic */}
-          <div
-            className="flex flex-wrap items-center justify-between gap-4 p-6 rounded-[14px] my-6 border-2 border-dashed border-[#D1D5DC]"
-            style={{ background: '#FFFFFF', minHeight: 107 }}
-          >
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 rounded-[16px] flex items-center justify-center text-2xl" style={{ background: '#F3F4F6' }}>+</div>
-              <div>
-                <p className="font-bold mb-1" style={{ fontFamily: 'Inter', fontSize: 18, lineHeight: '28px', color: '#101828' }}>Add Custom Question/Topic</p>
-                <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#4A5565' }}>Create your own question for today</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 rounded-lg px-5 py-2.5"
-              style={{ background: 'linear-gradient(90deg, #F1AB01 0%, #FE6F00 100%)', fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}
-            >
-              Add Question
-            </button>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div
-              className="flex flex-wrap items-center justify-between gap-4 py-4 px-6 rounded-b-[10px]"
-              style={{ borderTop: '0.8px solid #F3F4F6', background: '#FFFFFF' }}
-            >
-              <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>
-                Showing {visibleItems.length} of {items.length} questions
-              </span>
-              <div className="flex items-center gap-2">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setPage(n)}
-                    className="w-8 h-8 rounded-[10px] flex items-center justify-center font-semibold text-[14px]"
-                    style={{ fontFamily: 'Inter', lineHeight: '20px', background: page === n ? '#101828' : '#F3F4F6', color: page === n ? '#FFFFFF' : '#4A5565' }}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Add to Flashcard Deck modal */}
+      {/* Add Question modal */}
       {showAddModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"

@@ -102,11 +102,11 @@ export default function HelpSupportPage() {
           </div>
 
           <h2
-            className="text-[clamp(28px,3vw,38px)] font-medium leading-[1.25] text-[#1a1a2e] mb-4"
-            style={{ fontFamily: 'var(--font-cormorant-garamond), Georgia, serif' }}
+            className="mb-4"
+            style={{ fontFamily: 'var(--font-cormorant-garamond), Georgia, serif', fontSize: '41.6px', fontWeight: 600, lineHeight: '49.92px', color: '#0C1424', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}
           >
             We&apos;re here,<br />
-            <em className="text-[#2d3561] italic">not behind a ticket queue</em>
+            <em style={{ color: '#1E3060', fontStyle: 'italic', fontWeight: 600 }}>not behind a ticket queue</em>
           </h2>
 
           <p className="text-[14px] text-[#6B7A99] leading-[1.8] mb-6">

@@ -289,25 +289,6 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 )}
               </div>
 
-              <hr className="border-[#F3F4F6] mx-0" />
-
-              {/* Sign Out */}
-              <div className="py-1.5">
-                <button
-                  onClick={async () => {
-                    setShowDropdown(false);
-                    await logout();
-                  }}
-                  className="flex items-center gap-2.5 px-4 py-2 w-full hover:bg-gray-50 transition-colors"
-                >
-                  <svg className="w-4 h-4 opacity-60" fill="none" viewBox="0 0 24 24" stroke="#EF4444" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
-                  </svg>
-                  <span className="font-inter font-medium text-[13px] leading-none text-[#EF4444]">
-                    Sign out
-                  </span>
-                </button>
-              </div>
             </div>
           )}
         </div>

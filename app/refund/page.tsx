@@ -54,7 +54,7 @@ export default function RefundPolicyPage() {
           </div>
           <div className="mb-3 flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] text-amber-400/70">
             <span className="h-px w-8 bg-amber-400/30" />
-            Simple, Transparent &amp; Secure
+            Transparent and Fair
             <span className="h-px w-8 bg-amber-400/30" />
           </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '60.80px', fontWeight: 600, lineHeight: '69.92px' }}>
@@ -86,7 +86,7 @@ export default function RefundPolicyPage() {
 
             {/* Section 1: Our Approach */}
             <section id="our-approach" className="mb-14 scroll-mt-24">
-              <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">01</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '0.8rem', fontWeight: 700, color: '#e8b84b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '7px' }}>01</div>
               <h2 className="mb-6" style={policyHeadingStyle}>Our Approach</h2>
 
               <div className="mb-6 flex gap-3 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5">
@@ -96,10 +96,10 @@ export default function RefundPolicyPage() {
                 </div>
               </div>
 
-              <p className="mb-4 text-base leading-relaxed text-[#374560]">
+              <p className="mb-4" style={{ fontSize: '15px', color: '#374560', lineHeight: 1.85, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                 We built RiseWithJeet with one belief: you should only pay for something that genuinely helps you prepare. We price the platform at what it costs to run, not what the market will bear. That same thinking applies to refunds. We are not in the business of trapping people into subscriptions they do not want.
               </p>
-              <p className="mb-6 text-base leading-relaxed text-[#374560]">
+              <p className="mb-6" style={{ fontSize: '15px', color: '#374560', lineHeight: 1.85, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                 At the same time, running this platform, training AI models on UPSC-specific content, and maintaining infrastructure has real costs. This policy reflects that balance honestly.
               </p>
 
@@ -125,10 +125,10 @@ export default function RefundPolicyPage() {
 
             {/* Section 2: Cancellations */}
             <section id="cancellations" className="mb-14 scroll-mt-24">
-              <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">02</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '0.8rem', fontWeight: 700, color: '#e8b84b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '7px' }}>02</div>
               <h2 className="mb-6" style={policyHeadingStyle}>Cancellations</h2>
 
-              <p className="mb-4 text-base leading-relaxed text-[#374560]">
+              <p className="mb-4" style={{ fontSize: '15px', color: '#374560', lineHeight: 1.85, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                 You can cancel your subscription at any time with no questions asked.
               </p>
 
@@ -157,10 +157,10 @@ export default function RefundPolicyPage() {
 
             {/* Section 3: Within the 7-Day Window */}
             <section id="within-7-days" className="mb-14 scroll-mt-24">
-              <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">03</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '0.8rem', fontWeight: 700, color: '#e8b84b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '7px' }}>03</div>
               <h2 className="mb-6" style={policyHeadingStyle}>Within the 7-Day Window</h2>
 
-              <p className="mb-4 text-base leading-relaxed text-[#374560]">
+              <p className="mb-4" style={{ fontSize: '15px', color: '#374560', lineHeight: 1.85, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                 If you request a refund within 7 days of your initial subscription payment, we will process it in full with no questions asked. This applies to both the Rise and Ascent plans.
               </p>
 
@@ -190,10 +190,10 @@ export default function RefundPolicyPage() {
 
             {/* Section 4: After the 7-Day Window */}
             <section id="after-7-days" className="mb-14 scroll-mt-24">
-              <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">04</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '0.8rem', fontWeight: 700, color: '#e8b84b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '7px' }}>04</div>
               <h2 className="mb-6" style={policyHeadingStyle}>After the 7-Day Window</h2>
 
-              <p className="mb-6 text-base leading-relaxed text-[#374560]">
+              <p className="mb-6" style={{ fontSize: '15px', color: '#374560', lineHeight: 1.85, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                 After the initial 7 days, we do not offer pro-rated refunds for unused subscription time. However, we review every situation with common sense. We will evaluate refund requests case by case for the following:
               </p>
 
@@ -233,10 +233,10 @@ export default function RefundPolicyPage() {
 
             {/* Section 5: How to Request a Refund */}
             <section id="how-to-request" className="mb-14 scroll-mt-24">
-              <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">05</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '0.8rem', fontWeight: 700, color: '#e8b84b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '7px' }}>05</div>
               <h2 className="mb-6" style={policyHeadingStyle}>How to Request a Refund</h2>
 
-              <p className="mb-6 text-base leading-relaxed text-[#374560]">
+              <p className="mb-6" style={{ fontSize: '15px', color: '#374560', lineHeight: 1.85, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                 The process is simple and handled by a real person, not a bot.
               </p>
 
@@ -275,10 +275,10 @@ export default function RefundPolicyPage() {
 
             {/* Section 6: Contact Us */}
             <section id="contact-us" className="mb-14 scroll-mt-24">
-              <div className="mb-1 text-xs font-semibold text-[#9aa3b8]">06</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '0.8rem', fontWeight: 700, color: '#e8b84b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '7px' }}>06</div>
               <h2 className="mb-6" style={policyHeadingStyle}>Contact Us</h2>
 
-              <p className="mb-4 text-base leading-relaxed text-[#374560]">
+              <p className="mb-4" style={{ fontSize: '15px', color: '#374560', lineHeight: 1.85, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                 For any billing or refund queries, please reach out directly. We respond as quickly as possible on working days.
               </p>
 
@@ -290,7 +290,7 @@ export default function RefundPolicyPage() {
                 </div>
               </div>
 
-              <p className="text-base leading-relaxed text-[#374560]">
+              <p style={{ fontSize: '15px', color: '#374560', lineHeight: 1.85, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                 This policy may be updated from time to time. The &quot;Last updated&quot; date at the top of this page will reflect any changes.
               </p>
             </section>
@@ -300,18 +300,25 @@ export default function RefundPolicyPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-[#FAF8F4] py-16">
-        <div className="mx-auto max-w-2xl px-6">
-          <div className="relative overflow-hidden rounded-2xl bg-[#090e1c] px-8 py-14 text-center">
-            <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-20 h-80 w-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(232,184,75,0.1) 0%, transparent 65%)' }} />
-            <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 -right-16 h-64 w-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(26,53,96,0.5) 0%, transparent 70%)' }} />
-            <div className="relative z-10">
-              <h2 className="font-serif text-3xl font-bold tracking-tight text-white sm:text-4xl">Your UPSC Journey<br />Starts Today</h2>
-              <p className="mt-4 text-slate-400">We keep it simple and honest. Reach out if anything is unclear.</p>
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-                <a href="mailto:together@risewithjeet.com" className="rounded-lg bg-amber-500 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-400">Email: together@risewithjeet.com</a>
-                <Link href="/contact" className="rounded-lg border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">Contact Us</Link>
-              </div>
+      <section className="bg-[#FAF8F4]" style={{ padding: '72px 48px 104px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div className="relative overflow-hidden text-center" style={{ background: 'linear-gradient(135deg, #0b1530 0%, #0f2050 100%)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '24px', boxShadow: '0 40px 80px rgba(11,29,58,0.24)', maxWidth: '700px', width: '100%', padding: '69px 76px 79px' }}>
+          <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-20 h-80 w-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(232,184,75,0.08) 0%, transparent 65%)' }} />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 -right-16 h-64 w-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(26,53,96,0.5) 0%, transparent 70%)' }} />
+          <div className="relative z-10">
+            <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '50px', fontWeight: 700, color: '#fff', lineHeight: '54px', letterSpacing: '-1.2px', margin: '0 0 20px' }}>
+              Need help with a<br />
+              <em style={{ display: 'block', fontStyle: 'italic', color: '#E8B84B', fontWeight: 700 }}>refund or cancellation?</em>
+            </h2>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '16px', fontWeight: 400, color: 'rgba(255,255,255,0.58)', maxWidth: '460px', margin: '0 auto 30px', lineHeight: '26px' }}>
+              Write to us directly. Our team reads every message and gets back to you.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <a href="mailto:together@risewithjeet.com" style={{ minWidth: '286px', height: '53px', background: 'linear-gradient(144deg, #e8b84b 0%, #b8780a 100%)', color: '#0b1530', padding: '0 24px', borderRadius: '12px', fontSize: '15.5px', fontWeight: 700, border: 'none', fontFamily: "'DM Sans', system-ui, sans-serif", textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 14px rgba(232,184,75,0.38)' }}>
+                Email: together@risewithjeet.com
+              </a>
+              <Link href="/contact" style={{ minWidth: '189px', height: '52px', background: 'rgba(255,255,255,0.06)', color: '#fff', padding: '0 24px', borderRadius: '12px', fontSize: '15.5px', fontWeight: 600, border: '1px solid rgba(255,255,255,0.20)', fontFamily: "'DM Sans', system-ui, sans-serif", textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                Contact Us
+              </Link>
             </div>
           </div>
         </div>

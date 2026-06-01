@@ -54,14 +54,14 @@ function getFallbackViewCount(seed: string): number {
   return 20000 + (hash % 10001);
 }
 
-/* Subject card background colors – one per subject, cycling */
+/* Subject card background colors – one per subject, no repeats */
 const SUBJECT_COLORS: Record<string, { bg: string; border: string; accent: string }> = {
-  'History': { bg: '#FEF3C7', border: '#FDE68A', accent: '#B45309' },
-  'Geography': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#1D4ED8' },
-  'Polity': { bg: '#EDE9FE', border: '#DDD6FE', accent: '#7C3AED' },
-  'Economy': { bg: '#FFF7ED', border: '#FED7AA', accent: '#EA580C' },
-  'Environment & Ecology': { bg: '#F0FDF4', border: '#BBF7D0', accent: '#16A34A' },
-  'Science & Technology': { bg: '#DBEAFE', border: '#BFDBFE', accent: '#0369A1' },
+  'History':              { bg: '#FEF3C7', border: '#FDE68A', accent: '#B45309' }, // amber
+  'Geography':            { bg: '#CCFBF1', border: '#99F6E4', accent: '#0D9488' }, // teal
+  'Polity':               { bg: '#EDE9FE', border: '#DDD6FE', accent: '#7C3AED' }, // purple
+  'Economy':              { bg: '#FFF7ED', border: '#FED7AA', accent: '#EA580C' }, // orange
+  'Environment & Ecology':{ bg: '#F0FDF4', border: '#BBF7D0', accent: '#16A34A' }, // green
+  'Science & Technology': { bg: '#F0F9FF', border: '#BAE6FD', accent: '#0369A1' }, // sky blue
 };
 
 const SUBJECT_ICON_GRADIENTS: Record<string, string> = {
@@ -75,16 +75,16 @@ const SUBJECT_ICON_GRADIENTS: Record<string, string> = {
 };
 
 const SUBJECT_CARD_THEMES: Record<string, SubjectCardTheme> = {
-  indianpolity: { bg: 'linear-gradient(145deg, #FFF4E2 0%, #FBE9CC 100%)', border: '#F4CCA0', progress: 72 },
-  indianeconomy: { bg: 'linear-gradient(145deg, #F3EEFF 0%, #E7DEFF 100%)', border: '#D7C8FF', progress: 38 },
-  geography: { bg: 'linear-gradient(145deg, #F4ECD2 0%, #ECE3C2 100%)', border: '#D9C88E', progress: 48 },
-  history: { bg: 'linear-gradient(145deg, #FFF7EC 0%, #FCECD8 100%)', border: '#F2CFA5', progress: 55 },
-  environment: { bg: 'linear-gradient(145deg, #EEFBF4 0%, #DCF5E8 100%)', border: '#BCE9D1', progress: 62 },
-  ethicsgs4: { bg: 'linear-gradient(145deg, #EEF4FB 0%, #E4ECF7 100%)', border: '#D1DFF0', progress: 32 },
-  essaywriting: { bg: 'linear-gradient(145deg, #FFF7EE 0%, #FDEBD7 100%)', border: '#F5D0A9', progress: 45 },
-  internalsecurity: { bg: 'linear-gradient(145deg, #FFF1F2 0%, #FDE7EA 100%)', border: '#F6C6CF', progress: 22, showNew: true },
-  intlrelations: { bg: 'linear-gradient(145deg, #F2ECFF 0%, #E9E0FF 100%)', border: '#D8CBFB', progress: 35 },
-  scienceandtech: { bg: 'linear-gradient(145deg, #E7F0FC 0%, #D7E6F8 100%)', border: '#BED4EE', progress: 28 },
+  indianpolity:     { bg: 'linear-gradient(145deg, #FFF4E2 0%, #FBE9CC 100%)', border: '#F4CCA0', progress: 72 }, // orange
+  indianeconomy:    { bg: 'linear-gradient(145deg, #F3EEFF 0%, #E7DEFF 100%)', border: '#D7C8FF', progress: 38 }, // purple
+  geography:        { bg: 'linear-gradient(145deg, #E0F7F6 0%, #CCEEEC 100%)', border: '#99D9D6', progress: 48 }, // teal
+  history:          { bg: 'linear-gradient(145deg, #FDF5EB 0%, #F0E2CC 100%)', border: '#DBBF99', progress: 55 }, // sepia-brown
+  environment:      { bg: 'linear-gradient(145deg, #EEFBF4 0%, #DCF5E8 100%)', border: '#BCE9D1', progress: 62 }, // green
+  ethicsgs4:        { bg: 'linear-gradient(145deg, #EEF0FF 0%, #E0E3FF 100%)', border: '#C4C9F8', progress: 32 }, // indigo
+  essaywriting:     { bg: 'linear-gradient(145deg, #FFF0F5 0%, #FDE0EC 100%)', border: '#F9B8D2', progress: 45 }, // rose/pink
+  internalsecurity: { bg: 'linear-gradient(145deg, #FFF1F2 0%, #FDE7EA 100%)', border: '#F6C6CF', progress: 22, showNew: true }, // red
+  intlrelations:    { bg: 'linear-gradient(145deg, #EFF6FF 0%, #DBEAFE 100%)', border: '#BFDBFE', progress: 35 }, // medium blue
+  scienceandtech:   { bg: 'linear-gradient(145deg, #E0F4FF 0%, #CCE8FF 100%)', border: '#99CFEE', progress: 28 }, // sky blue
 };
 
 const SUBJECT_SORT_ORDER = [
@@ -203,15 +203,101 @@ function subjectEmoji(name: string) {
   return '📹';
 }
 
-function getSubjectCardTheme(name: string) {
-  const n = normalizeSubjectKey(name);
-  if (n.includes('polity')) return { bg: '#EFF6FF', border: '#BFDBFE', progress: 80, showNew: true };
-  if (n.includes('history')) return { bg: '#FFF7ED', border: '#FDBA74', progress: 65, showNew: false };
-  if (n.includes('geography')) return { bg: '#ECFDF5', border: '#A7F3D0', progress: 55, showNew: false };
-  if (n.includes('economy')) return { bg: '#F5F3FF', border: '#DDD6FE', progress: 70, showNew: false };
-  if (n.includes('environment')) return { bg: '#F0FDF4', border: '#BBF7D0', progress: 45, showNew: false };
-  if (n.includes('science')) return { bg: '#FEF2F2', border: '#FECACA', progress: 60, showNew: true };
-  return { bg: '#F8FAFC', border: '#CBD5E1', progress: 50, showNew: false };
+/*
+ * Ordered pool of visually distinct pastel card colours.
+ * Indices 0-9 are the established core hues (one per well-known subject);
+ * 10+ are extra distinct pastels handed out to any additional subjects so
+ * that two subjects never end up sharing a colour. Yellow/gold tones are
+ * deliberately excluded — that hue is reserved for the brand theme.
+ */
+const SUBJECT_CARD_PALETTE: Array<{ key: string; bg: string; border: string }> = [
+  { key: 'orange',  bg: '#FFF4E2', border: '#F4CCA0' },
+  { key: 'sepia',   bg: '#FDF5EB', border: '#DBBF99' },
+  { key: 'teal',    bg: '#E0F7F6', border: '#99D9D6' },
+  { key: 'purple',  bg: '#F3EEFF', border: '#D7C8FF' },
+  { key: 'green',   bg: '#EEFBF4', border: '#BCE9D1' },
+  { key: 'indigo',  bg: '#EEF0FF', border: '#C4C9F8' },
+  { key: 'sky',     bg: '#E0F4FF', border: '#99CFEE' },
+  { key: 'rose',    bg: '#FFF0F5', border: '#F9B8D2' },
+  { key: 'red',     bg: '#FFF1F2', border: '#F6C6CF' },
+  { key: 'blue',    bg: '#EFF6FF', border: '#BFDBFE' },
+  { key: 'cyan',    bg: '#ECFEFF', border: '#A5E8F0' },
+  { key: 'lime',    bg: '#F4FCE3', border: '#CDE8A0' },
+  { key: 'fuchsia', bg: '#FDF4FF', border: '#F0CDF5' },
+  { key: 'coral',   bg: '#FFF1EC', border: '#FBD0BE' },
+  { key: 'stone',   bg: '#FAF7F2', border: '#E4DBCB' },
+  { key: 'slate',   bg: '#F1F5F9', border: '#CBD5E1' },
+];
+
+/* Canonical colour + progress/badge for the well-known subjects. */
+const CORE_SUBJECT_META: Array<{
+  match: (n: string) => boolean;
+  key: string;
+  progress: number;
+  showNew?: boolean;
+}> = [
+  { match: (n) => n.includes('polity'),                                  key: 'orange', progress: 80, showNew: true },
+  { match: (n) => n.includes('history'),                                 key: 'sepia',  progress: 65 },
+  { match: (n) => n.includes('geography'),                               key: 'teal',   progress: 55 },
+  { match: (n) => n.includes('economy'),                                 key: 'purple', progress: 70 },
+  { match: (n) => n.includes('environment'),                             key: 'green',  progress: 45 },
+  { match: (n) => n.includes('ethics'),                                  key: 'indigo', progress: 40 },
+  { match: (n) => n.includes('science'),                                 key: 'sky',    progress: 60, showNew: true },
+  { match: (n) => n.includes('essay'),                                   key: 'rose',   progress: 45 },
+  { match: (n) => n.includes('security'),                                key: 'red',    progress: 22, showNew: true },
+  { match: (n) => n.includes('international') || n.includes('relation'), key: 'blue',   progress: 35 },
+];
+
+function stableHash(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100000;
+  return h;
+}
+
+/*
+ * Build a name -> theme map for the given subject list, guaranteeing that no
+ * two subjects share a colour. Known subjects keep their canonical hue; any
+ * leftover/unknown subjects (or a second subject that collides on the same
+ * core hue) are handed the next unused palette colour.
+ */
+function buildSubjectThemeMap(subjects: SubjectItem[]): Map<string, SubjectCardTheme> {
+  const map = new Map<string, SubjectCardTheme>();
+  const usedKeys = new Set<string>();
+
+  const meta = new Map<string, { key: string; progress: number; showNew?: boolean }>();
+  for (const subject of subjects) {
+    const n = normalizeSubjectKey(subject.name);
+    const core = CORE_SUBJECT_META.find((m) => m.match(n));
+    meta.set(
+      subject.name,
+      core
+        ? { key: core.key, progress: core.progress, showNew: core.showNew }
+        : { key: '', progress: 30 + (stableHash(n) % 46) }, // 30-75, stable per name
+    );
+  }
+
+  // Pass 1: reserve each subject's canonical hue while it is still free.
+  for (const subject of subjects) {
+    const info = meta.get(subject.name)!;
+    if (info.key && !usedKeys.has(info.key)) {
+      const pal = SUBJECT_CARD_PALETTE.find((p) => p.key === info.key)!;
+      usedKeys.add(pal.key);
+      map.set(subject.name, { bg: pal.bg, border: pal.border, progress: info.progress, showNew: info.showNew });
+    }
+  }
+
+  // Pass 2: everyone left gets the next unused palette colour.
+  for (const subject of subjects) {
+    if (map.has(subject.name)) continue;
+    const info = meta.get(subject.name)!;
+    const pal =
+      SUBJECT_CARD_PALETTE.find((p) => !usedKeys.has(p.key)) ??
+      SUBJECT_CARD_PALETTE[stableHash(subject.name) % SUBJECT_CARD_PALETTE.length]; // palette exhausted: stable fallback
+    usedKeys.add(pal.key);
+    map.set(subject.name, { bg: pal.bg, border: pal.border, progress: info.progress, showNew: info.showNew });
+  }
+
+  return map;
 }
 
 function getSubjectIconGradient(name: string) {
@@ -339,7 +425,7 @@ export default function VideoLecturesPage() {
   const openVideoActionModal = (type: 'pdf' | 'mentor', video: VideoItem) => {
     setModalVideo(video);
     if (type === 'pdf') {
-      router.push('/dashboard/library');
+      setShowLoginModal(true);
       return;
     }
     setShowMentorModal(true);
@@ -401,6 +487,8 @@ export default function VideoLecturesPage() {
     const safeB = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
     return safeA - safeB;
   });
+
+  const subjectThemeMap = buildSubjectThemeMap(visibleSubjects);
 
   const matchedSelectedSubject = visibleSubjects.find((subject) => subject.name === selectedSubject) ?? null;
   const fallbackSubjectVideos = selectedSubject
@@ -530,7 +618,7 @@ export default function VideoLecturesPage() {
             }}
           >
             {visibleSubjects.map((subject) => {
-              const theme = getSubjectCardTheme(subject.name);
+              const theme = subjectThemeMap.get(subject.name) ?? { bg: '#F1F5F9', border: '#CBD5E1', progress: 50 };
               const isSelected = selectedSubject === subject.name;
               const showNew = theme.showNew || subject.isNew;
               return (
@@ -678,7 +766,7 @@ export default function VideoLecturesPage() {
                   <div
                     className="flex items-center justify-center"
                     style={{
-                      background: 'linear-gradient(135deg, #FF6900 0%, #FB2C36 100%)',
+                      background: getSubjectIconGradient(selectedSubject),
                       borderRadius: '14px',
                       width: '48px',
                       height: '48px',

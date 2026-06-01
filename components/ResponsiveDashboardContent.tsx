@@ -737,7 +737,7 @@ const ResponsiveDashboardContent = () => {
                 <div className="flex items-center gap-3 mb-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={isMcqCompleted ? '/sidebar-daily-mcq-new.png' : '/icons/dashboard/daily-mcq.png'}
+                    src="/target-icon.png"
                     alt="MCQ"
                     className="w-7 h-7 object-contain"
                   />
@@ -826,7 +826,7 @@ const ResponsiveDashboardContent = () => {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/icons/dashboard/editorial.png" alt="Editorial" className="w-7 h-7" />
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
-                    Daily Editorial
+                    Daily Editorial Analysis
                   </h3>
                 </div>
 

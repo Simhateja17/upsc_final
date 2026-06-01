@@ -200,12 +200,8 @@ export default function TestAnalyticsPage() {
 
           <DashboardPageHero
             badgeIcon={
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M18 17V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M13 17V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M8 17v-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src="/sidebar-analytics-new.png" alt="test analytics" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
             }
             badgeText="Analytics - Performance Dashboard"
             title={<>{user?.firstName ?? 'Your'}&apos;s <span style={{ fontStyle: 'italic', color: '#e8b84b' }}>Progress.</span></>}

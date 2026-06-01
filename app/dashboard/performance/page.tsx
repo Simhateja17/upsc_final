@@ -319,12 +319,8 @@ export default function PerformancePage() {
       <div className="flex-1 overflow-y-auto">
         <DashboardPageHero
           badgeIcon={
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M18 17V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M13 17V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M8 17v-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/sidebar-performance-new.png" alt="performance" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
           }
           badgeText="Analytics - Performance Dashboard"
           title={<>{userFirstName}&apos;s <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Progress.</span></>}

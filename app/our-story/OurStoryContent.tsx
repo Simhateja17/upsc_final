@@ -119,7 +119,7 @@ export default function OurStoryContent() {
           </div>
           <div className="callout r">
             <div className="callout-txt">&quot;Every year, over 10 lakh aspirants appear for UPSC. Only a fraction clear it. Most of those who don&apos;t aren&apos;t failing because they lack intelligence or dedication. They&apos;re failing because they don&apos;t have access to the right feedback, the right structure, and the right community at the right time. That&apos;s not a talent problem. That&apos;s an access problem, and access problems are exactly what technology exists to solve.&quot;</div>
-            <div className="callout-attr">Founder &amp; Mentor Rise With Jeet | UPSC Simplified</div>
+            <div className="callout-attr">Abhijeet Soni, Founder &amp; Mentor Rise With Jeet | UPSC Simplified</div>
           </div>
         </div>
       </section>
@@ -217,7 +217,7 @@ export default function OurStoryContent() {
               <p className="r d2">While his professional path led deeper into AI, building systems that learn, adapt, and scale, his passion for UPSC, for lifelong learning, and for empowering others never dimmed. He saw up close how transformative the right preparation could be, and how inaccessible it still was for millions of aspirants outside a handful of cities.</p>
               <div className="fo-quote r d2">
                 <div className="fo-q-txt">&quot;My career led me into AI and data science, but my passion for UPSC, for lifelong learning, and for empowering people on this challenging path has remained a constant. I started RiseWithJeet to help aspirants prepare smarter, navigate the complexities of UPSC with clarity and confidence, and ultimately contribute to nation-building. Alone we can do so little; together we can rise so much higher.&quot;</div>
-                <div className="fo-q-attr">Founder &amp; Mentor - RiseWithJeet</div>
+                <div className="fo-q-attr">Abhijeet, Founder &amp; Mentor Rise With Jeet | UPSC Simplified</div>
               </div>
               <p className="r d3">In February 2025, he stopped waiting and started building. A simple but powerful question guided the journey: what if the same AI-driven approaches used to personalize learning and solve complex problems could make high-quality UPSC preparation accessible to aspirants in every town, without the high costs traditionally attached to it? The YouTube channel became the first step. The platform that followed was built to take that vision further.</p>
               <p className="r d3">Today, Abhijeet personally reviews the AI evaluation models, curates the content roadmap, and continues to show up in the community the same way he did on Day 1, answering doubts, recording lectures, simplifying learners&apos; journeys. <strong>The channel may have grown. The intention hasn&apos;t changed by a single word.</strong></p>
@@ -271,7 +271,7 @@ export default function OurStoryContent() {
               <div>
                 <div className="tl-year">Late 2025</div>
                 <div className="tl-title">The insight that changes everything: a channel isn&apos;t enough</div>
-                <div className="tl-body">As the community grows, one pattern becomes impossible to ignore. Aspirants aren&apos;t failing from lack of dedication, they&apos;re failing from lack of the right feedback, the right structure, and consistent accountability. A YouTube video can inspire. But it can&apos;t tell you why your answer scored 3/10 instead of 6/10. It can&apos;t adapt to your weaknesses. It can&apos;t keep you on track on the days motivation runs out. Abhijeet realises that to truly change outcomes, not just views, the platform needs to go much deeper. He begins building.</div>
+                <div className="tl-body">As the community grows, one pattern becomes impossible to ignore. Aspirants aren&apos;t failing from lack of dedication, they&apos;re failing from lack of the right feedback, the right structure, and consistent accountability. A YouTube video can inspire. But it can&apos;t tell you why your answer didn&apos;t make the cut, or where exactly your thinking broke down. It can&apos;t adapt to your blind spots. It can&apos;t keep you on track on the days motivation runs out. Abhijeet realises that to truly change outcomes, the platform needs to go much deeper. He begins building.</div>
                 <span className="tl-badge" style={{ background: 'rgba(30,53,96,.09)', color: '#26427a', border: '1px solid rgba(30,53,96,.2)' }}>💡 The decision</span>
               </div>
             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { forumService } from '@/lib/services';
 
@@ -228,14 +228,66 @@ export default function QAForumPage() {
             Ask, <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>Discuss</em>, Rise Together
           </>
         }
-        subtitle="Your community of UPSC aspirants. Every doubt answered, every insight shared."
+        subtitle="Your community of 15,000+ UPSC aspirants. Every doubt answered, every insight shared."
+        buttons={
+          <>
+            <button
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#E8B84B',
+                color: '#0C1424',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '10px 20px',
+                fontSize: '14px',
+                fontWeight: 700,
+                fontFamily: 'var(--font-arimo), Arimo, sans-serif',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Ask a Question
+            </button>
+            <button
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'transparent',
+                color: '#FFFFFF',
+                border: '1.5px solid rgba(255,255,255,0.3)',
+                borderRadius: '8px',
+                padding: '10px 20px',
+                fontSize: '14px',
+                fontWeight: 700,
+                fontFamily: 'var(--font-arimo), Arimo, sans-serif',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Join Study Room
+            </button>
+          </>
+        }
         stats={[
-          { value: '2.6K', label: 'Questions Asked', color: '#FDC700' },
-          { value: '89K+', label: 'Answers Given', color: '#F87171' },
+          { value: '24.6K', label: 'Questions Asked', color: '#FDC700' },
+          { value: '89.2K', label: 'Answers Given', color: '#F87171' },
           { value: '547', label: 'Active Right Now', color: '#4ADE80' },
           { value: '∞', label: 'Always Free', color: '#FFFFFF' },
         ]}
-        contentShiftY={-30}
+        heroHeight="400px"
+        contentShiftY={-20}
         enforceUniformLayout={false}
       />
 
@@ -401,23 +453,87 @@ export default function QAForumPage() {
   );
 }
 
+const UPSC_SUBJECTS = [
+  'Indian Polity & Governance',
+  'Indian History',
+  'Geography',
+  'Indian Economy',
+  'Environment & Ecology',
+  'Science & Technology',
+  'Current Affairs',
+  'Ethics, Integrity & Aptitude',
+  'Art & Culture',
+  'International Relations',
+  'Social Issues',
+  'Internal Security',
+  'Disaster Management',
+  'Agriculture',
+  'General Studies',
+];
+
+const TAG_SUGGESTIONS = [
+  'Prelims', 'Mains', 'Current Affairs', 'UPSC', 'IAS',
+  'Optional', 'Essay', 'Interview', 'GS1', 'GS2', 'GS3', 'GS4',
+  'Polity', 'History', 'Geography', 'Economy', 'Environment',
+  'Science', 'Ethics', 'Art', 'Culture', 'Security',
+];
+
+const TAG_SHORTCUTS: Record<string, string> = {
+  p: 'Prelims',
+  m: 'Mains',
+  c: 'Current Affairs',
+  u: 'UPSC',
+  i: 'IAS',
+  o: 'Optional',
+  e: 'Essay',
+  g: 'GS',
+};
+
 function AskModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [tags, setTags] = useState('');
+  const [tagInput, setTagInput] = useState('');
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+
+  const getActiveTagFragment = (val: string) => {
+    const parts = val.split(',');
+    return parts[parts.length - 1].trim();
+  };
+
+  const handleTagChange = (val: string) => {
+    setTagInput(val);
+    const fragment = getActiveTagFragment(val).toLowerCase();
+    if (!fragment) { setTagSuggestions([]); return; }
+    const shortcut = TAG_SHORTCUTS[fragment];
+    const matched = TAG_SUGGESTIONS.filter((t) =>
+      t.toLowerCase().startsWith(fragment)
+    );
+    const list = shortcut && !matched.includes(shortcut) ? [shortcut, ...matched] : matched;
+    setTagSuggestions(list.slice(0, 5));
+  };
+
+  const applyTagSuggestion = (suggestion: string) => {
+    const parts = tagInput.split(',');
+    parts[parts.length - 1] = ' ' + suggestion;
+    const next = parts.join(',').replace(/^,\s*/, '') + ', ';
+    setTagInput(next);
+    setTagSuggestions([]);
+    tagInputRef.current?.focus();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !body.trim() || !subject.trim()) return;
+    if (!title.trim() || !body.trim() || !subject) return;
     setSubmitting(true);
     try {
       await forumService.createPost({
         title: title.trim(),
         body: body.trim(),
         subject: subject.trim(),
-        tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+        tags: tagInput.split(',').map((t) => t.trim()).filter(Boolean),
       });
       onClose();
       onCreated();
@@ -448,22 +564,46 @@ function AskModal({ onClose, onCreated }: { onClose: () => void; onCreated: () =
           </div>
           <div>
             <label className="mb-1 block text-[12px] font-semibold text-[#6B7A99]">Subject</label>
-            <input
+            <select
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="w-full rounded-[10px] border border-[#E1E6EF] px-4 py-2 text-[13px] outline-none focus:border-[#E8B84B]"
-              placeholder="e.g. Indian Polity"
+              className="w-full rounded-[10px] border border-[#E1E6EF] px-4 py-2 text-[13px] outline-none focus:border-[#E8B84B] bg-white text-[#0C1424]"
               required
-            />
+            >
+              <option value="" disabled>Select a subject...</option>
+              {UPSC_SUBJECTS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
-          <div>
-            <label className="mb-1 block text-[12px] font-semibold text-[#6B7A99]">Tags (comma separated)</label>
+          <div className="relative">
+            <label className="mb-1 block text-[12px] font-semibold text-[#6B7A99]">
+              Tags <span className="font-normal text-[#9AA3B8]">(comma separated · type P, M, C for quick tags)</span>
+            </label>
             <input
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
+              ref={tagInputRef}
+              value={tagInput}
+              onChange={(e) => handleTagChange(e.target.value)}
+              onBlur={() => setTimeout(() => setTagSuggestions([]), 150)}
               className="w-full rounded-[10px] border border-[#E1E6EF] px-4 py-2 text-[13px] outline-none focus:border-[#E8B84B]"
               placeholder="Prelims, Mains, Current Affairs"
+              autoComplete="off"
             />
+            {tagSuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-[10px] border border-[#E1E6EF] bg-white shadow-lg">
+                {tagSuggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onMouseDown={() => applyTagSuggestion(s)}
+                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-[13px] text-[#0C1424] hover:bg-[#FFF8E7]"
+                  >
+                    <span className="inline-block rounded-[4px] bg-[#FEF3C7] px-1.5 py-0.5 text-[10px] font-bold text-[#E8B84B]">TAG</span>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-[12px] font-semibold text-[#6B7A99]">Details</label>

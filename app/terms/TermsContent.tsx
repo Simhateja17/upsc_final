@@ -74,11 +74,11 @@ export default function TermsContent() {
         />
         <div className="relative z-10 mx-auto max-w-3xl px-6">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e8b84b]/30 bg-[#e8b84b]/10 px-4 py-1.5 text-xs font-medium text-[#e8b84b]">
-            Terms &amp; Policies
+            <span>📜</span> Terms &amp; Policies
           </div>
           <div className="mb-3 flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] text-amber-400/70">
             <span className="h-px w-8 bg-amber-400/30" />
-            Simple, Transparent &amp; Secure
+            A Quick Read Before You Begin.
             <span className="h-px w-8 bg-amber-400/30" />
           </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '60.80px', fontWeight: 600, lineHeight: '69.92px', color: '#fff' }}>

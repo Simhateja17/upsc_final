@@ -21,12 +21,35 @@ const tocItems = [
 
 /* ------------------------------------------------------------------ */
 
+const sectionHeadingStyle: React.CSSProperties = {
+  fontFamily: "'Cormorant Garamond', Georgia, serif",
+  fontSize: '1.6rem',
+  fontWeight: 600,
+  color: '#0c1424',
+  lineHeight: 1.25,
+  margin: '8px 0 14px',
+};
+
+const sectionNumStyle: React.CSSProperties = {
+  fontFamily: "'Cormorant Garamond', Georgia, serif",
+  fontSize: '0.8rem',
+  fontWeight: 700,
+  color: '#e8b84b',
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  marginBottom: '7px',
+};
+
+const bodyTextStyle: React.CSSProperties = {
+  fontSize: '15px',
+  color: '#374560',
+  lineHeight: 1.85,
+  marginBottom: '13px',
+  fontFamily: "'DM Sans', system-ui, sans-serif",
+};
+
 function SectionNumber({ n }: { n: string }) {
-  return (
-    <span className="font-mono text-sm text-amber-600/60 tracking-wider">
-      {n}
-    </span>
-  );
+  return <div style={sectionNumStyle}>{n}</div>;
 }
 
 function InfoBox({
@@ -124,7 +147,7 @@ export default function CookiePolicyPage() {
             {/* Section 1 */}
             <section id="sec1" className="scroll-mt-24 space-y-5">
               <SectionNumber n="01" />
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+              <h2 style={sectionHeadingStyle}>
                 What Are Cookies
               </h2>
 
@@ -135,14 +158,14 @@ export default function CookiePolicyPage() {
                 genuinely improve your experience.
               </InfoBox>
 
-              <p className="text-slate-700 leading-relaxed">
+              <p style={bodyTextStyle}>
                 When you visit RiseWithJeet, small text files called cookies may
                 be stored on your browser or device. These help the platform
                 recognise you between sessions, remember your preferences, and
                 understand how features are being used so we can keep improving
                 them.
               </p>
-              <p className="text-slate-700 leading-relaxed">
+              <p style={bodyTextStyle}>
                 We also use similar technologies like local storage and session
                 tokens for authentication purposes. In this policy, we refer to
                 all of these collectively as &ldquo;cookies&rdquo; for
@@ -153,10 +176,10 @@ export default function CookiePolicyPage() {
             {/* Section 2 */}
             <section id="sec2" className="scroll-mt-24 space-y-5">
               <SectionNumber n="02" />
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+              <h2 style={sectionHeadingStyle}>
                 What We Use and Why
               </h2>
-              <p className="text-slate-700 leading-relaxed">
+              <p style={bodyTextStyle}>
                 We keep our cookie usage lean. Here is a plain-language breakdown
                 of what we use and why:
               </p>
@@ -191,10 +214,10 @@ export default function CookiePolicyPage() {
             {/* Section 3 */}
             <section id="sec3" className="scroll-mt-24 space-y-5">
               <SectionNumber n="03" />
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+              <h2 style={sectionHeadingStyle}>
                 Cookie Reference Table
               </h2>
-              <p className="text-slate-700 leading-relaxed">
+              <p style={bodyTextStyle}>
                 A clear breakdown of every category of cookie we use:
               </p>
 
@@ -289,10 +312,10 @@ export default function CookiePolicyPage() {
             {/* Section 4 */}
             <section id="sec4" className="scroll-mt-24 space-y-5">
               <SectionNumber n="04" />
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+              <h2 style={sectionHeadingStyle}>
                 Your Choices
               </h2>
-              <p className="text-slate-700 leading-relaxed">
+              <p style={bodyTextStyle}>
                 You are always in control. Here are the ways you can manage
                 cookies on RiseWithJeet:
               </p>
@@ -327,16 +350,16 @@ export default function CookiePolicyPage() {
             {/* Section 5 */}
             <section id="sec5" className="scroll-mt-24 space-y-5">
               <SectionNumber n="05" />
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+              <h2 style={sectionHeadingStyle}>
                 Changes to This Policy
               </h2>
-              <p className="text-slate-700 leading-relaxed">
+              <p style={bodyTextStyle}>
                 If we add new cookies or change how we use existing ones, we will
                 update this page and revise the &ldquo;Last updated&rdquo; date
                 above. If the changes are significant, we will let you know
                 through the platform or by email.
               </p>
-              <p className="text-slate-700 leading-relaxed">
+              <p style={bodyTextStyle}>
                 Continued use of RiseWithJeet after an update means you are
                 comfortable with the changes. If you are not, you can manage your
                 preferences from Account Settings or reach out to us.
@@ -346,10 +369,10 @@ export default function CookiePolicyPage() {
             {/* Section 6 */}
             <section id="sec6" className="scroll-mt-24 space-y-5">
               <SectionNumber n="06" />
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+              <h2 style={sectionHeadingStyle}>
                 Contact Us
               </h2>
-              <p className="text-slate-700 leading-relaxed">
+              <p style={bodyTextStyle}>
                 If you have questions about how we use cookies or want to
                 understand more about a specific technology we use, please get in
                 touch.
@@ -374,38 +397,64 @@ export default function CookiePolicyPage() {
       {/* CTA */}
       <section className="bg-[#FAF8F4] py-16">
         <div className="mx-auto max-w-2xl px-6">
-          <div className="relative overflow-hidden rounded-2xl bg-[#090e1c] px-8 py-14 text-center">
+          <div
+            className="relative overflow-hidden rounded-[24px] px-8 py-16 text-center"
+            style={{
+              backgroundImage: 'linear-gradient(135deg, #0b1530 0%, #0f2050 100%)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              boxShadow: '0 40px 80px rgba(11,29,58,0.24)',
+            }}
+          >
             {/* Decorative overlays */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -left-20 -top-20 h-80 w-80 rounded-full"
-              style={{ background: 'radial-gradient(circle, rgba(232,184,75,0.1) 0%, transparent 65%)' }}
+              className="pointer-events-none absolute -left-20 -top-20 h-[320px] w-[320px] rounded-full"
+              style={{ background: 'rgba(232,184,75,0.06)' }}
             />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -bottom-16 -right-16 h-64 w-64 rounded-full"
-              style={{ background: 'radial-gradient(circle, rgba(26,53,96,0.5) 0%, transparent 70%)' }}
+              className="pointer-events-none absolute -bottom-[50px] -right-[82px] h-[250px] w-[250px] rounded-full"
+              style={{ background: 'rgba(46,93,179,0.08)' }}
             />
 
             <div className="relative z-10">
-              <h2 className="font-serif text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                Your UPSC Journey
+              <h2
+                style={{
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontSize: 'clamp(2rem, 3.5vw, 2.8rem)',
+                  fontWeight: 600,
+                  lineHeight: 1.2,
+                  letterSpacing: '-1.2px',
+                  color: '#fff',
+                }}
+              >
+                Questions about
                 <br />
-                Starts Today
+                <em style={{ fontStyle: 'italic', color: '#e8b84b' }}>Cookies or Privacy?</em>
               </h2>
-              <p className="mt-4 text-slate-400">
+              <p className="mx-auto mt-4 max-w-[489px]" style={{ fontSize: '16px', color: 'rgba(255,255,255,0.58)', lineHeight: 1.65 }}>
                 We keep it simple and honest. Reach out if anything is unclear.
               </p>
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
                 <a
                   href="mailto:together@risewithjeet.com"
-                  className="rounded-lg bg-amber-500 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-amber-400"
+                  className="rounded-xl px-8 py-3.5 text-[15.5px] font-bold transition hover:brightness-105 hover:-translate-y-0.5"
+                  style={{
+                    backgroundImage: 'linear-gradient(144deg, #e8b84b 0%, #b8780a 100%)',
+                    color: '#0b1530',
+                    filter: 'drop-shadow(0 8px 14px rgba(232,184,75,0.38))',
+                  }}
                 >
                   Email: together@risewithjeet.com
                 </a>
                 <Link
                   href="/contact"
-                  className="rounded-lg border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                  className="rounded-xl px-8 py-3.5 text-[15.5px] font-semibold text-white transition hover:border-white/35 hover:bg-white/10"
+                  style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(4px)',
+                  }}
                 >
                   Contact Us
                 </Link>

@@ -24,25 +24,25 @@ const Icons = {
 };
 
 const SUBJECT_COLORS: Record<string, string> = {
-  'indian-polity': '#3B82F6',
-  'geography': '#EC4899',
-  'indian-economy': '#F59E0B',
-  'modern-history': '#D97706',
-  'environment': '#10B981',
-  'science-and-tech': '#8B5CF6',
-  'gs-iv-ethics': '#6366F1',
-  'current-affairs': '#14B8A6',
+  'indian-polity':  '#EA580C', // orange
+  'modern-history': '#92400E', // brown
+  'geography':      '#0D9488', // teal
+  'indian-economy': '#7C3AED', // purple
+  'environment':    '#16A34A', // green
+  'gs-iv-ethics':   '#4F46E5', // indigo
+  'current-affairs':'#EF4444', // red
+  'science-and-tech':'#0369A1',// sky blue
 };
 
 const SUBJECT_CARD_STYLES: Record<string, { bg: string; border: string; bar: string }> = {
-  'indian-polity': { bg: 'linear-gradient(145deg, #FFF4E2 0%, #FBE9CC 100%)', border: '#F4CCA0', bar: '#EA580C' },
-  'modern-history': { bg: 'linear-gradient(145deg, #FFF7EC 0%, #FCECD8 100%)', border: '#F2CFA5', bar: '#B45309' },
-  geography: { bg: 'linear-gradient(145deg, #F4ECD2 0%, #ECE3C2 100%)', border: '#D9C88E', bar: '#1D4ED8' },
-  'indian-economy': { bg: 'linear-gradient(145deg, #F3EEFF 0%, #E7DEFF 100%)', border: '#D7C8FF', bar: '#7C3AED' },
-  environment: { bg: 'linear-gradient(145deg, #EEFBF4 0%, #DCF5E8 100%)', border: '#BCE9D1', bar: '#16A34A' },
-  'gs-iv-ethics': { bg: 'linear-gradient(145deg, #EEF4FB 0%, #E4ECF7 100%)', border: '#D1DFF0', bar: '#1D4ED8' },
-  'current-affairs': { bg: 'linear-gradient(145deg, #FFF1F2 0%, #FDE7EA 100%)', border: '#F6C6CF', bar: '#EF4444' },
-  'science-and-tech': { bg: 'linear-gradient(145deg, #E7F0FC 0%, #D7E6F8 100%)', border: '#BED4EE', bar: '#0369A1' },
+  'indian-polity':  { bg: 'linear-gradient(145deg, #FFF4E2 0%, #FBE9CC 100%)', border: '#F4CCA0', bar: '#EA580C' }, // orange
+  'modern-history': { bg: 'linear-gradient(145deg, #FDF5EB 0%, #F0E2CC 100%)', border: '#DBBF99', bar: '#92400E' }, // sepia-brown
+  geography:        { bg: 'linear-gradient(145deg, #E0F7F6 0%, #CCEEEC 100%)', border: '#99D9D6', bar: '#0D9488' }, // teal
+  'indian-economy': { bg: 'linear-gradient(145deg, #F3EEFF 0%, #E7DEFF 100%)', border: '#D7C8FF', bar: '#7C3AED' }, // purple
+  environment:      { bg: 'linear-gradient(145deg, #EEFBF4 0%, #DCF5E8 100%)', border: '#BCE9D1', bar: '#16A34A' }, // green
+  'gs-iv-ethics':   { bg: 'linear-gradient(145deg, #EEF0FF 0%, #E0E3FF 100%)', border: '#C4C9F8', bar: '#4F46E5' }, // indigo
+  'current-affairs':{ bg: 'linear-gradient(145deg, #FFF1F2 0%, #FDE7EA 100%)', border: '#F6C6CF', bar: '#EF4444' }, // red
+  'science-and-tech':{ bg: 'linear-gradient(145deg, #E0F4FF 0%, #CCE8FF 100%)', border: '#99CFEE', bar: '#0369A1' }, // sky blue
 };
 
 type SubjectData = {
@@ -122,7 +122,7 @@ export default function MindmapPage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-white rounded-[16px] h-[180px] animate-pulse" />
+              <div key={i} className="bg-white rounded-[16px] h-[176px] animate-pulse" />
             ))}
           </div>
         ) : subjects.length === 0 ? (
@@ -137,7 +137,7 @@ export default function MindmapPage() {
               const cardStyle = SUBJECT_CARD_STYLES[subject.slug] ?? { bg: '#FFFFFF', border: '#E5E7EB', bar: color };
               return (
                 <Link key={subject.slug} href={`/dashboard/mindmap/${subject.slug}`} className="block">
-                  <div className="rounded-[16px] overflow-hidden shadow-sm flex flex-col h-[172px] relative group hover:-translate-y-0.5 hover:shadow-md transition-all" style={{ background: cardStyle.bg, border: `1.5px solid ${cardStyle.border}` }}>
+                  <div className="rounded-[16px] overflow-hidden shadow-sm flex flex-col h-[176px] relative group hover:-translate-y-0.5 hover:shadow-md transition-all" style={{ background: cardStyle.bg, border: `1.5px solid ${cardStyle.border}` }}>
                     <div className="h-[4px] w-full" style={{ backgroundColor: cardStyle.bar }} />
                     <div className="p-5 flex flex-col justify-between h-full">
                       <div>

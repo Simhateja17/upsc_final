@@ -335,16 +335,17 @@ footer{background:#070b16;border-top:1px solid rgba(255,255,255,.05);padding:36p
 .tag-on{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--green-dim);color:#0f7a3e;border:1px solid var(--green-ring)}
 .tag-opt{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--gold-dim);color:#9a7000;border:1px solid var(--gold-ln)}
 .tag-no{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--surface);color:var(--t3);border:1px solid var(--b2)}
-.legal-cta{background:var(--navy);padding:72px 48px;text-align:center;position:relative;overflow:hidden}
-.legal-cta::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(232,184,75,.08) 0%,transparent 65%)}
-.legal-cta h2{font-family:var(--serif);font-size:clamp(1.8rem,3vw,2.8rem);font-weight:600;color:#fff;line-height:1.2;margin-bottom:12px;position:relative;z-index:1}
-.legal-cta h2 em{font-style:italic;color:var(--gold)}
-.legal-cta p{font-size:15px;color:rgba(255,255,255,.44);max-width:420px;margin:0 auto 26px;line-height:1.8;position:relative;z-index:1}
-.cta-row{display:flex;gap:11px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
-.btn-g{background:var(--gold);color:var(--navy);padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:var(--sans);transition:all .2s}
-.btn-g:hover{background:var(--gold-2);transform:translateY(-2px)}
-.btn-o{background:transparent;color:rgba(255,255,255,.65);padding:12px 28px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:1.5px solid rgba(255,255,255,.14);font-family:var(--sans);transition:all .2s}
-.btn-o:hover{border-color:rgba(255,255,255,.28);color:#fff}
+.legal-cta{background:linear-gradient(135deg,#0b1530 0%,#0f2050 100%);padding:80px 64px;text-align:center;position:relative;overflow:hidden;border-radius:24px;border:1px solid rgba(255,255,255,.07);box-shadow:0 40px 80px rgba(11,29,58,.24)}
+.legal-cta::before{content:'';position:absolute;top:-80px;left:-80px;width:320px;height:320px;background:rgba(232,184,75,.06);border-radius:50%}
+.legal-cta::after{content:'';position:absolute;bottom:-50px;right:-82px;width:250px;height:250px;background:rgba(46,93,179,.08);border-radius:50%}
+.legal-cta h2{font-family:var(--serif);font-size:clamp(2rem,3.5vw,2.8rem);font-weight:600;color:#fff;line-height:1.2;letter-spacing:-1.2px;margin-bottom:16px;position:relative;z-index:1}
+.legal-cta h2 em{font-style:italic;color:#e8b84b}
+.legal-cta p{font-size:16px;color:rgba(255,255,255,.58);max-width:489px;margin:0 auto 36px;line-height:1.65;position:relative;z-index:1}
+.cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
+.btn-g{background:linear-gradient(144deg,#e8b84b 0%,#b8780a 100%);color:#0b1530;padding:14px 34px;border-radius:12px;font-size:15.5px;font-weight:700;cursor:pointer;border:none;font-family:var(--sans);transition:all .2s;filter:drop-shadow(0 8px 14px rgba(232,184,75,.38))}
+.btn-g:hover{filter:drop-shadow(0 10px 18px rgba(232,184,75,.48)) brightness(1.05);transform:translateY(-2px)}
+.btn-o{background:rgba(255,255,255,.06);color:#fff;padding:14px 34px;border-radius:12px;font-size:15.5px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.2);font-family:var(--sans);transition:all .2s;backdrop-filter:blur(4px)}
+.btn-o:hover{border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.1)}
 @media(max-width:860px){
   .legal-inner{grid-template-columns:1fr;padding:0 22px}
   .toc{position:static;display:none}
@@ -520,11 +521,11 @@ footer{background:#070b16;border-top:1px solid rgba(255,255,255,.05);padding:36p
 </section>
 
 <section class="legal-cta">
-  <h2 class="r">Questions about<br/><em>cookies or privacy?</em></h2>
+  <h2 class="r">Questions about<br/><em>Cookies or Privacy?</em></h2>
   <p class="r d1">We keep it simple and honest. Reach out if anything is unclear.</p>
   <div class="cta-row r d2">
-    <button class="btn-g" onclick="window.location.href='mailto:privacy@risewithjeet.in'">Email privacy@risewithjeet.in</button>
-    <button class="btn-o" onclick="alert('Redirecting to Privacy Policy...')">Read Privacy Policy</button>
+    <button class="btn-g" onclick="window.location.href='mailto:together@risewithjeet.com'">Email: together@risewithjeet.com</button>
+    <button class="btn-o" onclick="window.location.href='/contact'">Contact Us</button>
   </div>
 </section>
 

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import LandingNav from '@/components/LandingNav';
+import DashboardHeader from '@/components/DashboardHeader';
 import Footer from '@/components/Footer';
 import { contactService } from '@/lib/services';
 
@@ -92,14 +92,14 @@ export default function ContactPage() {
   const capIcon = <img src="/help-support-icon.png" alt="help and support" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />;
   return (
     <main className="min-h-screen flex flex-col">
-      <LandingNav />
+      <DashboardHeader />
 
       <div style={{ background: '#0F131F' }}>
         <DashboardPageHero
           badgeIcon={capIcon}
           badgeText="HELP & SUPPORT"
-          backHref="/"
-          backLabel="Back to Home"
+          backHref="/dashboard"
+          backLabel="Back to Dashboard"
           rightElement={null}
           title={<>We&apos;d love to <em style={{ color: '#e8a820', fontStyle: 'italic' }}>hear from you</em></>}
           subtitle="Have a question, a doubt about your preparation, or just something you want to say? We read every message, every single one."
@@ -213,22 +213,27 @@ export default function ContactPage() {
                 <label className="mb-1.5 block text-[12px] font-semibold tracking-[0.24px] text-[#374560]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
                   What&apos;s this about?
                 </label>
-                <select
-                  required
-                  value={formData.subject}
-                  onChange={e => setFormData(p => ({ ...p, subject: e.target.value }))}
-                  className="h-[42px] w-full appearance-none rounded-[9px] border border-[rgba(11,22,40,0.17)] bg-[#FAF8F4] px-[14px] text-[14px] text-[#0C1424] outline-none"
-                  style={{ fontFamily: 'var(--font-dm-sans)' }}
-                >
-                  <option value="" disabled>
-                    Select a topic
-                  </option>
-                  {subjectOptions.map(opt => (
-                    <option key={opt} value={opt}>
-                      {opt}
+                <div className="relative">
+                  <select
+                    required
+                    value={formData.subject}
+                    onChange={e => setFormData(p => ({ ...p, subject: e.target.value }))}
+                    className="h-[42px] w-full appearance-none rounded-[9px] border border-[rgba(11,22,40,0.17)] bg-[#FAF8F4] px-[14px] pr-10 text-[14px] text-[#0C1424] outline-none"
+                    style={{ fontFamily: 'var(--font-dm-sans)' }}
+                  >
+                    <option value="" disabled>
+                      Select a topic
                     </option>
-                  ))}
-                </select>
+                    {subjectOptions.map(opt => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                  <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7A99]" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
               </div>
 
               <div>
@@ -266,38 +271,39 @@ export default function ContactPage() {
       </section>
 
       <section className="bg-[#faf8f4] py-16">
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-            {/* Left: Stay connected */}
-            <div className="rounded-2xl px-8 py-10 text-white" style={{ background: 'linear-gradient(135deg, #090E1C 0%, #0F1A33 100%)' }}>
-              <div className="mb-3 flex items-center gap-2.5">
-                <span className="h-[2px] w-6 bg-[#E8B84B]" />
-                <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#E8B84B]" style={{ fontFamily: 'var(--font-dm-sans)' }}>Stay connected</span>
-              </div>
-              <h3 className="text-2xl font-semibold leading-tight text-white" style={{ fontFamily: 'var(--font-cormorant)' }}>
-                Join the community<br />that <span className="italic text-[#E8B84B]">never stops learning</span>
-              </h3>
-              <p className="mt-4 text-sm leading-relaxed text-white/50" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                15,000+ aspirants. Daily discussions, live doubt sessions, notes, and the kind of peer support that keeps you going on the tough days.
-              </p>
-            </div>
+        <div className="mx-auto max-w-[700px] px-6">
+          <div
+            className="relative overflow-hidden rounded-[24px] px-8 py-16 text-center flex flex-col items-center justify-center"
+            style={{
+              background: 'linear-gradient(134.93deg, #0B1530 0%, #0F2050 100%)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              boxShadow: '0px 40px 80px 0px rgba(11,29,58,0.24)',
+            }}
+          >
+            {/* Decorative overlays */}
+            <div className="pointer-events-none absolute rounded-full" style={{ width: 320, height: 320, top: -80, left: -80, background: 'rgba(232,184,75,0.06)' }} />
+            <div className="pointer-events-none absolute rounded-full" style={{ width: 250, height: 250, bottom: -60, right: -60, background: 'rgba(46,93,179,0.08)' }} />
 
-            {/* Right: FAQ card */}
-            <div className="rounded-2xl px-8 py-10 text-center flex flex-col items-center justify-center" style={{ background: 'linear-gradient(135deg, #0c1830 0%, #111d3a 100%)' }}>
-              <h3 className="text-2xl font-medium text-white" style={{ fontFamily: 'var(--font-cormorant)' }}>
-                Looking for <em className="italic text-[#E8B84B]">quick answers?</em>
-              </h3>
-              <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/60" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                Most common questions about the platform, pricing, AI tools, and mentorship are answered in our FAQ section.
-              </p>
-              <a
-                href="/faq"
-                className="mt-6 inline-flex h-11 items-center gap-1 rounded-lg bg-[#E8B84B] px-6 text-sm font-semibold text-[#090E1C]"
-                style={{ fontFamily: 'var(--font-dm-sans)' }}
-              >
-                Browse FAQ <span aria-hidden="true">-&gt;</span>
-              </a>
-            </div>
+            <h3
+              className="relative text-white text-center tracking-[-0.024em]"
+              style={{ fontFamily: 'var(--font-cormorant-garamond), Georgia, serif', fontSize: 50, fontWeight: 700, lineHeight: '54px', WebkitFontSmoothing: 'antialiased' }}
+            >
+              Looking for{' '}
+              <em style={{ fontStyle: 'italic', color: '#E8B84B' }}>quick answers?</em>
+            </h3>
+            <p
+              className="relative mt-5 max-w-[489px] text-center"
+              style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 16, lineHeight: '26.4px', color: 'rgba(255,255,255,0.58)' }}
+            >
+              Most common questions about the platform, pricing, AI tools, and mentorship are answered in our FAQ section.
+            </p>
+            <a
+              href="/faq"
+              className="relative mt-8 inline-flex items-center gap-2 rounded-[10px] font-semibold text-[#0f172b]"
+              style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 16, lineHeight: '24px', background: '#f0b100', height: 48, paddingLeft: 24, paddingRight: 24 }}
+            >
+              Browse FAQ →
+            </a>
           </div>
         </div>
       </section>

@@ -324,7 +324,7 @@ export default function FAQContent() {
           }
         });
       },
-      { threshold: 0.25 }
+      { rootMargin: '-10% 0px -80% 0px', threshold: 0 }
     );
 
     Object.values(sectionRefs.current).forEach((ref) => {

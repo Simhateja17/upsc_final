@@ -12,7 +12,7 @@ function BillingHero() {
     <div
       className="relative overflow-hidden flex flex-col items-center justify-center"
       style={{
-        background: 'linear-gradient(180deg, #0B1428 0%, #0F1C35 100%)',
+        background: 'linear-gradient(180deg, #090E1C 0%, #10192F 100%)',
         minHeight: 260,
         padding: '40px 24px 44px',
       }}
@@ -631,8 +631,9 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
       '25 Mains AI Evaluations / day',
       '25 Mock Test attempts / day',
       'Full Performance Analytics Dashboard',
-      'Full Revision Suite – Flashcards, Mindmaps',
-      'Jeet AI – 100 conversations / day',
+      'Full Revision Suite – Flashcards, Mindmaps, Spaced Rep.',
+      'Jeet AI – 50 conversations / day',
+      'Smart Syllabus Tracker',
       'Live Study Room 24×7',
     ],
     cycles: {
@@ -644,21 +645,20 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
   ascent: {
     name: 'Ascent',
     badge: 'Ascent Plan',
-    description: 'The complete ecosystem for focused, daily UPSC preparation.',
+    description: 'Unlimited tools, personalised mentorship. For aspirants who leave nothing to chance.',
     features: [
-      'Unlimited Mains Evaluation and Mock Tests',
+      'Unlimited Mains Evaluations & Mock Tests',
       'Jeet AI – Unlimited conversations',
-      'Weekly 1-on-1 Mentorship (30 minutes)',
+      'Weekly 1-on-1 Mentorship Sessions',
       'Personalised Study Roadmap',
-      'Dedicated Q&A – Priority Responses',
+      'Dedicated Q&A – Quick Responses',
       'Monthly Performance Review Call',
-      'Exclusive Ascent Community',
       'Early Access to New Features',
     ],
     cycles: {
-      monthly:   { label: 'Monthly',   total: '999.00',  perMonth: '999', save: '',         duration: '1 month',   gstStrike: '179.82'  },
-      quarterly: { label: 'Quarterly', total: '2397.00', perMonth: '799', save: 'Save 20%', duration: '3 months',  gstStrike: '479.46'  },
-      yearly:    { label: 'Yearly',    total: '7188.00', perMonth: '599', save: 'Save 40%', duration: '12 months', gstStrike: '1437.60' },
+      monthly:   { label: 'Monthly',   total: '1999.00', perMonth: '1999', save: '',         duration: '1 month',   gstStrike: '304.93'  },
+      quarterly: { label: 'Quarterly', total: '4797.00', perMonth: '1599', save: 'Save 20%', duration: '3 months',  gstStrike: '732.59'  },
+      yearly:    { label: 'Yearly',    total: '14388.00', perMonth: '1199', save: 'Save 40%', duration: '12 months', gstStrike: '2194.78' },
     },
   },
 };
@@ -671,8 +671,37 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
   const plan = PLAN_CONFIGS[planKey];
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [coupon, setCoupon] = useState('');
+  const [couponStatus, setCouponStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponMessage, setCouponMessage] = useState('');
   const [isPaying, setIsPaying] = useState(false);
   const [paymentError, setPaymentError] = useState('');
+
+  const VALID_COUPONS: Record<string, { discount: number; label: string }> = {
+    'RISE10': { discount: 10, label: '10% off applied!' },
+    'JEET20': { discount: 20, label: '20% off applied!' },
+    'UPSC15': { discount: 15, label: '15% off applied!' },
+    'WELCOME25': { discount: 25, label: '25% off applied!' },
+  };
+
+  const applyCoupon = () => {
+    const code = coupon.trim().toUpperCase();
+    if (!code) {
+      setCouponStatus('invalid');
+      setCouponMessage('Please enter a coupon code.');
+      return;
+    }
+    const found = VALID_COUPONS[code];
+    if (found) {
+      setCouponStatus('valid');
+      setCouponDiscount(found.discount);
+      setCouponMessage(found.label);
+    } else {
+      setCouponStatus('invalid');
+      setCouponDiscount(0);
+      setCouponMessage('Invalid or expired coupon code.');
+    }
+  };
   const [step, setStep] = useState<CheckoutStep>('checkout');
   const [successData, setSuccessData] = useState<SuccessData | null>(null);
   const [failureData, setFailureData] = useState<FailureData | null>(null);
@@ -994,7 +1023,7 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#16A34A', fontSize: 11, fontWeight: 600 }}>
               <span aria-hidden="true">🛡️</span>
-              <span>7-Day Money-Back Guarantee</span>
+              <span>3-Day Money-Back Guarantee</span>
             </div>
           </div>
 
@@ -1010,29 +1039,36 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
               <span style={{ fontSize: 12, color: '#475569' }}>GST (18% Included)</span>
               <span style={{ fontSize: 12, color: '#94A3B8', textDecoration: 'line-through' }}>₹{active.gstStrike}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: 12, color: '#16A34A', fontWeight: 600 }}>7-Day Money-Back Guarantee</span>
-              <span style={{ fontSize: 12, color: '#16A34A', fontWeight: 600 }}>✓ Included</span>
-            </div>
             <div style={{ height: 1, background: 'rgba(176,127,0,0.18)', marginBottom: 8 }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172B' }}>Total Payable</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#0F172B' }}>₹{active.total}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#0F172B' }}>
+                {couponDiscount > 0
+                  ? `₹${Math.round(Number(active.total) * (1 - couponDiscount / 100))}`
+                  : `₹${active.total}`}
+              </span>
             </div>
+            {couponDiscount > 0 && (
+              <div style={{ marginTop: 4, fontSize: 11, color: '#16A34A', fontWeight: 600 }}>
+                You save ₹{Math.round(Number(active.total) * couponDiscount / 100)} with coupon
+              </div>
+            )}
           </div>
 
           {/* Coupon */}
           <label style={{ display: 'block', marginBottom: 5, fontSize: 12, fontWeight: 600, color: '#0F172B' }}>
             Coupon Code / Referral Code
           </label>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
             <input
               type="text"
               value={coupon}
-              onChange={(e) => setCoupon(e.target.value.toUpperCase())}
+              onChange={(e) => { setCoupon(e.target.value.toUpperCase()); setCouponStatus('idle'); setCouponMessage(''); setCouponDiscount(0); }}
+              onKeyDown={(e) => e.key === 'Enter' && applyCoupon()}
               placeholder="ENTER CODE"
               style={{
-                flex: 1, height: 36, borderRadius: 8, border: '1px solid #E2E8F0',
+                flex: 1, height: 36, borderRadius: 8,
+                border: `1px solid ${couponStatus === 'valid' ? '#16A34A' : couponStatus === 'invalid' ? '#DC2626' : '#E2E8F0'}`,
                 padding: '0 10px', fontSize: 12, color: '#0F172B',
                 outline: 'none', letterSpacing: '0.4px',
                 fontFamily: 'Inter, system-ui, sans-serif',
@@ -1040,6 +1076,7 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
             />
             <button
               type="button"
+              onClick={applyCoupon}
               style={{
                 minWidth: 72, height: 36, borderRadius: 8, border: '1px solid #E2E8F0',
                 background: '#FFFFFF', color: '#0F172B',
@@ -1049,6 +1086,12 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
               Apply
             </button>
           </div>
+          {couponMessage && (
+            <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 600, color: couponStatus === 'valid' ? '#16A34A' : '#DC2626' }}>
+              {couponStatus === 'valid' ? '✓' : '✕'} {couponMessage}
+            </p>
+          )}
+          {!couponMessage && <div style={{ marginBottom: 12 }} />}
 
           {/* CTA */}
           <button
@@ -1175,12 +1218,12 @@ export default function ExplorePlansPage() {
                 {[
                   { text: 'Daily MCQ Challenge', limited: false },
                   { text: 'Daily Mains Challenge', limited: false },
-                  { text: 'Daily News Analysis – Hindu & IE', limited: false },
+                  { text: 'Daily News Analysis – The Hindu & IE', limited: false },
                   { text: '10,000+ Previous Year Questions', limited: false },
-                  { text: '2 Mains Evaluations / day', limited: false },
-                  { text: 'Jeet AI – 10 conversations / day', limited: false },
+                  { text: 'Jeet AI – 5 conversations / day', limited: false },
                   { text: 'Study Planner & Time Tracker', limited: false },
-                  { text: 'Daily Leaderboard & Discussion Forum', limited: false },
+                  { text: 'Daily Leaderboard', limited: false },
+                  { text: 'Discussion Forum', limited: false },
                   { text: 'Mental Health Buddy', limited: false },
                   { text: 'Mock Tests – Limited access', limited: true },
                   { text: 'Revision Suite – Limited access', limited: true },
@@ -1225,9 +1268,9 @@ export default function ExplorePlansPage() {
                 <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>Everything in Aspire, plus:</span>
               </div>
               {[
-                { title: 'EVALUATION', items: ['25 Mains Evaluations / day', '25 Mock Test attempts / day'] },
-                { title: 'ANALYTICS', items: ['Full Performance Analytics Dashboard', 'Test Analytics – In-depth insights'] },
-                { title: 'REVISION TOOLS', items: ['Full Revision Suite – Flashcards, Mindmaps, Spaced Rep.', 'Jeet AI – 100 conversations / day', 'Live Study Room 24×7', 'Smart Syllabus Tracker'] },
+                { title: 'EVALUATION', items: ['25 Mains Evaluations / day', '25 Mock Test attempts / day', 'Jeet AI – 50 conversations / day'] },
+                { title: 'ANALYTICS', items: ['Full Performance Analytics Dashboard', 'Comprehensive Test Analytics'] },
+                { title: 'REVISION & AI TOOLS', items: ['Full Revision Suite – Flashcards, Mindmap, Spaced Repetition, Smart Notes', 'Smart Syllabus Tracker', 'Live Study Room'] },
               ].map((section) => (
                 <div key={section.title} style={{ marginBottom: 12 }}>
                   <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 800, letterSpacing: '1.6px', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>{section.title}</p>
@@ -1243,7 +1286,7 @@ export default function ExplorePlansPage() {
                 Unlock Rise Now →
               </button>
               <p style={{ margin: '10px 0 0', fontSize: 11, color: '#22C55E', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                ← 7-day money-back guarantee, no questions asked
+                3-day money-back guarantee, no questions asked
               </p>
             </div>
           </article>
@@ -1258,12 +1301,12 @@ export default function ExplorePlansPage() {
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
                 <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>
-                  ₹{cycle === 'monthly' ? '999' : cycle === 'quarterly' ? '799' : '599'}
+                  ₹{cycle === 'monthly' ? '1,999' : cycle === 'quarterly' ? '1,599' : '1,199'}
                 </span>
                 <span style={{ fontSize: 13, color: '#9AA3B8', paddingBottom: 6, fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
               </div>
               <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9AA3B8', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? '₹2,397 every 3 months - Save 20%' : '₹7,188 yearly - Save 40%'}
+                {cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? '₹4,797 every 3 months – Save 20%' : '₹14,388 yearly – Save 40%'}
               </p>
               <div style={{ height: 1, background: '#F0EDE8', margin: '20px 0' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -1272,7 +1315,7 @@ export default function ExplorePlansPage() {
               </div>
               {[
                 { title: 'EVALUATION', items: ['Unlimited Mains Evaluations', 'Unlimited Mock Test practice', 'Jeet AI – Unlimited conversations'] },
-                { title: 'MENTOR-LED GROWTH', items: ['Weekly 1-on-1 mentorship (30 min)', 'Personalised Study Roadmap', 'Dedicated Q&A – Priority Responses', 'Monthly Performance Review Call', 'Exclusive Ascent Community', 'Early Access to New Features'] },
+                { title: 'MENTOR-LED GROWTH', items: ['Weekly 1-on-1 mentorship sessions', 'Personalised Study Roadmap', 'Dedicated Q&A with Quick Responses', 'Monthly Performance Review Call', 'Early Access to New Features'] },
               ].map((section) => (
                 <div key={section.title} style={{ marginBottom: 12 }}>
                   <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 800, letterSpacing: '1.6px', color: '#9AA3B8', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>{section.title}</p>
@@ -1288,7 +1331,7 @@ export default function ExplorePlansPage() {
                 Get Ascent Plan→
               </button>
               <p style={{ margin: '10px 0 0', fontSize: 11, color: '#22C55E', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                ← 7-day money-back guarantee included
+                3-day money-back guarantee included
               </p>
             </div>
           </article>
@@ -1299,7 +1342,7 @@ export default function ExplorePlansPage() {
         <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12, paddingBottom: 8 }}>
           {[
             { icon: '🔒', text: 'Secure Payments' },
-            { icon: '↩', text: '7-Day Money-Back Guarantee' },
+            { icon: '↩', text: '3-Day Money-Back Guarantee' },
             { icon: '✕', text: 'Cancel Anytime' },
             { icon: '👥', text: '15,000+ UPSC aspirants' },
           ].map((item) => (
@@ -1354,21 +1397,23 @@ export default function ExplorePlansPage() {
                   { feature: 'Daily Mains Challenge', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
                   { feature: 'Daily News Analysis', sub: 'The Hindu & Indian Express', aspire: '✓', rise: '✓', ascent: '✓' },
                   { feature: 'Daily Leaderboard', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
-                  { feature: 'Mains Evaluations', sub: 'Instant UPSC marking scheme feedback', aspire: '2 / day', rise: '25 / day', ascent: 'Unlimited' },
+                  { feature: 'Discussion Forum', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
+                  { feature: 'Mental Health Buddy', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
                   { feature: '10,000+ Previous Year Questions', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
+                  { feature: 'Study Planner & Time Tracker', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
+                  { feature: 'Mains Evaluations', sub: 'Instant UPSC marking scheme feedback', aspire: '–', rise: '25 / day', ascent: 'Unlimited' },
                   { feature: 'Mock Test Attempts', sub: 'Full-length Prelims & Mains simulations', aspire: 'Limited', rise: '25 / day', ascent: 'Unlimited' },
-                  { feature: 'Syllabus Tracker', sub: 'Personalized UPSC Syllabus Mapping', aspire: 'Limited', rise: 'Unlimited', ascent: 'Unlimited' },
-                  { feature: 'Jeet AI Conversations', sub: 'UPSC-preparation partner', aspire: '10 / day', rise: '100 / day', ascent: 'Unlimited' },
+                  { feature: 'Jeet AI Conversations', sub: 'UPSC-preparation partner', aspire: '5 / day', rise: '50 / day', ascent: 'Unlimited' },
                   { feature: 'Performance Analytics Dashboard', sub: '', aspire: 'Limited', rise: '✓', ascent: '✓' },
                   { feature: 'Test Analytics', sub: 'Deep score breakdowns', aspire: '–', rise: '✓', ascent: '✓' },
                   { feature: 'Revision Suite', sub: 'Flashcards, Mindmaps, Spaced Repetition', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
-                  { feature: 'Discussion Forum', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
-                  { feature: 'Live Study Room 24×7', sub: '', aspire: 'Limited', rise: '✓', ascent: '✓' },
-                  { feature: 'Mental Health Buddy', sub: '', aspire: '✓', rise: '✓', ascent: '✓' },
-                  { feature: 'Weekly 1-on-1 Mentorship', sub: '30 minutes per session', aspire: '–', rise: '–', ascent: 'Weekly' },
+                  { feature: 'Smart Syllabus Tracker', sub: 'Personalized UPSC Syllabus Mapping', aspire: '–', rise: '✓', ascent: '✓' },
+                  { feature: 'Live Study Room', sub: '', aspire: '–', rise: '✓', ascent: '✓' },
+                  { feature: 'Weekly 1-on-1 Mentorship', sub: 'Personalised sessions with Jeet', aspire: '–', rise: '–', ascent: 'Weekly' },
                   { feature: 'Personalised Study Roadmap', sub: '', aspire: '–', rise: '–', ascent: '✓' },
-                  { feature: 'Dedicated Q&A Priority Responses', sub: '', aspire: '–', rise: '–', ascent: '✓' },
+                  { feature: 'Dedicated Q&A – Quick Responses', sub: '', aspire: '–', rise: '–', ascent: '✓' },
                   { feature: 'Monthly Performance Review Call', sub: '', aspire: '–', rise: '–', ascent: '✓' },
+                  { feature: 'Early Access to New Features', sub: '', aspire: '–', rise: '–', ascent: '✓' },
                 ] as { feature: string; sub: string; aspire: string; rise: string; ascent: string }[]).map((row, i) => {
                   const cellStyle = (val: string, isRise = false): React.CSSProperties => ({
                     padding: '13px 16px',
@@ -1540,11 +1585,11 @@ export default function ExplorePlansPage() {
             const faqs = [
               { q: 'Is Aspire really free forever?', a: 'Yes! Aspire is completely free with no expiry date, no credit card required, and no hidden charges. You get access to daily MCQs, mains challenge, current affairs, and more.' },
               { q: "What's the difference between Rise and Ascent?", a: 'Rise gives you unlimited AI evaluations, full analytics, and the complete revision suite. Ascent adds weekly 1-on-1 mentorship, a personalised roadmap, priority Q&A support, and monthly performance review calls.' },
-              { q: 'Is there a money-back guarantee?', a: 'Yes. All paid plans come with a 7-day money-back guarantee, no questions asked. Just reach out to our support team within 7 days of purchase.' },
+              { q: 'Is there a money-back guarantee?', a: 'Yes. All paid plans come with a 3-day money-back guarantee, no questions asked. Just reach out to our support team within 3 days of purchase.' },
               { q: 'How much do I save on quarterly & yearly plans?', a: 'Quarterly plans save you ~10% compared to monthly billing. Yearly plans give you up to 40% off – the best value for committed aspirants.' },
               { q: 'Can I upgrade or cancel anytime?', a: 'Absolutely. You can upgrade, downgrade, or cancel your subscription at any time from your billing page. No lock-ins, no penalties.' },
               { q: 'How does AI Mains Evaluation work?', a: 'Our AI evaluates your mains answers using UPSC-style marking schemes – checking structure, content, presentation, and relevance – and gives you detailed feedback within seconds.' },
-              { q: 'What is the refund policy?', a: 'We offer a 7-day full refund on all paid plans. After 7 days, refunds are handled case-by-case. Contact our billing team for assistance.' },
+              { q: 'What is the refund policy?', a: 'We offer a 3-day full refund on all paid plans. After 3 days, refunds are handled case-by-case. Contact our billing team for assistance.' },
               { q: 'Is this suitable for first-attempt aspirants?', a: 'Absolutely. Aspire is designed for beginners building their foundation. As you progress, Rise and Ascent provide deeper tools for serious, exam-ready preparation.' },
             ];
             const left = faqs.filter((_, i) => i % 2 === 0);

@@ -158,6 +158,31 @@ export default function StudyGroupsPage() {
   const pomoTotalForMode = pomoMode === 'focus' ? focusMinutes * 60 : BREAK_SECONDS;
   const pomoProgress = 1 - pomoSecondsLeft / pomoTotalForMode;
 
+  // Today's Study Tasks – persisted per day in localStorage
+  interface StudyTask { id: string; text: string; done: boolean; }
+  const tasksDayKey = `rwj_study_tasks_${new Date().toISOString().slice(0, 10)}`;
+  const [studyTasks, setStudyTasks] = useState<StudyTask[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try { return JSON.parse(localStorage.getItem(tasksDayKey) || '[]'); } catch { return []; }
+  });
+  const [newTaskInput, setNewTaskInput] = useState('');
+
+  const persistTasks = (tasks: StudyTask[]) => {
+    if (typeof window !== 'undefined') localStorage.setItem(tasksDayKey, JSON.stringify(tasks));
+  };
+  const toggleTask = (id: string) => {
+    const updated = studyTasks.map((t) => t.id === id ? { ...t, done: !t.done } : t);
+    setStudyTasks(updated); persistTasks(updated);
+  };
+  const taskInputRef = useRef<HTMLInputElement>(null);
+  const addTask = () => {
+    const text = newTaskInput.trim();
+    if (!text) return;
+    const updated = [...studyTasks, { id: Date.now().toString(), text, done: false }];
+    setStudyTasks(updated); persistTasks(updated);
+    setNewTaskInput('');
+  };
+
   const fetchGroups = useCallback(async () => {
     try {
       const res = await studyGroupService.getGroups();
@@ -488,10 +513,6 @@ export default function StudyGroupsPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 text-[11px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">
-                  🍅 Pomodoro · Session {pomoSession} of 4
-                </div>
-
                 {/* Controls */}
                 <div className="mt-6 flex items-center gap-3">
                   <button
@@ -541,6 +562,127 @@ export default function StudyGroupsPage() {
                     Your Time Today
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Today's Study Tasks */}
+            <div
+              className="mt-5 bg-white"
+              style={{
+                borderRadius: 16,
+                border: '1px solid rgba(11,22,40,0.09)',
+                padding: '41px 25px 25px',
+              }}
+            >
+              {/* Header */}
+              <div className="mb-4 flex items-center justify-between">
+                <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 13, color: '#0C1424', margin: 0 }}>
+                  📋 Today&apos;s Study Tasks
+                </h3>
+                <button
+                  onClick={() => taskInputRef.current?.focus()}
+                  style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 13, color: '#C99730', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  + Add Task
+                </button>
+              </div>
+
+              {studyTasks.length === 0 && (
+                <p style={{ fontSize: 13, color: '#9AA3B8', marginBottom: 12 }}>No tasks yet. Add one below to track your session goals.</p>
+              )}
+
+              {/* Task list */}
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {studyTasks.map((task) => (
+                  <li
+                    key={task.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      paddingTop: 9,
+                      paddingBottom: 10,
+                      borderBottom: '1px solid rgba(11,22,40,0.09)',
+                    }}
+                  >
+                    <button
+                      onClick={() => toggleTask(task.id)}
+                      style={{
+                        flexShrink: 0,
+                        width: 20,
+                        height: 20,
+                        borderRadius: 5,
+                        border: task.done ? '1px solid #22C55E' : '1px solid rgba(11,22,40,0.17)',
+                        background: task.done ? '#22C55E' : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0,
+                        transition: 'background 0.15s, border-color 0.15s',
+                      }}
+                    >
+                      {task.done && (
+                        <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                          <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </button>
+                    <span
+                      style={{
+                        fontFamily: 'DM Sans, sans-serif',
+                        fontSize: 13,
+                        fontWeight: 400,
+                        color: task.done ? '#9AA3B8' : '#374560',
+                        textDecoration: task.done ? 'line-through' : 'none',
+                      }}
+                    >
+                      {task.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Input row */}
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  ref={taskInputRef}
+                  type="text"
+                  placeholder="Add a task for this session..."
+                  value={newTaskInput}
+                  onChange={(e) => setNewTaskInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') addTask(); }}
+                  style={{
+                    flex: 1,
+                    background: '#FAF8F4',
+                    border: '1px solid rgba(11,22,40,0.09)',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    fontFamily: 'DM Sans, sans-serif',
+                    fontSize: 13,
+                    color: '#0C1424',
+                    outline: 'none',
+                  }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(232,184,75,0.5)'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(11,22,40,0.09)'; }}
+                />
+                <button
+                  onClick={addTask}
+                  style={{
+                    background: 'rgba(232,184,75,0.12)',
+                    border: '1px solid rgba(232,184,75,0.30)',
+                    borderRadius: 8,
+                    padding: '8px 16px',
+                    fontFamily: 'DM Sans, sans-serif',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    color: '#C99730',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Add
+                </button>
               </div>
             </div>
           </section>
@@ -772,8 +914,18 @@ export default function StudyGroupsPage() {
 
       {/* Create Group Modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-[520px] rounded-[20px] bg-[#F4F6FA] p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setShowCreate(false)}>
+          <div className="relative w-full max-w-[520px] rounded-[20px] bg-[#F4F6FA] p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Close button */}
+            <button
+              onClick={() => setShowCreate(false)}
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-[#6B7A99] transition hover:bg-[#E1E6EF] hover:text-[#0C1424]"
+              aria-label="Close"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </button>
             {/* Header */}
             <div className="mb-6">
               <div className="flex items-center gap-2">
@@ -805,59 +957,18 @@ export default function StudyGroupsPage() {
                 />
               </div>
 
-              {/* Focus Topic */}
+              {/* Group Rules */}
               <div>
                 <label className="mb-2 block text-[11px] font-bold uppercase tracking-[1px] text-[#6B7A99]">
-                  Focus Topic <span className="font-normal normal-case text-[#9CA3AF]">(Optional)</span>
+                  Group Rules <span className="font-normal normal-case text-[#9CA3AF]">(Optional)</span>
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  rows={3}
                   value={createForm.focusTopic || ''}
                   onChange={(e) => setCreateForm((p) => ({ ...p, focusTopic: e.target.value }))}
-                  placeholder="e.g., GS2 – Parliament & Governance"
-                  className="w-full rounded-[12px] border border-[#DDE3EC] bg-white px-4 py-3 text-[14px] text-[#0C1424] outline-none placeholder:text-[#9CA3AF] focus:border-[#E8B84B]"
+                  placeholder="Describe the group, its purpose, rules, joining criteria, expectations from members, and include a motivational welcome message for aspirants."
+                  className="w-full resize-none rounded-[12px] border border-[#DDE3EC] bg-white px-4 py-3 text-[14px] text-[#0C1424] outline-none placeholder:text-[#9CA3AF] focus:border-[#E8B84B]"
                 />
-              </div>
-
-              {/* Subjects */}
-              <div>
-                <label className="mb-3 block text-[11px] font-bold uppercase tracking-[1px] text-[#6B7A99]">
-                  Subjects <span className="font-normal normal-case text-[#9CA3AF]">(Optional)</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { label: 'Indian Polity', icon: '🏛️', value: 'Polity' },
-                    { label: 'History', icon: '📜', value: 'History' },
-                    { label: 'Geography', icon: '🌍', value: 'Geography' },
-                    { label: 'Economy', icon: '💰', value: 'Economy' },
-                    { label: 'Environment', icon: '🌿', value: 'Environment' },
-                    { label: 'Science & Tech', icon: '🔬', value: 'Sci & Tech' },
-                    { label: 'Current Affairs', icon: '📰', value: 'Current Affairs' },
-                    { label: 'Ethics', icon: '⚖️', value: 'Ethics' },
-                  ].map((subject) => {
-                    const isSelected = createForm.subjects?.includes(subject.value);
-                    return (
-                      <button
-                        key={subject.value}
-                        onClick={() => {
-                          const current = createForm.subjects || [];
-                          const updated = isSelected
-                            ? current.filter((s: string) => s !== subject.value)
-                            : [...current, subject.value];
-                          setCreateForm((p) => ({ ...p, subjects: updated }));
-                        }}
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] font-medium transition-colors ${
-                          isSelected
-                            ? 'border-[#E8B84B] bg-[#E8B84B]/10 text-[#C99730]'
-                            : 'border-[#DDE3EC] bg-white text-[#6B7A99] hover:border-[#C99730]'
-                        }`}
-                      >
-                        <span>{subject.icon}</span>
-                        <span>{subject.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
 
               {/* Capacity & Daily Time Goal */}
