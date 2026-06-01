@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { dailyMcqService } from '@/lib/services';
-import ConfettiBurst from '@/components/ConfettiBurst';
 
 interface Question {
   id: string;
@@ -16,17 +15,29 @@ interface Question {
   explanation: string | null;
 }
 
+interface TodayMCQInfo {
+  id: string;
+  title: string;
+  topic: string;
+  tags: string[];
+  questionCount: number;
+  timeLimit: number;
+  totalMarks: number;
+  attempted: boolean;
+}
+
 const FIXED_TIME_LIMIT_MINUTES = 10;
 
 function normalizeQuestionText(text: string): string {
   return text
-    .replace(/[––]/g, '-')
+    .replace(/[–—]/g, '-')
     .replace(/\s+(\d+\.)\s+/g, '\n$1 ')
     .replace(/\s+-\s+/g, ' ');
 }
 
 export default function DailyMcqChallengePage() {
   const router = useRouter();
+  const [mcqInfo, setMcqInfo] = useState<TodayMCQInfo | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [timeLimit, setTimeLimit] = useState(FIXED_TIME_LIMIT_MINUTES);
   const [loading, setLoading] = useState(true);
@@ -35,39 +46,45 @@ export default function DailyMcqChallengePage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [error, setError] = useState('');
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
 
+  // Load MCQ info first to check if already attempted
   useEffect(() => {
-    dailyMcqService.getQuestions()
+    dailyMcqService.getToday()
       .then((res) => {
-        const nextQuestions = res.data.questions || [];
-        if (nextQuestions.length !== 10) {
-          setError(`Today's challenge is not ready yet. Expected 10 questions, found ${nextQuestions.length}.`);
+        setMcqInfo(res.data);
+        if (res.data?.attempted) {
           return;
         }
-        setQuestions(nextQuestions);
+        // Not attempted yet — load questions
+        return dailyMcqService.getQuestions();
+      })
+      .then((res) => {
+        if (!res) return;
+        const questionsData = res.data.questions || [];
+        // Ensure we have at least some questions before proceeding
+        if (questionsData.length === 0) {
+          console.error('No questions available for today');
+          return;
+        }
+        setQuestions(questionsData);
         setTimeLimit(FIXED_TIME_LIMIT_MINUTES);
         setTimeLeft(FIXED_TIME_LIMIT_MINUTES * 60);
         startTimeRef.current = Date.now();
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Unable to load today's MCQ challenge."))
+      .catch((err) => {
+        console.error('Failed to load MCQ:', err);
+        router.push('/dashboard/daily-mcq');
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
-  const handleSubmit = useCallback(async (skipUnansweredConfirm = false) => {
+  const handleSubmit = useCallback(async () => {
     if (submitting || submitted) return;
-    const unansweredCount = questions.filter((q) => !answers[q.id]).length;
-    if (unansweredCount > 0 && !skipUnansweredConfirm) {
-      const shouldSubmit = window.confirm(
-        `${unansweredCount} question${unansweredCount === 1 ? ' is' : 's are'} unanswered. Submit anyway?`
-      );
-      if (!shouldSubmit) return;
-    }
-
     setSubmitting(true);
+    setSubmitError(null);
     if (timerRef.current) clearInterval(timerRef.current);
 
     const rawTimeTaken = Math.round((Date.now() - startTimeRef.current) / 1000);
@@ -80,23 +97,27 @@ export default function DailyMcqChallengePage() {
     try {
       await dailyMcqService.submit(answerArray, timeTaken);
       setSubmitted(true);
-      const correct = questions.filter((qu) => answers[qu.id] && answers[qu.id] === qu.correctOption).length;
-      if (questions.length > 0 && correct / questions.length > 0.5) {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 3500);
+      router.push('/dashboard/daily-mcq/results');
+    } catch (err: any) {
+      const msg = err.message || '';
+      if (msg.includes('already submitted') || msg.includes('already attempted')) {
+        setSubmitError('You have already attempted today\'s MCQ.');
+        // Redirect to results after a brief delay
+        setTimeout(() => router.push('/dashboard/daily-mcq/results'), 1500);
+      } else {
+        setSubmitError(msg);
+        setSubmitting(false);
       }
-    } finally {
-      setSubmitting(false);
     }
-  }, [answers, questions, submitted, submitting, timeLimit]);
+  }, [answers, questions, submitted, submitting, timeLimit, router]);
 
   useEffect(() => {
-    if (loading || submitted || timeLeft <= 0) return;
+    if (loading || submitted || timeLeft <= 0 || mcqInfo?.attempted) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           if (timerRef.current) clearInterval(timerRef.current);
-          handleSubmit(true);
+          handleSubmit();
           return 0;
         }
         return prev - 1;
@@ -106,58 +127,78 @@ export default function DailyMcqChallengePage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [handleSubmit, loading, submitted, timeLeft]);
+  }, [handleSubmit, loading, submitted, timeLeft, mcqInfo]);
 
   const handleSelectAnswer = (questionId: string, optionId: string) => {
     if (submitted) return;
     setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
   };
 
+  // Already attempted screen
+  if (!loading && mcqInfo?.attempted) {
+    return (
+      <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#E8EDF5' }}>
+        <div style={{ maxWidth: '600px', width: '100%', padding: '40px', background: '#FFFFFF', borderRadius: '16px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
+          <h1 className="font-arimo font-bold text-[#101828] mb-3" style={{ fontSize: '24px' }}>
+            You have already attempted today&apos;s MCQ
+          </h1>
+          <p className="font-arimo text-[#4A5565] mb-8" style={{ fontSize: '15px' }}>
+            Come back tomorrow for a new challenge, or review your performance below.
+          </p>
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <button
+              onClick={() => router.push('/dashboard/daily-mcq/review')}
+              className="bg-[#00A63E] text-white rounded-lg hover:bg-[#008C35] transition-colors font-arimo font-bold"
+              style={{ padding: '12px 28px', fontSize: '15px' }}>
+              View Analysis
+            </button>
+            <button
+              onClick={() => router.push('/dashboard/daily-mcq/next-steps')}
+              className="bg-[#17223E] text-white rounded-lg hover:bg-[#1E2875] transition-colors font-arimo font-bold"
+              style={{ padding: '12px 28px', fontSize: '15px' }}>
+              View Smart Next Steps
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
+      <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#E8EDF5' }}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
   const q = questions[currentQuestion];
-  if (error || !q) {
-    return (
-      <div className="flex flex-col items-center justify-center px-6 text-center" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
-        <div className="max-w-md rounded-2xl border border-red-100 bg-white p-6 shadow-sm">
-          <h1 className="font-arimo text-xl font-bold text-[#101828]">Daily MCQ Challenge unavailable</h1>
-          <p className="mt-3 text-sm leading-6 text-[#667085]">{error || "Unable to load today's questions."}</p>
-          <button
-            className="mt-5 rounded-lg bg-[#17223E] px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-[#1E2875]"
-            onClick={() => router.push('/dashboard/daily-mcq')}
-          >
-            Back to Daily MCQ
-          </button>
-        </div>
+  if (!q) return (
+    <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#E8EDF5' }}>
+      <div className="text-center">
+        <h2 className="font-arimo font-bold text-[#101828] mb-2" style={{ fontSize: '20px' }}>No questions available</h2>
+        <p className="font-arimo text-[#4A5565] mb-4">Please check back later or contact support.</p>
+        <button onClick={() => router.push('/dashboard/daily-mcq')} className="text-blue-600 hover:underline font-arimo">Back to Daily MCQ</button>
       </div>
-    );
-  }
+    </div>
+  );
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
 
   const correctCount = questions.filter((qu) => answers[qu.id] && answers[qu.id] === qu.correctOption).length;
+  const totalQuestions = questions.length;
 
   return (
-    <div
-      className="flex flex-col overflow-y-auto"
-      style={{ minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}
-    >
-      <ConfettiBurst active={showConfetti} />
-      <main className="flex-1 px-[clamp(1rem,4vw,5rem)] py-4 md:py-6 flex items-start justify-center">
-        <div className="w-full max-w-[940px] mx-auto">
-          <div style={{ maxWidth: '940px', borderRadius: '16px', background: 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.96) 100%)', boxShadow: '0 22px 55px -32px rgba(15,23,42,0.28), 0 10px 24px -18px rgba(15,23,42,0.2), inset 0 1px 0 rgba(255,255,255,0.92)', padding: '22px', border: '1px solid rgba(226,232,240,0.95)' }}>
-            <div className="mb-5">
-              <div className="flex items-center justify-between gap-4 mb-4">
+    <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#E8EDF5' }}>
+      <main className="flex-1 px-[clamp(1rem,4vw,5rem)] py-4 flex items-center justify-center">
+        <div className="max-w-[900px] mx-auto" style={{ width: '100%' }}>
+          <div style={{ maxWidth: '1050px', borderRadius: '10px', background: '#EAECEF40', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '24px' }}>
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/daily-challenge-icon.png" alt="MCQ" className="w-10 h-10 object-contain" />
+                  <img src="/daily-challenge-icon.png" alt="MCQ" className="w-10 h-10" />
                   <h1 className="font-arimo font-bold text-black text-[26px] leading-[28px] whitespace-nowrap">
                     Daily MCQ Challenge
                     <span className="font-arimo font-normal text-[#94A3B8] text-[18px] leading-[28px]"> ({new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })})</span>
@@ -167,7 +208,7 @@ export default function DailyMcqChallengePage() {
                   {submitted ? (
                     <span className="text-xs font-bold text-[#00A63E] flex items-center gap-2 px-4 py-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-full whitespace-nowrap">
                       <span className="w-1.5 h-1.5 bg-[#00A63E] rounded-full"></span>
-                      Submitted - {correctCount}/{questions.length} Correct
+                      Submitted - {correctCount}/{totalQuestions} Correct
                     </span>
                   ) : (
                     <span className="text-xs font-bold text-[#E7000B] flex items-center gap-2 px-4 py-2 bg-[#FEF2F2] border border-[#FFC9C9] rounded-full whitespace-nowrap">
@@ -180,21 +221,17 @@ export default function DailyMcqChallengePage() {
 
               <div className="w-full border-t border-[#99A1AFE5] mb-4"></div>
 
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[38px]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/tag-one.png" alt="Tag" className="w-4 h-4 object-contain" />
-                    <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px] whitespace-nowrap">{q.category}</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-[#FFF7ED] px-4 rounded-full h-[38px]">
-                    <span className="font-arimo font-bold text-[#C2410C] text-[14px] leading-[16px] whitespace-nowrap">{q.difficulty}</span>
-                  </div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[38px]">
+                  <img src="/tag-one.png" alt="Tag" className="w-4 h-4" />
+                  <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px]">{q.category}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-[#FFF7ED] px-4 rounded-full h-[38px]">
+                  <span className="font-arimo font-bold text-[#C2410C] text-[14px] leading-[16px]">{q.difficulty}</span>
                 </div>
                 {!submitted && (
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/timer-icon.png" alt="Timer" className="w-10 h-10 object-contain" />
+                  <div className="flex items-center gap-2">
+                    <img src="/timer-icon.png" alt="Timer" className="w-10 h-10" />
                     <div className="flex flex-col items-end">
                       <span className={`font-arimo font-bold text-xl leading-none ${timeLeft < 60 ? 'text-red-600' : 'text-[#101828]'}`}>
                         {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
@@ -206,13 +243,13 @@ export default function DailyMcqChallengePage() {
               </div>
             </div>
 
-            <div className="mb-5">
-              <p className="font-arimo font-bold text-[#101828] text-sm mb-4">
-                <span className="font-bold">Question {q.questionNum}:</span>{' '}
+            <div className="mb-6">
+              <p className="font-arimo font-bold text-[#101828] text-sm mb-6">
+                <span className="font-bold">Question {currentQuestion + 1} of {totalQuestions}:</span>{' '}
                 <span className="whitespace-pre-line">{normalizeQuestionText(q.questionText)}</span>
               </p>
 
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {q.options.map((option) => {
                   const optKey = option.id || option.label || '';
                   const isSelected = answers[q.id] === optKey;
@@ -265,7 +302,7 @@ export default function DailyMcqChallengePage() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '16px',
-                        padding: '14px 18px',
+                        padding: '16px 20px',
                         borderRadius: '12px',
                         border,
                         background: bg,
@@ -302,16 +339,14 @@ export default function DailyMcqChallengePage() {
               {submitted && q.explanation && (
                 <div
                   style={{
-                    marginTop: '16px',
+                    marginTop: '20px',
                     background: '#EFF6FF',
                     borderLeft: '4px solid #2B7FFF',
                     borderRadius: '10px',
-                    padding: '14px 14px 14px 18px',
+                    padding: '16px 16px 16px 20px',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '8px',
-                    maxHeight: '190px',
-                    overflowY: 'auto',
                   }}
                 >
                   <span style={{ fontWeight: 600, fontSize: '14px', color: '#155DFC', lineHeight: '20px' }}>EXPLANATION</span>
@@ -320,7 +355,14 @@ export default function DailyMcqChallengePage() {
               )}
             </div>
 
-            <div className="sticky bottom-3 bg-white rounded-xl border border-gray-200 p-3.5 flex items-center justify-between gap-4 z-10 shadow-[0_10px_30px_-20px_rgba(15,23,42,0.45)]">
+            {/* Submit Error */}
+            {submitError && (
+              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-center text-sm">
+                {submitError}
+              </div>
+            )}
+
+            <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-between">
               <button
                 className="flex items-center gap-2 text-[#101828] hover:opacity-70 transition-opacity disabled:opacity-30"
                 disabled={currentQuestion === 0}
@@ -333,13 +375,14 @@ export default function DailyMcqChallengePage() {
               <div className="flex items-center gap-2">
                 {questions.map((qu, i) => {
                   const answered = !!answers[qu.id];
+                  const isCurrent = i === currentQuestion;
                   const isCorrect = answered && answers[qu.id] === qu.correctOption;
                   const isWrong = answered && answers[qu.id] !== qu.correctOption;
 
                   let bgColor = '';
                   let txtColor = '#6B7280';
 
-                  if (currentQuestion === i) {
+                  if (isCurrent) {
                     bgColor = '#00A63E';
                     txtColor = '#FFFFFF';
                   } else if (submitted && isCorrect) {
@@ -380,10 +423,10 @@ export default function DailyMcqChallengePage() {
                   <span className="font-arimo font-bold text-sm">View Results</span>
                   <svg className="w-3 h-3" viewBox="0 0 16 16" fill="none"><path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </button>
-              ) : currentQuestion === questions.length - 1 ? (
+              ) : currentQuestion === totalQuestions - 1 ? (
                 <button
                   className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                  onClick={() => handleSubmit(false)}
+                  onClick={handleSubmit}
                   disabled={submitting}
                 >
                   <span className="font-arimo font-bold text-sm">{submitting ? 'Submitting...' : 'Submit'}</span>

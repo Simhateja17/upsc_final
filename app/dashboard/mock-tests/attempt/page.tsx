@@ -46,26 +46,6 @@ function normalizeDurationToSeconds(rawDuration: unknown, questionCount: number,
   return Math.round(parsed);
 }
 
-function buildMainsQuestionPattern(questionCount: number) {
-  if (questionCount <= 0) return [];
-  if (questionCount === 1) return [{ marks: 10, minutes: 7, words: 150 }];
-  if (questionCount === 2) {
-    return [
-      { marks: 10, minutes: 7, words: 150 },
-      { marks: 15, minutes: 11, words: 250 },
-    ];
-  }
-
-  return Array.from({ length: questionCount }, (_, idx) => {
-    const marks = (idx + 1) % 3 === 0 ? 15 : 10;
-    return {
-      marks,
-      minutes: marks === 15 ? 11 : 7,
-      words: marks === 15 ? 250 : 150,
-    };
-  });
-}
-
 const SAMPLE_QUESTIONS: Question[] = [
   {
     id: 1,
@@ -85,7 +65,7 @@ const SAMPLE_QUESTIONS: Question[] = [
     id: 2,
     subject: 'History',
     difficulty: 'Easy',
-    text: 'The term "Swaraj" was first used prominently by:',
+    text: 'The term “Swaraj” was first used prominently by:',
     options: [
       { label: 'A', text: 'Bal Gangadhar Tilak' },
       { label: 'B', text: 'Mahatma Gandhi' },
@@ -93,7 +73,7 @@ const SAMPLE_QUESTIONS: Question[] = [
       { label: 'D', text: 'Subhas Chandra Bose' },
     ],
     correct: 'C',
-    explanation: 'Dadabhai Naoroji used "Swaraj" prominently; later Tilak popularized it widely.',
+    explanation: 'Dadabhai Naoroji used “Swaraj” prominently; later Tilak popularized it widely.',
   },
   {
     id: 3,
@@ -101,7 +81,7 @@ const SAMPLE_QUESTIONS: Question[] = [
     difficulty: 'Medium',
     text: 'Which one of the following factors most directly influences the formation of monsoon winds over the Indian subcontinent?',
     options: [
-      { label: 'A', text: "Earth's rotation alone" },
+      { label: 'A', text: 'Earth’s rotation alone' },
       { label: 'B', text: 'Seasonal differential heating of land and sea' },
       { label: 'C', text: 'Ocean currents only' },
       { label: 'D', text: 'Mountain building processes' },
@@ -121,13 +101,13 @@ const SAMPLE_QUESTIONS: Question[] = [
       { label: 'D', text: 'SEBI' },
     ],
     correct: 'C',
-    explanation: "The RBI's Monetary Policy Committee sets the policy repo rate under the inflation targeting framework.",
+    explanation: 'The RBI’s Monetary Policy Committee sets the policy repo rate under the inflation targeting framework.',
   },
   {
     id: 5,
     subject: 'Environment',
     difficulty: 'Medium',
-    text: '"Biodiversity hotspot" refers to a region that:',
+    text: '“Biodiversity hotspot” refers to a region that:',
     options: [
       { label: 'A', text: 'Has only high species richness' },
       { label: 'B', text: 'Has high endemism and is under significant threat' },
@@ -147,31 +127,32 @@ function MockTestAttemptInner() {
   const isMains = examMode === 'mains';
   const title = searchParams.get('title') || (isMains ? 'Mains Practice' : 'Prelims Practice');
 
-  /* --- API / Loading State --- */
+  /* ─── API / Loading State ─── */
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [totalMarks, setTotalMarks] = useState(0);
 
-  /* --- Quiz State --- */
+  /* ─── Quiz State ─── */
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
   const [questionStatuses, setQuestionStatuses] = useState<Record<number, QuestionStatus>>({});
-  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<number[]>([]);
   const [timeLeft, setTimeLeft] = useState(0);
   const [startTime] = useState(Date.now());
 
-  /* --- Mains State --- */
+  /* ─── Mains State ─── */
   const [mainsPhase, setMainsPhase] = useState<'questions' | 'evaluating'>('questions');
   const [mainsAnswers, setMainsAnswers] = useState<Record<number, MainsAnswer>>({});
   const [evaluationProgress, setEvaluationProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
-  const [mainsTimerActive, setMainsTimerActive] = useState(false);
-  const [mainsTimerDuration, setMainsTimerDuration] = useState(0);
-  const [mainsEvaluatingElapsed, setMainsEvaluatingElapsed] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /* ─── Mains writing timer ─── */
+  const [isMainsTimerRunning, setIsMainsTimerRunning] = useState(false);
+  const [mainsWritingSeconds, setMainsWritingSeconds] = useState(20 * 60);
+  const [showMainsTypeAnswer, setShowMainsTypeAnswer] = useState(false);
+  const mainsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  /* --- Load questions from API --- */
+  /* ─── Load questions from API ─── */
   useEffect(() => {
     if (!testId) {
       // No testId: fall back to a built-in 5-question set so the UI always opens from "Resume".
@@ -181,9 +162,7 @@ function MockTestAttemptInner() {
         statuses[i] = i === 0 ? 'current' : 'unattempted';
       });
       setQuestionStatuses(statuses);
-      const fallbackDuration = normalizeDurationToSeconds(undefined, SAMPLE_QUESTIONS.length, isMains);
-      setTimeLeft(fallbackDuration);
-      setMainsTimerDuration(fallbackDuration);
+      setTimeLeft(15 * 60);
       setLoading(false);
       setError(null);
       return;
@@ -217,7 +196,6 @@ function MockTestAttemptInner() {
         // Set timer based on API duration (minutes or seconds) with a safe fallback.
         const durationSeconds = normalizeDurationToSeconds(res.data?.duration, qs.length, isMains);
         setTimeLeft(durationSeconds);
-        setMainsTimerDuration(durationSeconds);
       } catch (err: any) {
         if (!cancelled) {
           console.error('Failed to load questions:', err);
@@ -229,56 +207,51 @@ function MockTestAttemptInner() {
     }
     loadQuestions();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testId]);
 
-  // Timer countdown
+  // Timer countdown (prelims auto-runs; mains uses writing timer instead)
   useEffect(() => {
     if (loading || questions.length === 0) return;
-    if (isMains && !mainsTimerActive) return;
+    if (isMains) return; // mains uses manual writing timer
     const interval = setInterval(() => {
       setTimeLeft(t => {
-        if (t <= 1) {
-          clearInterval(interval);
-          if (isMains) setMainsTimerActive(false);
-          return 0;
-        }
+        if (t <= 1) { clearInterval(interval); return 0; }
         return t - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isMains, loading, mainsTimerActive, questions.length]);
+  }, [loading, questions.length, isMains]);
 
+  // Mains writing timer (manual start/pause)
   useEffect(() => {
-    if (!isMains || mainsPhase !== 'evaluating') return;
-    setMainsEvaluatingElapsed(0);
-    const interval = setInterval(() => {
-      setMainsEvaluatingElapsed((value) => value + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isMains, mainsPhase]);
+    if (!isMains) return;
+    if (isMainsTimerRunning) {
+      mainsTimerRef.current = setInterval(() => {
+        setMainsWritingSeconds(s => {
+          if (s <= 1) {
+            setIsMainsTimerRunning(false);
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
+    } else {
+      if (mainsTimerRef.current) clearInterval(mainsTimerRef.current);
+    }
+    return () => { if (mainsTimerRef.current) clearInterval(mainsTimerRef.current); };
+  }, [isMainsTimerRunning, isMains]);
+
+  // Reset writing timer when navigating to a new question
+  useEffect(() => {
+    if (!isMains || questions.length === 0) return;
+    setIsMainsTimerRunning(false);
+    setShowMainsTypeAnswer(false);
+    const marksPerQ = totalMarks && questions.length ? Math.round(totalMarks / questions.length) : 15;
+    const minPerQ = Math.max(8, Math.round(marksPerQ * 0.8));
+    setMainsWritingSeconds(minPerQ * 60);
+  }, [currentIdx, isMains, questions.length, totalMarks]);
 
   const totalQuestions = questions.length;
-  const bookmarkStorageKey = `mock-test-bookmarks:${testId ?? 'sample'}:${examMode}`;
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const raw = sessionStorage.getItem(bookmarkStorageKey);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        setBookmarkedQuestions(parsed.filter((value) => Number.isInteger(value)));
-      }
-    } catch {
-      /* ignore bad session data */
-    }
-  }, [bookmarkStorageKey]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    sessionStorage.setItem(bookmarkStorageKey, JSON.stringify(bookmarkedQuestions));
-  }, [bookmarkStorageKey, bookmarkedQuestions]);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
@@ -302,41 +275,6 @@ function MockTestAttemptInner() {
     setQuestionStatuses(prev => ({ ...prev, [currentIdx]: 'answered' }));
   };
 
-  const handleToggleBookmark = () => {
-    setBookmarkedQuestions((prev) => {
-      const exists = prev.includes(currentIdx);
-      const next = exists ? prev.filter((idx) => idx !== currentIdx) : [...prev, currentIdx];
-      if (typeof window !== 'undefined') {
-        try {
-          const storageKey = 'mock-test-bookmarked-mcqs';
-          const existing = JSON.parse(window.localStorage.getItem(storageKey) || '[]');
-          const current = questions[currentIdx];
-          const bookmarkId = `mock-${testId ?? 'sample'}-${examMode}-${current?.id ?? currentIdx}`;
-          const withoutCurrent = Array.isArray(existing)
-            ? existing.filter((item: any) => item?.id !== bookmarkId)
-            : [];
-          if (!exists && current) {
-            withoutCurrent.unshift({
-              id: bookmarkId,
-              subject: current.subject || 'General Studies',
-              difficulty: current.difficulty || 'Medium',
-              source: title,
-              date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-              question: current.text,
-              options: current.options,
-              correct: current.correct,
-              explanation: current.explanation,
-            });
-          }
-          window.localStorage.setItem(storageKey, JSON.stringify(withoutCurrent.slice(0, 50)));
-        } catch {
-          /* local bookmark persistence is best-effort */
-        }
-      }
-      return next;
-    });
-  };
-
   const handleMark = () => {
     setQuestionStatuses(prev => ({ ...prev, [currentIdx]: 'marked' }));
     handleNext();
@@ -358,7 +296,7 @@ function MockTestAttemptInner() {
     if (currentIdx > 0) goToQuestion(currentIdx - 1);
   };
 
-  /* --- Mains handlers --- */
+  /* ─── Mains handlers ─── */
   const currentAnswer: MainsAnswer = mainsAnswers[currentIdx] || { text: '', file: null };
 
   const handleMainsTextChange = (value: string) => {
@@ -400,7 +338,7 @@ function MockTestAttemptInner() {
         const res = await mockTestService.getMainsEvaluationStatus(testId!, attemptId);
         if (res.data?.isComplete) return true;
       } catch {
-        /* transient – keep polling */
+        /* transient — keep polling */
       }
       await new Promise(r => setTimeout(r, 2500));
     }
@@ -425,8 +363,6 @@ function MockTestAttemptInner() {
     }
 
     setError(null);
-    setSubmitting(true);
-    setMainsTimerActive(false);
     setMainsPhase('evaluating');
     setEvaluationProgress({ done: 0, total: totalQuestions });
 
@@ -439,13 +375,9 @@ function MockTestAttemptInner() {
           answerText: a?.text?.trim() || undefined,
           file: a?.file || undefined,
         });
-        const attemptId = (resp as any).attemptId || resp.data?.attemptId || (resp as any).data?.data?.attemptId;
+        const attemptId = resp.data?.attemptId;
         if (attemptId) attemptIds.push(attemptId);
         setEvaluationProgress(p => ({ ...p, done: Math.min(p.total, i + 1) }));
-      }
-
-      if (!attemptIds.length) {
-        throw new Error('No evaluation attempt was created. Please try submitting again.');
       }
 
       // Poll for each attempt to complete evaluation
@@ -466,12 +398,12 @@ function MockTestAttemptInner() {
       console.error('Mains submit failed:', err);
       setError(err.message || 'Failed to submit answers. Please try again.');
       setMainsPhase('questions');
-      setSubmitting(false);
     }
   };
 
   const handleSubmit = async () => {
-    const storeLocalResults = () => {
+    // Sample mode (no testId): store local results and open results screen
+    if (!testId) {
       const total = questions.length;
       const correctCount = correct;
       const wrongCount = wrong;
@@ -482,6 +414,7 @@ function MockTestAttemptInner() {
         const status: 'correct' | 'wrong' | 'skipped' =
           selected ? (selected === q.correct ? 'correct' : 'wrong') : 'skipped';
         const delta = status === 'correct' ? 2 : status === 'wrong' ? -0.67 : 0;
+        // simple, deterministic per-question time estimate for UI
         const timeSec = 60 + (idx % 4) * 15;
         return {
           idx: idx + 1,
@@ -509,11 +442,7 @@ function MockTestAttemptInner() {
           })
         );
       }
-    };
 
-    // Sample mode (no testId): store local results and open results screen
-    if (!testId) {
-      storeLocalResults();
       router.push(`/dashboard/mock-tests/attempt/results?mode=sample&title=${encodeURIComponent(title)}`);
       return;
     }
@@ -529,29 +458,18 @@ function MockTestAttemptInner() {
           answersMap[String(q.id)] = opt;
         }
       });
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem(
-          `mockTestReview:${testId}`,
-          JSON.stringify({ questions, selectedOptions, title, examMode })
-        );
-      }
-      const submitWithTimeout = Promise.race([
-        mockTestService.submit(testId, answersMap, timeTaken),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Submit request timed out')), 8000)),
-      ]);
-      await submitWithTimeout;
+      await mockTestService.submit(testId, answersMap, timeTaken);
       router.push(`/dashboard/mock-tests/attempt/results?testId=${testId}`);
     } catch (err: any) {
       console.error('Failed to submit test:', err);
-      storeLocalResults();
-      router.push(`/dashboard/mock-tests/attempt/results?mode=sample&testId=${encodeURIComponent(testId)}&title=${encodeURIComponent(title)}`);
+      setError(err.message || 'Failed to submit test. Please try again.');
+      setSubmitting(false);
     }
   };
 
   // Stats
   const answered = Object.values(questionStatuses).filter(s => s === 'answered').length;
   const marked = Object.values(questionStatuses).filter(s => s === 'marked').length;
-  const bookmarked = bookmarkedQuestions.length;
   const correct = Object.entries(selectedOptions).filter(([idx, opt]) => questions[Number(idx)]?.correct === opt).length;
   const wrong = Object.keys(selectedOptions).length - correct;
   const netScore = correct * 2 - wrong * 0.67;
@@ -567,12 +485,12 @@ function MockTestAttemptInner() {
     unattempted: '#314158',
   };
 
-  /* --- Loading State --- */
+  /* ─── Loading State ─── */
   if (loading) {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#FAFBFE',
+        background: '#FFFFFF',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -594,12 +512,12 @@ function MockTestAttemptInner() {
     );
   }
 
-  /* --- Error State --- */
+  /* ─── Error State ─── */
   if (error && questions.length === 0) {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#FAFBFE',
+        background: '#FFFFFF',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -629,511 +547,374 @@ function MockTestAttemptInner() {
     );
   }
 
-  /* --- Prelims submitting screen (prevents blank white flash) --- */
-  if (submitting && !isMains) {
-    return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arimo, Inter, sans-serif', padding: 24 }}>
-        <div style={{ width: 768, maxWidth: '100%', borderRadius: 16, background: '#FFFFFF', boxShadow: '0px 8px 10px -6px #0000001A, 0px 20px 25px -5px #0000001A', padding: '32px 40px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/eval-header.png" alt="Evaluating" style={{ width: 64, height: 64, objectFit: 'contain', marginBottom: 12 }} />
-            <h1 style={{ fontFamily: 'Arimo', fontWeight: 700, fontSize: 26, lineHeight: '32px', color: '#1E2939', textAlign: 'center', margin: '0 0 6px' }}>
-              Submitting Your Answers
-            </h1>
-            <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: 15, lineHeight: '22px', color: '#4A5565', textAlign: 'center', margin: '0 0 2px' }}>
-              Calculating your score
-            </p>
-            <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: 13, lineHeight: '18px', color: '#6A7282', textAlign: 'center', margin: 0 }}>
-              This usually takes a few seconds
-            </p>
-          </div>
-          {[
-            { emoji: '📋', bg: '#FEF3C7', title: 'Locking your responses', subtitle: 'Saving all selected answers' },
-            { emoji: '🧮', bg: '#DBEAFE', title: 'Calculating score', subtitle: 'Applying +2 / −0.67 marking scheme' },
-            { emoji: '📊', bg: '#DCFCE7', title: 'Preparing results', subtitle: 'Generating accuracy and performance data' },
-          ].map((step, idx) => (
-            <div key={idx}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ width: 36, height: 36, borderRadius: 10, background: step.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{step.emoji}</span>
-                  <div>
-                    <p style={{ fontFamily: 'Arimo', fontWeight: 700, fontSize: 15, color: '#17223E', margin: 0 }}>{step.title}</p>
-                    <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: 13, color: '#4A5565', margin: 0 }}>{step.subtitle}</p>
-                  </div>
-                </div>
-                {idx === 0
-                  ? <div style={{ width: 24, height: 24, borderRadius: '50%', border: '3px solid #D1D5DB', borderTopColor: '#17223E', animation: 'spin 0.8s linear infinite' }} />
-                  : <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid #D1D5DB' }} />
-                }
-              </div>
-              {idx < 2 && <div style={{ width: '100%', height: 1, background: '#B1B1B1' }} />}
-            </div>
-          ))}
-          <div style={{ borderRadius: 10, borderLeft: '4px solid #FDC700', background: '#FEFCE8', padding: '18px 28px', marginTop: 20 }}>
-            <p style={{ textAlign: 'center', fontFamily: 'Arimo', fontStyle: 'italic', fontSize: 11, lineHeight: '15px', color: '#6A7282', margin: 0 }}>
-              &quot;Consistency matters more than perfection. You&apos;re building a skill that compounds.&quot;
-            </p>
-          </div>
-        </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
-
   if (!currentQ) return null;
 
-  /* ---------------------------- MAINS UI ---------------------------- */
+  /* ──────────────────────────── MAINS UI ──────────────────────────── */
   if (isMains) {
-    const mainsPattern = buildMainsQuestionPattern(totalQuestions);
-    const currentPattern = mainsPattern[currentIdx] || { marks: 15, minutes: 11, words: 250 };
-    const marksPerQ = currentPattern.marks;
-    const minPerQ = currentPattern.minutes;
-    const targetWords = currentPattern.words;
+    const marksPerQ = totalMarks && totalQuestions ? Math.round(totalMarks / totalQuestions) : 15;
+    const minPerQ = Math.max(1, Math.round(marksPerQ * 0.5));
     const isLast = currentIdx === totalQuestions - 1;
     const answeredCount = questions.reduce((acc, _, i) => {
       const a = mainsAnswers[i];
       return acc + (a && (a.text.trim() || a.file) ? 1 : 0);
     }, 0);
 
-    /* -- Evaluating screen -- */
+    /* ── Evaluating screen ── */
     if (mainsPhase === 'evaluating') {
       const { done, total } = evaluationProgress;
-      const evaluationSteps = [
-        { key: 'read', title: 'Reading your submitted answers', subtitle: `Identifying key points in ${total || totalQuestions} answer${(total || totalQuestions) === 1 ? '' : 's'}` },
-        { key: 'rubric', title: 'Applying UPSC marking rubric', subtitle: 'Checking demand, structure, examples and balance' },
-        { key: 'score', title: 'Scoring each mains response', subtitle: 'Assigning marks question by question' },
-        { key: 'feedback', title: 'Preparing detailed feedback', subtitle: 'Writing strengths, gaps and improvement notes' },
-        { key: 'analysis', title: 'Generating Jeet Sir analysis', subtitle: 'Finalizing your result summary' },
+      const pct = total > 0 ? Math.max(8, Math.round((done / total) * 100)) : 8;
+      const activeStep = Math.min(done, 4);
+      const evalSteps = [
+        { emoji: '📖', bg: '#F8FAFC', title: 'Reading your handwritten answers', subtitle: 'Parsing text and structure' },
+        { emoji: '🔍', bg: '#FFFBEB', title: 'Identifying key points & arguments', subtitle: 'Mapping against UPSC framework' },
+        { emoji: '📐', bg: '#FFF7ED', title: 'Comparing with model answers', subtitle: 'Benchmarking against top responses' },
+        { emoji: '✏️', bg: '#F0FDF4', title: 'Preparing detailed markup & feedback', subtitle: 'Generating inline annotations' },
+        { emoji: '🎯', bg: '#FAFAFE', title: "Generating Jeet Sir's analysis", subtitle: 'Overall score and improvement tips' },
       ];
-      const activeStepIndex = Math.min(evaluationSteps.length - 1, Math.max(done, Math.floor(mainsEvaluatingElapsed / 8)));
-      const pct = Math.min(96, Math.max(12, Math.round(((activeStepIndex + 0.45) / evaluationSteps.length) * 100)));
-      const secondsRemaining = Math.max(0, 60 - mainsEvaluatingElapsed);
       return (
-        <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arimo, Inter, sans-serif', padding: 24 }}>
-          <div style={{ width: 768, maxWidth: '100%', borderRadius: 16, background: '#FFFFFF', boxShadow: '0px 8px 10px -6px #0000001A, 0px 20px 25px -5px #0000001A', padding: '32px 40px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 18 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/eval-header.png" alt="Evaluating" style={{ width: 64, height: 64, objectFit: 'contain', marginBottom: 12 }} />
-              <h1 style={{ fontFamily: 'Arimo', fontWeight: 700, fontSize: 26, lineHeight: '32px', color: '#1E2939', textAlign: 'center', margin: '0 0 6px' }}>
-                Evaluating Your Answers
-              </h1>
-              <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: 15, lineHeight: '22px', color: '#4A5565', textAlign: 'center', margin: '0 0 2px' }}>
-                Analyzing with UPSC examiner&apos;s lens
-              </p>
-              <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: 13, lineHeight: '18px', color: '#6A7282', textAlign: 'center', margin: 0 }}>
-                This usually takes 30-60 seconds
-              </p>
+        <div style={{ minHeight: '100vh', background: '#F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: 24 }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 24, padding: '40px 48px', boxShadow: '0 8px 40px rgba(0,0,0,0.10)', maxWidth: 560, width: '100%' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28 }}>
+              <div style={{ fontSize: 56, marginBottom: 12 }}>🧠</div>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#101828', margin: '0 0 6px', textAlign: 'center' }}>AI is evaluating your answers...</h2>
+              <p style={{ fontSize: 14, color: '#6B7280', margin: 0, textAlign: 'center' }}>This usually takes about 30 seconds</p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 18 }}>
-              {evaluationSteps.map((step, idx) => {
-                const doneStep = idx < activeStepIndex || done > idx;
-                const active = idx === activeStepIndex && !doneStep;
+            {/* Progress bar */}
+            <div style={{ height: 6, background: '#E5E7EB', borderRadius: 999, overflow: 'hidden', marginBottom: 24 }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg,#FBBF24,#F59E0B)', borderRadius: 999, transition: 'width 0.4s ease' }} />
+            </div>
+
+            {/* Steps list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {evalSteps.map((step, i) => {
+                const isDone = i < activeStep;
+                const isActive = i === activeStep;
                 return (
-                  <div key={step.key}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ width: 36, height: 36, borderRadius: 10, background: ['#FEF3C7', '#DBEAFE', '#FCE7F3', '#DCFCE7', '#EDE9FE'][idx], display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: doneStep || active ? 1 : 0.42 }}>
-                          <span style={{ width: 14, height: 14, borderRadius: '50%', background: doneStep ? '#22C55E' : active ? '#17223E' : '#D1D5DB' }} />
-                        </span>
-                        <div>
-                          <p style={{ fontFamily: 'Arimo', fontWeight: 700, fontSize: 15, lineHeight: '20px', color: '#17223E', margin: 0 }}>
-                            {step.title}
-                          </p>
-                          <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: 13, lineHeight: '18px', color: '#4A5565', margin: 0 }}>
-                            {step.subtitle}
-                          </p>
-                        </div>
+                  <div key={i}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0' }}>
+                      {/* Emoji badge */}
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: step.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0, border: '1px solid #E5E7EB' }}>
+                        {step.emoji}
                       </div>
-                      {doneStep ? (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                          <circle cx="12" cy="12" r="11" stroke="#22C55E" strokeWidth="2" />
-                          <path d="M7 12.5L10.5 16L17 9" stroke="#22C55E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      ) : active ? (
-                        <div style={{ width: 24, height: 24, borderRadius: '50%', border: '3px solid #D1D5DB', borderTopColor: '#17223E', animation: 'spin 0.8s linear infinite' }} />
-                      ) : (
-                        <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid #D1D5DB' }} />
-                      )}
+                      {/* Text */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: isDone ? '#6B7280' : isActive ? '#101828' : '#9CA3AF' }}>{step.title}</div>
+                        <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>{step.subtitle}</div>
+                      </div>
+                      {/* Status icon */}
+                      <div style={{ flexShrink: 0 }}>
+                        {isDone ? (
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="10" cy="10" r="10" fill="#00C950"/>
+                            <path d="M6 10l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        ) : isActive ? (
+                          <div style={{ width: 20, height: 20, border: '3px solid #FDC700', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                        ) : (
+                          <div style={{ width: 20, height: 20, border: '2px solid #E5E7EB', borderRadius: '50%' }} />
+                        )}
+                      </div>
                     </div>
-                    {idx < evaluationSteps.length - 1 && <div style={{ width: '100%', height: 1, background: '#B1B1B1' }} />}
+                    {i < evalSteps.length - 1 && <div style={{ height: 1, background: '#F3F4F6', marginLeft: 54 }} />}
                   </div>
                 );
               })}
             </div>
-
-            <div style={{ borderRadius: 10, borderLeft: '4px solid #FDC700', background: '#FEFCE8', padding: '18px 28px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/eval-timer.png" alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
-                <span style={{ fontFamily: 'DM Sans, Arimo, sans-serif', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#101828' }}>
-                  {secondsRemaining > 0 ? `${secondsRemaining} Seconds Remaining` : 'Almost done...'}
-                </span>
-              </div>
-              <div style={{ width: 362, maxWidth: '100%', height: 5, borderRadius: 10, background: '#D9D9D9', overflow: 'hidden', margin: '0 auto 12px' }}>
-                <div style={{ height: '100%', width: `${pct}%`, borderRadius: 10, background: '#101828', transition: 'width 1s linear' }} />
-              </div>
-              <p style={{ textAlign: 'center', fontFamily: 'Arimo', fontSize: 13, lineHeight: '18px', color: '#364153', margin: '0 0 8px' }}>
-                <strong>Submitted:</strong> {done} of {total || totalQuestions} answer{(total || totalQuestions) === 1 ? '' : 's'}. Please keep this screen open while feedback is prepared.
-              </p>
-              <p style={{ textAlign: 'center', fontFamily: 'Arimo', fontStyle: 'italic', fontSize: 11, lineHeight: '15px', color: '#6A7282', margin: 0 }}>
-                &quot;Consistency matters more than perfection. You&apos;re building a skill that compounds.&quot;
-              </p>
-            </div>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       );
     }
 
-    const wordCount = currentAnswer.text.trim().split(/\s+/).filter(Boolean).length;
-    const resetMainsTimer = () => {
-      setMainsTimerActive(false);
-      setTimeLeft(mainsTimerDuration || minPerQ * 60);
-    };
-
-    /* Mains question screen */
+    /* ── Questions screen (mains) — Daily Mains Challenge style ── */
     return (
-      <div style={{ height: '100vh', background: '#F8F9FC', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif', overflow: 'hidden' }}>
+      <div style={{ height: '100vh', overflow: 'hidden', background: '#F8F9FC', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
         {/* Header */}
-        <div style={{ background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)', padding: '10px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', flex: '0 0 auto' }}>
-          <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 14, lineHeight: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
-              <div style={{ color: 'rgba(255,255,255,0.58)', fontSize: 11, lineHeight: '16px', fontWeight: 600 }}>
-                Mains answer writing - {marksPerQ} marks - {targetWords} words
+        <div style={{ background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)', padding: '10px 24px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 14 }}>✍️</span>
+              <div>
+                <span style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 14 }}>{title}</span>
+                <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 1 }}>Mains Mock Test · {totalQuestions} Questions</div>
               </div>
             </div>
-            <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontSize: 14 }}>
-              Question {currentIdx + 1} of {totalQuestions}
+            <span style={{ color: '#FDC700', fontWeight: 700, fontSize: 13 }}>
+              Question {currentIdx + 1} of {totalQuestions} · {answeredCount} answered
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-              <span style={{ color: '#FFFFFF', fontWeight: 800, fontSize: 18, fontVariantNumeric: 'tabular-nums' }}>{formatTime(timeLeft)}</span>
-              <button
-                type="button"
-                onClick={() => setMainsTimerActive(v => !v)}
-                style={{ height: 30, border: 'none', borderRadius: 8, background: mainsTimerActive ? '#DC2626' : '#00BC7D', color: '#FFFFFF', fontSize: 12, fontWeight: 800, padding: '0 12px', cursor: 'pointer' }}
-              >
-                {mainsTimerActive ? 'Pause' : 'Start'}
-              </button>
-            </div>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'center', flex: '0 0 auto' }}>
-          <div style={{ width: '100%', maxWidth: 1160, height: 38, padding: '0 24px', display: 'flex', alignItems: 'center', gap: 14, boxSizing: 'border-box' }}>
-            <div style={{ flex: 1, height: 4, background: '#E5E7EB', borderRadius: 999, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${Math.round(((currentIdx + 1) / Math.max(1, totalQuestions)) * 100)}%`, background: '#F59E0B', transition: 'width 0.25s ease' }} />
-            </div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#364153', whiteSpace: 'nowrap' }}>
-              {answeredCount} / {totalQuestions} answered
-            </div>
+        <div style={{ flexShrink: 0 }}>
+          <div style={{ height: 4, background: '#E5E7EB' }}>
+            <div style={{ height: '100%', width: `${Math.round((answeredCount / Math.max(1, totalQuestions)) * 100)}%`, background: '#F59E0B', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 
         {/* Error banner */}
         {error && (
-          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ background: '#FEF2F2', borderBottom: '1px solid #FECACA', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <span style={{ fontSize: 14 }}>⚠️</span>
             <span style={{ fontSize: 14, color: '#991B1B' }}>{error}</span>
           </div>
         )}
 
-        {/* Main screen */}
-        <div style={{ flex: '1 1 auto', minHeight: 0, padding: '16px 24px 18px', boxSizing: 'border-box', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
-          <div style={{ width: '100%', maxWidth: 1160, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 230px', gap: 18, minHeight: 0 }}>
-            <main style={{ background: '#FFFFFF', borderRadius: 16, boxShadow: '0px 1px 3px rgba(0,0,0,0.10), 0px 1px 2px -1px rgba(0,0,0,0.10)', padding: 22, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                  <div style={{ background: '#101828', color: '#FFFFFF', fontWeight: 800, fontSize: 12, padding: '7px 12px', borderRadius: 8, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                    Question {currentIdx + 1} of {totalQuestions}
-                  </div>
-                  <div style={{ color: '#4A5565', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                    {marksPerQ} marks - {minPerQ} min - {targetWords} words
-                  </div>
+        {/* Body: left panel + writing timer sidebar */}
+        <div style={{ flex: 1, display: 'flex', gap: 16, padding: '14px 24px', overflow: 'hidden', boxSizing: 'border-box', minHeight: 0 }}>
+
+          {/* ── Left panel ── */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0, overflow: 'hidden' }}>
+
+            {/* Question card */}
+            <div style={{ background: '#FFFFFF', borderRadius: 16, padding: '18px 22px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', flexShrink: 0 }}>
+              {/* Tags row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                <div style={{ background: '#EFF6FF', borderRadius: 999, padding: '4px 12px' }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#155DFC' }}>GS Paper I</span>
                 </div>
-                <div style={{ color: '#6A7282', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                  {answeredCount} / {totalQuestions} answered
+                {currentQ.subject && (
+                  <div style={{ background: '#F3E8FF', borderRadius: 999, padding: '4px 12px' }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#6B21A8' }}>{currentQ.subject}</span>
+                  </div>
+                )}
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#EF4444' }}>LIVE NOW</span>
                 </div>
               </div>
 
-              <section style={{ background: '#FAFBFE', border: '1px solid #E5E7EB', borderRadius: 12, padding: '16px 18px', marginBottom: 14, flex: '0 1 auto', maxHeight: 150, overflow: 'auto' }}>
-                <p style={{ fontSize: 16, fontWeight: 600, color: '#17223E', lineHeight: '25px', margin: 0, whiteSpace: 'pre-line' }}>
-                  {currentQ.text}
-                </p>
-              </section>
+              {/* Question badge + text */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+                <div style={{ background: '#0F172B', color: '#FFFFFF', fontWeight: 700, fontSize: 11, padding: '4px 10px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  QUESTION {currentIdx + 1} OF {totalQuestions}
+                </div>
+              </div>
+              <p style={{ fontSize: 15, fontWeight: 500, color: '#17223E', lineHeight: '25px', margin: '0 0 10px', whiteSpace: 'pre-line' }}>{currentQ.text}</p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 310px', gap: 14, minHeight: 0 }}>
-                <section style={{ minWidth: 0 }}>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 800, color: '#101828', marginBottom: 8 }}>
-                    Type your answer
-                  </label>
+              {/* Info row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: '#6B7280' }}>
+                <span>⏱ {minPerQ} min</span>
+                <span>📝 ~250 words</span>
+                <span>⭐ {marksPerQ} marks</span>
+              </div>
+            </div>
+
+            {/* Upload + answer card */}
+            <div style={{ background: '#FFFFFF', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px 22px' }}>
+
+              {/* Drag-drop upload (primary) */}
+              {!currentAnswer.file ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ border: '1px dashed #17223E', borderRadius: 14, background: '#F9FAFB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, cursor: 'pointer', gap: 6, minHeight: 160 }}
+                >
+                  <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" style={{ display: 'none' }} onChange={handleMainsFileSelect} />
+                  <div style={{ width: 44, height: 44, borderRadius: 10, background: '#E8EDF5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 12l4-4m0 0l4 4m-4-4v8" stroke="#17223E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#101828' }}>Drop your answer script here</div>
+                  <div style={{ fontSize: 13, color: '#6B7280' }}>Upload handwritten answers for AI evaluation</div>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                    {['JPG', 'PNG', 'PDF', 'DOCX'].map(fmt => (
+                      <span key={fmt} style={{ background: '#E5E7EB', borderRadius: 4, padding: '2px 8px', fontSize: 12, color: '#374151' }}>{fmt}</span>
+                    ))}
+                    <span style={{ background: '#E5E7EB', borderRadius: 4, padding: '2px 8px', fontSize: 12, color: '#374151' }}>Max 10MB</span>
+                  </div>
+                  <button style={{ marginTop: 8, background: '#FFFFFF', border: '1px solid #D1D5DB', borderRadius: 8, padding: '8px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', color: '#111827' }}>
+                    Browse Files
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 12, padding: '12px 16px' }}>
+                  <div>
+                    <div style={{ fontSize: 14, color: '#15803D', fontWeight: 700 }}>📎 {currentAnswer.file.name}</div>
+                    <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{(currentAnswer.file.size / 1024 / 1024).toFixed(2)} MB</div>
+                  </div>
+                  <button onClick={handleMainsRemoveFile} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#15803D', fontSize: 18, fontWeight: 700 }}>✕</button>
+                </div>
+              )}
+
+              {/* OR Type your answer toggle */}
+              <div style={{ margin: '10px 0 0', textAlign: 'center' }}>
+                <button
+                  onClick={() => setShowMainsTypeAnswer(s => !s)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#374151', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                >
+                  OR Type your answer {showMainsTypeAnswer ? '▲' : '▼'}
+                </button>
+              </div>
+
+              {/* Textarea (collapsible) */}
+              {showMainsTypeAnswer && (
+                <div style={{ marginTop: 8 }}>
                   <textarea
                     value={currentAnswer.text}
                     onChange={(e) => handleMainsTextChange(e.target.value)}
                     placeholder="Write your answer here..."
-                    rows={7}
-                    style={{
-                      width: '100%',
-                      height: 178,
-                      padding: '13px 14px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: 10,
-                      fontSize: 14,
-                      lineHeight: '22px',
-                      color: '#101828',
-                      fontFamily: 'inherit',
-                      resize: 'none',
-                      boxSizing: 'border-box',
-                      outline: 'none',
-                      background: '#F9FAFB',
-                    }}
+                    rows={4}
+                    style={{ width: '100%', padding: '12px 14px', border: '1px solid #D1D5DB', borderRadius: 10, fontSize: 14, lineHeight: '22px', color: '#0F172B', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', background: '#FAFAFA' }}
                   />
-                  <div style={{ marginTop: 6, fontSize: 12, color: '#6A7282', textAlign: 'right' }}>
-                    {wordCount} words / target {targetWords}
+                  <div style={{ fontSize: 12, color: '#6B7280', marginTop: 3 }}>
+                    {currentAnswer.text.trim() ? `${currentAnswer.text.trim().split(/\s+/).filter(Boolean).length} words` : 'No text yet'}
                   </div>
-                </section>
+                </div>
+              )}
 
-                <section style={{ minWidth: 0 }}>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 800, color: '#101828', marginBottom: 8 }}>
-                    Upload handwritten answer
-                  </label>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.pdf"
-                    style={{ display: 'none' }}
-                    onChange={handleMainsFileSelect}
-                  />
-                  {!currentAnswer.file ? (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      style={{
-                        width: '100%',
-                        height: 178,
-                        border: '1.5px dashed #17223E',
-                        borderRadius: 14,
-                        background: '#F9FAFB',
-                        cursor: 'pointer',
-                        padding: '18px 14px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        textAlign: 'center',
-                      }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/upload-icon.png" alt="" style={{ width: 46, height: 46, objectFit: 'contain' }} />
-                      <span style={{ color: '#101828', fontWeight: 800, fontSize: 14 }}>Drop your answer script here</span>
-                      <span style={{ color: '#4A5565', fontWeight: 500, fontSize: 12 }}>JPG, PNG or PDF - Max 10MB</span>
-                      <span style={{ height: 32, minWidth: 118, borderRadius: 8, border: '1px solid #D1D5DB', background: '#FFFFFF', color: '#111827', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800 }}>
-                        Browse Files
-                      </span>
-                    </button>
-                  ) : (
-                    <div style={{ height: 178, border: '1px solid #86EFAC', borderRadius: 14, background: '#F0FDF4', padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 12, boxSizing: 'border-box' }}>
-                      <div style={{ color: '#15803D', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {currentAnswer.file.name}
-                      </div>
-                      <div style={{ color: '#166534', fontSize: 12, fontWeight: 600 }}>
-                        {(currentAnswer.file.size / 1024 / 1024).toFixed(2)} MB selected
-                      </div>
-                      <button type="button" onClick={handleMainsRemoveFile} style={{ alignSelf: 'flex-start', background: '#FFFFFF', border: '1px solid #86EFAC', borderRadius: 8, color: '#15803D', cursor: 'pointer', fontSize: 13, fontWeight: 800, padding: '8px 12px' }}>
-                        Remove file
-                      </button>
-                    </div>
-                  )}
-                </section>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 18, gap: 12, flex: '0 0 auto' }}>
+              {/* Navigation + submit row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, flexShrink: 0, gap: 10 }}>
                 <button
-                  type="button"
                   onClick={handleMainsPrev}
                   disabled={currentIdx === 0}
-                  style={{
-                    background: '#FFFFFF',
-                    border: '1px solid #D1D5DB',
-                    borderRadius: 10,
-                    width: 108,
-                    height: 44,
-                    color: currentIdx === 0 ? '#CBD5E1' : '#374151',
-                    cursor: currentIdx === 0 ? 'not-allowed' : 'pointer',
-                    fontWeight: 800,
-                    fontSize: 14,
-                  }}
+                  style={{ background: 'none', border: '1.5px solid #CBD5E1', borderRadius: 10, padding: '9px 16px', color: currentIdx === 0 ? '#CBD5E1' : '#334155', cursor: currentIdx === 0 ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13 }}
                 >
-                  Previous
+                  ← Prev
                 </button>
-
-                {isLast ? (
-                  <button
-                    type="button"
-                    onClick={handleMainsSubmitAll}
-                    disabled={submitting}
-                    style={{
-                      background: '#17223E',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      borderRadius: 12,
-                      minWidth: 230,
-                      height: 48,
-                      fontWeight: 800,
-                      fontSize: 15,
-                      cursor: submitting ? 'not-allowed' : 'pointer',
-                      boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.10), 0px 4px 6px -4px rgba(0,0,0,0.10)',
-                      opacity: submitting ? 0.65 : 1,
-                    }}
-                  >
-                    Submit Answer for Evaluation
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleMainsNext}
-                    style={{
-                      background: '#17223E',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      borderRadius: 12,
-                      minWidth: 172,
-                      height: 48,
-                      fontWeight: 800,
-                      fontSize: 15,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Next Question
-                  </button>
-                )}
-              </div>
-            </main>
-
-            <aside style={{ background: '#FFFFFF', borderRadius: 16, boxShadow: '0px 1px 3px rgba(0,0,0,0.10), 0px 1px 2px -1px rgba(0,0,0,0.10)', padding: '22px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#6A7282', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 18 }}>
-                Writing Timer
-              </div>
-              <div style={{ width: 122, height: 122, borderRadius: '50%', border: '4px solid #101828', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
-                <span style={{ color: '#101828', fontSize: 24, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{formatTime(timeLeft)}</span>
-              </div>
-              <div style={{ color: '#6A7282', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 18, textAlign: 'center' }}>
-                {mainsTimerActive ? 'Writing in progress' : 'Ready to start'}
-              </div>
-              <button
-                type="button"
-                onClick={() => setMainsTimerActive(v => !v)}
-                style={{ width: '100%', height: 46, border: 'none', borderRadius: 10, background: mainsTimerActive ? '#DC2626' : '#00BC7D', color: '#FFFFFF', fontWeight: 800, fontSize: 15, cursor: 'pointer', marginBottom: 10 }}
-              >
-                {mainsTimerActive ? 'Pause' : 'Start Timer'}
-              </button>
-              <button
-                type="button"
-                onClick={resetMainsTimer}
-                style={{ width: '100%', height: 44, border: '1px solid #D1D5DB', borderRadius: 10, background: '#FFFFFF', color: '#374151', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}
-              >
-                Reset
-              </button>
-              <div style={{ width: '100%', height: 1, background: '#E5E7EB', margin: '22px 0 16px' }} />
-              <div style={{ width: '100%', display: 'grid', gap: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4A5565', fontSize: 13, fontWeight: 700 }}>
-                  <span>Marks</span><span>{marksPerQ}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4A5565', fontSize: 13, fontWeight: 700 }}>
-                  <span>Target</span><span>{targetWords} words</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4A5565', fontSize: 13, fontWeight: 700 }}>
-                  <span>Question</span><span>{currentIdx + 1}/{totalQuestions}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  {isLast ? (
+                    <button
+                      onClick={handleMainsSubmitAll}
+                      style={{ background: '#17223E', color: '#FFFFFF', border: 'none', borderRadius: 12, padding: '12px 28px', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                    >
+                      🧠 Submit &amp; Evaluate
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleMainsNext}
+                      style={{ background: '#17223E', color: '#FFFFFF', border: 'none', borderRadius: 12, padding: '12px 28px', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                    >
+                      Next Question →
+                    </button>
+                  )}
+                  <div style={{ fontSize: 12, color: '#6B7280' }}>✦ Get detailed feedback in 60 seconds</div>
                 </div>
               </div>
-            </aside>
+            </div>
           </div>
+
+          {/* ── Right sidebar — Writing Timer ── */}
+          <div style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: 16, padding: '22px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ fontWeight: 400, fontSize: 12, letterSpacing: '0.06em', color: '#6A7282', textTransform: 'uppercase', marginBottom: 18, textAlign: 'center' }}>
+                WRITING TIMER
+              </div>
+              {/* Circular timer */}
+              <div style={{ width: 120, height: 120, borderRadius: '50%', border: `4px solid ${isMainsTimerRunning ? '#17223E' : '#CBD5E1'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, transition: 'border-color 0.3s' }}>
+                <span style={{ fontWeight: 700, fontSize: 22, color: '#101828' }}>
+                  {formatTime(mainsWritingSeconds)}
+                </span>
+              </div>
+              {/* Status */}
+              <div style={{ fontWeight: 400, fontSize: 11, letterSpacing: '0.06em', color: isMainsTimerRunning ? '#17223E' : '#9CA3AF', textTransform: 'uppercase', marginBottom: 18, textAlign: 'center' }}>
+                {isMainsTimerRunning ? 'IN PROGRESS' : mainsWritingSeconds === 0 ? 'COMPLETE' : 'PAUSED'}
+              </div>
+              {/* Start/Pause */}
+              <button
+                onClick={() => setIsMainsTimerRunning(r => !r)}
+                style={{ width: '100%', height: 46, background: isMainsTimerRunning ? '#dc2626' : '#00BC7D', border: 'none', borderRadius: 10, color: '#FFFFFF', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                {isMainsTimerRunning ? '⏸ Pause' : '▶ Start Timer'}
+              </button>
+              {/* Reset */}
+              <button
+                onClick={() => {
+                  setIsMainsTimerRunning(false);
+                  setMainsWritingSeconds(minPerQ * 60);
+                }}
+                style={{ width: '100%', height: 46, background: '#FFFFFF', border: '1px solid #D1D5DB', borderRadius: 10, color: '#374151', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                ↺ Reset
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
     );
   }
-  /* --------------------------- END MAINS UI --------------------------- */
+  /* ─────────────────────────── END MAINS UI ─────────────────────────── */
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FAFBFE', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ height: '100vh', background: '#E8EDF5', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif', overflow: 'hidden' }}>
 
-      {/* -- Sub-header (matches screenshot strip) -- */}
+      {/* ── Prelims submitting overlay ── */}
+      {submitting && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(232,237,245,0.96)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, fontFamily: 'Inter, sans-serif' }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 20, padding: '40px 48px', boxShadow: '0 20px 60px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, minWidth: 300 }}>
+            <div style={{ width: 44, height: 44, border: '4px solid #E5E7EB', borderTopColor: '#0F172B', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <div style={{ fontWeight: 700, fontSize: 18, color: '#101828' }}>Saving your answers…</div>
+            <div style={{ fontSize: 14, color: '#6B7280' }}>This usually takes a moment</div>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        </div>
+      )}
+
+      {/* ── Sub-header (title only — timer moves into question card) ── */}
       <div
         style={{
           background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
           padding: '10px 24px 12px',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
+          flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span aria-hidden="true" style={{ fontSize: 14, lineHeight: '16px' }}>🏛️</span>
-              <span style={{ fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {title}
-              </span>
-            </div>
-            <div style={{ fontWeight: 500, fontSize: 11, lineHeight: '16px', color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span aria-hidden="true" style={{ fontSize: 14, lineHeight: '16px' }}>🏛️</span>
+          <div>
+            <span style={{ fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {title}
+            </span>
+            <div style={{ fontWeight: 500, fontSize: 11, lineHeight: '16px', color: 'rgba(255,255,255,0.55)', marginTop: 1 }}>
               Today Prelims Mock Test · {totalQuestions} Questions · +0.67 per wrong
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span aria-hidden="true" style={{ fontSize: 16, lineHeight: '16px' }}>⏳</span>
-                <span style={{ fontWeight: 800, fontSize: 18, lineHeight: '22px', color: '#FFFFFF' }}>
-                  {formatTime(timeLeft)}
-                </span>
-              </div>
-              <div style={{ fontWeight: 700, fontSize: 10, lineHeight: '12px', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.6)' }}>
-                TIME LEFT
-              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* -- Progress row (1116×44) -- */}
+      {/* ── Progress row ── */}
       <div
         style={{
-          background: '#FFFFFF',
-          borderBottom: '0.8px solid #E5E7EB',
+          background: 'rgba(255,255,255,0.85)',
+          borderBottom: '0.8px solid #D1D9E6',
           display: 'flex',
           justifyContent: 'center',
+          flexShrink: 0,
         }}
       >
         <div
           style={{
-            width: 1116,
-            height: 44,
+            width: '100%',
+            maxWidth: 1116,
+            height: 40,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingLeft: 32,
-            paddingRight: 32,
+            paddingLeft: 24,
+            paddingRight: 24,
             boxSizing: 'border-box',
           }}
         >
-          <div style={{ flex: 1, marginRight: 16, height: 4, borderRadius: 999, background: '#E5E7EB', overflow: 'hidden' }}>
+          <div style={{ flex: 1, marginRight: 16, height: 4, borderRadius: 999, background: '#D1D9E6', overflow: 'hidden' }}>
             <div
               style={{
-                width: `${Math.round(((currentIdx + 1) / Math.max(1, totalQuestions)) * 100)}%`,
+                width: `${Math.round((answered / Math.max(1, totalQuestions)) * 100)}%`,
                 height: '100%',
                 background: '#00C950',
+                transition: 'width 0.3s ease',
               }}
             />
           </div>
           <div style={{ fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#364153', whiteSpace: 'nowrap' }}>
-            Q {currentIdx + 1} / {totalQuestions} - {answered} Answered
+            Q {currentIdx + 1} / {totalQuestions} · {answered} Answered
           </div>
         </div>
       </div>
 
-      {/* -- Submit Error Banner -- */}
+      {/* ── Submit Error Banner ── */}
       {error && (
         <div style={{
           background: '#FEF2F2',
@@ -1148,16 +929,16 @@ function MockTestAttemptInner() {
         </div>
       )}
 
-      {/* -- Body (centered fixed frame) -- */}
+      {/* ── Body (centered fixed frame) ── */}
       <div
         style={{
           flex: 1,
-          background: '#F9FAFB',
-          padding: '24px',
+          padding: '12px',
           boxSizing: 'border-box',
           display: 'flex',
           justifyContent: 'center',
-          overflow: 'visible',
+          overflow: 'hidden',
+          minHeight: 0,
         }}
       >
         <div
@@ -1165,120 +946,88 @@ function MockTestAttemptInner() {
             width: '100%',
             maxWidth: 1116,
             display: 'flex',
-            gap: 24,
+            gap: 16,
             boxSizing: 'border-box',
             alignItems: 'flex-start',
+            height: '100%',
           }}
         >
-        {/* -- Question Panel -- */}
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+        {/* ─ Question Panel ── */}
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0, height: '100%', overflow: 'hidden' }}>
 
           {/* Question Card */}
           <div
             style={{
-        background: '#FAFBFE',
+              background: '#FFFFFF',
               borderRadius: 16,
               border: '1px solid #E5E7EB',
-              padding: 24,
+              padding: '16px 20px',
               boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)',
-              overflow: 'visible',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
             }}
           >
-            {/* Question header row (pill + bookmark) */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginTop: 8,
-                marginBottom: 16,
-              }}
-            >
-              <div
-                style={{
-                  width: 103.20000457763672,
-                  height: 32,
-                  borderRadius: 10,
-                  background: '#101828',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <span
-                  style={{
-                    width: 73,
-                    height: 20,
-                    fontFamily: 'Inter',
-                    fontWeight: 700,
-                    fontSize: 14,
-                    lineHeight: '20px',
-                    color: '#FFFFFF',
-                  }}
-                >
-                  Question {currentIdx + 1}
-                </span>
+            {/* Daily MCQ style header: subject pill + difficulty pill + timer */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {/* Subject pill */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#EFF6FF', paddingLeft: 12, paddingRight: 12, borderRadius: 999, height: 32 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2" stroke="#155DFC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span style={{ fontWeight: 700, fontSize: 13, color: '#155DFC', whiteSpace: 'nowrap' }}>{currentQ.subject || 'General'}</span>
+                </div>
+                {/* Difficulty pill */}
+                <div style={{ display: 'flex', alignItems: 'center', background: '#FFF7ED', paddingLeft: 12, paddingRight: 12, borderRadius: 999, height: 32 }}>
+                  <span style={{ fontWeight: 700, fontSize: 13, color: '#C2410C' }}>{currentQ.difficulty || 'Medium'}</span>
+                </div>
               </div>
-
-              <button
-                type="button"
-                onClick={handleToggleBookmark}
-                aria-label={bookmarkedQuestions.includes(currentIdx) ? 'Remove bookmark' : 'Add bookmark'}
-                style={{
-                  width: 32,
-                  height: 32,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                }}
-              >
-                {/* Inline icon so no asset needed */}
-                <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarkedQuestions.includes(currentIdx) ? '#F59E0B' : 'none'} aria-hidden="true">
-                  <path
-                    d="M7 3.5h10A1.5 1.5 0 0 1 18.5 5v16l-6.5-3-6.5 3V5A1.5 1.5 0 0 1 7 3.5Z"
-                    stroke={bookmarkedQuestions.includes(currentIdx) ? '#F59E0B' : '#111827'}
-                    strokeWidth="1.6"
-                    strokeLinejoin="round"
-                  />
+              {/* Timer — Daily MCQ style */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                  <circle cx="16" cy="16" r="11" stroke={timeLeft < 60 ? '#E7000B' : '#374151'} strokeWidth="1.5"/>
+                  <path d="M16 10v6l3.5 3.5" stroke={timeLeft < 60 ? '#E7000B' : '#374151'} strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M13 3h6M16 3v3" stroke={timeLeft < 60 ? '#E7000B' : '#374151'} strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                  <span style={{ fontWeight: 800, fontSize: 20, lineHeight: 1, color: timeLeft < 60 ? '#E7000B' : '#101828' }}>
+                    {formatTime(timeLeft)}
+                  </span>
+                  <span style={{ fontSize: 10, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.08em' }}>TIME LEFT</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div style={{ borderTop: '1px solid #E5E7EB', marginBottom: 12 }} />
+
+            {/* Question text + bookmark row (Daily MCQ style) */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14 }}>
+              <div style={{ fontSize: 14, fontWeight: 400, color: '#101828', lineHeight: '22px', whiteSpace: 'pre-line', flex: 1 }}>
+                <span style={{ fontWeight: 700 }}>Question {currentIdx + 1} of {totalQuestions}:</span>{' '}
+                <span>{questionTitle || currentQ.text}</span>
+                {questionBody ? (
+                  <div style={{ marginTop: 8, fontSize: 13, color: '#374151', lineHeight: '20px' }}>{questionBody}</div>
+                ) : null}
+              </div>
+              {/* Bookmark button */}
+              <button
+                onClick={() => {
+                  const newStatuses = { ...questionStatuses };
+                  newStatuses[currentIdx] = newStatuses[currentIdx] === 'marked' ? (selectedOptions[currentIdx] ? 'answered' : 'unattempted') : 'marked';
+                  setQuestionStatuses(newStatuses);
+                }}
+                title={questionStatuses[currentIdx] === 'marked' ? 'Remove bookmark' : 'Bookmark this question'}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: questionStatuses[currentIdx] === 'marked' ? '#F59E0B' : '#D1D5DB', flexShrink: 0, lineHeight: 1, padding: 0 }}
+              >
+                {questionStatuses[currentIdx] === 'marked' ? '★' : '☆'}
               </button>
             </div>
 
-            {/* Question Text (fixed frame per layout) */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 16,
-                boxSizing: 'border-box',
-                marginBottom: 28,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 18,
-                  fontWeight: 400,
-                  color: '#17223E',
-                  lineHeight: '28px',
-                  letterSpacing: 0,
-                  whiteSpace: 'pre-line',
-                }}
-              >
-                {questionTitle || currentQ.text}
-              </div>
-              {questionBody ? (
-                <div style={{ fontSize: 15, fontWeight: 400, color: '#0F172A', lineHeight: '24px', whiteSpace: 'pre-line' }}>
-                  {questionBody}
-                </div>
-              ) : null}
-            </div>
-
-            {/* Options – this is a quiz: we show selection only, and reveal
-                correctness + explanation only on the results screen. */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Options */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflow: 'auto', flex: 1 }}>
               {currentQ.options.map(opt => {
                 const isSelected = selectedOptions[currentIdx] === opt.label;
 
@@ -1308,7 +1057,7 @@ function MockTestAttemptInner() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '16px',
-                      padding: '16px 20px',
+                      padding: '14px 18px',
                       borderRadius: '12px',
                       border,
                       background: bg,
@@ -1334,7 +1083,7 @@ function MockTestAttemptInner() {
                     }}>
                       {circleIcon}
                     </span>
-                    <span style={{ fontSize: '15px', color: textColor, fontWeight }}>
+                    <span style={{ fontSize: '14px', color: textColor, fontWeight }}>
                       {opt.text}
                     </span>
                   </button>
@@ -1353,11 +1102,12 @@ function MockTestAttemptInner() {
             justifyContent: 'space-between',
             background: '#FFFFFF',
             borderRadius: 12,
-            padding: '14px 18px',
+            padding: '10px 14px',
             border: '1px solid #E5E7EB',
+            flexShrink: 0,
           }}>
             {/* Left actions */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <button
                 onClick={handleMark}
                 style={{
@@ -1368,11 +1118,11 @@ function MockTestAttemptInner() {
                   color: '#FB2C36',
                   fontFamily: 'Inter, sans-serif',
                   fontWeight: 600,
-                  fontSize: '14px',
+                  fontSize: '13px',
                   lineHeight: '20px',
                 }}
               >
-                Mark
+                 Mark
               </button>
               <button
                 onClick={handleClear}
@@ -1388,13 +1138,13 @@ function MockTestAttemptInner() {
                   color: '#6A7282',
                   fontFamily: 'Inter, sans-serif',
                   fontWeight: 600,
-                  fontSize: '14px',
+                  fontSize: '13px',
                   lineHeight: '20px',
                   letterSpacing: '0px',
                   padding: 0,
                 }}
               >
-                Clear
+                 Clear
               </button>
               <button
                 onClick={handleNext}
@@ -1406,7 +1156,7 @@ function MockTestAttemptInner() {
                   color: '#155DFC',
                   fontFamily: 'Inter, sans-serif',
                   fontWeight: 600,
-                  fontSize: '14px',
+                  fontSize: '13px',
                   lineHeight: '20px',
                 }}
               >
@@ -1415,7 +1165,7 @@ function MockTestAttemptInner() {
             </div>
 
             {/* Right nav */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button
                 onClick={handlePrev}
                 disabled={currentIdx === 0}
@@ -1423,14 +1173,14 @@ function MockTestAttemptInner() {
                   background: 'none',
                   border: '1.5px solid #CBD5E1',
                   borderRadius: '8px',
-                  padding: '8px 18px',
+                  padding: '6px 14px',
                   color: currentIdx === 0 ? '#CBD5E1' : '#334155',
                   cursor: currentIdx === 0 ? 'not-allowed' : 'pointer',
                   fontWeight: 600,
-                  fontSize: '14px',
+                  fontSize: '13px',
                 }}
               >
-                Prev
+                ← Prev
               </button>
               <button
                 onClick={handleNext}
@@ -1439,44 +1189,55 @@ function MockTestAttemptInner() {
                   background: currentIdx === totalQuestions - 1 ? '#1E293B' : '#2B7FFF',
                   border: 'none',
                   borderRadius: '8px',
-                  padding: '8px 22px',
+                  padding: '6px 18px',
                   color: '#FFFFFF',
                   cursor: currentIdx === totalQuestions - 1 ? 'not-allowed' : 'pointer',
                   fontWeight: 700,
-                  fontSize: '14px',
+                  fontSize: '13px',
                 }}
               >
-                Next
+                Next →
               </button>
             </div>
           </div>
         </main>
 
-        {/* -- Right panel (Navigator card) -- */}
-        <aside style={{ width: 360, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E5E7EB', padding: 20, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)' }}>
-            <div style={{ fontWeight: 700, fontSize: 12, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 12 }}>
+        {/* ── Right panel (Navigator card) ── */}
+        <aside style={{ width: 288, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E5E7EB', padding: 16, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>
               Question Navigator
             </div>
 
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+            {/* Color-coded question buttons */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12, overflow: 'auto', flex: 1, alignContent: 'flex-start' }}>
               {questions.map((_, idx) => {
+                const status = questionStatuses[idx] || 'unattempted';
                 const isCurrent = idx === currentIdx;
-                const isBookmarked = bookmarkedQuestions.includes(idx);
+                const isAnswered = status === 'answered';
+                const isMarked = status === 'marked';
+
+                let bg = '#F3F4F6';
+                let color = '#6B7280';
+                if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
+                if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
+                if (isCurrent) { bg = '#0F172B'; color = '#FFFFFF'; }
+
                 return (
                   <button
                     key={idx}
                     onClick={() => goToQuestion(idx)}
                     style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 10,
-                      border: isBookmarked ? '1px solid #F59E0B' : '1px solid #E5E7EB',
-                      background: isCurrent ? '#0F172B' : '#F3F4F6',
-                      color: isCurrent ? '#FFFFFF' : (isBookmarked ? '#B45309' : '#111827'),
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      border: '1px solid #E5E7EB',
+                      background: bg,
+                      color,
                       fontWeight: 700,
-                      fontSize: 13,
+                      fontSize: 12,
                       cursor: 'pointer',
+                      flexShrink: 0,
                     }}
                   >
                     {idx + 1}
@@ -1485,45 +1246,41 @@ function MockTestAttemptInner() {
               })}
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+            {/* Legend */}
+            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 8, marginBottom: 10 }}>
               {[
                 { label: 'Answered', color: '#00C950', value: answered },
-                { label: 'Unanswered', color: '#94A3B8', value: Math.max(0, totalQuestions - answered) },
-                { label: 'Bookmarked', color: '#F59E0B', value: bookmarked },
-                { label: 'Marked for review', color: '#FB2C36', value: marked },
+                { label: 'Unanswered', color: '#D1D5DB', value: Math.max(0, totalQuestions - answered - marked) },
+                { label: 'Marked for review', color: '#F59E0B', value: marked },
               ].map((row) => (
-                <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: 3, background: row.color }} />
-                    <span style={{ fontSize: 12, color: '#374151' }}>{row.label}</span>
+                <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <div style={{ width: 14, height: 14, borderRadius: 3, background: row.label === 'Answered' ? '#DCFCE7' : row.label === 'Marked for review' ? '#FEF3C7' : '#F3F4F6', border: `1px solid ${row.color}` }} />
+                    <span style={{ fontSize: 11, color: '#374151' }}>{row.label}</span>
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#111827' }}>{row.value}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>{row.value}</span>
                 </div>
               ))}
             </div>
 
-            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 12, marginTop: 6 }}>
-              <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 6 }}>Ready to submit</div>
-              <div style={{ fontSize: 13, color: '#374151', lineHeight: '20px', marginBottom: 14 }}>
-                {answered} answered - {Math.max(0, totalQuestions - answered)} unanswered - {bookmarked} bookmarked
-              </div>
+            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 10 }}>
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
                 style={{
                   width: '100%',
-                  height: 44,
+                  height: 40,
                   background: '#0F172B',
                   border: 'none',
-                  borderRadius: 12,
+                  borderRadius: 10,
                   color: '#FFFFFF',
                   fontWeight: 700,
-                  fontSize: 14,
+                  fontSize: 13,
                   cursor: submitting ? 'not-allowed' : 'pointer',
                   opacity: submitting ? 0.7 : 1,
                 }}
               >
-                Submit Test
+                ✓ Submit Test
               </button>
             </div>
           </div>
@@ -1539,7 +1296,7 @@ export default function MockTestAttemptPage() {
     <Suspense fallback={
       <div style={{
         minHeight: '100vh',
-        background: '#FAFBFE',
+        background: '#FFFFFF',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

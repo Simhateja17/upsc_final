@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { flashcardService, mockTestService, spacedRepService } from '@/lib/services';
+import { mockTestService, flashcardService, spacedRepService } from '@/lib/services';
 
 interface Question {
   id: number;
@@ -145,41 +145,6 @@ interface MainsPerQuestion {
   wordCount?: number;
 }
 
-const NEXT_STEP_CARDS = [
-  {
-    icon: '↻',
-    title: 'Retake this test',
-    desc: 'Same config, fresh attempt. Ideal for reinforcing weak areas.',
-    href: '/dashboard/mock-tests/attempt',
-    dark: true,
-    badge: 'Recommended',
-  },
-  {
-    icon: '+',
-    title: 'Build a new test',
-    desc: 'Change subject, difficulty or source. Keep the variety going.',
-    href: '/dashboard/mock-tests',
-    dark: false,
-    badge: 'Most popular',
-  },
-  {
-    icon: '✍',
-    title: 'Try Mains Writing',
-    desc: 'Practice answer writing with AI feedback and timed structure.',
-    href: '/dashboard/daily-answer',
-    dark: false,
-    badge: 'Mains prep',
-  },
-  {
-    icon: '↑',
-    title: 'Unlock Pro Practice',
-    desc: 'Remove limits with full-length papers, PYQ archives, and analytics.',
-    href: '/dashboard/billing/plans',
-    dark: false,
-    badge: 'Upgrade',
-  },
-];
-
 function MockTestResultsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -195,7 +160,65 @@ function MockTestResultsInner() {
   const [error, setError] = useState<string | null>(null);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(1);
   const [mainsData, setMainsData] = useState<MainsPerQuestion[] | null>(null);
-  const [savedActions, setSavedActions] = useState<Record<string, boolean>>({});
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const handleAddToFlashcards = async (q: any) => {
+    setActionLoading(`flashcard-${q.idx}`);
+    try {
+      const correctOpt = q.options?.find((o: any) => o.label === q.correct);
+      await flashcardService.createCard({
+        subjectId: '',
+        subject: q.subject || 'General',
+        topic: q.subject || 'General',
+        question: q.text || q.questionText || '',
+        answer: correctOpt?.text || q.correct || '',
+        difficulty: q.difficulty || 'Medium',
+      });
+      showToast('Added to flashcards!');
+    } catch {
+      showToast('Failed to add to flashcards', 'error');
+    }
+    setActionLoading(null);
+  };
+
+  const handleNeedToRevise = async (q: any) => {
+    setActionLoading(`revise-${q.idx}`);
+    try {
+      await spacedRepService.addItem({
+        questionText: q.text || q.questionText || '',
+        subject: q.subject || 'General',
+        source: 'mock-test',
+        sourceType: 'mcq',
+        scheduleDay: 1,
+        scheduleDays: [1, 3, 7, 14, 30],
+        remindEnabled: true,
+      });
+      showToast('Added to spaced repetition!');
+    } catch {
+      showToast('Failed to add to revision', 'error');
+    }
+    setActionLoading(null);
+  };
+
+  const handleStudyNotes = (q: any) => {
+    if (typeof window !== 'undefined') {
+      const notes = JSON.parse(sessionStorage.getItem('studyNotes') || '[]');
+      notes.push({
+        questionId: q.idx,
+        question: q.text || q.questionText || '',
+        subject: q.subject || 'General',
+        addedAt: new Date().toISOString(),
+      });
+      sessionStorage.setItem('studyNotes', JSON.stringify(notes));
+    }
+    showToast('Saved to study notes!');
+  };
 
   /* ─── Mains results loader ─── */
   useEffect(() => {
@@ -263,7 +286,7 @@ function MockTestResultsInner() {
           skipped: data.skipped ?? 0,
           netScore: (Number(data.correct ?? 0) * 2 - Number(data.wrong ?? 0) * 0.67).toFixed(2),
           scorePct: data.accuracyPct ?? 0,
-          perfLabel: 'Keep Going – Every Attempt Makes You Better!',
+          perfLabel: 'Keep Going — Every Attempt Makes You Better!',
           subjectStats: [],
           analysis: [],
           testLabel: title,
@@ -329,8 +352,8 @@ function MockTestResultsInner() {
           const strongest = subjectStats.reduce((a: SubjectStat, b: SubjectStat) => (a.correct / (a.total || 1)) >= (b.correct / (b.total || 1)) ? a : b);
           const weakest = subjectStats.reduce((a: SubjectStat, b: SubjectStat) => (a.correct / (a.total || 1)) <= (b.correct / (b.total || 1)) ? a : b);
           analysis = [
-            { emoji: '💪', text: `Your strongest area is ${strongest.subject} – maintain momentum here.` },
-            { emoji: '🔥', text: `Focus on ${weakest.subject} – 20 min daily for two weeks will show major gains.` },
+            { emoji: '💪', text: `Your strongest area is ${strongest.subject} — maintain momentum here.` },
+            { emoji: '🔥', text: `Focus on ${weakest.subject} — 20 min daily for two weeks will show major gains.` },
             { emoji: '🎯', text: 'Accuracy is improving. Attempt similar difficulty tests to consolidate.' },
             { emoji: '🏆', text: 'Top rankers average 82%+. You\'re building momentum!' },
           ];
@@ -351,33 +374,6 @@ function MockTestResultsInner() {
             delta: !q.selectedOption && !q.selected ? 0 : (q.isCorrect ? 2 : -0.67),
             timeSec: '-',
           })));
-        } else if (typeof window !== 'undefined') {
-          const rawReview = sessionStorage.getItem(`mockTestReview:${testId}`);
-          if (rawReview) {
-            const cached = JSON.parse(rawReview) as {
-              questions?: Question[];
-              selectedOptions?: Record<number, string>;
-            };
-            if (Array.isArray(cached.questions)) {
-              setReviewQuestions(cached.questions.map((q, i) => {
-                const selected = cached.selectedOptions?.[i] ?? null;
-                const isCorrect = !!selected && selected === q.correct;
-                return {
-                  idx: i + 1,
-                  text: q.text,
-                  subject: q.subject,
-                  options: q.options,
-                  correct: q.correct,
-                  selected,
-                  isCorrect,
-                  explanation: q.explanation,
-                  status: !selected ? 'skipped' : (isCorrect ? 'correct' : 'wrong'),
-                  delta: !selected ? 0 : (isCorrect ? 2 : -0.67),
-                  timeSec: '-',
-                };
-              }));
-            }
-          }
         }
 
         setResults({
@@ -403,7 +399,6 @@ function MockTestResultsInner() {
     }
     loadResults();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testId]);
 
   /* ─── Loading State ─── */
@@ -411,7 +406,7 @@ function MockTestResultsInner() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#FAFBFE',
+        background: '#F9FAFB',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -438,7 +433,7 @@ function MockTestResultsInner() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#FAFBFE',
+        background: '#F9FAFB',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -475,8 +470,8 @@ function MockTestResultsInner() {
     const pct = Math.round((totalScore / totalMax) * 100);
     const headline =
       pct >= 70 ? 'Strong attempt across all questions'
-      : pct >= 50 ? 'Good attempt – solid foundation'
-      : 'Keep practising – real progress ahead';
+      : pct >= 50 ? 'Good attempt — solid foundation'
+      : 'Keep practising — real progress ahead';
 
     const gradeFor = (s: number, m: number): string => {
       const p = m > 0 ? (s / m) * 100 : 0;
@@ -490,7 +485,7 @@ function MockTestResultsInner() {
     };
 
     return (
-      <div style={{ minHeight: '100vh', background: '#FAFBFE', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
+      <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
         <div style={{ maxWidth: 960, margin: '0 auto' }}>
           <button
             type="button"
@@ -597,13 +592,37 @@ function MockTestResultsInner() {
               </li>
               <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
                 <span>📖</span>
-                <span>Layer in recent policy / current-affairs examples – examiners consistently reward contemporary linkage on mains.</span>
+                <span>Layer in recent policy / current-affairs examples — examiners consistently reward contemporary linkage on mains.</span>
               </li>
               <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
                 <span>🎯</span>
                 <span>Push for multi-dimensional analysis: social, economic, political, and environmental angles strengthen answers significantly.</span>
               </li>
             </ul>
+          </div>
+
+          {/* What to do next CTA */}
+          <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
+            <button
+              onClick={() => router.push(`/dashboard/mock-tests/next-steps${testId ? `?testId=${testId}&examMode=mains` : ''}`)}
+              style={{
+                background: '#17223E',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: 12,
+                padding: '14px 32px',
+                fontWeight: 700,
+                fontSize: 15,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                boxShadow: '0 4px 16px rgba(23,34,62,0.2)',
+              }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FDC700', display: 'inline-block' }} />
+              What would you like to do next? →
+            </button>
           </div>
         </div>
       </div>
@@ -613,74 +632,30 @@ function MockTestResultsInner() {
   const { total, correct, wrong, skipped, scorePct } = results!;
   const sample = (results as any)._sample as any | undefined;
   const showConfetti = scorePct > 50;
-  const subjectToId = (subject: string) =>
-    (subject || 'general-studies').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  const currentReviewRows = sample?.review ?? reviewQuestions;
-  const rememberAction = (key: string) => setSavedActions((prev) => ({ ...prev, [key]: true }));
-  const saveStudyNote = (q: Question, rowIdx: number) => {
-    if (typeof window === 'undefined') return;
-    const key = 'mock-test-study-notes';
-    const existing = JSON.parse(window.localStorage.getItem(key) || '[]');
-    const next = Array.isArray(existing) ? existing.filter((item: any) => item?.id !== `note-${testId ?? 'sample'}-${rowIdx}`) : [];
-    next.unshift({
-      id: `note-${testId ?? 'sample'}-${rowIdx}`,
-      title: q.text.split('\n')[0],
-      subject: q.subject || 'General Studies',
-      note: q.explanation || 'Review this question again before your next mock test.',
-      createdAt: new Date().toISOString(),
-      source: 'Mock Test Review',
-    });
-    window.localStorage.setItem(key, JSON.stringify(next.slice(0, 50)));
-    rememberAction(`note-${rowIdx}`);
-  };
-  const addToFlashcards = async (q: Question, rowIdx: number) => {
-    const subject = q.subject || 'General Studies';
-    const answer = q.explanation || `Correct answer: ${q.correct}`;
-    rememberAction(`flashcard-${rowIdx}`);
-    try {
-      await flashcardService.createCard({
-        subjectId: subjectToId(subject),
-        subject,
-        topicId: 'mock-test-review',
-        topic: 'Mock Test Review',
-        question: q.text,
-        answer,
-        difficulty: q.difficulty,
-      });
-    } catch {
-      if (typeof window !== 'undefined') {
-        const key = 'mock-test-flashcard-queue';
-        const existing = JSON.parse(window.localStorage.getItem(key) || '[]');
-        const next = Array.isArray(existing) ? existing : [];
-        next.unshift({ id: `flashcard-${testId ?? 'sample'}-${rowIdx}`, subject, question: q.text, answer });
-        window.localStorage.setItem(key, JSON.stringify(next.slice(0, 50)));
-      }
-    }
-  };
-  const markWeak = async (q: Question, rowIdx: number) => {
-    const subject = q.subject || 'General Studies';
-    rememberAction(`weak-${rowIdx}`);
-    try {
-      await spacedRepService.addItem({
-        questionText: q.text,
-        subject,
-        source: 'Mock Test Review',
-        sourceType: 'mock-test',
-        scheduleDay: 1,
-      });
-    } catch {
-      if (typeof window !== 'undefined') {
-        const key = 'mock-test-weak-queue';
-        const existing = JSON.parse(window.localStorage.getItem(key) || '[]');
-        const next = Array.isArray(existing) ? existing : [];
-        next.unshift({ id: `weak-${testId ?? 'sample'}-${rowIdx}`, subject, questionText: q.text });
-        window.localStorage.setItem(key, JSON.stringify(next.slice(0, 50)));
-      }
-    }
-  };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FAFBFE', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif' }}>
+      {/* Toast Notification */}
+      {toast.show && (
+        <div style={{
+          position: 'fixed',
+          top: '16px',
+          right: '16px',
+          zIndex: 9999,
+          padding: '12px 20px',
+          borderRadius: '10px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          background: toast.type === 'success' ? '#F0FDF4' : '#FEF2F2',
+          border: toast.type === 'success' ? '1px solid #86EFAC' : '1px solid #FCA5A5',
+          color: toast.type === 'success' ? '#166534' : '#991B1B',
+          fontSize: '14px',
+          fontWeight: 600,
+          fontFamily: 'Inter, sans-serif',
+          animation: 'slideDown 0.2s ease',
+        }}>
+          {toast.type === 'success' ? '✓' : '✕'} {toast.message}
+        </div>
+      )}
       {showConfetti && (
         <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 10 }}>
           {Array.from({ length: 36 }, (_, i) => (
@@ -709,11 +684,10 @@ function MockTestResultsInner() {
       )}
       <div
         style={{
-          width: '100%',
-          maxWidth: 1024,
+          width: 1024,
           minHeight: 955.9750366210938,
-          margin: '52px auto 0',
-          padding: '0 24px 40px',
+          marginTop: 52,
+          marginLeft: 46,
           boxSizing: 'border-box',
         }}
       >
@@ -757,7 +731,7 @@ function MockTestResultsInner() {
           <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
             <button
               type="button"
-              onClick={() => router.push(testId ? `/dashboard/mock-tests/attempt?testId=${encodeURIComponent(testId)}&examMode=${encodeURIComponent(examMode)}` : `/dashboard/mock-tests/attempt?mode=sample&title=${encodeURIComponent(title)}`)}
+              onClick={() => router.push(`/dashboard/mock-tests/attempt?mode=sample&title=${encodeURIComponent(title)}`)}
               style={{ height: 36, borderRadius: 10, padding: '0 16px', border: 'none', background: 'linear-gradient(89.92deg, #F1A901 0.07%, #FD7302 99.93%)', color: '#0B1120', fontWeight: 800, cursor: 'pointer' }}
             >
               ↻ Reattempt
@@ -785,54 +759,6 @@ function MockTestResultsInner() {
           </div>
         </div>
 
-        <div style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: '#101828', marginBottom: 12 }}>
-            What would you like to do next?
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            {NEXT_STEP_CARDS.map((card) => (
-              <button
-                key={card.title}
-                type="button"
-                onClick={() => router.push(card.href)}
-                style={{
-                  textAlign: 'left',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: 18,
-                  padding: '20px 18px',
-                  background: card.dark ? '#1D293D' : '#FFFFFF',
-                  color: card.dark ? '#FFFFFF' : '#101828',
-                  boxShadow: '0 8px 20px rgba(15, 23, 43, 0.08)',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ fontSize: 11, fontWeight: 800, color: card.dark ? '#DBEAFE' : '#7C3AED', marginBottom: 8 }}>
-                  {card.badge}
-                </div>
-                <div style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 10,
-                  background: card.dark ? 'rgba(255,255,255,0.12)' : '#F3F4F6',
-                  color: card.dark ? '#FDC700' : '#17223E',
-                  fontSize: 22,
-                  fontWeight: 900,
-                }}>
-                  {card.icon}
-                </div>
-                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>{card.title}</div>
-                <div style={{ fontSize: 13, lineHeight: '20px', color: card.dark ? 'rgba(255,255,255,0.72)' : '#4B5563' }}>
-                  {card.desc}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div id="mt-full-analysis" style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800, color: '#101828', marginBottom: 12 }}>
             <span style={{ width: 18, height: 18, borderRadius: 4, border: '2px solid #00C950', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#00C950' }}>✓</span>
@@ -840,7 +766,7 @@ function MockTestResultsInner() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {currentReviewRows.map((row: any) => {
+            {(sample?.review ?? reviewQuestions).map((row: any) => {
               const questions: Question[] = (sample?.questions as Question[] | undefined) ?? SAMPLE_QUESTIONS;
               const selectedOptions: Record<number, string> = (sample?.selectedOptions as Record<number, string> | undefined) ?? {};
               // For real tests, row itself contains full question data
@@ -978,7 +904,7 @@ function MockTestResultsInner() {
                         <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>
                           You picked:{' '}
                           <span style={{ fontWeight: 800, color: row.status === 'wrong' ? '#DC2626' : '#16A34A' }}>
-                            {selected} – {(q.options.find((o: any) => o.label === selected)?.text ?? '')}
+                            {selected} — {(q.options.find((o: any) => o.label === selected)?.text ?? '')}
                           </span>
                         </div>
                       ) : (
@@ -1005,24 +931,23 @@ function MockTestResultsInner() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14, fontSize: 12 }}>
                         <button
                           type="button"
-                          onClick={() => addToFlashcards(q as Question, row.idx)}
-                          style={{ background: 'transparent', border: 'none', color: '#DC2626', fontWeight: 700, cursor: 'pointer', padding: 0 }}
-                        >
-                          {savedActions[`flashcard-${row.idx}`] ? 'Added to Flashcards' : 'Add to Flashcards'}
+                          onClick={() => handleAddToFlashcards(row)}
+                          disabled={actionLoading === `flashcard-${row.idx}`}
+                          style={{ background: 'transparent', border: 'none', color: '#7C3AED', fontWeight: 700, cursor: actionLoading === `flashcard-${row.idx}` ? 'not-allowed' : 'pointer', padding: 0, opacity: actionLoading === `flashcard-${row.idx}` ? 0.5 : 1 }}>
+                          {actionLoading === `flashcard-${row.idx}` ? 'Adding...' : 'Add to Flashcards'}
                         </button>
                         <button
                           type="button"
-                          onClick={() => markWeak(q as Question, row.idx)}
-                          style={{ background: 'transparent', border: 'none', color: '#D97706', fontWeight: 700, cursor: 'pointer', padding: 0 }}
-                        >
-                          {savedActions[`weak-${row.idx}`] ? 'Marked Weak' : 'Mark Weak'}
+                          onClick={() => handleNeedToRevise(row)}
+                          disabled={actionLoading === `revise-${row.idx}`}
+                          style={{ background: 'transparent', border: 'none', color: '#DC2626', fontWeight: 700, cursor: actionLoading === `revise-${row.idx}` ? 'not-allowed' : 'pointer', padding: 0, opacity: actionLoading === `revise-${row.idx}` ? 0.5 : 1 }}>
+                          {actionLoading === `revise-${row.idx}` ? 'Adding...' : 'Need to Revise'}
                         </button>
                         <button
                           type="button"
-                          onClick={() => saveStudyNote(q as Question, row.idx)}
-                          style={{ background: 'transparent', border: 'none', color: '#2563EB', fontWeight: 700, cursor: 'pointer', padding: 0 }}
-                        >
-                          {savedActions[`note-${row.idx}`] ? 'Saved Note' : 'Study Notes'}
+                          onClick={() => handleStudyNotes(row)}
+                          style={{ background: 'transparent', border: 'none', color: '#2563EB', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+                          Study Notes
                         </button>
                       </div>
                     </div>
@@ -1051,7 +976,7 @@ export default function MockTestResultsPage() {
     <Suspense fallback={
       <div style={{
         minHeight: '100vh',
-        background: '#FAFBFE',
+        background: '#F9FAFB',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

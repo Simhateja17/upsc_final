@@ -322,7 +322,12 @@ function NextStepsInner() {
                 padding: '6px 16px',
                 alignSelf: 'flex-start',
               }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: card.badgeColor, lineHeight: '16px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: card.badgeColor, lineHeight: '16px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {card.title === 'Unlock Pro Practice' && (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z"/>
+                    </svg>
+                  )}
                   {card.badge}
                 </span>
               </div>

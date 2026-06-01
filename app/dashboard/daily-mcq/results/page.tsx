@@ -188,6 +188,12 @@ export default function DailyMcqResultsPage() {
   const effectiveTimeSeconds = Math.min(r.timeTaken, 10 * 60);
   const speed = attemptedCount > 0 ? (effectiveTimeSeconds / 60 / attemptedCount).toFixed(2) : '0';
 
+  // Fix ranking display: show meaningful rank even with low participation
+  const displayPercentile = Math.min(Math.max(r.percentile, 0), 99);
+  const rankLabel = r.rank > 0 && r.questionCount > 1
+    ? displayPercentile >= 95 ? `Top 5%` : displayPercentile >= 90 ? `Top 10%` : displayPercentile >= 75 ? `Top 25%` : displayPercentile >= 50 ? `Top 50%` : `Keep practicing!`
+    : r.rank === 0 && r.questionCount > 0 ? 'First to attempt!' : 'Rankings updating...';
+
   return (
     <>
       <ConfettiCanvas active={showConfetti} />
@@ -248,7 +254,7 @@ export default function DailyMcqResultsPage() {
                 <div className="font-arimo text-[#4A5565] mb-[clamp(0.15rem,0.3vw,0.25rem)]"
                   style={{ fontSize: 'clamp(11px,0.65vw,14px)' }}>Rank</div>
                 <div className="font-arimo font-bold text-[#101828]"
-                  style={{ fontSize: 'clamp(16px,1.05vw,22px)' }}>Top {r.percentile}%</div>
+                  style={{ fontSize: 'clamp(16px,1.05vw,22px)' }}>{rankLabel}</div>
               </div>
             </div>
 
