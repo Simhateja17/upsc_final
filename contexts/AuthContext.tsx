@@ -5,7 +5,7 @@ import { authService, User, storeTokens, clearTokens, SignupData, LoginData } fr
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 
-/** Build a fallback User from the Supabase session when /auth/me is unavailable */
+/** Build a fallback User from the Supabase session when /auth/me is unavailable  */
 function userFromSession(session: Session): User {
   const { user: su } = session;
   return {
