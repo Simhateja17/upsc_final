@@ -57,6 +57,34 @@ const SUBJECT_ICONS: Record<string, string> = {
 const countKey = (...parts: Array<string | null | undefined>) =>
   parts.map((part) => (part || '').trim().toLowerCase()).join('||');
 
+const asTextList = (value: any): string[] => {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          return item.text || item.feedback || item.comment || item.point || JSON.stringify(item);
+        }
+        return String(item);
+      })
+      .filter((item) => item.trim().length > 0);
+  }
+  if (typeof value === 'string') return value.trim() ? [value] : [];
+  if (typeof value === 'object') {
+    return Object.entries(value)
+      .flatMap(([key, item]) => asTextList(item).map((text) => `${key}: ${text}`))
+      .filter(Boolean);
+  }
+  return [String(value)];
+};
+
+const humanizeKey = (key: string) =>
+  key
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
 const PRELIMS_SUBJECT_TREE: SubjectTreeNode[] = [
   ...(prelimsSyllabus as Array<{ subject: string; subSubjects: Array<{ label: string; topics: string[] }> }>).map((node) => ({
     label: node.subject,
@@ -1910,113 +1938,189 @@ export default function PyqPage() {
         </div>
       )}
 
-      {/* AI EVALUATION COMPLETE - opens after real evaluation */}
+      {/* Rich AI evaluation result - opens after real evaluation */}
       {showAiEvalCompleteModal && mainsEvalResults && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto"
-          style={{ background: 'rgba(0,0,0,0.6)' }}
+          style={{ background: 'rgba(15,23,42,0.64)' }}
           onClick={() => setShowAiEvalCompleteModal(false)}
         >
           <div
-            className="rounded-[24px] flex flex-col my-8 overflow-hidden w-full max-w-[720px]"
+            className="rounded-[28px] flex flex-col my-8 overflow-hidden w-full max-w-[840px]"
             style={{
-              background: '#0F172B',
+              background: '#F8FAFC',
               boxShadow: '0px 25px 50px -12px rgba(0,0,0,0.5)',
-              minHeight: 560,
               maxHeight: 'calc(100vh - 64px)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="px-8 pt-8 pb-6 flex flex-col md:flex-row md:items-start md:justify-between gap-4 rounded-t-[24px]" style={{ background: '#1E3A5F' }}>
+            <div className="px-8 pt-7 pb-6 flex flex-col md:flex-row md:items-start md:justify-between gap-4" style={{ background: '#FFFFFF', borderBottom: '1px solid #E5E7EB' }}>
               <div>
-                <div className="flex items-center gap-2 mb-2" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.05em', color: '#FBBF24', textTransform: 'uppercase' }}>
-                  AI EVALUATION COMPLETE
+                <div className="flex items-center gap-2 mb-2" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', letterSpacing: '0.05em', color: '#2563EB', textTransform: 'uppercase' }}>
+                  Evaluation
                 </div>
-                <h2 className="font-bold mb-1" style={{ fontFamily: 'Inter', fontSize: 24, lineHeight: 1.3, color: '#FFFFFF' }}>
-                  Your answer has been evaluated
+                <h2 className="font-bold mb-1" style={{ fontFamily: 'Inter', fontSize: 28, lineHeight: 1.2, color: '#111827' }}>
+                  Marks scored: {mainsEvalResults.score}/{mainsEvalResults.maxScore}
                 </h2>
-                <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: 1.4, color: '#94A3B8' }}>
+                <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: 1.4, color: '#6B7280' }}>
                   {mainsEvalResults.question?.paper || 'Mains'} · {mainsEvalResults.question?.subject || ''} · {mainsEvalResults.wordCount || 0} words
                 </p>
               </div>
-              <div className="flex items-start gap-3">
               {(() => {
                 const pct = mainsEvalResults.maxScore > 0 ? Math.round((mainsEvalResults.score / mainsEvalResults.maxScore) * 100) : 0;
                 return (
-                  <div className="flex-shrink-0 relative w-20 h-20 flex items-center justify-center">
-                    <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 80 80">
-                      <circle cx="40" cy="40" r="36" fill="none" stroke="#64748B" strokeWidth="4" />
-                      <circle cx="40" cy="40" r="36" fill="none" stroke="#FBBF24" strokeWidth="4" strokeDasharray={`${2 * Math.PI * 36}`} strokeDashoffset={2 * Math.PI * 36 * (1 - pct / 100)} strokeLinecap="round" />
-                    </svg>
-                    <div className="relative flex flex-col items-center justify-center">
-                      <span className="font-bold block leading-none" style={{ fontFamily: 'Inter', fontSize: 18, color: '#FFFFFF' }}>{pct}%</span>
-                      <span className="block mt-0.5" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: 1.2, color: '#94A3B8' }}>MARKS</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0 relative w-20 h-20 flex items-center justify-center">
+                      <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 80 80">
+                        <circle cx="40" cy="40" r="36" fill="none" stroke="#E5E7EB" strokeWidth="6" />
+                        <circle cx="40" cy="40" r="36" fill="none" stroke={pct >= 60 ? '#22C55E' : pct >= 35 ? '#F59E0B' : '#EF4444'} strokeWidth="6" strokeDasharray={`${2 * Math.PI * 36}`} strokeDashoffset={2 * Math.PI * 36 * (1 - pct / 100)} strokeLinecap="round" />
+                      </svg>
+                      <div className="relative flex flex-col items-center justify-center">
+                        <span className="font-bold block leading-none" style={{ fontFamily: 'Inter', fontSize: 18, color: '#111827' }}>{pct}%</span>
+                        <span className="block mt-0.5" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, lineHeight: 1.2, color: '#6B7280' }}>MARKS</span>
+                      </div>
                     </div>
+                    <button type="button" onClick={() => setShowAiEvalCompleteModal(false)} className="h-11 w-11 rounded-full bg-[#111827] text-white text-[24px] leading-none" aria-label="Close evaluation modal">
+                      ×
+                    </button>
                   </div>
                 );
               })()}
-                <button type="button" onClick={() => setShowAiEvalCompleteModal(false)} className="h-10 w-10 rounded-full bg-[#0F172B] text-white" aria-label="Close evaluation modal">
-                  ×
-                </button>
-              </div>
             </div>
 
             <div className="flex-1 px-8 py-6 space-y-6 overflow-y-auto">
-              {/* Score card */}
-              <div className="rounded-[16px] p-6 space-y-4" style={{ background: '#F1F5F9' }}>
+              <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
                 <QuestionTextRenderer
                   text={mainsEvalResults.question?.questionText}
-                  textClassName="font-[Inter] font-normal text-[15px] leading-[1.5] text-[#334155]"
+                  textClassName="font-[Inter] font-semibold text-[15px] leading-[1.55] text-[#111827]"
                 />
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-bold" style={{ fontFamily: 'Inter', fontSize: 28, lineHeight: 1.2, color: '#1E3A5F' }}>{mainsEvalResults.score}/{mainsEvalResults.maxScore}</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
+                  <div className="flex items-baseline justify-between gap-3 mb-4">
+                    <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, color: '#111827' }}>Word count: {mainsEvalResults.wordCount || 0}</p>
+                    <span className="rounded-full px-3 py-1" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, color: (mainsEvalResults.wordCount || 0) > 280 ? '#BE123C' : '#047857', border: `1px solid ${(mainsEvalResults.wordCount || 0) > 280 ? '#FDA4AF' : '#86EFAC'}` }}>
+                      {(mainsEvalResults.wordCount || 0) > 280 ? 'OVER LIMIT' : 'RECORDED'}
+                    </span>
+                  </div>
+                  <p style={{ fontFamily: 'Inter', fontSize: 14, lineHeight: 1.6, color: '#4B5563' }}>
+                    Word limit is considered while calculating your marks.
+                  </p>
                 </div>
 
-                {/* Strengths */}
+                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
+                  <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, color: '#111827' }}>Checked copy</p>
+                  <p style={{ fontFamily: 'Inter', fontSize: 14, lineHeight: 1.6, color: '#4B5563' }}>
+                    {mainsEvalResults.checkedCopyUrl
+                      ? 'Teacher-style markup is ready.'
+                      : mainsFile
+                        ? 'Markup is not available yet for this attempt.'
+                        : 'Upload a handwritten image to generate visual markup.'}
+                  </p>
+                  {mainsEvalResults.checkedCopyUrl && (
+                    <a href={mainsEvalResults.checkedCopyUrl} target="_blank" rel="noreferrer" className="inline-flex mt-4 rounded-[12px] px-4 py-2" style={{ background: '#2563EB', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: 14 }}>
+                      Open checked copy
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {mainsEvalResults.checkedCopyUrl && (
+                <div className="rounded-[22px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <p style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#111827' }}>Examiner markup</p>
+                    <span className="rounded-full px-3 py-1" style={{ background: '#FEE2E2', color: '#B91C1C', fontFamily: 'Inter', fontWeight: 800, fontSize: 12 }}>BETA</span>
+                  </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={mainsEvalResults.checkedCopyUrl}
+                    alt="Checked copy with evaluator markup"
+                    className="w-full rounded-[14px]"
+                    style={{ border: '1px solid #E5E7EB', background: '#F3F4F6' }}
+                  />
+                </div>
+              )}
+
+              {asTextList(mainsEvalResults.demandCoverage).length > 0 && (
+                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
+                  <p className="mb-4" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 22, color: '#111827' }}>Demand of the question</p>
+                  <ul className="space-y-3 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 16, lineHeight: 1.55, color: '#111827' }}>
+                    {asTextList(mainsEvalResults.demandCoverage).map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {mainsEvalResults.answerText && (
+                <div className="rounded-[18px] p-5" style={{ background: '#E0F2FE', border: '1px solid #BAE6FD' }}>
+                  <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#0F172A' }}>What you wrote</p>
+                  <p style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.75, color: '#0F172A', whiteSpace: 'pre-line' }}>
+                    {mainsEvalResults.answerText}
+                  </p>
+                </div>
+              )}
+
+              {mainsEvalResults.sectionFeedback && typeof mainsEvalResults.sectionFeedback === 'object' && !Array.isArray(mainsEvalResults.sectionFeedback) && (
+                <div className="space-y-4">
+                  {Object.entries(mainsEvalResults.sectionFeedback).map(([section, feedback]) => (
+                    <div key={section} className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
+                      <p className="mb-3 uppercase" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 14, letterSpacing: '0.06em', color: '#6B7280' }}>
+                        {humanizeKey(section)}
+                      </p>
+                      <ul className="space-y-2 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.6, color: '#1F2937' }}>
+                        {asTextList(feedback).map((item, i) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {mainsEvalResults.strengths?.length > 0 && (
-                  <div className="space-y-2 pt-2" style={{ borderTop: '1px solid #E2E8F0' }}>
-                    <p style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: '#15803D' }}>Strengths</p>
-                    {mainsEvalResults.strengths.map((s: string, i: number) => (
-                      <p key={i} style={{ fontFamily: 'Inter', fontSize: 14, lineHeight: 1.5, color: '#334155' }}>
-                        <span className="text-[#15803D]" aria-hidden>✓ </span>{s}
-                      </p>
-                    ))}
+                  <div className="rounded-[18px] p-5" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                    <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#166534' }}>Strengths</p>
+                    <ul className="space-y-2 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.6, color: '#14532D' }}>
+                      {mainsEvalResults.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                    </ul>
                   </div>
                 )}
 
-                {/* Improvements */}
                 {mainsEvalResults.improvements?.length > 0 && (
-                  <div className="space-y-2 pt-2" style={{ borderTop: '1px solid #E2E8F0' }}>
-                    <p style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: '#EA580C' }}>Areas to Improve</p>
-                    {mainsEvalResults.improvements.map((s: string, i: number) => (
-                      <p key={i} style={{ fontFamily: 'Inter', fontSize: 14, lineHeight: 1.5, color: '#334155' }}>
-                        <span className="text-[#EA580C]" aria-hidden>↑ </span>{s}
-                      </p>
-                    ))}
-                  </div>
-                )}
-
-                {/* Suggestions */}
-                {mainsEvalResults.suggestions?.length > 0 && (
-                  <div className="space-y-2 pt-2" style={{ borderTop: '1px solid #E2E8F0' }}>
-                    <p style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: '#0EA5E9' }}>Suggestions</p>
-                    {mainsEvalResults.suggestions.map((s: string, i: number) => (
-                      <p key={i} style={{ fontFamily: 'Inter', fontSize: 14, lineHeight: 1.5, color: '#334155' }}>
-                        <span className="text-[#0EA5E9]" aria-hidden>i </span>{s}
-                      </p>
-                    ))}
+                  <div className="rounded-[18px] p-5" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
+                    <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#C2410C' }}>Areas to improve</p>
+                    <ul className="space-y-2 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.6, color: '#7C2D12' }}>
+                      {mainsEvalResults.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                    </ul>
                   </div>
                 )}
               </div>
 
-              {/* Detailed feedback */}
+              {mainsEvalResults.suggestions?.length > 0 && (
+                <div className="rounded-[18px] p-5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+                  <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#1D4ED8' }}>Suggestions to improve</p>
+                  <ul className="space-y-3 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.65, color: '#1E3A8A' }}>
+                    {mainsEvalResults.suggestions.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              {mainsEvalResults.modelAnswer && (
+                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
+                  <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#111827' }}>Model answer</p>
+                  <p style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.7, color: '#1F2937', whiteSpace: 'pre-line' }}>
+                    {mainsEvalResults.modelAnswer}
+                  </p>
+                </div>
+              )}
+
               {mainsEvalResults.detailedFeedback && (
-                <div className="rounded-[16px] p-6 space-y-4" style={{ background: '#1E293B' }}>
-                  <div className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#94A3B8' }}>
-                    DETAILED FEEDBACK
-                  </div>
-                  <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: 1.6, color: '#E2E8F0', whiteSpace: 'pre-line' }}>
+                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
+                  <p className="mb-3 uppercase" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 14, letterSpacing: '0.06em', color: '#6B7280' }}>Overall feedback</p>
+                  <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 16, lineHeight: 1.7, color: '#111827', whiteSpace: 'pre-line' }}>
                     {mainsEvalResults.detailedFeedback}
                   </p>
                 </div>
@@ -2029,7 +2133,7 @@ export default function PyqPage() {
                 type="button"
                 onClick={() => setShowAiEvalCompleteModal(false)}
                 className="w-full flex items-center justify-center gap-2 rounded-[16px] py-4"
-                style={{ background: '#1E3A5F', fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '24px', color: '#FFFFFF' }}
+                style={{ background: '#2563EB', fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '24px', color: '#FFFFFF' }}
               >
                 Close
               </button>

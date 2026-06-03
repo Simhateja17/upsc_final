@@ -143,6 +143,8 @@ interface MainsPerQuestion {
   detailedFeedback?: string;
   answerText?: string | null;
   wordCount?: number;
+  checkedCopyUrl?: string | null;
+  checkedCopyStatus?: string | null;
 }
 
 function MockTestResultsInner() {
@@ -254,6 +256,8 @@ function MockTestResultsInner() {
             detailedFeedback: d.detailedFeedback,
             answerText: d.answerText,
             wordCount: d.wordCount,
+            checkedCopyUrl: d.checkedCopyUrl,
+            checkedCopyStatus: d.checkedCopyStatus,
           });
         }
         if (!cancelled) {
@@ -549,6 +553,23 @@ function MockTestResultsInner() {
                       </span>
                     )}
                   </div>
+
+                  {q.checkedCopyUrl && (
+                    <div style={{ marginBottom: 14, border: '1px solid #E2E8F0', borderRadius: 12, background: '#FFFFFF', padding: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: '#991B1B' }}>Checked copy markup</span>
+                        <a href={q.checkedCopyUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>
+                          Open full size
+                        </a>
+                      </div>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={q.checkedCopyUrl}
+                        alt={`Checked copy markup for question ${q.idx}`}
+                        style={{ width: '100%', borderRadius: 10, border: '1px solid #E5E7EB', background: '#F8FAFC' }}
+                      />
+                    </div>
+                  )}
 
                   <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {q.strengths.length > 0 && (
