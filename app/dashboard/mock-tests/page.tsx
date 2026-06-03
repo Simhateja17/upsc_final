@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService, dashboardService, pricingService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
@@ -10,33 +10,119 @@ import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
 /* ─── Static Config (UI structure only, not data) ─── */
 
 const prelimsPaperTypes = [
-  { id: 'gs1', icon: '/2k.png', label: 'GS Paper I', description: 'General Studies — History, Geography, Polity, Economy, Science', isDefault: true },
+  { id: 'gs1', icon: '/2k.png', label: 'GS Paper I', description: 'General Studies – History, Geography, Polity, Economy, Science', isDefault: true },
   { id: 'csat', icon: '/3k.png', label: 'CSAT', description: 'Aptitude · Comprehension · Logical Reasoning' },
 ];
 
 const fallbackQuestionSources = [
-  { id: 'daily-mcq', icon: '/sun.png', label: 'Daily MCQ', description: 'Fresh from 10 curated daily picks' },
+  { id: 'daily-mcq', icon: '/target-icon.png', label: 'Daily MCQ', description: 'Fresh from 10 curated daily picks' },
   { id: 'practice-pyq', icon: '/script.png', label: 'Practice PYQ', description: 'UPSC papers 2010 – 2024' },
   { id: 'subject-wise', icon: '/booksss.png', label: 'Subject-wise', description: 'Deep-dive any one subject' },
   { id: 'mixed-bag', icon: '/shinee.png', label: 'Mixed Bag', description: 'Random cross-subject mix' },
   { id: 'full-length', icon: '/cuppp.png', label: 'Full Length Test', description: 'Complete 100-Q simulation', pro: true },
 ];
 
+const PRELIMS_SUBJECTS = [
+  'All Subjects',
+  'Polity',
+  'History',
+  'Geography',
+  'Economy',
+  'Environment & Ecology',
+  'Science & Technology',
+  'Current Affairs',
+];
+
+const MAINS_SUBJECTS = [
+  'All Subjects',
+  'Polity',
+  'History',
+  'Geography',
+  'Economy',
+  'Environment & Ecology',
+  'Science & Technology',
+  'Society',
+  'Governance',
+  'International Relations',
+  'Social Justice',
+  'Agriculture',
+  'Internal Security',
+  'Disaster Management',
+  'Ethics',
+  'Current Affairs',
+];
+
+const SUBJECT_COUNT_ALIASES: Record<string, string[]> = {
+  'Science & Tech': ['Science & Technology'],
+  'Environment': ['Environment & Ecology'],
+  "Int'l Relations": ['International Relations'],
+};
+
 const subjectEmojiMap: Record<string, string> = {
   'All Subjects': '🌐',
   'All Topics': '🌐',
-  'History': '📚',
-  'Geography': '🗺️',
+  'History': '🏛️',
+  'Geography': '🌍',
   'Polity': '⚖️',
-  'Economy': '📊',
+  'Economy': '💰',
   'Science & Tech': '🔬',
   'Environment': '🌿',
   'Current Affairs': '📰',
   'Art & Culture': '🎨',
-  'International Relations': '🌍',
+  'International Relations': '🌐',
   'Security & Defence': '🛡️',
   'Art': '🎨',
 };
+
+Object.assign(subjectEmojiMap, {
+  'All Subjects': '🌐',
+  'All Topics': '🌐',
+  'History': '🏛️',
+  'Geography': '🌍',
+  'Polity': '⚖️',
+  'Economy': '💰',
+  'Science & Tech': '🔬',
+  'Science & Technology': '🔬',
+  'Environment': '🌿',
+  'Environment & Ecology': '🌿',
+  'Current Affairs': '📰',
+  'Art & Culture': '🎨',
+  'International Relations': '🌐',
+  'Security & Defence': '🛡️',
+  'Internal Security': '🛡️',
+  'Art': '🎨',
+  'Society': '👥',
+  'Governance': '🏛️',
+  'Social Justice': '🤝',
+  'Agriculture': '🌾',
+  'Disaster Management': '🚨',
+  'Ethics': '🧠',
+});
+
+const optionalSubjectIcons: Record<string, string> = {
+  'Public Administration': '🏛️',
+  'Geography': '🌍',
+  'History': '🏛️',
+  'Sociology': '👥',
+  'Political Science': '🗳️',
+  'Philosophy': '💭',
+  'Economics': '📈',
+  'Anthropology': '🧬',
+  'Psychology': '🧠',
+  'Law': '⚖️',
+  'Literature': '📚',
+};
+
+function buildMainsMarksPattern(questionCount: number) {
+  if (questionCount <= 1) return [10];
+  if (questionCount === 2) return [10, 15];
+
+  const pattern: number[] = [];
+  for (let idx = 0; idx < questionCount; idx += 1) {
+    pattern.push((idx + 1) % 3 === 0 ? 15 : 10);
+  }
+  return pattern;
+}
 
 const fallbackExamModes = [
   { id: 'prelims', label: 'Prelims', description: 'Objective MCQs · 2 hour format' },
@@ -51,59 +137,10 @@ const fallbackMainsPaperTypes = [
 ];
 
 const fallbackOptionalSubjects = [
-  'Agriculture',
-  'Animal Husbandry & Veterinary Science',
-  'Anthropology',
-  'Botany',
-  'Chemistry',
-  'Civil Engineering',
-  'Commerce & Accountancy',
-  'Economics',
-  'Electrical Engineering',
-  'Geography',
-  'Geology',
-  'History',
-  'Law',
-  'Management',
-  'Mathematics',
-  'Mechanical Engineering',
-  'Medical Science',
-  'Philosophy',
-  'Physics',
-  'Political Science & International Relations',
-  'Psychology',
-  'Public Administration',
-  'Sociology',
-  'Statistics',
-  'Zoology',
-  'Assamese',
-  'Bengali',
-  'Bodo',
-  'Dogri',
-  'Gujarati',
-  'Hindi',
-  'Kannada',
-  'Kashmiri',
-  'Konkani',
-  'Maithili',
-  'Malayalam',
-  'Manipuri',
-  'Marathi',
-  'Nepali',
-  'Odia',
-  'Punjabi',
-  'Sanskrit',
-  'Santhali',
-  'Sindhi',
-  'Tamil',
-  'Telugu',
-  'Urdu',
-  'English Literature',
+  'Public Administration', 'Geography', 'History', 'Sociology',
+  'Political Science', 'Philosophy', 'Economics', 'Anthropology',
+  'Psychology', 'Law',
 ];
-
-function mergeOptionalSubjects(subjects?: string[]) {
-  return Array.from(new Set([...(subjects || []), ...fallbackOptionalSubjects])).sort((a, b) => a.localeCompare(b));
-}
 
 const fallbackDifficulties = [
   { id: 'easy', emoji: '🌱', label: 'Foundation level', description: 'Build concepts' },
@@ -111,6 +148,20 @@ const fallbackDifficulties = [
   { id: 'hard', emoji: '🔥', label: 'Advanced', description: 'High difficulty' },
   { id: 'mixed', emoji: '🎯', label: 'All levels', description: 'Balanced mix' },
 ];
+
+const difficultyMetaById: Record<string, { emoji: string; description: string }> = {
+  easy: { emoji: '🌱', description: 'Build concepts' },
+  medium: { emoji: '⚡', description: 'UPSC pattern' },
+  hard: { emoji: '🔥', description: 'High difficulty' },
+  mixed: { emoji: '🎯', description: 'Balanced mix' },
+};
+
+const humanizeDifficultyId = (id: string) => {
+  if (!id) return '';
+  return id
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+};
 const fallbackUpgradePlans = [
   { name: 'Monthly Pro', price: 299, duration: 'month', features: ['Unlimited tests, all subjects, PYQ, analytics'], isPopular: false },
   { name: '6-Month Pro + Mentorship', price: 1299, duration: '6 months', features: ['Pro + personal mentorship with Jeet Sir'], isPopular: true },
@@ -163,8 +214,6 @@ function MockTestsPageInner() {
   const [selectedOptional, setSelectedOptional] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState(5);
   const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
-  const [showProModal, setShowProModal] = useState(false);
-  const [proModalFeature, setProModalFeature] = useState<string>('Full-Length Tests');
 
   /* ─── API State ─── */
   const [subjects, setSubjects] = useState<{ name: string; count: number }[]>([]);
@@ -179,13 +228,12 @@ function MockTestsPageInner() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pricingPlans, setPricingPlans] = useState<any[]>([]);
-  const [liveCount, setLiveCount] = useState(() => liveStudentCount('mock-tests'));
   const questionPresets = selectedExamMode === 'mains'
     ? [
-        { value: 1, label: 'Starter 1', icon: '/90.png', pro: false },
         { value: 2, label: 'Free 2', icon: '/90.png', pro: false },
         { value: 5, label: 'Practice 5', icon: '/text7.png', pro: true },
         { value: 10, label: 'Deep 10', icon: '/text8.png', pro: true },
+        { value: 15, label: 'Answer 15', icon: '/text8.png', pro: true },
         { value: 20, label: 'Full 20', icon: '/text8.png', pro: true },
       ]
     : [
@@ -197,6 +245,29 @@ function MockTestsPageInner() {
         { value: 100, label: 'Full 100', icon: '/text8.png', pro: true },
       ];
   const maxQuestionCount = selectedExamMode === 'mains' ? 20 : 100;
+  const subjectCountMap = subjects.reduce<Record<string, number>>((acc, subject) => {
+    acc[subject.name] = subject.count;
+    return acc;
+  }, {});
+  const resolveSubjectCount = (name: string) =>
+    subjectCountMap[name] ??
+    SUBJECT_COUNT_ALIASES[name]?.reduce<number | null>((found, alias) => {
+      if (found != null) return found;
+      return subjectCountMap[alias] ?? null;
+    }, null) ??
+    0;
+  const subjectOptions = (selectedExamMode === 'mains' ? MAINS_SUBJECTS : PRELIMS_SUBJECTS)
+    .filter((name) => name !== 'All Subjects')
+    .map((name) => ({
+      name,
+      count: resolveSubjectCount(name),
+    }));
+  const availableSubjects = useMemo(() => [
+    { name: 'All Subjects', count: subjectCountMap['All Subjects'] ?? subjectOptions.reduce((sum, subject) => sum + subject.count, 0) },
+    ...subjectOptions,
+  ], [subjectCountMap, subjectOptions]);
+  const mainsMarksPattern = selectedExamMode === 'mains' ? buildMainsMarksPattern(questionCount) : [];
+
   const difficultyDisplay: Record<string, { short: string; label: string; description: string }> = {
     easy: { short: '🌱', label: 'Easy', description: 'Build confidence' },
     medium: { short: '⚡', label: 'Medium', description: 'UPSC standard' },
@@ -231,27 +302,45 @@ function MockTestsPageInner() {
           }
           const merged: Array<{ name: string; count: number }> = [
             { name: 'All Subjects', count: apiMap['All Subjects'] ?? Object.values(apiMap).reduce((a, b) => a + b, 0) },
-            ...UPSC_SUBJECTS.map((s) => ({ name: s.label, count: apiMap[s.label] ?? 0 })),
+            ...Array.from(new Set([
+              ...UPSC_SUBJECTS.map((s) => s.label),
+              ...PRELIMS_SUBJECTS,
+              ...MAINS_SUBJECTS,
+            ])).map((name) => ({ name, count: apiMap[name] ?? 0 })),
           ];
           // Include any API subjects not in the canonical list (long tail)
           for (const s of subjectsRes.data as Array<{ name: string; count: number }>) {
             if (!merged.find((m) => m.name === s.name)) merged.push(s);
           }
           setSubjects(merged);
-        } else {
-          // Fallback: always show UPSC subjects even if API fails
-          setSubjects([
-            { name: 'All Subjects', count: 0 },
-            ...UPSC_SUBJECTS.map((s) => ({ name: s.label, count: 0 })),
-          ]);
         }
         if (configRes.data) {
           const cfg = configRes.data;
           if (cfg.questionSources) setQuestionSources(cfg.questionSources);
           if (cfg.examModes) setExamModes(cfg.examModes);
           if (cfg.mainsPaperTypes) setMainsPaperTypes(cfg.mainsPaperTypes);
-          setOptionalSubjects(mergeOptionalSubjects(cfg.optionalSubjects));
-          if (cfg.difficulties) setDifficulties(cfg.difficulties);
+          if (cfg.optionalSubjects) setOptionalSubjects(cfg.optionalSubjects);
+          if (Array.isArray(cfg.difficulties)) {
+            const normalizedDifficulties = cfg.difficulties
+              .map((item: any) => {
+                const rawId = String(item?.id ?? item?.value ?? item?.name ?? '').trim();
+                const id = rawId.toLowerCase().replace(/\s+/g, '_');
+                if (!id) return null;
+                const meta = difficultyMetaById[id];
+                const label = String(item?.label ?? item?.name ?? item?.title ?? humanizeDifficultyId(id)).trim();
+                const description = String(item?.description ?? meta?.description ?? '').trim();
+                const emoji = String(item?.emoji ?? meta?.emoji ?? '🎯').trim();
+                return {
+                  id,
+                  label,
+                  description,
+                  emoji,
+                };
+              })
+              .filter(Boolean) as Array<{ id: string; label: string; description: string; emoji: string }>;
+
+            setDifficulties(normalizedDifficulties.length > 0 ? normalizedDifficulties : fallbackDifficulties);
+          }
         }
         if (statsRes.data) setPracticeStats(statsRes.data);
         if (platformRes.data) setPlatformStats(platformRes.data);
@@ -285,9 +374,10 @@ function MockTestsPageInner() {
   }, [selectedExamMode]);
 
   useEffect(() => {
-    const id = setInterval(() => setLiveCount(liveStudentCount('mock-tests')), 30 * 60 * 1000);
-    return () => clearInterval(id);
-  }, []);
+    if (!availableSubjects.some((subject) => subject.name === selectedSubject)) {
+      setSelectedSubject('All Subjects');
+    }
+  }, [availableSubjects, selectedSubject]);
 
   /* ─── Generate Test Handler ─── */
   const handleGenerateTest = async () => {
@@ -299,7 +389,6 @@ function MockTestsPageInner() {
         subject: selectedSubject,
         examMode: selectedExamMode,
         paperType: selectedExamMode === 'mains' ? selectedPaperType : undefined,
-        optionalSubject: selectedExamMode === 'mains' ? selectedOptional || undefined : undefined,
         questionCount,
         difficulty: selectedDifficulty,
       };
@@ -317,7 +406,7 @@ function MockTestsPageInner() {
   };
 
   const estimatedMinutes = selectedExamMode === 'mains'
-    ? Math.ceil(questionCount * 8)
+    ? mainsMarksPattern.reduce((total, marks) => total + (marks === 15 ? 11 : 7), 0)
     : questionCount;
   const upgradePlans = (pricingPlans.length > 0 ? pricingPlans : fallbackUpgradePlans).slice(0, 3);
 
@@ -326,7 +415,7 @@ function MockTestsPageInner() {
   const paperLabel = selectedExamMode === 'mains'
     ? (mainsPaperTypes.find(p => p.id === selectedPaperType)?.label ?? 'GS I')
     : (prelimsPaperTypes.find(p => p.id === selectedPaperType)?.label ?? 'GS Paper I');
-  const subjectLabel = subjects.find(s => s.name === selectedSubject)?.name ?? selectedSubject ?? 'All Topics';
+  const subjectLabel = availableSubjects.find(s => s.name === selectedSubject)?.name ?? selectedSubject ?? 'All Topics';
   const difficultyLabel = difficulties.find(d => d.id === selectedDifficulty)?.label ?? 'Medium';
 
   /* ─── Card style helper ─── */
@@ -339,141 +428,32 @@ function MockTestsPageInner() {
   };
 
   return (
-    <div className="flex overflow-hidden" style={{ background: '#D8DEE6', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
+    <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
 
       {/* ── Pro Upgrade Modal ── */}
-      {showProModal && (
-        <div
-          onClick={() => setShowProModal(false)}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000, padding: '16px',
-          }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: '#FFFFFF', borderRadius: '24px',
-              padding: '28px 24px 24px',
-              width: '100%', maxWidth: '360px',
-              position: 'relative', boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
-            }}
-          >
-            {/* Close */}
-            <button
-              onClick={() => setShowProModal(false)}
-              style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#6B7280', lineHeight: 1 }}
-            >×</button>
-
-            {/* Icon */}
-            <div style={{ textAlign: 'center', fontSize: '40px', marginBottom: '12px' }}>📋</div>
-
-            {/* Title */}
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '20px', color: '#101828', textAlign: 'center', marginBottom: '8px' }}>
-              {proModalFeature} Await
-            </h2>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280', textAlign: 'center', lineHeight: 1.5, marginBottom: '18px' }}>
-              Complete 100-question papers replicating real UPSC patterns.{' '}
-              <strong style={{ color: '#101828' }}>Top rankers</strong> swear by this format.
-            </p>
-
-            {/* Usage bar */}
-            <div style={{ background: '#F3F4F6', borderRadius: '10px', padding: '10px 14px', marginBottom: '18px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6B7280' }}>Free today: <strong style={{ color: '#101828' }}>3 / 10</strong> questions used</span>
-              </div>
-              <div style={{ height: '6px', background: '#E5E7EB', borderRadius: '999px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: '30%', background: 'linear-gradient(90deg, #FF6900, #FDC700)', borderRadius: '999px' }} />
-              </div>
-            </div>
-            {/* Plans (admin-driven; fallback defaults) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '18px' }}>
-              {upgradePlans.map((plan, idx) => {
-                const isPopular = Boolean(plan.isPopular);
-                const desc = Array.isArray(plan.features) && plan.features.length > 0
-                  ? String(plan.features[0])
-                  : 'UPSC test practice and analytics';
-                return (
-                  <div
-                    key={`${String(plan.name)}-${idx}`}
-                    style={{
-                      border: isPopular ? '2px solid #101828' : '1.5px solid #E5E7EB',
-                      borderRadius: '14px',
-                      padding: '14px 16px',
-                      background: isPopular ? '#0F172B' : '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      position: 'relative',
-                    }}
-                  >
-                    {isPopular && (
-                      <span style={{
-                        position: 'absolute', top: '-11px', left: '50%', transform: 'translateX(-50%)',
-                        background: '#FDC700', color: '#101828', fontFamily: 'Inter, sans-serif',
-                        fontWeight: 700, fontSize: '10px', padding: '3px 10px', borderRadius: '999px',
-                        whiteSpace: 'nowrap',
-                      }}>MOST POPULAR</span>
-                    )}
-                    <span style={{ fontSize: '20px' }}>{isPopular ? 'Pro' : (idx === 0 ? 'Core' : 'Elite')}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: isPopular ? '#FFFFFF' : '#101828' }}>
-                        {plan.name}
-                      </div>
-                      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: isPopular ? '#94A3B8' : '#6B7280' }}>
-                        {desc}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: isPopular ? '#FDC700' : '#101828' }}>
-                        Rs {Number(plan.price || 0).toLocaleString('en-IN')}
-                      </div>
-                      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: isPopular ? '#94A3B8' : '#6B7280' }}>
-                        {plan.duration ? `/${String(plan.duration).toLowerCase()}` : ''}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {/* CTA */}
-            <a href="/pricing" style={{ display: 'block', textDecoration: 'none' }}>
-              <button style={{
-                width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
-                background: '#101828', color: '#FFFFFF',
-                fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px',
-                cursor: 'pointer', marginBottom: '10px',
-              }}>
-                View All Plans &amp; Start Free Trial →
-              </button>
-            </a>
-            <div style={{ textAlign: 'center', fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9CA3AF', cursor: 'pointer' }}
-              onClick={() => setShowProModal(false)}>
-              Continue with free tier
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main scrollable content */}
-      <main className="flex-1 overflow-y-auto" style={{ background: '#E8EDF5' }}>
+      <main className="flex-1 overflow-y-auto font-arimo" style={{ background: '#F9FAFB' }}>
 
         <DashboardPageHero
-          badgeIcon={<img src="/cap.png" alt="cap" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
+          // eslint-disable-next-line @next/next/no-img-element
+          badgeIcon={<img src="/badge-mocktest.png" alt="mocktest" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
           badgeText="MOCK TEST PLATFORM"
           title={
             <>
               Build Your{' '}
-              <em className="not-italic" style={{ color: '#e8a820', fontStyle: 'italic' }}>Perfect</em>{' '}
+              <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>Perfect</em>{' '}
               Mock Test
             </>
           }
-          subtitle="Adaptive questions · Real exam environment · Detailed analytics."
+          subtitle="Adaptive questions · Real exam environment · Detailed analytics. Add as much as it takes."
+          heroHeight="320px"
+          contentShiftY={-12}
+          titleMarginBottom={2}
           stats={[
             { value: platformStats ? platformStats.questionsCount.toLocaleString('en-IN') + '+' : '5000+', label: 'Questions', color: '#FDC700' },
             { value: platformStats ? platformStats.testsCount.toLocaleString('en-IN') + '+' : '12K+', label: 'Tests Taken', color: '#F97316' },
-            { value: platformStats ? platformStats.usersCount.toLocaleString('en-IN') + '+' : '50K+', label: 'Community', color: '#22C55E' },
+            { value: '15K+', label: 'Community', color: '#22C55E' },
             { value: '86%', label: 'Success Rate', color: '#FFFFFF' },
           ]}
         />
@@ -505,6 +485,7 @@ function MockTestsPageInner() {
                 transition: 'all 0.2s ease',
               }}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/9k.png" alt="Prelims" style={{ width: '22px', height: '22px', objectFit: 'contain', flexShrink: 0 }} />
               <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '17px', color: selectedExamMode === 'prelims' ? '#FFFFFF' : '#4A5565' }}>Prelims</span>
             </button>
@@ -524,6 +505,7 @@ function MockTestsPageInner() {
                 transition: 'all 0.2s ease',
               }}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/8k.png" alt="Mains" style={{ width: '22px', height: '22px', objectFit: 'contain', flexShrink: 0 }} />
               <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '17px', color: selectedExamMode === 'mains' ? '#FFFFFF' : '#4A5565' }}>Mains</span>
             </button>
@@ -612,6 +594,7 @@ function MockTestsPageInner() {
                     )}
                     {(paper as { icon?: string }).icon && (
                       <div style={{ marginBottom: '5px' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={(paper as { icon?: string }).icon} alt={paper.label} style={{ width: '24px', height: '28px', objectFit: 'contain' }} />
                       </div>
                     )}
@@ -662,7 +645,7 @@ function MockTestsPageInner() {
                 🎯 FOCUS ON A SPECIFIC SUBJECT
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {subjects.map(subj => {
+                {availableSubjects.map(subj => {
                   const isSelected = selectedSubject === subj.name;
                   return (
                     <button
@@ -697,35 +680,44 @@ function MockTestsPageInner() {
               </div>
             </div>
 
-            {/* Optional Subject (Mains only) — dropdown */}
+            {/* Optional Subject (Mains only) */}
             {selectedExamMode === 'mains' && (
               <div style={{ marginTop: '20px' }}>
-                <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#17223E', marginBottom: '8px' }}>
+                <div style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  color: '#17223E',
+                  marginBottom: '12px',
+                }}>
                   Optional Subject
                 </div>
-                <select
-                  value={selectedOptional || ''}
-                  onChange={e => setSelectedOptional(e.target.value || null)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    border: '1.5px solid #E5E7EB',
-                    borderRadius: '10px',
-                    fontFamily: 'Inter, sans-serif',
-                    fontWeight: 600,
-                    fontSize: '14px',
-                    color: '#374151',
-                    background: '#FFFFFF',
-                    cursor: 'pointer',
-                    appearance: 'auto',
-                    outline: 'none',
-                  }}
-                >
-                  <option value="">— Select optional subject —</option>
-                  {optionalSubjects.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(6px, 0.45vw, 10px)' }}>
+                  {optionalSubjects.map(opt => {
+                    const isSelected = selectedOptional === opt;
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => setSelectedOptional(isSelected ? null : opt)}
+                        style={{
+                          background: isSelected ? '#17223E' : '#FFF',
+                          color: isSelected ? '#FFF' : '#374151',
+                          border: isSelected ? '1.5px solid #17223E' : '1.5px solid #E5E7EB',
+                          borderRadius: '999px',
+                          padding: 'clamp(5px, 0.4vw, 7px) clamp(12px, 0.9vw, 18px)',
+                          fontFamily: 'Inter, sans-serif',
+                          fontWeight: 600,
+                          fontSize: 'clamp(12px, 0.78vw, 13px)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <span style={{ marginRight: '6px' }}>{optionalSubjectIcons[opt] ?? '📘'}</span>
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -791,14 +783,7 @@ function MockTestsPageInner() {
                 return (
                   <button
                     key={src.id}
-                    onClick={() => {
-                      if ((src as any).pro) {
-                        setProModalFeature(src.label);
-                        setShowProModal(true);
-                      } else {
-                        setSelectedSource(src.id);
-                      }
-                    }}
+                    onClick={() => setSelectedSource(src.id)}
                     style={{
                       flex: '1 1 0',
                       minWidth: '110px',
@@ -829,6 +814,7 @@ function MockTestsPageInner() {
                       </span>
                     )}
                     <div style={{ marginBottom: '8px' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={(src as { icon?: string }).icon} alt={src.label} style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
                     </div>
                     <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#101828', marginBottom: '4px' }}>
@@ -948,7 +934,7 @@ function MockTestsPageInner() {
                 />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                {(selectedExamMode === 'mains' ? [1, 2, 5, 10, 20] : [1, 25, 50, 75, 100]).map(val => (
+                {(selectedExamMode === 'mains' ? [2, 5, 10, 15, 20] : [5, 25, 50, 75, 100]).map(val => (
                   <span
                     key={val}
                     onClick={() => setQuestionCount(val)}
@@ -989,6 +975,7 @@ function MockTestsPageInner() {
                       transition: 'all 0.15s ease',
                     }}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={preset.icon} alt="" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
                     <span style={{
                       fontFamily: 'Inter, sans-serif',
@@ -997,13 +984,32 @@ function MockTestsPageInner() {
                       lineHeight: '20px',
                       color: isActive ? '#FFFFFF' : '#364153',
                     }}>
-	                      {preset.label}
-                      {preset.pro && <span style={{ marginLeft: 6, color: isActive ? '#FDC700' : '#9CA3AF', fontSize: 12 }}>🔒</span>}
-	                    </span>
+                      {preset.label}
+                    </span>
                   </button>
                 );
               })}
             </div>
+
+            {selectedExamMode === 'mains' && (
+              <div style={{
+                background: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                marginBottom: '24px',
+              }}>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#1D4ED8', marginBottom: '4px' }}>
+                  Mains marking pattern
+                </div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#1E3A8A', lineHeight: '20px' }}>
+                  {mainsMarksPattern.map((marks, idx) => `Q${idx + 1}: ${marks} marks`).join(' · ')}
+                </div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#1D4ED8', lineHeight: '18px', marginTop: '4px' }}>
+                  10 marker = 7 min · 15 marker = 11 min
+                </div>
+              </div>
+            )}
 
             {/* Guideline Banner */}
             <div style={{
@@ -1033,7 +1039,7 @@ function MockTestsPageInner() {
                 </p>
               </div>
               <button
-                onClick={() => router.push('/pricing')}
+                onClick={() => router.push('/dashboard/billing/plans?plan=pro&source=mock-tests')}
                 style={{
                   background: '#FDC700',
                   color: '#101828',
@@ -1273,19 +1279,15 @@ function MockTestsPageInner() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '12px',
+                gap: '6px',
                 fontFamily: 'var(--font-inter), Inter, sans-serif',
-                fontSize: 'clamp(11px, 0.75vw, 13px)',
-                color: '#CBD5E1',
+                fontSize: 'clamp(10px, 0.68vw, 12px)',
+                color: '#64748B',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '12px', fontWeight: 700, border: '2px solid rgba(255,255,255,0.3)', marginRight: '-8px' }}>AK</div>
-                  <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#8B5CF6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '12px', fontWeight: 700, border: '2px solid rgba(255,255,255,0.3)', marginRight: '-8px' }}>PS</div>
-                  <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '12px', fontWeight: 700, border: '2px solid rgba(255,255,255,0.3)', marginRight: '-8px' }}>RV</div>
-                  <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '12px', fontWeight: 700, border: '2px solid rgba(255,255,255,0.3)', marginRight: '-8px' }}>MH</div>
-                  <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#6B7280', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '11px', fontWeight: 700, border: '2px solid rgba(255,255,255,0.3)' }}>+2k</div>
-                </div>
-                <span><strong style={{ color: '#FFFFFF' }}>{liveCount.toLocaleString('en-IN')}+</strong> aspirants actively preparing</span>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16A34A' }} />
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3B82F6' }} />
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FDC700' }} />
+                <span style={{ marginLeft: '4px' }}>{liveStudentCount('mock-tests')} students are taking tests right now</span>
               </div>
               </div>
             </div>
@@ -1299,7 +1301,7 @@ function MockTestsPageInner() {
 
 export default function MockTestsPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#F9FAFB' }} />}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#FAFBFE' }} />}>
       <MockTestsPageInner />
     </Suspense>
   );

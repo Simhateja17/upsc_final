@@ -12,6 +12,9 @@ interface ResultsData {
   improvements: string[];
   suggestions: string[];
   detailedFeedback?: string;
+  checkedCopyUrl?: string | null;
+  checkedCopyStatus?: string | null;
+  annotationPlan?: unknown;
   wordCount?: number | null;
   submittedAt?: string | null;
 }
@@ -81,6 +84,8 @@ export default function ResultsPage() {
     () => detailedFeedback.split(/\n+/).map((item) => item.trim()).filter(Boolean),
     [detailedFeedback]
   );
+  const checkedCopyReady = Boolean(data?.checkedCopyUrl);
+  const markupLabel = checkedCopyReady ? 'Teacher-style checked copy is ready.' : 'Visual markup is generated for handwritten image uploads.';
 
   const summaryCards = [
     {
@@ -330,55 +335,73 @@ export default function ResultsPage() {
             }}
           >
             <h2 className="font-bold text-[#101828] mb-2" style={{ fontSize: '22px' }}>
-              Examiner&apos;s Markup
+              {checkedCopyReady ? 'Checked Copy' : 'Examiner&apos;s Markup'}
             </h2>
             <p className="text-[#4A5565] mb-6" style={{ fontSize: '14px' }}>
-              This slide now stays available even when the backend returns narrative feedback instead of token-level markup.
+              {markupLabel}
             </p>
 
-            <div className="grid gap-5 md:grid-cols-2">
-              <div className="rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] p-5">
-                <h3 className="font-bold text-[#166534] mb-3" style={{ fontSize: '15px' }}>Positive examiner notes</h3>
-                {strengths.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {strengths.map((item, index) => (
-                      <span
-                        key={`${item}-${index}`}
-                        className="rounded-full px-3 py-2"
-                        style={{ background: '#DCFCE7', color: '#166534', fontSize: '13px', lineHeight: '18px' }}
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[#166534]" style={{ fontSize: '13px', lineHeight: '20px' }}>
-                    Positive markup will appear here when the evaluator returns line-level comments.
-                  </p>
-                )}
+            {checkedCopyReady ? (
+              <div className="rounded-[12px] border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <span className="rounded-full bg-[#FEE2E2] px-3 py-1 text-[12px] font-bold text-[#B91C1C]">BETA</span>
+                  <a href={data?.checkedCopyUrl || '#'} target="_blank" rel="noreferrer" className="text-[13px] font-bold text-[#2563EB]">
+                    Open full size
+                  </a>
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={data?.checkedCopyUrl || ''}
+                  alt="Checked copy with examiner markup"
+                  className="w-full rounded-[10px]"
+                  style={{ border: '1px solid #E5E7EB', background: '#FFFFFF' }}
+                />
               </div>
+            ) : (
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] p-5">
+                  <h3 className="font-bold text-[#166534] mb-3" style={{ fontSize: '15px' }}>Positive examiner notes</h3>
+                  {strengths.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {strengths.map((item, index) => (
+                        <span
+                          key={`${item}-${index}`}
+                          className="rounded-full px-3 py-2"
+                          style={{ background: '#DCFCE7', color: '#166534', fontSize: '13px', lineHeight: '18px' }}
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[#166534]" style={{ fontSize: '13px', lineHeight: '20px' }}>
+                      Positive markup will appear here when the evaluator returns line-level comments.
+                    </p>
+                  )}
+                </div>
 
-              <div className="rounded-[12px] border border-[#FDE68A] bg-[#FEFCE8] p-5">
-                <h3 className="font-bold text-[#A16207] mb-3" style={{ fontSize: '15px' }}>Attention areas</h3>
-                {improvements.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {improvements.map((item, index) => (
-                      <span
-                        key={`${item}-${index}`}
-                        className="rounded-full px-3 py-2"
-                        style={{ background: '#FEF3C7', color: '#A16207', fontSize: '13px', lineHeight: '18px' }}
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[#A16207]" style={{ fontSize: '13px', lineHeight: '20px' }}>
-                    Improvement markup will appear here when the evaluator returns line-level comments.
-                  </p>
-                )}
+                <div className="rounded-[12px] border border-[#FDE68A] bg-[#FEFCE8] p-5">
+                  <h3 className="font-bold text-[#A16207] mb-3" style={{ fontSize: '15px' }}>Attention areas</h3>
+                  {improvements.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {improvements.map((item, index) => (
+                        <span
+                          key={`${item}-${index}`}
+                          className="rounded-full px-3 py-2"
+                          style={{ background: '#FEF3C7', color: '#A16207', fontSize: '13px', lineHeight: '18px' }}
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[#A16207]" style={{ fontSize: '13px', lineHeight: '20px' }}>
+                      Improvement markup will appear here when the evaluator returns line-level comments.
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="mt-6 rounded-[12px] border border-[#E5E7EB] bg-[#F9FAFB] p-6">
               <h3 className="font-bold text-[#101828] mb-3" style={{ fontSize: '16px' }}>Detailed examiner commentary</h3>
