@@ -137,7 +137,7 @@ export default function DailyMcqChallengePage() {
   // Already attempted screen
   if (!loading && mcqInfo?.attempted) {
     return (
-      <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#E8EDF5' }}>
+      <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#FAFBFE' }}>
         <div style={{ maxWidth: '600px', width: '100%', padding: '40px', background: '#FFFFFF', borderRadius: '16px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
           <h1 className="font-arimo font-bold text-[#101828] mb-3" style={{ fontSize: '24px' }}>
@@ -167,7 +167,7 @@ export default function DailyMcqChallengePage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#E8EDF5' }}>
+      <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#FAFBFE' }}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
@@ -175,7 +175,7 @@ export default function DailyMcqChallengePage() {
 
   const q = questions[currentQuestion];
   if (!q) return (
-    <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#E8EDF5' }}>
+    <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#FAFBFE' }}>
       <div className="text-center">
         <h2 className="font-arimo font-bold text-[#101828] mb-2" style={{ fontSize: '20px' }}>No questions available</h2>
         <p className="font-arimo text-[#4A5565] mb-4">Please check back later or contact support.</p>
@@ -191,17 +191,17 @@ export default function DailyMcqChallengePage() {
   const totalQuestions = questions.length;
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#E8EDF5' }}>
-      <main className="flex-1 px-[clamp(1rem,4vw,5rem)] py-4 flex items-center justify-center">
-        <div className="max-w-[900px] mx-auto" style={{ width: '100%' }}>
-          <div style={{ maxWidth: '1050px', borderRadius: '10px', background: '#EAECEF40', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '24px' }}>
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
+    <div className="flex flex-col overflow-hidden" style={{ height: '100%', minHeight: '100%', background: '#FAFBFE' }}>
+      <main className="flex-1 px-[clamp(0.75rem,1.5vw,2rem)] py-2 flex items-center justify-center">
+        <div className="max-w-[1520px] mx-auto" style={{ width: '100%' }}>
+          <div style={{ width: '100%', borderRadius: '10px', background: '#EAECEF40', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '16px' }}>
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <img src="/daily-challenge-icon.png" alt="MCQ" className="w-10 h-10" />
-                  <h1 className="font-arimo font-bold text-black text-[26px] leading-[28px] whitespace-nowrap">
+                  <img src="/daily-challenge-icon.png" alt="MCQ" className="w-9 h-9" />
+                  <h1 className="font-arimo font-bold text-black text-[24px] leading-[26px] whitespace-nowrap">
                     Daily MCQ Challenge
-                    <span className="font-arimo font-normal text-[#94A3B8] text-[18px] leading-[28px]"> ({new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })})</span>
+                    <span className="font-arimo font-normal text-[#94A3B8] text-[17px] leading-[26px]"> ({new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })})</span>
                   </h1>
                 </div>
                 <div className="flex items-center">
@@ -219,19 +219,19 @@ export default function DailyMcqChallengePage() {
                 </div>
               </div>
 
-              <div className="w-full border-t border-[#99A1AFE5] mb-4"></div>
+              <div className="w-full border-t border-[#99A1AFE5] mb-2"></div>
 
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[38px]">
+                <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[34px]">
                   <img src="/tag-one.png" alt="Tag" className="w-4 h-4" />
                   <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px]">{q.category}</span>
                 </div>
-                <div className="flex items-center gap-2 bg-[#FFF7ED] px-4 rounded-full h-[38px]">
+                <div className="flex items-center gap-2 bg-[#FFF7ED] px-4 rounded-full h-[34px]">
                   <span className="font-arimo font-bold text-[#C2410C] text-[14px] leading-[16px]">{q.difficulty}</span>
                 </div>
                 {!submitted && (
                   <div className="flex items-center gap-2">
-                    <img src="/timer-icon.png" alt="Timer" className="w-10 h-10" />
+                    <img src="/timer-icon.png" alt="Timer" className="w-9 h-9" />
                     <div className="flex flex-col items-end">
                       <span className={`font-arimo font-bold text-xl leading-none ${timeLeft < 60 ? 'text-red-600' : 'text-[#101828]'}`}>
                         {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
@@ -243,13 +243,13 @@ export default function DailyMcqChallengePage() {
               </div>
             </div>
 
-            <div className="mb-6">
-              <p className="font-arimo font-bold text-[#101828] text-sm mb-6">
+            <div className="mb-3">
+              <p className="font-arimo font-bold text-[#101828] text-sm mb-3">
                 <span className="font-bold">Question {currentQuestion + 1} of {totalQuestions}:</span>{' '}
                 <span className="whitespace-pre-line">{normalizeQuestionText(q.questionText)}</span>
               </p>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {q.options.map((option) => {
                   const optKey = option.id || option.label || '';
                   const isSelected = answers[q.id] === optKey;
@@ -302,8 +302,8 @@ export default function DailyMcqChallengePage() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '16px',
-                        padding: '16px 20px',
-                        borderRadius: '12px',
+                        padding: '8px 16px',
+                        borderRadius: '10px',
                         border,
                         background: bg,
                         cursor: submitted ? 'default' : 'pointer',
@@ -314,8 +314,8 @@ export default function DailyMcqChallengePage() {
                     >
                       <span
                         style={{
-                          width: '32px',
-                          height: '32px',
+                          width: '28px',
+                          height: '28px',
                           borderRadius: '50%',
                           border: `2px solid ${circleColor}`,
                           display: 'flex',
@@ -362,7 +362,7 @@ export default function DailyMcqChallengePage() {
               </div>
             )}
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-between">
+            <div className="bg-white rounded-lg border border-gray-200 p-2 flex items-center justify-between">
               <button
                 className="flex items-center gap-2 text-[#101828] hover:opacity-70 transition-opacity disabled:opacity-30"
                 disabled={currentQuestion === 0}

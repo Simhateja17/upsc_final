@@ -197,6 +197,12 @@ function MockTestsPageInner() {
         { value: 100, label: 'Full 100', icon: '/text8.png', pro: true },
       ];
   const maxQuestionCount = selectedExamMode === 'mains' ? 20 : 100;
+  const difficultyDisplay: Record<string, { short: string; label: string; description: string }> = {
+    easy: { short: '🌱', label: 'Easy', description: 'Build confidence' },
+    medium: { short: '⚡', label: 'Medium', description: 'UPSC standard' },
+    hard: { short: '🔥', label: 'Hard', description: 'Push limits' },
+    mixed: { short: '🎯', label: 'Mixed', description: 'Real exam feel' },
+  };
 
   /* ─── Load all data from API ─── */
   useEffect(() => {
@@ -1051,30 +1057,42 @@ function MockTestsPageInner() {
           {!loading && (
           <div style={cardStyle}>
             <StepHeader step={4} label="Difficulty" />
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(10px, 0.8vw, 14px)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 'clamp(18px, 1.6vw, 28px)' }}>
               {difficulties.map(diff => {
                 const isSelected = selectedDifficulty === diff.id;
+                const display = difficultyDisplay[diff.id] ?? {
+                  short: '🎯',
+                  label: diff.label || 'Difficulty',
+                  description: diff.description || 'Select level',
+                };
                 return (
                   <button
                     key={diff.id}
                     onClick={() => setSelectedDifficulty(diff.id)}
                     style={{
-                      flex: '1 1 clamp(120px, 12vw, 160px)',
                       background: isSelected ? '#FEF3C7' : '#FFF',
                       border: isSelected ? '2px solid #FDC700' : '1.5px solid #E5E7EB',
                       borderRadius: '14px',
-                      padding: 'clamp(14px, 1.1vw, 20px)',
+                      minHeight: '164px',
+                      padding: '24px 18px',
                       cursor: 'pointer',
                       textAlign: 'center',
                       transition: 'all 0.15s ease',
+                      boxShadow: isSelected ? '0 8px 20px -18px rgba(245, 158, 11, 0.9)' : '0 1px 2px rgba(15, 23, 42, 0.04)',
                     }}
                   >
-                    <div style={{ fontSize: 'clamp(22px, 1.6vw, 30px)', marginBottom: '6px' }}>{diff.emoji}</div>
-                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 700, fontSize: 'clamp(13px, 0.85vw, 15px)', color: '#101828', marginBottom: '2px' }}>
-                      {diff.label}
+                    <div style={{
+                      fontSize: '36px',
+                      lineHeight: '42px',
+                      marginBottom: '14px',
+                    }}>
+                      {display.short}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 'clamp(11px, 0.7vw, 12px)', color: '#6B7280' }}>
-                      {diff.description}
+                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 800, fontSize: '20px', lineHeight: '28px', color: '#101828', marginBottom: '4px' }}>
+                      {display.label}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: '16px', lineHeight: '24px', color: '#6B7280' }}>
+                      {display.description}
                   </div>
                   </button>
                 );
