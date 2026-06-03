@@ -705,11 +705,14 @@ function MockTestResultsInner() {
       )}
       <div
         style={{
-          width: 1024,
+          width: 'min(100%, 1280px)',
           minHeight: 955.9750366210938,
           marginTop: 52,
-          marginLeft: 46,
+          marginLeft: 'auto',
+          marginRight: 'auto',
           boxSizing: 'border-box',
+          paddingLeft: 24,
+          paddingRight: 24,
         }}
       >
         <button
@@ -809,12 +812,12 @@ function MockTestResultsInner() {
               const rightText = row.status === 'skipped' ? 'Skipped' : (row.delta < 0 ? row.delta.toFixed(2) : `+${row.delta}`);
               const rightColor = row.status === 'wrong' ? '#FB2C36' : row.status === 'correct' ? '#00C950' : '#6B7280';
               return (
-                <div key={row.idx} style={{ width: 904.4000244140625 }}>
+                <div key={row.idx} style={{ width: '100%' }}>
                   <button
                     type="button"
                     onClick={() => setExpandedIdx(prev => (prev === row.idx ? null : row.idx))}
                     style={{
-                      width: 904.4000244140625,
+                      width: '100%',
                       height,
                       borderRadius: 10,
                       background: bg,
@@ -851,7 +854,7 @@ function MockTestResultsInner() {
                   {isExpanded && q ? (
                     <div
                       style={{
-                        width: 904.4000244140625,
+                          width: '100%',
                         marginTop: 10,
                         borderRadius: 12,
                         border: '1px solid #E5E7EB',
