@@ -13,6 +13,7 @@ interface ResultsData {
   suggestions: string[];
   detailedFeedback?: string;
   checkedCopyUrl?: string | null;
+  checkedCopyPages?: Array<{ pageNumber: number; checkedCopyUrl?: string | null; status?: string; reason?: string }>;
   checkedCopyStatus?: string | null;
   annotationPlan?: unknown;
   wordCount?: number | null;
@@ -84,7 +85,13 @@ export default function ResultsPage() {
     () => detailedFeedback.split(/\n+/).map((item) => item.trim()).filter(Boolean),
     [detailedFeedback]
   );
-  const checkedCopyReady = Boolean(data?.checkedCopyUrl);
+  const checkedCopyPages = (data?.checkedCopyPages || []).filter((page) => page.checkedCopyUrl);
+  const checkedCopyReady = checkedCopyPages.length > 0 || Boolean(data?.checkedCopyUrl);
+  const displayCheckedCopyPages = checkedCopyPages.length > 0
+    ? checkedCopyPages
+    : data?.checkedCopyUrl
+      ? [{ pageNumber: 1, checkedCopyUrl: data.checkedCopyUrl }]
+      : [];
   const markupLabel = checkedCopyReady ? 'Teacher-style checked copy is ready.' : 'Visual markup is generated for handwritten image uploads.';
 
   const summaryCards = [
@@ -342,20 +349,27 @@ export default function ResultsPage() {
             </p>
 
             {checkedCopyReady ? (
-              <div className="rounded-[12px] border border-[#E5E7EB] bg-[#F8FAFC] p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <span className="rounded-full bg-[#FEE2E2] px-3 py-1 text-[12px] font-bold text-[#B91C1C]">BETA</span>
-                  <a href={data?.checkedCopyUrl || '#'} target="_blank" rel="noreferrer" className="text-[13px] font-bold text-[#2563EB]">
-                    Open full size
-                  </a>
-                </div>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={data?.checkedCopyUrl || ''}
-                  alt="Checked copy with examiner markup"
-                  className="w-full rounded-[10px]"
-                  style={{ border: '1px solid #E5E7EB', background: '#FFFFFF' }}
-                />
+              <div className="space-y-4">
+                {displayCheckedCopyPages.map((page) => (
+                  <div key={page.pageNumber} className="rounded-[12px] border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-[#FEE2E2] px-3 py-1 text-[12px] font-bold text-[#B91C1C]">BETA</span>
+                        <span className="text-[13px] font-bold text-[#364153]">Page {page.pageNumber}</span>
+                      </div>
+                      <a href={page.checkedCopyUrl || '#'} target="_blank" rel="noreferrer" className="text-[13px] font-bold text-[#2563EB]">
+                        Open full size
+                      </a>
+                    </div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={page.checkedCopyUrl || ''}
+                      alt={`Checked copy page ${page.pageNumber} with examiner markup`}
+                      className="w-full rounded-[10px]"
+                      style={{ border: '1px solid #E5E7EB', background: '#FFFFFF' }}
+                    />
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="grid gap-5 md:grid-cols-2">
