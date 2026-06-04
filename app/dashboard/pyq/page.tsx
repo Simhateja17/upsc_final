@@ -2028,10 +2028,15 @@ export default function PyqPage() {
                         ? 'Markup is not available yet for this attempt.'
                         : 'Upload a handwritten image to generate visual markup.'}
                   </p>
-                  {displayCheckedCopyPages[0]?.checkedCopyUrl && (
-                    <a href={displayCheckedCopyPages[0].checkedCopyUrl} target="_blank" rel="noreferrer" className="inline-flex mt-4 rounded-[12px] px-4 py-2" style={{ background: '#2563EB', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: 14 }}>
-                      Open checked copy
-                    </a>
+                  {displayCheckedCopyPages.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('pyq-examiner-markup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                      className="inline-flex mt-4 rounded-[12px] px-4 py-2"
+                      style={{ background: '#2563EB', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: 14 }}
+                    >
+                      View checked pages
+                    </button>
                   )}
                 </div>
               </div>
@@ -2049,7 +2054,7 @@ export default function PyqPage() {
                     : [];
                 if (displayCheckedCopyPages.length === 0) return null;
                 return (
-                  <div className="rounded-[22px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
+                  <div id="pyq-examiner-markup" className="rounded-[22px] p-5 scroll-mt-6" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
                     <div className="flex items-center justify-between gap-3 mb-4">
                       <p style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#111827' }}>Examiner markup</p>
                       <span className="rounded-full px-3 py-1" style={{ background: '#FEE2E2', color: '#B91C1C', fontFamily: 'Inter', fontWeight: 800, fontSize: 12 }}>BETA</span>
