@@ -144,6 +144,7 @@ interface MainsPerQuestion {
   answerText?: string | null;
   wordCount?: number;
   checkedCopyUrl?: string | null;
+  checkedCopyPages?: Array<{ pageNumber: number; checkedCopyUrl?: string | null; status?: string; reason?: string }>;
   checkedCopyStatus?: string | null;
 }
 
@@ -257,6 +258,7 @@ function MockTestResultsInner() {
             answerText: d.answerText,
             wordCount: d.wordCount,
             checkedCopyUrl: d.checkedCopyUrl,
+            checkedCopyPages: Array.isArray(d.checkedCopyPages) ? d.checkedCopyPages : [],
             checkedCopyStatus: d.checkedCopyStatus,
           });
         }
@@ -554,22 +556,36 @@ function MockTestResultsInner() {
                     )}
                   </div>
 
-                  {q.checkedCopyUrl && (
+                  {(() => {
+                    const checkedCopyPages = (q.checkedCopyPages || []).filter((page) => page.checkedCopyUrl);
+                    const displayCheckedCopyPages = checkedCopyPages.length > 0
+                      ? checkedCopyPages
+                      : q.checkedCopyUrl
+                        ? [{ pageNumber: 1, checkedCopyUrl: q.checkedCopyUrl }]
+                        : [];
+                    if (displayCheckedCopyPages.length === 0) return null;
+                    return (
                     <div style={{ marginBottom: 14, border: '1px solid #E2E8F0', borderRadius: 12, background: '#FFFFFF', padding: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                         <span style={{ fontSize: 13, fontWeight: 800, color: '#991B1B' }}>Checked copy markup</span>
-                        <a href={q.checkedCopyUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>
+                        <a href={displayCheckedCopyPages[0].checkedCopyUrl || '#'} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>
                           Open full size
                         </a>
                       </div>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={q.checkedCopyUrl}
-                        alt={`Checked copy markup for question ${q.idx}`}
-                        style={{ width: '100%', borderRadius: 10, border: '1px solid #E5E7EB', background: '#F8FAFC' }}
-                      />
+                      {displayCheckedCopyPages.map((page) => (
+                        <div key={page.pageNumber} style={{ marginTop: 10 }}>
+                          <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', marginBottom: 6 }}>Page {page.pageNumber}</div>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={page.checkedCopyUrl || ''}
+                            alt={`Checked copy page ${page.pageNumber} markup for question ${q.idx}`}
+                            style={{ width: '100%', borderRadius: 10, border: '1px solid #E5E7EB', background: '#F8FAFC' }}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  )}
+                    );
+                  })()}
 
                   <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {q.strengths.length > 0 && (

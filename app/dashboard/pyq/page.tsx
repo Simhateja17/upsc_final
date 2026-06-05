@@ -1996,6 +1996,16 @@ export default function PyqPage() {
                 />
               </div>
 
+              {(() => {
+                const checkedCopyPages = Array.isArray(mainsEvalResults.checkedCopyPages)
+                  ? mainsEvalResults.checkedCopyPages.filter((page: any) => page?.checkedCopyUrl)
+                  : [];
+                const displayCheckedCopyPages = checkedCopyPages.length > 0
+                  ? checkedCopyPages
+                  : mainsEvalResults.checkedCopyUrl
+                    ? [{ pageNumber: 1, checkedCopyUrl: mainsEvalResults.checkedCopyUrl }]
+                    : [];
+                return (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
                   <div className="flex items-baseline justify-between gap-3 mb-4">
@@ -2012,35 +2022,63 @@ export default function PyqPage() {
                 <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
                   <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, color: '#111827' }}>Checked copy</p>
                   <p style={{ fontFamily: 'Inter', fontSize: 14, lineHeight: 1.6, color: '#4B5563' }}>
-                    {mainsEvalResults.checkedCopyUrl
-                      ? 'Teacher-style markup is ready.'
+                    {displayCheckedCopyPages.length > 0
+                      ? `Teacher-style markup is ready for ${displayCheckedCopyPages.length} page${displayCheckedCopyPages.length === 1 ? '' : 's'}.`
                       : mainsFile
                         ? 'Markup is not available yet for this attempt.'
                         : 'Upload a handwritten image to generate visual markup.'}
                   </p>
-                  {mainsEvalResults.checkedCopyUrl && (
-                    <a href={mainsEvalResults.checkedCopyUrl} target="_blank" rel="noreferrer" className="inline-flex mt-4 rounded-[12px] px-4 py-2" style={{ background: '#2563EB', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: 14 }}>
-                      Open checked copy
-                    </a>
+                  {displayCheckedCopyPages.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('pyq-examiner-markup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                      className="inline-flex mt-4 rounded-[12px] px-4 py-2"
+                      style={{ background: '#2563EB', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: 14 }}
+                    >
+                      View checked pages
+                    </button>
                   )}
                 </div>
               </div>
+                );
+              })()}
 
-              {mainsEvalResults.checkedCopyUrl && (
-                <div className="rounded-[22px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                  <div className="flex items-center justify-between gap-3 mb-4">
-                    <p style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#111827' }}>Examiner markup</p>
-                    <span className="rounded-full px-3 py-1" style={{ background: '#FEE2E2', color: '#B91C1C', fontFamily: 'Inter', fontWeight: 800, fontSize: 12 }}>BETA</span>
+              {(() => {
+                const checkedCopyPages = Array.isArray(mainsEvalResults.checkedCopyPages)
+                  ? mainsEvalResults.checkedCopyPages.filter((page: any) => page?.checkedCopyUrl)
+                  : [];
+                const displayCheckedCopyPages = checkedCopyPages.length > 0
+                  ? checkedCopyPages
+                  : mainsEvalResults.checkedCopyUrl
+                    ? [{ pageNumber: 1, checkedCopyUrl: mainsEvalResults.checkedCopyUrl }]
+                    : [];
+                if (displayCheckedCopyPages.length === 0) return null;
+                return (
+                  <div id="pyq-examiner-markup" className="rounded-[22px] p-5 scroll-mt-6" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <p style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#111827' }}>Examiner markup</p>
+                      <span className="rounded-full px-3 py-1" style={{ background: '#FEE2E2', color: '#B91C1C', fontFamily: 'Inter', fontWeight: 800, fontSize: 12 }}>BETA</span>
+                    </div>
+                    <div className="space-y-4">
+                      {displayCheckedCopyPages.map((page: any) => (
+                        <div key={page.pageNumber || page.checkedCopyUrl}>
+                          <div className="mb-2 flex items-center justify-between">
+                            <span style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 14, color: '#364153' }}>Page {page.pageNumber || 1}</span>
+                            <a href={page.checkedCopyUrl} target="_blank" rel="noreferrer" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 13, color: '#2563EB' }}>Open full size</a>
+                          </div>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={page.checkedCopyUrl}
+                            alt={`Checked copy page ${page.pageNumber || 1} with evaluator markup`}
+                            className="w-full rounded-[14px]"
+                            style={{ border: '1px solid #E5E7EB', background: '#F3F4F6' }}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={mainsEvalResults.checkedCopyUrl}
-                    alt="Checked copy with evaluator markup"
-                    className="w-full rounded-[14px]"
-                    style={{ border: '1px solid #E5E7EB', background: '#F3F4F6' }}
-                  />
-                </div>
-              )}
+                );
+              })()}
 
               {asTextList(mainsEvalResults.demandCoverage).length > 0 && (
                 <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
