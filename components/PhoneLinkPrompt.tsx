@@ -5,7 +5,6 @@ import { authService } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
 
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === 'true';
-const DISMISS_KEY = 'rwj_phone_link_prompt_dismissed';
 
 export default function PhoneLinkPrompt() {
   const { user, refreshUser } = useAuth();
@@ -21,9 +20,7 @@ export default function PhoneLinkPrompt() {
       setOpen(false);
       return;
     }
-    if (sessionStorage.getItem(DISMISS_KEY) === '1') return;
-    const timer = setTimeout(() => setOpen(true), 700);
-    return () => clearTimeout(timer);
+    setOpen(true);
   }, [user]);
 
   if (!open || !user || user.phone) return null;
@@ -59,11 +56,6 @@ export default function PhoneLinkPrompt() {
     }
   }
 
-  function dismiss() {
-    sessionStorage.setItem(DISMISS_KEY, '1');
-    setOpen(false);
-  }
-
   const inputStyle = {
     width: '100%',
     height: 46,
@@ -77,21 +69,11 @@ export default function PhoneLinkPrompt() {
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/35 px-4">
       <div className="w-full max-w-[420px] rounded-[14px] bg-white p-5 shadow-2xl">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="font-inter text-[18px] font-bold text-[#101828]">Add your mobile number</h2>
-            <p className="mt-1 font-inter text-sm leading-5 text-[#667085]">
-              Secure your account and enable mobile OTP sign-in.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={dismiss}
-            className="h-8 w-8 rounded-full border border-[#E5E7EB] text-[#667085]"
-            aria-label="Dismiss phone prompt"
-          >
-            x
-          </button>
+        <div>
+          <h2 className="font-inter text-[18px] font-bold text-[#101828]">Verify your mobile number</h2>
+          <p className="mt-1 font-inter text-sm leading-5 text-[#667085]">
+            A verified Indian mobile number is required to use your RiseWithJeet account.
+          </p>
         </div>
 
         <form onSubmit={step === 'phone' ? sendOtp : verifyOtp} className="mt-5">
