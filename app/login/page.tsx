@@ -220,7 +220,8 @@ function LoginPageContent() {
     }
   };
 
-  const handleSendPhoneSignupOtp = async () => {
+  const handleSendPhoneSignupOtp = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setError(null);
 
     if (!agreedToTerms) {
@@ -733,7 +734,7 @@ function LoginPageContent() {
 
         {/* ── SIGNUP FORM ── */}
         {activeTab === 'signup' && (
-          <form onSubmit={handleSignup}>
+          <form onSubmit={handleSendPhoneSignupOtp}>
             {/* Heading */}
             <h1
               style={{
@@ -785,7 +786,7 @@ function LoginPageContent() {
             >
               <Image src="/icon-google.png" alt="" width={20} height={20} style={{ objectFit: 'contain' }} />
               <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#0A0A0A' }}>
-                Sign up with Google
+                Continue with Google
               </span>
             </button>
 
@@ -793,7 +794,7 @@ function LoginPageContent() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
               <div style={{ flex: 1, height: 1, background: '#D1D5DC' }} />
               <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 12, lineHeight: '16px', color: '#99A1AF', whiteSpace: 'nowrap' }}>
-                or create with email
+                or create with verified mobile
               </span>
               <div style={{ flex: 1, height: 1, background: '#D1D5DC' }} />
             </div>
@@ -842,7 +843,7 @@ function LoginPageContent() {
             {/* Email Address */}
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
-                Email Address
+                Email Address <span style={{ color: '#99A1AF', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
               </label>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex', zIndex: 1 }}>
@@ -855,7 +856,6 @@ function LoginPageContent() {
                   value={signupEmail}
                   onChange={(e) => { setSignupEmail(e.target.value); setEmailSuggestions(getEmailSuggestions(e.target.value)); }}
                   onBlur={() => setTimeout(() => setEmailSuggestions([]), 150)}
-                  required
                   style={{ width: '100%', height: 45.6, paddingLeft: 40, paddingRight: 16, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }}
                 />
                 {emailSuggestions.length > 0 && (
@@ -891,34 +891,6 @@ function LoginPageContent() {
               </div>
             </div>
 
-            {/* Password */}
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
-                Password
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex' }}>
-                  <Image src="/icon-lock.png" alt="" width={16} height={16} style={{ objectFit: 'contain' }} />
-                </span>
-                <input 
-                  type={showPassword ? 'text' : 'password'} 
-                  placeholder="Create a strong password" 
-                  value={signupPassword}
-                  onChange={(e) => setSignupPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  style={{ width: '100%', height: 45.6, paddingLeft: 40, paddingRight: 40, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }} 
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z" stroke="#99A1AF" strokeWidth="1.2" fill="none"/><circle cx="8" cy="8" r="2" stroke="#99A1AF" strokeWidth="1.2" fill="none"/></svg>
-                </button>
-              </div>
-            </div>
-
             {/* Terms checkbox */}
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
               <input 
@@ -940,14 +912,14 @@ function LoginPageContent() {
             {/* Create Free Account button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={otpLoading}
               style={{
                 width: '100%',
                 height: 44,
                 borderRadius: 9999,
-                background: isLoading ? '#6B7280' : '#0F1C2E',
+                background: otpLoading ? '#9CA3AF' : '#0F1C2E',
                 border: 'none',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
+                cursor: otpLoading ? 'not-allowed' : 'pointer',
                 fontFamily: "'Outfit', sans-serif",
                 fontWeight: 600,
                 fontSize: 14,
@@ -957,30 +929,7 @@ function LoginPageContent() {
                 marginBottom: 12,
               }}
             >
-              {isLoading ? 'Creating Account...' : 'Create Free Account →'}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSendPhoneSignupOtp}
-              disabled={otpLoading}
-              style={{
-                width: '100%',
-                height: 44,
-                borderRadius: 9999,
-                background: otpLoading ? '#9CA3AF' : '#F0B100',
-                border: 'none',
-                cursor: otpLoading ? 'not-allowed' : 'pointer',
-                fontFamily: "'Outfit', sans-serif",
-                fontWeight: 700,
-                fontSize: 14,
-                lineHeight: '20px',
-                color: '#101828',
-                textAlign: 'center',
-                marginBottom: 12,
-              }}
-            >
-              {otpLoading ? 'Sending OTP...' : 'Create with Phone OTP'}
+              {otpLoading ? 'Sending OTP...' : 'Create Account with SMS OTP →'}
             </button>
 
             {/* Already have account */}
