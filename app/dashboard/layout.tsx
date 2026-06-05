@@ -9,6 +9,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import Sidebar from '@/components/Sidebar';
 import MilestonePopup from '@/components/MilestonePopup';
 import OnboardingFlow from '@/components/OnboardingFlow';
+import PhoneLinkPrompt from '@/components/PhoneLinkPrompt';
 
 const HIDE_SIDEBAR_ROUTES = ['/dashboard/profile', '/dashboard/settings', '/dashboard/billing', '/dashboard/feedback'];
 const STREAK_MILESTONES = [3, 7, 10, 14, 21, 30] as const;
@@ -155,6 +156,7 @@ export default function DashboardLayout({
 
       {/* Onboarding flow – shown once for new users */}
       <OnboardingFlow />
+      <PhoneLinkPrompt />
 
       {/* Milestone Popup – WIP placeholder */}
       <MilestonePopup

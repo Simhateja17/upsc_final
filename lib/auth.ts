@@ -25,6 +25,8 @@ export interface AuthResponse {
   requiresEmailVerification?: boolean;
 }
 
+export type PhoneOtpPurpose = 'login' | 'signup' | 'link';
+
 export interface SignupData {
   email: string;
   password: string;
@@ -56,6 +58,15 @@ export const storeTokens = (accessToken: string, refreshToken: string) => {
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 };
+
+async function applyBackendSession(session: Session | null | undefined) {
+  if (!session?.accessToken) return;
+  storeTokens(session.accessToken, session.refreshToken ?? '');
+  await supabase.auth.setSession({
+    access_token: session.accessToken,
+    refresh_token: session.refreshToken ?? '',
+  });
+}
 
 export const clearTokens = () => {
   if (typeof window === 'undefined') return;
@@ -236,6 +247,40 @@ export const authService = {
         expiresAt: data.session.expires_at,
       },
     };
+  },
+
+  sendPhoneLoginOtp: async (phone: string): Promise<{ phone: string }> => {
+    const response = await api.post<{ phone: string }>('/auth/phone/send-login-otp', { phone });
+    return response.data!;
+  },
+
+  sendPhoneSignupOtp: async (phone: string): Promise<{ phone: string }> => {
+    const response = await api.post<{ phone: string }>('/auth/phone/send-signup-otp', { phone });
+    return response.data!;
+  },
+
+  sendPhoneLinkOtp: async (phone: string): Promise<{ phone: string }> => {
+    const { accessToken } = getStoredTokens();
+    if (!accessToken) throw new Error('No access token');
+    const response = await api.post<{ phone: string }>('/auth/phone/send-link-otp', { phone }, { token: accessToken });
+    return response.data!;
+  },
+
+  verifyPhoneOtp: async (
+    purpose: PhoneOtpPurpose,
+    phone: string,
+    token: string,
+    profile?: { firstName?: string; lastName?: string }
+  ): Promise<AuthResponse> => {
+    const { accessToken } = getStoredTokens();
+    const response = await api.post<AuthResponse>(
+      '/auth/phone/verify',
+      { purpose, phone, token, profile },
+      purpose === 'link' && accessToken ? { token: accessToken } : undefined
+    );
+    const authResponse = response.data!;
+    await applyBackendSession(authResponse.session);
+    return authResponse;
   },
 
   resetPassword: async (email: string): Promise<void> => {
