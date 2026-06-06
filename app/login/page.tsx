@@ -39,7 +39,8 @@ function LoginPageContent() {
   const [resetSentEmail, setResetSentEmail] = useState('');
 
   // OTP login state
-  const [otpEmail, setOtpEmail] = useState('');
+  const [otpPhone, setOtpPhone] = useState('');
+  const [otpPurpose, setOtpPurpose] = useState<'login' | 'signup'>('login');
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
   const [otpLoading, setOtpLoading] = useState(false);
 
@@ -201,18 +202,50 @@ function LoginPageContent() {
     setError(null);
     setOtpLoading(true);
     try {
-      await authService.sendOtp(otpEmail);
+      await authService.sendPhoneLoginOtp(otpPhone);
+      setOtpPurpose('login');
       setOtpCode(['', '', '', '', '', '']);
       setActiveTab('otpVerify');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not send OTP. Please try again.';
-      if (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('signups not allowed')) {
-        setError('No account found with this email. Please sign up first.');
+      if (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('no account')) {
+        setError('No account found with this phone number. Please create an account first.');
       } else if (msg.toLowerCase().includes('rate limit')) {
         setError('Too many OTP requests. Please wait a minute and try again.');
       } else {
         setError(msg);
       }
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleSendPhoneSignupOtp = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setError(null);
+
+    if (!agreedToTerms) {
+      setError('Please agree to the Terms of Service and Privacy Policy');
+      return;
+    }
+    if (!signupFirstName.trim() || !signupLastName.trim()) {
+      setError('First name and last name are required for phone signup.');
+      return;
+    }
+    if (!signupPhone.trim()) {
+      setError('Mobile number is required for phone signup.');
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      const result = await authService.sendPhoneSignupOtp(signupPhone);
+      setOtpPhone(result.phone);
+      setOtpPurpose('signup');
+      setOtpCode(['', '', '', '', '', '']);
+      setActiveTab('otpVerify');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send OTP. Please try again.');
     } finally {
       setOtpLoading(false);
     }
@@ -228,7 +261,14 @@ function LoginPageContent() {
     }
     setOtpLoading(true);
     try {
-      await authService.verifyOtp(otpEmail, token);
+      await authService.verifyPhoneOtp(
+        otpPurpose,
+        otpPhone,
+        token,
+        otpPurpose === 'signup'
+          ? { firstName: signupFirstName, lastName: signupLastName }
+          : undefined
+      );
       localStorage.setItem('rwj_has_logged_in', '1');
       sessionStorage.setItem('rwj_login_success', '1');
       router.replace('/dashboard');
@@ -694,7 +734,7 @@ function LoginPageContent() {
 
         {/* ── SIGNUP FORM ── */}
         {activeTab === 'signup' && (
-          <form onSubmit={handleSignup}>
+          <form onSubmit={handleSendPhoneSignupOtp}>
             {/* Heading */}
             <h1
               style={{
@@ -746,7 +786,7 @@ function LoginPageContent() {
             >
               <Image src="/icon-google.png" alt="" width={20} height={20} style={{ objectFit: 'contain' }} />
               <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#0A0A0A' }}>
-                Sign up with Google
+                Continue with Google
               </span>
             </button>
 
@@ -754,7 +794,7 @@ function LoginPageContent() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
               <div style={{ flex: 1, height: 1, background: '#D1D5DC' }} />
               <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 12, lineHeight: '16px', color: '#99A1AF', whiteSpace: 'nowrap' }}>
-                or create with email
+                or create with verified mobile
               </span>
               <div style={{ flex: 1, height: 1, background: '#D1D5DC' }} />
             </div>
@@ -803,7 +843,7 @@ function LoginPageContent() {
             {/* Email Address */}
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
-                Email Address
+                Email Address <span style={{ color: '#99A1AF', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
               </label>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex', zIndex: 1 }}>
@@ -816,7 +856,6 @@ function LoginPageContent() {
                   value={signupEmail}
                   onChange={(e) => { setSignupEmail(e.target.value); setEmailSuggestions(getEmailSuggestions(e.target.value)); }}
                   onBlur={() => setTimeout(() => setEmailSuggestions([]), 150)}
-                  required
                   style={{ width: '100%', height: 45.6, paddingLeft: 40, paddingRight: 16, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }}
                 />
                 {emailSuggestions.length > 0 && (
@@ -852,34 +891,6 @@ function LoginPageContent() {
               </div>
             </div>
 
-            {/* Password */}
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
-                Password
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex' }}>
-                  <Image src="/icon-lock.png" alt="" width={16} height={16} style={{ objectFit: 'contain' }} />
-                </span>
-                <input 
-                  type={showPassword ? 'text' : 'password'} 
-                  placeholder="Create a strong password" 
-                  value={signupPassword}
-                  onChange={(e) => setSignupPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  style={{ width: '100%', height: 45.6, paddingLeft: 40, paddingRight: 40, borderRadius: 14, border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: 14, color: '#0A0A0A', outline: 'none', boxSizing: 'border-box' }} 
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z" stroke="#99A1AF" strokeWidth="1.2" fill="none"/><circle cx="8" cy="8" r="2" stroke="#99A1AF" strokeWidth="1.2" fill="none"/></svg>
-                </button>
-              </div>
-            </div>
-
             {/* Terms checkbox */}
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
               <input 
@@ -901,14 +912,14 @@ function LoginPageContent() {
             {/* Create Free Account button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={otpLoading}
               style={{
                 width: '100%',
                 height: 44,
                 borderRadius: 9999,
-                background: isLoading ? '#6B7280' : '#0F1C2E',
+                background: otpLoading ? '#9CA3AF' : '#0F1C2E',
                 border: 'none',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
+                cursor: otpLoading ? 'not-allowed' : 'pointer',
                 fontFamily: "'Outfit', sans-serif",
                 fontWeight: 600,
                 fontSize: 14,
@@ -918,7 +929,7 @@ function LoginPageContent() {
                 marginBottom: 12,
               }}
             >
-              {isLoading ? 'Creating Account...' : 'Create Free Account →'}
+              {otpLoading ? 'Sending OTP...' : 'Create Account with SMS OTP →'}
             </button>
 
             {/* Already have account */}
@@ -1162,20 +1173,23 @@ function LoginPageContent() {
                 Login with OTP
               </h1>
               <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, lineHeight: '18px', color: '#6A7282', margin: '0 auto', maxWidth: 320 }}>
-                Enter your registered email and we&apos;ll send you a 6-digit code to sign in.
+                {otpPurpose === 'signup'
+                  ? 'Verify your Indian mobile number to create your account.'
+                  : 'Enter your registered Indian mobile number and we\'ll send you a 6-digit code to sign in.'}
               </p>
             </div>
 
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#364153', marginBottom: 8 }}>
-                Email Address
+                Mobile Number
               </label>
               <input
-                type="email"
-                autoComplete="email"
-                value={otpEmail}
-                onChange={(e) => setOtpEmail(e.target.value)}
-                placeholder="yourname@gmail.com"
+                type="tel"
+                autoComplete="tel"
+                inputMode="numeric"
+                value={otpPhone}
+                onChange={(e) => setOtpPhone(e.target.value)}
+                placeholder="98765 43210"
                 required
                 style={{
                   width: '100%',
@@ -1259,7 +1273,7 @@ function LoginPageContent() {
                 Enter your code
               </h1>
               <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, lineHeight: '18px', color: '#6A7282', margin: '0 auto', maxWidth: 320 }}>
-                We sent a 6-digit code to <strong>{otpEmail}</strong>.
+                We sent a 6-digit code to <strong>{otpPhone}</strong>.
               </p>
             </div>
 
@@ -1320,12 +1334,19 @@ function LoginPageContent() {
                 marginBottom: 14,
               }}
             >
-              {otpLoading ? 'Verifying...' : 'Verify & Sign In'}
+              {otpLoading ? 'Verifying...' : otpPurpose === 'signup' ? 'Verify & Create Account' : 'Verify & Sign In'}
             </button>
 
             <button
               type="button"
-              onClick={() => { setActiveTab('otpRequest'); setError(null); }}
+              onClick={() => {
+                if (otpPurpose === 'signup') {
+                  handleSendPhoneSignupOtp();
+                } else {
+                  setActiveTab('otpRequest');
+                  setError(null);
+                }
+              }}
               style={{ display: 'block', margin: '0 auto 10px', background: 'none', border: 'none', color: '#155DFC', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
             >
               Didn&apos;t get it? Resend code
@@ -1333,7 +1354,7 @@ function LoginPageContent() {
 
             <button
               type="button"
-              onClick={() => { setActiveTab('login'); setError(null); }}
+              onClick={() => { setActiveTab(otpPurpose === 'signup' ? 'signup' : 'login'); setError(null); }}
               style={{
                 width: '100%',
                 height: 42,
@@ -1347,7 +1368,7 @@ function LoginPageContent() {
                 cursor: 'pointer',
               }}
             >
-              ← Back to login
+              ← Back to {otpPurpose === 'signup' ? 'signup' : 'login'}
             </button>
           </form>
         )}
@@ -1682,7 +1703,7 @@ function LoginPageContent() {
             <button
               type="button"
               onClick={() => {
-                setOtpEmail(loginEmail);
+                setOtpPhone('');
                 setError(null);
                 setActiveTab('otpRequest');
               }}

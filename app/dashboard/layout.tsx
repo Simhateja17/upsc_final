@@ -9,6 +9,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import Sidebar from '@/components/Sidebar';
 import MilestonePopup from '@/components/MilestonePopup';
 import OnboardingFlow from '@/components/OnboardingFlow';
+import PhoneLinkPrompt from '@/components/PhoneLinkPrompt';
 
 const HIDE_SIDEBAR_ROUTES = ['/dashboard/profile', '/dashboard/settings', '/dashboard/billing', '/dashboard/feedback'];
 const PUBLIC_DASHBOARD_ROUTES = ['/dashboard/pyq'];
@@ -157,6 +158,7 @@ export default function DashboardLayout({
 
       {/* Onboarding flow – shown once for new users */}
       <OnboardingFlow />
+      <PhoneLinkPrompt />
 
       {/* Milestone Popup – WIP placeholder */}
       <MilestonePopup
