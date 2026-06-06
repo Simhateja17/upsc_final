@@ -4,8 +4,6 @@ import { FormEvent, useEffect, useState } from 'react';
 import { authService } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
 
-const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === 'true';
-
 export default function PhoneLinkPrompt() {
   const { user, refreshUser } = useAuth();
   const [open, setOpen] = useState(false);
@@ -16,7 +14,7 @@ export default function PhoneLinkPrompt() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!PHONE_AUTH_ENABLED || !user || user.phone) {
+    if (!user || user.phone) {
       setOpen(false);
       return;
     }
