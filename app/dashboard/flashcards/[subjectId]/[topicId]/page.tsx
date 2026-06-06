@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { flashcardService } from '@/lib/services';
 
 type Card = {
@@ -12,15 +13,24 @@ type Card = {
   mastered: boolean;
 };
 
-export default function FlashcardReviewPage({ params }: { params: { subjectId: string; topicId: string } }) {
+const SUBJECT_ICONS: Record<string, string> = {
+  polity: '🏛️', history: '📜', geography: '🌍', economy: '💰',
+  'environment-ecology': '🌿', 'science-technology': '🔬', 'current-affairs': '📰',
+};
+
+function pretty(slug: string) {
+  return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export default function FlashcardReviewPage() {
+  const params = useParams<{ subjectId: string; topicId: string }>();
   const subjectId = typeof params?.subjectId === 'string' ? params.subjectId : '';
-  const topicId = typeof params?.topicId === 'string' ? params.topicId : '';
+  const topicId   = typeof params?.topicId   === 'string' ? params.topicId   : '';
 
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
-  const [arrowImgFailed, setArrowImgFailed] = useState(false);
   const [showSessionComplete, setShowSessionComplete] = useState(false);
   const [masteredCount, setMasteredCount] = useState(0);
 
@@ -40,25 +50,21 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
   const totalCards = cards.length;
   const card = cards[currentIndex];
   const isFirst = currentIndex === 0;
-  const isLast = currentIndex === totalCards - 1;
+  const isLast  = currentIndex === totalCards - 1;
 
   const goPrev = () => {
     if (!isFirst) { setCurrentIndex((i) => i - 1); setRevealed(false); }
   };
-
   const goNext = () => {
     if (isLast) setShowSessionComplete(true);
     else { setCurrentIndex((i) => i + 1); setRevealed(false); }
   };
-
   const handleFlip = () => {
     if (!revealed && card && !card.mastered) {
-      // Mark as seen when the back is revealed for the first time.
       flashcardService.updateProgress(card.id, false).catch(() => {});
     }
-    setRevealed((value) => !value);
+    setRevealed((v) => !v);
   };
-
   const handleMastered = () => {
     if (!card) return;
     flashcardService.updateProgress(card.id, true)
@@ -73,7 +79,7 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
   if (loading) {
     return (
       <div className="flex items-center justify-center" style={{ background: '#FAFBFE', height: '100%' }}>
-        <div className="animate-pulse text-gray-400">Loading cards...</div>
+        <div className="animate-pulse text-gray-400">Loading cards…</div>
       </div>
     );
   }
@@ -82,231 +88,298 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
     return (
       <div className="flex flex-col items-center justify-center gap-4" style={{ background: '#FAFBFE', height: '100%' }}>
         <p className="text-gray-500">No cards found for this topic.</p>
-        <Link href={`/dashboard/flashcards/${subjectId}`} className="text-blue-600 underline text-sm">
-          ← Back to Topics
-        </Link>
+        <Link href={`/dashboard/flashcards/${subjectId}`} className="text-blue-600 underline text-sm">← Back to Topics</Link>
       </div>
     );
   }
 
+  const subjectIcon = SUBJECT_ICONS[subjectId] ?? '📘';
+  const ratedCount = cards.filter((c, i) => c.mastered || i < currentIndex).length;
+
   return (
     <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: '100%' }}>
-      <div className="flex-1 overflow-y-auto" style={{ background: '#FFFFFF' }}>
-        <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 py-5 sm:py-6">
-          {/* Back to Topics */}
+      <div className="flex-1 overflow-y-auto" style={{ background: '#FAFBFE' }}>
+        <div className="w-full max-w-[1100px] mx-auto px-4 sm:px-6 py-5">
+
+          {/* ── Back link ── */}
           <Link
             href={`/dashboard/flashcards/${subjectId}`}
-            className="inline-flex items-center gap-2 mb-4"
-            style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#4A5565' }}
+            className="inline-flex items-center gap-1.5 mb-4"
+            style={{ fontFamily: 'Inter', fontSize: 13, color: '#6B7280' }}
           >
-            {!arrowImgFailed && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src="/ArrowLeft.png" alt="" className="w-5 h-5 object-contain flex-shrink-0 mr-1" onError={() => setArrowImgFailed(true)} />
-            )}
-            {arrowImgFailed && <span aria-hidden className="mr-1">←</span>}
-            Back to Topics
+            <span aria-hidden>←</span> Back to Topics
           </Link>
 
-          {/* Breadcrumb bar */}
-          <div
-            className="w-full rounded-[10px] px-4 py-3 flex flex-wrap items-center justify-between gap-3 mb-4"
-            style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF', minHeight: 60 }}
-          >
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="inline-flex items-center rounded-full px-3 py-1" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#155DFC', background: '#EFF6FF' }}>
-                {subjectId}
-              </span>
-              <span style={{ width: 1, height: 16, background: '#E5E7EB' }} aria-hidden />
-              <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#101828' }}>
-                {topicId.replace(/-/g, ' ')}
-              </span>
-              <span style={{ width: 1, height: 16, background: '#E5E7EB' }} aria-hidden />
-              <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, lineHeight: '20px', color: '#6A7282' }}>
-                Card {currentIndex + 1} / {totalCards}
-              </span>
+          {/* ── Top nav: colorful chips + card count + keyboard hint ── */}
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            {/* Subject chip — purple */}
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
+              style={{ background: '#EDE9FE', color: '#7C3AED', fontFamily: 'Inter', fontWeight: 600, fontSize: 12 }}
+            >
+              <span aria-hidden>{subjectIcon}</span>
+              {pretty(subjectId)}
+            </span>
+
+            {/* Topic chip — blue */}
+            <span
+              className="inline-flex items-center rounded-full px-3 py-1"
+              style={{ background: '#DBEAFE', color: '#1D4ED8', fontFamily: 'Inter', fontWeight: 600, fontSize: 12 }}
+            >
+              {pretty(topicId)}
+            </span>
+
+            <span style={{ fontFamily: 'Inter', fontSize: 12, color: '#9CA3AF', marginLeft: 4 }}>
+              Card {currentIndex + 1} / {totalCards}
+            </span>
+
+            {/* Keyboard hints — right */}
+            <div className="ml-auto hidden sm:flex items-center gap-2" style={{ fontFamily: 'Inter', fontSize: 11, color: '#C9CFD8' }}>
+              <span style={{ background: '#F1F3F5', border: '0.5px solid #E2E5ED', borderRadius: 4, padding: '1px 6px', fontSize: 10, color: '#6B7280' }}>Space</span>
+              <span>Flip</span>
+              <span style={{ background: '#F1F3F5', border: '0.5px solid #E2E5ED', borderRadius: 4, padding: '1px 6px', fontSize: 10, color: '#6B7280' }}>→</span>
+              <span>Next</span>
+              <span style={{ marginLeft: 8, color: '#9CA3AF' }}>{ratedCount} of {totalCards} seen</span>
             </div>
           </div>
 
-          {/* Step row */}
-          <div className="flex flex-wrap items-center gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#00C950', color: '#FFFFFF', fontSize: 16 }}>✓</div>
-              <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>Subject</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#00C950', color: '#FFFFFF', fontSize: 16 }}>✓</div>
-              <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>Topic</span>
-            </div>
-            <div className="flex items-center gap-3">
+          {/* ── Segmented progress bar ── */}
+          <div className="flex gap-1 mb-4" style={{ height: 6 }}>
+            {cards.map((c, i) => (
               <div
-                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: '#101828', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}
+                key={i}
+                className="flex-1 rounded-sm transition-colors duration-300"
+                style={{
+                  background: c.mastered
+                    ? '#22C55E'
+                    : i === currentIndex
+                    ? '#6366F1'
+                    : i < currentIndex
+                    ? '#C7D2FE'
+                    : '#E5E7EB',
+                }}
+              />
+            ))}
+          </div>
+
+          {/* ── Step breadcrumb row — grey Subject × Topic × | Flashcards active ── */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <Link
+              href="/dashboard/flashcards"
+              className="flex items-center gap-1"
+              style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF', textDecoration: 'none' }}
+            >
+              Subject
+              <span style={{ fontSize: 10, marginLeft: 2 }}>×</span>
+            </Link>
+            <span style={{ color: '#E5E7EB', fontSize: 10 }}>›</span>
+            <Link
+              href={`/dashboard/flashcards/${subjectId}`}
+              className="flex items-center gap-1"
+              style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF', textDecoration: 'none' }}
+            >
+              Topic
+              <span style={{ fontSize: 10, marginLeft: 2 }}>×</span>
+            </Link>
+            <span style={{ color: '#E5E7EB', fontSize: 10 }}>›</span>
+            <span
+              className="flex items-center gap-1.5"
+              style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 13, color: '#101828' }}
+            >
+              🧠 Flashcards
+              <span
+                className="inline-flex items-center justify-center rounded-full"
+                style={{ background: '#101828', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: 10, width: 20, height: 20, flexShrink: 0 }}
               >
                 {totalCards}
+              </span>
+            </span>
+
+            {/* Right side: difficulty + hint + bookmark */}
+            {card && (
+              <div className="ml-auto flex items-center gap-2">
+                {card.difficulty && (
+                  <span
+                    className="rounded-full px-3 py-0.5"
+                    style={{
+                      fontFamily: 'Inter', fontWeight: 600, fontSize: 11,
+                      ...(card.difficulty.toLowerCase() === 'easy'
+                        ? { background: '#F0FDF4', color: '#16A34A', border: '0.5px solid #BBF7D0' }
+                        : card.difficulty.toLowerCase() === 'medium'
+                        ? { background: '#FFFBEB', color: '#D97706', border: '0.5px solid #FDE68A' }
+                        : { background: '#FEF2F2', color: '#DC2626', border: '0.5px solid #FCA5A5' }),
+                    }}
+                  >
+                    {card.difficulty.charAt(0).toUpperCase() + card.difficulty.slice(1).toLowerCase()}
+                  </span>
+                )}
               </div>
-              <div>
-                <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 18, lineHeight: '28px', color: '#101828' }}>Flashcards</p>
-                <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, lineHeight: '16px', color: '#6A7282' }}>Click the card to flip</p>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Main flashcard */}
+          {/* ── Main flashcard ── */}
           {card && (
-            <div
-              className="w-full rounded-[24px] border mb-6 min-h-[340px]"
-              style={{ perspective: '1400px' }}
-            >
+            <div className="w-full mb-5" style={{ perspective: '1400px' }}>
               <div
                 role="button"
                 tabIndex={0}
                 onClick={handleFlip}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleFlip();
-                  }
-                }}
-                className="relative h-full min-h-[340px] cursor-pointer outline-none"
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFlip(); } }}
+                className="relative cursor-pointer outline-none"
                 style={{
+                  minHeight: 280,
                   transformStyle: 'preserve-3d',
-                  transition: 'transform 900ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  transition: 'transform 600ms cubic-bezier(0.4, 0.2, 0.2, 1)',
                   transform: revealed ? 'rotateY(180deg)' : 'rotateY(0deg)',
                 }}
               >
+                {/* Front */}
                 <div
-                  className="absolute inset-0 rounded-[24px] p-6 sm:p-8 flex flex-col"
+                  className="absolute inset-0 rounded-[18px] p-7 flex flex-col"
                   style={{
                     backfaceVisibility: 'hidden',
-                    background: 'linear-gradient(180deg, #0F1419 0%, #1A2332 50%, #0D1218 100%)',
-                    border: '0.8px solid rgba(30,41,59,0.5)',
-                    boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.08)',
+                    background: 'linear-gradient(145deg, #1A1D23, #2D3140)',
+                    border: '0.5px solid #30363D',
+                    minHeight: 280,
                   }}
                 >
-                  <div className="flex items-center justify-between gap-4 mb-3">
-                    <span className="uppercase tracking-[2px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: '#6A7282' }}>
-                      Question
-                    </span>
-                    <span className="uppercase tracking-[1.5px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: '#E8B84B' }}>
-                      {card.difficulty}
-                    </span>
-                  </div>
-                  <div className="flex-1 flex flex-col justify-center">
-                    <p className="mb-5 max-w-[980px]" style={{ fontFamily: 'Georgia', fontWeight: 400, fontSize: 28, lineHeight: '44px', color: '#FFFFFF' }}>
+                  <span
+                    className="uppercase tracking-[1.5px] mb-5"
+                    style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: '#6E7681' }}
+                  >
+                    Question
+                  </span>
+                  <div className="flex-1 flex items-center">
+                    <p style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, lineHeight: '36px', color: '#FFFFFF' }}>
                       {card.question}
                     </p>
-                    <div className="h-px w-full mb-4" style={{ background: 'rgba(255,255,255,0.16)' }} />
-                    <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, lineHeight: '18px', color: '#8A94A6' }}>
-                      Click the card to flip
-                    </p>
+                  </div>
+                  {/* Subtle "click to reveal" hint bottom-right */}
+                  <div className="flex justify-end mt-4">
+                    <span style={{ fontFamily: 'Inter', fontSize: 11, color: '#484F58', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1v7M8 1L5 4M8 1l3 3" stroke="#484F58" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 9v4a1 1 0 001 1h8a1 1 0 001-1V9" stroke="#484F58" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      Click to reveal answer
+                    </span>
                   </div>
                 </div>
 
+                {/* Back */}
                 <div
-                  className="absolute inset-0 rounded-[24px] p-6 sm:p-8 flex flex-col"
+                  className="absolute inset-0 rounded-[18px] p-7 flex flex-col"
                   style={{
                     backfaceVisibility: 'hidden',
                     transform: 'rotateY(180deg)',
                     background: '#FFFFFF',
-                    border: '0.8px solid #E5E7EB',
-                    boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.08)',
+                    border: '1.5px solid #E2E5ED',
+                    minHeight: 280,
                   }}
                 >
-                  <div className="flex items-center justify-between gap-4 mb-3">
-                    <span className="uppercase tracking-[2px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: '#6A7282' }}>
-                      Answer
-                    </span>
-                    <span className="uppercase tracking-[1.5px]" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '15px', color: '#6A7282' }}>
-                      {card.difficulty}
-                    </span>
-                  </div>
+                  <span
+                    className="uppercase tracking-[1.5px] mb-5"
+                    style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: '#9CA3AF' }}
+                  >
+                    Answer
+                  </span>
                   <div className="flex-1 flex flex-col justify-center">
-                    <p className="mb-5 max-w-[980px]" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 16, lineHeight: '24px', color: '#101828' }}>
+                    <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 16, lineHeight: '26px', color: '#101828' }}>
                       {card.answer}
                     </p>
-                    <div className="h-px w-full mb-4" style={{ background: '#E5E7EB' }} />
-                    <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, lineHeight: '18px', color: '#6A7282' }}>
-                      Click the card to flip back
-                    </p>
                   </div>
+                  <div className="h-px w-full mt-4 mb-3" style={{ background: '#F1F3F5' }} />
+                  <p style={{ fontFamily: 'Inter', fontSize: 11, color: '#9CA3AF' }}>
+                    How well did you know this? Mark below.
+                  </p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Pagination dots */}
-          <div className="flex justify-center gap-2 mb-5">
-            {cards.map((_, i) => (
-              <div key={i} className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: i === currentIndex ? '#F1AB01' : '#E5E7EB' }} aria-hidden />
-            ))}
-          </div>
-
-          {/* Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          {/* ── Bottom buttons ── */}
+          <div className="flex items-center justify-between gap-3">
+            {/* Prev */}
             <button
               type="button"
               onClick={goPrev}
               disabled={isFirst}
-              className="rounded-[10px] px-5 py-2.5 border min-w-[120px] disabled:opacity-50"
-              style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px', color: '#364153', background: '#FFFFFF', border: '0.8px solid #D1D5DC' }}
+              className="rounded-[10px] px-5 py-2.5 border disabled:opacity-40"
+              style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, color: '#364153', background: '#FFFFFF', border: '0.8px solid #D1D5DC', minWidth: 100 }}
             >
-              ← Previous
+              ‹ Prev
             </button>
+
+            {/* Flip Card — amber bg, dark navy text, rotate icon */}
             <button
               type="button"
               onClick={handleFlip}
-              className="rounded-[10px] px-5 py-2.5 min-w-[156px]"
-              style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', background: 'linear-gradient(90deg, #F1AB01 0%, #FE6F01 100%)' }}
+              className="flex items-center gap-2 rounded-[10px] px-6 py-2.5"
+              style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, color: '#101828', background: '#F0AE00', minWidth: 148 }}
             >
+              {/* Rotate / flip icon */}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+              </svg>
               {revealed ? 'Flip Back' : 'Flip Card'}
             </button>
+
+            {/* Got it — only when revealed and not yet mastered */}
             {revealed && !card?.mastered && (
               <button
                 type="button"
                 onClick={handleMastered}
-                className="rounded-[10px] px-5 py-2.5 min-w-[156px]"
-                style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', background: '#00C950' }}
+                className="rounded-[10px] px-5 py-2.5"
+                style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, color: '#FFFFFF', background: '#16A34A', minWidth: 110 }}
               >
                 ✓ Got it!
               </button>
             )}
+
+            {/* Next */}
             <button
               type="button"
               onClick={goNext}
-              className="rounded-[10px] px-5 py-2.5 border min-w-[130px]"
-              style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', background: '#101828', border: '0.8px solid #D1D5DC' }}
+              className="rounded-[10px] px-5 py-2.5"
+              style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#FFFFFF', background: '#101828', minWidth: 100 }}
             >
-              Next Card →
+              Next ›
             </button>
           </div>
+
         </div>
       </div>
 
-      {/* Session Complete modal */}
+      {/* ── Session complete modal ── */}
       {showSessionComplete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setShowSessionComplete(false)}>
-          <div className="rounded-[24px] bg-white w-full max-w-md overflow-hidden shadow-xl text-center" style={{ padding: '40px 32px' }} onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setShowSessionComplete(false)}
+        >
+          <div
+            className="rounded-[24px] bg-white w-full max-w-md overflow-hidden shadow-xl text-center"
+            style={{ padding: '40px 32px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="text-4xl mb-4" aria-hidden>🎉</div>
-            <h2 className="mb-2" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: '#101828' }}>
+            <h2 className="mb-2" style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 24, color: '#101828' }}>
               Session Complete!
             </h2>
-            <p className="mb-8 mx-auto max-w-[320px]" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>
-              Great work! Your cards have been updated in the spaced repetition schedule.
+            <p className="mb-8 mx-auto max-w-[320px]" style={{ fontFamily: 'Inter', fontSize: 14, color: '#6A7282' }}>
+              Great work! Cards updated in your spaced repetition schedule.
             </p>
-            <div className="flex justify-center gap-6 mb-8">
+            <div className="flex justify-center gap-8 mb-8">
               <div>
-                <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 28, lineHeight: '36px', color: '#7C3AED' }}>{totalCards}</p>
-                <p className="uppercase tracking-wide" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '14px', color: '#6A7282' }}>Reviewed</p>
+                <p style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 28, color: '#7C3AED' }}>{totalCards}</p>
+                <p className="uppercase tracking-wide" style={{ fontFamily: 'Inter', fontSize: 10, color: '#6A7282' }}>Reviewed</p>
               </div>
               <div>
-                <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 28, lineHeight: '36px', color: '#00C950' }}>100%</p>
-                <p className="uppercase tracking-wide" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '14px', color: '#6A7282' }}>Completed</p>
+                <p style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 28, color: '#16A34A' }}>100%</p>
+                <p className="uppercase tracking-wide" style={{ fontFamily: 'Inter', fontSize: 10, color: '#6A7282' }}>Completed</p>
               </div>
               <div>
-                <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 28, lineHeight: '36px', color: '#F59E0B' }}>
+                <p style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 28, color: '#F59E0B' }}>
                   {totalCards > 0 ? Math.round((masteredCount / totalCards) * 100) : 0}%
                 </p>
-                <p className="uppercase tracking-wide" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, lineHeight: '14px', color: '#6A7282' }}>Mastery</p>
+                <p className="uppercase tracking-wide" style={{ fontFamily: 'Inter', fontSize: 10, color: '#6A7282' }}>Mastery</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-3">
@@ -314,16 +387,16 @@ export default function FlashcardReviewPage({ params }: { params: { subjectId: s
                 type="button"
                 onClick={() => { setShowSessionComplete(false); setCurrentIndex(0); setRevealed(false); }}
                 className="rounded-[10px] px-5 py-2.5 border"
-                style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px', color: '#364153', background: '#FFFFFF', border: '0.8px solid #D1D5DC' }}
+                style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, color: '#364153', background: '#FFFFFF', border: '0.8px solid #D1D5DC' }}
               >
                 Review Again
               </button>
               <Link
                 href="/dashboard/flashcards"
                 className="inline-flex items-center gap-2 rounded-[10px] px-5 py-2.5"
-                style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF', background: 'linear-gradient(90deg, #F1AB01 0%, #FE6F01 100%)' }}
+                style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#FFFFFF', background: '#101828' }}
               >
-                <span aria-hidden>🏠</span> Back to Decks
+                🏠 Back to Decks
               </Link>
             </div>
           </div>

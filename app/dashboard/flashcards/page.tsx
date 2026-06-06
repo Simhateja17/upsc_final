@@ -85,6 +85,7 @@ export default function FlashcardsPage() {
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
         <DashboardPageHero
+          badgeIcon={<img src="/flashcard-icon.png" alt="" aria-hidden className="w-5 h-5 object-contain flex-shrink-0" />}
           badgeText="Revision - Smart Learning System"
           title={<>Your <span style={{ color: '#E8B84B', fontStyle: 'italic' }}>Flashcard</span> <span style={{ fontStyle: 'italic', color: '#FFFFFF' }}>Vault.</span></>}
           subtitle="Powered by spaced repetition science. Study smarter each card surfaces exactly when your brain is about to forget it."
@@ -110,13 +111,14 @@ export default function FlashcardsPage() {
               onClick={() => setShowAddModal(true)}
               className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
               style={{
-                background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
-                boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
+                background: '#FFFFFF',
+                border: '1.5px solid #2563EB',
+                boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.06)',
                 fontFamily: 'Inter',
                 fontWeight: 700,
                 fontSize: 14,
                 lineHeight: '20px',
-                color: '#FFFFFF',
+                color: '#2563EB',
               }}
             >
               <span>+</span> New Flashcard
@@ -125,7 +127,7 @@ export default function FlashcardsPage() {
 
           <p
             className="mb-6"
-            style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}
+            style={{ fontFamily: 'Georgia, serif', fontWeight: 400, fontSize: 15, lineHeight: '22px', color: '#6A7282' }}
           >
             Pick the subject you want to revise today
           </p>
@@ -136,7 +138,7 @@ export default function FlashcardsPage() {
                 <div
                   key={index}
                   className="animate-pulse rounded-[16px] border"
-                  style={{ border: '0.8px solid #E5E7EB', background: '#F9FAFB', height: 176 }}
+                  style={{ border: '0.8px solid #E5E7EB', background: '#F9FAFB', height: 190 }}
                 />
               ))}
             </div>
@@ -152,18 +154,17 @@ export default function FlashcardsPage() {
                   <>
                     <div className="flex items-start justify-between gap-3">
                       <span aria-hidden style={{ fontSize: 24, lineHeight: '24px' }}>{item.icon}</span>
-                      {item.isNew ? (
+                      {hasDeck && due > 0 ? (
+                        <span
+                          className="inline-flex items-center rounded-full px-2 py-0.5 flex-shrink-0"
+                          style={{ background: '#EF4444', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
+                        >
+                          {due} due
+                        </span>
+                      ) : item.isNew ? (
                         <span
                           className="inline-flex items-center rounded-full px-2 py-0.5"
-                          style={{
-                            background: '#FDB022',
-                            fontFamily: 'Inter',
-                            fontWeight: 700,
-                            fontSize: 9,
-                            lineHeight: '12px',
-                            letterSpacing: '0.04em',
-                            color: '#FFFFFF',
-                          }}
+                          style={{ background: '#FDB022', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '12px', color: '#FFFFFF' }}
                         >
                           NEW
                         </span>
@@ -171,49 +172,32 @@ export default function FlashcardsPage() {
                     </div>
 
                     <h3
-                      className="mt-4"
-                      style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 18, lineHeight: '22px', color: '#22304D' }}
+                      className="mt-3"
+                      style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 17, lineHeight: '22px', color: '#22304D' }}
                     >
                       {title}
                     </h3>
 
                     <p
                       className="mt-1"
-                      style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, lineHeight: '16px', color: '#8A94A6' }}
+                      style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, lineHeight: '15px', color: '#8A94A6' }}
                     >
-                      {hasDeck ? `${item.totalCards} cards - ${item.topics} topics` : '0 cards - Start here'}
+                      {hasDeck ? `${item.totalCards} cards · ${item.topics} topics · ${item.viewsLabel}` : '0 cards · Start here'}
                     </p>
 
-                    <p
-                      className="mt-1"
-                      style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, lineHeight: '14px', color: '#A0A7B5' }}
-                    >
-                      {item.viewsLabel}
-                    </p>
-
-                    <div className="mt-5 h-[4px] w-full rounded-full" style={{ background: '#D8E8F6' }}>
+                    <div className="mt-4 h-[4px] w-full rounded-full" style={{ background: 'rgba(0,0,0,0.08)' }}>
                       <div
                         className="h-full rounded-full transition-all"
-                        style={{ width: `${progressWidth}%`, background: item.card.bar }}
+                        style={{ width: `${progressWidth}%`, background: '#16A34A' }}
                       />
                     </div>
 
                     <div className="mt-3 flex items-center justify-between gap-3">
-                      <span
-                        style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 11, lineHeight: '14px', color: '#7B8794' }}
-                      >
-                        {hasDeck ? `${item.mastery}% mastered` : 'Create first card'}
+                      <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#16A34A' }}>
+                        {hasDeck ? `✓ ${item.masteredCards} mastered` : 'Create first card'}
                       </span>
-                      <span
-                        style={{
-                          fontFamily: 'Inter',
-                          fontWeight: 600,
-                          fontSize: 11,
-                          lineHeight: '14px',
-                          color: hasDeck && due === 0 ? '#00A63E' : '#F08C00',
-                        }}
-                      >
-                        {hasDeck ? (due === 0 ? 'All done' : `${due} due`) : 'New deck'}
+                      <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '18px', color: hasDeck && due === 0 ? '#16A34A' : '#EF4444' }}>
+                        {hasDeck ? (due === 0 ? '✓ All done' : `${due} to go`) : 'New deck'}
                       </span>
                     </div>
                   </>
@@ -225,7 +209,7 @@ export default function FlashcardsPage() {
                       key={item.id}
                       href={`/dashboard/flashcards/${item.id}`}
                       className="block rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md flex flex-col"
-                      style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, height: 176 }}
+                      style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, height: 190 }}
                     >
                       {cardContent}
                     </Link>
@@ -241,7 +225,7 @@ export default function FlashcardsPage() {
                       setShowAddModal(true);
                     }}
                     className="rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md flex flex-col"
-                    style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, height: 176 }}
+                    style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, height: 190 }}
                   >
                     {cardContent}
                   </button>

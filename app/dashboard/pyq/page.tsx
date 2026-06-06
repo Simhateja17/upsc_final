@@ -54,6 +54,7 @@ const SUBJECT_ICONS: Record<string, string> = {
   'Current Affairs': '📰',
 };
 
+
 const countKey = (...parts: Array<string | null | undefined>) =>
   parts.map((part) => (part || '').trim().toLowerCase()).join('||');
 
@@ -106,6 +107,68 @@ const PRELIMS_SUBJECT_TREE: SubjectTreeNode[] = [
   },
 ];
 
+const MAINS_OPTIONAL_SUBJECTS = {
+  science: [
+    'Agriculture',
+    'Animal Husbandry & Veterinary Science',
+    'Botany',
+    'Chemistry',
+    'Civil Engineering',
+    'Electrical Engineering',
+    'Geology',
+    'Mathematics',
+    'Mechanical Engineering',
+    'Medical Science',
+    'Physics',
+    'Statistics',
+    'Zoology',
+  ],
+  social: [
+    'Anthropology',
+    'Commerce & Accountancy',
+    'Economics',
+    'Geography (Optional)',
+    'History (Optional)',
+    'Law',
+    'Management',
+    'Philosophy',
+    'Political Science & International Relations',
+    'Psychology',
+    'Public Administration',
+    'Sociology',
+  ],
+  literature: [
+    'Literature: Assamese',
+    'Literature: Bengali',
+    'Literature: Bodo',
+    'Literature: Dogri',
+    'Literature: English',
+    'Literature: Gujarati',
+    'Literature: Hindi',
+    'Literature: Kannada',
+    'Literature: Kashmiri',
+    'Literature: Konkani',
+    'Literature: Maithili',
+    'Literature: Malayalam',
+    'Literature: Manipuri',
+    'Literature: Marathi',
+    'Literature: Nepali',
+    'Literature: Odia',
+    'Literature: Punjabi',
+    'Literature: Sanskrit',
+    'Literature: Santhali',
+    'Literature: Sindhi',
+    'Literature: Tamil',
+    'Literature: Telugu',
+    'Literature: Urdu',
+  ],
+};
+const MAINS_OPTIONAL_ALL = [
+  ...MAINS_OPTIONAL_SUBJECTS.science,
+  ...MAINS_OPTIONAL_SUBJECTS.social,
+  ...MAINS_OPTIONAL_SUBJECTS.literature,
+];
+
 const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
   prelims: PRELIMS_SUBJECT_TREE,
   mains: [
@@ -124,29 +187,6 @@ const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
     { label: 'Disaster Management', icon: '🚨', children: [{ label: 'Preparedness' }, { label: 'Response' }, { label: 'Risk Reduction' }] },
     { label: 'Ethics', icon: '🧭', children: [{ label: 'Ethics Theory' }, { label: 'Aptitude' }, { label: 'Case Studies' }] },
     { label: 'Current Affairs', icon: '📰', children: [{ label: 'Government Initiatives' }, { label: 'International Developments' }, { label: 'Reports & Data' }] },
-    { label: 'Agriculture Optional', icon: '📘' },
-    { label: 'Anthropology', icon: '📘' },
-    { label: 'Botany', icon: '📘' },
-    { label: 'Chemistry', icon: '📘' },
-    { label: 'Civil Engineering', icon: '📘' },
-    { label: 'Commerce and Accountancy', icon: '📘' },
-    { label: 'Economics', icon: '📘' },
-    { label: 'Electrical Engineering', icon: '📘' },
-    { label: 'Geology', icon: '📘' },
-    { label: 'Law', icon: '📘' },
-    { label: 'Management', icon: '📘' },
-    { label: 'Mathematics', icon: '📘' },
-    { label: 'Mechanical Engineering', icon: '📘' },
-    { label: 'Medical Science', icon: '📘' },
-    { label: 'Philosophy', icon: '📘' },
-    { label: 'Physics', icon: '📘' },
-    { label: 'Political Science and International Relations', icon: '📘' },
-    { label: 'Psychology', icon: '📘' },
-    { label: 'Public Administration', icon: '📘' },
-    { label: 'Sociology', icon: '📘' },
-    { label: 'Statistics', icon: '📘' },
-    { label: 'Zoology', icon: '📘' },
-    { label: 'Literature', icon: '📘' },
   ],
 };
 
@@ -442,8 +482,8 @@ export default function PyqPage() {
         ]}
       />
 
-      <div className="w-full max-w-[1400px] mx-auto px-6 pt-6 pb-10">
-        <div className="mb-10 flex w-full justify-center">
+      <div className="w-full max-w-[1400px] mx-auto px-6 pt-3 pb-4">
+        <div className="mb-4 flex w-full justify-center">
           <div
             className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_4px_6px_-4px_rgba(0,0,0,0.1),0_10px_15px_-3px_rgba(0,0,0,0.1)]"
             style={{
@@ -522,62 +562,13 @@ export default function PyqPage() {
         </div>
 
         {/* Content area: filters (left on desktop) + questions */}
-        <nav aria-label="Question filters breadcrumb" className="mb-4 flex flex-wrap items-center gap-2 text-[12px] md:text-[13px]">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedSubject('All Papers');
-                setSelectedSubtopic(null);
-                setSelectedTopics([]);
-                setExpandedSubject(null);
-                setExpandedSubtopic(null);
-              }}
-              className="font-semibold text-[#5F8DE8] transition-colors hover:text-[#3E73DA]"
-            >
-              All Papers
-            </button>
-            {selectedSubject !== 'All Papers' && (
-              <>
-                <span className="text-[#98A2B3]">›</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedSubtopic(null);
-                    setSelectedTopics([]);
-                    setExpandedSubtopic(null);
-                  }}
-                  className="font-semibold text-[#5F8DE8] transition-colors hover:text-[#3E73DA]"
-                >
-                  {selectedSubject}
-                </button>
-              </>
-            )}
-            {selectedSubtopic && (
-              <>
-                <span className="text-[#98A2B3]">›</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedTopics([])}
-                  className="font-semibold text-[#5F8DE8] transition-colors hover:text-[#3E73DA]"
-                >
-                  {selectedSubtopic}
-                </button>
-              </>
-            )}
-            {selectedTopics[0] && (
-              <>
-                <span className="text-[#98A2B3]">›</span>
-                <span className="font-semibold text-[#101828]">{selectedTopics[0]}</span>
-              </>
-            )}
-        </nav>
         <div className="flex flex-col lg:flex-row-reverse gap-8">
           {/* Questions list */}
           <section className="flex-1 min-w-0">
             {mode === 'prelims' ? (
               <>
               {/* Header */}
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
                 <h3 className="font-bold text-[20px] md:text-[24px] text-[#101828]">
                   Prelims Questions
                   {yearMode === 'custom' && selectedYears.length > 0 ? ` · ${selectedYears.length === 1 ? selectedYears[0] : `${selectedYears.length} years`}` : ''}
@@ -586,6 +577,55 @@ export default function PyqPage() {
                   {loading ? 'Loading...' : `Showing ${visibleQuestions.length} of ${total} questions`}
                 </p>
               </div>
+
+              {/* Breadcrumb trail */}
+              <nav aria-label="Filter path" className="flex flex-wrap items-center gap-1.5 mb-4">
+                <button
+                  type="button"
+                  onClick={() => { setSelectedSubject('All Papers'); setSelectedSubtopic(null); setSelectedTopics([]); setExpandedSubject(null); setExpandedSubtopic(null); }}
+                  className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
+                  style={{ background: selectedSubject === 'All Papers' ? '#0F1A30' : '#EEF2FF', color: selectedSubject === 'All Papers' ? '#FFFFFF' : '#4338CA' }}
+                >
+                  📘 All Papers
+                </button>
+                {selectedSubject !== 'All Papers' && (
+                  <>
+                    <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedSubtopic(null); setSelectedTopics([]); setExpandedSubtopic(null); }}
+                      className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
+                      style={{ background: !selectedSubtopic ? '#0F1A30' : '#DBEAFE', color: !selectedSubtopic ? '#FFFFFF' : '#1D4ED8' }}
+                    >
+                      {SUBJECT_ICONS[selectedSubject] ?? '📘'} {selectedSubject}
+                    </button>
+                  </>
+                )}
+                {selectedSubtopic && (
+                  <>
+                    <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTopics([])}
+                      className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
+                      style={{ background: !selectedTopics[0] ? '#0F1A30' : '#FEF3C7', color: !selectedTopics[0] ? '#FFFFFF' : '#92400E' }}
+                    >
+                      {selectedSubtopic}
+                    </button>
+                  </>
+                )}
+                {selectedTopics[0] && (
+                  <>
+                    <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
+                    <span
+                      className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold"
+                      style={{ background: '#0F1A30', color: '#FFFFFF' }}
+                    >
+                      {selectedTopics[0]}
+                    </span>
+                  </>
+                )}
+              </nav>
 
               {/* Loading skeleton */}
               {loading && (
@@ -923,15 +963,64 @@ export default function PyqPage() {
             ) : (
               <>
                 {/* Mains header */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
                   <h3 className="font-bold text-[24px] text-[#101828]">
                     Mains Questions
-                    {yearMode === 'custom' && selectedYears.length > 0 ? ` · ${selectedYears.length === 1 ? selectedYears[0] : `${selectedYears.length} years`}` : ' - All Papers'}
+                    {yearMode === 'custom' && selectedYears.length > 0 ? ` · ${selectedYears.length === 1 ? selectedYears[0] : `${selectedYears.length} years`}` : ''}
                   </h3>
                   <p className="text-[14px] text-[#6A7282]">
                     {loading ? 'Loading...' : `Showing ${visibleQuestions.length} of ${total} questions`}
                   </p>
                 </div>
+
+                {/* Breadcrumb trail */}
+                <nav aria-label="Filter path" className="flex flex-wrap items-center gap-1.5 mb-5">
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedSubject('All Papers'); setSelectedSubtopic(null); setSelectedTopics([]); setExpandedSubject(null); setExpandedSubtopic(null); }}
+                    className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
+                    style={{ background: selectedSubject === 'All Papers' ? '#0F1A30' : '#EEF2FF', color: selectedSubject === 'All Papers' ? '#FFFFFF' : '#4338CA' }}
+                  >
+                    📘 All Papers
+                  </button>
+                  {selectedSubject !== 'All Papers' && (
+                    <>
+                      <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedSubtopic(null); setSelectedTopics([]); setExpandedSubtopic(null); }}
+                        className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
+                        style={{ background: !selectedSubtopic ? '#0F1A30' : '#DBEAFE', color: !selectedSubtopic ? '#FFFFFF' : '#1D4ED8' }}
+                      >
+                        {SUBJECT_ICONS[selectedSubject] ?? '📘'} {selectedSubject}
+                      </button>
+                    </>
+                  )}
+                  {selectedSubtopic && (
+                    <>
+                      <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTopics([])}
+                        className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
+                        style={{ background: !selectedTopics[0] ? '#0F1A30' : '#FEF3C7', color: !selectedTopics[0] ? '#FFFFFF' : '#92400E' }}
+                      >
+                        {selectedSubtopic}
+                      </button>
+                    </>
+                  )}
+                  {selectedTopics[0] && (
+                    <>
+                      <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
+                      <span
+                        className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold"
+                        style={{ background: '#0F1A30', color: '#FFFFFF' }}
+                      >
+                        {selectedTopics[0]}
+                      </span>
+                    </>
+                  )}
+                </nav>
 
                 {/* Loading skeleton */}
                 {loading && (
@@ -968,11 +1057,6 @@ export default function PyqPage() {
                           {q.year}
                         </span>
                       )}
-                      {q.paper && (
-                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#DBEAFE', color: '#1447E6' }}>
-                          {q.paper.toUpperCase()}
-                        </span>
-                      )}
                       {q.subject && (
                         <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#FEE2E2', color: '#DC2626' }}>
                           {q.subject.toUpperCase()}
@@ -1000,10 +1084,6 @@ export default function PyqPage() {
                       </span>
                     </div>}
 
-                    {/* Meta */}
-                    <div className="mb-2 uppercase text-[12px] tracking-[0.3px] text-[#6A7282]">
-                      MAINS · {q.paper || 'GS'} · QUESTION #{idx + 1}
-                    </div>
 
                     {/* Question text */}
                     <QuestionTextRenderer
@@ -1074,7 +1154,10 @@ export default function PyqPage() {
           </section>
 
           {/* Right: filters */}
-          <aside className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-1.5rem)] lg:overflow-y-auto lg:pr-1">
+          <aside
+            className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto"
+            style={{ scrollbarWidth: 'thin', scrollbarColor: '#D1D5DB transparent' }}
+          >
             {/* Exam year card */}
             <div
               className="rounded-[16px] bg-white flex flex-col"
@@ -1199,13 +1282,11 @@ export default function PyqPage() {
               )}
             </div>
 
-            {/* Subject Filter panel - 310×826 */}
+            {/* Subject Filter panel */}
             <div
-              className="rounded-[16px] bg-white flex flex-col overflow-hidden"
+              className="rounded-[16px] bg-white flex flex-col"
               style={{
                 width: '100%',
-                minHeight: 'auto',
-                opacity: 1,
                 borderTop: '0.8px solid #E5E7EB',
                 boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
               }}
@@ -1232,6 +1313,7 @@ export default function PyqPage() {
                 </span>
               </div>
 
+              {/* Subject list — independent scroll, always accessible regardless of page scroll */}
               <div className="flex flex-col gap-2 px-5 pb-5">
                 <button
                   onClick={() => {
@@ -1251,6 +1333,71 @@ export default function PyqPage() {
                     </span>
                   </div>
                 </button>
+                {mode === 'mains' && (
+                  <div style={{ paddingBottom: 4 }}>
+                    <div style={{
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 600,
+                      fontSize: 11,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase' as const,
+                      color: '#9AA3B2',
+                      marginBottom: 6,
+                      paddingLeft: 4,
+                    }}>
+                      Optional Subject
+                    </div>
+                    <div style={{ position: 'relative' }}>
+                      <select
+                        value={MAINS_OPTIONAL_ALL.includes(selectedSubject) ? selectedSubject : ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSelectedSubject(val || 'All Papers');
+                          setSelectedSubtopic(null);
+                          setSelectedTopics([]);
+                          setExpandedSubject(null);
+                          setExpandedSubtopic(null);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '10px 32px 10px 12px',
+                          border: MAINS_OPTIONAL_ALL.includes(selectedSubject) ? '1.5px solid #0F1A30' : '1.5px solid #E5E7EB',
+                          borderRadius: 12,
+                          background: MAINS_OPTIONAL_ALL.includes(selectedSubject) ? '#0F1A30' : '#F9FAFB',
+                          color: MAINS_OPTIONAL_ALL.includes(selectedSubject) ? '#FFFFFF' : '#374151',
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: 13,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          outline: 'none',
+                          appearance: 'none' as any,
+                          WebkitAppearance: 'none' as any,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <option value="">— Select Optional Subject —</option>
+                        <optgroup label="Science & Engineering">
+                          {MAINS_OPTIONAL_SUBJECTS.science.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </optgroup>
+                        <optgroup label="Social Sciences & Humanities">
+                          {MAINS_OPTIONAL_SUBJECTS.social.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </optgroup>
+                        <optgroup label="Literature">
+                          {MAINS_OPTIONAL_SUBJECTS.literature.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </optgroup>
+                      </select>
+                      <span style={{
+                        position: 'absolute',
+                        right: 10,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: MAINS_OPTIONAL_ALL.includes(selectedSubject) ? '#FFFFFF' : '#9AA3B2',
+                        fontSize: 12,
+                        pointerEvents: 'none' as const,
+                      }}>▾</span>
+                    </div>
+                  </div>
+                )}
                 {PYQ_SUBJECT_TREE[mode].map(({ label, icon, children }) => {
                   const selected = selectedSubject === label;
                   const expanded = expandedSubject === label;
@@ -1304,12 +1451,13 @@ export default function PyqPage() {
                         </div>
                       </button>
                       {expanded && children?.length ? (
-                        <div className="border-t border-[#E5E7EB] bg-[#F7F9FC]">
+                        <div className="border-t border-[#E5E7EB] bg-transparent">
                           {children.map((child) => {
                             const childSelected = selectedSubtopic === child.label;
                             const childExpanded = expandedSubtopic === child.label;
                             const topicCount = child.microTopics?.length || 0;
                             const childQuestionCount = subSubjectQuestionCounts.get(countKey(label, child.label)) || 0;
+                            const isActiveLeaf = childSelected && !topicCount;
                             return (
                               <div key={child.label} className="border-b border-[#E8ECF2] last:border-b-0">
                                 <button
@@ -1321,17 +1469,17 @@ export default function PyqPage() {
                                     setSelectedTopics([]);
                                   }}
                                   className="flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors"
-                                  style={{ background: childExpanded ? '#E8F0FD' : 'transparent' }}
+                                  style={{ background: isActiveLeaf ? '#0F1A30' : '#FAFBFE' }}
                                 >
                                   <div className="flex min-w-0 items-center gap-2">
                                     <span
                                       className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
-                                      style={{ background: childExpanded ? '#3B82F6' : '#9AA3B2' }}
+                                      style={{ background: isActiveLeaf ? '#FFFFFF' : '#9AA3B2' }}
                                     />
                                     <span
                                       className="truncate"
                                       style={{
-                                        color: childSelected || childExpanded ? '#2563EB' : '#5A6478',
+                                        color: isActiveLeaf ? '#FFFFFF' : (childSelected || childExpanded ? '#2563EB' : '#5A6478'),
                                         fontFamily: 'Inter, sans-serif',
                                         fontSize: '12px',
                                         fontWeight: childSelected || childExpanded ? 700 : 500,
@@ -1355,7 +1503,7 @@ export default function PyqPage() {
                                   </div>
                                 </button>
                                 {childExpanded && child.microTopics?.length ? (
-                                  <div className="border-t border-[#E8ECF2] bg-[#F2F5FA]">
+                                  <div className="border-t border-[#E8ECF2] bg-white">
                                     {child.microTopics.map((topic) => (
                                       <button
                                         key={topic}

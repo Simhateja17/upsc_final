@@ -102,14 +102,32 @@ Object.assign(subjectEmojiMap, {
 const optionalSubjectIcons: Record<string, string> = {
   'Public Administration': '🏛️',
   'Geography': '🌍',
+  'Geography (Optional)': '🌍',
   'History': '🏛️',
+  'History (Optional)': '🏛️',
   'Sociology': '👥',
   'Political Science': '🗳️',
+  'Political Science & International Relations': '🗳️',
   'Philosophy': '💭',
   'Economics': '📈',
   'Anthropology': '🧬',
   'Psychology': '🧠',
   'Law': '⚖️',
+  'Agriculture': '🌾',
+  'Animal Husbandry & Veterinary Science': '🐄',
+  'Botany': '🌿',
+  'Chemistry': '🧪',
+  'Civil Engineering': '🏗️',
+  'Commerce & Accountancy': '📊',
+  'Electrical Engineering': '⚡',
+  'Geology': '🪨',
+  'Management': '💼',
+  'Mathematics': '📐',
+  'Mechanical Engineering': '⚙️',
+  'Medical Science': '🏥',
+  'Physics': '⚛️',
+  'Statistics': '📉',
+  'Zoology': '🐘',
   'Literature': '📚',
 };
 
@@ -136,10 +154,49 @@ const fallbackMainsPaperTypes = [
   { id: 'gs4', emoji: '🧠', label: 'GS IV', description: 'Ethics, Integrity & Aptitude' },
 ];
 
+const OPTIONAL_SUBJECTS_SCIENCE = [
+  'Agriculture',
+  'Animal Husbandry & Veterinary Science',
+  'Botany',
+  'Chemistry',
+  'Civil Engineering',
+  'Electrical Engineering',
+  'Geology',
+  'Mathematics',
+  'Mechanical Engineering',
+  'Medical Science',
+  'Physics',
+  'Statistics',
+  'Zoology',
+];
+const OPTIONAL_SUBJECTS_SOCIAL = [
+  'Anthropology',
+  'Commerce & Accountancy',
+  'Economics',
+  'Geography (Optional)',
+  'History (Optional)',
+  'Law',
+  'Management',
+  'Philosophy',
+  'Political Science & International Relations',
+  'Psychology',
+  'Public Administration',
+  'Sociology',
+];
+const OPTIONAL_SUBJECTS_LITERATURE = [
+  'Literature: Assamese', 'Literature: Bengali', 'Literature: Bodo',
+  'Literature: Dogri', 'Literature: English', 'Literature: Gujarati',
+  'Literature: Hindi', 'Literature: Kannada', 'Literature: Kashmiri',
+  'Literature: Konkani', 'Literature: Maithili', 'Literature: Malayalam',
+  'Literature: Manipuri', 'Literature: Marathi', 'Literature: Nepali',
+  'Literature: Odia', 'Literature: Punjabi', 'Literature: Sanskrit',
+  'Literature: Santhali', 'Literature: Sindhi', 'Literature: Tamil',
+  'Literature: Telugu', 'Literature: Urdu',
+];
 const fallbackOptionalSubjects = [
-  'Public Administration', 'Geography', 'History', 'Sociology',
-  'Political Science', 'Philosophy', 'Economics', 'Anthropology',
-  'Psychology', 'Law',
+  ...OPTIONAL_SUBJECTS_SCIENCE,
+  ...OPTIONAL_SUBJECTS_SOCIAL,
+  ...OPTIONAL_SUBJECTS_LITERATURE,
 ];
 
 const fallbackDifficulties = [
@@ -268,11 +325,11 @@ function MockTestsPageInner() {
   ], [subjectCountMap, subjectOptions]);
   const mainsMarksPattern = selectedExamMode === 'mains' ? buildMainsMarksPattern(questionCount) : [];
 
-  const difficultyDisplay: Record<string, { short: string; label: string; description: string }> = {
-    easy: { short: '🌱', label: 'Easy', description: 'Build confidence' },
-    medium: { short: '⚡', label: 'Medium', description: 'UPSC standard' },
-    hard: { short: '🔥', label: 'Hard', description: 'Push limits' },
-    mixed: { short: '🎯', label: 'Mixed', description: 'Real exam feel' },
+  const difficultyDisplay: Record<string, { short: string; imgSrc: string; label: string; description: string }> = {
+    easy: { short: '🌱', imgSrc: '/diff-easy.png', label: 'Easy', description: 'Build confidence' },
+    medium: { short: '⚡', imgSrc: '/diff-medium.png', label: 'Medium', description: 'UPSC standard' },
+    hard: { short: '🔥', imgSrc: '/diff-hard.png', label: 'Hard', description: 'Push limits' },
+    mixed: { short: '🎯', imgSrc: '/diff-mixed.png', label: 'Mixed', description: 'Real exam feel' },
   };
 
   /* ─── Load all data from API ─── */
@@ -686,38 +743,79 @@ function MockTestsPageInner() {
                 <div style={{
                   fontFamily: 'Inter, sans-serif',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: 'clamp(12px, 0.82vw, 13px)',
                   color: '#17223E',
-                  marginBottom: '12px',
+                  marginBottom: '10px',
                 }}>
                   Optional Subject
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(6px, 0.45vw, 10px)' }}>
-                  {optionalSubjects.map(opt => {
-                    const isSelected = selectedOptional === opt;
-                    return (
-                      <button
-                        key={opt}
-                        onClick={() => setSelectedOptional(isSelected ? null : opt)}
-                        style={{
-                          background: isSelected ? '#17223E' : '#FFF',
-                          color: isSelected ? '#FFF' : '#374151',
-                          border: isSelected ? '1.5px solid #17223E' : '1.5px solid #E5E7EB',
-                          borderRadius: '999px',
-                          padding: 'clamp(5px, 0.4vw, 7px) clamp(12px, 0.9vw, 18px)',
-                          fontFamily: 'Inter, sans-serif',
-                          fontWeight: 600,
-                          fontSize: 'clamp(12px, 0.78vw, 13px)',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <span style={{ marginRight: '6px' }}>{optionalSubjectIcons[opt] ?? '📘'}</span>
-                        {opt}
-                      </button>
-                    );
-                  })}
+                <div style={{ position: 'relative', maxWidth: 380 }}>
+                  <select
+                    value={selectedOptional ?? ''}
+                    onChange={(e) => setSelectedOptional(e.target.value || null)}
+                    style={{
+                      width: '100%',
+                      padding: 'clamp(9px, 0.6vw, 11px) clamp(36px, 2.5vw, 40px) clamp(9px, 0.6vw, 11px) clamp(10px, 0.8vw, 14px)',
+                      border: selectedOptional ? '1.5px solid #17223E' : '1.5px solid #D1D5DB',
+                      borderRadius: 10,
+                      background: selectedOptional ? '#17223E' : '#FFFFFF',
+                      color: selectedOptional ? '#FFFFFF' : '#374151',
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: selectedOptional ? 600 : 400,
+                      fontSize: 'clamp(12px, 0.78vw, 13px)',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      appearance: 'none' as any,
+                      WebkitAppearance: 'none' as any,
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                    }}
+                  >
+                    <option value="">— Select Optional Subject —</option>
+                    <optgroup label="Science &amp; Engineering">
+                      {OPTIONAL_SUBJECTS_SCIENCE.map((s) => (
+                        <option key={s} value={s}>{optionalSubjectIcons[s] ?? '📘'} {s}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Social Sciences &amp; Humanities">
+                      {OPTIONAL_SUBJECTS_SOCIAL.map((s) => (
+                        <option key={s} value={s}>{optionalSubjectIcons[s] ?? '📘'} {s}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Literature">
+                      {OPTIONAL_SUBJECTS_LITERATURE.map((s) => (
+                        <option key={s} value={s}>📚 {s}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  <span style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: selectedOptional ? '#FFFFFF' : '#9CA3AF',
+                    fontSize: 13,
+                    pointerEvents: 'none' as const,
+                  }}>▾</span>
                 </div>
+                {selectedOptional && (
+                  <button
+                    onClick={() => setSelectedOptional(null)}
+                    style={{
+                      marginTop: 8,
+                      fontFamily: 'Inter, sans-serif',
+                      fontSize: 12,
+                      color: '#6B7280',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Clear selection
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -1068,6 +1166,7 @@ function MockTestsPageInner() {
                 const isSelected = selectedDifficulty === diff.id;
                 const display = difficultyDisplay[diff.id] ?? {
                   short: '🎯',
+                  imgSrc: '/diff-mixed.png',
                   label: diff.label || 'Difficulty',
                   description: diff.description || 'Select level',
                 };
@@ -1079,25 +1178,22 @@ function MockTestsPageInner() {
                       background: isSelected ? '#FEF3C7' : '#FFF',
                       border: isSelected ? '2px solid #FDC700' : '1.5px solid #E5E7EB',
                       borderRadius: '14px',
-                      minHeight: '164px',
-                      padding: '24px 18px',
+                      minHeight: '120px',
+                      padding: '16px 14px',
                       cursor: 'pointer',
                       textAlign: 'center',
                       transition: 'all 0.15s ease',
                       boxShadow: isSelected ? '0 8px 20px -18px rgba(245, 158, 11, 0.9)' : '0 1px 2px rgba(15, 23, 42, 0.04)',
                     }}
                   >
-                    <div style={{
-                      fontSize: '36px',
-                      lineHeight: '42px',
-                      marginBottom: '14px',
-                    }}>
-                      {display.short}
+                    <div style={{ width: 36, height: 36, margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={display.imgSrc} alt={display.label} style={{ width: 36, height: 36, objectFit: 'contain' }} />
                     </div>
-                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 800, fontSize: '20px', lineHeight: '28px', color: '#101828', marginBottom: '4px' }}>
+                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 800, fontSize: '16px', lineHeight: '22px', color: '#101828', marginBottom: '3px' }}>
                       {display.label}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: '16px', lineHeight: '24px', color: '#6B7280' }}>
+                    <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: '13px', lineHeight: '18px', color: '#6B7280' }}>
                       {display.description}
                   </div>
                   </button>

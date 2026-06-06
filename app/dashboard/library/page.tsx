@@ -46,7 +46,7 @@ const features = [
 const heroStatItems = [
   { value: '100+', label: 'PDFs', color: '#FDC700' },
   { value: '25+', label: 'PYQ-Backed Notes', color: '#F87171' },
-  { value: '1L+', label: 'Downloads', color: '#4ADE80' },
+  { value: '50k+', label: 'Downloads', color: '#4ADE80' },
   { value: '4.9', label: 'Ratings', color: '#FFFFFF' },
 ];
 
@@ -62,7 +62,7 @@ export default function LibraryPage() {
     hero_stats: JSON.stringify([
       { value: '100+', label: 'PDFs', color: '#FDC700' },
       { value: '25+', label: 'PYQ-Backed Notes', color: '#F87171' },
-      { value: '1L+', label: 'Downloads', color: '#4ADE80' },
+      { value: '50k+', label: 'Downloads', color: '#4ADE80' },
       { value: '4.9', label: 'Ratings', color: '#FFFFFF' },
     ]),
     sidebar_header_title: 'CHOOSE A SUBJECT',
@@ -102,10 +102,18 @@ export default function LibraryPage() {
 
   const [selectedSubject, setSelectedSubject] = useState('');
   const [activeTab, setActiveTab] = useState('Notes');
+  const [examStage, setExamStage] = useState<'prelims' | 'mains' | 'optional'>('prelims');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [apiSubjects, setApiSubjects] = useState<any[]>([]);
   const [apiChapters, setApiChapters] = useState<Record<string, any[]>>({});
   const [loadingChapters, setLoadingChapters] = useState(false);
   const [downloadingChapter, setDownloadingChapter] = useState<string | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [readModal, setReadModal] = useState<{ url: string; title: string } | null>(null);
+  const [loadingRead, setLoadingRead] = useState<string | null>(null);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
   const selectedApiSubject = apiSubjects.find(s => s.name === selectedSubject) ?? null;
 
   // Fetch subjects on mount
@@ -139,45 +147,130 @@ export default function LibraryPage() {
       .finally(() => setLoadingChapters(false));
   }, [selectedSubject, apiSubjects]);
 
-  // Handle PDF download via API
-  const handleDownload = async (material: any) => {
+  // Read: fetch URL and open in protected in-app viewer (no download)
+  const handleRead = async (material: any) => {
     const materialId = material._id || material.id;
-    if (!materialId || material.isLocked) {
-      if (material.isLocked) window.location.href = '/dashboard/billing/plans?source=library';
-      return;
-    }
-    setDownloadingChapter(materialId);
+    if (!materialId) return;
+    setLoadingRead(materialId);
     try {
       const res: any = await libraryService.getMaterialDownloadUrl(materialId);
       const url = res.data?.url || res.data?.downloadUrl || res.data;
       if (url && typeof url === 'string') {
-        window.open(url, '_blank');
+        setIframeLoaded(false);
+        setReadModal({ url, title: material.title || material.name || 'Note' });
       }
-    } catch (_e) {
-      // Download not available
-    } finally {
-      setDownloadingChapter(null);
-    }
+    } catch (_e) {}
+    finally { setLoadingRead(null); }
   };
 
-  const tabs = ['Notes', 'PYQ Notes'] as const;
+  // Get PDF: always go to upgrade/billing
+  const handleGetPdf = () => {
+    window.location.href = '/dashboard/billing/plans?source=library';
+  };
+
+  // Upgrade (locked notes)
+  const handleUpgrade = () => {
+    window.location.href = '/dashboard/billing/plans?source=library';
+  };
+
+  const tabs = ['Notes', 'PYQ Notes', 'Tricks & Mnemonics', 'Current Affairs'] as const;
+  type TabKey = typeof tabs[number];
+
+  const TAB_CONFIG: Record<TabKey, { color: string; activeColor: string; activeBg: string; borderColor: string; icon: (active: boolean) => React.ReactNode }> = {
+    'Notes': {
+      color: '#155DFC', activeColor: '#155DFC', activeBg: '#EFF6FF', borderColor: '#155DFC',
+      icon: (active) => (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="1" width="12" height="14" rx="2" fill={active ? '#DBEAFE' : '#F3F4F6'} stroke={active ? '#155DFC' : '#6A7282'} strokeWidth="1.3"/>
+          <line x1="5" y1="5" x2="11" y2="5" stroke={active ? '#155DFC' : '#9CA3AF'} strokeWidth="1.2"/>
+          <line x1="5" y1="8" x2="11" y2="8" stroke={active ? '#155DFC' : '#9CA3AF'} strokeWidth="1.2"/>
+          <line x1="5" y1="11" x2="9" y2="11" stroke={active ? '#155DFC' : '#9CA3AF'} strokeWidth="1.2"/>
+        </svg>
+      ),
+    },
+    'PYQ Notes': {
+      color: '#D97706', activeColor: '#D97706', activeBg: '#FEF3C7', borderColor: '#D97706',
+      icon: (active) => (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="1" y="2" width="6" height="12" rx="1" fill={active ? '#FDE68A' : '#F3F4F6'} stroke={active ? '#D97706' : '#6A7282'} strokeWidth="1.2"/>
+          <rect x="9" y="2" width="6" height="12" rx="1" fill={active ? '#FDE68A' : '#F3F4F6'} stroke={active ? '#D97706' : '#6A7282'} strokeWidth="1.2"/>
+          <line x1="3" y1="5" x2="5" y2="5" stroke={active ? '#D97706' : '#9CA3AF'} strokeWidth="1"/>
+          <line x1="3" y1="7.5" x2="5" y2="7.5" stroke={active ? '#D97706' : '#9CA3AF'} strokeWidth="1"/>
+          <line x1="11" y1="5" x2="13" y2="5" stroke={active ? '#D97706' : '#9CA3AF'} strokeWidth="1"/>
+          <line x1="11" y1="7.5" x2="13" y2="7.5" stroke={active ? '#D97706' : '#9CA3AF'} strokeWidth="1"/>
+        </svg>
+      ),
+    },
+    'Tricks & Mnemonics': {
+      color: '#7C3AED', activeColor: '#7C3AED', activeBg: '#EDE9FE', borderColor: '#7C3AED',
+      icon: (active) => (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 1.5L10 6H14.5L11 9L12.5 13.5L8 11L3.5 13.5L5 9L1.5 6H6L8 1.5Z" fill={active ? '#C4B5FD' : '#E5E7EB'} stroke={active ? '#7C3AED' : '#6A7282'} strokeWidth="1.1" strokeLinejoin="round"/>
+        </svg>
+      ),
+    },
+    'Current Affairs': {
+      color: '#059669', activeColor: '#059669', activeBg: '#D1FAE5', borderColor: '#059669',
+      icon: (active) => (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6.5" fill={active ? '#A7F3D0' : '#F3F4F6'} stroke={active ? '#059669' : '#6A7282'} strokeWidth="1.2"/>
+          <path d="M5 8.5L7 10.5L11 6" stroke={active ? '#059669' : '#9CA3AF'} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M8 4V5.5" stroke={active ? '#059669' : '#9CA3AF'} strokeWidth="1.2" strokeLinecap="round"/>
+        </svg>
+      ),
+    },
+  };
 
   const getChaptersForTab = (tab: string) => {
     const subSubjects = apiChapters[selectedSubject] || [];
     return subSubjects.flatMap((subSubject: any) =>
       (subSubject.topics || []).flatMap((topic: any) =>
         (topic.materials || [])
-          .filter((material: any) => (tab === 'PYQ Notes' ? material.type === 'PYQ Notes' : material.type !== 'PYQ Notes'))
+          .filter((material: any) => {
+            // Type filter across all 4 tabs
+            const mType: string = (material.type || '').toLowerCase();
+            let typeMatch: boolean;
+            if (tab === 'PYQ Notes') {
+              typeMatch = mType === 'pyq notes' || mType === 'pyq';
+            } else if (tab === 'Tricks & Mnemonics') {
+              typeMatch = mType.includes('trick') || mType.includes('mnemonic');
+            } else if (tab === 'Current Affairs') {
+              typeMatch = mType.includes('current affairs') || mType.includes('current affair');
+            } else {
+              // Notes: everything that isn't one of the above specific types
+              typeMatch = !['pyq notes', 'pyq', 'tricks & mnemonics', 'tricks', 'mnemonics', 'current affairs', 'current affair'].includes(mType)
+                && !mType.includes('trick') && !mType.includes('mnemonic') && !mType.includes('current affair');
+            }
+            // Stage filter: if the material carries an examStage/stage/tags field, use it;
+            // otherwise show the material for every stage (don't hide content unnecessarily).
+            const materialStage: string | undefined =
+              material.examStage ?? material.stage ?? material.exam_stage;
+            const materialTags: string[] = material.tags ?? [];
+            const hasStageInfo = materialStage !== undefined || materialTags.length > 0;
+            const stageMatch = !hasStageInfo ||
+              (materialStage && materialStage.toLowerCase() === examStage) ||
+              materialTags.some((t: string) => t.toLowerCase() === examStage);
+            return typeMatch && stageMatch;
+          })
           .map((material: any) => ({
             ...material,
             subSubjectTitle: subSubject.title || subSubject.name,
             topicTitle: topic.title || topic.name,
           }))
       )
-    );
+    ).filter((material: any) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        (material.title || material.name || '').toLowerCase().includes(q) ||
+        (material.topicTitle || '').toLowerCase().includes(q) ||
+        (material.subSubjectTitle || '').toLowerCase().includes(q)
+      );
+    });
   };
 
   return (
+    <>
     <div
       className="font-arimo w-full min-h-screen"
       style={{ background: '#FAFBFE' }}
@@ -269,7 +362,7 @@ export default function LibraryPage() {
                 return (
                   <button
                     key={subject.id}
-                    onClick={() => { setSelectedSubject(subject.name); setActiveTab('Notes'); }}
+                    onClick={() => { setSelectedSubject(subject.name); setActiveTab('Notes'); setExamStage('prelims'); setSearchQuery(''); setShowSearch(false); }}
                     className="w-full"
                     style={{
                       display: 'flex',
@@ -512,28 +605,53 @@ export default function LibraryPage() {
                   </div>
                 </div>
 
-                {/* Tags row */}
-                <div
-                  className="flex items-center"
-                  style={{
-                    gap: '16px',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  {(selectedApiSubject?.tags ?? []).map((tag: string) => (
-                    <span
-                      key={tag}
-                      className="font-arimo"
+                {/* Prelims / Mains / Optional stage tabs */}
+                {(() => {
+                  const stages: { key: 'prelims' | 'mains' | 'optional'; label: string; icon: string }[] = [
+                    { key: 'prelims' as const, label: 'Prelims', icon: '📋' },
+                    { key: 'mains' as const, label: 'Mains', icon: '✍️' },
+                    { key: 'optional' as const, label: 'Optional', icon: '📚' },
+                  ];
+                  return (
+                    <div
+                      className="flex items-center"
                       style={{
-                        fontSize: '14px',
-                        color: '#364153',
-                        lineHeight: '20px',
+                        gap: '8px',
+                        padding: '5px',
+                        background: '#F3F4F6',
+                        borderRadius: '12px',
+                        display: 'inline-flex',
                       }}
                     >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+                      {stages.map(({ key, label, icon }) => {
+                        const active = examStage === key;
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => { setExamStage(key); setActiveTab('Notes'); setSearchQuery(''); setShowSearch(false); }}
+                            className="font-arimo font-bold flex items-center transition-all"
+                            style={{
+                              gap: '6px',
+                              padding: '7px 18px',
+                              borderRadius: '8px',
+                              fontSize: '13px',
+                              border: 'none',
+                              cursor: 'pointer',
+                              background: active ? '#FFFFFF' : 'transparent',
+                              color: active ? '#101828' : '#6A7282',
+                              boxShadow: active ? '0px 1px 3px rgba(0,0,0,0.12)' : 'none',
+                              lineHeight: '20px',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            <span style={{ fontSize: '14px' }}>{icon}</span>
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -563,52 +681,42 @@ export default function LibraryPage() {
                   zIndex: 0,
                 }}
               />
-              <div className="flex" style={{ gap: 'clamp(20px, 2.5vw, 36px)', position: 'relative', zIndex: 1 }}>
+              <div className="flex items-center justify-between" style={{ position: 'relative', zIndex: 1 }}>
+              <div className="flex" style={{ gap: 'clamp(20px, 2.5vw, 36px)' }}>
                 {tabs.map((tab) => {
                   const isActive = activeTab === tab;
+                  const cfg = TAB_CONFIG[tab];
                   const count = getChaptersForTab(tab).length;
-                  const tabIcon = tab === 'Notes' ? (
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <rect x="2" y="1" width="12" height="14" rx="2" stroke={isActive ? '#155DFC' : '#6A7282'} strokeWidth="1.3" fill="none" />
-                      <line x1="5" y1="5" x2="11" y2="5" stroke={isActive ? '#155DFC' : '#6A7282'} strokeWidth="1.2" />
-                      <line x1="5" y1="8" x2="11" y2="8" stroke={isActive ? '#155DFC' : '#6A7282'} strokeWidth="1.2" />
-                      <line x1="5" y1="11" x2="9" y2="11" stroke={isActive ? '#155DFC' : '#6A7282'} strokeWidth="1.2" />
-                    </svg>
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <rect x="1" y="2" width="6" height="12" rx="1" stroke={isActive ? '#155DFC' : '#6A7282'} strokeWidth="1.2" fill="none" />
-                      <rect x="9" y="2" width="6" height="12" rx="1" stroke={isActive ? '#155DFC' : '#6A7282'} strokeWidth="1.2" fill="none" />
-                    </svg>
-                  );
                   return (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
                       className="font-arimo font-bold"
                       style={{
-                        fontSize: 'clamp(13px, 1.12vw, 15px)',
-                        color: isActive ? '#155DFC' : '#6A7282',
+                        fontSize: 'clamp(12px, 1.05vw, 14px)',
+                        color: isActive ? cfg.activeColor : '#6A7282',
                         background: 'none',
                         border: 'none',
-                        borderBottom: isActive ? '2px solid #155DFC' : '2px solid transparent',
+                        borderBottom: isActive ? `2px solid ${cfg.borderColor}` : '2px solid transparent',
                         padding: 'clamp(8px, 0.8vw, 12px) 0',
                         marginBottom: '-2px',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 'clamp(6px, 0.5vw, 8px)',
+                        gap: '6px',
                         transition: 'all 0.2s ease',
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      {tabIcon}
+                      {cfg.icon(isActive)}
                       {tab}
                       <span
                         className="font-arimo font-bold"
                         style={{
                           fontSize: 'clamp(10px, 0.82vw, 12px)',
-                          background: isActive ? '#EFF6FF' : '#F3F4F6',
-                          color: isActive ? '#155DFC' : '#6A7282',
-                          borderRadius: '26843500px',
+                          background: isActive ? cfg.activeBg : '#F3F4F6',
+                          color: isActive ? cfg.activeColor : '#6A7282',
+                          borderRadius: '999px',
                           padding: '2px clamp(6px, 0.5vw, 8px)',
                         }}
                       >
@@ -618,22 +726,76 @@ export default function LibraryPage() {
                   );
                 })}
               </div>
+
+              {/* Search — right side of tab bar */}
+              <div className="flex items-center" style={{ gap: '8px', paddingBottom: '2px' }}>
+                {showSearch && (
+                  <div className="flex items-center" style={{
+                    height: '34px',
+                    borderRadius: '8px',
+                    border: '1px solid #C7D7FF',
+                    background: '#F5F8FF',
+                    padding: '0 10px',
+                    gap: '6px',
+                    minWidth: '220px',
+                    maxWidth: '300px',
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                      <circle cx="11" cy="11" r="7" stroke="#6A7282" strokeWidth="2"/>
+                      <path d="M16.5 16.5L21 21" stroke="#6A7282" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={`Search in ${selectedSubject || 'this subject'}...`}
+                      className="font-arimo outline-none bg-transparent flex-1 min-w-0"
+                      style={{ fontSize: '13px', color: '#101828', border: 'none' }}
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        style={{ flexShrink: 0, color: '#9CA3AF', lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                )}
+                <button
+                  onClick={() => {
+                    const next = !showSearch;
+                    setShowSearch(next);
+                    if (!next) setSearchQuery('');
+                    else setTimeout(() => searchInputRef.current?.focus(), 50);
+                  }}
+                  className="flex items-center gap-1.5 font-arimo font-bold transition-all"
+                  style={{
+                    height: '34px',
+                    padding: '0 14px',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    border: showSearch ? `1px solid ${TAB_CONFIG[activeTab as TabKey]?.activeColor ?? '#155DFC'}` : '1px solid #E5E7EB',
+                    background: showSearch ? (TAB_CONFIG[activeTab as TabKey]?.activeBg ?? '#EFF6FF') : '#FFFFFF',
+                    color: showSearch ? (TAB_CONFIG[activeTab as TabKey]?.activeColor ?? '#155DFC') : '#6A7282',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Search PDFs
+                </button>
+              </div>
+
+              </div>
             </div>
 
-            {/* Section label */}
-            <div
-              className="font-arimo"
-              style={{
-                fontSize: '12px',
-                lineHeight: '16px',
-                color: '#6A7282',
-                textTransform: 'uppercase',
-                letterSpacing: '0.3px',
-                marginBottom: '16px',
-              }}
-            >
-              {activeTab === 'Notes' ? sectionLabelNotes : sectionLabelPyq}
-            </div>
 
             {/* PDF cards */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -643,8 +805,10 @@ export default function LibraryPage() {
                 </div>
               )}
               {!loadingChapters && getChaptersForTab(activeTab).length === 0 && (
-                <div className="font-arimo" style={{ textAlign: 'center', padding: '20px', color: '#6A7282' }}>
-                  No published PDFs in this section yet.
+                <div className="font-arimo" style={{ textAlign: 'center', padding: '32px 20px', color: '#6A7282' }}>
+                  {searchQuery.trim()
+                    ? <>No PDFs matched <strong>&ldquo;{searchQuery}&rdquo;</strong> in {selectedSubject}.</>
+                    : 'No published PDFs in this section yet.'}
                 </div>
               )}
               {getChaptersForTab(activeTab).map((material: any, idx: number) => {
@@ -654,17 +818,28 @@ export default function LibraryPage() {
                 const materialSize = material.fileSize
                   ? `${(material.fileSize / (1024 * 1024)).toFixed(1)} MB`
                   : material.size || '';
+                const cardKey = materialId || materialTitle + idx;
+                const isHovered = hoveredCard === cardKey;
+                const tabColor = TAB_CONFIG[activeTab as TabKey]?.activeColor ?? '#155DFC';
                 return (
                 <div
-                  key={materialId || materialTitle + idx}
+                  key={cardKey}
+                  onMouseEnter={() => setHoveredCard(cardKey)}
+                  onMouseLeave={() => setHoveredCard(null)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '16px',
                     borderRadius: '14px',
-                    border: '0.8px solid #E5E7EB',
+                    border: isHovered ? `1.5px solid ${tabColor}` : '0.8px solid #E5E7EB',
                     padding: '16px',
-                    transition: 'all 0.2s ease',
+                    transition: 'all 0.18s ease',
+                    boxShadow: isHovered
+                      ? `0 4px 20px rgba(0,0,0,0.08), 0 0 0 3px ${tabColor}18`
+                      : '0 1px 2px rgba(0,0,0,0.04)',
+                    transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
+                    background: isHovered ? '#FAFBFF' : '#FFFFFF',
+                    cursor: 'default',
                   }}
                 >
                   {/* PDF number */}
@@ -735,55 +910,112 @@ export default function LibraryPage() {
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex items-center" style={{ gap: '12px', flexShrink: 0 }}>
-                    <button
-                      className="font-arimo font-bold"
-                      onClick={() => materialId && handleDownload(material)}
-                      style={{
-                        fontSize: '14px',
-                        lineHeight: '20px',
-                        background: '#FFD274',
-                        color: '#17223E',
-                        borderRadius: '10px',
-                        height: '40px',
-                        padding: '10px 24px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        opacity: downloadingChapter === materialId ? 0.6 : 1,
-                      }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/bbook.png" alt="read" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-                      {material.isLocked ? 'Unlock' : downloadingChapter === materialId ? 'Opening...' : 'Read'}
-                    </button>
-                    <button
-                      className="font-arimo font-bold"
-                      onClick={() => materialId && handleDownload(material)}
-                      style={{
-                        fontSize: '14px',
-                        lineHeight: '20px',
-                        background: '#17223E',
-                        color: '#FFD272',
-                        borderRadius: '10px',
-                        height: '40px',
-                        padding: '10px 24px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        opacity: downloadingChapter === materialId ? 0.6 : 1,
-                      }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/get pdf.png" alt="get pdf" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-                      {material.isLocked ? 'Upgrade' : downloadingChapter === materialId ? 'Loading...' : 'Get PDF'}
-                    </button>
+                  <div className="flex items-center" style={{ gap: '10px', flexShrink: 0 }}>
+                    {material.isLocked ? (
+                      <>
+                        {/* Unlock */}
+                        <button
+                          className="font-arimo font-bold active:translate-y-[3px]"
+                          onClick={handleUpgrade}
+                          style={{
+                            fontSize: '13px',
+                            background: '#EDE9FE',
+                            color: '#6D28D9',
+                            borderRadius: '10px',
+                            height: '38px',
+                            padding: '0 18px',
+                            border: '1.5px solid #C4B5FD',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '7px',
+                            boxShadow: '0 4px 0 0 #A78BFA',
+                            transition: 'transform 0.08s ease, box-shadow 0.08s ease',
+                          }}
+                        >
+                          <span style={{ fontSize: '15px', lineHeight: 1 }}>🔒</span>
+                          Unlock
+                        </button>
+                        {/* Upgrade */}
+                        <button
+                          className="font-arimo font-bold active:translate-y-[3px]"
+                          onClick={handleUpgrade}
+                          style={{
+                            fontSize: '13px',
+                            background: '#F59E0B',
+                            color: '#FFFFFF',
+                            borderRadius: '10px',
+                            height: '38px',
+                            padding: '0 18px',
+                            border: '1.5px solid #D97706',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '7px',
+                            boxShadow: '0 4px 0 0 #B45309',
+                            transition: 'transform 0.08s ease, box-shadow 0.08s ease',
+                          }}
+                        >
+                          <span style={{ fontSize: '15px', lineHeight: 1 }}>✦</span>
+                          Upgrade
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Read — opens protected in-app viewer */}
+                        <button
+                          className="font-arimo font-bold active:translate-y-[3px]"
+                          onClick={() => materialId && handleRead(material)}
+                          disabled={loadingRead === materialId}
+                          style={{
+                            fontSize: '13px',
+                            background: '#F0FDF4',
+                            color: '#166534',
+                            borderRadius: '10px',
+                            height: '38px',
+                            padding: '0 18px',
+                            border: '1.5px solid #86EFAC',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '7px',
+                            opacity: loadingRead === materialId ? 0.6 : 1,
+                            boxShadow: '0 4px 0 0 #4ADE80',
+                            transition: 'transform 0.08s ease, box-shadow 0.08s ease',
+                          }}
+                        >
+                          <span style={{ fontSize: '15px', lineHeight: 1 }}>📖</span>
+                          {loadingRead === materialId ? 'Opening…' : 'Read'}
+                        </button>
+                        {/* Get PDF — always goes to upgrade */}
+                        <button
+                          className="font-arimo font-bold active:translate-y-[3px]"
+                          onClick={handleGetPdf}
+                          style={{
+                            fontSize: '13px',
+                            background: '#F59E0B',
+                            color: '#FFFFFF',
+                            borderRadius: '10px',
+                            height: '38px',
+                            padding: '0 18px',
+                            border: '1.5px solid #D97706',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '7px',
+                            boxShadow: '0 4px 0 0 #B45309',
+                            transition: 'transform 0.08s ease, box-shadow 0.08s ease',
+                          }}
+                        >
+                          <span style={{ fontSize: '15px', lineHeight: 1 }}>⬇️</span>
+                          Get PDF
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
                 );
@@ -1055,5 +1287,189 @@ export default function LibraryPage() {
         </div>
       </div>
     </div>
+
+    {/* ── Read Modal – protected in-app viewer ── */}
+    {readModal && (
+      <div
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+        style={{ background: 'rgba(10,14,26,0.72)', backdropFilter: 'blur(8px)' }}
+        onClick={(e) => { if (e.target === e.currentTarget) setReadModal(null); }}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        {/* shimmer keyframes */}
+        <style>{`
+          @keyframes rwj-shimmer {
+            0%   { background-position: -500px 0; }
+            100% { background-position: 500px 0; }
+          }
+        `}</style>
+
+        <div
+          className="flex flex-col w-full"
+          style={{
+            maxWidth: '820px',
+            height: 'min(92vh, 920px)',
+            borderRadius: '18px',
+            overflow: 'hidden',
+            boxShadow: '0 40px 100px rgba(0,0,0,0.6)',
+            background: '#FFFFFF',
+            userSelect: 'none',
+          }}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {/* ── Header – matches image style ── */}
+          <div
+            className="flex items-center justify-between flex-shrink-0"
+            style={{
+              background: '#FFFFFF',
+              borderBottom: '1px solid #E5E7EB',
+              padding: '12px 18px',
+              gap: '12px',
+            }}
+          >
+            {/* Left: icon + title + subtitle */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div style={{
+                width: '34px', height: '34px', borderRadius: '9px',
+                background: '#EFF6FF', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', flexShrink: 0,
+              }}>
+                <span style={{ fontSize: '17px' }}>📄</span>
+              </div>
+              <div className="min-w-0">
+                <p className="font-arimo font-bold truncate" style={{ fontSize: '14px', color: '#101828', lineHeight: '20px' }}>
+                  {readModal.title}
+                </p>
+                <p className="font-arimo" style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '1px' }}>
+                  {selectedSubject} · View only
+                </p>
+              </div>
+            </div>
+
+            {/* Right: lock badge + upgrade + close */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="font-arimo font-bold" style={{
+                fontSize: '10px', padding: '3px 9px', borderRadius: '20px',
+                background: '#FEF3C7', color: '#D97706', letterSpacing: '0.4px',
+                whiteSpace: 'nowrap',
+              }}>
+                🔒 VIEW ONLY
+              </div>
+              <button
+                onClick={handleGetPdf}
+                className="font-arimo font-bold active:translate-y-[1px] flex items-center gap-1.5"
+                style={{
+                  fontSize: '12px', background: '#F59E0B', color: '#fff',
+                  borderRadius: '8px', height: '30px', padding: '0 12px',
+                  border: '1.5px solid #D97706', cursor: 'pointer',
+                  boxShadow: '0 3px 0 0 #B45309',
+                  transition: 'transform 0.08s ease',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                ⬇️ Get PDF
+              </button>
+              <button
+                onClick={() => setReadModal(null)}
+                style={{
+                  width: '30px', height: '30px', borderRadius: '8px',
+                  background: '#F3F4F6', border: '1px solid #E5E7EB',
+                  color: '#6B7280', cursor: 'pointer', fontSize: '14px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* ── Viewer area with watermark + iframe ── */}
+          <div
+            className="flex-1 relative overflow-hidden"
+            style={{ background: '#E8ECF3', userSelect: 'none' }}
+            onContextMenu={(e) => e.preventDefault()}
+          >
+            {/* Loading skeleton */}
+            {!iframeLoaded && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-5"
+                style={{ background: '#F1F4FA', zIndex: 20 }}>
+                <div style={{
+                  width: '220px', height: '290px', borderRadius: '10px',
+                  background: 'linear-gradient(90deg, #E5E7EB 25%, #F3F4F6 50%, #E5E7EB 75%)',
+                  backgroundSize: '500px 100%',
+                  animation: 'rwj-shimmer 1.4s infinite linear',
+                  boxShadow: '0 6px 24px rgba(0,0,0,0.08)',
+                }} />
+                <div style={{ textAlign: 'center' }}>
+                  <p className="font-arimo font-bold" style={{ fontSize: '14px', color: '#374151' }}>Loading note…</p>
+                  <p className="font-arimo" style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px' }}>Fetching from secure storage</p>
+                </div>
+              </div>
+            )}
+
+            {/* Google Docs viewer iframe */}
+            <iframe
+              key={readModal.url}
+              src={`https://docs.google.com/viewer?url=${encodeURIComponent(readModal.url)}&embedded=true`}
+              style={{
+                width: '100%', height: '100%',
+                border: 'none', display: 'block',
+                opacity: iframeLoaded ? 1 : 0,
+                transition: 'opacity 0.35s ease',
+              }}
+              title={readModal.title}
+              onLoad={() => setIframeLoaded(true)}
+              allow="fullscreen"
+            />
+
+            {/* ── Watermark overlay ──
+                Sits above the iframe (pointer-events:none so scroll is unaffected).
+                The repeated diagonal text appears in any screenshot. */}
+            {iframeLoaded && (
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 10,
+                  pointerEvents: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='180'%3E%3Ctext transform='rotate(-32 160 90)' x='8' y='100' font-family='Arial,sans-serif' font-size='13' font-weight='bold' fill='rgba(17%2C24%2C39%2C0.07)' letter-spacing='1'%3ERISE WITH JEET • VIEW ONLY%3C/text%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'repeat',
+                  backgroundSize: '320px 180px',
+                }}
+              />
+            )}
+          </div>
+
+          {/* ── Footer ── */}
+          <div
+            className="flex items-center justify-between flex-shrink-0"
+            style={{
+              background: '#FAFAFA',
+              borderTop: '1px solid #E5E7EB',
+              padding: '9px 18px',
+            }}
+          >
+            <p className="font-arimo" style={{ fontSize: '11px', color: '#9CA3AF' }}>
+              🛡️ Protected · watermarked · right-click & selection disabled
+            </p>
+            <button
+              onClick={handleGetPdf}
+              className="font-arimo font-bold active:translate-y-[1px] flex items-center gap-2"
+              style={{
+                fontSize: '12px', background: '#17223E', color: '#FFD272',
+                borderRadius: '9px', height: '34px', padding: '0 16px',
+                border: 'none', cursor: 'pointer',
+                boxShadow: '0 3px 0 0 #0A1220',
+                transition: 'transform 0.08s ease',
+              }}
+            >
+              ✦ Upgrade to Download
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

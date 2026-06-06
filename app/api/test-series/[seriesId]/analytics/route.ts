@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getBearerFromRequest, getBearerUser, isAdminUser } from '@/lib/test-series/auth';
 import * as repo from '@/lib/test-series/repo';
 
-type Ctx = { params: Promise<{ seriesId: string }> | { seriesId: string } };
+type Ctx = { params: Promise<{ seriesId: string }> };
 
 export async function GET(req: NextRequest, ctx: Ctx) {
   const admin = getSupabaseAdmin();

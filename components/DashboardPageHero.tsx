@@ -69,6 +69,7 @@ export default function DashboardPageHero({
   return (
     <PageHeroBackground
       className="flex flex-col"
+      showGrid={showDotGrid}
       style={{
         padding: '20px 26px 18px',
         marginBottom: 16,

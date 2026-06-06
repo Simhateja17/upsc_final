@@ -33,7 +33,7 @@ const SAMPLE_QUESTIONS: Question[] = [
     id: 2,
     subject: 'History',
     difficulty: 'Easy',
-    text: 'The term “Swaraj” was first used prominently by:',
+    text: 'The term "Swaraj" was first used prominently by:',
     options: [
       { label: 'A', text: 'Bal Gangadhar Tilak' },
       { label: 'B', text: 'Mahatma Gandhi' },
@@ -41,7 +41,7 @@ const SAMPLE_QUESTIONS: Question[] = [
       { label: 'D', text: 'Subhas Chandra Bose' },
     ],
     correct: 'C',
-    explanation: 'Dadabhai Naoroji used “Swaraj” prominently; later Tilak popularized it widely.',
+    explanation: 'Dadabhai Naoroji used "Swaraj" prominently; later Tilak popularized it widely.',
   },
   {
     id: 3,
@@ -49,7 +49,7 @@ const SAMPLE_QUESTIONS: Question[] = [
     difficulty: 'Medium',
     text: 'Which one of the following factors most directly influences the formation of monsoon winds over the Indian subcontinent?',
     options: [
-      { label: 'A', text: 'Earth’s rotation alone' },
+      { label: 'A', text: 'Earth\'s rotation alone' },
       { label: 'B', text: 'Seasonal differential heating of land and sea' },
       { label: 'C', text: 'Ocean currents only' },
       { label: 'D', text: 'Mountain building processes' },
@@ -69,13 +69,13 @@ const SAMPLE_QUESTIONS: Question[] = [
       { label: 'D', text: 'SEBI' },
     ],
     correct: 'C',
-    explanation: 'The RBI’s Monetary Policy Committee sets the policy repo rate under the inflation targeting framework.',
+    explanation: 'The RBI\'s Monetary Policy Committee sets the policy repo rate under the inflation targeting framework.',
   },
   {
     id: 5,
     subject: 'Environment',
     difficulty: 'Medium',
-    text: '“Biodiversity hotspot” refers to a region that:',
+    text: '"Biodiversity hotspot" refers to a region that:',
     options: [
       { label: 'A', text: 'Has only high species richness' },
       { label: 'B', text: 'Has high endemism and is under significant threat' },
@@ -148,6 +148,84 @@ interface MainsPerQuestion {
   checkedCopyStatus?: string | null;
 }
 
+/* ─── Next-steps types ─── */
+interface CardItem {
+  icon: string;
+  iconBg: string;
+  iconColor?: string;
+  imgSrc?: string;
+  title: string;
+  desc: string;
+  badge: string;
+  badgeBg: string;
+  badgeColor: string;
+  dark: boolean;
+  href: string;
+}
+
+interface StreakData {
+  days: number;
+  percentile: number;
+  message?: string;
+}
+
+interface RecommendationsData {
+  cards: CardItem[];
+  streak?: StreakData;
+  heroTitle?: string;
+  heroSubtitle?: string;
+}
+
+const fallbackCards: CardItem[] = [
+  {
+    icon: '🔄',
+    iconBg: '#2B7FFF',
+    imgSrc: '/emoji-12.png',
+    title: 'Retake this test',
+    desc: 'Same config, fresh attempt. Ideal for reinforcing weak areas.',
+    badge: 'Recommended',
+    badgeBg: 'rgba(49,65,88,0.6)',
+    badgeColor: '#DBEAFE',
+    dark: true,
+    href: '/dashboard/mock-tests/attempt',
+  },
+  {
+    icon: '+',
+    iconBg: '#F3E8FF',
+    iconColor: '#0F172B',
+    title: 'Build a new test',
+    desc: 'Change subject, difficulty or source. Keep the variety going.',
+    badge: 'Most popular',
+    badgeBg: '#F3E8FF',
+    badgeColor: '#8200DB',
+    dark: false,
+    href: '/dashboard/mock-tests',
+  },
+  {
+    icon: '✍️',
+    iconBg: '#FEF9C3',
+    title: 'Try Mains Writing',
+    desc: 'Practice answer writing with AI markup feedback. Build answer skills.',
+    badge: 'Mains prep',
+    badgeBg: '#DBEAFE',
+    badgeColor: '#1447E6',
+    dark: false,
+    href: '/dashboard/daily-answer',
+  },
+  {
+    icon: '🚀',
+    iconBg: '#FCE7F3',
+    imgSrc: '/emoji-13.png',
+    title: 'Unlock Pro Practice',
+    desc: 'Remove limits – full 100-Q papers, unlimited subjects, PYQ archives.',
+    badge: 'Upgrade',
+    badgeBg: '#F3E8FF',
+    badgeColor: '#8200DB',
+    dark: false,
+    href: '/dashboard/billing/plans',
+  },
+];
+
 function MockTestResultsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -165,6 +243,13 @@ function MockTestResultsInner() {
   const [mainsData, setMainsData] = useState<MainsPerQuestion[] | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+
+  /* ─── Next-steps tab state ─── */
+  const [activeTab, setActiveTab] = useState<'next-steps' | 'review'>('next-steps');
+  const [cards, setCards] = useState<CardItem[]>(fallbackCards);
+  const [streak, setStreak] = useState<StreakData | null>(null);
+  const [heroTitle, setHeroTitle] = useState('Great session!');
+  const [heroSubtitle, setHeroSubtitle] = useState("You've completed today's practice. Here's what the best aspirants do next to keep climbing.");
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ show: true, message, type });
@@ -279,7 +364,7 @@ function MockTestResultsInner() {
   }, [isMains, testId]);
 
   useEffect(() => {
-    if (isMains) return; // handled by mains loader above
+    if (isMains) return;
     if (mode === 'sample') {
       try {
         const raw = typeof window !== 'undefined' ? sessionStorage.getItem('mockTestSampleResults') : null;
@@ -296,7 +381,6 @@ function MockTestResultsInner() {
           subjectStats: [],
           analysis: [],
           testLabel: title,
-          // stash for render
           _sample: data,
         } as any);
         setLoading(false);
@@ -327,7 +411,6 @@ function MockTestResultsInner() {
           throw new Error('No results data returned.');
         }
 
-        // Normalize the API response into our ResultsData shape
         const correct = data.correct ?? data.correctCount ?? data.correct_count ?? 0;
         const wrong = data.wrong ?? data.wrongCount ?? data.wrong_count ?? 0;
         const skipped = data.skipped ?? data.skippedCount ?? data.skipped_count ?? 0;
@@ -343,7 +426,6 @@ function MockTestResultsInner() {
           'Don\'t Give Up!'
         );
 
-        // Subject stats - use API data or build from available info
         const subjectStats: SubjectStat[] = data.subjectStats ?? data.subjectWise ?? data.subject_wise
           ? Object.entries(data.subject_wise || {}).map(([subject, v]: [string, any]) => ({
               subject,
@@ -352,7 +434,6 @@ function MockTestResultsInner() {
             }))
           : [];
 
-        // Analysis - use API data or build fallbacks based on subject stats
         let analysis: AnalysisItem[] = data.analysis ?? data.insights ?? [];
         if (analysis.length === 0 && subjectStats.length > 0) {
           const strongest = subjectStats.reduce((a: SubjectStat, b: SubjectStat) => (a.correct / (a.total || 1)) >= (b.correct / (b.total || 1)) ? a : b);
@@ -365,7 +446,6 @@ function MockTestResultsInner() {
           ];
         }
 
-        // Store question review data from API
         if (data.questions && Array.isArray(data.questions)) {
           setReviewQuestions(data.questions.map((q: any, i: number) => ({
             idx: i + 1,
@@ -404,6 +484,30 @@ function MockTestResultsInner() {
       }
     }
     loadResults();
+    return () => { cancelled = true; };
+  }, [testId]);
+
+  /* ─── Load next-steps recommendations ─── */
+  useEffect(() => {
+    let cancelled = false;
+    async function loadRecommendations() {
+      try {
+        const res = await mockTestService.getRecommendations(testId || '');
+        if (cancelled) return;
+        const data: RecommendationsData = res.data;
+        if (data?.cards?.length) {
+          setCards(data.cards.map((card: CardItem) =>
+            card.href?.includes('/attempt') && !card.href.includes('testId')
+              ? { ...card, href: `${card.href}?testId=${testId}` }
+              : card
+          ));
+        }
+        if (data?.streak) setStreak(data.streak);
+        if (data?.heroTitle) setHeroTitle(data.heroTitle);
+        if (data?.heroSubtitle) setHeroSubtitle(data.heroSubtitle);
+      } catch { /* keep fallbacks */ }
+    }
+    loadRecommendations();
     return () => { cancelled = true; };
   }, [testId]);
 
@@ -469,7 +573,172 @@ function MockTestResultsInner() {
     );
   }
 
-  /* ─── Mains Results View (PYQ-style) ─── */
+  /* ─── Shared: patch fallback retake card with testId ─── */
+  const displayCards = cards.map(card =>
+    card.href?.includes('/attempt') && testId && !card.href.includes('testId')
+      ? { ...card, href: `${card.href}?testId=${testId}` }
+      : card
+  );
+
+  /* ─── Shared: tab bar ─── */
+  const tabBar = (
+    <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+      {(['next-steps', 'review'] as const).map(tab => (
+        <button
+          key={tab}
+          type="button"
+          onClick={() => setActiveTab(tab)}
+          style={{
+            padding: '10px 20px',
+            borderRadius: 10,
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: 14,
+            fontFamily: 'Inter, sans-serif',
+            background: activeTab === tab ? '#17223E' : '#E5E7EB',
+            color: activeTab === tab ? '#FFFFFF' : '#374151',
+            transition: 'background 0.15s ease, color 0.15s ease',
+          }}
+        >
+          {tab === 'next-steps' ? 'What would you like to do next? →' : 'Review Answers'}
+        </button>
+      ))}
+    </div>
+  );
+
+  /* ─── Shared: next steps content ─── */
+  const nextStepsContent = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* Hero card */}
+      <div style={{
+        borderRadius: 32,
+        background: '#1D293D',
+        boxShadow: '0 8px 10px -6px rgba(0,0,0,0.1), 0 20px 25px -5px rgba(0,0,0,0.1)',
+        padding: '48px 32px',
+        display: 'flex',
+        flexDirection: 'column' as const,
+        alignItems: 'center',
+        gap: 16,
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/emoji-6.png" alt="celebration" style={{ width: 72, height: 72, objectFit: 'contain' }} />
+        <h2 style={{ fontSize: 40, fontWeight: 700, color: '#FFFFFF', margin: 0, textAlign: 'center', lineHeight: '48px' }}>
+          {heroTitle}
+        </h2>
+        <p style={{ fontSize: 16, color: '#BEDBFF', margin: 0, textAlign: 'center', lineHeight: '26px' }}>
+          {heroSubtitle}
+        </p>
+      </div>
+
+      {/* 2×2 action cards */}
+      <div>
+        <p style={{
+          fontSize: 12,
+          fontWeight: 800,
+          letterSpacing: '1.2px',
+          textTransform: 'uppercase' as const,
+          color: '#6B7280',
+          margin: '0 0 16px 4px',
+        }}>
+          Next Steps
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          {displayCards.map((card) => (
+            <div
+              key={card.title}
+              onClick={() => router.push(card.href)}
+              style={{
+                borderRadius: 32,
+                background: card.dark ? '#1D293D' : '#FFFFFF',
+                boxShadow: '0 4px 6px -4px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.1)',
+                padding: 32,
+                display: 'flex',
+                flexDirection: 'column' as const,
+                gap: 12,
+                cursor: 'pointer',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -4px rgba(0,0,0,0.15), 0 16px 24px -3px rgba(0,0,0,0.1)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 6px -4px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.1)';
+              }}
+            >
+              <div style={{
+                width: 52, height: 52, borderRadius: 14,
+                background: card.iconBg,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: card.icon === '+' ? 36 : 26, fontWeight: 700,
+                color: card.iconColor || '#fff', overflow: 'hidden',
+              }}>
+                {card.imgSrc
+                  ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={card.imgSrc} alt={card.title} style={{ width: 30, height: 36, objectFit: 'contain' }} />
+                  )
+                  : <span style={{ lineHeight: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{card.icon}</span>
+                }
+              </div>
+              <h3 style={{ fontSize: 22, fontWeight: 700, margin: 0, lineHeight: '30px', color: card.dark ? '#FFFFFF' : '#0F172B' }}>
+                {card.title}
+              </h3>
+              <p style={{ fontSize: 14, margin: 0, lineHeight: '22px', color: card.dark ? '#BEDBFF' : '#4A5565', flex: 1 }}>
+                {card.desc}
+              </p>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center',
+                background: card.badgeBg, borderRadius: 999,
+                padding: '6px 16px', alignSelf: 'flex-start',
+              }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: card.badgeColor, lineHeight: '16px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {card.title === 'Unlock Pro Practice' && (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z"/>
+                    </svg>
+                  )}
+                  {card.badge}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Streak card */}
+      <div style={{
+        borderRadius: 32,
+        background: '#FFFFFF',
+        boxShadow: '0 4px 6px -4px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.1)',
+        padding: 32,
+        display: 'flex', alignItems: 'center', gap: 24,
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/fire-emoji.png" alt="streak" style={{ width: 52, height: 52, objectFit: 'contain', flexShrink: 0 }} />
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: '#0F172B', margin: 0, lineHeight: '28px' }}>
+            {streak
+              ? `${streak.days}-day streak – you're in the top ${streak.percentile}%!`
+              : "12-day streak – you're in the top 18%!"}
+          </h3>
+          <p style={{ fontSize: 16, color: '#364153', margin: 0, lineHeight: '26px' }}>
+            {streak?.message || (
+              <>
+                Come back tomorrow to extend your streak.{' '}
+                <strong style={{ fontWeight: 600 }}>Consistent practice</strong>{' '}
+                is the biggest predictor of clearing Prelims. See you tomorrow!
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ─── Mains Results View ─── */
   if (isMains && mainsData) {
     const totalScore = mainsData.reduce((a, b) => a + (b.score || 0), 0);
     const totalMax = mainsData.reduce((a, b) => a + (b.maxScore || 0), 0) || 1;
@@ -501,7 +770,7 @@ function MockTestResultsInner() {
             ← Back to Mock Tests
           </button>
 
-          {/* Header card */}
+          {/* Header card — always visible */}
           <div style={{ borderRadius: 24, background: '#0F172B', overflow: 'hidden', marginBottom: 24 }}>
             <div style={{ padding: '28px 32px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: '#1E3A5F', flexWrap: 'wrap' }}>
               <div>
@@ -531,141 +800,128 @@ function MockTestResultsInner() {
             </div>
           </div>
 
-          {/* Per-question cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {mainsData.map((q) => {
-              const grade = gradeFor(q.score, q.maxScore);
-              return (
-                <div key={q.idx} style={{ background: '#F1F5F9', borderRadius: 16, padding: '22px 24px' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#64748B', marginBottom: 10 }}>
-                    QUESTION {q.idx}{q.subject ? ` · ${q.subject.toUpperCase()}` : ''}
-                  </div>
-                  <p style={{ fontSize: 15, lineHeight: '24px', color: '#334155', margin: '0 0 14px', whiteSpace: 'pre-line' }}>
-                    {q.questionText}
-                  </p>
+          {/* Tab bar */}
+          {tabBar}
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
-                    <span style={{ fontSize: 28, fontWeight: 800, color: '#1E3A5F' }}>{grade}</span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: '#64748B' }}>
-                      {q.score}/{q.maxScore} marks
-                    </span>
-                    {typeof q.wordCount === 'number' && q.wordCount > 0 && (
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', background: '#E2E8F0', borderRadius: 8, padding: '4px 10px' }}>
-                        {q.wordCount} words
-                      </span>
-                    )}
-                  </div>
+          {/* Next steps tab */}
+          {activeTab === 'next-steps' && nextStepsContent}
 
-                  {(() => {
-                    const checkedCopyPages = (q.checkedCopyPages || []).filter((page) => page.checkedCopyUrl);
-                    const displayCheckedCopyPages = checkedCopyPages.length > 0
-                      ? checkedCopyPages
-                      : q.checkedCopyUrl
-                        ? [{ pageNumber: 1, checkedCopyUrl: q.checkedCopyUrl }]
-                        : [];
-                    if (displayCheckedCopyPages.length === 0) return null;
-                    return (
-                    <div style={{ marginBottom: 14, border: '1px solid #E2E8F0', borderRadius: 12, background: '#FFFFFF', padding: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: '#991B1B' }}>Checked copy markup</span>
-                        <a href={displayCheckedCopyPages[0].checkedCopyUrl || '#'} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>
-                          Open full size
-                        </a>
+          {/* Review tab */}
+          {activeTab === 'review' && (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {mainsData.map((q) => {
+                  const grade = gradeFor(q.score, q.maxScore);
+                  return (
+                    <div key={q.idx} style={{ background: '#F1F5F9', borderRadius: 16, padding: '22px 24px' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#64748B', marginBottom: 10 }}>
+                        QUESTION {q.idx}{q.subject ? ` · ${q.subject.toUpperCase()}` : ''}
                       </div>
-                      {displayCheckedCopyPages.map((page) => (
-                        <div key={page.pageNumber} style={{ marginTop: 10 }}>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', marginBottom: 6 }}>Page {page.pageNumber}</div>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={page.checkedCopyUrl || ''}
-                            alt={`Checked copy page ${page.pageNumber} markup for question ${q.idx}`}
-                            style={{ width: '100%', borderRadius: 10, border: '1px solid #E5E7EB', background: '#F8FAFC' }}
-                          />
-                        </div>
-                      ))}
+                      <p style={{ fontSize: 15, lineHeight: '24px', color: '#334155', margin: '0 0 14px', whiteSpace: 'pre-line' }}>
+                        {q.questionText}
+                      </p>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
+                        <span style={{ fontSize: 28, fontWeight: 800, color: '#1E3A5F' }}>{grade}</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: '#64748B' }}>
+                          {q.score}/{q.maxScore} marks
+                        </span>
+                        {typeof q.wordCount === 'number' && q.wordCount > 0 && (
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', background: '#E2E8F0', borderRadius: 8, padding: '4px 10px' }}>
+                            {q.wordCount} words
+                          </span>
+                        )}
+                      </div>
+
+                      {(() => {
+                        const checkedCopyPages = (q.checkedCopyPages || []).filter((page) => page.checkedCopyUrl);
+                        const displayCheckedCopyPages = checkedCopyPages.length > 0
+                          ? checkedCopyPages
+                          : q.checkedCopyUrl
+                            ? [{ pageNumber: 1, checkedCopyUrl: q.checkedCopyUrl }]
+                            : [];
+                        if (displayCheckedCopyPages.length === 0) return null;
+                        return (
+                          <div style={{ marginBottom: 14, border: '1px solid #E2E8F0', borderRadius: 12, background: '#FFFFFF', padding: 12 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: '#991B1B' }}>Checked copy markup</span>
+                              <a href={displayCheckedCopyPages[0].checkedCopyUrl || '#'} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>
+                                Open full size
+                              </a>
+                            </div>
+                            {displayCheckedCopyPages.map((page) => (
+                              <div key={page.pageNumber} style={{ marginTop: 10 }}>
+                                <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', marginBottom: 6 }}>Page {page.pageNumber}</div>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={page.checkedCopyUrl || ''}
+                                  alt={`Checked copy page ${page.pageNumber} markup for question ${q.idx}`}
+                                  style={{ width: '100%', borderRadius: 10, border: '1px solid #E5E7EB', background: '#F8FAFC' }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+
+                      <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {q.strengths.length > 0 && (
+                          <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
+                            <span style={{ color: '#15803D', fontWeight: 700, flexShrink: 0 }}>✓ Strengths:</span>
+                            <span>{q.strengths.join(' ')}</span>
+                          </div>
+                        )}
+                        {q.improvements.length > 0 && (
+                          <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
+                            <span style={{ color: '#EA580C', fontWeight: 700, flexShrink: 0 }}>↑ Improve:</span>
+                            <span>{q.improvements.join(' ')}</span>
+                          </div>
+                        )}
+                        {q.suggestions.length > 0 && (
+                          <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
+                            <span style={{ color: '#DC2626', fontWeight: 700, flexShrink: 0 }}>✕ Key misses:</span>
+                            <span>{q.suggestions.join(' ')}</span>
+                          </div>
+                        )}
+                        {q.detailedFeedback && (
+                          <div style={{ marginTop: 6, fontSize: 13, color: '#475569', lineHeight: '20px', background: '#FFFFFF', borderRadius: 10, padding: '10px 14px', border: '1px solid #E2E8F0' }}>
+                            {q.detailedFeedback}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    );
-                  })()}
+                  );
+                })}
+              </div>
 
-                  <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {q.strengths.length > 0 && (
-                      <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
-                        <span style={{ color: '#15803D', fontWeight: 700, flexShrink: 0 }}>✓ Strengths:</span>
-                        <span>{q.strengths.join(' ')}</span>
-                      </div>
-                    )}
-                    {q.improvements.length > 0 && (
-                      <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
-                        <span style={{ color: '#EA580C', fontWeight: 700, flexShrink: 0 }}>↑ Improve:</span>
-                        <span>{q.improvements.join(' ')}</span>
-                      </div>
-                    )}
-                    {q.suggestions.length > 0 && (
-                      <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
-                        <span style={{ color: '#DC2626', fontWeight: 700, flexShrink: 0 }}>✕ Key misses:</span>
-                        <span>{q.suggestions.join(' ')}</span>
-                      </div>
-                    )}
-                    {q.detailedFeedback && (
-                      <div style={{ marginTop: 6, fontSize: 13, color: '#475569', lineHeight: '20px', background: '#FFFFFF', borderRadius: 10, padding: '10px 14px', border: '1px solid #E2E8F0' }}>
-                        {q.detailedFeedback}
-                      </div>
-                    )}
-                  </div>
+              {/* Overall feedback */}
+              <div style={{ marginTop: 24, background: '#1E293B', borderRadius: 16, padding: '24px 28px' }}>
+                <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', color: '#94A3B8', marginBottom: 12 }}>
+                  📊 JEET SIR&apos;S OVERALL FEEDBACK
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Overall feedback */}
-          <div style={{ marginTop: 24, background: '#1E293B', borderRadius: 16, padding: '24px 28px' }}>
-            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', color: '#94A3B8', marginBottom: 12 }}>
-              📊 JEET SIR&apos;S OVERALL FEEDBACK
-            </div>
-            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
-                <span>💡</span>
-                <span>Overall you scored <strong>{totalScore}/{totalMax}</strong> ({pct}%). Focus next on the questions below 50% to lift your average quickly.</span>
-              </li>
-              <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
-                <span>📖</span>
-                <span>Layer in recent policy / current-affairs examples — examiners consistently reward contemporary linkage on mains.</span>
-              </li>
-              <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
-                <span>🎯</span>
-                <span>Push for multi-dimensional analysis: social, economic, political, and environmental angles strengthen answers significantly.</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* What to do next CTA */}
-          <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
-            <button
-              onClick={() => router.push(`/dashboard/mock-tests/next-steps${testId ? `?testId=${testId}&examMode=mains` : ''}`)}
-              style={{
-                background: '#17223E',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: 12,
-                padding: '14px 32px',
-                fontWeight: 700,
-                fontSize: 15,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                boxShadow: '0 4px 16px rgba(23,34,62,0.2)',
-              }}
-            >
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FDC700', display: 'inline-block' }} />
-              What would you like to do next? →
-            </button>
-          </div>
+                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
+                    <span>💡</span>
+                    <span>Overall you scored <strong>{totalScore}/{totalMax}</strong> ({pct}%). Focus next on the questions below 50% to lift your average quickly.</span>
+                  </li>
+                  <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
+                    <span>📖</span>
+                    <span>Layer in recent policy / current-affairs examples — examiners consistently reward contemporary linkage on mains.</span>
+                  </li>
+                  <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
+                    <span>🎯</span>
+                    <span>Push for multi-dimensional analysis: social, economic, political, and environmental angles strengthen answers significantly.</span>
+                  </li>
+                </ul>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
   }
 
+  /* ─── Prelims Results View ─── */
   const { total, correct, wrong, skipped, scorePct } = results!;
   const sample = (results as any)._sample as any | undefined;
   const showConfetti = scorePct > 50;
@@ -739,6 +995,7 @@ function MockTestResultsInner() {
           ← Back to Dashboard
         </button>
 
+        {/* Score header card — always visible */}
         <div
           style={{
             borderRadius: 16,
@@ -779,9 +1036,12 @@ function MockTestResultsInner() {
             <button
               type="button"
               onClick={() => {
-                const el = document.getElementById('mt-full-analysis');
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                else router.push('/dashboard/test-analytics');
+                setActiveTab('review');
+                setTimeout(() => {
+                  const el = document.getElementById('mt-full-analysis');
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  else router.push('/dashboard/test-analytics');
+                }, 50);
               }}
               style={{ height: 36, borderRadius: 10, padding: '0 16px', border: 'none', background: '#314158', color: '#FFFFFF', fontWeight: 700, cursor: 'pointer' }}
             >
@@ -799,204 +1059,212 @@ function MockTestResultsInner() {
           </div>
         </div>
 
-        <div id="mt-full-analysis" style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800, color: '#101828', marginBottom: 12 }}>
-            <span style={{ width: 18, height: 18, borderRadius: 4, border: '2px solid #00C950', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#00C950' }}>✓</span>
-            Answer Review
-          </div>
+        {/* Tab bar */}
+        {tabBar}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {(sample?.review ?? reviewQuestions).map((row: any) => {
-              const questions: Question[] = (sample?.questions as Question[] | undefined) ?? SAMPLE_QUESTIONS;
-              const selectedOptions: Record<number, string> = (sample?.selectedOptions as Record<number, string> | undefined) ?? {};
-              // For real tests, row itself contains full question data
-              const isSample = !!sample;
-              const q = isSample ? questions[(row.idx ?? 1) - 1] : {
-                text: row.text,
-                subject: row.subject,
-                options: row.options || [],
-                correct: row.correct,
-                explanation: row.explanation,
-                difficulty: 'Medium' as const,
-                id: row.idx,
-              };
-              const selected = isSample ? selectedOptions[(row.idx ?? 1) - 1] : row.selected;
-              const isExpanded = expandedIdx === row.idx;
-              const borderColor = row.status === 'wrong' ? '#FB2C36' : row.status === 'correct' ? '#00C950' : '#E5E7EB';
-              const bg = row.status === 'wrong' ? '#FEF2F24D' : row.status === 'correct' ? '#F0FDF44D' : '#FFFFFF';
-              const height = row.status === 'wrong' ? 73.5999984741211 : 65.5999984741211;
-              const rightText = row.status === 'skipped' ? 'Skipped' : (row.delta < 0 ? row.delta.toFixed(2) : `+${row.delta}`);
-              const rightColor = row.status === 'wrong' ? '#FB2C36' : row.status === 'correct' ? '#00C950' : '#6B7280';
-              return (
-                <div key={row.idx} style={{ width: '100%' }}>
-                  <button
-                    type="button"
-                    onClick={() => setExpandedIdx(prev => (prev === row.idx ? null : row.idx))}
-                    style={{
-                      width: '100%',
-                      height,
-                      borderRadius: 10,
-                      background: bg,
-                      borderStyle: 'solid',
-                      borderTopWidth: 0.8,
-                      borderRightWidth: 0.8,
-                      borderBottomWidth: 0.8,
-                      borderLeftWidth: 4,
-                      borderColor,
-                      boxSizing: 'border-box',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0 16px',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 999, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#6B7280', flexShrink: 0 }}>
-                        {row.idx}
-                      </div>
-                      <div style={{ fontSize: 13, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 720 }}>
-                        {row.text}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexShrink: 0 }}>
-                      <div style={{ fontSize: 12, color: '#6B7280' }}>🕒 {row.timeSec}s</div>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: rightColor, minWidth: 52, textAlign: 'right' }}>{rightText}</div>
-                      <div style={{ color: '#6B7280', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease' }}>⌄</div>
-                    </div>
-                  </button>
+        {/* Next steps tab */}
+        {activeTab === 'next-steps' && nextStepsContent}
 
-                  {isExpanded && q ? (
-                    <div
+        {/* Review tab */}
+        {activeTab === 'review' && (
+          <div id="mt-full-analysis" style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800, color: '#101828', marginBottom: 12 }}>
+              <span style={{ width: 18, height: 18, borderRadius: 4, border: '2px solid #00C950', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#00C950' }}>✓</span>
+              Answer Review
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {(sample?.review ?? reviewQuestions).map((row: any) => {
+                const questions: Question[] = (sample?.questions as Question[] | undefined) ?? SAMPLE_QUESTIONS;
+                const selectedOptions: Record<number, string> = (sample?.selectedOptions as Record<number, string> | undefined) ?? {};
+                const isSample = !!sample;
+                const q = isSample ? questions[(row.idx ?? 1) - 1] : {
+                  text: row.text,
+                  subject: row.subject,
+                  options: row.options || [],
+                  correct: row.correct,
+                  explanation: row.explanation,
+                  difficulty: 'Medium' as const,
+                  id: row.idx,
+                };
+                const selected = isSample ? selectedOptions[(row.idx ?? 1) - 1] : row.selected;
+                const isExpanded = expandedIdx === row.idx;
+                const borderColor = row.status === 'wrong' ? '#FB2C36' : row.status === 'correct' ? '#00C950' : '#E5E7EB';
+                const bg = row.status === 'wrong' ? '#FEF2F24D' : row.status === 'correct' ? '#F0FDF44D' : '#FFFFFF';
+                const height = row.status === 'wrong' ? 73.5999984741211 : 65.5999984741211;
+                const rightText = row.status === 'skipped' ? 'Skipped' : (row.delta < 0 ? row.delta.toFixed(2) : `+${row.delta}`);
+                const rightColor = row.status === 'wrong' ? '#FB2C36' : row.status === 'correct' ? '#00C950' : '#6B7280';
+                return (
+                  <div key={row.idx} style={{ width: '100%' }}>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedIdx(prev => (prev === row.idx ? null : row.idx))}
                       style={{
-                          width: '100%',
-                        marginTop: 10,
-                        borderRadius: 12,
-                        border: '1px solid #E5E7EB',
-                        background: '#FFFFFF',
-                        padding: 18,
+                        width: '100%',
+                        height,
+                        borderRadius: 10,
+                        background: bg,
+                        borderStyle: 'solid',
+                        borderTopWidth: 0.8,
+                        borderRightWidth: 0.8,
+                        borderBottomWidth: 0.8,
+                        borderLeftWidth: 4,
+                        borderColor,
                         boxSizing: 'border-box',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0 16px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                          <div style={{ width: 28, height: 28, borderRadius: 999, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#6B7280', flexShrink: 0 }}>
-                            {row.idx}
-                          </div>
-                          <div style={{ fontWeight: 700, fontSize: 14, color: '#111827', lineHeight: '20px', minWidth: 0 }}>
-                            {q.text.split('\n').slice(0, 1).join(' ')}
-                          </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 999, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#6B7280', flexShrink: 0 }}>
+                          {row.idx}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-                          <div style={{ fontSize: 12, color: '#6B7280' }}>🕒 {row.timeSec}s</div>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: rightColor, minWidth: 52, textAlign: 'right' }}>{rightText}</div>
+                        <div style={{ fontSize: 13, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 720 }}>
+                          {row.text}
                         </div>
                       </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', background: '#F3F4F6', borderRadius: 8, padding: '4px 8px' }}>
-                          {q.subject}
-                        </span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#854D0E', background: '#FEF08A', borderRadius: 8, padding: '4px 8px' }}>
-                          PYQ 2019
-                        </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexShrink: 0 }}>
+                        <div style={{ fontSize: 12, color: '#6B7280' }}>🕒 {row.timeSec}s</div>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: rightColor, minWidth: 52, textAlign: 'right' }}>{rightText}</div>
+                        <div style={{ color: '#6B7280', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease' }}>⌄</div>
                       </div>
+                    </button>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {q.options.map((opt: any) => {
-                          const isCorrect = opt.label === q.correct;
-                          const isSelected = selected === opt.label;
-                          const isWrongSelected = isSelected && !isCorrect;
-                          const rowBg = isCorrect ? '#F0FDF4' : isWrongSelected ? '#FEF2F2' : '#FFFFFF';
-                          const rowBorder = isCorrect ? '1px solid #86EFAC' : isWrongSelected ? '1px solid #FCA5A5' : '1px solid #E5E7EB';
-                          const right = isCorrect ? '✓ Correct' : isWrongSelected ? '✕ Your Answer' : '';
-                          const rightCol = isCorrect ? '#16A34A' : isWrongSelected ? '#DC2626' : '#6B7280';
-                          return (
-                            <div
-                              key={opt.label}
-                              style={{
-                                borderRadius: 10,
-                                border: rowBorder,
-                                background: rowBg,
-                                padding: '12px 14px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: 12,
-                              }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                                <div style={{ width: 26, height: 26, borderRadius: 8, border: '1px solid #E5E7EB', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#111827', flexShrink: 0 }}>
-                                  {opt.label}
-                                </div>
-                                <div style={{ fontSize: 13, color: '#111827', minWidth: 0 }}>
-                                  {opt.text}
-                                </div>
-                              </div>
-                              {right ? <div style={{ fontSize: 12, fontWeight: 700, color: rightCol, flexShrink: 0 }}>{right}</div> : <div />}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {selected ? (
-                        <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>
-                          You picked:{' '}
-                          <span style={{ fontWeight: 800, color: row.status === 'wrong' ? '#DC2626' : '#16A34A' }}>
-                            {selected} — {(q.options.find((o: any) => o.label === selected)?.text ?? '')}
-                          </span>
-                        </div>
-                      ) : (
-                        <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>You picked: <span style={{ fontWeight: 800, color: '#6B7280' }}>Skipped</span></div>
-                      )}
-
+                    {isExpanded && q ? (
                       <div
                         style={{
-                          marginTop: 12,
-                          background: '#EFF6FF',
-                          borderRadius: 10,
-                          padding: '14px 14px',
-                          border: '1px solid #BFDBFE',
+                          width: '100%',
+                          marginTop: 10,
+                          borderRadius: 12,
+                          border: '1px solid #E5E7EB',
+                          background: '#FFFFFF',
+                          padding: 18,
+                          boxSizing: 'border-box',
                         }}
                       >
-                        <div style={{ fontSize: 12, fontWeight: 800, color: '#155DFC', marginBottom: 6 }}>
-                          Explanation:
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: 999, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#6B7280', flexShrink: 0 }}>
+                              {row.idx}
+                            </div>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: '#111827', lineHeight: '20px', minWidth: 0 }}>
+                              {q.text.split('\n').slice(0, 1).join(' ')}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+                            <div style={{ fontSize: 12, color: '#6B7280' }}>🕒 {row.timeSec}s</div>
+                            <div style={{ fontSize: 12, fontWeight: 800, color: rightColor, minWidth: 52, textAlign: 'right' }}>{rightText}</div>
+                          </div>
                         </div>
-                        <div style={{ fontSize: 13, color: '#1D4ED8', lineHeight: '18px' }}>
-                          {q.explanation}
-                        </div>
-                      </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14, fontSize: 12 }}>
-                        <button
-                          type="button"
-                          onClick={() => handleAddToFlashcards(row)}
-                          disabled={actionLoading === `flashcard-${row.idx}`}
-                          style={{ background: 'transparent', border: 'none', color: '#7C3AED', fontWeight: 700, cursor: actionLoading === `flashcard-${row.idx}` ? 'not-allowed' : 'pointer', padding: 0, opacity: actionLoading === `flashcard-${row.idx}` ? 0.5 : 1 }}>
-                          {actionLoading === `flashcard-${row.idx}` ? 'Adding...' : 'Add to Flashcards'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleNeedToRevise(row)}
-                          disabled={actionLoading === `revise-${row.idx}`}
-                          style={{ background: 'transparent', border: 'none', color: '#DC2626', fontWeight: 700, cursor: actionLoading === `revise-${row.idx}` ? 'not-allowed' : 'pointer', padding: 0, opacity: actionLoading === `revise-${row.idx}` ? 0.5 : 1 }}>
-                          {actionLoading === `revise-${row.idx}` ? 'Adding...' : 'Need to Revise'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleStudyNotes(row)}
-                          style={{ background: 'transparent', border: 'none', color: '#2563EB', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
-                          Study Notes
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', background: '#F3F4F6', borderRadius: 8, padding: '4px 8px' }}>
+                            {q.subject}
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#854D0E', background: '#FEF08A', borderRadius: 8, padding: '4px 8px' }}>
+                            PYQ 2019
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {q.options.map((opt: any) => {
+                            const isCorrect = opt.label === q.correct;
+                            const isSelected = selected === opt.label;
+                            const isWrongSelected = isSelected && !isCorrect;
+                            const rowBg = isCorrect ? '#F0FDF4' : isWrongSelected ? '#FEF2F2' : '#FFFFFF';
+                            const rowBorder = isCorrect ? '1px solid #86EFAC' : isWrongSelected ? '1px solid #FCA5A5' : '1px solid #E5E7EB';
+                            const right = isCorrect ? '✓ Correct' : isWrongSelected ? '✕ Your Answer' : '';
+                            const rightCol = isCorrect ? '#16A34A' : isWrongSelected ? '#DC2626' : '#6B7280';
+                            return (
+                              <div
+                                key={opt.label}
+                                style={{
+                                  borderRadius: 10,
+                                  border: rowBorder,
+                                  background: rowBg,
+                                  padding: '12px 14px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: 12,
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                  <div style={{ width: 26, height: 26, borderRadius: 8, border: '1px solid #E5E7EB', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#111827', flexShrink: 0 }}>
+                                    {opt.label}
+                                  </div>
+                                  <div style={{ fontSize: 13, color: '#111827', minWidth: 0 }}>
+                                    {opt.text}
+                                  </div>
+                                </div>
+                                {right ? <div style={{ fontSize: 12, fontWeight: 700, color: rightCol, flexShrink: 0 }}>{right}</div> : <div />}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {selected ? (
+                          <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>
+                            You picked:{' '}
+                            <span style={{ fontWeight: 800, color: row.status === 'wrong' ? '#DC2626' : '#16A34A' }}>
+                              {selected} — {(q.options.find((o: any) => o.label === selected)?.text ?? '')}
+                            </span>
+                          </div>
+                        ) : (
+                          <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>You picked: <span style={{ fontWeight: 800, color: '#6B7280' }}>Skipped</span></div>
+                        )}
+
+                        <div
+                          style={{
+                            marginTop: 12,
+                            background: '#EFF6FF',
+                            borderRadius: 10,
+                            padding: '14px 14px',
+                            border: '1px solid #BFDBFE',
+                          }}
+                        >
+                          <div style={{ fontSize: 12, fontWeight: 800, color: '#155DFC', marginBottom: 6 }}>
+                            Explanation:
+                          </div>
+                          <div style={{ fontSize: 13, color: '#1D4ED8', lineHeight: '18px' }}>
+                            {q.explanation}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14, fontSize: 12 }}>
+                          <button
+                            type="button"
+                            onClick={() => handleAddToFlashcards(row)}
+                            disabled={actionLoading === `flashcard-${row.idx}`}
+                            style={{ background: 'transparent', border: 'none', color: '#7C3AED', fontWeight: 700, cursor: actionLoading === `flashcard-${row.idx}` ? 'not-allowed' : 'pointer', padding: 0, opacity: actionLoading === `flashcard-${row.idx}` ? 0.5 : 1 }}>
+                            {actionLoading === `flashcard-${row.idx}` ? 'Adding...' : 'Add to Flashcards'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleNeedToRevise(row)}
+                            disabled={actionLoading === `revise-${row.idx}`}
+                            style={{ background: 'transparent', border: 'none', color: '#DC2626', fontWeight: 700, cursor: actionLoading === `revise-${row.idx}` ? 'not-allowed' : 'pointer', padding: 0, opacity: actionLoading === `revise-${row.idx}` ? 0.5 : 1 }}>
+                            {actionLoading === `revise-${row.idx}` ? 'Adding...' : 'Need to Revise'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleStudyNotes(row)}
+                            style={{ background: 'transparent', border: 'none', color: '#2563EB', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+                            Study Notes
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

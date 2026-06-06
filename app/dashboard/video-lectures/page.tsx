@@ -54,14 +54,14 @@ function getFallbackViewCount(seed: string): number {
   return 20000 + (hash % 10001);
 }
 
-/* Subject card background colors – one per subject, no repeats */
+/* Subject card background colors – palette from upsc_subject_color_palette */
 const SUBJECT_COLORS: Record<string, { bg: string; border: string; accent: string }> = {
-  'History':              { bg: '#FEF3C7', border: '#FDE68A', accent: '#B45309' }, // amber
-  'Geography':            { bg: '#CCFBF1', border: '#99F6E4', accent: '#0D9488' }, // teal
-  'Polity':               { bg: '#EDE9FE', border: '#DDD6FE', accent: '#7C3AED' }, // purple
-  'Economy':              { bg: '#FFF7ED', border: '#FED7AA', accent: '#EA580C' }, // orange
-  'Environment & Ecology':{ bg: '#F0FDF4', border: '#BBF7D0', accent: '#16A34A' }, // green
-  'Science & Technology': { bg: '#F0F9FF', border: '#BAE6FD', accent: '#0369A1' }, // sky blue
+  'History':               { bg: '#F5E8D4', border: '#E0C89A', accent: '#C49A6C' },
+  'Geography':             { bg: '#C8E8F4', border: '#A8D0EC', accent: '#5B9BD5' },
+  'Polity':                { bg: '#D0DDF4', border: '#B8C8E8', accent: '#4A68B0' },
+  'Economy':               { bg: '#F8EDD8', border: '#F0D498', accent: '#E6A817' },
+  'Environment & Ecology': { bg: '#C8ECCC', border: '#A8DEB8', accent: '#6DBF8A' },
+  'Science & Technology':  { bg: '#DCF0F8', border: '#C4B8E0', accent: '#8B6FC4' },
 };
 
 const SUBJECT_ICON_GRADIENTS: Record<string, string> = {

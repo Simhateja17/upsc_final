@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { mindmapService } from '@/lib/services';
 
 const CheckmarkIcon = () => (
@@ -27,9 +28,8 @@ function getStatus(mastery: number, viewed: boolean): MindmapStatus {
   return 'New';
 }
 
-type PageProps = { params: { subjectId: string } };
-
-export default function SubjectDetailPage({ params }: PageProps) {
+export default function SubjectDetailPage() {
+  const params = useParams<{ subjectId: string }>();
   const { subjectId } = params;
   const [subjectMeta, setSubjectMeta] = useState<{ name: string; icon: string } | null>(null);
   const [maps, setMaps] = useState<MindmapItem[]>([]);

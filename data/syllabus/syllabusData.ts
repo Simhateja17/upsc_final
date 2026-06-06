@@ -30,8 +30,8 @@ export const SYLLABUS_DATA: SyllabusData = {
       name: 'History',
       short: 'History',
       icon: '🏛️',
-      color: '#e07b39',
-      bg: 'rgba(224,123,57,.11)',
+      color: '#C49A6C',
+      bg: 'rgba(196,154,108,.12)',
       topics: [
         {
           name: 'Ancient India',
@@ -104,8 +104,8 @@ export const SYLLABUS_DATA: SyllabusData = {
       name: 'Geography',
       short: 'Geog.',
       icon: '🌍',
-      color: '#2e7dd4',
-      bg: 'rgba(46,125,212,.10)',
+      color: '#5B9BD5',
+      bg: 'rgba(91,155,213,.12)',
       topics: [
         {
           name: 'Physical Geography of the World',
@@ -161,8 +161,8 @@ export const SYLLABUS_DATA: SyllabusData = {
       name: 'Polity',
       short: 'Polity',
       icon: '⚖️',
-      color: '#7c3aed',
-      bg: 'rgba(124,58,237,.09)',
+      color: '#4A68B0',
+      bg: 'rgba(74,104,176,.12)',
       topics: [
         {
           name: 'Historical Evolution & Making of Constitution',
@@ -241,8 +241,8 @@ export const SYLLABUS_DATA: SyllabusData = {
       name: 'Economy',
       short: 'Economy',
       icon: '💰',
-      color: '#059669',
-      bg: 'rgba(5,150,105,.09)',
+      color: '#E6A817',
+      bg: 'rgba(230,168,23,.12)',
       topics: [
         {
           name: 'Basic Economy',
@@ -316,8 +316,8 @@ export const SYLLABUS_DATA: SyllabusData = {
       name: 'Environment & Ecology',
       short: 'Enviro.',
       icon: '🌿',
-      color: '#16a34a',
-      bg: 'rgba(22,163,74,.09)',
+      color: '#6DBF8A',
+      bg: 'rgba(109,191,138,.12)',
       topics: [
         {
           name: 'Ecology & Ecosystem',
@@ -373,8 +373,8 @@ export const SYLLABUS_DATA: SyllabusData = {
       name: 'Science & Technology',
       short: 'Science',
       icon: '🔬',
-      color: '#d97706',
-      bg: 'rgba(217,119,6,.09)',
+      color: '#8B6FC4',
+      bg: 'rgba(139,111,196,.12)',
       topics: [
         {
           name: 'General Science',
@@ -482,8 +482,8 @@ export const SYLLABUS_DATA: SyllabusData = {
       name: 'History',
       short: 'History',
       icon: '🏛️',
-      color: '#e07b39',
-      bg: 'rgba(224,123,57,.11)',
+      color: '#C49A6C',
+      bg: 'rgba(196,154,108,.12)',
       topics: [
         {
           name: 'Ancient India',
@@ -556,8 +556,8 @@ export const SYLLABUS_DATA: SyllabusData = {
       name: 'Geography',
       short: 'Geog.',
       icon: '🌍',
-      color: '#2e7dd4',
-      bg: 'rgba(46,125,212,.10)',
+      color: '#5B9BD5',
+      bg: 'rgba(91,155,213,.12)',
       topics: [
         {
           name: 'Physical Geography of the World',
@@ -613,8 +613,8 @@ export const SYLLABUS_DATA: SyllabusData = {
       name: 'Polity',
       short: 'Polity',
       icon: '⚖️',
-      color: '#7c3aed',
-      bg: 'rgba(124,58,237,.09)',
+      color: '#4A68B0',
+      bg: 'rgba(74,104,176,.12)',
       topics: [
         {
           name: 'Historical Evolution & Making of Constitution',
@@ -693,8 +693,8 @@ export const SYLLABUS_DATA: SyllabusData = {
       name: 'Economy',
       short: 'Economy',
       icon: '💰',
-      color: '#059669',
-      bg: 'rgba(5,150,105,.09)',
+      color: '#E6A817',
+      bg: 'rgba(230,168,23,.12)',
       topics: [
         {
           name: 'Basic Economy',
@@ -768,8 +768,8 @@ export const SYLLABUS_DATA: SyllabusData = {
       name: 'Environment & Ecology',
       short: 'Enviro.',
       icon: '🌿',
-      color: '#16a34a',
-      bg: 'rgba(22,163,74,.09)',
+      color: '#6DBF8A',
+      bg: 'rgba(109,191,138,.12)',
       topics: [
         {
           name: 'Ecology & Ecosystem',
@@ -825,8 +825,8 @@ export const SYLLABUS_DATA: SyllabusData = {
       name: 'Science & Technology',
       short: 'Science',
       icon: '🔬',
-      color: '#d97706',
-      bg: 'rgba(217,119,6,.09)',
+      color: '#8B6FC4',
+      bg: 'rgba(139,111,196,.12)',
       topics: [
         {
           name: 'General Science',

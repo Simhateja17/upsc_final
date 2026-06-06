@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { dashboardService, studyPlannerService } from '@/lib/services';
+import { dashboardService, studyPlannerService, syllabusService, userService } from '@/lib/services';
 import { getSubjectEmoji } from '@/lib/subjectEmojis';
 
 function fmtTimer(secs: number): string {
@@ -10,6 +10,13 @@ function fmtTimer(secs: number): string {
   const m = Math.floor(s / 60).toString().padStart(2, '0');
   const sec = (s % 60).toString().padStart(2, '0');
   return `${m}:${sec}`;
+}
+
+// Coverage bar/percentage colour by completion: Good (>30%) green, Review needed (>10%) orange, else Weak red
+function coverageColor(pct: number): string {
+  if (pct > 30) return '#16A34A';
+  if (pct > 10) return '#F59E0B';
+  return '#EF4444';
 }
 
 function taskDurationSecs(task: Task): number {
@@ -44,24 +51,14 @@ function compareTasksByTime(a: Task, b: Task): number {
   return a.title.localeCompare(b.title);
 }
 
-function pieSlicePath(cx: number, cy: number, r: number, startAngle: number, endAngle: number): string {
-  const angleDiff = endAngle - startAngle;
-  if (angleDiff >= Math.PI * 2 - 0.0001) {
-    // SVG arc commands cannot draw a full circle in a single segment.
-    return [
-      `M ${cx} ${cy}`,
-      `L ${cx} ${(cy - r).toFixed(3)}`,
-      `A ${r} ${r} 0 1 1 ${cx} ${(cy + r).toFixed(3)}`,
-      `A ${r} ${r} 0 1 1 ${cx} ${(cy - r).toFixed(3)}`,
-      'Z',
-    ].join(' ');
-  }
+// Stroke-only arc for a donut ring segment (no center lines / fill).
+function donutArcPath(cx: number, cy: number, r: number, startAngle: number, endAngle: number): string {
   const x1 = cx + r * Math.cos(startAngle);
   const y1 = cy + r * Math.sin(startAngle);
   const x2 = cx + r * Math.cos(endAngle);
   const y2 = cy + r * Math.sin(endAngle);
-  const largeArc = angleDiff > Math.PI ? 1 : 0;
-  return `M ${cx} ${cy} L ${x1.toFixed(3)} ${y1.toFixed(3)} A ${r} ${r} 0 ${largeArc} 1 ${x2.toFixed(3)} ${y2.toFixed(3)} Z`;
+  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+  return `M ${x1.toFixed(3)} ${y1.toFixed(3)} A ${r} ${r} 0 ${largeArc} 1 ${x2.toFixed(3)} ${y2.toFixed(3)}`;
 }
 
 interface Task {
@@ -72,6 +69,84 @@ interface Task {
   startTime?: string;
   endTime?: string;
   isCompleted: boolean;
+  recur?: string;
+}
+
+type RecurType = 'daily' | 'weekly' | 'weekdays' | 'custom';
+type RecurEnd = 'exam' | '2weeks' | '1month' | '3months';
+
+// Cap how many task instances a single recurring add can generate, to avoid
+// flooding the backend with hundreds of API calls.
+const MAX_RECUR_OCCURRENCES = 60;
+
+const RECUR_TYPE_LABEL: Record<RecurType, string> = {
+  daily: 'Daily',
+  weekly: 'Weekly',
+  weekdays: 'Weekdays',
+  custom: 'Custom',
+};
+
+const RECUR_TYPE_SUMMARY: Record<RecurType, string> = {
+  daily: 'Repeats every day',
+  weekly: 'Repeats every week',
+  weekdays: 'Repeats on weekdays (Mon–Fri)',
+  custom: 'Repeats on selected days',
+};
+
+const RECUR_END_SUMMARY: Record<RecurEnd, string> = {
+  exam: 'until your exam date',
+  '2weeks': 'for 2 weeks',
+  '1month': 'for 1 month',
+  '3months': 'for 3 months',
+};
+
+// 0 = Monday … 6 = Sunday
+const DAY_PILLS: { label: string; index: number }[] = [
+  { label: 'M', index: 0 },
+  { label: 'T', index: 1 },
+  { label: 'W', index: 2 },
+  { label: 'T', index: 3 },
+  { label: 'F', index: 4 },
+  { label: 'S', index: 5 },
+  { label: 'S', index: 6 },
+];
+
+// Convert a JS getDay() (0 = Sunday) into our Monday-first index (0 = Monday).
+function mondayIndex(date: Date): number {
+  return (date.getDay() + 6) % 7;
+}
+
+function recurrenceEndDate(start: Date, end: RecurEnd): Date {
+  const d = new Date(start);
+  switch (end) {
+    case '2weeks': d.setDate(d.getDate() + 14); break;
+    case '1month': d.setMonth(d.getMonth() + 1); break;
+    case '3months': d.setMonth(d.getMonth() + 3); break;
+    case 'exam': default: d.setMonth(d.getMonth() + 3); break; // bounded horizon
+  }
+  return d;
+}
+
+// Expand a recurrence rule into the list of dates (YYYY-MM-DD) on which the
+// session should be created, starting from `start` and inclusive of the range.
+function getRecurrenceDates(start: Date, type: RecurType, days: number[], end: RecurEnd): string[] {
+  const result: string[] = [];
+  const endDate = recurrenceEndDate(start, end);
+  const startIdx = mondayIndex(start);
+  const cursor = new Date(start);
+  cursor.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+  while (cursor <= endDate && result.length < MAX_RECUR_OCCURRENCES) {
+    const idx = mondayIndex(cursor);
+    let include = false;
+    if (type === 'daily') include = true;
+    else if (type === 'weekdays') include = idx <= 4;
+    else if (type === 'weekly') include = idx === startIdx;
+    else if (type === 'custom') include = days.includes(idx);
+    if (include) result.push(toDateParam(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return result;
 }
 
 const SUBJECT_OPTIONS = [
@@ -130,17 +205,19 @@ export default function StudyPlannerPage() {
   const [studyType, setStudyType] = useState('');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
+  const [recurEnabled, setRecurEnabled] = useState(false);
+  const [recurType, setRecurType] = useState<RecurType>('daily');
+  const [recurDays, setRecurDays] = useState<number[]>([1, 3]); // Tue & Thu by default
+  const [recurEnd, setRecurEnd] = useState<RecurEnd>('exam');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [streakDays, setStreakDays] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
   const [weeklyStudied, setWeeklyStudied] = useState<number | null>(null);
   const [weeklyTarget, setWeeklyTarget] = useState<number | null>(null);
-  const [syllabusCoverage, setSyllabusCoverage] = useState<{ subject: string; percentage: number }[]>([]);
+  const [syllabusCoverage, setSyllabusCoverage] = useState<{ subject: string; percentage: number; done: number; total: number }[]>([]);
   const [weeklyGoals, setWeeklyGoals] = useState<{ title: string; completed: boolean }[]>([]);
-  const [showGoalsModal, setShowGoalsModal] = useState(false);
-  const [editGoals, setEditGoals] = useState<{ title: string; completed: boolean }[]>([]);
-  const [savingGoals, setSavingGoals] = useState(false);
+  const [newGoal, setNewGoal] = useState('');
   const [adding, setAdding] = useState(false);
   const [studiedDays, setStudiedDays] = useState<number[]>([]);
   const [showSaveToast, setShowSaveToast] = useState(false);
@@ -184,13 +261,44 @@ export default function StudyPlannerPage() {
         if (normalizedWeeklyTarget !== undefined) setWeeklyTarget(Number(normalizedWeeklyTarget));
       })
       .catch(() => {});
-    studyPlannerService.getSyllabusCoverage()
-      .then(res => {
-        if (res.data && Array.isArray(res.data)) {
-          setSyllabusCoverage(res.data);
-        } else if (res.data?.subjects && Array.isArray(res.data.subjects)) {
-          setSyllabusCoverage(res.data.subjects);
+    // Syllabus Coverage is derived from the SAME source as the Syllabus Tracker
+    // module (syllabusService.getSyllabus + the user's tracker states) so the two
+    // screens always show identical subject names and progress.
+    Promise.all([
+      syllabusService.getSyllabus(),
+      userService.getSyllabusTracker(),
+    ])
+      .then(([syllabusRes, trackerRes]) => {
+        const data = syllabusRes?.data;
+        if (!data) return;
+        let states = trackerRes?.data?.states as Record<string, { status?: string }> | undefined;
+        if ((!states || Object.keys(states).length === 0) && typeof window !== 'undefined') {
+          const saved = localStorage.getItem('syllabusTrackerState');
+          if (saved) { try { states = JSON.parse(saved); } catch {} }
         }
+        const stateMap = states ?? {};
+        const stages: ('prelims' | 'mains' | 'optional')[] = ['prelims', 'mains', 'optional'];
+        const rows: { subject: string; percentage: number; done: number; total: number }[] = [];
+        stages.forEach((stage) => {
+          const subjects = Array.isArray(data[stage]) ? data[stage] : [];
+          subjects.forEach((subject: any) => {
+            let total = 0;
+            let done = 0;
+            (subject.topics ?? []).forEach((topic: any, ti: number) => {
+              (topic.subs ?? []).forEach((_: any, si: number) => {
+                total += 1;
+                if (stateMap[`${subject.id}__${ti}__${si}`]?.status === 'done') done += 1;
+              });
+            });
+            rows.push({
+              subject: subject.short || subject.name,
+              percentage: total > 0 ? Math.round((done / total) * 100) : 0,
+              done,
+              total,
+            });
+          });
+        });
+        setSyllabusCoverage(rows);
       })
       .catch(() => {});
     studyPlannerService.getWeeklyGoals()
@@ -233,15 +341,38 @@ export default function StudyPlannerPage() {
     if (!taskTitle.trim()) return;
     setAdding(true);
     try {
-      const res = await studyPlannerService.createTask({
+      const todayParam = toDateParam(currentDate);
+      const recurLabel = recurEnabled ? RECUR_TYPE_LABEL[recurType] : undefined;
+
+      // When recurrence is on, expand the rule into one task per matching date.
+      // Otherwise just create the single task for the selected day.
+      const dates = recurEnabled
+        ? getRecurrenceDates(currentDate, recurType, recurDays, recurEnd)
+        : [todayParam];
+      // Always make sure the currently-viewed day gets a task.
+      if (!dates.includes(todayParam)) dates.unshift(todayParam);
+
+      const base = {
         title: taskTitle,
         subject: taskSubject || undefined,
         type: studyType || 'reading',
-        date: toDateParam(currentDate),
         startTime,
         endTime,
+      };
+
+      const results = await Promise.allSettled(
+        dates.map(date => studyPlannerService.createTask({ ...base, date }))
+      );
+
+      // Append only the task(s) created for the day currently in view.
+      dates.forEach((date, i) => {
+        if (date !== todayParam) return;
+        const r = results[i];
+        if (r.status === 'fulfilled' && r.value.data) {
+          setTasks(prev => [...prev, { ...r.value.data, recur: recurLabel }]);
+        }
       });
-      if (res.data) setTasks(prev => [...prev, res.data]);
+
       setTaskTitle('');
       setTaskSubject('');
       setStudyType('');
@@ -261,6 +392,26 @@ export default function StudyPlannerPage() {
       await studyPlannerService.deleteTask(id);
       setTasks(prev => prev.filter(t => t.id !== id));
     } catch {}
+  };
+
+  const persistGoals = (goals: { title: string; completed: boolean }[]) => {
+    setWeeklyGoals(goals);
+    studyPlannerService.saveWeeklyGoals(goals).catch(() => {});
+  };
+
+  const handleAddGoal = () => {
+    const title = newGoal.trim();
+    if (!title) return;
+    persistGoals([...weeklyGoals, { title, completed: false }]);
+    setNewGoal('');
+  };
+
+  const handleToggleGoal = (i: number) => {
+    persistGoals(weeklyGoals.map((g, idx) => (idx === i ? { ...g, completed: !g.completed } : g)));
+  };
+
+  const handleDeleteGoal = (i: number) => {
+    persistGoals(weeklyGoals.filter((_, idx) => idx !== i));
   };
 
   const handleGoogleCalendarToggle = async () => {
@@ -308,7 +459,7 @@ export default function StudyPlannerPage() {
 
   // Focus session timer
   useEffect(() => {
-    if (focusActive && !focusPaused && !focusDone) {
+    if (focusActive && !focusPaused && !focusDone && !justCompleted) {
       focusTimerRef.current = setInterval(() => {
         setFocusTaskSecs(s => s + 1);
         setFocusTotalSecs(s => s + 1);
@@ -317,7 +468,7 @@ export default function StudyPlannerPage() {
       if (focusTimerRef.current) clearInterval(focusTimerRef.current);
     }
     return () => { if (focusTimerRef.current) clearInterval(focusTimerRef.current); };
-  }, [focusActive, focusPaused, focusDone]);
+  }, [focusActive, focusPaused, focusDone, justCompleted]);
 
   useEffect(() => {
     return () => {
@@ -419,6 +570,7 @@ export default function StudyPlannerPage() {
   const calendarDays = [...emptySlots, ...daySlots];
 
   const studyTypes = [
+    { id: 'video', label: 'Video Lectures', icon: '/study-type-video.png' },
     { id: 'reading', label: 'Reading', icon: '/study-type-reading.png' },
     { id: 'practice', label: 'Practice', icon: '/practise.png' },
     { id: 'revision', label: 'Revision', icon: '/revision.png' },
@@ -427,6 +579,8 @@ export default function StudyPlannerPage() {
     { id: 'answer', label: 'Answer Writing', icon: '/answer writing.png' },
     { id: 'other', label: 'Other', icon: '/others.png' },
   ];
+
+  const studyTypeLabel = (id?: string) => studyTypes.find((t) => t.id === id)?.label ?? '';
 
   const quickAddSubjects = SUBJECT_OPTIONS;
 
@@ -461,6 +615,16 @@ export default function StudyPlannerPage() {
     '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30',
     '22:00', '22:30', '23:00',
   ];
+
+  // Add 30 minutes to a "HH:MM" time, capped at the last available option
+  const addThirtyMinutes = (time: string) => {
+    const [h, m] = time.split(':').map(Number);
+    const total = h * 60 + m + 30;
+    const hh = String(Math.floor(total / 60)).padStart(2, '0');
+    const mm = String(total % 60).padStart(2, '0');
+    const next = `${hh}:${mm}`;
+    return timeOptions.includes(next) ? next : timeOptions[timeOptions.length - 1];
+  };
 
   // Compute total study time from tasks that have start/end times
   const totalStudyMinutes = tasks.reduce((sum, task) => {
@@ -882,7 +1046,7 @@ export default function StudyPlannerPage() {
                           onChange={(e) => {
                             const newStart = e.target.value;
                             setStartTime(newStart);
-                            setEndTime(newStart);
+                            setEndTime(addThirtyMinutes(newStart));
                           }}
                           className="w-full font-arimo outline-none appearance-none cursor-pointer transition-colors"
                           style={{ height: '44px', borderRadius: '10px', border: '0.8px solid #E5E7EB', padding: '0 36px 0 14px', fontSize: '16px', color: '#0A0A0A', background: '#FFFFFF' }}
@@ -918,6 +1082,142 @@ export default function StudyPlannerPage() {
                     </div>
                   </div>
 
+                  {/* Repeat this session (recurrence) */}
+                  <div
+                    style={{
+                      borderRadius: '10px',
+                      border: '0.8px solid #E5E7EB',
+                      background: '#FFFFFF',
+                      padding: '14px',
+                      marginBottom: '18px',
+                    }}
+                  >
+                    {/* Toggle row */}
+                    <div
+                      className="flex items-center justify-between cursor-pointer select-none"
+                      onClick={() => setRecurEnabled(v => !v)}
+                    >
+                      <div className="flex items-center" style={{ gap: '8px' }}>
+                        <svg style={{ width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none" stroke="#4F78F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17 1l4 4-4 4" />
+                          <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                          <path d="M7 23l-4-4 4-4" />
+                          <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                        </svg>
+                        <span className="font-arimo font-bold" style={{ fontSize: '14px', lineHeight: '20px', color: '#101828' }}>
+                          Repeat this session
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={recurEnabled}
+                        aria-label="Repeat this session"
+                        onClick={(e) => { e.stopPropagation(); setRecurEnabled(v => !v); }}
+                        className={`w-9 h-5 rounded-full relative transition-colors flex-shrink-0 ${recurEnabled ? 'bg-[#4F78F6]' : 'bg-[#E5E7EB]'}`}
+                      >
+                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${recurEnabled ? 'left-[18px]' : 'left-0.5'}`} />
+                      </button>
+                    </div>
+
+                    {recurEnabled && (
+                      <div style={{ marginTop: '14px' }}>
+                        {/* Repeat type */}
+                        <div className="font-arimo font-bold uppercase" style={{ fontSize: '11px', letterSpacing: '0.8px', color: '#6B7280', marginBottom: '8px' }}>
+                          Repeat
+                        </div>
+                        <div className="flex flex-wrap" style={{ gap: '6px', marginBottom: '12px' }}>
+                          {(['daily', 'weekly', 'weekdays', 'custom'] as RecurType[]).map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => setRecurType(t)}
+                              className="font-arimo font-medium transition-colors"
+                              style={{
+                                padding: '5px 12px',
+                                borderRadius: '20px',
+                                fontSize: '12px',
+                                border: recurType === t ? '1px solid #4F78F6' : '0.8px solid #E5E7EB',
+                                background: recurType === t ? '#EEF2FF' : '#FFFFFF',
+                                color: recurType === t ? '#4F46E5' : '#6B7280',
+                              }}
+                            >
+                              {t === 'custom' ? 'Custom days' : RECUR_TYPE_LABEL[t]}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Day picker (custom only) */}
+                        {recurType === 'custom' && (
+                          <div style={{ marginBottom: '12px' }}>
+                            <div className="font-arimo font-bold uppercase" style={{ fontSize: '11px', letterSpacing: '0.8px', color: '#6B7280', marginBottom: '8px' }}>
+                              Pick days
+                            </div>
+                            <div className="flex" style={{ gap: '6px' }}>
+                              {DAY_PILLS.map((d) => {
+                                const sel = recurDays.includes(d.index);
+                                return (
+                                  <button
+                                    key={d.index}
+                                    type="button"
+                                    onClick={() => setRecurDays(prev => prev.includes(d.index) ? prev.filter(x => x !== d.index) : [...prev, d.index])}
+                                    className="flex items-center justify-center font-arimo font-medium transition-colors"
+                                    style={{
+                                      width: '30px',
+                                      height: '30px',
+                                      borderRadius: '50%',
+                                      fontSize: '12px',
+                                      border: sel ? '1px solid #4F78F6' : '0.8px solid #E5E7EB',
+                                      background: sel ? '#4F78F6' : '#FFFFFF',
+                                      color: sel ? '#FFFFFF' : '#6B7280',
+                                    }}
+                                  >
+                                    {d.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Ends */}
+                        <div className="font-arimo font-bold uppercase" style={{ fontSize: '11px', letterSpacing: '0.8px', color: '#6B7280', marginBottom: '8px' }}>
+                          Ends
+                        </div>
+                        <div className="relative" style={{ marginBottom: '12px' }}>
+                          <select
+                            value={recurEnd}
+                            onChange={(e) => setRecurEnd(e.target.value as RecurEnd)}
+                            className="w-full font-arimo outline-none appearance-none cursor-pointer"
+                            style={{ height: '40px', borderRadius: '10px', border: '0.8px solid #E5E7EB', padding: '0 36px 0 14px', fontSize: '14px', color: '#0A0A0A', background: '#FFFFFF' }}
+                          >
+                            <option value="exam">On exam date</option>
+                            <option value="2weeks">After 2 weeks</option>
+                            <option value="1month">After 1 month</option>
+                            <option value="3months">After 3 months</option>
+                          </select>
+                          <svg className="absolute pointer-events-none" style={{ right: '14px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none">
+                            <path d="M6 9l6 6 6-6" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+
+                        {/* Summary */}
+                        <div
+                          className="flex items-center font-arimo"
+                          style={{ gap: '6px', padding: '8px 10px', borderRadius: '8px', background: '#EEF2FF', fontSize: '12px', color: '#4F46E5' }}
+                        >
+                          <svg style={{ width: '14px', height: '14px', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 16v-4M12 8h.01" strokeLinecap="round" />
+                          </svg>
+                          <span>
+                            {RECUR_TYPE_SUMMARY[recurType]} {RECUR_END_SUMMARY[recurEnd]}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Add to Plan Button */}
                   <button
                     onClick={handleAddTask}
@@ -942,6 +1242,15 @@ export default function StudyPlannerPage() {
                   flexShrink: 0,
                 }}
               >
+                {/* Header — parallel to "Build Your Study Plan" */}
+                <div className="flex items-center" style={{ gap: '6px', marginBottom: '18px', height: '34px' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/study-tasks-icon.png" alt="Today's Plan" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                  <h2 className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
+                    Today&apos;s Plan
+                  </h2>
+                </div>
+
                 {/* Tasks List or Empty State */}
                 {tasks.length === 0 ? (
                 <div
@@ -976,7 +1285,23 @@ export default function StudyPlannerPage() {
                         </button>
                         <div className="flex-1 min-w-0">
                           <p className={`font-arimo font-bold text-sm ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-900'}`}>{task.title}</p>
-                          {task.startTime && <p className="font-arimo text-xs text-gray-500">{task.startTime} - {task.endTime || ''}</p>}
+                          {(task.startTime || task.type) && (
+                            <p className="font-arimo text-xs text-gray-500 flex items-center gap-1.5 flex-wrap">
+                              <span>
+                                {task.startTime && <>{task.startTime} - {task.endTime || ''}</>}
+                                {task.startTime && studyTypeLabel(task.type) && ' · '}
+                                {studyTypeLabel(task.type)}
+                              </span>
+                              {task.recur && (
+                                <span
+                                  className="font-arimo font-medium"
+                                  style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '10px', background: '#EEF2FF', color: '#4F78F6' }}
+                                >
+                                  ↻ {task.recur}
+                                </span>
+                              )}
+                            </p>
+                          )}
                         </div>
                         <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-500 flex-shrink-0">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -987,8 +1312,8 @@ export default function StudyPlannerPage() {
                 </div>
                 )}
 
-                {/* Bottom Stats */}
-                <div style={{ paddingTop: '16px' }}>
+                {/* Bottom Stats — aligned with the left card's "Add to Today's Plan" button */}
+                <div style={{ paddingTop: '16px', marginTop: 'auto', marginBottom: '44px' }}>
                   {/* Total Study Time */}
                   <div
                     className="flex items-center justify-center font-arimo"
@@ -1033,8 +1358,9 @@ export default function StudyPlannerPage() {
 
               {/* Card 0: Syllabus Coverage */}
               <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] flex flex-col"
               >
+                {/* Header (stays fixed — indentation preserved up to the pie-chart icon) */}
                 <div className="flex items-center gap-2 mb-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/image-removebg-preview%20(60)%201.png" alt="Syllabus" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
@@ -1043,18 +1369,55 @@ export default function StudyPlannerPage() {
                   </h3>
                 </div>
 
-                <div className="space-y-3">
-                  {syllabusCoverage.map((item) => (
-                    <div key={item.subject}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-arimo text-[#101828]" style={{ fontSize: '13px' }}>{item.subject}</span>
-                        <span className="font-arimo font-bold text-[#101828]" style={{ fontSize: '13px' }}>{item.percentage}%</span>
-                      </div>
-                      <div className="w-full bg-[#E5E7EB] rounded-full h-2">
-                        <div className="bg-[#17223E] h-2 rounded-full" style={{ width: `${item.percentage}%` }}></div>
-                      </div>
+                {/* Overall Progress */}
+                {(() => {
+                  const totalDone = syllabusCoverage.reduce((s, i) => s + i.done, 0);
+                  const totalAll = syllabusCoverage.reduce((s, i) => s + i.total, 0);
+                  const overall = totalAll > 0 ? Math.round((totalDone / totalAll) * 100) : 0;
+                  return (
+                    <div
+                      className="flex items-center justify-between rounded-[10px] px-3 mb-3 flex-shrink-0"
+                      style={{ height: '40px', background: '#F0FDF4', border: '1px solid #DCFCE7' }}
+                    >
+                      <span className="font-arimo text-[#15803D]" style={{ fontSize: '13px' }}>Overall Progress</span>
+                      <span className="font-arimo font-bold text-[#15803D]" style={{ fontSize: '16px' }}>{overall}%</span>
                     </div>
-                  ))}
+                  );
+                })()}
+
+                {/* Scrollable subject list */}
+                <div className="flex-1 overflow-y-auto pr-1" style={{ maxHeight: '240px' }}>
+                  <div className="space-y-3">
+                    {syllabusCoverage.length === 0 ? (
+                      <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '13px' }}>No syllabus data yet.</p>
+                    ) : syllabusCoverage.map((item) => {
+                      const color = coverageColor(item.percentage);
+                      return (
+                        <div key={item.subject}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-arimo text-[#101828]" style={{ fontSize: '13px' }}>{item.subject}</span>
+                            <span className="font-arimo font-bold" style={{ fontSize: '13px', color }}>{item.percentage}%</span>
+                          </div>
+                          <div className="w-full bg-[#E5E7EB] rounded-full h-2">
+                            <div className="h-2 rounded-full" style={{ width: `${item.percentage}%`, background: color }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Legend (stays fixed at the bottom) */}
+                <div className="flex items-center gap-4 flex-wrap mt-3 pt-3 flex-shrink-0" style={{ borderTop: '1px solid #F3F4F6' }}>
+                  <span className="flex items-center gap-1.5 font-arimo text-[#6B7280]" style={{ fontSize: '11px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16A34A', display: 'inline-block', flexShrink: 0 }} /> Good (&gt;30%)
+                  </span>
+                  <span className="flex items-center gap-1.5 font-arimo text-[#6B7280]" style={{ fontSize: '11px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#F59E0B', display: 'inline-block', flexShrink: 0 }} /> Review needed
+                  </span>
+                  <span className="flex items-center gap-1.5 font-arimo text-[#6B7280]" style={{ fontSize: '11px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#EF4444', display: 'inline-block', flexShrink: 0 }} /> Weak
+                  </span>
                 </div>
               </div>
 
@@ -1062,53 +1425,90 @@ export default function StudyPlannerPage() {
               <div
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    {/* Target Icon */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/image-removebg-preview%20(61)%201%20(1).png" alt="Goals" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
-                    <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '16px', lineHeight: '24px' }}>
-                      Weekly Goals
-                    </h3>
-                  </div>
+                {/* Inline add-goal row */}
+                <div className="flex items-center gap-2 mb-5">
+                  <input
+                    type="text"
+                    value={newGoal}
+                    onChange={(e) => setNewGoal(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddGoal(); }}
+                    placeholder="Add a weekly goal..."
+                    className="flex-1 min-w-0 font-arimo outline-none transition-colors"
+                    style={{ height: '40px', borderRadius: '10px', border: '0.8px solid #E5E7EB', padding: '0 14px', fontSize: '14px', color: '#101828', background: '#FFFFFF' }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = '#4F78F6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(79, 120, 246, 0.15)'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }}
+                  />
                   <button
-                    onClick={() => { setEditGoals(weeklyGoals.map(g => ({ ...g }))); setShowGoalsModal(true); }}
-                    className="flex items-center justify-center hover:bg-gray-100 rounded-lg transition-colors"
-                    style={{ width: '32px', height: '32px' }}
-                    title="Edit goals"
+                    onClick={handleAddGoal}
+                    disabled={!newGoal.trim()}
+                    className="flex items-center gap-1.5 font-arimo font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-40 flex-shrink-0"
+                    style={{ height: '40px', padding: '0 16px', borderRadius: '10px', background: '#17223E', fontSize: '13px' }}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none">
+                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                     </svg>
+                    Add
                   </button>
                 </div>
 
+                {/* Header */}
+                <div className="flex items-center gap-2 mb-4">
+                  {/* Target Icon */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/image-removebg-preview%20(61)%201%20(1).png" alt="Goals" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
+                  <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '16px', lineHeight: '24px' }}>
+                    Weekly Goals
+                  </h3>
+                </div>
+
+                {/* This week's progress */}
+                {weeklyGoals.length > 0 && (() => {
+                  const completed = weeklyGoals.filter(g => g.completed).length;
+                  const total = weeklyGoals.length;
+                  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+                  return (
+                    <div style={{ background: '#F5F3FF', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px' }}>
+                      <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
+                        <span className="font-arimo font-medium" style={{ fontSize: '13px', color: '#4F46E5' }}>This week&apos;s progress</span>
+                        <span className="font-arimo font-bold" style={{ fontSize: '13px', color: '#4F46E5' }}>{completed} / {total} done</span>
+                      </div>
+                      <div className="w-full rounded-full" style={{ height: '6px', background: '#E0E7FF' }}>
+                        <div className="rounded-full transition-all" style={{ height: '6px', width: `${pct}%`, background: '#4F46E5' }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Goals list */}
                 <div className="space-y-3">
                   {weeklyGoals.length > 0 ? (
                     weeklyGoals.map((goal, i) => (
-                      <div
-                        key={i}
-                        className="flex items-start gap-3 cursor-pointer select-none"
-                        onClick={() => {
-                          const updated = weeklyGoals.map((g, idx) =>
-                            idx === i ? { ...g, completed: !g.completed } : g
-                          );
-                          setWeeklyGoals(updated);
-                          studyPlannerService.saveWeeklyGoals(updated).catch(() => {});
-                        }}
-                      >
+                      <div key={i} className="flex items-start gap-3 group">
                         <div
-                          className={`w-5 h-5 rounded-full flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${goal.completed ? 'bg-[#4F78F6] border-2 border-[#4F78F6]' : 'border-2 border-[#D1D5DB] hover:border-[#4F78F6]'}`}
+                          className={`w-5 h-5 rounded-full flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors cursor-pointer ${goal.completed ? 'bg-[#4F78F6] border-2 border-[#4F78F6]' : 'border-2 border-[#D1D5DB] hover:border-[#4F78F6]'}`}
+                          onClick={() => handleToggleGoal(i)}
                         >
                           {goal.completed && <div className="w-2 h-2 rounded-full bg-white" />}
                         </div>
-                        <span className={`font-arimo ${goal.completed ? 'line-through text-gray-400' : 'text-[#101828]'}`} style={{ fontSize: '14px', lineHeight: '20px' }}>{goal.title}</span>
+                        <span
+                          className={`flex-1 font-arimo cursor-pointer select-none ${goal.completed ? 'line-through text-gray-400' : 'text-[#101828]'}`}
+                          style={{ fontSize: '14px', lineHeight: '20px' }}
+                          onClick={() => handleToggleGoal(i)}
+                        >
+                          {goal.title}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteGoal(i)}
+                          className="flex-shrink-0 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                          title="Delete goal"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                        </button>
                       </div>
                     ))
                   ) : (
                     <p className="font-arimo text-[#6B7280] text-center" style={{ fontSize: '13px', paddingTop: '8px' }}>
-                      No weekly goals set.
+                      No goals yet — add one above to get started.
                     </p>
                   )}
                 </div>
@@ -1344,22 +1744,48 @@ export default function StudyPlannerPage() {
                     Complete at least one task to see distribution
                   </div>
                 ) : (
-                  <svg viewBox="0 0 220 220" width="160" height="160">
+                  <svg viewBox="0 0 160 160" width="160" height="160">
                     {(() => {
-                      const cx = 110, cy = 110, r = 85;
+                      const cx = 80, cy = 80, r = 60, strokeWidth = 20;
+                      const gap = timeByType.length > 1 ? 0.06 : 0; // small gap between segments
                       let angle = -Math.PI / 2;
                       return timeByType.map((slice) => {
                         const sliceAngle = (slice.minutes / totalTypeMins) * 2 * Math.PI;
-                        const path = pieSlicePath(cx, cy, r, angle, angle + sliceAngle);
+                        // Single full-ring segment: draw a plain circle (arc can't close 360°).
+                        if (timeByType.length === 1) {
+                          return (
+                            <circle
+                              key={slice.id}
+                              cx={cx}
+                              cy={cy}
+                              r={r}
+                              fill="none"
+                              stroke={slice.color}
+                              strokeWidth={strokeWidth}
+                            />
+                          );
+                        }
+                        const start = angle + gap / 2;
+                        const end = angle + sliceAngle - gap / 2;
+                        const path = donutArcPath(cx, cy, r, start, end);
                         angle += sliceAngle;
-                        return <path key={slice.id} d={path} fill={slice.color} stroke="#fff" strokeWidth="2" />;
+                        return (
+                          <path
+                            key={slice.id}
+                            d={path}
+                            fill="none"
+                            stroke={slice.color}
+                            strokeWidth={strokeWidth}
+                            strokeLinecap="round"
+                          />
+                        );
                       });
                     })()}
-                    <text x="110" y="105" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="22" fontFamily="Arimo, sans-serif">
+                    <text x="80" y="74" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="26" fontFamily="Arimo, sans-serif">
                       {fmtHours(totalTypeMins)}
                     </text>
-                    <text x="110" y="128" textAnchor="middle" dominantBaseline="middle" fill="#6B7280" fontSize="11" fontFamily="Arimo, sans-serif">
-                      total
+                    <text x="80" y="96" textAnchor="middle" dominantBaseline="middle" fill="#9CA3AF" fontSize="12" fontFamily="Arimo, sans-serif">
+                      today
                     </text>
                   </svg>
                 )}
@@ -1654,103 +2080,6 @@ export default function StudyPlannerPage() {
       </div>
     )}
 
-    {/* ── Weekly Goals Edit Modal ── */}
-    {showGoalsModal && (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center"
-        style={{ background: 'rgba(0,0,0,0.45)' }}
-        onClick={(e) => { if (e.target === e.currentTarget) setShowGoalsModal(false); }}
-      >
-        <div className="bg-white rounded-[16px] shadow-xl w-full max-w-md mx-4" style={{ padding: '28px' }}>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/image-removebg-preview%20(61)%201%20(1).png" alt="Goals" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
-              <h2 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '18px' }}>Edit Weekly Goals</h2>
-            </div>
-            <button onClick={() => setShowGoalsModal(false)} className="hover:bg-gray-100 rounded-lg p-1 transition-colors">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          </div>
-
-          {/* Goals list */}
-          <div className="space-y-2 mb-4" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-            {editGoals.map((goal, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={goal.title}
-                  onChange={(e) => {
-                    const updated = [...editGoals];
-                    updated[i] = { ...updated[i], title: e.target.value };
-                    setEditGoals(updated);
-                  }}
-                  className="flex-1 font-arimo outline-none border border-[#E5E7EB] rounded-[8px] px-3 focus:border-[#4F78F6]"
-                  style={{ height: '40px', fontSize: '14px', color: '#101828' }}
-                  placeholder="Goal title"
-                />
-                <button
-                  onClick={() => setEditGoals(editGoals.filter((_, idx) => idx !== i))}
-                  className="flex-shrink-0 hover:bg-red-50 rounded-lg p-1.5 transition-colors"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* Add goal */}
-          <button
-            onClick={() => setEditGoals([...editGoals, { title: '', completed: false }])}
-            className="flex items-center gap-2 font-arimo text-[#4F78F6] hover:text-[#3b62d6] transition-colors mb-6"
-            style={{ fontSize: '14px', fontWeight: 500 }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            Add goal
-          </button>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowGoalsModal(false)}
-              className="flex-1 font-arimo font-bold rounded-[8px] border border-[#E5E7EB] hover:bg-gray-50 transition-colors"
-              style={{ height: '44px', fontSize: '14px', color: '#374151' }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={async () => {
-                const cleaned = editGoals.filter(g => g.title.trim());
-                setSavingGoals(true);
-                try {
-                  await studyPlannerService.saveWeeklyGoals(cleaned);
-                  setWeeklyGoals(cleaned);
-                  setShowGoalsModal(false);
-                } catch {
-                  // optimistic update even if API fails
-                  setWeeklyGoals(cleaned);
-                  setShowGoalsModal(false);
-                } finally {
-                  setSavingGoals(false);
-                }
-              }}
-              disabled={savingGoals}
-              className="flex-1 font-arimo font-bold bg-[#101828] text-white rounded-[8px] hover:opacity-90 transition-opacity disabled:opacity-60"
-              style={{ height: '44px', fontSize: '14px' }}
-            >
-              {savingGoals ? 'Saving...' : 'Save Goals'}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
     </>
   );
 }

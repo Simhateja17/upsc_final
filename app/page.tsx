@@ -147,6 +147,15 @@ export default function LandingPage() {
     return () => clearTimeout(t);
   }, [activeSlide]);
 
+  // Auto-advance the AI feature slides every 4s (matches the gold progress-line
+  // animation). Resets whenever activeSlide changes, so hover/click restarts the cycle.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setActiveSlide((prev) => (prev + 1) % AI_SLIDES.length);
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [activeSlide]);
+
   // Nav scroll tint
   useEffect(() => {
     const nav = document.getElementById('lp-main-nav');
@@ -372,7 +381,7 @@ export default function LandingPage() {
                   </div>
                   <div className="ai-feat-desc">{slide.desc}</div>
                   <div className="ai-feat-progress">
-                    <div className="ai-feat-progress-fill" />
+                    {activeSlide === i && <div className="ai-feat-progress-fill" key={activeSlide} />}
                   </div>
                 </div>
               ))}

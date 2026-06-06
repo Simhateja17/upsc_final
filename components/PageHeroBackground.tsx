@@ -6,6 +6,7 @@ interface PageHeroBackgroundProps {
   children?: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
+  showGrid?: boolean;
 }
 
 /**
@@ -18,6 +19,7 @@ export default function PageHeroBackground({
   children,
   className = '',
   style,
+  showGrid = true,
 }: PageHeroBackgroundProps) {
   return (
     <div
@@ -36,6 +38,20 @@ export default function PageHeroBackground({
             'radial-gradient(ellipse 520px 380px at -6% -8%, rgba(194,140,40,0.22) 0%, transparent 70%)',
         }}
       />
+
+      {showGrid && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.034) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.034) 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+            maskImage: 'linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 58%, rgba(0,0,0,0.36) 100%)',
+            WebkitMaskImage: 'linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 58%, rgba(0,0,0,0.36) 100%)',
+          }}
+        />
+      )}
 
       {/* Page content */}
       <div className="relative z-10 flex h-full flex-col">{children}</div>
