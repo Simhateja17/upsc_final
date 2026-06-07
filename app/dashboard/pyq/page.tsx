@@ -209,7 +209,9 @@ export default function PyqPage() {
         mode,
         years: yearMode === 'custom' && selectedYears.length > 0 ? selectedYears : undefined,
         subject: selectedSubject !== 'All Papers' ? selectedSubject : undefined,
-        subSubject: selectedSubtopic || undefined,
+        ...(mode === 'mains'
+          ? { topic: selectedSubtopic || undefined }
+          : { subSubject: selectedSubtopic || undefined }),
         topic: selectedTopics.length ? selectedTopics : undefined,
         page,
         limit: 20,
