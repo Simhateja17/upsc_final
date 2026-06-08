@@ -11,6 +11,7 @@ function userFromSession(session: Session): User {
   return {
     id: su.id,
     email: su.email ?? '',
+    phone: su.phone ?? undefined,
     firstName: su.user_metadata?.first_name,
     lastName: su.user_metadata?.last_name,
     avatarUrl: su.user_metadata?.avatar_url,
