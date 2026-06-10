@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService } from '@/lib/services';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface Question {
   id: number;
@@ -128,6 +129,8 @@ const SAMPLE_QUESTIONS: Question[] = [
 
 function MockTestAttemptInner() {
   const router = useRouter();
+  const isMobile = useIsMobile();
+  const [navOpen, setNavOpen] = useState(false);
   const searchParams = useSearchParams();
   const testId = searchParams.get('testId');
   const examMode = searchParams.get('examMode') || 'prelims';
@@ -151,9 +154,8 @@ function MockTestAttemptInner() {
   const [startTime] = useState(Date.now());
 
   /* ─── Mains State ─── */
-  const [mainsPhase, setMainsPhase] = useState<'questions' | 'evaluating'>('questions');
+  const [mainsSubmitting, setMainsSubmitting] = useState(false);
   const [mainsAnswers, setMainsAnswers] = useState<Record<number, MainsAnswer>>({});
-  const [evaluationProgress, setEvaluationProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
   /* ─── Mains writing timer ─── */
   const [isMainsTimerRunning, setIsMainsTimerRunning] = useState(false);
@@ -250,11 +252,6 @@ function MockTestAttemptInner() {
     return () => { if (mainsTimerRef.current) clearInterval(mainsTimerRef.current); };
   }, [isMainsTimerRunning, isMains]);
 
-  useEffect(() => {
-    if (!isMains && mainsPhase !== 'questions') {
-      setMainsPhase('questions');
-    }
-  }, [isMains, mainsPhase]);
 
   // Reset writing timer when navigating to a new question
   useEffect(() => {
@@ -346,43 +343,27 @@ function MockTestAttemptInner() {
     if (currentIdx > 0) setCurrentIdx(i => i - 1);
   };
 
-  const waitForEvaluation = async (attemptId: string, maxMs = 120_000) => {
-    const started = Date.now();
-    while (Date.now() - started < maxMs) {
-      try {
-        const res = await mockTestService.getMainsEvaluationStatus(testId!, attemptId);
-        if (res.data?.isComplete) return true;
-      } catch {
-        /* transient — keep polling */
-      }
-      await new Promise(r => setTimeout(r, 2500));
-    }
-    return false;
-  };
-
   const handleMainsSubmitAll = async () => {
     if (!testId) {
       setError('Cannot submit without a test session. Please regenerate the test.');
       return;
     }
 
-    // Require at least one form of answer per question
     const missing = questions.findIndex((_, i) => {
       const a = mainsAnswers[i];
       return !a || (!a.text.trim() && !a.file);
     });
     if (missing !== -1) {
       setCurrentIdx(missing);
-      setError(`Please provide an answer for Question ${missing + 1} (text or file).`);
+      setError(`Please provide an answer for Question ${missing + 1} before submitting.`);
       return;
     }
 
     setError(null);
-    setMainsPhase('evaluating');
-    setEvaluationProgress({ done: 0, total: totalQuestions });
+    setMainsSubmitting(true);
 
-    const attemptIds: string[] = [];
     try {
+      const attemptIds: string[] = [];
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
         const a = mainsAnswers[i];
@@ -390,14 +371,8 @@ function MockTestAttemptInner() {
           answerText: a?.text?.trim() || undefined,
           file: a?.file || undefined,
         });
-        const attemptId = resp.data?.attemptId;
-        if (attemptId) attemptIds.push(attemptId);
-        setEvaluationProgress(p => ({ ...p, done: Math.min(p.total, i + 1) }));
-      }
-
-      // Poll for each attempt to complete evaluation
-      for (const id of attemptIds) {
-        await waitForEvaluation(id);
+        const id = resp.data?.attemptId;
+        if (id) attemptIds.push(id);
       }
 
       if (typeof window !== 'undefined') {
@@ -407,12 +382,12 @@ function MockTestAttemptInner() {
         );
       }
       router.push(
-        `/dashboard/mock-tests/attempt/results?testId=${testId}&examMode=mains&title=${encodeURIComponent(title)}`
+        `/dashboard/mock-tests/attempt/evaluating?testId=${testId}&title=${encodeURIComponent(title)}`
       );
     } catch (err: any) {
       console.error('Mains submit failed:', err);
       setError(err.message || 'Failed to submit answers. Please try again.');
-      setMainsPhase('questions');
+      setMainsSubmitting(false);
     }
   };
 
@@ -673,134 +648,130 @@ function MockTestAttemptInner() {
       return acc + (a && (a.text.trim() || a.file) ? 1 : 0);
     }, 0);
 
-    /* ── Evaluating screen ── */
-    if (mainsPhase === 'evaluating') {
-      const { done, total } = evaluationProgress;
-      const pct = total > 0 ? Math.max(40, Math.round((done / total) * 100)) : 40;
-      const activeStep = Math.min(done, 4);
-      return (
-        <div style={{ minHeight: '100vh', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: 24 }}>
-          {renderSubmitEvaluationCard(pct, activeStep)}
-        </div>
-      );
-    }
-
-    /* ── Questions screen (mains) — Daily Mains Challenge style ── */
+    /* ── Questions screen (mains) — compact one-screen layout ── */
     return (
-      <div style={{ height: '100vh', overflow: 'hidden', background: '#F8F9FC', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
-        {/* Header */}
-        <div style={{ background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)', padding: '10px 24px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+      <div style={{ height: isMobile ? 'auto' : '100vh', minHeight: isMobile ? '100%' : undefined, overflow: isMobile ? 'visible' : 'hidden', background: '#F2F4F8', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
+
+        {/* ── Header ── */}
+        <div style={{ background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)', padding: '9px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 14 }}>✍️</span>
               <div>
-                <span style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 14 }}>{title}</span>
-                <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 1 }}>Mains Mock Test · {totalQuestions} Questions</div>
+                <span style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 13 }}>{title}</span>
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, marginTop: 1 }}>Mains Mock Test · {totalQuestions} Questions</div>
               </div>
             </div>
-            <span style={{ color: '#FDC700', fontWeight: 700, fontSize: 13 }}>
-              Question {currentIdx + 1} of {totalQuestions} · {answeredCount} answered
+            <span style={{ color: '#FDC700', fontWeight: 700, fontSize: 12 }}>
+              {answeredCount} of {totalQuestions} answered
             </span>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div style={{ flexShrink: 0 }}>
-          <div style={{ height: 4, background: '#E5E7EB' }}>
-            <div style={{ height: '100%', width: `${Math.round((answeredCount / Math.max(1, totalQuestions)) * 100)}%`, background: '#F59E0B', transition: 'width 0.3s ease' }} />
-          </div>
+        <div style={{ flexShrink: 0, height: 3, background: '#E5E7EB' }}>
+          <div style={{ height: '100%', width: `${Math.round((answeredCount / Math.max(1, totalQuestions)) * 100)}%`, background: '#F59E0B', transition: 'width 0.3s ease' }} />
         </div>
 
-        {/* Error banner */}
+        {/* Error */}
         {error && (
-          <div style={{ background: '#FEF2F2', borderBottom: '1px solid #FECACA', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <span style={{ fontSize: 14 }}>⚠️</span>
-            <span style={{ fontSize: 14, color: '#991B1B' }}>{error}</span>
+          <div style={{ background: '#FEF2F2', borderBottom: '1px solid #FECACA', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <span style={{ fontSize: 13 }}>⚠️</span>
+            <span style={{ fontSize: 13, color: '#991B1B' }}>{error}</span>
           </div>
         )}
 
-        {/* Body: left panel + writing timer sidebar */}
-        <div style={{ flex: 1, display: 'flex', gap: 16, padding: '14px 24px', overflow: 'hidden', boxSizing: 'border-box', minHeight: 0 }}>
+        {/* ── Body ── */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12, padding: isMobile ? '10px' : '10px 16px 10px', overflow: isMobile ? 'visible' : 'hidden', boxSizing: 'border-box', minHeight: 0 }}>
 
-          {/* ── Left panel ── */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0, overflow: 'hidden' }}>
+          {/* ── Left column ── */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0, overflow: isMobile ? 'visible' : 'hidden' }}>
 
             {/* Question card */}
-            <div style={{ background: '#FFFFFF', borderRadius: 16, padding: '18px 22px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', flexShrink: 0 }}>
-              {/* Tags row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                <div style={{ background: '#EFF6FF', borderRadius: 999, padding: '4px 12px' }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#155DFC' }}>GS Paper I</span>
+            <div style={{ background: '#FFFFFF', borderRadius: 14, padding: '14px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)', flexShrink: 0 }}>
+              {/* Chips row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexWrap: 'wrap' }}>
+                <div style={{ background: '#EFF6FF', borderRadius: 999, padding: '3px 10px' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#155DFC' }}>{(currentQ as any).paper || 'GS Paper I'}</span>
                 </div>
                 {currentQ.subject && (
-                  <div style={{ background: '#F3E8FF', borderRadius: 999, padding: '4px 12px' }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#6B21A8' }}>{currentQ.subject}</span>
+                  <div style={{ background: '#F3E8FF', borderRadius: 999, padding: '3px 10px' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#6B21A8' }}>{currentQ.subject}</span>
                   </div>
                 )}
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#EF4444' }}>LIVE NOW</span>
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#EF4444' }}>LIVE NOW</span>
                 </div>
               </div>
 
-              {/* Question badge + text */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-                <div style={{ background: '#0F172B', color: '#FFFFFF', fontWeight: 700, fontSize: 11, padding: '4px 10px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>
+              {/* Question badge + marks */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ background: '#0F172B', color: '#FFFFFF', fontWeight: 700, fontSize: 11, padding: '3px 10px', borderRadius: 6 }}>
                   QUESTION {currentIdx + 1} OF {totalQuestions}
                 </div>
+                <span style={{ fontSize: 12, color: '#6B7280' }}>{marksPerQ} marks · {minPerQ} min</span>
               </div>
-              <p style={{ fontSize: 15, fontWeight: 500, color: '#17223E', lineHeight: '25px', margin: '0 0 10px', whiteSpace: 'pre-line' }}>{currentQ.text}</p>
 
-              {/* Info row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: '#6B7280' }}>
+              {/* Question text — scrolls internally if too long */}
+              <div style={{ fontSize: 14, fontWeight: 500, color: '#17223E', lineHeight: '22px', maxHeight: 110, overflowY: 'auto', paddingRight: 4 }}>
+                {currentQ.text}
+              </div>
+
+              {/* Meta */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 12, color: '#9CA3AF', marginTop: 8 }}>
                 <span>⏱ {minPerQ} min</span>
                 <span>📝 ~250 words</span>
                 <span>⭐ {marksPerQ} marks</span>
               </div>
             </div>
 
-            {/* Upload + answer card */}
-            <div style={{ background: '#FFFFFF', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px 22px' }}>
+            {/* Answer card — flex:1, holds upload + submit */}
+            <div style={{ background: '#FFFFFF', borderRadius: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.07)', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '12px 16px' }}>
 
-              {/* Drag-drop upload (primary) */}
+              {/* Upload zone (primary) or file confirmation */}
               {!currentAnswer.file ? (
                 <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => fileInputRef.current?.click()}
-                  style={{ border: '1px dashed #17223E', borderRadius: 14, background: '#F9FAFB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, cursor: 'pointer', gap: 6, minHeight: 160 }}
+                  onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+                  style={{ border: '1.5px dashed #CBD5E1', borderRadius: 12, background: '#F9FAFB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, cursor: 'pointer', gap: 5, minHeight: 120 }}
                 >
                   <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" style={{ display: 'none' }} onChange={handleMainsFileSelect} />
-                  <div style={{ width: 44, height: 44, borderRadius: 10, background: '#E8EDF5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 12l4-4m0 0l4 4m-4-4v8" stroke="#17223E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: '#17223E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 12l4-4m0 0l4 4m-4-4v8" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: '#101828' }}>Drop your answer script here</div>
-                  <div style={{ fontSize: 13, color: '#6B7280' }}>Upload handwritten answers for AI evaluation</div>
-                  <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: '#101828' }}>Drop your answer script here</div>
+                  <div style={{ fontSize: 12, color: '#6B7280' }}>Upload handwritten answers for AI evaluation</div>
+                  <div style={{ display: 'flex', gap: 5, marginTop: 2 }}>
                     {['JPG', 'PNG', 'PDF', 'DOCX'].map(fmt => (
-                      <span key={fmt} style={{ background: '#E5E7EB', borderRadius: 4, padding: '2px 8px', fontSize: 12, color: '#374151' }}>{fmt}</span>
+                      <span key={fmt} style={{ background: '#E5E7EB', borderRadius: 4, padding: '2px 7px', fontSize: 11, color: '#374151' }}>{fmt}</span>
                     ))}
-                    <span style={{ background: '#E5E7EB', borderRadius: 4, padding: '2px 8px', fontSize: 12, color: '#374151' }}>Max 10MB</span>
+                    <span style={{ background: '#E5E7EB', borderRadius: 4, padding: '2px 7px', fontSize: 11, color: '#374151' }}>Max 10MB</span>
                   </div>
-                  <button style={{ marginTop: 8, background: '#FFFFFF', border: '1px solid #D1D5DB', borderRadius: 8, padding: '8px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', color: '#111827' }}>
+                  <button type="button" style={{ marginTop: 6, background: '#FFFFFF', border: '1px solid #D1D5DB', borderRadius: 8, padding: '6px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer', color: '#111827' }}>
                     Browse Files
                   </button>
                 </div>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 12, padding: '12px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 12, padding: '10px 14px', flex: 1, maxHeight: 72 }}>
                   <div>
                     <div style={{ fontSize: 14, color: '#15803D', fontWeight: 700 }}>📎 {currentAnswer.file.name}</div>
-                    <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{(currentAnswer.file.size / 1024 / 1024).toFixed(2)} MB</div>
+                    <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{(currentAnswer.file.size / 1024 / 1024).toFixed(2)} MB</div>
                   </div>
-                  <button onClick={handleMainsRemoveFile} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#15803D', fontSize: 18, fontWeight: 700 }}>✕</button>
+                  <button type="button" onClick={handleMainsRemoveFile} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#15803D', fontSize: 18, fontWeight: 700 }}>✕</button>
                 </div>
               )}
 
-              {/* OR Type your answer toggle */}
-              <div style={{ margin: '10px 0 0', textAlign: 'center' }}>
+              {/* OR Type your answer */}
+              <div style={{ textAlign: 'center', marginTop: 7 }}>
                 <button
+                  type="button"
                   onClick={() => setShowMainsTypeAnswer(s => !s)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#374151', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#6B7280', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                 >
                   OR Type your answer {showMainsTypeAnswer ? '▲' : '▼'}
                 </button>
@@ -808,81 +779,106 @@ function MockTestAttemptInner() {
 
               {/* Textarea (collapsible) */}
               {showMainsTypeAnswer && (
-                <div style={{ marginTop: 8 }}>
+                <div style={{ marginTop: 6 }}>
                   <textarea
                     value={currentAnswer.text}
                     onChange={(e) => handleMainsTextChange(e.target.value)}
                     placeholder="Write your answer here..."
-                    rows={4}
-                    style={{ width: '100%', padding: '12px 14px', border: '1px solid #D1D5DB', borderRadius: 10, fontSize: 14, lineHeight: '22px', color: '#0F172B', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', background: '#FAFAFA' }}
+                    rows={3}
+                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #D1D5DB', borderRadius: 10, fontSize: 13, lineHeight: '19px', color: '#0F172B', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', background: '#FAFAFA' }}
                   />
-                  <div style={{ fontSize: 12, color: '#6B7280', marginTop: 3 }}>
-                    {currentAnswer.text.trim() ? `${currentAnswer.text.trim().split(/\s+/).filter(Boolean).length} words` : 'No text yet'}
+                  <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
+                    {currentAnswer.text.trim() ? `${currentAnswer.text.trim().split(/\s+/).filter(Boolean).length} words` : '0 words'}
                   </div>
                 </div>
               )}
 
-              {/* Navigation + submit row */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, flexShrink: 0, gap: 10 }}>
-                <button
-                  onClick={handleMainsPrev}
-                  disabled={currentIdx === 0}
-                  style={{ background: 'none', border: '1.5px solid #CBD5E1', borderRadius: 10, padding: '9px 16px', color: currentIdx === 0 ? '#CBD5E1' : '#334155', cursor: currentIdx === 0 ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13 }}
-                >
-                  ← Prev
-                </button>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                  {isLast ? (
-                    <button
-                      onClick={handleMainsSubmitAll}
-                      style={{ background: '#17223E', color: '#FFFFFF', border: 'none', borderRadius: 12, padding: '12px 28px', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                    >
-                      🧠 Submit &amp; Evaluate
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleMainsNext}
-                      style={{ background: '#17223E', color: '#FFFFFF', border: 'none', borderRadius: 12, padding: '12px 28px', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                    >
-                      Next Question →
-                    </button>
-                  )}
-                  <div style={{ fontSize: 12, color: '#6B7280' }}>✦ Get detailed feedback in 60 seconds</div>
-                </div>
+              {/* ── Bottom actions ── */}
+              <div style={{ marginTop: 8, flexShrink: 0 }}>
+                {/* Prev link */}
+                {currentIdx > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleMainsPrev}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#9CA3AF', fontWeight: 600, marginBottom: 6, display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                  >
+                    ← Previous Question
+                  </button>
+                )}
+                {/* Primary CTA */}
+                {isLast ? (
+                  <button
+                    type="button"
+                    disabled={mainsSubmitting}
+                    onClick={handleMainsSubmitAll}
+                    style={{ width: '100%', height: 44, background: '#17223E', color: '#FFFFFF', border: 'none', borderRadius: 12, fontWeight: 800, fontSize: 14, cursor: mainsSubmitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: mainsSubmitting ? 0.75 : 1 }}
+                  >
+                    {mainsSubmitting ? (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="animate-spin" style={{ flexShrink: 0 }}>
+                          <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5" />
+                          <path d="M12 2a10 10 0 0 1 10 10" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+                        </svg>
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                          <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Submit Answer for Evaluation
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleMainsNext}
+                    style={{ width: '100%', height: 44, background: '#17223E', color: '#FFFFFF', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  >
+                    Save &amp; Next Question →
+                  </button>
+                )}
+                <div style={{ textAlign: 'center', fontSize: 11, color: '#9CA3AF', marginTop: 5 }}>✦ Get detailed feedback in 60 seconds</div>
               </div>
             </div>
           </div>
 
-          {/* ── Right sidebar — Writing Timer ── */}
-          <div style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ background: '#FFFFFF', borderRadius: 16, padding: '22px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ fontWeight: 400, fontSize: 12, letterSpacing: '0.06em', color: '#6A7282', textTransform: 'uppercase', marginBottom: 18, textAlign: 'center' }}>
+          {/* ── Right: Writing Timer ── */}
+          <div style={{ width: isMobile ? '100%' : 200, flexShrink: 0, display: 'flex', flexDirection: 'column', order: isMobile ? -1 : 0 }}>
+            <div style={{ background: '#FFFFFF', borderRadius: 14, padding: '18px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.07em', color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 14, textAlign: 'center' }}>
                 WRITING TIMER
               </div>
               {/* Circular timer */}
-              <div style={{ width: 120, height: 120, borderRadius: '50%', border: `4px solid ${isMainsTimerRunning ? '#17223E' : '#CBD5E1'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, transition: 'border-color 0.3s' }}>
-                <span style={{ fontWeight: 700, fontSize: 22, color: '#101828' }}>
+              <div style={{
+                width: 108, height: 108, borderRadius: '50%',
+                border: `4px solid ${isMainsTimerRunning ? '#17223E' : '#E5E7EB'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: 10, transition: 'border-color 0.3s',
+                background: isMainsTimerRunning ? 'rgba(15,26,48,0.04)' : 'transparent',
+              }}>
+                <span style={{ fontWeight: 700, fontSize: 22, color: '#101828', fontFamily: 'Inter, sans-serif' }}>
                   {formatTime(mainsWritingSeconds)}
                 </span>
               </div>
-              {/* Status */}
-              <div style={{ fontWeight: 400, fontSize: 11, letterSpacing: '0.06em', color: isMainsTimerRunning ? '#17223E' : '#9CA3AF', textTransform: 'uppercase', marginBottom: 18, textAlign: 'center' }}>
+              {/* Status label */}
+              <div style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.07em', color: isMainsTimerRunning ? '#17223E' : '#9CA3AF', textTransform: 'uppercase', marginBottom: 14, textAlign: 'center' }}>
                 {isMainsTimerRunning ? 'IN PROGRESS' : mainsWritingSeconds === 0 ? 'COMPLETE' : 'PAUSED'}
               </div>
               {/* Start/Pause */}
               <button
+                type="button"
                 onClick={() => setIsMainsTimerRunning(r => !r)}
-                style={{ width: '100%', height: 46, background: isMainsTimerRunning ? '#dc2626' : '#00BC7D', border: 'none', borderRadius: 10, color: '#FFFFFF', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                style={{ width: '100%', height: 40, background: isMainsTimerRunning ? '#DC2626' : '#00BC7D', border: 'none', borderRadius: 10, color: '#FFFFFF', fontWeight: 700, fontSize: 13, cursor: 'pointer', marginBottom: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
               >
-                {isMainsTimerRunning ? '⏸ Pause' : '▶ Start Timer'}
+                {isMainsTimerRunning ? '⏸ Pause' : '▶ Start'}
               </button>
               {/* Reset */}
               <button
-                onClick={() => {
-                  setIsMainsTimerRunning(false);
-                  setMainsWritingSeconds(minPerQ * 60);
-                }}
-                style={{ width: '100%', height: 46, background: '#FFFFFF', border: '1px solid #D1D5DB', borderRadius: 10, color: '#374151', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                type="button"
+                onClick={() => { setIsMainsTimerRunning(false); setMainsWritingSeconds(minPerQ * 60); }}
+                style={{ width: '100%', height: 40, background: '#FFFFFF', border: '1.5px solid #E5E7EB', borderRadius: 10, color: '#374151', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
               >
                 ↺ Reset
               </button>
@@ -895,8 +891,70 @@ function MockTestAttemptInner() {
   }
   /* ─────────────────────────── END MAINS UI ─────────────────────────── */
 
+  // Reusable navigator card (inline aside on desktop, bottom-sheet drawer on mobile)
+  const navigatorCard = (
+    <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 14, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>
+        Question Navigator
+      </div>
+
+      {/* Color-coded question buttons */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, overflow: 'auto', flex: 1, alignContent: 'flex-start' }}>
+        {questions.map((_, idx) => {
+          const status = questionStatuses[idx] || 'unattempted';
+          const isCurrent = idx === currentIdx;
+          const isAnswered = status === 'answered';
+          const isMarked = status === 'marked';
+
+          let bg = '#F3F4F6';
+          let color = '#6B7280';
+          if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
+          if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
+          if (isCurrent) { bg = '#0F172B'; color = '#FFFFFF'; }
+
+          return (
+            <button
+              key={idx}
+              onClick={() => { goToQuestion(idx); setNavOpen(false); }}
+              style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #E5E7EB', background: bg, color, fontWeight: 700, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}
+            >
+              {idx + 1}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 8, marginBottom: 8 }}>
+        {[
+          { label: 'Answered', color: '#00C950', value: answered },
+          { label: 'Unanswered', color: '#D1D5DB', value: Math.max(0, totalQuestions - answered - marked) },
+          { label: 'Marked for review', color: '#F59E0B', value: marked },
+        ].map((row) => (
+          <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <div style={{ width: 14, height: 14, borderRadius: 3, background: row.label === 'Answered' ? '#DCFCE7' : row.label === 'Marked for review' ? '#FEF3C7' : '#F3F4F6', border: `1px solid ${row.color}` }} />
+              <span style={{ fontSize: 11, color: '#374151' }}>{row.label}</span>
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>{row.value}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 10 }}>
+        <button
+          onClick={handleSubmit}
+          disabled={submitting}
+          style={{ width: '100%', height: 38, background: '#0F172B', border: 'none', borderRadius: 10, color: '#FFFFFF', fontWeight: 700, fontSize: 13, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
+        >
+          ✓ Submit Test
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <div style={{ height: '100%', minHeight: 0, background: '#E8EDF5', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif', overflow: 'hidden' }}>
+    <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : 0, background: '#E8EDF5', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif', overflow: isMobile ? 'visible' : 'hidden' }}>
 
       {/* ── Prelims submitting overlay ── */}
       {submitting && !isMains && (
@@ -905,7 +963,7 @@ function MockTestAttemptInner() {
         </div>
       )}
 
-      {/* ── Sub-header (title only — timer moves into question card) ── */}
+      {/* ── Sub-header: title left + timer right ── */}
       <div
         style={{
           background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
@@ -914,14 +972,30 @@ function MockTestAttemptInner() {
           flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span aria-hidden="true" style={{ fontSize: 14, lineHeight: '16px' }}>🏛️</span>
-          <div>
-            <span style={{ fontWeight: 700, fontSize: 13, lineHeight: '18px', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {title}
-            </span>
-            <div style={{ fontWeight: 500, fontSize: 10, lineHeight: '14px', color: 'rgba(255,255,255,0.55)', marginTop: 1 }}>
-              Today Prelims Mock Test · {totalQuestions} Questions · +0.67 per wrong
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          {/* Title */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <span aria-hidden="true" style={{ fontSize: 14, lineHeight: '16px', flexShrink: 0 }}>🏛️</span>
+            <div style={{ minWidth: 0 }}>
+              <span style={{ fontWeight: 700, fontSize: 13, lineHeight: '18px', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                {title}
+              </span>
+              <div style={{ fontWeight: 500, fontSize: 10, lineHeight: '14px', color: 'rgba(255,255,255,0.55)', marginTop: 1 }}>
+                Today Prelims Mock Test · {totalQuestions} Questions · +0.67 per wrong
+              </div>
+            </div>
+          </div>
+          {/* Timer — white text on dark bg */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/timer-icon.png" alt="Timer" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 20, lineHeight: '24px', color: timeLeft < 60 ? '#FB2C36' : '#FFFFFF' }}>
+                {formatTime(timeLeft)}
+              </span>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
+                TIME LEFT
+              </span>
             </div>
           </div>
         </div>
@@ -930,7 +1004,7 @@ function MockTestAttemptInner() {
       {/* ── Progress row ── */}
       <div
         style={{
-          background: 'rgba(255,255,255,0.85)',
+          background: '#FFFFFF',
           borderBottom: '0.8px solid #D1D9E6',
           display: 'flex',
           justifyContent: 'center',
@@ -963,6 +1037,15 @@ function MockTestAttemptInner() {
           <div style={{ fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#364153', whiteSpace: 'nowrap' }}>
             Q {currentIdx + 1} / {totalQuestions} · {answered} Answered
           </div>
+          {isMobile && (
+            <button
+              onClick={() => setNavOpen(true)}
+              style={{ marginLeft: 12, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, background: '#0F172B', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '6px 12px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3.5h12M2 8h12M2 12.5h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+              Questions
+            </button>
+          )}
         </div>
       </div>
 
@@ -985,27 +1068,27 @@ function MockTestAttemptInner() {
       <div
         style={{
           flex: 1,
-          padding: '6px 6px 8px',
+          padding: isMobile ? '8px' : '6px 6px 8px',
           boxSizing: 'border-box',
           display: 'flex',
           justifyContent: 'center',
-          overflow: 'hidden',
+          overflow: isMobile ? 'visible' : 'hidden',
           minHeight: 0,
         }}
       >
         <div
           style={{
             width: '100%',
-            maxWidth: 'calc(100vw - 96px)',
+            maxWidth: isMobile ? '100%' : 'calc(100vw - 96px)',
             display: 'flex',
             gap: 12,
             boxSizing: 'border-box',
             alignItems: 'flex-start',
-            height: '100%',
+            height: isMobile ? 'auto' : '100%',
           }}
         >
         {/* ─ Question Panel ── */}
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, height: '100%', overflow: 'hidden' }}>
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, height: isMobile ? 'auto' : '100%', overflow: isMobile ? 'visible' : 'hidden', width: '100%' }}>
 
           {/* Question Card */}
           <div
@@ -1013,38 +1096,25 @@ function MockTestAttemptInner() {
               background: '#FFFFFF',
               borderRadius: 10,
               border: 'none',
-              padding: '16px 24px',
+              padding: isMobile ? '14px 16px' : '16px 24px',
               boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)',
-              overflow: 'hidden',
+              overflow: isMobile ? 'visible' : 'hidden',
               display: 'flex',
               flexDirection: 'column',
-              flex: 1,
+              flex: isMobile ? 'none' : 1,
             }}
           >
-            {/* Daily MCQ style header: subject pill + difficulty pill + timer */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10, flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {/* Subject pill */}
-                <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[34px]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/tag-one.png" alt="Tag" className="w-4 h-4" />
-                  <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px]">{currentQ.subject || 'General'}</span>
-                </div>
-                {/* Difficulty pill */}
-                <div className="flex items-center gap-2 bg-[#FFF7ED] px-4 rounded-full h-[34px]">
-                  <span className="font-arimo font-bold text-[#C2410C] text-[14px] leading-[16px]">{currentQ.difficulty || 'Medium'}</span>
-                </div>
-              </div>
-              {/* Timer — Daily MCQ style */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            {/* Subject pill + difficulty pill */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexShrink: 0 }}>
+              {/* Subject pill */}
+              <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[34px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/timer-icon.png" alt="Timer" className="w-9 h-9" />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                  <span className="font-arimo font-bold text-xl leading-none" style={{ color: timeLeft < 60 ? '#E7000B' : '#101828' }}>
-                    {formatTime(timeLeft)}
-                  </span>
-                  <span className="text-[10px] text-gray-500 uppercase tracking-wide">TIME LEFT</span>
-                </div>
+                <img src="/tag-one.png" alt="Tag" className="w-4 h-4" />
+                <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px]">{currentQ.subject || 'General'}</span>
+              </div>
+              {/* Difficulty pill */}
+              <div className="flex items-center gap-2 bg-[#FFF7ED] px-4 rounded-full h-[34px]">
+                <span className="font-arimo font-bold text-[#C2410C] text-[14px] leading-[16px]">{currentQ.difficulty || 'Medium'}</span>
               </div>
             </div>
 
@@ -1069,7 +1139,7 @@ function MockTestAttemptInner() {
             </div>
 
             {/* Options */}
-            <div className="space-y-2" style={{ overflow: 'hidden', flex: 1, minHeight: 0 }}>
+            <div className="space-y-2" style={{ overflow: isMobile ? 'visible' : 'hidden', flex: isMobile ? 'none' : 1, minHeight: 0 }}>
               {currentQ.options.map(opt => {
                 const isSelected = selectedOptions[currentIdx] === opt.label;
 
@@ -1148,6 +1218,10 @@ function MockTestAttemptInner() {
             padding: '8px 12px',
             border: '1px solid #E5E7EB',
             flexShrink: 0,
+            position: isMobile ? 'sticky' : 'static',
+            bottom: isMobile ? 8 : undefined,
+            zIndex: isMobile ? 5 : undefined,
+            boxShadow: isMobile ? '0 -2px 8px rgba(0,0,0,0.06)' : undefined,
           }}>
             {/* Left actions */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1245,91 +1319,32 @@ function MockTestAttemptInner() {
           </div>
         </main>
 
-        {/* ── Right panel (Navigator card) ── */}
-        <aside style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 14, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>
-              Question Navigator
-            </div>
-
-            {/* Color-coded question buttons */}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, overflow: 'auto', flex: 1, alignContent: 'flex-start' }}>
-              {questions.map((_, idx) => {
-                const status = questionStatuses[idx] || 'unattempted';
-                const isCurrent = idx === currentIdx;
-                const isAnswered = status === 'answered';
-                const isMarked = status === 'marked';
-
-                let bg = '#F3F4F6';
-                let color = '#6B7280';
-                if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
-                if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
-                if (isCurrent) { bg = '#0F172B'; color = '#FFFFFF'; }
-
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => goToQuestion(idx)}
-                    style={{
-                      width: 30,
-                      height: 30,
-                      borderRadius: 8,
-                      border: '1px solid #E5E7EB',
-                      background: bg,
-                      color,
-                      fontWeight: 700,
-                      fontSize: 12,
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {idx + 1}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Legend */}
-            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 8, marginBottom: 8 }}>
-              {[
-                { label: 'Answered', color: '#00C950', value: answered },
-                { label: 'Unanswered', color: '#D1D5DB', value: Math.max(0, totalQuestions - answered - marked) },
-                { label: 'Marked for review', color: '#F59E0B', value: marked },
-              ].map((row) => (
-                <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <div style={{ width: 14, height: 14, borderRadius: 3, background: row.label === 'Answered' ? '#DCFCE7' : row.label === 'Marked for review' ? '#FEF3C7' : '#F3F4F6', border: `1px solid ${row.color}` }} />
-                    <span style={{ fontSize: 11, color: '#374151' }}>{row.label}</span>
-                  </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>{row.value}</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 10 }}>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                style={{
-                  width: '100%',
-                  height: 38,
-                  background: '#0F172B',
-                  border: 'none',
-                  borderRadius: 10,
-                  color: '#FFFFFF',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  cursor: submitting ? 'not-allowed' : 'pointer',
-                  opacity: submitting ? 0.7 : 1,
-                }}
-              >
-                ✓ Submit Test
-              </button>
-            </div>
-          </div>
-        </aside>
+        {/* ── Right panel (Navigator card) — desktop only ── */}
+        {!isMobile && (
+          <aside style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {navigatorCard}
+          </aside>
+        )}
         </div>
       </div>
+
+      {/* ── Mobile navigator bottom-sheet drawer ── */}
+      {isMobile && navOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => setNavOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxHeight: '80vh', background: '#FFFFFF', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 14, boxShadow: '0 -8px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+              <div style={{ width: 40, height: 4, borderRadius: 999, background: '#D1D5DB' }} />
+            </div>
+            {navigatorCard}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

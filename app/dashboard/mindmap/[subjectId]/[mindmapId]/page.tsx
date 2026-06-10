@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { mindmapService, userService, pricingService } from '@/lib/services';
 import { MindmapRenderer, MindmapListView, NodeDetailPanel, findTreeNodeById } from '@/lib/mindmap';
 import type { MindmapTree, TreeNode, MindmapNodeData } from '@/lib/mindmap';
@@ -92,9 +92,8 @@ function parseData(raw: any): NewFormatData {
   return legacyToTree(raw);
 }
 
-type PageParams = { params: { subjectId: string; mindmapId: string } };
-
-export default function MindmapViewPage({ params }: PageParams) {
+export default function MindmapViewPage() {
+  const params = useParams<{ subjectId: string; mindmapId: string }>();
   const { subjectId, mindmapId } = params;
   const router = useRouter();
 

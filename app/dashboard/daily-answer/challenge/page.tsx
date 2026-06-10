@@ -262,7 +262,7 @@ export default function DailyMainsChallengeContextPage() {
   if (!challengeStarted) {
     return (
       <div className="flex flex-col bg-[#F3F4F6] font-arimo" style={{ minHeight: '100%', overflowY: 'auto' }}>
-        <div className="flex-1 flex flex-col items-center px-6 py-8 w-full max-w-[1200px] mx-auto">
+        <div className="flex-1 flex flex-col items-center px-4 sm:px-6 py-8 w-full max-w-[1200px] mx-auto">
 
           {/* Badge */}
           <div
@@ -291,12 +291,12 @@ export default function DailyMainsChallengeContextPage() {
 
           {/* Question Card */}
           <div
-            className="relative rounded-[24px] w-full"
-            style={{ maxWidth: '1091px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '24px 32px', background: '#FFFFFF' }}
+            className="relative rounded-[24px] w-full p-4 sm:p-6 lg:px-8"
+            style={{ maxWidth: '1091px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', background: '#FFFFFF' }}
           >
             {/* Tags row */}
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+              <div className="flex flex-wrap gap-3">
                 <div className="flex items-center px-3 py-1.5 rounded-[10px]" style={{ background: '#FAF5FF', boxShadow: '0px 1px 2px -1px #0000001A' }}>
                   <span style={{ fontSize: '14px', color: '#8200DB' }}>{data.paper}</span>
                 </div>
@@ -319,7 +319,7 @@ export default function DailyMainsChallengeContextPage() {
 
             {/* Meta + Actions */}
             <div className="flex flex-col gap-5">
-              <div className="flex items-center gap-8 text-[#4A5565]" style={{ fontSize: '14px' }}>
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-[#4A5565]" style={{ fontSize: '14px' }}>
                 <div className="flex items-center gap-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/Icon%20(8).png" alt="" style={{ width: '20px', height: '20px' }} />
@@ -337,25 +337,25 @@ export default function DailyMainsChallengeContextPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex gap-4">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:w-auto">
                   <button
                     onClick={handleBeginChallenge}
-                    className="bg-[#17223E] text-white flex items-center justify-center gap-2 transition-transform hover:scale-105"
-                    style={{ width: '195px', height: '52px', borderRadius: '14px', fontSize: '17px', fontWeight: 700, boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)' }}
+                    className="bg-[#17223E] text-white flex w-full items-center justify-center gap-2 transition-transform hover:scale-105"
+                    style={{ minHeight: '52px', borderRadius: '14px', fontSize: '17px', fontWeight: 700, boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)', padding: '10px 18px' }}
                   >
                     🚀 Begin Challenge
                   </button>
                   <button
-                    className="bg-[#17223E] text-white flex items-center justify-center gap-2 transition-transform hover:scale-105"
-                    style={{ width: '260px', height: '52px', borderRadius: '14px', fontSize: '16px', fontWeight: 700, boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)' }}
+                    className="bg-[#17223E] text-white flex w-full items-center justify-center gap-2 transition-transform hover:scale-105"
+                    style={{ minHeight: '52px', borderRadius: '14px', fontSize: '16px', fontWeight: 700, boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)', padding: '10px 18px' }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/Icon%20(9).png" alt="" style={{ width: '24px', height: '24px' }} />
                     Attempt Challenge on App
                   </button>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <div className="flex -space-x-2">
                     <div className="w-8 h-8 rounded-full bg-blue-400 border-2 border-white" />
                     <div className="w-8 h-8 rounded-full bg-green-400 border-2 border-white" />
@@ -408,14 +408,14 @@ export default function DailyMainsChallengeContextPage() {
           </div>
 
           {/* ── Two-column: (Calendar + Progress + Achievements) | Mains League ── */}
-          <div className="w-full mt-5 grid" style={{ maxWidth: '1091px', gridTemplateColumns: '1fr 1.25fr', gap: '20px', alignItems: 'start' }}>
+          <div className="mt-5 grid w-full grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]" style={{ maxWidth: '1091px' }}>
 
             {/* LEFT COLUMN */}
             <div className="flex flex-col gap-5">
 
               {/* Calendar */}
               <div className="bg-white rounded-[16px]" style={{ padding: '20px 22px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <div className="flex items-center gap-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/icon-calendar.png" alt="" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
@@ -454,7 +454,7 @@ export default function DailyMainsChallengeContextPage() {
 
               {/* Your Progress */}
               <div className="bg-white rounded-[16px]" style={{ padding: '20px 22px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <div className="flex items-center gap-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/icon-progress-chart.png" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
@@ -468,7 +468,7 @@ export default function DailyMainsChallengeContextPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-around items-end">
+                <div className="grid grid-cols-2 items-end gap-4">
                   <div className="text-center">
                     <div className="font-bold text-[#101828]" style={{ fontSize: '28px', lineHeight: '32px' }}>89</div>
                     <div className="text-[#4A5565] mt-1" style={{ fontSize: '12px' }}>Questions Attempted</div>
@@ -482,7 +482,7 @@ export default function DailyMainsChallengeContextPage() {
 
               {/* Achievements */}
               <div className="bg-white rounded-[16px]" style={{ padding: '20px 22px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <div className="flex items-center gap-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/icon-trophy.png" alt="" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
@@ -517,7 +517,7 @@ export default function DailyMainsChallengeContextPage() {
 
             {/* RIGHT COLUMN: Mains League */}
             <div className="bg-white rounded-[16px]" style={{ padding: '20px 22px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div className="flex items-center gap-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/icon-medal.png" alt="" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
@@ -529,10 +529,10 @@ export default function DailyMainsChallengeContextPage() {
                 {mainsLeague.map((row, i) => (
                   <div
                     key={row.userId}
-                    className="flex items-center justify-between rounded-lg"
+                    className="flex min-w-0 items-center justify-between gap-3 rounded-lg"
                     style={{ background: '#F9FAFB', padding: '8px 14px' }}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <span style={{ width: '24px', height: '24px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                         {i < 3 && (
                           /* eslint-disable-next-line @next/next/no-img-element */
@@ -540,16 +540,16 @@ export default function DailyMainsChallengeContextPage() {
                         )}
                       </span>
                       <div className="rounded-full bg-[#2B7FFF] text-white flex items-center justify-center font-bold" style={{ width: '28px', height: '28px', fontSize: '12px' }}>{row.rank}</div>
-                      <span className="font-bold text-[#101828]" style={{ fontSize: '13px' }}>{row.name}</span>
+                      <span className="min-w-0 break-words font-bold text-[#101828]" style={{ fontSize: '13px' }}>{row.name}</span>
                     </div>
                     <span className="font-bold text-[#0F766E]" style={{ fontSize: '13px' }}>{Math.round(row.mainsAvg * 10) / 10}</span>
                   </div>
                 ))}
                 <div
-                  className="flex items-center justify-between rounded-lg mt-2"
+                  className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg mt-2"
                   style={{ border: '2px solid #2B7FFF', background: '#EFF6FF', padding: '8px 14px' }}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <span style={{ width: '22px', display: 'inline-block' }} />
                     <div className="rounded-full bg-[#2B7FFF] text-white flex items-center justify-center font-bold" style={{ width: '28px', height: '28px', fontSize: '12px' }}>{myMainsRank?.mainsRank ?? '-'}</div>
                     <span className="text-[#101828]" style={{ fontSize: '13px' }}>You · {Math.round((myMainsRank?.mainsAvg ?? 0) * 10) / 10} avg · {myMainsRank?.streak ?? 0} streak</span>

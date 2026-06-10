@@ -4,7 +4,7 @@ import { getBearerFromRequest, getBearerUser, isAdminUser } from '@/lib/test-ser
 import { parseOptions } from '@/lib/test-series/mappers';
 import * as repo from '@/lib/test-series/repo';
 
-type Ctx = { params: Promise<{ seriesId: string; testId: string }> | { seriesId: string; testId: string } };
+type Ctx = { params: Promise<{ seriesId: string; testId: string }> };
 
 /** Student attempt payload: no correct answers in response */
 function stripCorrect(qs: { id: string; sort_order: number; prompt: string; options: unknown }[]) {

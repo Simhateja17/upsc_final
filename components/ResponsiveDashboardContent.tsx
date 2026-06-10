@@ -662,7 +662,7 @@ const ResponsiveDashboardContent = () => {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/c.png"
+                src="/calendar-icon.png"
                 alt="Calendar"
                 className="w-[clamp(14px,0.83vw,16px)] h-[clamp(14px,0.83vw,16px)]"
               />

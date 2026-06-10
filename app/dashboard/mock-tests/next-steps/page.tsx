@@ -225,18 +225,18 @@ function NextStepsInner() {
           borderRadius: '32px',
           background: '#1D293D',
           boxShadow: '0 8px 10px -6px rgba(0,0,0,0.1), 0 20px 25px -5px rgba(0,0,0,0.1)',
-          padding: '48px',
+          padding: 'clamp(28px, 5vw, 48px)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           gap: '16px',
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/emoji-6.png" alt="celebration" style={{ width: '72px', height: '72px', objectFit: 'contain' }} />
-          <h1 style={{ fontSize: '48px', fontWeight: 700, color: '#FFFFFF', margin: 0, textAlign: 'center', lineHeight: '48px' }}>
+          <img src="/emoji-6.png" alt="celebration" style={{ width: 'clamp(56px, 12vw, 72px)', height: 'clamp(56px, 12vw, 72px)', objectFit: 'contain' }} />
+          <h1 style={{ fontSize: 'clamp(28px, 6vw, 48px)', fontWeight: 700, color: '#FFFFFF', margin: 0, textAlign: 'center', lineHeight: 1.1 }}>
             {heroTitle}
           </h1>
-          <p style={{ fontSize: '18px', color: '#BEDBFF', margin: 0, textAlign: 'center', lineHeight: '28px', whiteSpace: 'nowrap' }}>
+          <p style={{ fontSize: 'clamp(14px, 3.4vw, 18px)', color: '#BEDBFF', margin: 0, textAlign: 'center', lineHeight: 1.4, whiteSpace: 'normal' }}>
             {heroSubtitle}
           </p>
         </div>

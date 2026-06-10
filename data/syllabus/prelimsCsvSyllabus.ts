@@ -14,33 +14,33 @@ type CsvSubject = {
 const SUBJECT_META: Record<string, Omit<Subject, 'id' | 'name' | 'short' | 'topics'>> = {
   history: {
     icon: '🏛️',
-    color: '#e07b39',
-    bg: 'rgba(224,123,57,.11)',
+    color: '#C49A6C',
+    bg: 'rgba(196,154,108,.12)',
   },
   geography: {
     icon: '🌍',
-    color: '#2e7dd4',
-    bg: 'rgba(46,125,212,.10)',
+    color: '#5B9BD5',
+    bg: 'rgba(91,155,213,.12)',
   },
   polity: {
     icon: '⚖️',
-    color: '#7c3aed',
-    bg: 'rgba(124,58,237,.09)',
+    color: '#4A68B0',
+    bg: 'rgba(74,104,176,.12)',
   },
   economy: {
     icon: '💰',
-    color: '#059669',
-    bg: 'rgba(5,150,105,.09)',
+    color: '#E6A817',
+    bg: 'rgba(230,168,23,.12)',
   },
   'environment-ecology': {
     icon: '🌿',
-    color: '#16a34a',
-    bg: 'rgba(22,163,74,.10)',
+    color: '#6DBF8A',
+    bg: 'rgba(109,191,138,.12)',
   },
   'science-technology': {
     icon: '🔬',
-    color: '#0891b2',
-    bg: 'rgba(8,145,178,.10)',
+    color: '#8B6FC4',
+    bg: 'rgba(139,111,196,.12)',
   },
 };
 

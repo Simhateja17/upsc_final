@@ -5,6 +5,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import '../../../../../styles/test-series-v2.css';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { testSeriesService } from '@/lib/services';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-plus-jakarta' });
 
@@ -92,6 +93,7 @@ const fmtTime = (seconds: number) => {
 
 export default function TestAttemptPage() {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const params = useParams();
   const searchParams = useSearchParams();
   const seriesId = params?.id as string;
@@ -329,7 +331,7 @@ export default function TestAttemptPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '12px' : '20px' }}>
         {/* Breadcrumb */}
         <div style={{ fontSize: '0.68rem', color: 'var(--ink4)', marginBottom: '10px', display: 'flex', gap: '6px', alignItems: 'center' }}>
           <span className="bc-link" onClick={() => router.push('/dashboard/test-series')} style={{ cursor: 'pointer', color: 'var(--ink3)' }}>
@@ -360,7 +362,7 @@ export default function TestAttemptPage() {
         </div>
 
         {/* Main Layout */}
-        <div className="q-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px' }}>
+        <div className="q-layout" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: '20px' }}>
           {/* Question Card */}
           <div>
             <div className="q-card fu" style={{ background: '#fff', borderRadius: 'var(--r2)', padding: '28px 32px', border: '1px solid var(--border)', marginBottom: '12px' }}>

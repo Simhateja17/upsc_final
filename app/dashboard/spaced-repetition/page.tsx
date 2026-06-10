@@ -172,7 +172,7 @@ export default function SpacedRepetitionPage() {
                   key={s.id}
                   href={`/dashboard/spaced-repetition/${s.id}`}
                   className="flex flex-col rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
-                  style={{ border: `1.5px solid ${s.border}`, background: subjectBg(s.label), minHeight: 150 }}
+                  style={{ border: `1.5px solid ${s.border}`, background: subjectBg(s.label), height: 190 }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span aria-hidden style={{ fontSize: 22, lineHeight: '22px' }}>{s.icon}</span>

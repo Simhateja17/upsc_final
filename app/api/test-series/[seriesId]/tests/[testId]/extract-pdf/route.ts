@@ -5,7 +5,7 @@ import * as repo from '@/lib/test-series/repo';
 
 export const runtime = 'nodejs';
 
-type Ctx = { params: Promise<{ seriesId: string; testId: string }> | { seriesId: string; testId: string } };
+type Ctx = { params: Promise<{ seriesId: string; testId: string }> };
 
 async function extractTextFromPdfBuffer(buffer: Buffer): Promise<string> {
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');

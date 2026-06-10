@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { flashcardService, spacedRepService, userService } from '@/lib/services';
 import {
   FREE_QUESTION_LIMIT,
@@ -27,7 +28,8 @@ function filterLabel(f: FilterKey): string {
   return f.toUpperCase();
 }
 
-export default function SpacedRepetitionSubjectPage({ params }: { params: { subjectId: string } }) {
+export default function SpacedRepetitionSubjectPage() {
+  const params = useParams<{ subjectId: string }>();
   const subjectId = typeof params?.subjectId === 'string' ? params.subjectId : '';
   const health = subjectHealthById(subjectId);
   const option = subjectOptions.find((o) => o.id === subjectId);

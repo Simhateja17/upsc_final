@@ -304,12 +304,10 @@ export default function DailyEditorialPage() {
         }}
       >
       <div
-        className="w-full mx-auto"
+        className="mx-auto grid w-full grid-cols-1 xl:grid-cols-[minmax(0,1fr)_clamp(280px,24vw,340px)]"
         style={{
           maxWidth: 'min(94vw, 1400px)',
           padding: '0 clamp(16px, 2vw, 30px)',
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) clamp(280px, 24vw, 340px)',
           gap: 'clamp(16px, 2vw, 28px)',
           paddingBottom: 'clamp(40px, 5vw, 80px)',
         }}
@@ -322,7 +320,7 @@ export default function DailyEditorialPage() {
           <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between" style={{ gap: '12px', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
             {/* Newspaper toggles */}
             <div className="flex flex-col sm:flex-row sm:items-center" style={{ gap: '10px' }}>
-              <div className="flex items-center" style={{ background: '#FFFFFF', border: '1px solid #D7DEEA', borderRadius: '999px', padding: '4px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+              <div className="grid w-full grid-cols-2 items-center sm:w-auto" style={{ background: '#FFFFFF', border: '1px solid #D7DEEA', borderRadius: '999px', padding: '4px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
                 {[ 
                   { id: 'hindu' as const, label: 'The Hindu', icon: '/hindu-full.png' },
                   { id: 'express' as const, label: 'Indian Express', icon: '/indian.png' },
@@ -330,15 +328,14 @@ export default function DailyEditorialPage() {
                   <button
                     key={item.id}
                     onClick={() => setActiveNewspaper(item.id)}
-                    className="flex items-center justify-center gap-2 font-fahkwang"
+                    className="flex min-w-0 items-center justify-center gap-2 font-fahkwang"
                     style={{
-                      minWidth: 'clamp(220px, 20vw, 280px)',
                       height: '48px',
-                      padding: '0 22px',
+                      padding: '0 clamp(8px, 1.4vw, 22px)',
                       borderRadius: '999px',
                       background: activeNewspaper === item.id ? '#101828' : 'transparent',
                       color: activeNewspaper === item.id ? '#FFFFFF' : '#101828',
-                      fontSize: 'clamp(14px, 1.4vw, 18px)',
+                      fontSize: 'clamp(11px, 1.2vw, 18px)',
                       fontWeight: 500,
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
@@ -346,7 +343,7 @@ export default function DailyEditorialPage() {
                   >
                     <span
                       style={{
-                        width: item.id === 'hindu' ? '96px' : '22px',
+                        width: item.id === 'hindu' ? 'clamp(42px, 7vw, 96px)' : '22px',
                         height: item.id === 'hindu' ? '32px' : '22px',
                         borderRadius: '999px',
                         background: '#FFFFFF',
@@ -375,6 +372,7 @@ export default function DailyEditorialPage() {
                       />
                     </span>
                     <span
+                      className="min-w-0 truncate"
                       style={{
                         fontFamily: 'inherit',
                         fontWeight: 500,
@@ -436,7 +434,7 @@ export default function DailyEditorialPage() {
 
           {/* Last updated + article count */}
           {!loading && editorials.length > 0 && (
-            <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+            <div className="flex flex-wrap items-center justify-between gap-2" style={{ marginBottom: '12px' }}>
               <span className="font-arimo" style={{ fontSize: '13px', color: '#6A7282' }}>
                 🕐 Updated {lastFetched ? lastFetched.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'just now'} &nbsp;·&nbsp; {editorials.length} articles (last 24 hrs)
               </span>
@@ -548,8 +546,8 @@ export default function DailyEditorialPage() {
                 <div style={{ borderBottom: '1px solid #D1D5DC', marginBottom: 'clamp(10px, 1.2vw, 16px)' }} />
 
                 {/* Action buttons */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center" style={{ gap: 'clamp(6px, 0.75vw, 10px)' }}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center" style={{ gap: 'clamp(6px, 0.75vw, 10px)' }}>
                     <button
                       onClick={() => handleSave(card.id)}
                       className="flex items-center gap-2 font-arimo"
@@ -595,7 +593,7 @@ export default function DailyEditorialPage() {
                   <button
                     onClick={() => handleSummarize(card)}
                     disabled={summarizing === card.id}
-                    className="flex items-center gap-2 font-arimo font-bold"
+                    className="flex w-full items-center justify-center gap-2 font-arimo font-bold sm:w-auto"
                     style={{
                       padding: 'clamp(8px, 0.75vw, 10px) clamp(14px, 1.5vw, 20px)',
                       borderRadius: '26843500px',
@@ -1307,7 +1305,7 @@ export default function DailyEditorialPage() {
               {/* ── FOOTER ACTIONS ── */}
               {!summaryModal.loading && summaryModal.summary && (
                 <>
-                  <div style={{ background: '#f0f4fa', borderTop: '1px solid #dce3ef', padding: '14px 16px', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, flexShrink: 0 }}>
+                  <div style={{ background: '#f0f4fa', borderTop: '1px solid #dce3ef', padding: '14px 16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(120px, 100%), 1fr))', gap: 8, flexShrink: 0 }}>
                     {[
                       {
                         icon: ed?.isSaved ? '✅' : '📌',

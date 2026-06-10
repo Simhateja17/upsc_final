@@ -151,7 +151,7 @@ export default function DailyAnswerAttemptPage() {
             <main className="flex-1 max-w-[1200px]">
 
                     {/* Main Content Area - Centered Card */}
-                    <div className="p-10 flex flex-col items-center w-full">
+                    <div className="p-4 sm:p-10 flex flex-col items-center w-full">
 
                         <div className="w-full flex flex-col lg:flex-row items-start justify-center gap-8 mb-8">
                         {/* Bottom Card Container (Wrapping Text Area, Upload & Submit) */}
@@ -165,7 +165,7 @@ export default function DailyAnswerAttemptPage() {
                             }}
                         >
                             {/* Text Answer Area */}
-                            <div className="w-full px-[40px] mb-8">
+                            <div className="w-full px-5 sm:px-[40px] mb-8">
                                 <label
                                     htmlFor="answer-text"
                                     style={{
@@ -200,7 +200,7 @@ export default function DailyAnswerAttemptPage() {
                             </div>
 
                             {/* Divider */}
-                            <div className="w-full px-[40px] mb-8">
+                            <div className="w-full px-5 sm:px-[40px] mb-8">
                                 <div className="flex items-center gap-4">
                                     <div className="flex-1 h-px bg-[#E5E7EB]"></div>
                                     <span className="text-[#6A7282] font-arimo text-center" style={{ fontSize: '13px' }}>OR upload handwritten answer</span>

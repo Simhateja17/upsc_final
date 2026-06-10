@@ -2,6 +2,57 @@
 
 import { Subject, TrackerState } from '../page';
 
+const TOPIC_PALETTE: Record<string, { bg: string; color: string }> = {
+  // History
+  'Ancient India':                                                          { bg: '#F5E8D4', color: '#7A5230' },
+  'Medieval India':                                                         { bg: '#EDD5E6', color: '#7A3D72' },
+  'Art & Culture':                                                          { bg: '#FDE9C0', color: '#8A6010' },
+  'Modern':                                                                 { bg: '#D8E4CC', color: '#445E38' },
+  // Geography
+  'Physical Geography of the World':                                        { bg: '#C8E8F4', color: '#1E6A9A' },
+  'Physical Geography of India':                                            { bg: '#D8F0DC', color: '#2E6E3E' },
+  'Economic Geography':                                                     { bg: '#F4EDD0', color: '#826020' },
+  'Human Geography':                                                        { bg: '#ECD8F4', color: '#6A3A90' },
+  // Polity — all topics share one colour
+  'Historical Evolution & Making of Constitution':                          { bg: '#D0DDF4', color: '#2A4490' },
+  'Salient Features, Preamble, Schedules, Amendments':                     { bg: '#D0DDF4', color: '#2A4490' },
+  'Citizenship, Union & its Territory':                                     { bg: '#D0DDF4', color: '#2A4490' },
+  'Basic Structure, Separation of Powers':                                  { bg: '#D0DDF4', color: '#2A4490' },
+  'Fundamental Rights, Directive Principles, Fundamental Duties':           { bg: '#D0DDF4', color: '#2A4490' },
+  'Union and State Executive':                                              { bg: '#D0DDF4', color: '#2A4490' },
+  'Parliament and State Legislatures':                                      { bg: '#D0DDF4', color: '#2A4490' },
+  'Judiciary':                                                              { bg: '#D0DDF4', color: '#2A4490' },
+  'Federalism: Centre-State relations, Emergency provisions, Inter-State Council': { bg: '#D0DDF4', color: '#2A4490' },
+  'Local government: Panchayati Raj, Municipalities':                      { bg: '#D0DDF4', color: '#2A4490' },
+  'Constitutional bodies: Election Commission, UPSC, CAG, Finance Commission': { bg: '#D0DDF4', color: '#2A4490' },
+  'Statutory bodies: NHRC, NCW, NCSC, NCST, Lokpal':                      { bg: '#D0DDF4', color: '#2A4490' },
+  'Non-constitutional bodies: NITI Aayog, CBI, NIA':                      { bg: '#D0DDF4', color: '#2A4490' },
+  'Political parties and election process, Anti Defection':                { bg: '#D0DDF4', color: '#2A4490' },
+  // Economy
+  'Basic Economy':                                                          { bg: '#F8EDD8', color: '#7A5818' },
+  'Public Finance':                                                         { bg: '#D0ECD8', color: '#2E6848' },
+  'External Sector':                                                        { bg: '#C8ECF4', color: '#1E6880' },
+  'Agriculture':                                                            { bg: '#D8F0CC', color: '#3A6828' },
+  'Sectors of Economy':                                                     { bg: '#F4F0CC', color: '#6A6018' },
+  'Infrastructure':                                                         { bg: '#D4DCE8', color: '#3A4A62' },
+  'Human Resource Development':                                             { bg: '#F4E0D8', color: '#7A3A28' },
+  // Environment & Ecology
+  'Ecology & Ecosystem':                                                    { bg: '#C8ECCC', color: '#2A6438' },
+  'Biodiversity':                                                           { bg: '#D0F0D4', color: '#1E5C34' },
+  'Pollution':                                                              { bg: '#E8E4DC', color: '#5A5248' },
+  'Climate Change':                                                         { bg: '#D8ECF8', color: '#1E5A80' },
+  'Conservation Efforts':                                                   { bg: '#D4EEDC', color: '#2A6040' },
+  // Science & Technology
+  'General Science':                                                        { bg: '#DCF0F8', color: '#1A5878' },
+  'Biotechnology':                                                          { bg: '#CCF0D4', color: '#1A5830' },
+  'Human Health & Diseases':                                                { bg: '#F8DCDC', color: '#7A2828' },
+  'Space':                                                                  { bg: '#D4D0F4', color: '#3A2A90' },
+  'Defence':                                                                { bg: '#D8E0CC', color: '#3A4828' },
+  'Nuclear Energy':                                                         { bg: '#F4F0BC', color: '#6A6010' },
+  'Electronics & Communications & IT':                                      { bg: '#C8ECF8', color: '#1A5870' },
+  'Nano Science & Nano - Technology':                                       { bg: '#E8E4F4', color: '#4A3880' },
+};
+
 interface TopicListProps {
   subject: Subject | null | undefined;
   openTopics: Set<string>;
@@ -134,7 +185,8 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
           const isOpen = openTopics.has(topicKey);
           const isSelected = selectedTopic?.subjectId === subject.id && selectedTopic?.topicIndex === ti;
           const topicStats = stats[ti];
-          const fillColor = topicStats.pct === 100 ? '#16a34a' : topicStats.pct > 0 ? subject.color : '#d8e4f5';
+          const topicPalette = TOPIC_PALETTE[topic.name];
+          const fillColor = topicStats.pct === 100 ? '#16a34a' : topicStats.pct > 0 ? (topicPalette?.color ?? subject.color) : '#d8e4f5';
           
           // Status icon based on completion
           const statusIcon = topicStats.pct === 100 
@@ -190,13 +242,20 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
             <div
               key={ti}
               className={`
-                bg-white border-[1.5px] rounded-[12px] mb-[4px] overflow-hidden transition-all duration-200 shadow-sm
+                relative bg-white border-[1.5px] rounded-[12px] mb-[4px] overflow-hidden transition-all duration-200 shadow-sm
                 ${isOpen ? 'border-[#0f1f3d]' : isSelected ? 'border-[#c9921a]' : 'border-[#e0e8f4] hover:border-[rgba(15,31,61,.12)] hover:shadow-md'}
               `}
               style={isSelected ? { boxShadow: '0 0 0 2px rgba(201,146,26,.12)' } : {}}
             >
+              {/* Palette left accent strip */}
+              {topicPalette && (
+                <div
+                  className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-[2px]"
+                  style={{ background: topicPalette.color }}
+                />
+              )}
               <div
-                className="flex items-center gap-[10px] p-[10px_12px] cursor-pointer select-none"
+                className="flex items-center gap-[10px] p-[10px_12px_10px_14px] cursor-pointer select-none"
                 onClick={() => onToggleTopic(subject.id, ti)}
               >
                 {/* Status Icon */}

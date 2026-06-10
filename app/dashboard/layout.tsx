@@ -12,6 +12,7 @@ import OnboardingFlow from '@/components/OnboardingFlow';
 import PhoneLinkPrompt from '@/components/PhoneLinkPrompt';
 
 const HIDE_SIDEBAR_ROUTES = ['/dashboard/profile', '/dashboard/settings', '/dashboard/billing', '/dashboard/feedback'];
+const PUBLIC_DASHBOARD_ROUTES = ['/dashboard/pyq'];
 const STREAK_MILESTONES = [3, 7, 10, 14, 21, 30] as const;
 
 function getNextEligibleStreakMilestone(currentStreak: number, lastShownMilestone: number | null) {
@@ -37,6 +38,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const didTryRefreshRef = useRef(false);
   const hideSidebar = HIDE_SIDEBAR_ROUTES.includes(pathname);
+  const isPublicRoute = PUBLIC_DASHBOARD_ROUTES.some((r) => pathname.startsWith(r));
   const userId = user?.id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
@@ -94,7 +96,7 @@ export default function DashboardLayout({
   }, [pathname]);
 
   useEffect(() => {
-    if (isLoading || isAuthenticated) return;
+    if (isLoading || isAuthenticated || isPublicRoute) return;
 
     // Always check the Supabase session before redirecting.
     // A valid session means auth state just hasn't hydrated yet – never
@@ -126,11 +128,11 @@ export default function DashboardLayout({
   }, [isLoading]);
 
   useEffect(() => {
-    if (!authTimedOut || isAuthenticated) return;
+    if (!authTimedOut || isAuthenticated || isPublicRoute) return;
     router.replace('/login');
-  }, [authTimedOut, isAuthenticated, router]);
+  }, [authTimedOut, isAuthenticated, isPublicRoute, router]);
 
-  if ((isLoading && !authTimedOut) || !isAuthenticated) {
+  if (!isPublicRoute && ((isLoading && !authTimedOut) || !isAuthenticated)) {
     // Show a loading state instead of blank screen
     return (
       <div className="flex items-center justify-center" style={{ height: '100dvh', background: '#FAFBFE' }}>
@@ -156,7 +158,8 @@ export default function DashboardLayout({
 
       {/* Onboarding flow – shown once for new users */}
       <OnboardingFlow />
-      <PhoneLinkPrompt />
+      {/* Temporarily disabled for local dev */}
+      {/* <PhoneLinkPrompt /> */}
 
       {/* Milestone Popup – WIP placeholder */}
       <MilestonePopup

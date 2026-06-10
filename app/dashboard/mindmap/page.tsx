@@ -122,7 +122,7 @@ export default function MindmapPage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-white rounded-[16px] h-[176px] animate-pulse" />
+              <div key={i} className="bg-white rounded-[16px] h-[190px] animate-pulse" />
             ))}
           </div>
         ) : subjects.length === 0 ? (
@@ -137,7 +137,7 @@ export default function MindmapPage() {
               const cardStyle = SUBJECT_CARD_STYLES[subject.slug] ?? { bg: '#FFFFFF', border: '#E5E7EB', bar: color };
               return (
                 <Link key={subject.slug} href={`/dashboard/mindmap/${subject.slug}`} className="block">
-                  <div className="rounded-[16px] overflow-hidden shadow-sm flex flex-col h-[176px] relative group hover:-translate-y-0.5 hover:shadow-md transition-all" style={{ background: cardStyle.bg, border: `1.5px solid ${cardStyle.border}` }}>
+                  <div className="rounded-[16px] overflow-hidden shadow-sm flex flex-col h-[190px] relative group hover:-translate-y-0.5 hover:shadow-md transition-all" style={{ background: cardStyle.bg, border: `1.5px solid ${cardStyle.border}` }}>
                     <div className="h-[4px] w-full" style={{ backgroundColor: cardStyle.bar }} />
                     <div className="p-5 flex flex-col justify-between h-full">
                       <div>

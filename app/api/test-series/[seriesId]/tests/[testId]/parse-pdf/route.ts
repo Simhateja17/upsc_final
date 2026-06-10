@@ -7,7 +7,7 @@ import * as repo from '@/lib/test-series/repo';
 export const runtime = 'nodejs';
 export const maxDuration = 120; // allow up to 2 min for large PDFs
 
-type Ctx = { params: Promise<{ seriesId: string; testId: string }> | { seriesId: string; testId: string } };
+type Ctx = { params: Promise<{ seriesId: string; testId: string }> };
 
 // ── Azure OpenAI client (lazy singleton) ────────────────────────────
 let _azure: AzureOpenAI | null | undefined;

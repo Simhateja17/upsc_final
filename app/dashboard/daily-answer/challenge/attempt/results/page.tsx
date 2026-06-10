@@ -255,7 +255,7 @@ export default function ResultsPage() {
               style={{ width: '924px', objectFit: 'fill' }}
             />
 
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {summaryCards.map((metric) => (
                 <div
                   key={metric.id}
@@ -273,7 +273,7 @@ export default function ResultsPage() {
               ))}
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="rounded-[10px] border border-[#B9F8CF] bg-[#F0FDF4] p-5">
                 <h3 className="font-bold text-[#0D542B] mb-3" style={{ fontSize: '15px' }}>What You Did Well</h3>
                 {strengths.length > 0 ? (
@@ -463,7 +463,7 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {rubricCards.map((card) => (
                 <div key={card.label} className="rounded-[12px] border border-[#E5E7EB] bg-[#F9FAFB] p-5">
                   <div className="text-[#6A7282] uppercase mb-2" style={{ fontSize: '11px', letterSpacing: '0.4px', fontWeight: 700 }}>
@@ -493,7 +493,7 @@ export default function ResultsPage() {
               What would you like to do next?
             </h2>
 
-            <div className="grid grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               <button onClick={() => setSlide('feedback')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#EDE9FE] text-[#5B21B6] text-xl">F</div>
                 <div className="font-bold text-[#101828] mb-1">Review Feedback</div>
