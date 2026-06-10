@@ -169,6 +169,7 @@ export default function PyqPage() {
   // Mains AI evaluation state
   const [mainsAnswerText, setMainsAnswerText] = useState('');
   const [mainsFile, setMainsFile] = useState<File | null>(null);
+  const [mainsFiles, setMainsFiles] = useState<File[]>([]);
   const [mainsAttemptId, setMainsAttemptId] = useState<string | null>(null);
   const [mainsEvalResults, setMainsEvalResults] = useState<any>(null);
   const [mainsSubmitting, setMainsSubmitting] = useState(false);
@@ -1034,7 +1035,7 @@ export default function PyqPage() {
                     <div className="flex items-center gap-3 mb-4">
                       <button
                         type="button"
-                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
                         className="flex items-center justify-center"
                         style={{ height: '59px', borderRadius: '14px', background: '#101828', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
@@ -1057,7 +1058,7 @@ export default function PyqPage() {
                         className="flex items-center justify-center"
                         style={{ width: '59px', height: '59px', borderRadius: '14px', background: '#FFFFFF', border: '1.6px solid #FFC9C9', fontSize: '20px', cursor: 'pointer', flexShrink: 0 }}
                         aria-label="Write answer"
-                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
                       >
                         ✏️
                       </button>
@@ -1757,32 +1758,53 @@ export default function PyqPage() {
               <input
                 ref={mainsFileInputRef}
                 type="file"
+                multiple
                 accept="image/jpeg,image/png,application/pdf"
                 style={{ display: 'none' }}
-                onChange={(e) => setMainsFile(e.target.files?.[0] || null)}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.files || []);
+                  const hasPdf = selected.some((file) => file.type === 'application/pdf');
+                  if (hasPdf && selected.length > 1) {
+                    setMainsSubmitError('Upload either one PDF or multiple image pages, not both.');
+                    e.target.value = '';
+                    return;
+                  }
+                  setMainsSubmitError(null);
+                  setMainsFiles(selected);
+                  setMainsFile(selected[0] || null);
+                }}
               />
               <div
                 className="rounded-[16px] flex flex-col items-center justify-center text-center cursor-pointer"
-                style={{ width: 832, maxWidth: '100%', marginTop: 16, padding: '50px 50px', border: mainsFile ? '1.6px solid #3B52D4' : '1.6px solid #D1D5DC', background: mainsFile ? '#EFF6FF' : '#FFF', order: 1 }}
+                style={{ width: 832, maxWidth: '100%', marginTop: 16, padding: '50px 50px', border: mainsFiles.length > 0 ? '1.6px solid #3B52D4' : '1.6px solid #D1D5DC', background: mainsFiles.length > 0 ? '#EFF6FF' : '#FFF', order: 1 }}
                 onClick={() => mainsFileInputRef.current?.click()}
               >
                 {/* Camera icon in gray square */}
                 <div style={{ width: 64, height: 64, borderRadius: 16, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                  {mainsFile
+                  {mainsFiles.length > 0
                     ? <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M5 27L27 5" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"/><circle cx="16" cy="16" r="10" stroke="#22C55E" strokeWidth="2"/></svg>
                     : <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M12 8H20L22 11H27C27.55 11 28 11.45 28 12V24C28 24.55 27.55 25 27 25H5C4.45 25 4 24.55 4 24V12C4 11.45 4.45 11 5 11H10L12 8Z" stroke="#9CA3AF" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="16" cy="18" r="4" stroke="#9CA3AF" strokeWidth="1.5"/></svg>
                   }
                 </div>
                 <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 18, lineHeight: '28px', color: '#1E2939', marginBottom: 8 }}>
-                  {mainsFile ? mainsFile.name : 'Photograph your handwritten answer & upload'}
+                  {mainsFiles.length > 1
+                    ? `${mainsFiles.length} pages selected`
+                    : mainsFile ? mainsFile.name : 'Photograph your handwritten answer & upload'}
                 </p>
+                {mainsFiles.length > 1 && (
+                  <div style={{ fontFamily: 'Inter', fontSize: 13, color: '#4B5563', marginBottom: 12 }}>
+                    {mainsFiles.map((file, index) => (
+                      <div key={`${file.name}-${index}`}>Page {index + 1}: {file.name}</div>
+                    ))}
+                  </div>
+                )}
                 {!mainsFile && (
                   <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282', marginBottom: 16 }}>
-                    Take a clear photo of each page. Good lighting = better AI evaluation.
+                    Take clear photos of all pages, then select them in order. Good lighting = better AI evaluation.
                   </p>
                 )}
                 {mainsFile
-                  ? <span style={{ fontFamily: 'Inter', fontSize: 13, color: '#6A7282' }}>Click to change file</span>
+                  ? <span style={{ fontFamily: 'Inter', fontSize: 13, color: '#6A7282' }}>Click to change files</span>
                   : (
                     <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                       {['JPG', 'PNG', 'PDF'].map((fmt) => (
@@ -1802,14 +1824,14 @@ export default function PyqPage() {
               <button
                 id="pyq-mains-submit-btn"
                 type="button"
-                disabled={mainsSubmitting || (!mainsAnswerText.trim() && !mainsFile)}
+                disabled={mainsSubmitting || (!mainsAnswerText.trim() && mainsFiles.length === 0)}
                 onClick={async () => {
                   if (!selectedQuestion) return;
                   setMainsSubmitting(true);
                   try {
                     const res = await pyqService.submitMainsAnswer(selectedQuestion.id, {
                       answerText: mainsAnswerText.trim() || undefined,
-                      file: mainsFile || undefined,
+                      files: mainsFiles.length > 0 ? mainsFiles : undefined,
                     });
                     if (res.data?.attemptId) {
                       setMainsAttemptId(res.data.attemptId);

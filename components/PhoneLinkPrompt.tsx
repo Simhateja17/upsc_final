@@ -23,12 +23,25 @@ export default function PhoneLinkPrompt() {
 
   if (!open || !user || user.phone) return null;
 
+  const sanitizePhone = (value: string) => {
+    let digits = value.replace(/\D/g, '');
+    if (digits.startsWith('91') && digits.length > 10) digits = digits.slice(2);
+    if (digits.startsWith('0') && digits.length > 10) digits = digits.slice(1);
+    return digits.slice(0, 10);
+  };
+
   async function sendOtp(e: FormEvent) {
     e.preventDefault();
+    const normalizedInput = sanitizePhone(phone);
+    if (!/^[6-9]\d{9}$/.test(normalizedInput)) {
+      setError('Enter a valid 10 digit Indian mobile number');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const result = await authService.sendPhoneLinkOtp(phone);
+      const result = await authService.sendPhoneLinkOtp(normalizedInput);
       setPhone(result.phone);
       setStep('otp');
       setOtp('');
@@ -85,7 +98,7 @@ export default function PhoneLinkPrompt() {
                 inputMode="numeric"
                 autoComplete="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(sanitizePhone(e.target.value))}
                 placeholder="98765 43210"
                 required
                 style={inputStyle}
