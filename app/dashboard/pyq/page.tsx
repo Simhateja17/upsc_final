@@ -45,6 +45,7 @@ const EMPTY_COUNTS: PYQCountData = {
 };
 
 const SUBJECT_ICONS: Record<string, string> = {
+  'Ancient History and Art & Culture': '🏺',
   History: '🏛️',
   Geography: '🌍',
   Polity: '⚖️',
@@ -389,6 +390,38 @@ export default function PyqPage() {
     },
     [questionCounts.byTopic]
   );
+
+  const subjectTree = useMemo(() => {
+    const baseTree = PYQ_SUBJECT_TREE[mode];
+    const existingSubjects = new Set(baseTree.map((node) => countKey(node.label)));
+    const dynamicSubjects = questionCounts.bySubject
+      .filter((row) => row.subject && !existingSubjects.has(countKey(row.subject)))
+      .map((row) => {
+        const label = row.subject as string;
+        const children = questionCounts.bySubSubject
+          .filter((sub) => countKey(sub.subject) === countKey(label) && sub.subSubject)
+          .map((sub) => {
+            const childLabel = sub.subSubject as string;
+            const microTopics = questionCounts.byTopic
+              .filter((topic) => countKey(topic.subject, topic.subSubject) === countKey(label, childLabel) && topic.topic)
+              .map((topic) => topic.topic as string)
+              .filter((topic, index, topics) => topics.indexOf(topic) === index);
+
+            return {
+              label: childLabel,
+              microTopics: microTopics.length ? microTopics : undefined,
+            };
+          });
+
+        return {
+          label,
+          icon: SUBJECT_ICONS[label] || '📘',
+          children: children.length ? children : undefined,
+        };
+      });
+
+    return [...baseTree, ...dynamicSubjects];
+  }, [mode, questionCounts.bySubject, questionCounts.bySubSubject, questionCounts.byTopic]);
 
   const visibleQuestions = useMemo(() => {
     if (!selectedTopics.length) return questions;
@@ -1401,7 +1434,7 @@ export default function PyqPage() {
                     </div>
                   </div>
                 )}
-                {PYQ_SUBJECT_TREE[mode].map(({ label, icon, children }) => {
+                {subjectTree.map(({ label, icon, children }) => {
                   const selected = selectedSubject === label;
                   const expanded = expandedSubject === label;
                   const subjectCount = subjectQuestionCounts.get(countKey(label)) || 0;
