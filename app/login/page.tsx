@@ -291,7 +291,7 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="flex w-full min-h-screen" style={{ fontFamily: "'Outfit', sans-serif" }}>
+    <div className="auth-shell flex w-full min-h-screen" style={{ fontFamily: "'Outfit', sans-serif" }}>
       <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
         .success-burst {
@@ -320,10 +320,44 @@ function LoginPageContent() {
           18% { opacity: 1; }
           100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--burst-rotate)) translateY(-58px) scale(1); }
         }
+        @media (max-width: 1023px) {
+          .auth-shell {
+            min-height: 100dvh;
+            overflow-x: hidden;
+          }
+          .auth-brand-panel {
+            display: none;
+          }
+          .auth-form-panel {
+            width: 100%;
+            min-width: 0;
+            padding: 32px 16px 40px !important;
+            justify-content: flex-start;
+          }
+          .auth-form-container {
+            width: 100% !important;
+            max-width: 448px;
+          }
+          .auth-name-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+          .auth-otp-row {
+            gap: 6px !important;
+          }
+          .auth-otp-row input {
+            width: min(44px, calc((100vw - 62px) / 6)) !important;
+            height: 48px !important;
+          }
+          .auth-form-container h1 {
+            font-size: clamp(30px, 8vw, 38px) !important;
+            line-height: 1.12 !important;
+            overflow-wrap: anywhere;
+          }
+        }
       ` }} />
       {/* ── LEFT PANEL ── */}
       <div
-        className="relative flex-shrink-0"
+        className="auth-brand-panel relative flex-shrink-0"
         style={{
           width: 478,
           height: '100vh',
@@ -494,11 +528,11 @@ function LoginPageContent() {
 
       {/* ── RIGHT PANEL ── */}
       <div
-        className="flex-1 flex flex-col items-center"
+        className="auth-form-panel flex-1 flex flex-col items-center"
         style={{ background: '#F9FAFB', paddingTop: 72, paddingBottom: 72 }}
       >
         {/* Single centered container for tab + form */}
-        <div style={{ width: 448 }}>
+        <div className="auth-form-container" style={{ width: 448 }}>
 
         {/* Tab row */}
         <div
@@ -800,7 +834,7 @@ function LoginPageContent() {
             </div>
 
             {/* First Name + Last Name row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+            <div className="auth-name-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
               {/* First Name */}
               <div>
                 <label style={{ display: 'block', fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.3px', textTransform: 'uppercase', color: '#1E2939', marginBottom: 6 }}>
@@ -1092,7 +1126,7 @@ function LoginPageContent() {
             <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, lineHeight: '18px', color: '#6A7282', margin: '0 auto 18px', maxWidth: 320 }}>
               We sent a secure reset link to <strong>{resetSentEmail}</strong>.
             </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 18 }}>
+            <div className="auth-otp-row" style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 18 }}>
               {[0, 1, 2, 3, 4, 5].map((i) => (
                 <input
                   key={i}
@@ -1277,7 +1311,7 @@ function LoginPageContent() {
               </p>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
+            <div className="auth-otp-row" style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
               {otpCode.map((digit, i) => (
                 <input
                   key={i}
