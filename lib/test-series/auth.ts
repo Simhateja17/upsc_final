@@ -33,10 +33,12 @@ const ADMIN_EMAILS: string[] = [
 
 export function isAdminUser(user: User | null): boolean {
   if (!user) return false;
-  // Check role from metadata
-  const r =
-    (user.app_metadata as { role?: string } | undefined)?.role ??
-    (user.user_metadata as { role?: string } | undefined)?.role;
+  // SECURITY: Only trust app_metadata.role. It is server-controlled and cannot
+  // be set by the user. user_metadata is writable by the user themselves via
+  // supabase.auth.updateUser({ data: { role: 'admin' } }), so trusting it here
+  // would let any logged-in user self-promote to admin and reach the
+  // service-role-backed API routes.
+  const r = (user.app_metadata as { role?: string } | undefined)?.role;
   if (r === 'admin') return true;
   // Fallback: check against admin email allowlist
   if (user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) return true;
