@@ -1195,8 +1195,7 @@ export default function PyqPage() {
 
           {/* Right: filters */}
           <aside
-            className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto"
-            style={{ scrollbarWidth: 'thin', scrollbarColor: '#D1D5DB transparent' }}
+            className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:self-start"
           >
             {/* Exam year card */}
             <div
@@ -1324,11 +1323,13 @@ export default function PyqPage() {
 
             {/* Subject Filter panel */}
             <div
-              className="rounded-[16px] bg-white flex flex-col"
+              className="rounded-[16px] bg-white flex flex-col lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto"
               style={{
                 width: '100%',
                 borderTop: '0.8px solid #E5E7EB',
                 boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#D1D5DB transparent',
               }}
             >
               <div className="flex items-center gap-3 pt-6 pb-4 px-5">

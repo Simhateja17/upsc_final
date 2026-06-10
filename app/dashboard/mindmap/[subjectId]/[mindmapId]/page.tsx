@@ -339,7 +339,7 @@ export default function MindmapViewPage() {
             {data.quizData && data.quizData.length > 0 && (
               <button
                 type="button"
-                onClick={() => setShowProModal(true)}
+                onClick={() => router.push('/dashboard/billing/plans?source=mindmap-quiz')}
                 className="rounded-full px-4 py-2 text-[12px] font-bold text-white flex items-center gap-1.5"
                 style={{ background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)' }}
               >
