@@ -88,6 +88,10 @@ const humanizeKey = (key: string) =>
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
 const PRELIMS_SUBJECT_TREE: SubjectTreeNode[] = [
+  {
+    label: 'Ancient History and Art & Culture',
+    icon: SUBJECT_ICONS['Ancient History and Art & Culture'],
+  },
   ...(prelimsSyllabus as Array<{ subject: string; subSubjects: Array<{ label: string; topics: string[] }> }>).map((node) => ({
     label: node.subject,
     icon: SUBJECT_ICONS[node.subject] || '📘',
