@@ -388,11 +388,14 @@ export const pyqService = {
   // Mains AI evaluation
   submitMainsAnswer: async (
     questionId: string,
-    opts: { answerText?: string; file?: File }
+    opts: { answerText?: string; file?: File; files?: File[] }
   ): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
     const fd = new FormData();
     if (opts.answerText) fd.append('answerText', opts.answerText);
     if (opts.file) fd.append('file', opts.file);
+    if (opts.files) {
+      opts.files.forEach((file) => fd.append('files', file));
+    }
 
     const token = getToken();
     const res = await fetch(
