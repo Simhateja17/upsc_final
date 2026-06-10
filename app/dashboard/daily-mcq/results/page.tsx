@@ -301,7 +301,7 @@ export default function DailyMcqResultsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-[clamp(0.65rem,0.9vw,1rem)] mb-[clamp(0.85rem,1.2vw,1.15rem)]">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-[clamp(0.65rem,0.9vw,1rem)] mb-[clamp(0.85rem,1.2vw,1.15rem)]">
               <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-[clamp(10px,0.73vw,14px)] text-center"
                 style={{ padding: 'clamp(0.5rem,0.75vw,1rem) clamp(0.5rem,0.625vw,0.75rem)' }}>
                 <div className="font-arimo text-[#4A5565] mb-[clamp(0.15rem,0.3vw,0.25rem)]"

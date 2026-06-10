@@ -303,10 +303,10 @@ export default function SyllabusTrackerPage() {
           />
         </div>
 
-        {/* Tracker Area – four side-by-side columns */}
-        <div className="flex items-stretch gap-[14px] px-[12px] pb-[18px] pt-[10px] min-w-[1180px]">
+        {/* Tracker Area – stacks on mobile, four side-by-side columns on xl+ */}
+        <div className="flex flex-col xl:flex-row items-stretch gap-[14px] px-[12px] pb-[18px] pt-[10px] xl:min-w-[1180px]">
           {/* Column A - Subjects */}
-          <div className="w-[280px] shrink-0 flex flex-col">
+          <div className="w-full xl:w-[280px] shrink-0 flex flex-col">
             <SubjectList
               subjects={currentSubjects}
               activeSubject={activeSubject}
@@ -319,7 +319,7 @@ export default function SyllabusTrackerPage() {
           </div>
 
           {/* Column B - Topics */}
-          <div className="w-[240px] shrink-0 flex flex-col">
+          <div className="w-full xl:w-[240px] shrink-0 flex flex-col">
             <TopicList
               subject={currentSubject}
               openTopics={openTopics}

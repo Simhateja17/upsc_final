@@ -96,7 +96,7 @@ export default function DailyMcqIntroPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-3 gap-3 w-[360px] mx-auto mb-6">
+          <div className="grid grid-cols-3 gap-3 w-full max-w-[360px] mx-auto mb-6">
             <div className="flex flex-col items-center rounded-[12px] bg-[#F9FAFB] border border-[#E5E7EB] py-4">
               <div className="font-arimo font-bold text-[#101828] text-[32px] leading-tight max-md:text-[24px]">{FIXED_QUESTION_COUNT}</div>
               <div className="font-arimo text-[#667085] text-[12px] mt-1">Questions</div>

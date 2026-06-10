@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService } from '@/lib/services';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface Question {
   id: number;
@@ -128,6 +129,8 @@ const SAMPLE_QUESTIONS: Question[] = [
 
 function MockTestAttemptInner() {
   const router = useRouter();
+  const isMobile = useIsMobile();
+  const [navOpen, setNavOpen] = useState(false);
   const searchParams = useSearchParams();
   const testId = searchParams.get('testId');
   const examMode = searchParams.get('examMode') || 'prelims';
@@ -647,7 +650,7 @@ function MockTestAttemptInner() {
 
     /* ── Questions screen (mains) — compact one-screen layout ── */
     return (
-      <div style={{ height: '100vh', overflow: 'hidden', background: '#F2F4F8', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ height: isMobile ? 'auto' : '100vh', minHeight: isMobile ? '100%' : undefined, overflow: isMobile ? 'visible' : 'hidden', background: '#F2F4F8', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
 
         {/* ── Header ── */}
         <div style={{ background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)', padding: '9px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
@@ -679,10 +682,10 @@ function MockTestAttemptInner() {
         )}
 
         {/* ── Body ── */}
-        <div style={{ flex: 1, display: 'flex', gap: 12, padding: '10px 16px 10px', overflow: 'hidden', boxSizing: 'border-box', minHeight: 0 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12, padding: isMobile ? '10px' : '10px 16px 10px', overflow: isMobile ? 'visible' : 'hidden', boxSizing: 'border-box', minHeight: 0 }}>
 
           {/* ── Left column ── */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0, overflow: 'hidden' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0, overflow: isMobile ? 'visible' : 'hidden' }}>
 
             {/* Question card */}
             <div style={{ background: '#FFFFFF', borderRadius: 14, padding: '14px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)', flexShrink: 0 }}>
@@ -842,7 +845,7 @@ function MockTestAttemptInner() {
           </div>
 
           {/* ── Right: Writing Timer ── */}
-          <div style={{ width: 200, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ width: isMobile ? '100%' : 200, flexShrink: 0, display: 'flex', flexDirection: 'column', order: isMobile ? -1 : 0 }}>
             <div style={{ background: '#FFFFFF', borderRadius: 14, padding: '18px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.07em', color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 14, textAlign: 'center' }}>
                 WRITING TIMER
@@ -888,8 +891,70 @@ function MockTestAttemptInner() {
   }
   /* ─────────────────────────── END MAINS UI ─────────────────────────── */
 
+  // Reusable navigator card (inline aside on desktop, bottom-sheet drawer on mobile)
+  const navigatorCard = (
+    <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 14, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>
+        Question Navigator
+      </div>
+
+      {/* Color-coded question buttons */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, overflow: 'auto', flex: 1, alignContent: 'flex-start' }}>
+        {questions.map((_, idx) => {
+          const status = questionStatuses[idx] || 'unattempted';
+          const isCurrent = idx === currentIdx;
+          const isAnswered = status === 'answered';
+          const isMarked = status === 'marked';
+
+          let bg = '#F3F4F6';
+          let color = '#6B7280';
+          if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
+          if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
+          if (isCurrent) { bg = '#0F172B'; color = '#FFFFFF'; }
+
+          return (
+            <button
+              key={idx}
+              onClick={() => { goToQuestion(idx); setNavOpen(false); }}
+              style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #E5E7EB', background: bg, color, fontWeight: 700, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}
+            >
+              {idx + 1}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 8, marginBottom: 8 }}>
+        {[
+          { label: 'Answered', color: '#00C950', value: answered },
+          { label: 'Unanswered', color: '#D1D5DB', value: Math.max(0, totalQuestions - answered - marked) },
+          { label: 'Marked for review', color: '#F59E0B', value: marked },
+        ].map((row) => (
+          <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <div style={{ width: 14, height: 14, borderRadius: 3, background: row.label === 'Answered' ? '#DCFCE7' : row.label === 'Marked for review' ? '#FEF3C7' : '#F3F4F6', border: `1px solid ${row.color}` }} />
+              <span style={{ fontSize: 11, color: '#374151' }}>{row.label}</span>
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>{row.value}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 10 }}>
+        <button
+          onClick={handleSubmit}
+          disabled={submitting}
+          style={{ width: '100%', height: 38, background: '#0F172B', border: 'none', borderRadius: 10, color: '#FFFFFF', fontWeight: 700, fontSize: 13, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
+        >
+          ✓ Submit Test
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <div style={{ height: '100%', minHeight: 0, background: '#E8EDF5', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif', overflow: 'hidden' }}>
+    <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : 0, background: '#E8EDF5', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif', overflow: isMobile ? 'visible' : 'hidden' }}>
 
       {/* ── Prelims submitting overlay ── */}
       {submitting && !isMains && (
@@ -972,6 +1037,15 @@ function MockTestAttemptInner() {
           <div style={{ fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#364153', whiteSpace: 'nowrap' }}>
             Q {currentIdx + 1} / {totalQuestions} · {answered} Answered
           </div>
+          {isMobile && (
+            <button
+              onClick={() => setNavOpen(true)}
+              style={{ marginLeft: 12, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, background: '#0F172B', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '6px 12px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3.5h12M2 8h12M2 12.5h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+              Questions
+            </button>
+          )}
         </div>
       </div>
 
@@ -994,27 +1068,27 @@ function MockTestAttemptInner() {
       <div
         style={{
           flex: 1,
-          padding: '6px 6px 8px',
+          padding: isMobile ? '8px' : '6px 6px 8px',
           boxSizing: 'border-box',
           display: 'flex',
           justifyContent: 'center',
-          overflow: 'hidden',
+          overflow: isMobile ? 'visible' : 'hidden',
           minHeight: 0,
         }}
       >
         <div
           style={{
             width: '100%',
-            maxWidth: 'calc(100vw - 96px)',
+            maxWidth: isMobile ? '100%' : 'calc(100vw - 96px)',
             display: 'flex',
             gap: 12,
             boxSizing: 'border-box',
             alignItems: 'flex-start',
-            height: '100%',
+            height: isMobile ? 'auto' : '100%',
           }}
         >
         {/* ─ Question Panel ── */}
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, height: '100%', overflow: 'hidden' }}>
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, height: isMobile ? 'auto' : '100%', overflow: isMobile ? 'visible' : 'hidden', width: '100%' }}>
 
           {/* Question Card */}
           <div
@@ -1022,12 +1096,12 @@ function MockTestAttemptInner() {
               background: '#FFFFFF',
               borderRadius: 10,
               border: 'none',
-              padding: '16px 24px',
+              padding: isMobile ? '14px 16px' : '16px 24px',
               boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)',
-              overflow: 'hidden',
+              overflow: isMobile ? 'visible' : 'hidden',
               display: 'flex',
               flexDirection: 'column',
-              flex: 1,
+              flex: isMobile ? 'none' : 1,
             }}
           >
             {/* Subject pill + difficulty pill */}
@@ -1065,7 +1139,7 @@ function MockTestAttemptInner() {
             </div>
 
             {/* Options */}
-            <div className="space-y-2" style={{ overflow: 'hidden', flex: 1, minHeight: 0 }}>
+            <div className="space-y-2" style={{ overflow: isMobile ? 'visible' : 'hidden', flex: isMobile ? 'none' : 1, minHeight: 0 }}>
               {currentQ.options.map(opt => {
                 const isSelected = selectedOptions[currentIdx] === opt.label;
 
@@ -1144,6 +1218,10 @@ function MockTestAttemptInner() {
             padding: '8px 12px',
             border: '1px solid #E5E7EB',
             flexShrink: 0,
+            position: isMobile ? 'sticky' : 'static',
+            bottom: isMobile ? 8 : undefined,
+            zIndex: isMobile ? 5 : undefined,
+            boxShadow: isMobile ? '0 -2px 8px rgba(0,0,0,0.06)' : undefined,
           }}>
             {/* Left actions */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1241,91 +1319,32 @@ function MockTestAttemptInner() {
           </div>
         </main>
 
-        {/* ── Right panel (Navigator card) ── */}
-        <aside style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 14, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>
-              Question Navigator
-            </div>
-
-            {/* Color-coded question buttons */}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, overflow: 'auto', flex: 1, alignContent: 'flex-start' }}>
-              {questions.map((_, idx) => {
-                const status = questionStatuses[idx] || 'unattempted';
-                const isCurrent = idx === currentIdx;
-                const isAnswered = status === 'answered';
-                const isMarked = status === 'marked';
-
-                let bg = '#F3F4F6';
-                let color = '#6B7280';
-                if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
-                if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
-                if (isCurrent) { bg = '#0F172B'; color = '#FFFFFF'; }
-
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => goToQuestion(idx)}
-                    style={{
-                      width: 30,
-                      height: 30,
-                      borderRadius: 8,
-                      border: '1px solid #E5E7EB',
-                      background: bg,
-                      color,
-                      fontWeight: 700,
-                      fontSize: 12,
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {idx + 1}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Legend */}
-            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 8, marginBottom: 8 }}>
-              {[
-                { label: 'Answered', color: '#00C950', value: answered },
-                { label: 'Unanswered', color: '#D1D5DB', value: Math.max(0, totalQuestions - answered - marked) },
-                { label: 'Marked for review', color: '#F59E0B', value: marked },
-              ].map((row) => (
-                <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <div style={{ width: 14, height: 14, borderRadius: 3, background: row.label === 'Answered' ? '#DCFCE7' : row.label === 'Marked for review' ? '#FEF3C7' : '#F3F4F6', border: `1px solid ${row.color}` }} />
-                    <span style={{ fontSize: 11, color: '#374151' }}>{row.label}</span>
-                  </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>{row.value}</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 10 }}>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                style={{
-                  width: '100%',
-                  height: 38,
-                  background: '#0F172B',
-                  border: 'none',
-                  borderRadius: 10,
-                  color: '#FFFFFF',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  cursor: submitting ? 'not-allowed' : 'pointer',
-                  opacity: submitting ? 0.7 : 1,
-                }}
-              >
-                ✓ Submit Test
-              </button>
-            </div>
-          </div>
-        </aside>
+        {/* ── Right panel (Navigator card) — desktop only ── */}
+        {!isMobile && (
+          <aside style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {navigatorCard}
+          </aside>
+        )}
         </div>
       </div>
+
+      {/* ── Mobile navigator bottom-sheet drawer ── */}
+      {isMobile && navOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => setNavOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxHeight: '80vh', background: '#FFFFFF', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 14, boxShadow: '0 -8px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+              <div style={{ width: 40, height: 4, borderRadius: 999, background: '#D1D5DB' }} />
+            </div>
+            {navigatorCard}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

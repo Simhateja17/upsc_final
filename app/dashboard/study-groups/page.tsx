@@ -389,19 +389,19 @@ export default function StudyGroupsPage() {
 
       <main className="mx-auto max-w-[1244px] px-4 pb-16">
         {/* Tabs */}
-        <div className="flex h-14 items-center justify-between border-b border-[#E1E6EF] bg-white px-8">
-          <div className="flex gap-1">
+        <div className="flex flex-col gap-3 border-b border-[#E1E6EF] bg-white px-3 py-3 sm:px-5 md:h-14 md:flex-row md:items-center md:justify-between md:px-8 md:py-0">
+          <div className="grid w-full grid-cols-3 gap-1 md:flex md:w-auto">
             <button
               onClick={() => setActiveTab('rooms')}
-              className={`flex items-center gap-2 rounded-[8px] px-5 py-2 text-[13px] font-semibold ${activeTab === 'rooms' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
+              className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'rooms' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
             >
               ️ Study Rooms
             </button>
             <button
               onClick={() => setActiveTab('solo')}
-              className={`flex items-center gap-2 rounded-[8px] px-5 py-2 text-[13px] font-semibold ${activeTab === 'solo' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
+              className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'solo' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <svg className="hidden shrink-0 sm:block" width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M3 18v-6a9 9 0 1118 0v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 <path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" fill="currentColor"/>
               </svg>
@@ -409,15 +409,15 @@ export default function StudyGroupsPage() {
             </button>
             <button
               onClick={() => setActiveTab('my')}
-              className={`flex items-center gap-2 rounded-[8px] px-5 py-2 text-[13px] font-semibold ${activeTab === 'my' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
+              className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'my' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
             >
                My Groups {myGroups.length > 0 ? `(${myGroups.length})` : ''}
             </button>
           </div>
-          <div className="flex gap-3">
+          <div className="grid w-full grid-cols-2 gap-2 md:flex md:w-auto md:gap-3">
             <button
               onClick={() => setActiveTab('solo')}
-              className="flex items-center gap-2 rounded-[8px] bg-[#090E1C] px-5 py-2 text-[13px] font-semibold text-white"
+              className="flex min-w-0 items-center justify-center gap-2 rounded-[8px] bg-[#090E1C] px-3 py-2 text-[12px] font-semibold text-white md:px-5 md:text-[13px]"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M3 18v-6a9 9 0 1118 0v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -427,7 +427,7 @@ export default function StudyGroupsPage() {
             </button>
             <button
               onClick={() => setShowCreate(true)}
-              className="rounded-[8px] bg-[#E8B84B] px-5 py-2 text-[13px] font-semibold text-[#090E1C]"
+              className="min-w-0 rounded-[8px] bg-[#E8B84B] px-3 py-2 text-[12px] font-semibold text-[#090E1C] md:px-5 md:text-[13px]"
             >
               + Create Room
             </button>
@@ -702,15 +702,14 @@ export default function StudyGroupsPage() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2 rounded-[10px] border border-[#E1E6EF] bg-white px-4 py-2 text-[13px] text-[#757575]">
+          <div className="flex w-full items-center gap-2 rounded-[10px] border border-[#E1E6EF] bg-white px-4 py-2 text-[13px] text-[#757575] sm:w-auto">
             <span>🔍</span>
             <input
               type="text"
               placeholder="Search rooms..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-transparent outline-none placeholder:text-[#757575]"
-              style={{ minWidth: 140 }}
+              className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[#757575] sm:min-w-[140px]"
             />
           </div>
         </section>

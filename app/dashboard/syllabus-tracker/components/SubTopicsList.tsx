@@ -198,7 +198,7 @@ export default function SubTopicsList({
         </div>
 
         {/* Stats Strip */}
-        <div className="grid grid-cols-4 gap-[8px] mb-[12px]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-[8px] mb-[12px]">
           <div className="bg-[#f3f6fb] border-[1.5px] border-[#e0e8f4] rounded-[9px] p-[8px_11px] transition-all duration-150 hover:border-[rgba(201,146,26,.30)]">
             <div className="font-playfair text-[19px] font-bold text-[#0f1f3d]">{total}</div>
             <div className="text-[10px] text-[#8795ae] font-medium mt-[1px]">{statsStripLabels.total || 'Total'}</div>

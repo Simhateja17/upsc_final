@@ -95,9 +95,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
       <aside
         className={`
-          h-full bg-white flex-shrink-0 flex flex-col
+          bg-white flex-shrink-0 flex flex-col
           ${collapsed ? 'w-[60px] min-w-[60px]' : 'w-[260px] min-w-[260px]'}
-          fixed lg:relative inset-y-0 left-0 z-30 lg:z-auto
+          fixed lg:relative left-0 z-30 lg:z-auto
+          top-[clamp(56px,5.78vw,111px)] bottom-0 lg:top-0 lg:bottom-auto lg:h-full
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
         style={{

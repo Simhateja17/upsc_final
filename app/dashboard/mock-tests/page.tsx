@@ -1150,7 +1150,13 @@ function MockTestsPageInner() {
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '7px',
                 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#101828" aria-hidden="true" style={{ flexShrink: 0 }}>
+                  <path d="M3 7.5l3.8 3 3.4-5.2a1 1 0 011.6 0l3.4 5.2 3.8-3a1 1 0 011.6.95l-1.7 9.3a1 1 0 01-1 .82H5.1a1 1 0 01-1-.82L2.4 8.45A1 1 0 013 7.5z" />
+                </svg>
                 Unlock
               </button>
             </div>
@@ -1161,7 +1167,7 @@ function MockTestsPageInner() {
           {!loading && (
           <div style={cardStyle}>
             <StepHeader step={4} label="Difficulty" />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 'clamp(18px, 1.6vw, 28px)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(150px, 100%), 1fr))', gap: 'clamp(18px, 1.6vw, 28px)' }}>
               {difficulties.map(diff => {
                 const isSelected = selectedDifficulty === diff.id;
                 const display = difficultyDisplay[diff.id] ?? {

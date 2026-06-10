@@ -158,7 +158,8 @@ export default function DashboardLayout({
 
       {/* Onboarding flow – shown once for new users */}
       <OnboardingFlow />
-      <PhoneLinkPrompt />
+      {/* Temporarily disabled for local dev */}
+      {/* <PhoneLinkPrompt /> */}
 
       {/* Milestone Popup – WIP placeholder */}
       <MilestonePopup

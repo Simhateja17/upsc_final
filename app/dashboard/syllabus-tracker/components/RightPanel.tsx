@@ -87,7 +87,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms }
 
   return (
     <>
-      <div className="w-[250px] min-w-[250px] flex flex-col gap-[11px] overflow-y-auto flex-shrink-0">
+      <div className="w-full xl:w-[250px] xl:min-w-[250px] flex flex-col gap-[11px] overflow-y-auto flex-shrink-0">
         <div className="bg-white border-[1.5px] border-[#e0e8f4] rounded-[14px] p-[13px] shadow-sm">
           <div className="flex items-center justify-between mb-[11px]">
           <div className="flex items-center gap-[6px]">

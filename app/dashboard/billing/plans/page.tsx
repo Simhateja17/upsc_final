@@ -1201,7 +1201,7 @@ export default function ExplorePlansPage() {
         </div>
 
         {/* 3 plan cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 16, alignItems: 'start' }}>
 
           {/* Aspire */}
           <article style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden' }}>
@@ -1483,7 +1483,7 @@ export default function ExplorePlansPage() {
           </div>
 
           {/* 4×2 feature grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 16 }}>
             {[
               { icon: '🎯', iconBg: '#FEF3C7', title: 'Daily MCQ Practice', desc: 'Subject-wise & topic-wise MCQs with detailed explanations. New questions every day, curated by experts.' },
               { icon: '📊', iconBg: '#EFF6FF', title: 'Deep Analytics', desc: 'Topic-level breakdowns, readiness scores, and weak-area detection.' },
@@ -1520,7 +1520,7 @@ export default function ExplorePlansPage() {
           </div>
 
           {/* 3 testimonial cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: 16 }}>
             {[
               {
                 stars: 5,

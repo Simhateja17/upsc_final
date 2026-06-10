@@ -299,7 +299,7 @@ export default function TestSeriesPage() {
                         You are not enrolled in any series yet.
                       </div>
                     ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 24, width: '100%' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 24, width: '100%' }}>
                         {enrolledSeries.map((s) => (
                           <ProgramCard
                             key={s.id}
@@ -344,7 +344,7 @@ export default function TestSeriesPage() {
                         No published test series are available yet.
                       </div>
                     ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 24, width: '100%' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 24, width: '100%' }}>
                         {allSeries.map((s) => (
                           <ProgramCard
                             key={s.id}

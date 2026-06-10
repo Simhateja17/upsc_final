@@ -96,15 +96,9 @@ export default function DashboardPageHero({
         style={{ marginBottom: '8px', paddingInline: 'clamp(8px, 1vw, 14px)' }}
       >
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr auto 1fr',
-            alignItems: 'center',
-            gap: 'clamp(8px, 1vw, 14px)',
-            width: '100%',
-          }}
+          className="flex flex-col items-start gap-2 w-full sm:grid sm:items-center sm:gap-[clamp(8px,1vw,14px)] sm:[grid-template-columns:1fr_auto_1fr]"
         >
-          <div style={{ justifySelf: 'start', minWidth: 0 }}>
+          <div className="justify-self-start min-w-0">
             <Link
               href={backHref}
               className="flex items-center gap-2 font-arimo font-medium text-white/60 hover:text-white transition-colors"
@@ -118,7 +112,7 @@ export default function DashboardPageHero({
           </div>
 
           <div
-            className="flex items-center gap-2 font-arimo font-semibold text-[#E8B84B]"
+            className="flex items-center gap-2 font-arimo font-semibold text-[#E8B84B] self-center sm:self-auto"
             style={{
               background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.1)',
@@ -127,13 +121,14 @@ export default function DashboardPageHero({
               fontSize: 'clamp(11px, 0.9vw, 13px)',
               letterSpacing: '0.5px',
               whiteSpace: 'nowrap',
+              maxWidth: '100%',
             }}
           >
             {badgeIcon}
             {badgeText}
           </div>
 
-          <div style={{ justifySelf: 'end', minWidth: 0 }}>
+          <div className={`justify-self-end min-w-0 ${right ? 'block' : 'hidden sm:block'}`}>
             {right}
           </div>
         </div>
@@ -160,10 +155,10 @@ export default function DashboardPageHero({
               color: '#FFF',
               textAlign: 'center',
               fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif',
-              fontSize: '64px',
+              fontSize: 'clamp(30px, 6.2vw, 64px)',
               fontStyle: 'normal',
               fontWeight: 600,
-              lineHeight: '70.4px',
+              lineHeight: 1.1,
               marginBottom: typeof effectiveTitleMarginBottom === 'number' ? `${effectiveTitleMarginBottom}px` : effectiveTitleMarginBottom,
             }}
           >

@@ -4,25 +4,24 @@ import PerformanceStatsWidget from '@/components/PerformanceStatsWidget';
 export default function DashboardPage() {
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden" style={{ background: '#FAFBFE' }}>
-      {/* Scrollable Content Area */}
-      <div className="flex flex-1 min-h-0 overflow-y-auto">
+      {/* Scrollable Content Area — stacks on mobile, side-by-side on lg+ */}
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-y-auto">
         {/* Main Content Area */}
         <main className="flex-1 min-w-0">
           <ResponsiveDashboardContent />
         </main>
 
-        {/* Right Sidebar – visible on lg+ screens */}
+        {/* Right Sidebar – sits below content on mobile, beside it on lg+ */}
         <aside
-          className="hidden lg:block flex-shrink-0"
+          className="w-full lg:w-auto flex-shrink-0 border-t lg:border-t-0 lg:border-l border-[#E5E7EB]"
           style={{
-            width: 'clamp(280px,20vw,340px)',
             background: '#FAFBFE',
-            borderLeft: '1px solid #E5E7EB',
             padding: 'clamp(0.875rem,1vw,1.25rem)',
-            paddingRight: 'clamp(0.5rem,0.73vw,0.875rem)',
           }}
         >
-          <PerformanceStatsWidget />
+          <div className="w-full lg:w-[clamp(280px,20vw,340px)]">
+            <PerformanceStatsWidget />
+          </div>
         </aside>
       </div>
     </div>

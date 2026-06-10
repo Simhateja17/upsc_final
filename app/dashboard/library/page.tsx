@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { libraryService } from '@/lib/services';
 import { useCmsContent } from '@/hooks/useCmsContent';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -100,6 +101,7 @@ export default function LibraryPage() {
     { emoji: '🏆', bg: '#FFEDD5', title: 'Toppers Trust It', desc: 'Used by 15,000+ aspirants building stronger Prelims, Mains, and interview preparation.' },
   ];
 
+  const isMobile = useIsMobile();
   const [selectedSubject, setSelectedSubject] = useState('');
   const [activeTab, setActiveTab] = useState('Notes');
   const [examStage, setExamStage] = useState<'prelims' | 'mains' | 'optional'>('prelims');
@@ -302,16 +304,17 @@ export default function LibraryPage() {
         <div
           style={{
             display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
             gap: 'clamp(16px, 2vw, 28px)',
-            alignItems: 'flex-start',
+            alignItems: isMobile ? 'stretch' : 'flex-start',
             marginBottom: 'clamp(40px, 4vw, 60px)',
-            flexWrap: 'wrap' as const,
+            flexWrap: isMobile ? ('nowrap' as const) : ('wrap' as const),
           }}
         >
           {/* ── Left Sidebar ── */}
           <div
             style={{
-              width: 'clamp(240px, 24vw, 310px)',
+              width: isMobile ? '100%' : 'clamp(240px, 24vw, 310px)',
               flexShrink: 0,
               background: '#FFFFFF',
               borderRadius: '16px',
@@ -510,6 +513,8 @@ export default function LibraryPage() {
             style={{
               flex: 1,
               minWidth: 0,
+              width: isMobile ? '100%' : undefined,
+              maxWidth: '100%',
               background: '#FFFFFF',
               borderRadius: '16px',
               border: '0.8px solid #E5E7EB',
@@ -681,8 +686,8 @@ export default function LibraryPage() {
                   zIndex: 0,
                 }}
               />
-              <div className="flex items-center justify-between" style={{ position: 'relative', zIndex: 1 }}>
-              <div className="flex" style={{ gap: 'clamp(20px, 2.5vw, 36px)' }}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" style={{ position: 'relative', zIndex: 1 }}>
+              <div className="flex overflow-x-auto" style={{ gap: 'clamp(20px, 2.5vw, 36px)', maxWidth: '100%', minWidth: 0, scrollbarWidth: 'none' }}>
                 {tabs.map((tab) => {
                   const isActive = activeTab === tab;
                   const cfg = TAB_CONFIG[tab];
@@ -829,6 +834,7 @@ export default function LibraryPage() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
+                    flexWrap: isMobile ? 'wrap' : 'nowrap',
                     gap: '16px',
                     borderRadius: '14px',
                     border: isHovered ? `1.5px solid ${tabColor}` : '0.8px solid #E5E7EB',
@@ -910,7 +916,7 @@ export default function LibraryPage() {
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex items-center" style={{ gap: '10px', flexShrink: 0 }}>
+                  <div className="flex items-center" style={{ gap: '10px', flexShrink: 0, flexBasis: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'flex-end' : undefined }}>
                     {material.isLocked ? (
                       <>
                         {/* Unlock */}

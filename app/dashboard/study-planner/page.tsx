@@ -701,7 +701,7 @@ export default function StudyPlannerPage() {
     <>
     <div className="flex flex-col bg-gray-50 overflow-x-hidden" style={{ height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
-        <div className="flex flex-row gap-5 p-4 md:p-6">
+        <div className="flex flex-col xl:flex-row gap-5 p-4 md:p-6">
 
           {/* ═══════ Left Column: Main Content ═══════ */}
           <div className="flex-1 min-w-0">
@@ -910,7 +910,7 @@ export default function StudyPlannerPage() {
                 padding: '24px',
               }}
             >
-            <div className="flex" style={{ gap: '16px' }}>
+            <div className="flex flex-col lg:flex-row" style={{ gap: '16px' }}>
 
               {/* Left Card: Build Your Study Plan */}
               <div
@@ -999,7 +999,7 @@ export default function StudyPlannerPage() {
                     <label className="font-arimo font-bold block" style={{ fontSize: '14px', lineHeight: '20px', color: '#101828', marginBottom: '6px' }}>
                       Study Type
                     </label>
-                    <div className="grid grid-cols-4" style={{ gap: '10px' }}>
+                    <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: '10px' }}>
                       {studyTypes.map((type) => (
                         <button
                           key={type.id}
@@ -1587,12 +1587,12 @@ export default function StudyPlannerPage() {
           </div>
 
           {/* ═══════ Right Column (290px): Streak + Quick Add ═══════ */}
-          <div className="flex-shrink-0 flex flex-col gap-5 w-[290px]">
+          <div className="flex-shrink-0 flex flex-col gap-5 w-full xl:w-[290px]">
 
             {/* Study Streak Card */}
             <div
               style={{
-                width: '290px',
+                width: '100%',
                 borderRadius: '16px',
                 border: '0.8px solid #E5E7EB',
                 background: '#FFFFFF',
@@ -1656,7 +1656,7 @@ export default function StudyPlannerPage() {
             {/* Quick Add to Plan */}
             <div
               style={{
-                width: '290px',
+                width: '100%',
                 borderRadius: '16px',
                 border: '0.8px solid #E5E7EB',
                 background: '#FFFFFF',
@@ -1721,7 +1721,7 @@ export default function StudyPlannerPage() {
             {/* Time Distribution */}
             <div
               style={{
-                width: '290px',
+                width: '100%',
                 borderRadius: '16px',
                 border: '0.8px solid #E5E7EB',
                 background: '#FFFFFF',
