@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -51,6 +52,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
         </AuthProvider>
+        <SpeedInsights />
       </body>
     </html>
   )
