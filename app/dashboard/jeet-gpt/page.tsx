@@ -122,7 +122,31 @@ function JeetAIAvatar({ size = 32 }: { size?: number }) {
 }
 
 /* ── Markdown renderer using react-markdown ── */
+function normalizeJeetMarkup(content: string): string {
+  return content
+    .replace(/>?\s*\[!ALERT[^\]]*\]\s*\n([\s\S]*?)\n>?\s*\[\/ALERT\]/g, (_match, body: string) => {
+      const lines = body
+        .split('\n')
+        .map((line) => line.replace(/^>\s?/, '').trimEnd())
+        .filter(Boolean);
+
+      return ['> **Important:**', ...lines.map((line) => `> ${line}`)].join('\n');
+    })
+    .replace(/>?\s*\[!TIP\]\s*\n([\s\S]*?)\n>?\s*\[\/TIP\]/g, (_match, body: string) => {
+      const lines = body
+        .split('\n')
+        .map((line) => line.replace(/^>\s?/, '').trimEnd())
+        .filter(Boolean);
+
+      return ['> **Tip:**', ...lines.map((line) => `> ${line}`)].join('\n');
+    })
+    .replace(/==[a-z]+{([^{}]+)}==/gi, '**$1**')
+    .replace(/^---\s*BADGES:\s*(.*?)\s*---$/gim, '**Tags:** $1');
+}
+
 function MarkdownRenderer({ content }: { content: string }) {
+  const normalizedContent = normalizeJeetMarkup(content);
+
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -228,7 +252,7 @@ function MarkdownRenderer({ content }: { content: string }) {
         ),
       }}
     >
-      {content}
+      {normalizedContent}
     </ReactMarkdown>
   );
 }
@@ -365,7 +389,7 @@ export default function JeetGPTPage() {
   const hasConversations = conversations.today.length > 0 || conversations.yesterday.length > 0 || conversations.earlier.length > 0;
 
   return (
-    <div className="flex overflow-hidden bg-white" style={{ height: '100%' }}>
+    <div className="flex min-h-0 overflow-hidden bg-white" style={{ height: '100%' }}>
 
       {/* ── History drawer overlay (mobile + tablet) ── */}
       {historyOpen && (
@@ -446,7 +470,7 @@ export default function JeetGPTPage() {
       </aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 flex flex-col overflow-hidden" style={{ background: '#FFFFFF' }}>
+      <main className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden" style={{ background: '#FFFFFF' }}>
         <header className="flex-shrink-0 flex flex-col gap-0.5 py-3 px-4 md:px-6" style={{ borderBottom: '0.8px solid #E5E7EB' }}>
           <div className="flex items-center gap-2 flex-wrap">
             <button
@@ -546,7 +570,7 @@ export default function JeetGPTPage() {
         ) : (
           /* Chat view */
           <>
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 space-y-6">
               {messages.map((msg) =>
                 msg.role === 'user' ? (
                   <div key={msg.id} className="flex flex-col items-end gap-1">
@@ -558,7 +582,7 @@ export default function JeetGPTPage() {
                   </div>
                 ) : (
                   <div key={msg.id} className="flex flex-col gap-1">
-                    <div className="max-w-[840px] rounded-[16px] p-6 border" style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF', boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1)' }}>
+                    <div className="w-full max-w-[840px] rounded-[16px] p-6 border" style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF', boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1)' }}>
                       <div className="flex gap-3">
                         <JeetAIAvatar />
                         <div className="flex-1 min-w-0"><MarkdownRenderer content={msg.content} /></div>

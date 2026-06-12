@@ -87,6 +87,94 @@ const humanizeKey = (key: string) =>
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
+const chipKey = (value: unknown) => String(value || '').trim().toLowerCase();
+
+const questionChips = (q: any, styles: Record<string, React.CSSProperties>) => {
+  const seen = new Set<string>();
+  const add = (key: string, value: unknown, label: string, styleKey: string) => {
+    const text = String(value || '').trim();
+    const normalized = chipKey(text);
+    if (!text || seen.has(normalized)) return null;
+    seen.add(normalized);
+    return { key, label, style: styles[styleKey] };
+  };
+
+  return [
+    q.year > 0 ? { key: 'year', label: `UPSC ${q.year}`, style: styles.year } : null,
+    add('subject', q.subject, String(q.subject || '').toUpperCase(), 'subject'),
+    add('subSubject', q.subSubject, String(q.subSubject || '').toUpperCase(), 'subSubject'),
+    add('topic', q.topic, String(q.topic || '').toUpperCase(), 'topic'),
+  ].filter(Boolean) as Array<{ key: string; label: string; style: React.CSSProperties }>;
+};
+
+function ExplanationRenderer({ question }: { question: any }) {
+  const explanation = question?.explanation;
+  const structured = question?.structuredJson?.explanation?.structured;
+  const paragraphFallback = String(explanation || '')
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+  const sections = [
+    ['statement_analysis', 'Statement Analysis'],
+    ['pair_analysis', 'Pair Analysis'],
+    ['option_analysis', 'Option Analysis'],
+  ] as const;
+
+  if (!explanation) return null;
+
+  const hasStructuredSections =
+    sections.some(([key]) => Array.isArray(structured?.[key]) && structured[key].length > 0) ||
+    Boolean(structured?.conclusion);
+
+  if (!hasStructuredSections) {
+    const paragraphs = Array.isArray(structured?.paragraphs) && structured.paragraphs.length > 0
+      ? structured.paragraphs
+      : paragraphFallback;
+    return (
+      <div className="space-y-3">
+        {paragraphs.map((paragraph: string, index: number) => (
+          <p key={index} style={{ fontSize: '15px', color: '#364153', lineHeight: '26px', whiteSpace: 'pre-wrap' }}>
+            {paragraph}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {sections.map(([key, title]) => {
+        const items = structured?.[key];
+        if (!Array.isArray(items) || items.length === 0) return null;
+        return (
+          <section key={key} className="space-y-2">
+            <h4 className="text-[13px] font-bold uppercase tracking-[0.06em]" style={{ color: '#016630' }}>
+              {title}
+            </h4>
+            <div className="space-y-3">
+              {items.map((item: string, index: number) => (
+                <p key={index} style={{ fontSize: '15px', color: '#364153', lineHeight: '26px', whiteSpace: 'pre-wrap' }}>
+                  {item}
+                </p>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+      {structured?.conclusion && (
+        <section className="rounded-[12px] bg-white/70 p-3" style={{ border: '1px solid #BBF7D0' }}>
+          <h4 className="mb-2 text-[13px] font-bold uppercase tracking-[0.06em]" style={{ color: '#016630' }}>
+            Conclusion
+          </h4>
+          <p style={{ fontSize: '15px', color: '#364153', lineHeight: '26px', whiteSpace: 'pre-wrap' }}>
+            {structured.conclusion}
+          </p>
+        </section>
+      )}
+    </div>
+  );
+}
+
 const PRELIMS_SUBJECT_TREE: SubjectTreeNode[] = [
   {
     label: 'Ancient History and Art & Culture',
@@ -689,6 +777,12 @@ export default function PyqPage() {
                   : q.difficulty === 'Easy'
                   ? { background: '#DCFCE7', color: '#008236' }
                   : { background: '#FFEDD4', color: '#CA3500' };
+                const chips = questionChips(q, {
+                  year: { background: '#DBEAFE', color: '#1447E6' },
+                  subject: { background: '#E0E7FF', color: '#432DD7' },
+                  subSubject: { background: '#E0F2FE', color: '#0369A1' },
+                  topic: { background: '#F3E8FF', color: '#7E22CE' },
+                });
                 const qState = questionStates[q.id] ?? { selected: null, submitted: false };
                 const setSelected = (label: string) => {
                   if (qState.submitted) return;
@@ -708,26 +802,11 @@ export default function PyqPage() {
                   >
                     {/* Tags */}
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {q.year > 0 && (
-                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#DBEAFE', color: '#1447E6' }}>
-                          UPSC {q.year}
+                      {chips.map((chip) => (
+                        <span key={chip.key} className="px-3 py-1 rounded-full text-[12px] font-bold" style={chip.style}>
+                          {chip.label}
                         </span>
-                      )}
-                      {q.subject && (
-                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#E0E7FF', color: '#432DD7' }}>
-                          {q.subject.toUpperCase()}
-                        </span>
-                      )}
-                      {q.subSubject && (
-                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#E0F2FE', color: '#0369A1' }}>
-                          {q.subSubject.toUpperCase()}
-                        </span>
-                      )}
-                      {q.topic && (
-                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#F3E8FF', color: '#7E22CE' }}>
-                          {q.topic.toUpperCase()}
-                        </span>
-                      )}
+                      ))}
                       <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={diffColor}>
                         {q.difficulty?.toUpperCase()}
                       </span>
@@ -776,7 +855,7 @@ export default function PyqPage() {
                               >
                                 {opt.label}
                               </div>
-                              <span className="text-[16px]" style={{ color: '#1A202C', fontWeight: qState.submitted && (isCorrect || isSelected) ? 500 : 400 }}>
+                              <span className="text-[16px]" style={{ color: '#1A202C', fontWeight: qState.submitted && (isCorrect || isSelected) ? 500 : 400, whiteSpace: 'pre-wrap', lineHeight: '24px' }}>
                                 {opt.text}
                               </span>
                             </button>
@@ -817,7 +896,7 @@ export default function PyqPage() {
                         <div className="flex items-center gap-2 mb-1" style={{ color: '#016630', fontWeight: 700, fontSize: '13px', textTransform: 'uppercase' }}>
                           <span>✅</span><span>Explanation</span>
                         </div>
-                        <p style={{ fontSize: '15px', color: '#364153', lineHeight: '26px' }}>{q.explanation}</p>
+                        <ExplanationRenderer question={q} />
                         <p className="mt-2" style={{ fontSize: '13px', color: '#6A7282' }}>📖 UPSC CSE Prelims {q.year}</p>
                       </div>
                     )}
@@ -1076,7 +1155,17 @@ export default function PyqPage() {
                 )}
 
                 {/* Dynamic mains cards */}
-                {!loading && visibleQuestions.map((q, idx) => (
+                {!loading && visibleQuestions.map((q, idx) => {
+                  const chips = questionChips(q, {
+                    year: { background: '#1E40AF', color: '#FFFFFF' },
+                    subject: { background: '#FEE2E2', color: '#DC2626' },
+                    subSubject: { background: '#E0F2FE', color: '#0369A1' },
+                    topic: { background: '#EDE9FE', color: '#7E22CE' },
+                  }).map((chip) => ({
+                    ...chip,
+                    label: chip.key === 'year' ? String(q.year) : chip.label,
+                  }));
+                  return (
                   <div
                     key={q.id}
                     className="mb-6"
@@ -1092,26 +1181,11 @@ export default function PyqPage() {
                   >
                     {/* Tag row */}
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {q.year > 0 && (
-                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#1E40AF', color: '#FFFFFF' }}>
-                          {q.year}
+                      {chips.map((chip) => (
+                        <span key={chip.key} className="px-3 py-1 rounded-full text-[12px] font-bold" style={chip.style}>
+                          {chip.label}
                         </span>
-                      )}
-                      {q.subject && (
-                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#FEE2E2', color: '#DC2626' }}>
-                          {q.subject.toUpperCase()}
-                        </span>
-                      )}
-                      {q.subSubject && (
-                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#E0F2FE', color: '#0369A1' }}>
-                          {q.subSubject.toUpperCase()}
-                        </span>
-                      )}
-                      {q.topic && (
-                        <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#EDE9FE', color: '#7E22CE' }}>
-                          {q.topic.toUpperCase()}
-                        </span>
-                      )}
+                      ))}
                       <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#F3E8FF', color: '#7E22CE' }}>
                         {q.marks || 15} marks
                       </span>
@@ -1182,7 +1256,8 @@ export default function PyqPage() {
                     </div>
 
                   </div>
-                ))}
+                  );
+                })}
 
                 {!loading && visibleQuestions.length === 0 && (
                   <div className="rounded-[16px] bg-white p-10 text-center text-[#6A7282]" style={{ border: '0.8px solid #E5E7EB' }}>
@@ -2472,7 +2547,7 @@ export default function PyqPage() {
                          style={{ background: labelBg, color: labelColor }}>
                       {opt.label}
                     </div>
-                    <span style={{ fontWeight: (hasSubmitted && (isCorrect || isSelected)) ? 500 : 400, fontSize: '16px', color: '#1E2939' }}>
+                    <span style={{ fontWeight: (hasSubmitted && (isCorrect || isSelected)) ? 500 : 400, fontSize: '16px', color: '#1E2939', whiteSpace: 'pre-wrap', lineHeight: '24px' }}>
                       {opt.text}
                     </span>
                   </button>
@@ -2486,9 +2561,9 @@ export default function PyqPage() {
                 <div className="flex items-center gap-2 mb-2" style={{ color: '#016630', fontWeight: 700, fontSize: '14px', textTransform: 'uppercase' }}>
                   <span>✅</span><span>Explanation</span>
                 </div>
-                <p style={{ fontSize: '16px', color: '#364153', lineHeight: '26px', marginBottom: 12 }}>
-                  {selectedQuestion.explanation}
-                </p>
+                <div style={{ marginBottom: 12 }}>
+                  <ExplanationRenderer question={selectedQuestion} />
+                </div>
                 <div className="flex items-center gap-2" style={{ fontSize: '14px', color: '#6A7282' }}>
                   <span>📖</span>
                   <span>UPSC CSE Prelims {selectedQuestion.year}, {selectedQuestion.paper}</span>
