@@ -43,7 +43,7 @@ export const jeetAIService = {
     api.post<{ conversationId: string; reply: string }>(
       '/ai/chat',
       { message, conversationId },
-      { ...authConfig(), timeout: 60000 }
+      { ...authConfig(), timeout: 120000 }
     ),
 
   getConversations: () =>
