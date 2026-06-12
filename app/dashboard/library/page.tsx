@@ -581,17 +581,19 @@ export default function LibraryPage() {
                       borderRadius: '24px',
                       border: '0.8px solid #E5E7EB',
                       boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.08)',
-                      padding: '20px 48px',
+                      padding: isMobile ? '16px 24px' : '20px 48px',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '32px',
+                      gap: isMobile ? '20px' : '32px',
                       flexShrink: 0,
+                      width: isMobile ? '100%' : undefined,
+                      justifyContent: isMobile ? 'center' : undefined,
                       position: 'relative',
                       zIndex: 1,
                     }}
                   >
                     <div className="flex flex-col items-center">
-                      <div className="font-arimo font-bold" style={{ fontSize: '40px', color: '#101828', lineHeight: 1.1 }}>
+                      <div className="font-arimo font-bold" style={{ fontSize: isMobile ? '32px' : '40px', color: '#101828', lineHeight: 1.1 }}>
                         {selectedApiSubject?.pdfCount ?? 0}
                       </div>
                       <div className="font-arimo" style={{ fontSize: '14px', color: '#6A7282' }}>
@@ -600,7 +602,7 @@ export default function LibraryPage() {
                     </div>
                     <div style={{ width: '1px', height: '48px', background: '#E5E7EB' }} />
                     <div className="flex flex-col items-center">
-                      <div className="font-arimo font-bold" style={{ fontSize: '40px', color: '#C68A0B', lineHeight: 1.1 }}>
+                      <div className="font-arimo font-bold" style={{ fontSize: isMobile ? '32px' : '40px', color: '#C68A0B', lineHeight: 1.1 }}>
                         {selectedApiSubject?.pageCount ?? selectedApiSubject?.pages ?? selectedApiSubject?.chapterCount ?? 0}
                       </div>
                       <div className="font-arimo" style={{ fontSize: '14px', color: '#6A7282' }}>
@@ -626,6 +628,9 @@ export default function LibraryPage() {
                         background: '#F3F4F6',
                         borderRadius: '12px',
                         display: 'inline-flex',
+                        maxWidth: '100%',
+                        overflowX: 'auto',
+                        scrollbarWidth: 'none',
                       }}
                     >
                       {stages.map(({ key, label, icon }) => {
@@ -637,7 +642,8 @@ export default function LibraryPage() {
                             className="font-arimo font-bold flex items-center transition-all"
                             style={{
                               gap: '6px',
-                              padding: '7px 18px',
+                              padding: isMobile ? '7px 12px' : '7px 18px',
+                              flexShrink: 0,
                               borderRadius: '8px',
                               fontSize: '13px',
                               border: 'none',

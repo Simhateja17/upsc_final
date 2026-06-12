@@ -216,7 +216,7 @@ export default function ProfilePage() {
             style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
           >
             {/* Avatar + Name Header */}
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 min-w-0">
               <div className="relative w-16 h-16 flex-shrink-0">
                 <div
                   className="w-16 h-16 rounded-full flex items-center justify-center text-white font-semibold text-[24px] leading-[32px]"
@@ -226,9 +226,9 @@ export default function ProfilePage() {
                 </div>
                 <div className="absolute left-[48px] top-[48px] w-4 h-4 bg-[#90a1b9] border-[1.6px] border-solid border-white rounded-full" />
               </div>
-              <div className="flex flex-col">
-                <h2 className="font-semibold text-[20px] leading-[28px] text-[#0f172b]">{displayName}</h2>
-                <p className="font-normal text-[14px] leading-[20px] text-[#62748e]">{user?.email}</p>
+              <div className="flex flex-col min-w-0">
+                <h2 className="font-semibold text-[20px] leading-[28px] text-[#0f172b] break-words">{displayName}</h2>
+                <p className="font-normal text-[14px] leading-[20px] text-[#62748e] truncate">{user?.email}</p>
                 <span
                   className="inline-block mt-1 px-3 py-1 rounded-[4px] font-medium text-[12px] leading-[16px] text-[#a65f00]"
                   style={{ background: '#fef9c2' }}

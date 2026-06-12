@@ -1371,22 +1371,34 @@ export default function ExplorePlansPage() {
           </div>
 
           {/* Comparison table */}
-          <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid #E5E7EB' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Inter, system-ui, sans-serif' }}>
+          <style>{`
+            .cmp-table-wrap { border-radius: 16px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; border: 1px solid #E5E7EB; }
+            .cmp-table { width: 100%; min-width: 560px; border-collapse: collapse; font-family: Inter, system-ui, sans-serif; }
+            .cmp-h { font-family: var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif; font-size: 44px; font-weight: 400; line-height: 51.92px; }
+            @media (max-width: 640px) {
+              .cmp-table { min-width: 480px; }
+              .cmp-h { font-size: 26px; line-height: 1.2; }
+              .cmp-th { padding: 14px 10px !important; }
+              .cmp-td-feature { padding: 11px 12px !important; }
+              .cmp-td { padding: 11px 8px !important; }
+            }
+          `}</style>
+          <div className="cmp-table-wrap">
+            <table className="cmp-table">
               {/* Header row */}
               <thead>
                 <tr style={{ background: '#0B1525' }}>
-                  <th style={{ padding: '18px 20px', textAlign: 'left', width: '40%', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 44, fontStyle: 'normal', fontWeight: 400, lineHeight: '51.92px', color: '#fff' }}>
+                  <th className="cmp-th cmp-h" style={{ padding: '18px 20px', textAlign: 'left', width: '40%', color: '#fff' }}>
                     Features
                   </th>
-                  <th style={{ padding: '18px 16px', textAlign: 'center', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 44, fontStyle: 'normal', fontWeight: 400, lineHeight: '51.92px', color: '#fff' }}>
+                  <th className="cmp-th cmp-h" style={{ padding: '18px 16px', textAlign: 'center', color: '#fff' }}>
                     Aspire
                   </th>
-                  <th style={{ padding: '18px 16px', textAlign: 'center', background: 'rgba(232,184,75,0.12)' }}>
-                    <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 44, fontStyle: 'normal', fontWeight: 400, lineHeight: '51.92px', color: '#E8B84B' }}>Rise</span>
+                  <th className="cmp-th" style={{ padding: '18px 16px', textAlign: 'center', background: 'rgba(232,184,75,0.12)' }}>
+                    <span className="cmp-h" style={{ color: '#E8B84B' }}>Rise</span>
                     <span style={{ marginLeft: 6, fontSize: 20 }}>⭐</span>
                   </th>
-                  <th style={{ padding: '18px 16px', textAlign: 'center', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 44, fontStyle: 'normal', fontWeight: 400, lineHeight: '51.92px', color: '#fff' }}>
+                  <th className="cmp-th cmp-h" style={{ padding: '18px 16px', textAlign: 'center', color: '#fff' }}>
                     Ascent
                   </th>
                 </tr>
@@ -1417,6 +1429,7 @@ export default function ExplorePlansPage() {
                 ] as { feature: string; sub: string; aspire: string; rise: string; ascent: string }[]).map((row, i) => {
                   const cellStyle = (val: string, isRise = false): React.CSSProperties => ({
                     padding: '13px 16px',
+                    whiteSpace: 'nowrap' as const,
                     textAlign: 'center' as const,
                     fontSize: 13,
                     fontWeight: val === '✓' || val === '–' ? 600 : 500,
@@ -1430,13 +1443,13 @@ export default function ExplorePlansPage() {
 
                   return (
                     <tr key={row.feature} style={{ background: i % 2 === 0 ? '#fff' : '#FAFAFA' }}>
-                      <td style={{ padding: '13px 20px', borderBottom: '1px solid #F3F4F6' }}>
+                      <td className="cmp-td-feature" style={{ padding: '13px 20px', borderBottom: '1px solid #F3F4F6' }}>
                         <span style={{ fontSize: 13, fontWeight: 500, color: '#1A2540', display: 'block' }}>{row.feature}</span>
                         {row.sub && <span style={{ fontSize: 11, color: '#9AA3B8', display: 'block', marginTop: 2 }}>{row.sub}</span>}
                       </td>
-                      <td style={cellStyle(row.aspire)}>{row.aspire}</td>
-                      <td style={cellStyle(row.rise, true)}>{row.rise}</td>
-                      <td style={cellStyle(row.ascent)}>{row.ascent}</td>
+                      <td className="cmp-td" style={cellStyle(row.aspire)}>{row.aspire}</td>
+                      <td className="cmp-td" style={cellStyle(row.rise, true)}>{row.rise}</td>
+                      <td className="cmp-td" style={cellStyle(row.ascent)}>{row.ascent}</td>
                     </tr>
                   );
                 })}

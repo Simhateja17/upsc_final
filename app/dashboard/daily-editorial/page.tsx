@@ -83,7 +83,6 @@ function getCalendarDays(year: number, month: number) {
 export default function DailyEditorialPage() {
   const router = useRouter();
   const [activeNewspaper, setActiveNewspaper] = useState<'hindu' | 'express'>('hindu');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
   const [calYear, setCalYear] = useState(() => new Date().getFullYear());
   const [editorials, setEditorials] = useState<EditorialCard[]>([]);
@@ -389,44 +388,6 @@ export default function DailyEditorialPage() {
 
             </div>
 
-            {/* View mode toggles */}
-            <div className="flex items-center self-start xl:self-auto" style={{ background: '#FFFFFF', border: '1px solid #D7DEEA', borderRadius: '14px', padding: '4px' }}>
-              <button
-                onClick={() => setViewMode('list')}
-                className="flex items-center gap-2 font-arimo font-medium"
-                style={{
-                  height: 'clamp(30px, 2.69vw, 36px)',
-                  padding: '0 clamp(10px, 1.1vw, 14px)',
-                  borderRadius: '10px',
-                  background: viewMode === 'list' ? '#162456' : '#F3F4F6',
-                  color: viewMode === 'list' ? '#FFFFFF' : '#4A5565',
-                  fontSize: 'clamp(12px, 1.05vw, 14px)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/list.png" alt="List" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
-                List View
-              </button>
-
-              <button
-                onClick={() => setViewMode('grid')}
-                className="flex items-center gap-2 font-arimo font-medium"
-                style={{
-                  height: 'clamp(30px, 2.69vw, 36px)',
-                  padding: '0 clamp(10px, 1.1vw, 14px)',
-                  borderRadius: '10px',
-                  background: viewMode === 'grid' ? '#162456' : '#F3F4F6',
-                  color: viewMode === 'grid' ? '#FFFFFF' : '#4A5565',
-                  fontSize: 'clamp(12px, 1.05vw, 14px)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                Grid View
-              </button>
-            </div>
           </div>
 
           {/* Divider */}
@@ -448,7 +409,7 @@ export default function DailyEditorialPage() {
           <div
             style={{
               display: loading ? 'block' : 'grid',
-              gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr',
+              gridTemplateColumns: '1fr',
               gap: 'clamp(14px, 1.5vw, 20px)',
             }}
           >

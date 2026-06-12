@@ -8,9 +8,11 @@ interface SidebarProps {
   forceShow?: boolean;
   isOpen?: boolean;
   onClose?: () => void;
+  /** When true, render only as a mobile drawer (hidden on desktop). */
+  mobileOnly?: boolean;
 }
 
-const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
+const Sidebar = ({ isOpen, onClose, mobileOnly = false }: SidebarProps) => {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -97,9 +99,9 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         className={`
           bg-white flex-shrink-0 flex flex-col
           ${collapsed ? 'w-[60px] min-w-[60px]' : 'w-[260px] min-w-[260px]'}
-          fixed lg:relative left-0 z-30 lg:z-auto
+          ${mobileOnly ? 'fixed lg:hidden' : 'fixed lg:relative'} left-0 z-30 lg:z-auto
           top-[clamp(56px,5.78vw,111px)] bottom-0 lg:top-0 lg:bottom-auto lg:h-full
-          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${isOpen ? 'translate-x-0' : `-translate-x-full ${mobileOnly ? '' : 'lg:translate-x-0'}`}
         `}
         style={{
           boxShadow: '3px 0 12px rgba(0,0,0,0.06), 1px 0 3px rgba(0,0,0,0.04)',

@@ -148,9 +148,7 @@ export default function DashboardLayout({
     <div className="flex flex-col" style={{ height: '100dvh' }}>
       <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
       <div className="flex flex-1 overflow-hidden">
-        {!hideSidebar && (
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        )}
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} mobileOnly={hideSidebar} />
         <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0" style={{ background: '#FAFBFE' }}>
           {children}
         </main>
