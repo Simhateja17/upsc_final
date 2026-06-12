@@ -128,11 +128,10 @@ function ExplanationRenderer({ question }: { question: any }) {
 
   if (!explanation) return null;
 
-  const hasStructuredSections =
-    sections.some(([key]) => Array.isArray(structured?.[key]) && structured[key].length > 0) ||
-    Boolean(structured?.conclusion);
+  const hasAnalysisSections =
+    sections.some(([key]) => Array.isArray(structured?.[key]) && structured[key].length > 0);
 
-  if (!hasStructuredSections) {
+  if (!hasAnalysisSections) {
     const paragraphs = Array.isArray(structured?.paragraphs) && structured.paragraphs.length > 0
       ? structured.paragraphs
       : paragraphFallback;
