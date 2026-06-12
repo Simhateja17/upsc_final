@@ -255,17 +255,17 @@ export default function EvaluatingPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center font-arimo"
+      className="min-h-screen flex items-center justify-center font-arimo p-4"
       style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}
     >
       <div
-        className="relative flex flex-col"
+        className="relative flex flex-col px-6 py-8 sm:px-10 sm:py-8"
         style={{
-          width: '768px',
+          width: '100%',
+          maxWidth: '768px',
           borderRadius: '16px',
           background: '#FFFFFF',
           boxShadow: '0px 8px 10px -6px #0000001A, 0px 20px 25px -5px #0000001A',
-          padding: '32px 40px 32px 40px',
         }}
       >
         {/* Header */}
@@ -448,7 +448,8 @@ export default function EvaluatingPage() {
           <div
             className="mx-auto mb-3"
             style={{
-              width: '362px',
+              width: '100%',
+              maxWidth: '362px',
               height: '5px',
               borderRadius: '10px',
               background: '#D9D9D9',

@@ -628,7 +628,7 @@ export default function VideoLecturesPage() {
                   onClick={() => handleSubjectClick(subject.name)}
                   style={{
                     width: '169px',
-                    height: '143px',
+                    height: '163px',
                     background: theme.bg,
                     borderRadius: '18px',
                     padding: '16px 14px 14px',
@@ -665,7 +665,21 @@ export default function VideoLecturesPage() {
                   <div style={{ fontSize: '30px', lineHeight: '30px', marginBottom: '10px' }}>
                     {subjectEmoji(subject.name)}
                   </div>
-                  <div className="font-arimo font-bold" style={{ fontSize: '14px', lineHeight: '20px', color: '#1A2744', letterSpacing: '-0.3px' }}>
+                  <div
+                    className="font-arimo font-bold"
+                    title={subject.name}
+                    style={{
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                      color: '#1A2744',
+                      letterSpacing: '-0.3px',
+                      height: '40px',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
                     {subject.name}
                   </div>
                   <div className="font-arimo" style={{ fontSize: '11.5px', lineHeight: '17.25px', color: '#5A7096', marginTop: '3px', marginBottom: '2px' }}>

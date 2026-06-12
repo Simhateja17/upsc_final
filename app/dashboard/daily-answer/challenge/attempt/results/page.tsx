@@ -187,7 +187,7 @@ export default function ResultsPage() {
         <div
           className="flex flex-col items-center justify-center px-6"
           style={{
-            width: '988px',
+            width: '100%', maxWidth: '988px',
             minHeight: '168px',
             borderRadius: '14px',
             background: 'linear-gradient(90deg, #101828 0%, #17223E 100%)',
@@ -217,7 +217,7 @@ export default function ResultsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap" style={{ width: '988px' }}>
+        <div className="flex items-center gap-2 flex-wrap" style={{ width: '100%', maxWidth: '988px' }}>
           {slides.map((item) => (
             <button
               key={item.key}
@@ -236,7 +236,7 @@ export default function ResultsPage() {
         {slide === 'feedback' && (
           <div
             style={{
-              width: '988px',
+              width: '100%', maxWidth: '988px',
               borderRadius: '14px',
               background: '#FFFFFF',
               boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
@@ -247,12 +247,12 @@ export default function ResultsPage() {
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/feedback-header.png" alt="Personalized Feedback" style={{ width: '924px', objectFit: 'fill' }} />
+            <img src="/feedback-header.png" alt="Personalized Feedback" style={{ width: '100%', maxWidth: '924px', objectFit: 'fill' }} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/feedback-subtitle.png"
               alt="Actionable insights to help you improve, not just a score"
-              style={{ width: '924px', objectFit: 'fill' }}
+              style={{ width: '100%', maxWidth: '924px', objectFit: 'fill' }}
             />
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -334,7 +334,7 @@ export default function ResultsPage() {
         {slide === 'markup' && (
           <div
             style={{
-              width: '988px',
+              width: '100%', maxWidth: '988px',
               borderRadius: '14px',
               background: '#FFFFFF',
               boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
@@ -439,7 +439,7 @@ export default function ResultsPage() {
         {slide === 'rubric' && (
           <div
             style={{
-              width: '988px',
+              width: '100%', maxWidth: '988px',
               borderRadius: '14px',
               background: '#FFFFFF',
               boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
@@ -482,7 +482,7 @@ export default function ResultsPage() {
         {slide === 'next' && (
           <div
             style={{
-              width: '988px',
+              width: '100%', maxWidth: '988px',
               borderRadius: '14px',
               background: '#FFFFFF',
               boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
@@ -517,7 +517,7 @@ export default function ResultsPage() {
 
         <div
           style={{
-            width: '988px',
+            width: '100%', maxWidth: '988px',
             borderRadius: '10px',
             background: '#FEFCE8',
             borderLeft: '4px solid #FDC700',

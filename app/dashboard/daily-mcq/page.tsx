@@ -73,7 +73,7 @@ export default function DailyMcqIntroPage() {
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-4">
         {/* Intro Card */}
-        <div className="card-elevated rounded-[18px] p-8 text-center" style={{ width: '605px', minHeight: '620px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 26px 60px -28px rgba(15, 23, 42, 0.28), 0 10px 24px -18px rgba(15, 23, 42, 0.18), inset 0 1px 0 rgba(255,255,255,0.85)' }}>
+        <div className="card-elevated rounded-[18px] p-6 sm:p-8 text-center" style={{ width: '100%', maxWidth: '605px', minHeight: '620px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 26px 60px -28px rgba(15, 23, 42, 0.28), 0 10px 24px -18px rgba(15, 23, 42, 0.18), inset 0 1px 0 rgba(255,255,255,0.85)' }}>
           {/* Icon */}
           <div className="flex justify-center mb-6">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -111,7 +111,7 @@ export default function DailyMcqIntroPage() {
             </div>
           </div>
 
-          <div className="w-[380px] rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] p-4 mb-6 text-left">
+          <div className="w-full max-w-[380px] rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] p-4 mb-6 text-left">
             <div className="font-arimo font-bold text-[#15803D] text-[12px] uppercase tracking-[0.5px] mb-3">
               Marking Pattern
             </div>

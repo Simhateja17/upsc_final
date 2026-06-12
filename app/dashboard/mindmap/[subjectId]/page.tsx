@@ -57,7 +57,7 @@ export default function SubjectDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFBFE] font-inter p-8">
+    <div className="min-h-screen bg-[#FAFBFE] font-inter p-4 sm:p-8">
       <Link href="/dashboard/mindmap" className="inline-flex items-center text-[#6B7280] text-[13px] hover:text-[#111827] mb-6">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-1">
           <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -80,7 +80,7 @@ export default function SubjectDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center mb-1">
+        <div className="flex items-center flex-wrap gap-y-2 mb-1">
           <div className="flex items-center gap-2 bg-[#F0FDF4] px-3 py-1.5 rounded-full border border-[#DCFCE7] mr-4">
             <div className="w-5 h-5 rounded-full bg-[#10B981] flex items-center justify-center">
               <CheckmarkIcon />
@@ -93,7 +93,7 @@ export default function SubjectDetailPage() {
             <span className="text-[#111827] font-bold text-[18px]">Choose a Mindmap</span>
           </div>
         </div>
-        <p className="text-[#6B7280] text-[14px] mb-8 ml-[235px]">Each map covers one key topic with all its branches</p>
+        <p className="text-[#6B7280] text-[14px] mb-8 ml-0 sm:ml-[235px]">Each map covers one key topic with all its branches</p>
 
         {/* Mindmap list */}
         {loading ? (
@@ -113,9 +113,9 @@ export default function SubjectDetailPage() {
               const statusStyle = statusColors[status];
               return (
                 <Link key={map.slug} href={`/dashboard/mindmap/${subjectId}/${map.slug}`} className="block">
-                  <div className="bg-white rounded-[12px] p-6 border border-gray-100 flex items-center justify-between hover:shadow-sm transition-shadow mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-[8px] bg-[#F9FAFB] flex items-center justify-center">
+                  <div className="bg-white rounded-[12px] p-4 sm:p-6 border border-gray-100 flex flex-wrap items-center gap-x-4 gap-y-3 hover:shadow-sm transition-shadow mb-4">
+                    <div className="flex items-center gap-4 grow basis-[180px] min-w-0">
+                      <div className="w-12 h-12 rounded-[8px] bg-[#F9FAFB] flex items-center justify-center flex-shrink-0">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M3 21H21" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                           <path d="M5 21V7" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -124,16 +124,16 @@ export default function SubjectDetailPage() {
                           <path d="M10 21V11C10 10.4477 10.4477 10 11 10H13C13.5523 10 14 10.4477 14 11V21" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </div>
-                      <div>
-                        <h3 className="text-[#111827] font-bold text-[16px] mb-1">{map.title}</h3>
+                      <div className="min-w-0">
+                        <h3 className="text-[#111827] font-bold text-[16px] mb-1 break-words">{map.title}</h3>
                         <p className="text-[#6B7280] text-[12px]">
                           {map.branchCount} branches
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-8">
-                      <div className="w-[100px] h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-6 ml-auto flex-shrink-0">
+                      <div className="w-[60px] sm:w-[100px] h-2 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
                         <div className="h-full rounded-full" style={{ width: `${map.mastery}%`, backgroundColor: map.mastery === 0 ? 'transparent' : '#10B981' }} />
                       </div>
                       <span className="text-[14px] font-bold text-[#10B981]">{map.mastery}%</span>
@@ -144,7 +144,7 @@ export default function SubjectDetailPage() {
                         {status === 'Done' && <span className="mr-1">✓</span>}
                         {status}
                       </span>
-                      <span className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600">
+                      <span className="w-8 h-8 hidden sm:flex items-center justify-center text-gray-400 hover:text-gray-600">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>

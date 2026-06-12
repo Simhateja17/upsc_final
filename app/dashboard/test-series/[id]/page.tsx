@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { testSeriesService } from '@/lib/services';
+import { useIsTabletOrBelow } from '@/hooks/useIsMobile';
 import '../../../../styles/test-series-v2.css';
 import { Plus_Jakarta_Sans, Playfair_Display } from 'next/font/google';
 
@@ -203,6 +204,7 @@ export default function TestSeriesDetailPage() {
   const params = useParams();
   const seriesId = params?.id as string;
   const cms = isCmsUuid(seriesId);
+  const stack = useIsTabletOrBelow();
   const [apiData, setApiData] = useState<Record<string, any> | null>(null);
   const [apiLoading, setApiLoading] = useState(cms);
   const [apiErr, setApiErr] = useState<string | null>(null);
@@ -297,7 +299,7 @@ export default function TestSeriesDetailPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: stack ? '1fr' : '1fr 340px', gap: 20, alignItems: 'start' }}>
             {/* Left column */}
             <div>
               {/* Description */}
@@ -590,7 +592,7 @@ export default function TestSeriesDetailPage() {
         </div>
 
         {/* Main Layout with Sidebar */}
-        <div className="detail-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px' }}>
+        <div className="detail-layout">
           {/* Main Content */}
           <div>
             {/* Why Enroll */}
@@ -808,7 +810,7 @@ export default function TestSeriesDetailPage() {
                 </div>
                 Student Reviews
               </div>
-              <div className="rev-row" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '24px' }}>
+              <div className="rev-row" style={{ display: 'grid', gridTemplateColumns: stack ? '1fr' : '200px 1fr', gap: '24px' }}>
                 <div>
                   <div className="rev-big" style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--ink)', marginBottom: '8px' }}>
                     {series.rating || '–'}

@@ -540,12 +540,12 @@ export default function TestAnalyticsPage() {
 
       {selectedReport && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto"
           style={{ background: 'rgba(15,23,42,0.55)' }}
           onClick={() => setSelectedReport(null)}
         >
           <div
-            className="w-full max-w-[840px] rounded-[24px] bg-white p-7"
+            className="w-full max-w-[840px] rounded-[24px] bg-white p-7 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto"
             style={{ boxShadow: '0 25px 60px rgba(15,23,42,0.28)' }}
             onClick={(event) => event.stopPropagation()}
           >

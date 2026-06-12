@@ -284,7 +284,7 @@ export default function MindmapViewPage() {
         </div>
       )}
 
-      <div className="max-w-[1400px] mx-auto py-6 px-8">
+      <div className="max-w-[1400px] mx-auto py-6 px-4 sm:px-8">
         {/* Back link */}
         <Link href={`/dashboard/mindmap/${subjectId}`} className="inline-flex items-center text-[#6B7280] text-[13px] hover:text-[#111827] mb-4">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-1">
@@ -295,14 +295,14 @@ export default function MindmapViewPage() {
         </Link>
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h1 className="text-[24px] font-bold text-[#101828] mb-1">{data.title}</h1>
             <p className="text-[#6B7280] text-[13px]">
               {data.subject} · {topBranches} branches · {totalNodes} nodes
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center flex-wrap gap-2 sm:gap-3">
             {/* View toggle */}
             <div className="flex items-center bg-white border border-gray-200 rounded-lg p-0.5">
               <button
@@ -351,7 +351,7 @@ export default function MindmapViewPage() {
         </div>
 
         {/* Main content */}
-        <div className="flex gap-6 items-start">
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* Mindmap / List view */}
           <div className="flex-1 min-w-0">
             {viewMode === 'mindmap' ? (

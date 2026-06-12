@@ -643,7 +643,7 @@ function MockTestResultsInner() {
         }}>
           Next Steps
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 20 }}>
           {displayCards.map((card) => (
             <div
               key={card.title}

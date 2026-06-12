@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { pricingService, userService } from '@/lib/services';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 type SubscriptionPlan = 'free' | 'trial' | 'pro' | 'pro-annual';
 type SubscriptionStatus = 'active' | 'cancelled' | 'expired' | 'trial';
@@ -218,6 +219,7 @@ export default function BillingPage() {
   const searchParams = useSearchParams();
   const trialJustStarted = searchParams.get('trial') === 'started';
   const billingRef = useRef<HTMLElement | null>(null);
+  const isMobile = useIsMobile();
 
   const [sub, setSub] = useState<Subscription | null>(null);
   const [orders, setOrders] = useState<OrderItem[]>([]);
@@ -317,12 +319,14 @@ export default function BillingPage() {
             borderRadius: 16,
             background: 'linear-gradient(160deg, #0A1120 0%, #0F1C35 100%)',
             display: 'flex',
-            padding: '29px 37px 37px 37px',
+            padding: 'clamp(20px, 4vw, 37px)',
             justifyContent: 'space-between',
             alignItems: 'center',
             alignSelf: 'stretch',
             position: 'relative',
             overflow: 'visible',
+            flexWrap: 'wrap',
+            gap: 16,
           }}>
             {/* Left – icon + plan info */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -366,7 +370,7 @@ export default function BillingPage() {
           </div>
 
           {/* Usage + Features two-column */}
-          <div style={{ background: '#fff', border: '1px solid #ECEAE4', borderRadius: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
+          <div style={{ background: '#fff', border: '1px solid #ECEAE4', borderRadius: 16, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', overflow: 'hidden' }}>
             {/* Left – YOUR USAGE THIS MONTH */}
             <div style={{ padding: '28px 28px', borderRight: '1px solid #ECEAE4' }}>
               <p style={{ margin: '0 0 18px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', color: '#9B9590', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -425,7 +429,7 @@ export default function BillingPage() {
           </div>
 
           {/* Billing footer bar */}
-          <div style={{ borderRadius: 16, background: '#0A1120', padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ borderRadius: 16, background: '#0A1120', padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 20, lineHeight: 1 }}>📅</span>
               <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, system-ui, sans-serif' }}>
