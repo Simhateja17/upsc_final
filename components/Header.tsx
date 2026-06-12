@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 
-// Dropdown menu items with Lucide-style icons
+// Dropdown menu  items with Lucide-style icons
 const dropdownMenus = {
   prepare: [
     { label: 'Study Planner', href: '/dashboard/study-planner', icon: 'calendar' },
