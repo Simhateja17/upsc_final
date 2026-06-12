@@ -6,6 +6,18 @@ import { userService } from '@/lib/services';
 
 const DONE_KEY = 'rwj_onboarding_complete';
 
+// ── Responsive helper ─────────────────────────────────────────────────────────
+function useIsMobile(breakpoint = 480) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < breakpoint);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 const INDIAN_STATES = [
   'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
   'Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh',
@@ -144,14 +156,15 @@ function OptionCard({
 
 // ── Header (shared across all steps) ─────────────────────────────────────────
 function ModalHeader({ step, firstName }: { step: number; firstName: string }) {
+  const isMobile = useIsMobile();
   return (
-    <div style={{ background: '#FAF6E8', padding: '24px 28px 20px' }}>
-      <div style={{ marginBottom: 20 }}>
+    <div style={{ background: '#FAF6E8', padding: isMobile ? '18px 18px 16px' : '24px 28px 20px' }}>
+      <div style={{ marginBottom: isMobile ? 16 : 20 }}>
         <StepBar current={step} />
       </div>
       <h1 style={{
         fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 700,
-        fontSize: 22, color: '#111827', marginBottom: 6, lineHeight: 1.3,
+        fontSize: isMobile ? 19 : 22, color: '#111827', marginBottom: 6, lineHeight: 1.3,
       }}>
         Let&apos;s personalise your Aspire experience,{' '}
         <span style={{ color: '#D97706' }}>{firstName}</span>{' '}
@@ -218,6 +231,7 @@ function FooterButtons({
 
 // ── Step 4: dashboard preview ─────────────────────────────────────────────────
 function DashboardPreview({ firstName }: { firstName: string }) {
+  const isMobile = useIsMobile();
   return (
     <div style={{
       border: '1px solid #E5E7EB', borderRadius: 12, overflow: 'hidden',
@@ -244,11 +258,13 @@ function DashboardPreview({ firstName }: { firstName: string }) {
       {/* action bar */}
       <div style={{
         background: '#F9FAFB', borderBottom: '1px solid #E5E7EB',
-        padding: '8px 16px', display: 'flex', gap: 8, alignItems: 'center',
+        padding: '8px 16px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap',
       }}>
         <div style={{
-          flex: 1, background: '#fff', border: '1px solid #E5E7EB',
+          flex: isMobile ? '1 1 100%' : 1, minWidth: 0,
+          background: '#fff', border: '1px solid #E5E7EB',
           borderRadius: 8, padding: '6px 10px', color: '#9CA3AF', fontSize: 11,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           🔍 Ask Jeet AI: &quot;Explain current affairs&quot;
         </div>
@@ -274,12 +290,14 @@ function DashboardPreview({ firstName }: { firstName: string }) {
             { icon: '📰', label: 'Daily Editorial', desc: 'Noida International Airport', btn: 'Read Now', btnColor: '#374151' },
           ].map((card) => (
             <div key={card.label} style={{
-              border: '1px solid #E5E7EB', borderRadius: 8, padding: '10px',
+              border: '1px solid #E5E7EB', borderRadius: 8, padding: isMobile ? '8px' : '10px',
+              minWidth: 0, display: 'flex', flexDirection: 'column',
             }}>
               <div style={{ fontSize: 14, marginBottom: 4 }}>{card.icon}</div>
               <div style={{ fontWeight: 600, fontSize: 11, color: '#111827', marginBottom: 2 }}>{card.label}</div>
               <div style={{ fontSize: 10, color: '#6B7280', marginBottom: 8 }}>{card.desc}</div>
               <div style={{
+                marginTop: 'auto',
                 background: card.btnColor, color: '#fff', borderRadius: 6,
                 padding: '4px 8px', fontSize: 10, fontWeight: 500, textAlign: 'center',
               }}>{card.btn}</div>
@@ -294,6 +312,7 @@ function DashboardPreview({ firstName }: { firstName: string }) {
 // ── Main component ────────────────────────────────────────────────────────────
 export default function OnboardingFlow() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
   const [slideDir, setSlideDir] = useState<'in' | 'out'>('in');
@@ -355,6 +374,9 @@ export default function OnboardingFlow() {
     transition: 'opacity 0.16s ease, transform 0.16s ease',
   };
 
+  const bodyPad = isMobile ? '20px 18px 22px' : '24px 28px 28px';
+  const formCols = isMobile ? '1fr' : '1fr 1fr';
+
   return (
     <div
       style={{
@@ -367,13 +389,14 @@ export default function OnboardingFlow() {
       <div style={{
         width: '100%', maxWidth: 580,
         borderRadius: 20, overflow: 'hidden',
+        maxHeight: '92vh', overflowY: 'auto',
         boxShadow: '0 32px 80px rgba(0,0,0,0.28), 0 8px 24px rgba(0,0,0,0.16)',
       }}>
         <ModalHeader step={step} firstName={firstName} />
 
         {/* ── Step 1 ── */}
         {step === 0 && (
-          <div style={{ background: '#fff', padding: '24px 28px 28px', ...bodyStyle }}>
+          <div style={{ background: '#fff', padding: bodyPad, ...bodyStyle }}>
             <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 500, color: '#374151', marginBottom: 16 }}>
               Which stage of UPSC preparation are you at?
             </p>
@@ -394,13 +417,13 @@ export default function OnboardingFlow() {
 
         {/* ── Step 2 ── */}
         {step === 1 && (
-          <div style={{ background: '#fff', padding: '24px 28px 28px', ...bodyStyle }}>
+          <div style={{ background: '#fff', padding: bodyPad, ...bodyStyle }}>
             <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 500, color: '#374151', marginBottom: 20 }}>
               Tell us a bit about your prep focus
             </p>
 
             {/* Row 1 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: formCols, gap: 16, marginBottom: 16 }}>
               <div>
                 <label style={labelStyle}>Target Exam Year</label>
                 <div style={{ position: 'relative' }}>
@@ -437,7 +460,7 @@ export default function OnboardingFlow() {
             </div>
 
             {/* Row 2 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: formCols, gap: 16, marginBottom: 16 }}>
               <div>
                 <label style={labelStyle}>State</label>
                 <div style={{ position: 'relative' }}>
@@ -475,7 +498,7 @@ export default function OnboardingFlow() {
             </div>
 
             {/* Row 3 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 0 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: formCols, gap: 16, marginBottom: 0 }}>
               <div>
                 <label style={labelStyle}>How many hours do you study per day?</label>
                 <div style={{ position: 'relative' }}>
@@ -515,7 +538,7 @@ export default function OnboardingFlow() {
 
         {/* ── Step 3 ── */}
         {step === 2 && (
-          <div style={{ background: '#fff', padding: '24px 28px 28px', ...bodyStyle }}>
+          <div style={{ background: '#fff', padding: bodyPad, ...bodyStyle }}>
             <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 500, color: '#374151', marginBottom: 16 }}>
               Set your daily reminder time – consistency is everything
             </p>
@@ -534,7 +557,7 @@ export default function OnboardingFlow() {
 
         {/* ── Step 4 ── */}
         {step === 3 && (
-          <div style={{ background: '#fff', padding: '24px 28px 28px', ...bodyStyle }}>
+          <div style={{ background: '#fff', padding: bodyPad, ...bodyStyle }}>
             <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 500, color: '#374151', marginBottom: 16 }}>
               Your personalised dashboard is ready – here&apos;s a preview
             </p>

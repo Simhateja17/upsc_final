@@ -316,15 +316,20 @@ export default function FAQContent() {
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
+    // Track which sections currently overlap the detection band, then always
+    // highlight the topmost one in document order. Setting active to whichever
+    // entry fired last (the old behaviour) picked the wrong neighbour because
+    // IntersectionObserver entries are not delivered in document order.
+    const visibility: Record<string, boolean> = {};
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
+          visibility[entry.target.id] = entry.isIntersecting;
         });
+        const firstVisible = faqData.find((section) => visibility[section.id]);
+        if (firstVisible) setActiveSection(firstVisible.id);
       },
-      { rootMargin: '-10% 0px -80% 0px', threshold: 0 }
+      { rootMargin: '-12% 0px -83% 0px', threshold: 0 }
     );
 
     Object.values(sectionRefs.current).forEach((ref) => {

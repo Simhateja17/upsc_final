@@ -580,10 +580,10 @@ export default function DailyMainsChallengeContextPage() {
         }
       `}</style>
 
-      <div className="flex flex-col px-6 py-5 w-full max-w-[1200px] mx-auto slide-up">
+      <div className="flex flex-col px-4 sm:px-6 py-5 w-full max-w-[1200px] mx-auto slide-up">
 
         {/* ── Row 1: Compact question (left) + Timer (right) ── */}
-        <div className="flex gap-5 mb-5">
+        <div className="flex flex-col lg:flex-row gap-5 mb-5">
 
           {/* Compact Question Card */}
           <div
@@ -591,7 +591,7 @@ export default function DailyMainsChallengeContextPage() {
             style={{ padding: '20px 24px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}
           >
             {/* Tags */}
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center flex-wrap gap-2 sm:gap-3 mb-4">
               <div className="flex items-center px-3 py-1 rounded-[8px]" style={{ background: '#FAF5FF' }}>
                 <span style={{ fontSize: '13px', color: '#8200DB' }}>{data.paper}</span>
               </div>
@@ -612,7 +612,7 @@ export default function DailyMainsChallengeContextPage() {
             </div>
 
             {/* Meta */}
-            <div className="flex items-center gap-6 text-[#4A5565]" style={{ fontSize: '13px' }}>
+            <div className="flex items-center flex-wrap gap-x-6 gap-y-2 text-[#4A5565]" style={{ fontSize: '13px' }}>
               <div className="flex items-center gap-1.5">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/Icon%20(8).png" alt="" style={{ width: '16px', height: '16px' }} />
@@ -633,8 +633,8 @@ export default function DailyMainsChallengeContextPage() {
 
           {/* Timer Card */}
           <div
-            className="bg-white rounded-[20px] flex flex-col items-center justify-center"
-            style={{ width: '260px', flexShrink: 0, padding: '20px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}
+            className="bg-white rounded-[20px] flex flex-col items-center justify-center w-full lg:w-[260px]"
+            style={{ flexShrink: 0, padding: '20px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}
           >
             <div className="uppercase tracking-widest text-[#6A7282] mb-3" style={{ fontSize: '11px', fontWeight: 600 }}>
               Writing Timer
@@ -729,8 +729,8 @@ export default function DailyMainsChallengeContextPage() {
 
         {/* ── Row 2: Answer Submission ── */}
         <div
-          className="bg-white rounded-[20px]"
-          style={{ padding: '28px 36px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}
+          className="bg-white rounded-[20px] p-5 sm:p-7 lg:px-9"
+          style={{ boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}
         >
           {/* ── Upload zone FIRST ── */}
           <div

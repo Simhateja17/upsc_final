@@ -1276,8 +1276,7 @@ export default function PyqPage() {
 
           {/* Right: filters */}
           <aside
-            className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto"
-            style={{ scrollbarWidth: 'thin', scrollbarColor: '#D1D5DB transparent' }}
+            className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:self-start"
           >
             {/* Exam year card */}
             <div
@@ -1405,11 +1404,13 @@ export default function PyqPage() {
 
             {/* Subject Filter panel */}
             <div
-              className="rounded-[16px] bg-white flex flex-col"
+              className="rounded-[16px] bg-white flex flex-col lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto"
               style={{
                 width: '100%',
                 borderTop: '0.8px solid #E5E7EB',
                 boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#D1D5DB transparent',
               }}
             >
               <div className="flex items-center gap-3 pt-6 pb-4 px-5">
@@ -1852,7 +1853,7 @@ export default function PyqPage() {
       {/* Mains Write & AI Evaluate modal - opens from Write & Evaluate on Mains tab */}
       {showMainsWriteModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto"
           style={{ background: 'rgba(15,23,42,0.5)' }}
           onClick={() => setShowMainsWriteModal(false)}
         >
@@ -1939,10 +1940,10 @@ export default function PyqPage() {
 
               {/* Specs bar */}
               <div
-                className="flex items-center justify-between rounded-[14px]"
-                style={{ width: 832, maxWidth: '100%', marginTop: 24, height: 69.6, padding: '0 16px', border: '0.8px solid #E5E7EB', background: '#F9FAFB' }}
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-[14px]"
+                style={{ width: 832, maxWidth: '100%', marginTop: 24, minHeight: 69.6, padding: '12px 16px', border: '0.8px solid #E5E7EB', background: '#F9FAFB' }}
               >
-                <div className="flex items-center" style={{ gap: 24 }}>
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                   <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#4A5565' }}>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4A5565" strokeWidth="1"/><path d="M8 5V8.5L10 10" stroke="#4A5565" strokeWidth="1.2" strokeLinecap="round"/></svg>
                     7–9 min
@@ -1956,7 +1957,7 @@ export default function PyqPage() {
                     {selectedQuestion?.marks || selectedQuestion?.maxMarks || 15} marks
                   </span>
                 </div>
-                <div className="flex items-center" style={{ gap: 16 }}>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, color: mainsTimeLeft <= 60 ? '#DC2626' : '#1E2939' }}>
                     {Math.floor(mainsTimeLeft / 60)}:{String(mainsTimeLeft % 60).padStart(2, '0')}
                   </span>

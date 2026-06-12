@@ -443,7 +443,7 @@ export default function LeaderboardPage() {
                         </div>
                       </div>
 
-                      <div className="text-center text-[18.4px] font-bold leading-none text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)' }}>
+                      <div className="text-center text-[18.4px] font-bold leading-none text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)', fontVariantNumeric: 'lining-nums tabular-nums' }}>
                         {row.score}
                       </div>
 
@@ -458,7 +458,7 @@ export default function LeaderboardPage() {
                         <span className="text-[12px] font-semibold leading-none">{row.streak}</span>
                       </div>
 
-                      <div className="text-center text-[18.4px] font-bold leading-none text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)' }}>
+                      <div className="text-center text-[18.4px] font-bold leading-none text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)', fontVariantNumeric: 'lining-nums tabular-nums' }}>
                         {row.hours}
                       </div>
                     </div>

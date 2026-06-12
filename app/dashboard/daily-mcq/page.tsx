@@ -77,7 +77,7 @@ export default function DailyMcqIntroPage() {
           {/* Icon */}
           <div className="flex justify-center mb-6">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/dashboard/daily-mcq.png" alt="Target Icon" className="w-[44px] h-[44px] object-contain" />
+            <img src="/target-icon.png" alt="Target Icon" className="w-[44px] h-[44px] object-contain" />
           </div>
 
           <h1 className="font-arimo font-bold text-[#101828] text-[24px] leading-[32px] mb-2">
