@@ -107,8 +107,14 @@ const questionChips = (q: any, styles: Record<string, React.CSSProperties>) => {
   ].filter(Boolean) as Array<{ key: string; label: string; style: React.CSSProperties }>;
 };
 
+const getExplanationText = (question: any) =>
+  question?.explanation ||
+  question?.structuredJson?.explanation?.displayText ||
+  question?.structuredJson?.explanation?.rawText ||
+  '';
+
 function ExplanationRenderer({ question }: { question: any }) {
-  const explanation = question?.explanation;
+  const explanation = getExplanationText(question);
   const structured = question?.structuredJson?.explanation?.structured;
   const paragraphFallback = String(explanation || '')
     .split(/\n{2,}/)
@@ -122,11 +128,10 @@ function ExplanationRenderer({ question }: { question: any }) {
 
   if (!explanation) return null;
 
-  const hasStructuredSections =
-    sections.some(([key]) => Array.isArray(structured?.[key]) && structured[key].length > 0) ||
-    Boolean(structured?.conclusion);
+  const hasAnalysisSections =
+    sections.some(([key]) => Array.isArray(structured?.[key]) && structured[key].length > 0);
 
-  if (!hasStructuredSections) {
+  if (!hasAnalysisSections) {
     const paragraphs = Array.isArray(structured?.paragraphs) && structured.paragraphs.length > 0
       ? structured.paragraphs
       : paragraphFallback;
@@ -891,7 +896,7 @@ export default function PyqPage() {
                     )}
 
                     {/* Explanation inline */}
-                    {qState.submitted && q.explanation && (
+                    {qState.submitted && getExplanationText(q) && (
                       <div className="mt-4 rounded-[14px] p-4" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
                         <div className="flex items-center gap-2 mb-1" style={{ color: '#016630', fontWeight: 700, fontSize: '13px', textTransform: 'uppercase' }}>
                           <span>✅</span><span>Explanation</span>
@@ -2557,7 +2562,7 @@ export default function PyqPage() {
             </div>
 
             {/* Explanation – shown only after submit */}
-            {hasSubmitted && selectedQuestion?.explanation && (
+            {hasSubmitted && getExplanationText(selectedQuestion) && (
               <div style={{ width: '774.4px', maxWidth: '100%' }}>
                 <div className="flex items-center gap-2 mb-2" style={{ color: '#016630', fontWeight: 700, fontSize: '14px', textTransform: 'uppercase' }}>
                   <span>✅</span><span>Explanation</span>
