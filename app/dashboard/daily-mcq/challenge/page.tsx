@@ -36,16 +36,24 @@ function normalizeQuestionText(text: string): string {
     .replace(/\s+-\s+/g, ' ');
 }
 
+function formatOrdinalDate(d: Date): string {
+  const day = d.getDate();
+  const j = day % 10;
+  const k = day % 100;
+  const suffix = j === 1 && k !== 11 ? 'st' : j === 2 && k !== 12 ? 'nd' : j === 3 && k !== 13 ? 'rd' : 'th';
+  return `${day}${suffix} ${d.toLocaleDateString('en-US', { month: 'long' })} ${d.getFullYear()}`;
+}
+
 export default function DailyMcqChallengePage() {
   const router = useRouter();
   const isMobile = useIsMobile();
-  const [navOpen, setNavOpen] = useState(false);
   const [mcqInfo, setMcqInfo] = useState<TodayMCQInfo | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [timeLimit, setTimeLimit] = useState(FIXED_TIME_LIMIT_MINUTES);
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [marked, setMarked] = useState<Record<string, boolean>>({});
+  const [bookmarks] = useState<Record<string, boolean>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -202,21 +210,11 @@ export default function DailyMcqChallengePage() {
   const totalQuestions = questions.length;
   const answeredCount = questions.filter((qu) => answers[qu.id] && !marked[qu.id]).length;
   const markedCount = questions.filter((qu) => marked[qu.id]).length;
+  const bookmarkedCount = questions.filter((qu) => bookmarks[qu.id]).length;
   const unansweredCount = Math.max(0, totalQuestions - answeredCount - markedCount);
   const isLast = currentQuestion === totalQuestions - 1;
-  const title = mcqInfo?.title || 'Daily MCQ Challenge';
 
-  const handleMark = () => {
-    setMarked((prev) => ({ ...prev, [q.id]: true }));
-    if (!isLast) setCurrentQuestion((prev) => prev + 1);
-  };
-
-  const handleClear = () => {
-    setAnswers((prev) => { const n = { ...prev }; delete n[q.id]; return n; });
-    setMarked((prev) => { const n = { ...prev }; delete n[q.id]; return n; });
-  };
-
-  // Reusable navigator card (shown inline on desktop, in a bottom-sheet drawer on mobile)
+  // Reusable navigator card (right-hand box)
   const navigatorCard = (
     <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 14, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>
@@ -229,9 +227,11 @@ export default function DailyMcqChallengePage() {
           const isCurrent = idx === currentQuestion;
           const isAnswered = !!answers[qu.id] && !marked[qu.id];
           const isMarked = !!marked[qu.id];
+          const isBookmarked = !!bookmarks[qu.id];
 
           let bg = '#F3F4F6';
           let color = '#6B7280';
+          if (isBookmarked) { bg = '#FFFBEB'; color = '#D97706'; }
           if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
           if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
           if (isCurrent) { bg = '#0F172B'; color = '#FFFFFF'; }
@@ -239,7 +239,7 @@ export default function DailyMcqChallengePage() {
           return (
             <button
               key={qu.id}
-              onClick={() => { setCurrentQuestion(idx); setNavOpen(false); }}
+              onClick={() => setCurrentQuestion(idx)}
               style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #E5E7EB', background: bg, color, fontWeight: 700, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}
             >
               {idx + 1}
@@ -253,11 +253,12 @@ export default function DailyMcqChallengePage() {
         {[
           { label: 'Answered', color: '#00C950', value: answeredCount },
           { label: 'Unanswered', color: '#D1D5DB', value: unansweredCount },
+          { label: 'Bookmarked', color: '#F59E0B', value: bookmarkedCount },
           { label: 'Marked for review', color: '#F59E0B', value: markedCount },
         ].map((row) => (
           <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <div style={{ width: 14, height: 14, borderRadius: 3, background: row.label === 'Answered' ? '#DCFCE7' : row.label === 'Marked for review' ? '#FEF3C7' : '#F3F4F6', border: `1px solid ${row.color}` }} />
+              <div style={{ width: 14, height: 14, borderRadius: 3, background: row.label === 'Answered' ? '#DCFCE7' : row.label === 'Marked for review' ? '#FEF3C7' : row.label === 'Bookmarked' ? '#FFFBEB' : '#F3F4F6', border: `1px solid ${row.color}` }} />
               <span style={{ fontSize: 11, color: '#374151' }}>{row.label}</span>
             </div>
             <span style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>{row.value}</span>
@@ -266,6 +267,10 @@ export default function DailyMcqChallengePage() {
       </div>
 
       <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 10 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#111827', marginBottom: 2 }}>Ready to submit</div>
+        <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 10 }}>
+          {answeredCount} answered · {unansweredCount} unanswered · {bookmarkedCount} bookmarked
+        </div>
         <button
           onClick={handleSubmit}
           disabled={submitting}
@@ -278,325 +283,140 @@ export default function DailyMcqChallengePage() {
   );
 
   return (
-    <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : 0, background: '#E8EDF5', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif', overflow: isMobile ? 'visible' : 'hidden' }}>
+    <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : undefined, background: '#F4F5F8', fontFamily: 'Inter, sans-serif', padding: isMobile ? '10px' : '12px 20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: isMobile ? 'auto' : 'hidden' }}>
+      <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0 }}>
 
-      {/* ── Sub-header: title left + timer right ── */}
-      <div
-        style={{
-          background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
-          padding: '8px 24px 9px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          {/* Title */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-            <span aria-hidden="true" style={{ fontSize: 14, lineHeight: '16px', flexShrink: 0 }}>🏛️</span>
-            <div style={{ minWidth: 0 }}>
-              <span style={{ fontWeight: 700, fontSize: 13, lineHeight: '18px', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
-                {title}
-              </span>
-              <div style={{ fontWeight: 500, fontSize: 10, lineHeight: '14px', color: 'rgba(255,255,255,0.55)', marginTop: 1 }}>
-                Daily MCQ Challenge · {totalQuestions} Questions · {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </div>
-            </div>
-          </div>
-          {/* Timer — white text on dark bg */}
-          {!submitted && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/timer-icon.png" alt="Timer" style={{ width: 32, height: 32, objectFit: 'contain' }} />
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 20, lineHeight: '24px', color: timeLeft < 60 ? '#FB2C36' : '#FFFFFF' }}>
-                  {timeStr}
-                </span>
-                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
-                  TIME LEFT
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Progress row ── */}
-      <div
-        style={{
-          background: '#FFFFFF',
-          borderBottom: '0.8px solid #D1D9E6',
-          display: 'flex',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 1400,
-            height: 32,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingLeft: 24,
-            paddingRight: 24,
-            boxSizing: 'border-box',
-          }}
+        {/* Back to dashboard */}
+        <button
+          onClick={() => router.push('/dashboard/daily-mcq')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 600, color: '#1A1D23', cursor: 'pointer', marginBottom: 10, alignSelf: 'flex-start', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
         >
-          <div style={{ flex: 1, marginRight: 16, height: 4, borderRadius: 999, background: '#D1D9E6', overflow: 'hidden' }}>
-            <div
-              style={{
-                width: `${Math.round((answeredCount / Math.max(1, totalQuestions)) * 100)}%`,
-                height: '100%',
-                background: '#00C950',
-                transition: 'width 0.3s ease',
-              }}
-            />
+          ← Back to dashboard
+        </button>
+
+        {submitError && (
+          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <span style={{ fontSize: 14 }}>⚠️</span>
+            <span style={{ fontSize: 14, color: '#991B1B' }}>{submitError}</span>
           </div>
-          <div style={{ fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#364153', whiteSpace: 'nowrap' }}>
-            Q {currentQuestion + 1} / {totalQuestions} · {answeredCount} Answered
-          </div>
-          {isMobile && (
-            <button
-              onClick={() => setNavOpen(true)}
-              style={{ marginLeft: 12, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, background: '#0F172B', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '6px 12px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3.5h12M2 8h12M2 12.5h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
-              Questions
-            </button>
-          )}
-        </div>
-      </div>
+        )}
 
-      {/* ── Submit Error Banner ── */}
-      {submitError && (
-        <div style={{
-          background: '#FEF2F2',
-          border: '1px solid #FECACA',
-          padding: '12px 32px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}>
-          <span style={{ fontSize: '14px' }}>⚠️</span>
-          <span style={{ fontSize: '14px', color: '#991B1B' }}>{submitError}</span>
-        </div>
-      )}
+        <div style={{ flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16, alignItems: 'stretch' }}>
 
-      {/* ── Body (centered fixed frame) ── */}
-      <div
-        style={{
-          flex: 1,
-          padding: isMobile ? '8px' : '6px 6px 8px',
-          boxSizing: 'border-box',
-          display: 'flex',
-          justifyContent: 'center',
-          overflow: isMobile ? 'visible' : 'hidden',
-          minHeight: 0,
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: isMobile ? '100%' : 'calc(100vw - 96px)',
-            display: 'flex',
-            gap: 12,
-            boxSizing: 'border-box',
-            alignItems: 'flex-start',
-            height: isMobile ? 'auto' : '100%',
-          }}
-        >
-          {/* ─ Question Panel ── */}
-          <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, height: isMobile ? 'auto' : '100%', overflow: isMobile ? 'visible' : 'hidden' }}>
+          {/* LEFT: question card */}
+          <div style={{ flex: 1, minWidth: 0, width: '100%', display: isMobile ? 'block' : 'flex', minHeight: isMobile ? 'auto' : 0 }}>
+            <div style={{ flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0, background: '#FFFFFF', borderRadius: 16, border: '1px solid #ECECF1', boxShadow: '0 4px 24px rgba(0,0,0,0.05)', overflow: isMobile ? 'visible' : 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-            {/* Question Card */}
-            <div
-              style={{
-                background: '#FFFFFF',
-                borderRadius: 10,
-                border: 'none',
-                padding: isMobile ? '14px 16px' : '16px 24px',
-                boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)',
-                overflow: isMobile ? 'visible' : 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                flex: isMobile ? 'none' : 1,
-              }}
-            >
-              {/* Category pill + difficulty pill */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexShrink: 0 }}>
-                <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[34px]">
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 22px 11px', flexWrap: 'wrap', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/tag-one.png" alt="Tag" className="w-4 h-4" />
-                  <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px]">{q.category}</span>
+                  <img src="/daily-mcq-icon.png" alt="" style={{ width: 24, height: 24, objectFit: 'contain', flexShrink: 0 }} />
+                  <span style={{ fontFamily: 'Arimo, sans-serif', fontSize: 26, fontWeight: 700, lineHeight: '28px', color: '#101828' }}>Daily MCQ Challenge</span>
+                  <span style={{ fontFamily: 'Arimo, sans-serif', fontSize: 13, color: '#9CA3AF' }}>· ({formatOrdinalDate(new Date())})</span>
                 </div>
-                <div className="flex items-center gap-2 bg-[#FFF7ED] px-4 rounded-full h-[34px]">
-                  <span className="font-arimo font-bold text-[#C2410C] text-[14px] leading-[16px]">{q.difficulty}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 999, padding: '4px 12px' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#DC2626' }}>Today&apos;s Challenge is LIVE</span>
+                </div>
+              </div>
+              <div style={{ height: 1, background: '#F1F3F5' }} />
+
+              {/* Tag + timer */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 22px 0', flexShrink: 0 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 999, padding: '5px 12px' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#1D4ED8' }}>{q.category} • {q.difficulty}</span>
+                </div>
+                {!submitted && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/timer-icon.png" alt="Timer" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                      <span style={{ fontWeight: 800, fontSize: 19, lineHeight: '22px', color: timeLeft < 60 ? '#EF4444' : '#1A1D23' }}>{timeStr}</span>
+                      <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>Time Left</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Content: question (fills) + options (2-col grid) */}
+              <div style={{ flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: 'column', padding: '12px 22px 14px', overflow: isMobile ? 'visible' : 'hidden' }}>
+                <div style={{ flex: isMobile ? 'none' : '1 1 auto', minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', whiteSpace: 'pre-line', fontSize: 14, lineHeight: '23px', color: '#1A1D23', paddingRight: 6 }}>
+                  <span style={{ fontWeight: 700 }}>Question {currentQuestion + 1}: </span>
+                  {normalizeQuestionText(q.questionText)}
+                </div>
+                <div style={{ flexShrink: 0, marginTop: 12, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
+                  {q.options.map((option) => {
+                    const optKey = option.id || option.label || '';
+                    const isSelected = answers[q.id] === optKey;
+                    return (
+                      <button
+                        key={optKey}
+                        onClick={() => handleSelectAnswer(q.id, optKey)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderRadius: 12, minHeight: 50,
+                          border: isSelected ? '1.5px solid #2B7FFF' : '1px solid #E5E7EB',
+                          background: isSelected ? '#EFF6FF' : '#FFFFFF',
+                          cursor: submitted ? 'default' : 'pointer', textAlign: 'left', transition: 'all 0.15s ease', width: '100%',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                        }}
+                      >
+                        <span style={{
+                          width: 28, height: 28, borderRadius: '50%',
+                          border: isSelected ? '1.5px solid #2B7FFF' : '1.5px solid #D1D5DB',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontWeight: 700, fontSize: 13, color: isSelected ? '#2B7FFF' : '#6B7280',
+                          background: isSelected ? '#DBEAFE' : 'transparent', flexShrink: 0,
+                        }}>{optKey}</span>
+                        <span style={{ fontSize: 13.5, color: '#1E293B', fontWeight: isSelected ? 600 : 400 }}>{option.text}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Question text */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14, flexShrink: 0 }}>
-                <div className="font-arimo font-bold text-[#101828]" style={{ whiteSpace: 'pre-line', flex: 1, fontSize: 13, lineHeight: '20px' }}>
-                  <span style={{ fontWeight: 700 }}>Question {currentQuestion + 1} of {totalQuestions}:</span>{' '}
-                  <span>{normalizeQuestionText(q.questionText)}</span>
-                </div>
-              </div>
-
-              {/* Options */}
-              <div className="space-y-2" style={{ overflow: isMobile ? 'visible' : 'auto', flex: isMobile ? 'none' : 1, minHeight: 0 }}>
-                {q.options.map((option) => {
-                  const optKey = option.id || option.label || '';
-                  const isSelected = answers[q.id] === optKey;
-
-                  let bg = '#FFFFFF';
-                  let border = '2px solid #E2E8F0';
-                  let circleColor = '#CBD5E1';
-                  let circleBg = 'transparent';
-                  let circleText = '#64748B';
-                  const circleIcon: string = optKey;
-                  let textColor = '#1E293B';
-                  let fontWeight = 400;
-
-                  if (isSelected) {
-                    bg = '#EFF6FF';
-                    border = '2px solid #2B7FFF';
-                    circleColor = '#2B7FFF';
-                    circleBg = '#DBEAFE';
-                    circleText = '#2B7FFF';
-                    fontWeight = 600;
-                  }
-
-                  return (
-                    <button
-                      key={optKey}
-                      onClick={() => handleSelectAnswer(q.id, optKey)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '16px',
-                        padding: '10px 18px',
-                        borderRadius: '12px',
-                        minHeight: 58,
-                        border,
-                        background: bg,
-                        cursor: submitted ? 'default' : 'pointer',
-                        textAlign: 'left',
-                        transition: 'all 0.15s ease',
-                        width: '100%',
-                      }}
-                    >
-                      <span style={{
-                        width: '30px',
-                        height: '30px',
-                        borderRadius: '50%',
-                        border: `2px solid ${circleColor}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 700,
-                        fontSize: '14px',
-                        color: circleText,
-                        flexShrink: 0,
-                        background: circleBg,
-                      }}>
-                        {circleIcon}
-                      </span>
-                      <span style={{ fontSize: '14px', color: textColor, fontWeight }}>
-                        {option.text}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Controls Bar */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: '#FFFFFF',
-              borderRadius: 10,
-              padding: '8px 12px',
-              border: '1px solid #E5E7EB',
-              flexShrink: 0,
-              position: isMobile ? 'sticky' : 'static',
-              bottom: isMobile ? 8 : undefined,
-              zIndex: isMobile ? 5 : undefined,
-              boxShadow: isMobile ? '0 -2px 8px rgba(0,0,0,0.06)' : undefined,
-            }}>
-              {/* Left actions */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Bottom nav */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 22px', borderTop: '1px solid #F1F3F5', flexWrap: 'wrap', flexShrink: 0 }}>
                 <button
-                  onClick={handleMark}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#FB2C36', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', lineHeight: '20px' }}
+                  onClick={() => setCurrentQuestion((prev) => Math.max(0, prev - 1))}
+                  disabled={currentQuestion === 0}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 999, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: currentQuestion === 0 ? '#C7CDD6' : '#374151', cursor: currentQuestion === 0 ? 'not-allowed' : 'pointer' }}
                 >
-                  Mark
+                  ← Previous
                 </button>
-                <button
-                  onClick={handleClear}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6A7282', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', lineHeight: '20px', padding: 0 }}
-                >
-                  Clear
-                </button>
+
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {questions.map((qu, idx) => {
+                    const isCurrent = idx === currentQuestion;
+                    const isAnswered = !!answers[qu.id];
+                    let dotBg = '#F3F4F6';
+                    let dotColor = '#6B7280';
+                    if (isAnswered) { dotBg = '#DCFCE7'; dotColor = '#166534'; }
+                    if (isCurrent) { dotBg = '#16A34A'; dotColor = '#FFFFFF'; }
+                    return (
+                      <button key={qu.id} onClick={() => setCurrentQuestion(idx)} style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: dotBg, color: dotColor, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>{idx + 1}</button>
+                    );
+                  })}
+                </div>
+
                 <button
                   onClick={() => !isLast && setCurrentQuestion((prev) => prev + 1)}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#155DFC', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', lineHeight: '20px' }}
-                >
-                  Skip
-                </button>
-              </div>
-
-              {/* Right nav */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <button
-                  onClick={() => setCurrentQuestion((prev) => prev - 1)}
-                  disabled={currentQuestion === 0}
-                  style={{ background: 'none', border: '1.5px solid #CBD5E1', borderRadius: '8px', padding: '5px 13px', color: currentQuestion === 0 ? '#CBD5E1' : '#334155', cursor: currentQuestion === 0 ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: '13px' }}
-                >
-                  ← Prev
-                </button>
-                <button
-                  onClick={() => setCurrentQuestion((prev) => prev + 1)}
                   disabled={isLast}
-                  style={{ background: isLast ? '#1E293B' : '#2B7FFF', border: 'none', borderRadius: '8px', padding: '5px 18px', color: '#FFFFFF', cursor: isLast ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px' }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isLast ? '#9CA3AF' : '#1A1D23', border: 'none', borderRadius: 999, padding: '9px 20px', fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: isLast ? 'not-allowed' : 'pointer' }}
                 >
                   Next →
                 </button>
               </div>
             </div>
-          </main>
+          </div>
 
-          {/* ── Right panel (Navigator card) — desktop only ── */}
-          {!isMobile && (
-            <aside style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
-              {navigatorCard}
-            </aside>
-          )}
+          {/* RIGHT: navigator box */}
+          <aside style={{ width: isMobile ? '100%' : 300, flexShrink: 0, display: isMobile ? 'block' : 'flex', minHeight: isMobile ? 'auto' : 0 }}>
+            {navigatorCard}
+          </aside>
         </div>
       </div>
-
-      {/* ── Mobile navigator bottom-sheet drawer ── */}
-      {isMobile && navOpen && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'flex-end' }}
-          onClick={() => setNavOpen(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ width: '100%', maxHeight: '80vh', background: '#FFFFFF', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 14, boxShadow: '0 -8px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', animation: 'mcqSheetUp 0.25s ease' }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-              <div style={{ width: 40, height: 4, borderRadius: 999, background: '#D1D5DB' }} />
-            </div>
-            {navigatorCard}
-          </div>
-          <style jsx>{`
-            @keyframes mcqSheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-          `}</style>
-        </div>
-      )}
     </div>
   );
 }
