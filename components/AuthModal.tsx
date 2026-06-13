@@ -367,8 +367,8 @@ export default function AuthModal() {
         >
           <div>
             {/* Logo */}
-            <div style={{ marginBottom: 26 }}>
-              <Image src="/logo.png" alt="RiseWithJeet" width={120} height={40} style={{ height: 40, width: 'auto', objectFit: 'contain' }} priority />
+            <div style={{ marginBottom: 26, marginLeft: -26 }}>
+              <Image src="/logo.png" alt="RiseWithJeet" width={216} height={72} style={{ height: 72, width: 'auto', objectFit: 'contain' }} priority />
             </div>
 
             <div style={{ width: 40, height: 2, background: '#C9933A', marginBottom: 18 }} />
