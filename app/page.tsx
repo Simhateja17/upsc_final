@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAuthModal } from '@/contexts/AuthModalContext';
 import { studyGroupService } from '@/lib/services';
 import '@/styles/landing.css';
 
@@ -39,6 +40,7 @@ const AI_SLIDES = [
 
 export default function LandingPage() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -236,8 +238,8 @@ export default function LandingPage() {
         </div>
 
         <div className="nav-btns hidden md:flex">
-          <button className="btn-nav-ghost" onClick={() => go('/login?tab=login')}>Login</button>
-          <button className="btn-nav-gold" onClick={() => go('/login?tab=signup')}>Start Free →</button>
+          <button className="btn-nav-ghost" onClick={() => openAuthModal('login')}>Login</button>
+          <button className="btn-nav-gold" onClick={() => openAuthModal('signup')}>Start Free →</button>
         </div>
         <button
           className={`nav-hamburger${mobileNavOpen ? ' open' : ''}`}
@@ -271,8 +273,8 @@ export default function LandingPage() {
         <a href="/community" onClick={closeMobileNav}>Community</a>
         <a href="/dashboard/billing/plans" onClick={closeMobileNav}>Pricing</a>
         <div className="mobile-nav-btns">
-          <button className="btn-nav-ghost" onClick={() => go('/login?tab=login')}>Login</button>
-          <button className="btn-nav-gold" onClick={() => go('/login?tab=signup')}>Start Free →</button>
+          <button className="btn-nav-ghost" onClick={() => openAuthModal('login')}>Login</button>
+          <button className="btn-nav-gold" onClick={() => openAuthModal('signup')}>Start Free →</button>
         </div>
       </div>
 
@@ -302,7 +304,7 @@ export default function LandingPage() {
         </p>
 
         <div className="hero-ctas">
-          <button className="cta-primary" onClick={() => go('/login?tab=signup')}>Start Your Free Trial →</button>
+          <button className="cta-primary" onClick={() => openAuthModal('signup')}>Start Your Free Trial →</button>
           <button className="cta-secondary" onClick={() => go('/dashboard')}>▶&nbsp;&nbsp;Watch Platform Demo</button>
         </div>
 
@@ -675,7 +677,7 @@ export default function LandingPage() {
                 <div className="lstat"><span className="lstat-val">{onlineCount}</span><div className="lstat-label">Online Now</div></div>
                 <div className="lstat"><span className="lstat-val">5hrs+</span><div className="lstat-label">Session</div></div>
               </div>
-              <button className="btn-join-live" onClick={() => go('/login?tab=signup')}>Join Study Room →</button>
+              <button className="btn-join-live" onClick={() => openAuthModal('signup')}>Join Study Room →</button>
             </div>
           </div>
 
@@ -827,7 +829,7 @@ export default function LandingPage() {
           <h2>Your UPSC Journey<br />Starts <span style={{ color: '#E8B84B' }}>Today</span></h2>
           <p>Smart preparation, structured planning, and AI-powered insights, everything serious aspirants need, in one place.</p>
           <div className="cta-btns">
-            <button className="cta-primary" onClick={() => go('/login?tab=signup')}>Start Free Trial →</button>
+            <button className="cta-primary" onClick={() => openAuthModal('signup')}>Start Free Trial →</button>
             <button className="cta-secondary" style={{ borderColor: 'rgba(255,255,255,0.2)' }} onClick={() => go('/contact')}>Connect Us</button>
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
+import { useAuthModal } from '@/contexts/AuthModalContext';
 
 // Dropdown menu  items with Lucide-style icons
 const dropdownMenus = {
@@ -116,6 +117,7 @@ const icons = {
 };
 
 const Header = () => {
+  const { openAuthModal } = useAuthModal();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -287,28 +289,28 @@ const Header = () => {
 
       {/* Desktop Auth Buttons */}
       <div className="hidden md:flex items-center gap-3">
-        <Link
-          href="/login?tab=login"
+        <button
+          onClick={() => openAuthModal('login')}
           className="px-4 py-2 border-2 border-white text-white text-sm font-semibold rounded-md hover:bg-white hover:text-black transition-all duration-200 whitespace-nowrap"
         >
           Login
-        </Link>
-        <Link
-          href="/login?tab=signup"
+        </button>
+        <button
+          onClick={() => openAuthModal('signup')}
           className="px-4 py-2 bg-[#F5C75D] text-black text-sm font-semibold rounded-md hover:bg-[#FFC557] transition-all duration-200 whitespace-nowrap"
         >
           Sign Up
-        </Link>
+        </button>
       </div>
 
       {/* Mobile: Auth buttons (compact) + Hamburger */}
       <div className="flex md:hidden items-center gap-2">
-        <Link
-          href="/login?tab=login"
+        <button
+          onClick={() => openAuthModal('login')}
           className="px-3 py-1.5 border border-white text-white text-xs font-semibold rounded-md hover:bg-white hover:text-black transition-all duration-200"
         >
           Login
-        </Link>
+        </button>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="flex items-center justify-center w-10 h-10 rounded-lg text-white hover:bg-white/10 transition-colors"
@@ -410,13 +412,12 @@ const Header = () => {
           </Link>
 
           <div className="px-6 py-4 flex items-center gap-3">
-            <Link
-              href="/login?tab=signup"
-              onClick={() => setMobileMenuOpen(false)}
+            <button
+              onClick={() => { setMobileMenuOpen(false); openAuthModal('signup'); }}
               className="flex-1 text-center px-4 py-2.5 bg-[#F5C75D] text-black text-sm font-semibold rounded-md hover:bg-[#FFC557] transition-all duration-200"
             >
               Sign Up Free
-            </Link>
+            </button>
           </div>
         </div>
       )}

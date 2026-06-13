@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { AuthModalProvider } from '@/contexts/AuthModalContext'
+import AuthModal from '@/components/AuthModal'
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
-import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -50,9 +51,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${cormorant.variable} ${dmSans.variable}`}>
         <AuthProvider>
-          {children}
+          <AuthModalProvider>
+            {children}
+            <AuthModal />
+          </AuthModalProvider>
         </AuthProvider>
-        <SpeedInsights />
       </body>
     </html>
   )

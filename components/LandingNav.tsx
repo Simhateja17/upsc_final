@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import '@/styles/landing.css';
+import { useAuthModal } from '@/contexts/AuthModalContext';
 
 const NAV_DROPDOWNS = {
   prepare: [
@@ -30,6 +31,7 @@ const NAV_DROPDOWNS = {
 
 export default function LandingNav() {
   const router = useRouter();
+  const { openAuthModal } = useAuthModal();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
@@ -117,8 +119,8 @@ export default function LandingNav() {
         </div>
 
         <div className="nav-btns hidden md:flex">
-          <button className="btn-nav-ghost" onClick={() => go('/login?tab=login')}>Login</button>
-          <button className="btn-nav-gold" onClick={() => go('/login?tab=signup')}>Start Free →</button>
+          <button className="btn-nav-ghost" onClick={() => openAuthModal('login')}>Login</button>
+          <button className="btn-nav-gold" onClick={() => openAuthModal('signup')}>Start Free →</button>
         </div>
 
         <button
@@ -153,8 +155,8 @@ export default function LandingNav() {
         <a href="/dashboard/study-groups" onClick={closeMobileNav}>Community</a>
         <a href="/dashboard/billing/plans" onClick={closeMobileNav}>Pricing</a>
         <div className="mobile-nav-btns">
-          <button className="btn-nav-ghost" onClick={() => go('/login?tab=login')}>Login</button>
-          <button className="btn-nav-gold" onClick={() => go('/login?tab=signup')}>Start Free →</button>
+          <button className="btn-nav-ghost" onClick={() => { closeMobileNav(); openAuthModal('login'); }}>Login</button>
+          <button className="btn-nav-gold" onClick={() => { closeMobileNav(); openAuthModal('signup'); }}>Start Free →</button>
         </div>
       </div>
     </>
