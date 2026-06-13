@@ -3,13 +3,20 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { AuthModalProvider } from '@/contexts/AuthModalContext'
 import AuthModal from '@/components/AuthModal'
-import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
+import { Cormorant_Garamond, DM_Sans, Sora } from 'next/font/google'
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
   variable: '--font-cormorant-garamond',
+  display: 'swap',
+})
+
+const sora = Sora({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-sora',
   display: 'swap',
 })
 
@@ -49,7 +56,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${cormorant.variable} ${dmSans.variable}`}>
+      <body className={`${cormorant.variable} ${dmSans.variable} ${sora.variable}`}>
         <AuthProvider>
           <AuthModalProvider>
             {children}
