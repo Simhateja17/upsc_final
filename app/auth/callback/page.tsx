@@ -76,7 +76,7 @@ export default function AuthCallback() {
           <h2 className="font-inter font-semibold text-[#111827] mb-2">Sign-in failed</h2>
           <p className="text-sm text-[#6B7280] mb-6">{errorMsg}</p>
           <button
-            onClick={() => router.push('/login')}
+            onClick={() => router.push('/?auth=login')}
             className="px-5 py-2 rounded-lg text-white font-inter font-medium text-sm"
             style={{ background: '#6366F1' }}
           >

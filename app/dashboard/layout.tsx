@@ -103,8 +103,8 @@ export default function DashboardLayout({
     // redirect a user who has a live session to the login page.
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        // Truly unauthenticated – send to login.
-        router.push('/login');
+        // Truly unauthenticated – send home and open the login popup.
+        router.push('/?auth=login');
       } else if (!didTryRefreshRef.current) {
         // Session exists but user state not resolved – try once to hydrate it.
         didTryRefreshRef.current = true;
@@ -129,7 +129,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (!authTimedOut || isAuthenticated || isPublicRoute) return;
-    router.replace('/login');
+    router.replace('/?auth=login');
   }, [authTimedOut, isAuthenticated, isPublicRoute, router]);
 
   if (!isPublicRoute && ((isLoading && !authTimedOut) || !isAuthenticated)) {

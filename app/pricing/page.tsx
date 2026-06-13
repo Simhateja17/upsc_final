@@ -340,7 +340,7 @@ export default function PricingPage() {
                       </button>
                     ) : (
                       <Link
-                        href={card.id === 'starter' ? '/login?tab=signup' : '/dashboard/billing'}
+                        href={card.id === 'starter' ? '/?auth=signup' : '/dashboard/billing'}
                         className={`mt-10 flex h-[48px] w-full items-center justify-center rounded-[10px] border text-[14px] font-bold ${
                           card.featured
                             ? 'border-[#E8B84B] bg-[#E8B84B] text-[#090E1C]'

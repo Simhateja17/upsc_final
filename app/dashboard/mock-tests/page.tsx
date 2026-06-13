@@ -1386,10 +1386,35 @@ function MockTestsPageInner() {
                 fontSize: 'clamp(10px, 0.68vw, 12px)',
                 color: '#64748B',
               }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16A34A' }} />
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3B82F6' }} />
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FDC700' }} />
-                <span style={{ marginLeft: '4px' }}>{liveStudentCount('mock-tests')} students are taking tests right now</span>
+                <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                  {[
+                    { initials: 'AK', bg: '#3B82F6' },
+                    { initials: 'PS', bg: '#8B5CF6' },
+                    { initials: 'RV', bg: '#14B8A6' },
+                  ].map((a, i) => (
+                    <span
+                      key={a.initials}
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        background: a.bg,
+                        border: '1.5px solid #0F172B',
+                        color: '#FFFFFF',
+                        fontSize: '8px',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginLeft: i === 0 ? 0 : '-7px',
+                      }}
+                    >
+                      {a.initials}
+                    </span>
+                  ))}
+                </div>
+                <span>{liveStudentCount('mock-tests')} students are taking tests right now</span>
               </div>
               </div>
             </div>

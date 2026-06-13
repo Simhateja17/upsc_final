@@ -23,7 +23,7 @@ const AVATAR_LABELS = ['AK', 'PS', 'RV', 'MR'];
 
 export default function AuthModal() {
   const { isOpen, defaultTab, closeAuthModal } = useAuthModal();
-  const { login, loginWithGoogle, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
 
   const [tab, setTab] = useState<'signup' | 'login'>(defaultTab);
@@ -74,10 +74,18 @@ export default function AuthModal() {
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, closeAuthModal]);
 
-  // Lock scroll when open
+  // Lock scroll on both <html> and <body> while the modal is open so the
+  // page behind cannot scroll.
   useEffect(() => {
-    document.body.style.overflow = isOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    if (!isOpen) return;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
   }, [isOpen]);
 
   // Redirect if already authenticated
@@ -154,24 +162,40 @@ export default function AuthModal() {
     }
   }
 
-  // ── Login: send OTP or verify ──
+  // ── Login: send OTP, then verify inline (single view) ──
   async function handleLoginAction() {
     setError(null);
     if (!loginOtpSent) {
+      // Step 1 – send the OTP
       if (!validatePhone(loginPhone, 'login', true)) return;
       setIsLoading(true);
       try {
         await authService.sendPhoneLoginOtp(loginPhone);
-        setOtpPhone(loginPhone);
-        setOtpPurpose('login');
-        setOtpCode(['', '', '', '', '', '']);
-        setStep('otpVerify');
-        startCountdown();
+        setLoginOtp('');
         setLoginOtpSent(true);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Could not send OTP.';
         setError(msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('no account')
           ? 'No account found with this number. Please create one first.'
+          : msg);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Step 2 – verify the OTP in place
+      const token = loginOtp.replace(/\D/g, '');
+      if (token.length !== 6) { setError('Please enter the 6-digit code sent to your mobile.'); return; }
+      setIsLoading(true);
+      try {
+        await authService.verifyPhoneOtp('login', loginPhone, token);
+        localStorage.setItem('rwj_has_logged_in', '1');
+        sessionStorage.setItem('rwj_login_success', '1');
+        closeAuthModal();
+        router.replace('/dashboard');
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Invalid or expired code.';
+        setError(msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid')
+          ? 'That code is invalid or has expired. Please request a new one.'
           : msg);
       } finally {
         setIsLoading(false);
@@ -221,15 +245,6 @@ export default function AuthModal() {
       setError(err instanceof Error ? err.message : 'Could not resend OTP.');
     } finally {
       setIsLoading(false);
-    }
-  }
-
-  async function handleGoogle() {
-    setError(null);
-    try {
-      await loginWithGoogle();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start Google login.');
     }
   }
 
@@ -288,7 +303,7 @@ export default function AuthModal() {
         .rwj-input {
           width:100%; padding:10px 12px 10px 36px;
           border:1.5px solid #E5E3DE; border-radius:8px;
-          background:#FAFAF8; font-family:'Outfit',sans-serif;
+          background:#FAFAF8; font-family:var(--font-inter-rwj),sans-serif;
           font-size:13.5px; color:#1A1A1A; outline:none;
           transition:border-color 0.18s,box-shadow 0.18s;
           box-sizing:border-box;
@@ -304,13 +319,13 @@ export default function AuthModal() {
         .rwj-otp-input {
           width:46px; height:52px; text-align:center; font-size:20px;
           font-weight:600; border:1.5px solid #E5E3DE; border-radius:8px;
-          background:#FAFAF8; outline:none; font-family:'Outfit',sans-serif;
+          background:#FAFAF8; outline:none; font-family:var(--font-inter-rwj),sans-serif;
           box-sizing:border-box;
         }
         .rwj-otp-input:focus { border-color:#C9933A; box-shadow:0 0 0 3px rgba(201,147,58,0.14); }
         .rwj-tab-btn {
           padding:8px 28px; border:none; background:transparent;
-          border-radius:60px; font-family:'Outfit',sans-serif;
+          border-radius:60px; font-family:var(--font-inter-rwj),sans-serif;
           font-size:14px; font-weight:600; color:#6B7280; cursor:pointer;
           transition:all 0.18s; white-space:nowrap;
         }
@@ -320,7 +335,7 @@ export default function AuthModal() {
         }
         .rwj-cta {
           width:100%; padding:13px; background:#0B1720; color:#fff;
-          border:none; border-radius:8px; font-family:'Outfit',sans-serif;
+          border:none; border-radius:8px; font-family:var(--font-inter-rwj),sans-serif;
           font-size:14.5px; font-weight:600; cursor:pointer; letter-spacing:0.01em;
           transition:all 0.18s;
         }
@@ -329,7 +344,7 @@ export default function AuthModal() {
         .rwj-google-btn {
           display:flex; align-items:center; justify-content:center; gap:10px;
           width:100%; padding:11px 16px; border:1.5px solid #E5E3DE;
-          border-radius:8px; background:#fff; font-family:'Outfit',sans-serif;
+          border-radius:8px; background:#fff; font-family:var(--font-inter-rwj),sans-serif;
           font-size:14px; font-weight:500; color:#1A1A1A; cursor:pointer;
           transition:all 0.18s; margin-bottom:20px;
         }
@@ -354,9 +369,9 @@ export default function AuthModal() {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Gold top bar */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, zIndex: 10,
-          background: 'linear-gradient(90deg,transparent 0%,#C9933A 30%,#DDB978 60%,transparent 100%)' }} />
+        {/* Gold left accent line (fades at top & bottom) */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', zIndex: 10, borderRadius: '2px 0 0 2px',
+          background: 'linear-gradient(180deg, rgba(201,147,58,0) 0%, #C9933A 15%, #C9933A 85%, rgba(201,147,58,0) 100%)' }} />
 
         {/* ── LEFT BRAND PANEL ── */}
         <div
@@ -367,16 +382,23 @@ export default function AuthModal() {
         >
           <div>
             {/* Logo */}
-            <div style={{ marginBottom: 26, marginLeft: -26 }}>
-              <Image src="/logo.png" alt="RiseWithJeet" width={216} height={72} style={{ height: 72, width: 'auto', objectFit: 'contain' }} priority />
+            <div style={{ marginBottom: 24 }}>
+              <Image
+                src="/auth-logo-new.png"
+                alt="RiseWithJeet"
+                width={320}
+                height={64}
+                priority
+                style={{ width: 270, height: 'auto', objectFit: 'contain', display: 'block', marginLeft: -26 }}
+              />
             </div>
 
             <div style={{ width: 40, height: 2, background: '#C9933A', marginBottom: 18 }} />
             <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', color: '#C9933A',
-              textTransform: 'uppercase', marginBottom: 12, fontFamily: "'Outfit',sans-serif" }}>
+              textTransform: 'uppercase', marginBottom: 12, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
               Trusted by 15,000+ aspirants
             </p>
-            <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 23, fontWeight: 600,
+            <h2 style={{ fontFamily: "var(--font-playfair),Georgia,serif", fontSize: 23, fontWeight: 600,
               color: '#fff', lineHeight: 1.3, marginBottom: 16 }}>
               Your UPSC journey<br />starts{' '}
               <em style={{ fontStyle: 'italic', color: '#C9933A', fontWeight: 500 }}>right here.</em>
@@ -385,7 +407,7 @@ export default function AuthModal() {
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12, marginTop: 6 }}>
               {FEATURES.map((f) => (
                 <li key={f.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10,
-                  fontSize: 12, color: 'rgba(255,255,255,0.85)', lineHeight: 1.45, fontFamily: "'Outfit',sans-serif" }}>
+                  fontSize: 12, color: 'rgba(255,255,255,0.85)', lineHeight: 1.45, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                   <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%',
                     background: '#C9933A', opacity: 0.7, marginTop: 5 }} />
                   <span><strong style={{ color: 'rgba(255,255,255,0.95)', fontWeight: 600, letterSpacing: '0.2px' }}>{f.label}</strong> – {f.desc}</span>
@@ -406,7 +428,7 @@ export default function AuthModal() {
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontFamily: "'Outfit',sans-serif" }}>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                 <strong style={{ color: '#C9933A', fontSize: 12 }}>15,000+</strong> actively preparing
               </div>
             </div>
@@ -436,15 +458,15 @@ export default function AuthModal() {
           {/* Header */}
           {step === 'form' && (
             <div style={{ textAlign: 'center', marginBottom: 22 }}>
-              <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700,
+              <h1 style={{ fontFamily: "var(--font-playfair),Georgia,serif", fontSize: 28, fontWeight: 700,
                 color: '#1A1A1A', marginBottom: 8, letterSpacing: '-0.3px' }}>
                 Welcome to{' '}
-                <em style={{ fontStyle: 'normal', color: '#C9933A', fontWeight: 800, fontFamily: "'Cormorant Garamond',serif" }}>
+                <em style={{ fontStyle: 'normal', color: '#C9933A', fontWeight: 800, fontFamily: "var(--font-playfair),Georgia,serif" }}>
                   RiseWithJeet!
                 </em>
               </h1>
               <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.5, maxWidth: '85%',
-                margin: '0 auto', fontFamily: "'Outfit',sans-serif" }}>
+                margin: '0 auto', fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                 Your personalized UPSC prep plan, daily practice, and AI-powered insights are just a step away.
               </p>
             </div>
@@ -452,10 +474,10 @@ export default function AuthModal() {
 
           {step === 'otpVerify' && (
             <div style={{ textAlign: 'center', marginBottom: 22 }}>
-              <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: '#1A1A1A', marginBottom: 8 }}>
+              <h1 style={{ fontFamily: "var(--font-playfair),Georgia,serif", fontSize: 28, fontWeight: 700, color: '#1A1A1A', marginBottom: 8 }}>
                 Enter your code
               </h1>
-              <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.5, fontFamily: "'Outfit',sans-serif" }}>
+              <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.5, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                 We sent a 6-digit code to <strong>+91 {otpPhone}</strong>
               </p>
             </div>
@@ -479,7 +501,7 @@ export default function AuthModal() {
           {error && (
             <div style={{ background: '#FEE2E2', border: '1px solid #EF4444', borderRadius: 8,
               padding: '10px 14px', marginBottom: 14, color: '#DC2626', fontSize: 13,
-              fontFamily: "'Outfit',sans-serif" }}>
+              fontFamily: "var(--font-inter-rwj),sans-serif" }}>
               {error}
             </div>
           )}
@@ -487,12 +509,12 @@ export default function AuthModal() {
           {/* ── OTP VERIFY STEP ── */}
           {step === 'otpVerify' && (
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 18, lineHeight: 1.5, fontFamily: "'Outfit',sans-serif" }}>
+              <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 18, lineHeight: 1.5, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                 We sent a 6-digit code to your mobile. Enter it below to verify.
               </p>
 
               <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, letterSpacing: '0.06em',
-                textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "'Outfit',sans-serif" }}>
+                textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                 Verification code
               </label>
               <div style={{ display: 'flex', gap: 10, marginBottom: 16 }} onPaste={otpBoxPaste}>
@@ -511,13 +533,13 @@ export default function AuthModal() {
                 ))}
               </div>
 
-              <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 20, fontFamily: "'Outfit',sans-serif" }}>
+              <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 20, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                 Didn&apos;t receive?{' '}
                 <button
                   onClick={handleResend}
                   disabled={!canResend}
                   style={{ color: canResend ? '#C9933A' : '#b0aba4', background: 'none', border: 'none',
-                    cursor: canResend ? 'pointer' : 'default', fontWeight: 600, fontSize: 12, fontFamily: "'Outfit',sans-serif", padding: 0 }}
+                    cursor: canResend ? 'pointer' : 'default', fontWeight: 600, fontSize: 12, fontFamily: "var(--font-inter-rwj),sans-serif", padding: 0 }}
                 >
                   {canResend ? 'Resend' : `Resend in ${countdown}s`}
                 </button>
@@ -530,7 +552,7 @@ export default function AuthModal() {
                 <button
                   onClick={() => { setStep('form'); setError(null); setLoginOtpSent(false); }}
                   style={{ color: '#C9933A', fontWeight: 600, background: 'none', border: 'none',
-                    cursor: 'pointer', fontSize: 13, fontFamily: "'Outfit',sans-serif" }}
+                    cursor: 'pointer', fontSize: 13, fontFamily: "var(--font-inter-rwj),sans-serif" }}
                 >
                   ← Change mobile number
                 </button>
@@ -541,22 +563,11 @@ export default function AuthModal() {
           {/* ── SIGNUP FORM ── */}
           {step === 'form' && tab === 'signup' && (
             <div style={{ flex: 1 }}>
-              {/* Google */}
-              <button className="rwj-google-btn" onClick={handleGoogle}>
-                <svg width="18" height="18" viewBox="0 0 18 18">
-                  <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
-                  <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.909-2.258c-.805.54-1.836.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
-                  <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
-                  <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.96l3.007 2.333C4.672 5.163 6.656 3.58 9 3.58z"/>
-                </svg>
-                Continue with Google
-              </button>
-
               {/* Name row */}
               <div className="rwj-name-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, letterSpacing: '0.06em',
-                    textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "'Outfit',sans-serif" }}>
+                    textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                     First name
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -567,7 +578,7 @@ export default function AuthModal() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, letterSpacing: '0.06em',
-                    textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "'Outfit',sans-serif" }}>
+                    textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                     Last name
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -581,7 +592,7 @@ export default function AuthModal() {
               {/* Email */}
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, letterSpacing: '0.06em',
-                  textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "'Outfit',sans-serif" }}>
+                  textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                   Email address{' '}
                   <span style={{ fontWeight: 400, color: '#6B7280', textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>(optional)</span>
                 </label>
@@ -592,19 +603,19 @@ export default function AuthModal() {
                     onChange={e => { setEmail(e.target.value); validateEmail(e.target.value); }}
                     onBlur={() => validateEmail(email)} />
                 </div>
-                {emailError && <p style={{ fontSize: 11.5, color: '#D14343', marginTop: 6, fontFamily: "'Outfit',sans-serif" }}>Please enter a valid email address</p>}
+                {emailError && <p style={{ fontSize: 11.5, color: '#D14343', marginTop: 6, fontFamily: "var(--font-inter-rwj),sans-serif" }}>Please enter a valid email address</p>}
               </div>
 
               {/* Phone */}
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, letterSpacing: '0.06em',
-                  textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "'Outfit',sans-serif" }}>
+                  textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                   Mobile number
                 </label>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px',
                     border: '1.5px solid #E5E3DE', borderRadius: 8, background: '#FAFAF8',
-                    fontSize: 13.5, color: '#6B7280', whiteSpace: 'nowrap', flexShrink: 0, fontFamily: "'Outfit',sans-serif" }}>
+                    fontSize: 13.5, color: '#6B7280', whiteSpace: 'nowrap', flexShrink: 0, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                     📱 +91
                   </div>
                   <input
@@ -616,14 +627,14 @@ export default function AuthModal() {
                     onBlur={() => validatePhone(phone, 'signup')}
                   />
                 </div>
-                {phoneError && <p style={{ fontSize: 11.5, color: '#D14343', marginTop: 6, fontFamily: "'Outfit',sans-serif" }}>Please enter a valid 10-digit phone number</p>}
+                {phoneError && <p style={{ fontSize: 11.5, color: '#D14343', marginTop: 6, fontFamily: "var(--font-inter-rwj),sans-serif" }}>Please enter a valid 10-digit phone number</p>}
               </div>
 
               <button className="rwj-cta" onClick={handleSignupSendOtp} disabled={isLoading} style={{ marginBottom: 14 }}>
                 {isLoading ? 'Sending OTP...' : 'Send OTP to Verify →'}
               </button>
 
-              <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.55, textAlign: 'center', marginTop: 8, fontFamily: "'Outfit',sans-serif" }}>
+              <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.55, textAlign: 'center', marginTop: 8, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                 By continuing, you agree to our{' '}
                 <Link href="/terms" onClick={closeAuthModal} style={{ color: '#C9933A', textDecoration: 'none' }}>Terms of Service</Link>
                 {' '}and{' '}
@@ -635,27 +646,16 @@ export default function AuthModal() {
           {/* ── LOGIN FORM ── */}
           {step === 'form' && tab === 'login' && (
             <div style={{ flex: 1 }}>
-              {/* Google */}
-              <button className="rwj-google-btn" onClick={handleGoogle}>
-                <svg width="18" height="18" viewBox="0 0 18 18">
-                  <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
-                  <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.909-2.258c-.805.54-1.836.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
-                  <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
-                  <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.96l3.007 2.333C4.672 5.163 6.656 3.58 9 3.58z"/>
-                </svg>
-                Continue with Google
-              </button>
-
               {/* Phone OTP login */}
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, letterSpacing: '0.06em',
-                  textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "'Outfit',sans-serif" }}>
+                  textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                   Mobile number
                 </label>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px',
                     border: '1.5px solid #E5E3DE', borderRadius: 8, background: '#FAFAF8',
-                    fontSize: 13.5, color: '#6B7280', whiteSpace: 'nowrap', flexShrink: 0, fontFamily: "'Outfit',sans-serif" }}>
+                    fontSize: 13.5, color: '#6B7280', whiteSpace: 'nowrap', flexShrink: 0, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                     📱 +91
                   </div>
                   <input
@@ -663,36 +663,55 @@ export default function AuthModal() {
                     style={{ paddingLeft: 12 }}
                     type="tel" placeholder="98765 43210" maxLength={10} inputMode="numeric"
                     value={loginPhone}
-                    onChange={e => { const v = sanitizePhone(e.target.value); setLoginPhone(v); validatePhone(v, 'login'); }}
+                    onChange={e => { const v = sanitizePhone(e.target.value); setLoginPhone(v); validatePhone(v, 'login'); if (loginOtpSent) { setLoginOtpSent(false); setLoginOtp(''); } }}
                     onBlur={() => validatePhone(loginPhone, 'login')}
                   />
                 </div>
-                {loginPhoneError && <p style={{ fontSize: 11.5, color: '#D14343', marginTop: 6, fontFamily: "'Outfit',sans-serif" }}>Please enter a valid 10-digit phone number</p>}
+                {loginPhoneError && <p style={{ fontSize: 11.5, color: '#D14343', marginTop: 6, fontFamily: "var(--font-inter-rwj),sans-serif" }}>Please enter a valid 10-digit phone number</p>}
               </div>
+
+              {/* Inline OTP field – appears after OTP is sent */}
+              {loginOtpSent && (
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, letterSpacing: '0.06em',
+                    textTransform: 'uppercase', color: '#1A1A1A', marginBottom: 6, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
+                    Verification code
+                  </label>
+                  <input
+                    className="rwj-input"
+                    style={{ paddingLeft: 12, letterSpacing: '0.25em' }}
+                    type="text" inputMode="numeric" maxLength={6} autoFocus
+                    placeholder="Enter 6-digit OTP"
+                    value={loginOtp}
+                    onChange={e => setLoginOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  />
+                </div>
+              )}
 
               <button className="rwj-cta" onClick={handleLoginAction} disabled={isLoading} style={{ marginBottom: 14 }}>
-                {isLoading ? 'Sending OTP...' : 'Send OTP →'}
+                {isLoading
+                  ? (loginOtpSent ? 'Verifying...' : 'Sending OTP...')
+                  : (loginOtpSent ? 'Verify OTP & Log In →' : 'Send OTP →')}
               </button>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 4 }}>
-                <button
-                  onClick={() => { closeAuthModal(); router.push('/login?tab=login'); }}
-                  style={{ color: '#C9933A', fontWeight: 600, background: 'none', border: 'none',
-                    cursor: 'pointer', fontSize: 12.5, fontFamily: "'Outfit',sans-serif" }}
+              {/* Help row */}
+              <p style={{ textAlign: 'center', fontSize: 12.5, color: '#6B7280', marginTop: 18, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
+                <a
+                  onClick={() => window.alert('Password reset link will be sent to your registered mobile number.')}
+                  style={{ color: '#C9933A', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
                 >
-                  Login with email / password
-                </button>
-                <span style={{ color: '#E5E3DE' }}>|</span>
-                <button
-                  onClick={() => { closeAuthModal(); router.push('/login'); }}
-                  style={{ color: '#C9933A', fontWeight: 600, background: 'none', border: 'none',
-                    cursor: 'pointer', fontSize: 12.5, fontFamily: "'Outfit',sans-serif" }}
+                  Forgot password?
+                </a>
+                <span style={{ color: '#E5E3DE', margin: '0 8px' }}>|</span>
+                <a
+                  onClick={() => window.alert('Contact support@risewithjeet.com for assistance.')}
+                  style={{ color: '#C9933A', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
                 >
                   Trouble logging in?
-                </button>
-              </div>
+                </a>
+              </p>
 
-              <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.55, textAlign: 'center', marginTop: 16, fontFamily: "'Outfit',sans-serif" }}>
+              <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.55, textAlign: 'center', marginTop: 16, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                 By continuing, you agree to our{' '}
                 <Link href="/terms" onClick={closeAuthModal} style={{ color: '#C9933A', textDecoration: 'none' }}>Terms of Service</Link>
                 {' '}and{' '}

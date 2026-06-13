@@ -236,6 +236,8 @@ export default function StudyPlannerPage() {
   const [focusTaskSecs, setFocusTaskSecs] = useState(0);
   const [focusTotalSecs, setFocusTotalSecs] = useState(0);
   const [justCompleted, setJustCompleted] = useState(false);
+  // Actual time spent (seconds) per task, captured from the focus timer on completion.
+  const [actualSecondsByTask, setActualSecondsByTask] = useState<Record<string, number>>({});
   const focusTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -502,6 +504,10 @@ export default function StudyPlannerPage() {
 
   const focusMarkDone = async () => {
     const task = focusSessionTasks[focusTaskIdx];
+    // Record the actual time the user spent on this task (from the focus timer).
+    if (task && focusTaskSecs > 0) {
+      setActualSecondsByTask(prev => ({ ...prev, [task.id]: focusTaskSecs }));
+    }
     if (task && !task.isCompleted) {
       await handleToggleTask(task.id, false);
     }
@@ -665,27 +671,41 @@ export default function StudyPlannerPage() {
     '#F43F5E', '#84CC16', '#EF4444', '#EAB308', '#7C3AED',
     '#14B8A6', '#E8B84B', '#FF6900', '#2DD4BF', '#34D399',
   ];
-  const completedTasksWithTime = tasks.filter(t => t.isCompleted && t.startTime && t.endTime);
-  const subjectMinutesMap = new Map<string, number>();
-  completedTasksWithTime.forEach(t => {
+  // Time spent per subject (in seconds). Prefer the actual time tracked by the
+  // focus timer; fall back to the planned slot length for tasks completed without it.
+  const subjectSecondsMap = new Map<string, number>();
+  tasks.filter(t => t.isCompleted).forEach(t => {
     const subj = t.subject?.trim() || 'General';
-    const [sh, sm] = t.startTime!.split(':').map(Number);
-    const [eh, em] = t.endTime!.split(':').map(Number);
-    const diff = (eh * 60 + em) - (sh * 60 + sm);
-    if (diff > 0) subjectMinutesMap.set(subj, (subjectMinutesMap.get(subj) ?? 0) + diff);
+    let secs = 0;
+    const actual = actualSecondsByTask[t.id];
+    if (actual != null && actual > 0) {
+      secs = actual;
+    } else if (t.startTime && t.endTime) {
+      const [sh, sm] = t.startTime.split(':').map(Number);
+      const [eh, em] = t.endTime.split(':').map(Number);
+      const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+      if (diffMin > 0) secs = diffMin * 60;
+    }
+    if (secs > 0) subjectSecondsMap.set(subj, (subjectSecondsMap.get(subj) ?? 0) + secs);
   });
-  const timeByType = Array.from(subjectMinutesMap.entries())
-    .map(([subj, mins], idx) => ({
+  const timeByType = Array.from(subjectSecondsMap.entries())
+    .map(([subj, secs], idx) => ({
       id: subj,
       label: subj,
       color: subjectColorPalette[idx % subjectColorPalette.length],
-      minutes: mins,
+      seconds: secs,
     }))
-    .sort((a, b) => b.minutes - a.minutes);
-  const typeConfig = timeByType;
-  const totalTypeMins = timeByType.reduce((s, x) => s + x.minutes, 0);
-  const hasCompletedTimeDistribution = totalTypeMins > 0;
-  const fmtHours = (m: number) => (m / 60 % 1 === 0 ? (m / 60).toFixed(0) : (m / 60).toFixed(1)) + 'h';
+    .sort((a, b) => b.seconds - a.seconds);
+  const totalTypeSecs = timeByType.reduce((s, x) => s + x.seconds, 0);
+  const hasCompletedTimeDistribution = totalTypeSecs > 0;
+  const fmtDuration = (secs: number) => {
+    if (secs >= 3600) {
+      const h = secs / 3600;
+      return (h % 1 === 0 ? h.toFixed(0) : h.toFixed(1)) + 'h';
+    }
+    if (secs >= 60) return Math.round(secs / 60) + 'm';
+    return Math.round(secs) + 's';
+  };
 
   // Dynamic month/year display for calendar header
   const calendarMonthYear = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -1750,7 +1770,7 @@ export default function StudyPlannerPage() {
                       const gap = timeByType.length > 1 ? 0.06 : 0; // small gap between segments
                       let angle = -Math.PI / 2;
                       return timeByType.map((slice) => {
-                        const sliceAngle = (slice.minutes / totalTypeMins) * 2 * Math.PI;
+                        const sliceAngle = (slice.seconds / totalTypeSecs) * 2 * Math.PI;
                         // Single full-ring segment: draw a plain circle (arc can't close 360°).
                         if (timeByType.length === 1) {
                           return (
@@ -1782,7 +1802,7 @@ export default function StudyPlannerPage() {
                       });
                     })()}
                     <text x="80" y="74" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="26" fontFamily="Arimo, sans-serif">
-                      {fmtHours(totalTypeMins)}
+                      {fmtDuration(totalTypeSecs)}
                     </text>
                     <text x="80" y="96" textAnchor="middle" dominantBaseline="middle" fill="#9CA3AF" fontSize="12" fontFamily="Arimo, sans-serif">
                       today
@@ -1804,7 +1824,7 @@ export default function StudyPlannerPage() {
                         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: slice.color }}></span>
                         <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{slice.label}</span>
                       </div>
-                      <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtHours(slice.minutes)}</span>
+                      <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtDuration(slice.seconds)}</span>
                     </div>
                   ))
                 )}

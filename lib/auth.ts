@@ -286,8 +286,8 @@ export const authService = {
   resetPassword: async (email: string): Promise<void> => {
     const redirectTo =
       typeof window !== 'undefined'
-        ? `${window.location.origin}/login`
-        : 'http://localhost:3000/login';
+        ? `${window.location.origin}/auth/callback`
+        : 'http://localhost:3000/auth/callback';
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo,

@@ -57,6 +57,20 @@ export default function LandingPage() {
     }
   }, [isAuthenticated, isLoading, user, router]);
 
+  // Open the auth popup when redirected here with ?auth=login|signup
+  // (used instead of the removed standalone /login page).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const auth = params.get('auth');
+    if (auth === 'login' || auth === 'signup') {
+      openAuthModal(auth);
+      params.delete('auth');
+      const qs = params.toString();
+      window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : ''));
+    }
+  }, [openAuthModal]);
+
   // Ensure landing page never inherits stale body scroll locks.
   useEffect(() => {
     document.body.style.overflow = '';

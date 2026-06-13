@@ -306,7 +306,7 @@ export default function OurStoryContent() {
           <h2 className="r" style={{ fontSize: 'clamp(1.8rem,4vw,2.6rem)', marginBottom: '16px' }}>Your UPSC Journey<br />Starts <em style={{ color: '#E8B84B' }}>Today</em></h2>
           <p className="r d1" style={{ color: 'rgba(255,255,255,.65)', fontSize: '1rem', maxWidth: '500px', margin: '0 auto 32px' }}>Smart preparation, structured planning, and AI-powered insights, everything serious aspirants need, in one place.</p>
           <div className="cta-btns r d2" style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="btn-g" onClick={() => { window.location.href = '/login?tab=signup'; }}>Start Free Trial →</button>
+            <button className="btn-g" onClick={() => { window.location.href = '/?auth=signup'; }}>Start Free Trial →</button>
             <button className="btn-o" style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.2)', color: '#fff' }} onClick={() => { window.location.href = '/contact'; }}>Connect Us</button>
           </div>
         </div>

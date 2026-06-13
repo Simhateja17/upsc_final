@@ -3,13 +3,28 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { AuthModalProvider } from '@/contexts/AuthModalContext'
 import AuthModal from '@/components/AuthModal'
-import { Cormorant_Garamond, DM_Sans, Sora } from 'next/font/google'
+import { Cormorant_Garamond, DM_Sans, Sora, Playfair_Display, Inter } from 'next/font/google'
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
   variable: '--font-cormorant-garamond',
+  display: 'swap',
+})
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  style: ['normal', 'italic'],
+  variable: '--font-playfair',
+  display: 'swap',
+})
+
+const interFont = Inter({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  variable: '--font-inter-rwj',
   display: 'swap',
 })
 
@@ -56,7 +71,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${cormorant.variable} ${dmSans.variable} ${sora.variable}`}>
+      <body className={`${cormorant.variable} ${dmSans.variable} ${sora.variable} ${playfair.variable} ${interFont.variable}`}>
         <AuthProvider>
           <AuthModalProvider>
             {children}
