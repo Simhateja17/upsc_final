@@ -57,7 +57,7 @@ function CancelSubscriptionModal({
         <p style={{ margin: '0 0 14px', color: '#7C88A6', fontSize: 14 }}>We{'\''}re sorry to see you go. Here{'\''}s what you{'\''}ll lose:</p>
         <div style={{ border: '1px solid #FCD5D8', background: '#FFF6F7', borderLeft: '4px solid #EF4444', borderRadius: 10, padding: 16, marginBottom: 12 }}>
           <p style={{ margin: '0 0 10px', color: '#EF4444', fontSize: 14 }}>Your plan remains active until April 15, 2027. After that, you{'\''}ll be downgraded to the free Starter plan. You will permanently lose :</p>
-          {['Unlimited Jeet AI Chats', 'Unlimited AI Mains Evaluations', 'Priority Answer Review', 'Mental Health Buddy', 'Unlimited Mock Tests'].map((item) => (
+          {['Unlimited Jeet AI Mentor Chats', 'Unlimited AI Mains Evaluations', 'Priority Answer Review', 'Mental Health Buddy', 'Unlimited Mock Tests'].map((item) => (
             <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#334155', marginBottom: 6 }}>
               <span style={{ color: '#EF4444', fontWeight: 700 }}>✕</span>
               <span style={{ fontSize: 14 }}>{item}</span>
@@ -378,7 +378,7 @@ export default function BillingPage() {
               </p>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {([
-                  { label: 'Jeet AI Chats',         value: 'Unlimited ∞', bar: 100, color: '#E8B84B' },
+                  { label: 'Jeet AI Mentor Chats',         value: 'Unlimited ∞', bar: 100, color: '#E8B84B' },
                   { label: 'AI Mains Evaluations',  value: 'Unlimited ∞', bar: 100, color: '#E8B84B' },
                   { label: 'Mock Tests Attempted',  value: '8 / ∞',       bar: 40,  color: '#22C55E' },
                   { label: 'Answer Reviews',        value: '12 used',      bar: 60,  color: '#E8B84B' },
@@ -408,7 +408,7 @@ export default function BillingPage() {
                   '25 Mock Test attempts / day',
                   'Daily News Analysis – Hindu & IE',
                   '10,000+ Previous Year Questions',
-                  'Jeet AI – 100 conversations / day',
+                  'Jeet AI Mentor – 100 conversations / day',
                   'Daily MCQ Challenge – 10 questions',
                   'Study Planner & Time Tracker',
                   'Full Revision Suite – Flashcards, Mindmaps, Spaced Rep.',

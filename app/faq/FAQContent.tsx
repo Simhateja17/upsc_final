@@ -31,7 +31,7 @@ const faqData: FAQSection[] = [
       },
       {
         question: 'Is there a free plan?',
-        answer: '<p>Yes. The <strong>Aspire plan is completely free</strong> and includes Daily MCQ practice, Daily Answer Writing, Daily Current affairs, Jeet AI conversations. You can use these features for as long as you like at no cost. Paid plans unlock the full platform including AI evaluation, mock tests, mentorship, and the complete revision suite.</p>',
+        answer: '<p>Yes. The <strong>Aspire plan is completely free</strong> and includes Daily MCQ practice, Daily Answer Writing, Daily Current affairs, Jeet AI Mentor conversations. You can use these features for as long as you like at no cost. Paid plans unlock the full platform including AI evaluation, mock tests, mentorship, and the complete revision suite.</p>',
       },
       {
         question: 'Is there a mobile app?',
@@ -69,25 +69,25 @@ const faqData: FAQSection[] = [
   },
   {
     id: 'cat-jeetai',
-    title: 'Jeet AI',
+    title: 'Jeet AI Mentor',
     icon: '/sidebar-jeet-gpt.png',
     iconBg: 'rgba(8,145,178,0.1)',
     items: [
       {
-        question: 'What is Jeet AI and what can I use it for?',
-        answer: '<p>Jeet AI is your personal UPSC AI assistant. You can ask it anything related to your preparation:</p><ul><li>Explain a concept from any GS paper</li><li>Help structure a Mains answer step by step</li><li>Summarise a current affairs topic and tag it to the syllabus</li><li>Suggest relevant examples or case studies for a theme</li><li>Review your preparation strategy and flag gaps</li></ul><p>It responds instantly and is trained on UPSC-specific content, not generic AI.</p>',
+        question: 'What is Jeet AI Mentor and what can I use it for?',
+        answer: '<p>Jeet AI Mentor is your personal UPSC AI assistant. You can ask it anything related to your preparation:</p><ul><li>Explain a concept from any GS paper</li><li>Help structure a Mains answer step by step</li><li>Summarise a current affairs topic and tag it to the syllabus</li><li>Suggest relevant examples or case studies for a theme</li><li>Review your preparation strategy and flag gaps</li></ul><p>It responds instantly and is trained on UPSC-specific content, not generic AI.</p>',
       },
       {
-        question: 'Is Jeet AI available 24 hours a day?',
-        answer: '<p>Yes. Jeet AI is available at any time of the day. There is no waiting, no scheduling, and no dependency on a human being available. Ask it at midnight before an exam if you need to.</p>',
+        question: 'Is Jeet AI Mentor available 24 hours a day?',
+        answer: '<p>Yes. Jeet AI Mentor is available at any time of the day. There is no waiting, no scheduling, and no dependency on a human being available. Ask it at midnight before an exam if you need to.</p>',
       },
       {
-        question: 'Can Jeet AI evaluate my answers?',
-        answer: '<p>Jeet AI can give you quick feedback and structure suggestions in a conversational way. For detailed, scored evaluation across 8 parameters with examiner-level feedback, use the dedicated <strong>Daily Answer Writing</strong> module, which is specifically designed and trained for that purpose.</p>',
+        question: 'Can Jeet AI Mentor evaluate my answers?',
+        answer: '<p>Jeet AI Mentor can give you quick feedback and structure suggestions in a conversational way. For detailed, scored evaluation across 8 parameters with examiner-level feedback, use the dedicated <strong>Daily Answer Writing</strong> module, which is specifically designed and trained for that purpose.</p>',
       },
       {
-        question: 'Is Jeet AI accurate for UPSC content?',
-        answer: '<p>Jeet AI is trained on UPSC-specific material including the full syllabus, PYQs, standard reference texts, and current affairs. That said, like all AI, it can occasionally be incomplete or imperfect on very specific factual queries. Always cross-check critical facts with source material before writing them in an exam answer.</p>',
+        question: 'Is Jeet AI Mentor accurate for UPSC content?',
+        answer: '<p>Jeet AI Mentor is trained on UPSC-specific material including the full syllabus, PYQs, standard reference texts, and current affairs. That said, like all AI, it can occasionally be incomplete or imperfect on very specific factual queries. Always cross-check critical facts with source material before writing them in an exam answer.</p>',
       },
     ],
   },
@@ -162,8 +162,8 @@ const faqData: FAQSection[] = [
         answer: '<p>The ideal approach: Read \u2192 Understand \u2192 Connect \u2192 Revise</p><ul><li>Read the news summary</li><li>Understand the issue and background</li><li>See its UPSC syllabus relevance</li><li>Practice MCQs or potential Mains questions</li><li>Save important notes for revision</li></ul><p>The goal is not just reading news - it is learning how UPSC sees the news.</p>',
       },
       {
-        question: 'What is "Jeet AI Summary" and how should I use it?',
-        answer: '<p>Jeet AI Summary breaks complex editorials into UPSC-ready understanding. It provides Key arguments, UPSC relevance, Important concepts, Potential exam questions based on PYQ & trend analysis and Critical analysis. Think of it as editorial decoding for aspirants.</p>',
+        question: 'What is "Jeet AI Mentor Summary" and how should I use it?',
+        answer: '<p>Jeet AI Mentor Summary breaks complex editorials into UPSC-ready understanding. It provides Key arguments, UPSC relevance, Important concepts, Potential exam questions based on PYQ & trend analysis and Critical analysis. Think of it as editorial decoding for aspirants.</p>',
       },
     ],
   },
@@ -215,7 +215,7 @@ const faqData: FAQSection[] = [
       },
       {
         question: 'What does the AI evaluation check?',
-        answer: '<p>Jeet AI evaluates answers through an examiner-style lens, including:</p><ul><li>Structure (Intro\u2013Body\u2013Conclusion)</li><li>Demand fulfillment</li><li>Content depth</li><li>Multi-dimensional perspective</li><li>Facts/examples</li><li>Balance & analysis</li><li>Relevance to question</li></ul><p>The aim is actionable feedback, not just a score.</p>',
+        answer: '<p>Jeet AI Mentor evaluates answers through an examiner-style lens, including:</p><ul><li>Structure (Intro\u2013Body\u2013Conclusion)</li><li>Demand fulfillment</li><li>Content depth</li><li>Multi-dimensional perspective</li><li>Facts/examples</li><li>Balance & analysis</li><li>Relevance to question</li></ul><p>The aim is actionable feedback, not just a score.</p>',
       },
     ],
   },

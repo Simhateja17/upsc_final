@@ -22,7 +22,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms }
   const rightPanelTitle = cms?.right_panel_title || 'Subject Progress';
   const viewAllText = cms?.right_panel_view_all || 'View all →';
   const ctaTitle = cms?.cta_title || "Plan Today's Study";
-  const ctaSubtitle = cms?.cta_subtitle || 'Set daily goals with Jeet AI and stay on track for UPSC 2026.';
+  const ctaSubtitle = cms?.cta_subtitle || 'Set daily goals with Jeet AI Mentor and stay on track for UPSC 2026.';
   const ctaButton = cms?.cta_button || '+ Add in Study Planner';
   const modalTitle = cms?.modal_title || 'Syllabus Progress Overview';
   const router = useRouter();

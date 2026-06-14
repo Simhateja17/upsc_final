@@ -149,12 +149,12 @@ const Header = () => {
 
       {/* Desktop Nav Links */}
       <div className="hidden md:flex items-center gap-4 lg:gap-8">
-        {/* Jeet AI - Simple link */}
+        {/* Jeet AI Mentor - Simple link */}
         <Link
           href="/dashboard/jeet-gpt"
           className="text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap"
         >
-          Jeet AI
+          Jeet AI Mentor
         </Link>
 
         {/* Daily Mains Challenge - Simple link */}
@@ -337,7 +337,7 @@ const Header = () => {
             onClick={() => setMobileMenuOpen(false)}
             className="text-white text-base font-serif font-semibold hover:text-[#E8B84B] hover:bg-white/5 transition-colors px-6 py-3 border-b border-white/5"
           >
-            Jeet AI
+            Jeet AI Mentor
           </Link>
           <Link
             href="/dashboard/daily-answer/challenge"

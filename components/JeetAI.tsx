@@ -41,7 +41,7 @@ const defaultJeetaiFeatures = [
 ];
 
 const defaults = {
-  jeetai_title: 'Experience Jeet AI in Action',
+  jeetai_title: 'Experience Jeet AI Mentor in Action',
   jeetai_features: defaultJeetaiFeatures,
 };
 
@@ -166,7 +166,7 @@ const JeetAI = () => {
             >
               <Image
                 src="/jeet-ai-preview.jpg"
-                alt="Jeet AI Preview"
+                alt="Jeet AI Mentor Preview"
                 fill
                 className="object-cover"
               />

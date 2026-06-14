@@ -60,7 +60,7 @@ export default function SyllabusTrackerPage() {
     right_panel_title: 'Subject Progress',
     right_panel_view_all: 'View all →',
     cta_title: "Plan Today's Study",
-    cta_subtitle: 'Set daily goals with Jeet AI and stay on track for UPSC 2026.',
+    cta_subtitle: 'Set daily goals with Jeet AI Mentor and stay on track for UPSC 2026.',
     cta_button: '+ Add in Study Planner',
     modal_title: 'Syllabus Progress Overview',
     subtopic_placeholder_title: 'Sub-Topics',

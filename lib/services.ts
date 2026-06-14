@@ -36,7 +36,7 @@ async function syncCurrentSessionWithBackend() {
   return { token: session.access_token };
 }
 
-// ==================== Jeet AI Chat ====================
+// ==================== Jeet AI Mentor Chat ====================
 
 export const jeetAIService = {
   sendMessage: (message: string, conversationId?: string) =>
@@ -300,7 +300,7 @@ export const entitlementService = {
   getMyEntitlements: () => api.get<any>('/entitlements/me', authConfig()),
 };
 
-// ==================== Jeet AI Chat ====================
+// ==================== Jeet AI Mentor Chat ====================
 
 export const aiService = {
   chat: (message: string, conversationId?: string) =>

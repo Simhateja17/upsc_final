@@ -73,7 +73,7 @@ const listItems = [
   '25 Mock Test attempts / day',
   'Full Performance Analytics Dashboard',
   'Full Revision Suite - Flashcards, Mindmaps and Spaced Repetition',
-  'Jeet AI - 100 conversations / day',
+  'Jeet AI Mentor - 100 conversations / day',
   'Live Study Room 24x7',
   'Syllabus Tracker',
 ];

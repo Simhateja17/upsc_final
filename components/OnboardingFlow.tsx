@@ -266,7 +266,7 @@ function DashboardPreview({ firstName }: { firstName: string }) {
           borderRadius: 8, padding: '6px 10px', color: '#9CA3AF', fontSize: 11,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
-          🔍 Ask Jeet AI: &quot;Explain current affairs&quot;
+          🔍 Ask Jeet AI Mentor: &quot;Explain current affairs&quot;
         </div>
         <div style={{
           background: '#fff', border: '1px solid #E5E7EB',

@@ -11,24 +11,35 @@ interface SidebarProps {
   onClose?: () => void;
   /** When true, render only as a mobile drawer (hidden on desktop). */
   mobileOnly?: boolean;
+  /** Controlled collapsed state. When provided, the parent manages collapse. */
+  collapsed?: boolean;
+  /** Callback when the sidebar toggle is clicked (used in controlled mode). */
+  onToggle?: () => void;
 }
 
-const Sidebar = ({ isOpen, onClose, mobileOnly = false }: SidebarProps) => {
+const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp, onToggle }: SidebarProps) => {
   const pathname = usePathname();
   const entitlements = useEntitlements();
-  const [collapsed, setCollapsed] = useState(false);
+  const isControlled = collapsedProp !== undefined;
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const collapsed = isControlled ? collapsedProp : internalCollapsed;
 
   useEffect(() => {
+    if (isControlled) return;
     try {
-      setCollapsed(localStorage.getItem('rwj_sidebar_collapsed') === 'true');
+      setInternalCollapsed(localStorage.getItem('rwj_sidebar_collapsed') === 'true');
     } catch {
       // ignore
     }
-  }, []);
+  }, [isControlled]);
 
   function toggle() {
-    const next = !collapsed;
-    setCollapsed(next);
+    if (isControlled) {
+      onToggle?.();
+      return;
+    }
+    const next = !internalCollapsed;
+    setInternalCollapsed(next);
     try { localStorage.setItem('rwj_sidebar_collapsed', String(next)); } catch { /* ignore */ }
   }
 
@@ -38,7 +49,7 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false }: SidebarProps) => {
       items: [
         { id: 'overview', label: 'Overview', icon: '/sidebar-overview.png', path: '/dashboard' },
         { id: 'study-planner', label: 'Study Planner', icon: '/sidebar-study-planner.png', path: '/dashboard/study-planner' },
-        { id: 'jeet-gpt', label: 'Jeet AI', icon: '/sidebar-jeet-gpt.png', path: '/dashboard/jeet-gpt' },
+        { id: 'jeet-gpt', label: 'Jeet AI Mentor', icon: '/sidebar-jeet-gpt.png', path: '/dashboard/jeet-gpt' },
         { id: 'syllabus-tracker', label: 'Syllabus Tracker', icon: '/sidebar-syllabus-new.png', path: '/dashboard/syllabus-tracker', accessKey: 'syllabus_tracker', allowed: ['full', 'limited'] },
       ],
     },

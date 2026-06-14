@@ -28,7 +28,7 @@ The platform integrates with Supabase for database, auth, and storage; Azure Ope
 
 | Service | Purpose | Where Used |
 |---------|---------|------------|
-| **Azure OpenAI** | Chat completions (Jeet AI), answer evaluation, editorial summarization, PYQ parsing, question generation | `upsc_backend/src/config/azure.ts`, `upsc_backend/src/services/embedding.service.ts` |
+| **Azure OpenAI** | Chat completions (Jeet AI Mentor), answer evaluation, editorial summarization, PYQ parsing, question generation | `upsc_backend/src/config/azure.ts`, `upsc_backend/src/services/embedding.service.ts` |
 | **Google Gemini** | Fallback / alternative LLM for generative tasks | `upsc_backend/src/config/gemini.ts` |
 | **Resend** | Transactional email (signup confirmations, notifications) | `upsc_backend/src/services/emailService.ts` |
 | **News API** | Fetching latest news headlines for current-affairs module | `upsc_backend/src/services/newsApi.ts` |

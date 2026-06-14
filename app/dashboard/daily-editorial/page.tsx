@@ -567,7 +567,7 @@ export default function DailyEditorialPage() {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/summaruze.png" alt="Summarize" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
-                    {summarizing === card.id ? 'Summarizing...' : 'Summarize with Jeet AI'}
+                    {summarizing === card.id ? 'Summarizing...' : 'Summarize with Jeet AI Mentor'}
                   </button>
                 </div>
               </div>
@@ -1065,7 +1065,7 @@ export default function DailyEditorialPage() {
       </div>
 
       {/* ============================================================ */}
-      {/*  JEET AI SUMMARY MODAL  – new structured design               */}
+      {/*  Jeet AI Mentor SUMMARY MODAL  – new structured design               */}
       {/* ============================================================ */}
       {summaryModal.open && (() => {
         const ed = summaryModal.editorial;
@@ -1199,7 +1199,7 @@ export default function DailyEditorialPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, zIndex: 1 }}>
                   <div style={{ width: 38, height: 38, background: '#1e2d45', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: '1px solid #2a3d58', flexShrink: 0 }}>🧠</div>
                   <div style={{ fontSize: 17, fontWeight: 700, color: '#e8edf5', letterSpacing: '-.01em' }}>
-                    <span style={{ color: '#f0a500' }}>Jeet AI</span> Summary
+                    <span style={{ color: '#f0a500' }}>Jeet AI Mentor</span> Summary
                   </div>
                 </div>
                 <button onClick={closeModal} style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid #2a3d58', background: '#1a2540', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: '#8a97b0', zIndex: 1, flexShrink: 0 }}>✕</button>
@@ -1301,7 +1301,7 @@ export default function DailyEditorialPage() {
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 16, padding: '10px 16px 12px', background: '#f0f4fa', flexShrink: 0 }}>
                     {[
                       { icon: <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1L1.5 3v3.5C1.5 9.1 3.5 11 6 11s4.5-1.9 4.5-4.5V3L6 1z" stroke="#9aa8bc" strokeWidth="1.2" fill="none"/></svg>, text: '256-bit SSL encrypted' },
-                      { icon: null, text: '· Powered by Jeet AI ·' },
+                      { icon: null, text: '· Powered by Jeet AI Mentor ·' },
                       { icon: <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#9aa8bc" strokeWidth="1.2"/><path d="M4 6l1.5 1.5L8 4" stroke="#9aa8bc" strokeWidth="1.2" strokeLinecap="round"/></svg>, text: 'UPSC Verified Content' },
                     ].map((item, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#9aa8bc' }}>
