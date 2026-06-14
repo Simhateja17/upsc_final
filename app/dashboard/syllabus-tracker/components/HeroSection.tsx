@@ -79,7 +79,6 @@ export default function HeroSection({ states, syllabusData, cms, userFirstName }
       statsBorderRadius={0}
       heroMarginInline={0}
       heroBackground="#0F131F"
-      showDotGrid={false}
       rightElement={null}
       title={
         <>

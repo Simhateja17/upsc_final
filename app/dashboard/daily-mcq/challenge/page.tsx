@@ -52,7 +52,8 @@ export default function DailyMcqChallengePage() {
   const [timeLimit, setTimeLimit] = useState(FIXED_TIME_LIMIT_MINUTES);
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [marked, setMarked] = useState<Record<string, boolean>>({});
+  const [skipped, setSkipped] = useState<Record<string, boolean>>({});
+  const [marked] = useState<Record<string, boolean>>({});
   const [bookmarks] = useState<Record<string, boolean>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -144,13 +145,20 @@ export default function DailyMcqChallengePage() {
   const handleSelectAnswer = (questionId: string, optionId: string) => {
     if (submitted) return;
     setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
-    // Selecting an answer clears any "marked for review" flag, mirroring the prelims flow.
-    setMarked((prev) => {
+    setSkipped((prev) => {
       if (!prev[questionId]) return prev;
       const next = { ...prev };
       delete next[questionId];
       return next;
     });
+  };
+
+  const navigateToQuestion = (nextIndex: number) => {
+    const currentId = questions[currentQuestion]?.id;
+    if (currentId && !answers[currentId]) {
+      setSkipped((prev) => ({ ...prev, [currentId]: true }));
+    }
+    setCurrentQuestion(nextIndex);
   };
 
   // Already attempted screen
@@ -209,9 +217,10 @@ export default function DailyMcqChallengePage() {
 
   const totalQuestions = questions.length;
   const answeredCount = questions.filter((qu) => answers[qu.id] && !marked[qu.id]).length;
+  const skippedCount = questions.filter((qu) => skipped[qu.id] && !answers[qu.id] && !marked[qu.id]).length;
   const markedCount = questions.filter((qu) => marked[qu.id]).length;
   const bookmarkedCount = questions.filter((qu) => bookmarks[qu.id]).length;
-  const unansweredCount = Math.max(0, totalQuestions - answeredCount - markedCount);
+  const unansweredCount = Math.max(0, totalQuestions - answeredCount - skippedCount - markedCount);
   const isLast = currentQuestion === totalQuestions - 1;
 
   // Reusable navigator card (right-hand box)
@@ -226,11 +235,13 @@ export default function DailyMcqChallengePage() {
         {questions.map((qu, idx) => {
           const isCurrent = idx === currentQuestion;
           const isAnswered = !!answers[qu.id] && !marked[qu.id];
+          const isSkipped = !!skipped[qu.id] && !answers[qu.id] && !marked[qu.id];
           const isMarked = !!marked[qu.id];
           const isBookmarked = !!bookmarks[qu.id];
 
           let bg = '#F3F4F6';
           let color = '#6B7280';
+          if (isSkipped) { bg = '#DBEAFE'; color = '#2563EB'; }
           if (isBookmarked) { bg = '#FFFBEB'; color = '#D97706'; }
           if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
           if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
@@ -239,7 +250,7 @@ export default function DailyMcqChallengePage() {
           return (
             <button
               key={qu.id}
-              onClick={() => setCurrentQuestion(idx)}
+              onClick={() => navigateToQuestion(idx)}
               style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #E5E7EB', background: bg, color, fontWeight: 700, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}
             >
               {idx + 1}
@@ -250,15 +261,19 @@ export default function DailyMcqChallengePage() {
 
       {/* Legend */}
       <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 8, marginBottom: 8 }}>
+        <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 9 }}>
+          Session Stats
+        </div>
         {[
-          { label: 'Answered', color: '#00C950', value: answeredCount },
-          { label: 'Unanswered', color: '#D1D5DB', value: unansweredCount },
-          { label: 'Bookmarked', color: '#F59E0B', value: bookmarkedCount },
-          { label: 'Marked for review', color: '#F59E0B', value: markedCount },
+          { label: 'Answered', color: '#22C55E', background: '#DCFCE7', value: answeredCount },
+          { label: 'Unanswered', color: '#D1D5DB', background: '#F3F4F6', value: unansweredCount },
+          { label: 'Skipped', color: '#2563EB', background: '#DBEAFE', value: skippedCount },
+          { label: 'Bookmarked', color: '#F59E0B', background: '#FFFBEB', value: bookmarkedCount },
+          { label: 'Marked for review', color: '#F59E0B', background: '#FEF3C7', value: markedCount },
         ].map((row) => (
           <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <div style={{ width: 14, height: 14, borderRadius: 3, background: row.label === 'Answered' ? '#DCFCE7' : row.label === 'Marked for review' ? '#FEF3C7' : row.label === 'Bookmarked' ? '#FFFBEB' : '#F3F4F6', border: `1px solid ${row.color}` }} />
+              <div style={{ width: 14, height: 14, borderRadius: 3, background: row.background, border: `1px solid ${row.color}` }} />
               <span style={{ fontSize: 11, color: '#374151' }}>{row.label}</span>
             </div>
             <span style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>{row.value}</span>
@@ -269,7 +284,7 @@ export default function DailyMcqChallengePage() {
       <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 10 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: '#111827', marginBottom: 2 }}>Ready to submit</div>
         <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 10 }}>
-          {answeredCount} answered · {unansweredCount} unanswered · {bookmarkedCount} bookmarked
+          {answeredCount} answered · {unansweredCount} unanswered · {skippedCount} skipped
         </div>
         <button
           onClick={handleSubmit}
@@ -285,14 +300,6 @@ export default function DailyMcqChallengePage() {
   return (
     <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : undefined, background: '#F4F5F8', fontFamily: 'Inter, sans-serif', padding: isMobile ? '10px' : '12px 20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: isMobile ? 'auto' : 'hidden' }}>
       <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0 }}>
-
-        {/* Back to dashboard */}
-        <button
-          onClick={() => router.push('/dashboard/daily-mcq')}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 600, color: '#1A1D23', cursor: 'pointer', marginBottom: 10, alignSelf: 'flex-start', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
-        >
-          ← Back to dashboard
-        </button>
 
         {submitError && (
           <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
@@ -379,7 +386,7 @@ export default function DailyMcqChallengePage() {
               {/* Bottom nav */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 22px', borderTop: '1px solid #F1F3F5', flexWrap: 'wrap', flexShrink: 0 }}>
                 <button
-                  onClick={() => setCurrentQuestion((prev) => Math.max(0, prev - 1))}
+                  onClick={() => navigateToQuestion(Math.max(0, currentQuestion - 1))}
                   disabled={currentQuestion === 0}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 999, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: currentQuestion === 0 ? '#C7CDD6' : '#374151', cursor: currentQuestion === 0 ? 'not-allowed' : 'pointer' }}
                 >
@@ -390,18 +397,20 @@ export default function DailyMcqChallengePage() {
                   {questions.map((qu, idx) => {
                     const isCurrent = idx === currentQuestion;
                     const isAnswered = !!answers[qu.id];
+                    const isSkipped = !!skipped[qu.id] && !isAnswered;
                     let dotBg = '#F3F4F6';
                     let dotColor = '#6B7280';
+                    if (isSkipped) { dotBg = '#DBEAFE'; dotColor = '#2563EB'; }
                     if (isAnswered) { dotBg = '#DCFCE7'; dotColor = '#166534'; }
                     if (isCurrent) { dotBg = '#16A34A'; dotColor = '#FFFFFF'; }
                     return (
-                      <button key={qu.id} onClick={() => setCurrentQuestion(idx)} style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: dotBg, color: dotColor, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>{idx + 1}</button>
+                      <button key={qu.id} onClick={() => navigateToQuestion(idx)} style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: dotBg, color: dotColor, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>{idx + 1}</button>
                     );
                   })}
                 </div>
 
                 <button
-                  onClick={() => !isLast && setCurrentQuestion((prev) => prev + 1)}
+                  onClick={() => !isLast && navigateToQuestion(currentQuestion + 1)}
                   disabled={isLast}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isLast ? '#9CA3AF' : '#1A1D23', border: 'none', borderRadius: 999, padding: '9px 20px', fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: isLast ? 'not-allowed' : 'pointer' }}
                 >

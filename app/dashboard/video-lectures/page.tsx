@@ -42,6 +42,8 @@ const CATEGORY_TABS: Array<{ label: string; width: number; active?: boolean }> =
 type SubjectCardTheme = {
   bg: string;
   border: string;
+  color: string;
+  tag: string;
   progress: number;
   showNew?: boolean;
 };
@@ -54,38 +56,16 @@ function getFallbackViewCount(seed: string): number {
   return 20000 + (hash % 10001);
 }
 
-/* Subject card background colors – palette from upsc_subject_color_palette */
-const SUBJECT_COLORS: Record<string, { bg: string; border: string; accent: string }> = {
-  'History':               { bg: '#F5E8D4', border: '#E0C89A', accent: '#C49A6C' },
-  'Geography':             { bg: '#C8E8F4', border: '#A8D0EC', accent: '#5B9BD5' },
-  'Polity':                { bg: '#D0DDF4', border: '#B8C8E8', accent: '#4A68B0' },
-  'Economy':               { bg: '#F8EDD8', border: '#F0D498', accent: '#E6A817' },
-  'Environment & Ecology': { bg: '#C8ECCC', border: '#A8DEB8', accent: '#6DBF8A' },
-  'Science & Technology':  { bg: '#DCF0F8', border: '#C4B8E0', accent: '#8B6FC4' },
-};
-
-const SUBJECT_ICON_GRADIENTS: Record<string, string> = {
-  history:           'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
-  geography:         'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
-  polity:            'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-  economy:           'linear-gradient(135deg, #F59E0B 0%, #EA580C 100%)',
-  environment:       'linear-gradient(135deg, #10B981 0%, #16A34A 100%)',
-  scienceandtech:    'linear-gradient(135deg, #0EA5E9 0%, #0369A1 100%)',
-  sciencetechnology: 'linear-gradient(135deg, #0EA5E9 0%, #0369A1 100%)',
-};
-
-const SUBJECT_CARD_THEMES: Record<string, SubjectCardTheme> = {
-  indianpolity:     { bg: 'linear-gradient(145deg, #FFF4E2 0%, #FBE9CC 100%)', border: '#F4CCA0', progress: 72 }, // orange
-  indianeconomy:    { bg: 'linear-gradient(145deg, #F3EEFF 0%, #E7DEFF 100%)', border: '#D7C8FF', progress: 38 }, // purple
-  geography:        { bg: 'linear-gradient(145deg, #E0F7F6 0%, #CCEEEC 100%)', border: '#99D9D6', progress: 48 }, // teal
-  history:          { bg: 'linear-gradient(145deg, #FDF5EB 0%, #F0E2CC 100%)', border: '#DBBF99', progress: 55 }, // sepia-brown
-  environment:      { bg: 'linear-gradient(145deg, #EEFBF4 0%, #DCF5E8 100%)', border: '#BCE9D1', progress: 62 }, // green
-  ethicsgs4:        { bg: 'linear-gradient(145deg, #EEF0FF 0%, #E0E3FF 100%)', border: '#C4C9F8', progress: 32 }, // indigo
-  essaywriting:     { bg: 'linear-gradient(145deg, #FFF0F5 0%, #FDE0EC 100%)', border: '#F9B8D2', progress: 45 }, // rose/pink
-  internalsecurity: { bg: 'linear-gradient(145deg, #FFF1F2 0%, #FDE7EA 100%)', border: '#F6C6CF', progress: 22, showNew: true }, // red
-  intlrelations:    { bg: 'linear-gradient(145deg, #EFF6FF 0%, #DBEAFE 100%)', border: '#BFDBFE', progress: 35 }, // medium blue
-  scienceandtech:   { bg: 'linear-gradient(145deg, #E0F4FF 0%, #CCE8FF 100%)', border: '#99CFEE', progress: 28 }, // sky blue
-};
+/* Deterministic per-subject view count (50k–320k), so cards never show 0 */
+function getSubjectViewCount(subject: SubjectItem): number {
+  if (subject.viewCount && subject.viewCount > 0) return subject.viewCount;
+  let hash = 0;
+  const seed = subject.name;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 1000000;
+  }
+  return 50000 + (hash % 270001);
+}
 
 const SUBJECT_SORT_ORDER = [
   'indian polity',
@@ -204,29 +184,27 @@ function subjectEmoji(name: string) {
 }
 
 /*
- * Ordered pool of visually distinct pastel card colours.
- * Indices 0-9 are the established core hues (one per well-known subject);
- * 10+ are extra distinct pastels handed out to any additional subjects so
- * that two subjects never end up sharing a colour. Yellow/gold tones are
- * deliberately excluded — that hue is reserved for the brand theme.
+ * Exact subject palette from the supplied reference page.
+ * Each subject has a foreground accent, card background, boundary and icon tile.
  */
-const SUBJECT_CARD_PALETTE: Array<{ key: string; bg: string; border: string }> = [
-  { key: 'orange',  bg: '#FFF4E2', border: '#F4CCA0' },
-  { key: 'sepia',   bg: '#FDF5EB', border: '#DBBF99' },
-  { key: 'teal',    bg: '#E0F7F6', border: '#99D9D6' },
-  { key: 'purple',  bg: '#F3EEFF', border: '#D7C8FF' },
-  { key: 'green',   bg: '#EEFBF4', border: '#BCE9D1' },
-  { key: 'indigo',  bg: '#EEF0FF', border: '#C4C9F8' },
-  { key: 'sky',     bg: '#E0F4FF', border: '#99CFEE' },
-  { key: 'rose',    bg: '#FFF0F5', border: '#F9B8D2' },
-  { key: 'red',     bg: '#FFF1F2', border: '#F6C6CF' },
-  { key: 'blue',    bg: '#EFF6FF', border: '#BFDBFE' },
-  { key: 'cyan',    bg: '#ECFEFF', border: '#A5E8F0' },
-  { key: 'lime',    bg: '#F4FCE3', border: '#CDE8A0' },
-  { key: 'fuchsia', bg: '#FDF4FF', border: '#F0CDF5' },
-  { key: 'coral',   bg: '#FFF1EC', border: '#FBD0BE' },
-  { key: 'stone',   bg: '#FAF7F2', border: '#E4DBCB' },
-  { key: 'slate',   bg: '#F1F5F9', border: '#CBD5E1' },
+const SUBJECT_CARD_PALETTE: Array<{ key: string; color: string; bg: string; border: string; tag: string }> = [
+  { key: 'polity',       color: '#5B8DD9', bg: '#F5F9FF', border: '#D0E2FF', tag: '#DBEAFE' },
+  { key: 'history',      color: '#C0854E', bg: '#FFFBF5', border: '#FFE0B8', tag: '#FFF3E0' },
+  { key: 'geography',    color: '#5BAD7A', bg: '#F5FDF6', border: '#B8F0C8', tag: '#D1FAE5' },
+  { key: 'economy',      color: '#D4A853', bg: '#FFFDF5', border: '#F5E4B8', tag: '#FEF3C7' },
+  { key: 'environment',  color: '#3D9E5F', bg: '#F4FDF4', border: '#B8EFC8', tag: '#DCFCE7' },
+  { key: 'science',      color: '#4C6FD4', bg: '#F5F8FF', border: '#C8D8FF', tag: '#E0EBFF' },
+  { key: 'current',      color: '#D4608A', bg: '#FFF5F8', border: '#FFD0E0', tag: '#FFE4EC' },
+  { key: 'csat',         color: '#7C5CBF', bg: '#F8F5FF', border: '#DDD0FF', tag: '#EDE9FE' },
+  { key: 'society',      color: '#C0609A', bg: '#FFF6FB', border: '#F5C8E8', tag: '#FCE7F3' },
+  { key: 'governance',   color: '#7B6FA0', bg: '#F7F5FF', border: '#D8D0F8', tag: '#EDE9FE' },
+  { key: 'justice',      color: '#D4784A', bg: '#FFF5F0', border: '#FFD8C0', tag: '#FFE8D8' },
+  { key: 'relations',    color: '#3A8EC0', bg: '#F5FBFF', border: '#B8DFFF', tag: '#DBEEFE' },
+  { key: 'agriculture',  color: '#5A9E35', bg: '#F6FDF0', border: '#C8EEAD', tag: '#DCFCE7' },
+  { key: 'security',     color: '#C85858', bg: '#FFF5F5', border: '#FFD0D0', tag: '#FFE4E4' },
+  { key: 'disaster',     color: '#C87A30', bg: '#FFF8F2', border: '#FFD8A8', tag: '#FFE8C8' },
+  { key: 'ethics',       color: '#6A9BD4', bg: '#F6FAFF', border: '#C8DEFF', tag: '#E0EFFF' },
+  { key: 'case-studies', color: '#A8853A', bg: '#FDFAF5', border: '#EAD8B0', tag: '#FEF3C7' },
 ];
 
 /* Canonical colour + progress/badge for the well-known subjects. */
@@ -236,16 +214,23 @@ const CORE_SUBJECT_META: Array<{
   progress: number;
   showNew?: boolean;
 }> = [
-  { match: (n) => n.includes('polity'),                                  key: 'orange', progress: 80, showNew: true },
-  { match: (n) => n.includes('history'),                                 key: 'sepia',  progress: 65 },
-  { match: (n) => n.includes('geography'),                               key: 'teal',   progress: 55 },
-  { match: (n) => n.includes('economy'),                                 key: 'purple', progress: 70 },
-  { match: (n) => n.includes('environment'),                             key: 'green',  progress: 45 },
-  { match: (n) => n.includes('ethics'),                                  key: 'indigo', progress: 40 },
-  { match: (n) => n.includes('science'),                                 key: 'sky',    progress: 60, showNew: true },
-  { match: (n) => n.includes('essay'),                                   key: 'rose',   progress: 45 },
-  { match: (n) => n.includes('security'),                                key: 'red',    progress: 22, showNew: true },
-  { match: (n) => n.includes('international') || n.includes('relation'), key: 'blue',   progress: 35 },
+  { match: (n) => n.includes('polity'),                                  key: 'polity', progress: 80, showNew: true },
+  { match: (n) => n.includes('history'),                                 key: 'history', progress: 65 },
+  { match: (n) => n.includes('geography'),                               key: 'geography', progress: 55 },
+  { match: (n) => n.includes('economy'),                                 key: 'economy', progress: 70 },
+  { match: (n) => n.includes('environment'),                             key: 'environment', progress: 45 },
+  { match: (n) => n.includes('science'),                                 key: 'science', progress: 60, showNew: true },
+  { match: (n) => n.includes('current'),                                 key: 'current', progress: 45 },
+  { match: (n) => n.includes('csat'),                                    key: 'csat', progress: 45 },
+  { match: (n) => n.includes('society'),                                 key: 'society', progress: 45 },
+  { match: (n) => n.includes('governance'),                              key: 'governance', progress: 45 },
+  { match: (n) => n.includes('justice'),                                 key: 'justice', progress: 45 },
+  { match: (n) => n.includes('international') || n.includes('relation'), key: 'relations', progress: 35 },
+  { match: (n) => n.includes('agriculture'),                             key: 'agriculture', progress: 45 },
+  { match: (n) => n.includes('security'),                                key: 'security', progress: 22, showNew: true },
+  { match: (n) => n.includes('disaster'),                                key: 'disaster', progress: 45 },
+  { match: (n) => n.includes('case stud'),                               key: 'case-studies', progress: 45 },
+  { match: (n) => n.includes('ethics'),                                  key: 'ethics', progress: 40 },
 ];
 
 function stableHash(s: string) {
@@ -282,7 +267,7 @@ function buildSubjectThemeMap(subjects: SubjectItem[]): Map<string, SubjectCardT
     if (info.key && !usedKeys.has(info.key)) {
       const pal = SUBJECT_CARD_PALETTE.find((p) => p.key === info.key)!;
       usedKeys.add(pal.key);
-      map.set(subject.name, { bg: pal.bg, border: pal.border, progress: info.progress, showNew: info.showNew });
+      map.set(subject.name, { bg: pal.bg, border: pal.border, color: pal.color, tag: pal.tag, progress: info.progress, showNew: info.showNew });
     }
   }
 
@@ -294,21 +279,16 @@ function buildSubjectThemeMap(subjects: SubjectItem[]): Map<string, SubjectCardT
       SUBJECT_CARD_PALETTE.find((p) => !usedKeys.has(p.key)) ??
       SUBJECT_CARD_PALETTE[stableHash(subject.name) % SUBJECT_CARD_PALETTE.length]; // palette exhausted: stable fallback
     usedKeys.add(pal.key);
-    map.set(subject.name, { bg: pal.bg, border: pal.border, progress: info.progress, showNew: info.showNew });
+    map.set(subject.name, { bg: pal.bg, border: pal.border, color: pal.color, tag: pal.tag, progress: info.progress, showNew: info.showNew });
   }
 
   return map;
 }
 
-function getSubjectIconGradient(name: string) {
+function getSubjectReferenceTheme(name: string) {
   const n = normalizeSubjectKey(name);
-  if (n.includes('polity')) return 'linear-gradient(135deg, #3B82F6, #1D4ED8)';
-  if (n.includes('history')) return 'linear-gradient(135deg, #F59E0B, #D97706)';
-  if (n.includes('geography')) return 'linear-gradient(135deg, #10B981, #059669)';
-  if (n.includes('economy')) return 'linear-gradient(135deg, #8B5CF6, #7C3AED)';
-  if (n.includes('environment')) return 'linear-gradient(135deg, #22C55E, #16A34A)';
-  if (n.includes('science')) return 'linear-gradient(135deg, #EF4444, #DC2626)';
-  return 'linear-gradient(135deg, #64748B, #475569)';
+  const core = CORE_SUBJECT_META.find((meta) => meta.match(n));
+  return SUBJECT_CARD_PALETTE.find((palette) => palette.key === core?.key) ?? SUBJECT_CARD_PALETTE[0];
 }
 
 function formatViews(n: number) {
@@ -319,6 +299,14 @@ function formatViews(n: number) {
 
 function formatCardViews(n: number | undefined) {
   return formatViews(n ?? 0);
+}
+
+/* Indian-style view count for subject cards, e.g. 120000 -> "1.2L" */
+function formatSubjectViews(n: number) {
+  if (n >= 10_000_000) return `${(n / 10_000_000).toFixed(1)}Cr`;
+  if (n >= 100_000) return `${(n / 100_000).toFixed(1)}L`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
 }
 
 function getSubjectHeroLabel(name: string) {
@@ -358,6 +346,8 @@ export default function VideoLecturesPage() {
   const [subjectsLoading, setSubjectsLoading] = useState(true);
   const [subjectVideosLoading, setSubjectVideosLoading] = useState(false);
   const [apiStats, setApiStats] = useState<any>(null);
+  // Per-subject watched video ids (a clicked "Watch" counts as watched). Persisted locally.
+  const [watchedBySubject, setWatchedBySubject] = useState<Record<string, string[]>>({});
 
   const [watchVideo, setWatchVideo] = useState<VideoItem | null>(null);
   const [videoQuestions, setVideoQuestions] = useState<any[]>([]);
@@ -366,12 +356,8 @@ export default function VideoLecturesPage() {
   const [quizLoading, setQuizLoading] = useState(false);
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showMentorModal, setShowMentorModal] = useState(false);
   const [modalVideo, setModalVideo] = useState<VideoItem | null>(null);
-  const [mentorQuestion, setMentorQuestion] = useState('');
-  const [mentorName, setMentorName] = useState('');
-  const [mentorSubmitting, setMentorSubmitting] = useState(false);
-  const [mentorSuccess, setMentorSuccess] = useState(false);
+  const [videoSearch, setVideoSearch] = useState('');
   const selectedVideosRef = useRef<HTMLDivElement | null>(null);
   const selectedVideoGridRef = useRef<HTMLDivElement | null>(null);
   const lastAutoScrolledSubjectRef = useRef<string | null>(null);
@@ -390,6 +376,18 @@ export default function VideoLecturesPage() {
       setApiStats(statRes.data ?? null);
       setSubjectsLoading(false);
     });
+  }, []);
+
+  /* Load locally-stored watched progress */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('rwj_watched_videos_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') setWatchedBySubject(parsed);
+      }
+    } catch {}
   }, []);
 
   /* Load videos for selected subject */
@@ -414,6 +412,7 @@ export default function VideoLecturesPage() {
   }, [watchVideo]);
 
   const handleSubjectClick = (name: string) => {
+    setVideoSearch('');
     setSelectedSubject((prev) => {
       const nextSubject = prev === name ? null : name;
       lastAutoScrolledSubjectRef.current = nextSubject ? null : prev;
@@ -422,13 +421,23 @@ export default function VideoLecturesPage() {
     });
   };
 
-  const openVideoActionModal = (type: 'pdf' | 'mentor', video: VideoItem) => {
+  // Clicking "Watch" marks the video watched and bumps that subject's progress.
+  const markVideoWatched = (subjectName: string | null | undefined, videoId: string | number | undefined) => {
+    if (!subjectName || videoId === undefined || videoId === null) return;
+    const key = normalizeSubjectKey(subjectName);
+    const id = String(videoId);
+    setWatchedBySubject((prev) => {
+      const existing = prev[key] || [];
+      if (existing.includes(id)) return prev;
+      const next = { ...prev, [key]: [...existing, id] };
+      try { localStorage.setItem('rwj_watched_videos_v1', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const openVideoActionModal = (_type: 'pdf', video: VideoItem) => {
     setModalVideo(video);
-    if (type === 'pdf') {
-      setShowLoginModal(true);
-      return;
-    }
-    setShowMentorModal(true);
+    setShowLoginModal(true);
   };
 
   const handleQuizSubmit = async () => {
@@ -439,19 +448,6 @@ export default function VideoLecturesPage() {
       setQuizResults(res.data ?? null);
     } catch {}
     setQuizLoading(false);
-  };
-
-  const handleAskMentor = async () => {
-    if (!mentorQuestion.trim()) return;
-    setMentorSubmitting(true);
-    try {
-      await videoService.askMentor({ question: mentorQuestion.trim(), name: mentorName.trim() || undefined });
-      setMentorSuccess(true);
-      setMentorQuestion('');
-      setMentorName('');
-      setTimeout(() => setMentorSuccess(false), 3000);
-    } catch {}
-    setMentorSubmitting(false);
   };
 
   const orderedSubjects = [...apiSubjects].sort((a, b) => {
@@ -495,6 +491,15 @@ export default function VideoLecturesPage() {
     ? apiVideos.filter((video) => normalizeSubjectKey(video.subject || '') === normalizeSubjectKey(selectedSubject))
     : [];
   const visibleSubjectVideos = subjectVideos.length > 0 ? subjectVideos : fallbackSubjectVideos;
+  const filteredSubjectVideos = visibleSubjectVideos.filter((video) =>
+    video.title.toLowerCase().includes(videoSearch.trim().toLowerCase()),
+  );
+  const selectedSubjectTheme = getSubjectReferenceTheme(selectedSubject ?? '');
+
+  const closeSelectedSubject = () => {
+    setVideoSearch('');
+    setSelectedSubject(null);
+  };
 
   useEffect(() => {
     if (!selectedSubject) {
@@ -612,30 +617,44 @@ export default function VideoLecturesPage() {
             style={{
               justifyContent: 'center',
               justifyItems: 'center',
-              columnGap: '14px',
-              rowGap: '16px',
+              columnGap: '20px',
+              rowGap: '22px',
               marginBottom: selectedSubject ? 'clamp(24px, 2.5vw, 36px)' : '0',
             }}
           >
             {visibleSubjects.map((subject) => {
-              const theme = subjectThemeMap.get(subject.name) ?? { bg: '#F1F5F9', border: '#CBD5E1', progress: 50 };
+              const theme = subjectThemeMap.get(subject.name) ?? { bg: '#F5F9FF', border: '#D0E2FF', color: '#5B8DD9', tag: '#DBEAFE', progress: 50 };
               const isSelected = selectedSubject === subject.name;
               const showNew = theme.showNew || subject.isNew;
+              const watchedCount = (watchedBySubject[normalizeSubjectKey(subject.name)] || []).length;
+              const totalCount = subject.videoCount ?? 0;
+              const progressPct = totalCount > 0 ? Math.min(100, Math.round((watchedCount / totalCount) * 100)) : 0;
               return (
                 <button
                   type="button"
                   key={subject.name}
                   onClick={() => handleSubjectClick(subject.name)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = `0 12px 28px ${theme.color}30`;
+                    e.currentTarget.style.borderColor = theme.color;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = isSelected ? 'translateY(-2px) scale(1.01)' : 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = isSelected ? `0 8px 28px ${theme.color}45` : '0 1px 4px rgba(0,0,0,0.05)';
+                    e.currentTarget.style.borderColor = isSelected ? theme.color : theme.border;
+                  }}
                   style={{
-                    width: '169px',
-                    height: '163px',
-                    background: theme.bg,
-                    borderRadius: '18px',
-                    padding: '16px 14px 14px',
+                    width: '100%',
+                    minHeight: '188px',
+                    background: isSelected ? theme.color : theme.bg,
+                    borderRadius: '20px',
+                    padding: '20px 18px 18px',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    border: isSelected ? '1.6px solid #162456' : `0.8px solid ${theme.border}`,
-                    boxShadow: isSelected ? '0 6px 14px rgba(22,36,86,0.16)' : 'none',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+                    border: `1.5px solid ${isSelected ? theme.color : theme.border}`,
+                    boxShadow: isSelected ? `0 8px 28px ${theme.color}45` : '0 1px 4px rgba(0,0,0,0.05)',
+                    transform: isSelected ? 'translateY(-2px) scale(1.01)' : 'translateY(0) scale(1)',
                     position: 'relative',
                     textAlign: 'left',
                   }}
@@ -645,16 +664,16 @@ export default function VideoLecturesPage() {
                       className="font-arimo font-bold"
                       style={{
                         position: 'absolute',
-                        top: '10px',
-                        right: '9px',
-                        height: '18.25px',
-                        minWidth: '40.375px',
-                        padding: '2px 9px 0',
+                        top: '12px',
+                        right: '12px',
+                        height: '22px',
+                        minWidth: '48px',
+                        padding: '3px 11px 0',
                         borderRadius: '20px',
-                        background: 'linear-gradient(155.676deg, #F5A623 0%, #D4881A 100%)',
-                        color: '#1A2744',
-                        fontSize: '9.5px',
-                        lineHeight: '14.25px',
+                        background: '#3B82F6',
+                        color: '#FFFFFF',
+                        fontSize: '11px',
+                        lineHeight: '16px',
                         letterSpacing: '0',
                       }}
                     >
@@ -662,18 +681,29 @@ export default function VideoLecturesPage() {
                     </div>
                   )}
 
-                  <div style={{ fontSize: '30px', lineHeight: '30px', marginBottom: '10px' }}>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '12px',
+                      background: isSelected ? 'rgba(255,255,255,0.22)' : theme.tag,
+                      fontSize: '24px',
+                      lineHeight: '32px',
+                      marginBottom: '12px',
+                    }}
+                  >
                     {subjectEmoji(subject.name)}
                   </div>
                   <div
                     className="font-arimo font-bold"
                     title={subject.name}
                     style={{
-                      fontSize: '14px',
-                      lineHeight: '20px',
-                      color: '#1A2744',
+                      fontSize: '17px',
+                      lineHeight: '24px',
+                      color: isSelected ? '#FFFFFF' : '#1E293B',
                       letterSpacing: '-0.3px',
-                      height: '40px',
+                      height: '48px',
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical',
@@ -682,20 +712,26 @@ export default function VideoLecturesPage() {
                   >
                     {subject.name}
                   </div>
-                  <div className="font-arimo" style={{ fontSize: '11.5px', lineHeight: '17.25px', color: '#5A7096', marginTop: '3px', marginBottom: '2px' }}>
+                  <div className="font-arimo" style={{ fontSize: '13px', lineHeight: '19.5px', color: isSelected ? 'rgba(255,255,255,0.75)' : '#94A3B8', marginTop: '4px', marginBottom: '2px' }}>
                     {subject.videoCount ?? 0} videos{subject.totalDuration ? ` \u00B7 ${subject.totalDuration}` : ''}
                   </div>
-                  <div className="font-arimo" style={{ fontSize: '10.5px', lineHeight: '15.75px', color: '#8FA4BE', marginBottom: '9px' }}>
-                    {subject.viewCount ? formatCardViews(subject.viewCount) : '0'} views
+                  <div className="font-arimo" style={{ fontSize: '12px', lineHeight: '18px', color: isSelected ? 'rgba(255,255,255,0.75)' : '#94A3B8', marginBottom: '12px' }}>
+                    {formatSubjectViews(getSubjectViewCount(subject))} views
                   </div>
-                  <div className="rounded-full overflow-hidden" style={{ width: '141px', height: '4px', background: '#DDE5F0' }}>
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${theme.progress}%`,
-                        background: 'linear-gradient(90deg, #F5A623 0%, #D4881A 100%)',
-                      }}
-                    />
+                  <div className="flex items-center" style={{ gap: '8px', width: '100%' }}>
+                    <div className="rounded-full overflow-hidden" style={{ flex: 1, height: '5px', background: isSelected ? 'rgba(255,255,255,0.25)' : theme.border }}>
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${progressPct}%`,
+                          background: isSelected ? 'rgba(255,255,255,0.8)' : theme.color,
+                          transition: 'width 0.3s ease',
+                        }}
+                      />
+                    </div>
+                    <span className="font-arimo font-bold" style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.9)' : theme.color, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                      {progressPct}% complete
+                    </span>
                   </div>
                 </button>
               );
@@ -767,23 +803,31 @@ export default function VideoLecturesPage() {
           <div ref={selectedVideosRef} style={{ marginTop: 'clamp(24px, 2.5vw, 36px)' }}>
             <div
               style={{
-                background: 'linear-gradient(180deg, #FCFDFF 0%, #F8FAFD 100%)',
-                border: '1px solid #E3EAF4',
-                borderRadius: '22px',
-                padding: 'clamp(18px, 2vw, 26px)',
+                border: `1.5px solid ${selectedSubjectTheme.border}`,
+                borderRadius: '24px',
                 marginBottom: 'clamp(20px, 2vw, 28px)',
-                boxShadow: '0 16px 36px rgba(15, 23, 42, 0.05)',
+                boxShadow: `0 6px 48px ${selectedSubjectTheme.color}14`,
+                overflow: 'hidden',
               }}
             >
-              <div className="flex items-start justify-between" style={{ gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+              <div
+                className="flex items-center justify-between"
+                style={{
+                  gap: '16px',
+                  flexWrap: 'wrap',
+                  padding: 'clamp(18px, 2vw, 26px)',
+                  background: `linear-gradient(135deg, ${selectedSubjectTheme.bg} 0%, #FFFFFF 100%)`,
+                  borderBottom: `1.5px solid ${selectedSubjectTheme.border}`,
+                }}
+              >
                 <div className="flex items-center" style={{ gap: '12px', marginBottom: '4px' }}>
                   <div
                     className="flex items-center justify-center"
                     style={{
-                      background: getSubjectIconGradient(selectedSubject),
-                      borderRadius: '14px',
-                      width: '48px',
-                      height: '48px',
+                      background: selectedSubjectTheme.tag,
+                      borderRadius: '16px',
+                      width: '56px',
+                      height: '56px',
                       flexShrink: 0,
                     }}
                   >
@@ -792,42 +836,60 @@ export default function VideoLecturesPage() {
                   <div>
                     <h2
                       className="font-arimo font-bold"
-                      style={{ fontSize: '24px', color: '#101828', lineHeight: '32px' }}
+                      style={{ fontSize: '24px', color: '#1E293B', lineHeight: '32px' }}
                     >
                       {getSubjectHeroLabel(selectedSubject)} Simplified
                     </h2>
-                    <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', color: '#4A5565' }}>
+                    <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', color: '#94A3B8' }}>
                       {'\u{1F4FA}'} {visibleSubjectVideos.length} Video{visibleSubjectVideos.length !== 1 ? 's' : ''}
                       {matchedSelectedSubject?.totalDuration ? ` · ${matchedSelectedSubject.totalDuration}` : ''}
                     </p>
                   </div>
                 </div>
-                <a
-                  href="https://www.youtube.com/@RiseWithJeet"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 font-arimo font-semibold text-white"
-                  style={{
-                    background: '#17223E',
-                    borderRadius: '999px',
-                    padding: '8px 14px',
-                    fontSize: '13px',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FF0000"/>
-                    <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#FFFFFF"/>
-                  </svg>
-                  @RiseWithJeet
-                </a>
+                <div className="flex items-center" style={{ gap: '10px' }}>
+                  <div style={{ position: 'relative' }}>
+                    <span
+                      aria-hidden="true"
+                      style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', fontSize: '12px', pointerEvents: 'none' }}
+                    >
+                      {'\u{1F50D}'}
+                    </span>
+                    <input
+                      type="search"
+                      value={videoSearch}
+                      onChange={(event) => setVideoSearch(event.target.value)}
+                      placeholder="Search videos..."
+                      aria-label={`Search ${selectedSubject} videos`}
+                      className="font-arimo outline-none"
+                      style={{
+                        width: 'clamp(150px, 16vw, 210px)',
+                        height: '38px',
+                        padding: '0 12px 0 32px',
+                        borderRadius: '12px',
+                        border: '1px solid #E2E8F0',
+                        background: '#FFFFFF',
+                        color: '#475569',
+                        fontSize: '12px',
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeSelectedSubject}
+                    aria-label={`Close ${selectedSubject} playlist`}
+                    className="flex items-center justify-center"
+                    style={{ width: '38px', height: '38px', borderRadius: '12px', border: 'none', background: '#F1F5F9', color: '#64748B', cursor: 'pointer', fontSize: '16px', flexShrink: 0 }}
+                  >
+                    {'\u2715'}
+                  </button>
+                </div>
               </div>
-              {matchedSelectedSubject?.description ? (
-                <p className="font-arimo" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#4A5565', lineHeight: 1.5 }}>
-                  {matchedSelectedSubject.description}
-                </p>
-              ) : null}
-            </div>
+              <div style={{ padding: 'clamp(18px, 2vw, 26px)', background: '#FFFFFF' }}>
+                {matchedSelectedSubject?.description ? (
+                  <p className="font-arimo" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#94A3B8', lineHeight: 1.5, marginBottom: '18px' }}>
+                    {matchedSelectedSubject.description}
+                  </p>
+                ) : null}
 
             {subjectVideosLoading ? (
               <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
@@ -835,11 +897,11 @@ export default function VideoLecturesPage() {
                   Loading videos...
                 </p>
               </div>
-            ) : visibleSubjectVideos.length === 0 ? (
+            ) : filteredSubjectVideos.length === 0 ? (
               <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>{'\u{1F4ED}'}</div>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>{videoSearch ? '\u{1F50D}' : '\u{1F4ED}'}</div>
                 <p className="font-arimo font-medium" style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>
-                  No videos available for {selectedSubject}
+                  {videoSearch ? 'No videos match your search.' : `No videos available for ${selectedSubject}`}
                 </p>
               </div>
             ) : (
@@ -852,7 +914,7 @@ export default function VideoLecturesPage() {
                     gap: 'clamp(16px, 1.8vw, 24px)',
                   }}
                 >
-                  {visibleSubjectVideos.map((video) => (
+                  {filteredSubjectVideos.map((video) => (
                     <div
                       key={video.id}
                       style={{
@@ -860,7 +922,7 @@ export default function VideoLecturesPage() {
                         borderRadius: '16px',
                         boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.08), 0px 1px 2px -1px rgba(0,0,0,0.06)',
                         overflow: 'hidden',
-                        border: '1px solid #E5E7EB',
+                        border: '1.5px solid #F1F5F9',
                       }}
                     >
                       <div
@@ -882,7 +944,7 @@ export default function VideoLecturesPage() {
                       </div>
                       <div
                         className="flex items-center justify-center"
-                        style={{ background: '#EFF6FF', height: 'clamp(150px, 14vw, 190px)', position: 'relative' }}
+                        style={{ background: selectedSubjectTheme.tag, height: 'clamp(150px, 14vw, 190px)', position: 'relative' }}
                       >
                         {video.thumbnailUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -895,7 +957,7 @@ export default function VideoLecturesPage() {
                       <div style={{ padding: 'clamp(14px, 1.5vw, 20px)' }}>
                         <p
                           className="font-arimo font-bold"
-                          style={{ fontSize: 'clamp(10px, 0.85vw, 12px)', color: '#C68A0B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 'clamp(4px, 0.4vw, 6px)' }}
+                          style={{ fontSize: 'clamp(10px, 0.85vw, 12px)', color: selectedSubjectTheme.color, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 'clamp(4px, 0.4vw, 6px)' }}
                         >
                           {matchedSelectedSubject?.name ?? selectedSubject}
                         </p>
@@ -911,27 +973,7 @@ export default function VideoLecturesPage() {
 
                         <div className="flex items-center" style={{ gap: '4px', flexWrap: 'nowrap', minWidth: 0 }}>
                           <button
-                            onClick={() => openVideoActionModal('pdf', video)}
-                            className="flex items-center gap-1 font-arimo font-bold"
-                            style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-                          >
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                              <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M7 11l5 5 5-5" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M12 4v12" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                            PDF
-                          </button>
-                          <button
-                            onClick={() => openVideoActionModal('mentor', video)}
-                            className="flex items-center gap-1 font-arimo font-bold"
-                            style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-                          >
-                            <span style={{ fontSize: '14px' }}>{'\u{1F9D1}\u200D\u{1F3EB}'}</span>
-                            Ask Mentor
-                          </button>
-                          <button
-                            onClick={() => openVideoInNewTab(video)}
+                            onClick={() => { markVideoWatched(selectedSubject ?? video.subject, video.id); openVideoInNewTab(video); }}
                             className="flex items-center gap-1 font-arimo font-bold text-white"
                             style={{ padding: '5px 8px', borderRadius: '10px', background: '#17223E', border: '1.5px solid #17223E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                           >
@@ -941,6 +983,18 @@ export default function VideoLecturesPage() {
                             </svg>
                             Watch
                           </button>
+                          <button
+                            onClick={() => openVideoActionModal('pdf', video)}
+                            className="flex items-center gap-1 font-arimo font-bold"
+                            style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                          >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                              <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M7 11l5 5 5-5" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M12 4v12" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            Download PDF
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -949,6 +1003,8 @@ export default function VideoLecturesPage() {
 
               </>
             )}
+              </div>
+            </div>
 
             {/* YouTube CTA Banner – always shown below videos when a subject is selected */}
             {!subjectVideosLoading && (
@@ -1012,156 +1068,6 @@ export default function VideoLecturesPage() {
         )}
       </div>
 
-      {/* Bottom support cards removed – PDF and Ask Mentor open as modals via openVideoActionModal */}
-      {false && (
-      <div style={{ display: 'none' }}>
-        <div>
-          <div
-            style={{
-              background: '#FFFFFF',
-              borderRadius: '24px',
-              border: '1.6px solid #9AA4B2',
-              padding: '32px',
-              width: '100%',
-              minHeight: '607.188px',
-            }}
-          >
-            <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-              <span style={{ fontSize: '34px' }}>{'\u{1F4E5}'}</span>
-              <button
-                type="button"
-                className="flex items-center justify-center"
-                style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F3F4F6', border: 'none', color: '#6B7280' }}
-              >
-                ×
-              </button>
-            </div>
-
-            <h3 className="font-arimo font-bold" style={{ fontSize: '30px', color: '#101828', lineHeight: '36px', marginBottom: '8px' }}>
-              Login to Download
-            </h3>
-            <p className="font-arimo" style={{ fontSize: '14px', color: '#4A5565', marginBottom: '20px', lineHeight: '20px' }}>
-              Please Sign-in to download <strong>Telegram Accts</strong>
-            </p>
-
-            <div style={{ marginBottom: '12px' }}>
-              <input
-                type="email"
-                placeholder="Email address"
-                className="w-full font-arimo outline-none"
-                style={{ height: '55px', borderRadius: '14px', border: '1.6px solid #D1D5DC', padding: '0 16px', fontSize: '14px' }}
-              />
-            </div>
-            <div style={{ marginBottom: '16px' }}>
-              <input
-                type="password"
-                placeholder="Password"
-                className="w-full font-arimo outline-none"
-                style={{ height: '55px', borderRadius: '14px', border: '1.6px solid #D1D5DC', padding: '0 16px', fontSize: '14px' }}
-              />
-            </div>
-
-            <button
-              type="button"
-              className="w-full font-arimo font-bold text-white"
-              style={{ height: '60px', borderRadius: '14px', background: '#162456', border: 'none', fontSize: '18px', marginBottom: '16px' }}
-            >
-              Sign In & Download →
-            </button>
-
-            <div className="flex items-center" style={{ gap: '12px', marginBottom: '16px' }}>
-              <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
-              <span className="font-arimo" style={{ fontSize: '14px', color: '#6A7282' }}>– or –</span>
-              <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
-            </div>
-
-            <button
-              type="button"
-              className="w-full flex items-center justify-center gap-2 font-arimo font-semibold"
-              style={{ height: '59px', borderRadius: '14px', border: '1.6px solid #D1D5DC', background: '#FFFFFF', color: '#101828', fontSize: '16px', marginBottom: '16px' }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-              Continue with Google
-            </button>
-
-            <div className="flex items-center justify-between">
-              <span className="font-arimo" style={{ fontSize: '12px', color: '#155DFC' }}>New? Create free account →</span>
-              <span className="font-arimo" style={{ fontSize: '12px', color: '#155DFC' }}>{'\u{1F4E7}'} Forgot?</span>
-            </div>
-          </div>
-
-          <div
-            style={{
-              background: '#FFFFFF',
-              borderRadius: '24px',
-              border: '1.6px solid #9AA4B2',
-              padding: '32px',
-              width: '100%',
-              minHeight: '607.188px',
-              marginTop: '151.8px',
-            }}
-          >
-            <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-              <span style={{ fontSize: '34px' }}>{'\u{1F914}'}</span>
-              <button
-                type="button"
-                className="flex items-center justify-center"
-                style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F3F4F6', border: 'none', color: '#6B7280' }}
-              >
-                ×
-              </button>
-            </div>
-
-            <h3 className="font-arimo font-bold" style={{ fontSize: '30px', color: '#101828', lineHeight: '36px', marginBottom: '8px' }}>
-              Ask the Mentor
-            </h3>
-            <p className="font-arimo" style={{ fontSize: '14px', color: '#4A5565', marginBottom: '24px', lineHeight: '20px' }}>
-              Have any doubt about <strong>Introduction to Indian Constitution I Historical Background</strong>...Jeet Sir responds within 24 hours.
-            </p>
-
-            <p className="font-arimo font-bold" style={{ fontSize: '14px', color: '#364153', marginBottom: '8px' }}>
-              Your doubt or question
-            </p>
-            <textarea
-              placeholder="e.g. At 18:32, I didn't understand why Article 370 had was mentioned u..."
-              className="w-full font-arimo outline-none resize-none"
-              value={mentorQuestion}
-              onChange={(e) => setMentorQuestion(e.target.value)}
-              style={{ height: '115px', borderRadius: '14px', border: '1.6px solid #D1D5DC', padding: '16px', fontSize: '14px', marginBottom: '12px' }}
-            />
-
-            <p className="font-arimo font-bold" style={{ fontSize: '14px', color: '#364153', marginBottom: '8px' }}>
-              Your name (optional)
-            </p>
-            <input
-              type="text"
-              placeholder="e.g. Rahul from Delhi"
-              className="w-full font-arimo outline-none"
-              style={{ height: '55px', borderRadius: '14px', border: '1.6px solid #D1D5DC', padding: '0 16px', fontSize: '14px', marginBottom: '14px' }}
-            />
-
-            <button
-              type="button"
-              onClick={handleAskMentor}
-              disabled={mentorSubmitting || !mentorQuestion.trim()}
-              className="w-full font-arimo font-bold text-white"
-              style={{ height: '60px', borderRadius: '14px', background: mentorSubmitting || !mentorQuestion.trim() ? '#6A7282' : '#101828', border: 'none', fontSize: '18px', marginBottom: '14px', opacity: !mentorQuestion.trim() ? 0.6 : 1 }}
-            >
-              {mentorSubmitting ? 'Submitting...' : 'Submit Doubt →'}
-            </button>
-
-            <p className="font-arimo text-center" style={{ fontSize: '12px', color: '#6A7282', lineHeight: '16px' }}>
-              Answers posted on <span style={{ color: '#E7000B', fontWeight: 700 }}>YouTube Community</span> & <span style={{ color: '#1E40AF', fontWeight: 700 }}>Telegram</span>
-            </p>
-          </div>
-        </div>
-      </div>
-      )}
 
       {/* Watch Video + Quiz Modal */}
       {watchVideo && (
@@ -1346,123 +1252,6 @@ export default function VideoLecturesPage() {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Ask the Mentor Modal */}
-      {showMentorModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.45)' }}
-          onClick={() => { setShowMentorModal(false); setMentorQuestion(''); setMentorName(''); }}
-        >
-          <div
-            style={{ background: '#FFFFFF', borderRadius: '20px', padding: '28px 28px 24px', width: '100%', maxWidth: '420px', margin: '0 16px', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header row */}
-            <div className="flex items-start justify-between" style={{ marginBottom: '14px' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/ask-mentor-icon.png" alt="Ask Mentor" style={{ width: '52px', height: '52px', objectFit: 'contain' }} />
-              <button
-                onClick={() => { setShowMentorModal(false); setMentorQuestion(''); setMentorName(''); }}
-                className="flex items-center justify-center"
-                style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F3F4F6', border: 'none', cursor: 'pointer', flexShrink: 0 }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="#4A5565" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-
-            <h3 className="font-arimo font-bold" style={{ fontSize: '22px', color: '#101828', marginBottom: '8px' }}>
-              Ask the Mentor
-            </h3>
-            <p className="font-arimo" style={{ fontSize: '13.5px', color: '#4A5565', marginBottom: '20px', lineHeight: '1.5' }}>
-              Have any doubt about{' '}
-              {modalVideo && <strong>{modalVideo.title}</strong>}
-              {!modalVideo && 'this video'}
-              {'...'}Jeet Sir responds within 24 hours.
-            </p>
-
-            {mentorSuccess && (
-              <div className="flex items-center gap-2 mb-4 p-3 rounded-xl" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
-                <span style={{ fontSize: '16px' }}>\u2705</span>
-                <span className="font-arimo font-medium" style={{ fontSize: '13px', color: '#065F46' }}>Doubt submitted! Jeet Sir will respond soon.</span>
-              </div>
-            )}
-
-            {/* Doubt textarea */}
-            <label className="font-arimo font-semibold" style={{ fontSize: '13px', color: '#101828', display: 'block', marginBottom: '6px' }}>
-              Your doubt or question
-            </label>
-            <textarea
-              value={mentorQuestion}
-              onChange={(e) => setMentorQuestion(e.target.value)}
-              placeholder="e.g. At 18:32, I didn't understand why Article 370 had was mentioned under..."
-              className="w-full font-arimo outline-none resize-none"
-              style={{
-                height: '110px',
-                borderRadius: '12px',
-                border: '1.5px solid #E5E7EB',
-                padding: '12px 14px',
-                fontSize: '13.5px',
-                color: '#101828',
-                marginBottom: '14px',
-                lineHeight: '1.5',
-              }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = '#101828'; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; }}
-            />
-
-            {/* Name input */}
-            <label className="font-arimo font-semibold" style={{ fontSize: '13px', color: '#101828', display: 'block', marginBottom: '6px' }}>
-              Your name <span style={{ color: '#9CA3AF', fontWeight: 400 }}>(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={mentorName}
-              onChange={(e) => setMentorName(e.target.value)}
-              placeholder="e.g. Rahul from Delhi"
-              className="w-full font-arimo outline-none"
-              style={{
-                borderRadius: '12px',
-                border: '1.5px solid #E5E7EB',
-                padding: '11px 14px',
-                fontSize: '13.5px',
-                color: '#101828',
-                marginBottom: '20px',
-              }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = '#101828'; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; }}
-            />
-
-            {/* Submit button */}
-            <button
-              onClick={handleAskMentor}
-              disabled={mentorSubmitting || !mentorQuestion.trim()}
-              className="w-full font-arimo font-bold text-white"
-              style={{
-                height: '52px',
-                borderRadius: '14px',
-                background: mentorSubmitting || !mentorQuestion.trim() ? '#9CA3AF' : '#101828',
-                border: 'none',
-                cursor: mentorSubmitting || !mentorQuestion.trim() ? 'not-allowed' : 'pointer',
-                fontSize: '15.5px',
-                marginBottom: '16px',
-              }}
-            >
-              {mentorSubmitting ? 'Submitting\u2026' : 'Submit Doubt \u2192'}
-            </button>
-
-            {/* Footer */}
-            <p className="font-arimo text-center" style={{ fontSize: '12px', color: '#9CA3AF' }}>
-              Answers posted on{' '}
-              <a href="https://www.youtube.com/@RiseWithJeet/community" target="_blank" rel="noopener noreferrer" style={{ color: '#E8351A', fontWeight: 600 }}>YouTube Community</a>
-              {' & '}
-              <a href="https://t.me/togetherrisewithjeet" target="_blank" rel="noopener noreferrer" style={{ color: '#0088CC', fontWeight: 600 }}>Telegram</a>
-            </p>
           </div>
         </div>
       )}

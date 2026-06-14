@@ -314,35 +314,60 @@ export default function FAQContent() {
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const contentScrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    // Track which sections currently overlap the detection band, then always
-    // highlight the topmost one in document order. Setting active to whichever
-    // entry fired last (the old behaviour) picked the wrong neighbour because
-    // IntersectionObserver entries are not delivered in document order.
-    const visibility: Record<string, boolean> = {};
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          visibility[entry.target.id] = entry.isIntersecting;
-        });
-        const firstVisible = faqData.find((section) => visibility[section.id]);
-        if (firstVisible) setActiveSection(firstVisible.id);
-      },
-      { rootMargin: '-12% 0px -83% 0px', threshold: 0 }
-    );
+    let frame = 0;
+    const scrollContainer = contentScrollRef.current;
+    if (!scrollContainer) return;
 
-    Object.values(sectionRefs.current).forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
+    const syncActiveSection = () => {
+      frame = 0;
+      const containerTop = scrollContainer.getBoundingClientRect().top;
+      const detectionLine = containerTop + Math.min(150, scrollContainer.clientHeight * 0.22);
+      const visibleSections = faqData
+        .map((section) => ({ id: section.id, element: sectionRefs.current[section.id] }))
+        .filter((section): section is { id: string; element: HTMLDivElement } => Boolean(section.element));
 
-    return () => observer.disconnect();
-  }, []);
+      if (visibleSections.length === 0) return;
+
+      if (scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 4) {
+        const lastSection = visibleSections[visibleSections.length - 1];
+        setActiveSection((previous) => previous === lastSection.id ? previous : lastSection.id);
+        return;
+      }
+
+      const passedSections = visibleSections.filter(
+        ({ element }) => element.getBoundingClientRect().top <= detectionLine,
+      );
+      const current = passedSections[passedSections.length - 1] ?? visibleSections[0];
+      setActiveSection((previous) => previous === current.id ? previous : current.id);
+    };
+
+    const requestSync = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(syncActiveSection);
+    };
+
+    syncActiveSection();
+    scrollContainer.addEventListener('scroll', requestSync, { passive: true });
+    window.addEventListener('resize', requestSync);
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', requestSync);
+      window.removeEventListener('resize', requestSync);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [searchQuery]);
 
   const jumpTo = (id: string) => {
     setActiveSection(id);
     const el = sectionRefs.current[id];
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const scrollContainer = contentScrollRef.current;
+    if (el && scrollContainer) {
+      const targetTop = scrollContainer.scrollTop + el.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top - 8;
+      scrollContainer.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+    }
   };
 
   const toggleFAQ = (sectionId: string, index: number) => {
@@ -386,19 +411,24 @@ export default function FAQContent() {
         .faq-search-input::placeholder { color: rgba(255,255,255,.3); }
         .faq-search-input:focus { border-color: rgba(232,184,75,.35); background: rgba(255,255,255,.08); }
         .faq-search-ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; pointer-events: none; }
-        .faq-body-section { background: #faf8f4; padding: 72px 0; }
-        .faq-inner { max-width: 1060px; margin: 0 auto; padding: 0 48px; display: grid; grid-template-columns: 220px 1fr; gap: 56px; align-items: start; }
-        .faq-toc { position: sticky; top: 96px; align-self: start; max-height: calc(100vh - 112px); overflow: hidden; }
+        .faq-body-section { background: #faf8f4; padding: 32px 0; height: calc(100vh - 66px); min-height: 620px; overflow: hidden; }
+        .faq-inner { max-width: 1060px; height: 100%; margin: 0 auto; padding: 0 48px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 56px; align-items: stretch; overflow: hidden; }
+        .faq-toc { height: 100%; align-self: stretch; overflow: hidden; padding: 2px 0; }
+        .faq-main-scroll { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth; padding: 2px 14px 32px 0; scrollbar-width: thin; scrollbar-color: rgba(107,122,153,.35) transparent; }
+        .faq-main-scroll::-webkit-scrollbar { width: 6px; }
+        .faq-main-scroll::-webkit-scrollbar-track { background: transparent; }
+        .faq-main-scroll::-webkit-scrollbar-thumb { background: rgba(107,122,153,.30); border-radius: 20px; }
         .faq-toc-label { font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--t3); margin-bottom: 12px; }
-        .faq-toc-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 7px; font-size: 13px; color: var(--t3); cursor: pointer; transition: all .15s; margin-bottom: 2px; border-left: 2px solid transparent; }
+        .faq-toc-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 7px; font-size: 13px; color: var(--t3); cursor: pointer; transition: color .22s ease, background-color .22s ease, border-color .22s ease, transform .22s ease, box-shadow .22s ease; margin-bottom: 2px; border-left: 2px solid transparent; transform: translateX(0); }
         .faq-toc-item:hover { color: var(--t1); background: #fff; border-left-color: var(--b2); }
-        .faq-toc-item.active { color: var(--navy-5); background: #fff; border-left-color: var(--gold); font-weight: 600; }
-        .faq-toc-ico { width: 18px; height: 18px; flex-shrink: 0; object-fit: contain; }
+        .faq-toc-item.active { color: var(--navy-5); background: #fff; border-left-color: var(--gold); font-weight: 600; transform: translateX(5px); box-shadow: 0 5px 18px rgba(12,20,36,.07); }
+        .faq-toc-ico { width: 18px; height: 18px; flex-shrink: 0; object-fit: contain; transition: transform .22s ease; }
+        .faq-toc-item.active .faq-toc-ico { transform: scale(1.12); }
         .faq-toc-sep { height: 1px; background: var(--b1); margin: 12px 0; }
         .faq-toc-box { background: #fff; border: 1.5px solid var(--b1); border-radius: 10px; padding: 14px; margin-top: 12px; }
         .faq-toc-box-lbl { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
         .faq-toc-box-val { font-size: 13px; color: var(--navy-5); font-weight: 500; }
-        .faq-section-block { margin-bottom: 52px; }
+        .faq-section-block { margin-bottom: 52px; scroll-margin-top: 8px; }
         .faq-section-block:last-child { margin-bottom: 0; }
         .faq-section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid var(--b1); }
         .faq-sec-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -437,8 +467,10 @@ export default function FAQContent() {
         .faq-btn-outline { min-width: 189px; height: 52px; background: rgba(255,255,255,.06); color: #fff; padding: 0 24px; border-radius: 12px; font-size: 15.5px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,.20); font-family: 'Outfit', var(--sans); transition: all .2s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .faq-btn-outline:hover { border-color: rgba(255,255,255,.32); background: rgba(255,255,255,.09); color: #fff; }
         @media(max-width: 860px) {
-          .faq-inner { grid-template-columns: 1fr; padding: 0 22px; }
+          .faq-body-section { height: auto; min-height: 0; overflow: visible; padding: 48px 0; }
+          .faq-inner { height: auto; grid-template-columns: 1fr; padding: 0 22px; overflow: visible; }
           .faq-toc { display: none; }
+          .faq-main-scroll { height: auto; overflow: visible; padding: 0; }
           .faq-hero-inner { padding: 32px 22px 28px; }
           .faq-cta-box { min-height: auto; padding: 52px 24px; }
           .faq-cta-box h2 { font-size: 38px; line-height: 42px; letter-spacing: -0.6px; }
@@ -499,7 +531,7 @@ export default function FAQContent() {
             </aside>
 
             {/* FAQ Main */}
-            <div>
+            <div className="faq-main-scroll" ref={contentScrollRef}>
               {noResults && (
                 <div className="faq-no-results">
                   <div className="icon">🔍</div>

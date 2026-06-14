@@ -171,6 +171,7 @@ export default function DailyMcqResultsPage() {
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showQuestionReview, setShowQuestionReview] = useState(false);
+  const [openReviewQuestion, setOpenReviewQuestion] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.allSettled([
@@ -383,29 +384,123 @@ export default function DailyMcqResultsPage() {
               </button>
 
               {showQuestionReview && (
-                <div className="max-h-[clamp(160px,18vh,230px)] overflow-y-auto space-y-2">
+                <div className="space-y-3">
                   {reviewQuestions.length > 0 ? reviewQuestions.map((question, index) => {
-                    const selected = question.options.find((option, optionIdx) => getOptionKey(option, optionIdx) === question.selectedOption);
-                    const correct = question.options.find((option, optionIdx) => getOptionKey(option, optionIdx) === question.correctOption);
+                    const isOpen = openReviewQuestion === index;
+                    const status = question.selectedOption === null
+                      ? { label: 'Skipped', color: '#D97706', background: '#FFFBEB', border: '#FDE68A' }
+                      : question.isCorrect
+                        ? { label: 'Correct', color: '#059669', background: '#F0FDF4', border: '#BBF7D0' }
+                        : { label: 'Wrong', color: '#DC2626', background: '#FEF2F2', border: '#FECACA' };
 
                     return (
                       <div
                         key={question.id || index}
-                        className="bg-white border rounded-[clamp(8px,0.52vw,10px)]"
-                        style={{
-                          padding: 'clamp(0.65rem,0.8vw,0.9rem)',
-                          borderColor: question.isCorrect ? '#BBF7D0' : '#FCA5A5',
-                        }}>
-                        <div className="font-arimo font-bold text-[#155DFC] mb-1" style={{ fontSize: 'clamp(10px,0.6vw,12px)' }}>
-                          Question {question.questionNum || index + 1}
-                        </div>
-                        <p className="font-arimo text-[#364153] mb-2" style={{ fontSize: 'clamp(11px,0.68vw,13px)', lineHeight: '1.45' }}>
-                          {question.questionText}
-                        </p>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 font-arimo" style={{ fontSize: 'clamp(10px,0.62vw,12px)' }}>
-                          <span className="text-[#4A5565]">Your answer: {selected?.text || question.selectedOption || 'Skipped'}</span>
-                          <span className="font-bold text-[#016630]">Correct: {correct?.text || question.correctOption}</span>
-                        </div>
+                        className="overflow-hidden rounded-2xl border border-white/60 bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-300">
+                        <button
+                          type="button"
+                          aria-expanded={isOpen}
+                          onClick={() => setOpenReviewQuestion(isOpen ? null : index)}
+                          className="flex w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-gray-50/50">
+                          <span
+                            className="flex h-7 min-w-7 flex-shrink-0 items-center justify-center rounded-lg font-arimo text-xs font-bold text-white"
+                            style={{ background: '#818CF8' }}>
+                            {question.questionNum || index + 1}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span
+                              className="line-clamp-2 block font-arimo text-sm leading-relaxed text-[#374151]">
+                              {question.questionText}
+                            </span>
+                            <span className="mt-1.5 flex flex-wrap items-center gap-2">
+                              <span
+                                className="rounded-full px-2 py-0.5 font-arimo text-xs"
+                                style={{ background: '#E0E7FF', color: '#4F46E5' }}>
+                                {question.category || 'Daily MCQ'}
+                              </span>
+                              {question.difficulty && (
+                                <span
+                                  className="rounded-full bg-[#F3F4F6] px-2 py-0.5 font-arimo text-xs text-[#6B7280]">
+                                  {question.difficulty}
+                                </span>
+                              )}
+                            </span>
+                          </span>
+                          <span className="flex flex-shrink-0 items-center gap-2">
+                            <span
+                              className="rounded-lg border px-2 py-1 font-arimo text-xs font-semibold"
+                              style={{ color: status.color, background: status.background, borderColor: status.border }}>
+                              {status.label}
+                            </span>
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                              aria-hidden="true"
+                              className="text-[#9CA3AF] transition-transform duration-300"
+                              style={{ transform: isOpen ? 'rotate(180deg)' : undefined }}>
+                              <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </span>
+                        </button>
+
+                        {isOpen && (
+                          <div className="space-y-4 border-t border-[#F3F4F6] px-5 py-4">
+                            <div className="rounded-xl bg-[#F8FAFF] p-3.5">
+                              <p className="font-arimo text-sm font-medium leading-relaxed text-[#374151]">
+                                {question.questionText}
+                              </p>
+                            </div>
+
+                            <div className="space-y-2">
+                              {question.options.map((option, optionIdx) => {
+                                const optionKey = getOptionKey(option, optionIdx);
+                                const isCorrectOption = optionKey === question.correctOption;
+                                const isSelectedWrong = optionKey === question.selectedOption && !isCorrectOption;
+
+                                return (
+                                  <div
+                                    key={option.id || optionIdx}
+                                    className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 font-arimo"
+                                    style={{
+                                      background: isCorrectOption ? '#F0FDF4' : isSelectedWrong ? '#FEF2F2' : '#F9FAFB',
+                                      border: isCorrectOption ? '2px solid #22C55E' : isSelectedWrong ? '2px solid #EF4444' : '1.5px solid #E5E7EB',
+                                      color: isCorrectOption ? '#15803D' : isSelectedWrong ? '#DC2626' : '#374151',
+                                    }}>
+                                    <span
+                                      className="flex h-6 min-w-6 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold"
+                                      style={{
+                                        background: isCorrectOption ? '#22C55E' : isSelectedWrong ? '#EF4444' : '#E5E7EB',
+                                        color: isCorrectOption || isSelectedWrong ? '#FFFFFF' : '#6B7280',
+                                      }}>
+                                      {optionKey}
+                                    </span>
+                                    <span className="flex-1 text-sm">{option.text}</span>
+                                    {isCorrectOption && <span className="ml-auto text-xs font-bold text-[#22C55E]">Correct</span>}
+                                    {isSelectedWrong && <span className="ml-auto text-xs font-bold text-[#EF4444]">Wrong</span>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            <div className="font-arimo text-sm text-[#6B7280]">
+                              You picked:{' '}
+                              <span className="font-bold" style={{ color: status.color }}>
+                                {question.selectedOption ? `Option ${question.selectedOption}` : 'Skipped'}
+                              </span>
+                            </div>
+
+                            <div className="rounded-xl border border-[#C7D2FE] bg-[#EEF2FF] p-4">
+                              <h4 className="mb-2 font-arimo text-xs font-bold uppercase tracking-wider text-[#4F46E5]">
+                                Explanation
+                              </h4>
+                              <p className="font-arimo text-sm leading-relaxed text-[#374151]">
+                                {question.explanation || 'Explanation is not available for this question yet.'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   }) : (

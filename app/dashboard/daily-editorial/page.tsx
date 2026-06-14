@@ -1253,7 +1253,7 @@ export default function DailyEditorialPage() {
                     <div key={idx} style={{ padding: '18px 22px', borderBottom: '1px solid #dce3ef', background: idx % 2 === 0 ? '#fff' : '#f7f9fd' }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: '#2563c7', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 7, letterSpacing: '.01em' }}>
                         <div style={{ width: 22, height: 22, background: '#e8f0fd', border: '1px solid #c0d4f7', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#2563c7', flexShrink: 0 }}>{idx + 1}</div>
-                        {getSectionIcon(sec.title)} {sec.title}
+                        {sec.title.replace(/^\s*\d+[.)]\s*/, '')}
                       </div>
                       {renderSectionBody(sec.title, sec.body)}
                     </div>
