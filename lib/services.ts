@@ -281,6 +281,10 @@ export const billingService = {
     api.post<any>('/verify-payment', data, authConfig()),
 };
 
+export const entitlementService = {
+  getMyEntitlements: () => api.get<any>('/entitlements/me', authConfig()),
+};
+
 // ==================== Jeet AI Chat ====================
 
 export const aiService = {
