@@ -404,7 +404,6 @@ export default function JeetGPTPage() {
   const canSend = inputValue.trim().length > 0 && !isLoading && !queriesExhausted;
   const quotaLimit = aiQuota?.limit ?? null;
   const quotaUsed = aiQuota?.used ?? 0;
-  const quotaRemaining = aiQuota?.remaining ?? null;
   const fillPct = quotaLimit ? Math.min(100, Math.round((quotaUsed / quotaLimit) * 100)) : 0;
 
   const allConvos: { label: string; items: ConversationSummary[] }[] = [
@@ -463,18 +462,13 @@ export default function JeetGPTPage() {
 
         <div className="jai-sidebar-bottom">
           <div className="jai-query-wrap">
-            <div className="jai-query-top">
-              <span className="jai-query-label">Jeet AI quota</span>
+            <div className="jai-query-label">Daily Queries</div>
+            <div className="jai-query-row">
+              <div className="jai-query-bar">
+                <div className="jai-query-fill" style={{ width: fillPct + '%' }} />
+              </div>
               <span className="jai-query-count">{quotaLimit === null ? 'Unlimited' : `${quotaUsed} / ${quotaLimit}`}</span>
             </div>
-            <div className="jai-query-bar">
-              <div className="jai-query-fill" style={{ width: fillPct + '%' }} />
-            </div>
-            {quotaLimit !== null && (
-              <div style={{ marginTop: 6, fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>
-                {quotaRemaining ?? 0} left {aiQuota?.period ? `per ${aiQuota.period}` : ''}
-              </div>
-            )}
           </div>
           <Link href="/dashboard/profile" className="jai-user-row">
             <div className="jai-user-av">{initials}</div>
@@ -519,7 +513,11 @@ export default function JeetGPTPage() {
               <IconChat size={15} /> Chats
             </button>
             <div style={{ minWidth: 0 }}>
-              <div className="jai-main-title">Jeet <span>AI</span> — Your UPSC Partner</div>
+              <div className="jai-main-title">
+                <span className="jai-brand-jeet">Jeet</span>{' '}
+                <span className="jai-brand-mentor">AI Mentor</span>{' '}
+                — Your UPSC Preparation Partner
+              </div>
               <div className="jai-main-sub">Ask anything about your preparation</div>
             </div>
           </div>
@@ -532,8 +530,12 @@ export default function JeetGPTPage() {
         <div className="jai-chat-area">
           {!showChat ? (
             <div className="jai-welcome">
-              <div className="jai-ai-avatar">JA</div>
-              <div className="jai-welcome-title">Hi {user?.firstName || 'there'}, I&apos;m <span>Jeet AI.</span></div>
+              <div className="jai-ai-avatar"><img src="/sidebar-jeet-gpt.png" alt="Jeet AI Mentor" /></div>
+              <div className="jai-welcome-title">
+                Hi {user?.firstName || 'there'}, I&apos;m{' '}
+                <span className="jai-brand-jeet">Jeet</span>{' '}
+                <span className="jai-brand-mentor">AI Mentor</span>.
+              </div>
               <div className="jai-welcome-sub">Your intelligent UPSC preparation partner — from Ancient History to Current Affairs, revision strategy, ethics case studies, or just thinking through a tough concept together.</div>
 
               <div className="jai-prompt-cards">
@@ -569,10 +571,13 @@ export default function JeetGPTPage() {
                   </div>
                 ) : (
                   <div key={msg.id} className="jai-msg-ai">
-                    <div className="jai-msg-ai-av">JA</div>
+                    <div className="jai-msg-ai-av"><img src="/sidebar-jeet-gpt.png" alt="Jeet AI Mentor" /></div>
                     <div className="jai-msg-ai-bubble">
                       <div className="jai-msg-ai-head">
-                        <span className="jai-msg-ai-name">Jeet AI</span>
+                        <span className="jai-msg-ai-name">
+                          <span className="jai-brand-jeet">Jeet</span>{' '}
+                          <span className="jai-brand-mentor">AI Mentor</span>
+                        </span>
                         <span className="jai-msg-ai-time">{formatTime(msg.createdAt)}</span>
                       </div>
                       <MarkdownRenderer content={msg.content} />
@@ -583,7 +588,7 @@ export default function JeetGPTPage() {
 
               {isLoading && (
                 <div className="jai-msg-ai">
-                  <div className="jai-msg-ai-av">JA</div>
+                  <div className="jai-msg-ai-av"><img src="/sidebar-jeet-gpt.png" alt="Jeet AI Mentor" /></div>
                   <div className="jai-msg-ai-bubble">
                     <div className="jai-typing"><span /><span /><span /></div>
                   </div>
@@ -610,7 +615,7 @@ export default function JeetGPTPage() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={queriesExhausted ? (aiQuota?.message || 'Jeet AI limit reached - upgrade for higher access') : 'Ask me anything about your preparation...'}
+              placeholder={queriesExhausted ? (aiQuota?.message || 'Jeet AI Mentor limit reached - upgrade for higher access') : 'Ask me anything about your preparation...'}
               disabled={isLoading || queriesExhausted}
             />
             <div className="jai-input-actions">
@@ -621,7 +626,7 @@ export default function JeetGPTPage() {
               </button>
             </div>
           </form>
-          <div className="jai-disclaimer">Jeet AI may make mistakes. Always verify important facts from <span>NCERT &amp; official sources</span>.</div>
+          <div className="jai-disclaimer">Jeet AI Mentor may make mistakes. Always verify important facts from <span>NCERT &amp; official sources</span>.</div>
         </div>
       </div>
 
@@ -665,14 +670,14 @@ export default function JeetGPTPage() {
             </div>
 
             <h2 className="text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '22px', fontWeight: 700, color: '#0E1D54', lineHeight: 1.3, margin: '0 0 8px' }}>
-              Jeet AI access paused<br />for your current plan
+              Jeet AI Mentor access paused<br />for your current plan
             </h2>
             <p className="text-center" style={{ fontSize: '13px', color: '#6B7899', lineHeight: 1.6, margin: '0 0 22px' }}>
-              {aiQuota?.message || 'Your current quota is up. Upgrade for higher Jeet AI access and priority answers.'}
+              {aiQuota?.message || 'Your current quota is up. Upgrade for higher Jeet AI Mentor access and priority answers.'}
             </p>
 
             <div className="flex justify-between items-center" style={{ marginBottom: '7px' }}>
-              <span style={{ fontSize: '12px', color: '#8A96B4', fontWeight: 500 }}>Jeet AI quota</span>
+              <span style={{ fontSize: '12px', color: '#8A96B4', fontWeight: 500 }}>Jeet AI Mentor quota</span>
               <strong style={{ fontSize: '12px', fontWeight: 700, color: '#C05A2A' }}>{quotaLimit === null ? 'Unlimited' : `${quotaUsed} / ${quotaLimit} used`}</strong>
             </div>
             <div style={{ height: '7px', background: '#EEF2FF', borderRadius: '99px', overflow: 'hidden', marginBottom: '22px' }}>
@@ -741,12 +746,12 @@ export default function JeetGPTPage() {
         .jai-empty-convo-title{font-size:12px;color:#6e7681;margin-bottom:4px;font-weight:500;}
         .jai-empty-convo-sub{font-size:11px;color:#484f58;line-height:1.5;}
         .jai-sidebar-bottom{border-top:0.5px solid #21262d;padding:12px;}
-        .jai-query-wrap{background:#161b22;border-radius:8px;padding:10px 12px;}
-        .jai-query-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
-        .jai-query-label{font-size:11px;color:#8b949e;}
-        .jai-query-count{font-size:11px;font-weight:600;color:#f0a500;}
-        .jai-query-bar{height:4px;background:#21262d;border-radius:4px;overflow:hidden;}
-        .jai-query-fill{height:100%;background:linear-gradient(90deg,#f0a500,#e8820c);border-radius:4px;transition:width .3s;}
+        .jai-query-wrap{background:#161b22;border-radius:10px;padding:12px 14px;}
+        .jai-query-label{font-size:11px;font-weight:500;color:#8b949e;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+        .jai-query-row{display:flex;align-items:center;gap:10px;}
+        .jai-query-count{font-size:13px;font-weight:600;color:#e6edf3;white-space:nowrap;}
+        .jai-query-bar{flex:1;height:6px;background:#2a3038;border-radius:6px;overflow:hidden;}
+        .jai-query-fill{height:100%;background:linear-gradient(90deg,#f0a500,#e8820c);border-radius:6px;transition:width .3s;}
         .jai-user-row{display:flex;align-items:center;gap:8px;margin-top:10px;text-decoration:none;padding:4px;border-radius:8px;transition:background .15s;}
         .jai-user-row:hover{background:#161b22;}
         .jai-user-av{width:28px;height:28px;border-radius:50%;background:#f0a500;display:flex;align-items:center;justify-content:center;font-family:var(--font-sora),sans-serif;font-weight:700;font-size:11px;color:#0d1117;flex-shrink:0;}
@@ -758,18 +763,19 @@ export default function JeetGPTPage() {
         .jai-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#fff;overflow:hidden;}
         .jai-main-header{padding:14px 20px 12px;border-bottom:0.5px solid #f1f3f5;display:flex;align-items:center;justify-content:space-between;gap:12px;}
         .jai-main-title{font-family:var(--font-sora),sans-serif;font-size:15px;font-weight:700;color:#1a1d23;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-        .jai-main-title span{color:#f0a500;}
         .jai-main-sub{font-size:11px;color:#9ca3af;margin-top:1px;}
         .jai-badges{display:flex;gap:6px;flex-shrink:0;}
         .jai-badge{display:flex;align-items:center;gap:4px;font-size:10px;padding:3px 8px;border-radius:10px;font-weight:500;white-space:nowrap;}
-        .jai-badge.green{background:#f0fdf4;color:#16a34a;border:0.5px solid #bbf7d0;}
-        .jai-badge.blue{background:#eff6ff;color:#1d4ed8;border:0.5px solid #bfdbfe;}
+        .jai-badge.green{background:#f9fafb;color:#6b7280;border:0.5px solid #e5e7eb;}
+        .jai-badge.blue{background:#f9fafb;color:#6b7280;border:0.5px solid #e5e7eb;}
 
         .jai-chat-area{flex:1;overflow-y:auto;padding:24px 32px 16px;}
         .jai-welcome{text-align:center;max-width:480px;margin:0 auto;}
-        .jai-ai-avatar{width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,#667eea,#764ba2,#f093fb);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:var(--font-sora),sans-serif;font-weight:800;font-size:18px;color:#fff;letter-spacing:-0.5px;}
+        .jai-ai-avatar{width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;overflow:hidden;}
+        .jai-ai-avatar img{width:100%;height:100%;object-fit:contain;}
         .jai-welcome-title{font-family:var(--font-sora),sans-serif;font-size:20px;font-weight:700;color:#1a1d23;margin-bottom:8px;}
-        .jai-welcome-title span{color:#f0a500;}
+        .jai-brand-jeet{color:#0A1172;}
+        .jai-brand-mentor{color:#f0a500;}
         .jai-welcome-sub{font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:20px;}
 
         .jai-prompt-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;text-align:left;}
@@ -785,9 +791,9 @@ export default function JeetGPTPage() {
         .jai-chip:hover{border-color:#f0a500;color:#b07a00;background:#fffbf0;}
 
         .jai-input-wrap{padding:14px 20px;border-top:0.5px solid #f1f3f5;background:#fff;flex-shrink:0;}
-        .jai-input-row{display:flex;align-items:flex-end;gap:10px;background:#f8f9fa;border:1px solid #e2e5ed;border-radius:14px;padding:10px 14px;transition:border .2s,background .2s;}
+        .jai-input-row{display:flex;align-items:center;gap:10px;background:#f8f9fa;border:1px solid #e2e5ed;border-radius:14px;padding:10px 14px;transition:border .2s,background .2s;}
         .jai-input-row:focus-within{border-color:#f0a500;background:#fff;}
-        .jai-input{flex:1;border:none;background:transparent;font-size:13px;font-family:var(--font-dm-sans),sans-serif;color:#1a1d23;resize:none;outline:none;line-height:1.5;max-height:80px;}
+        .jai-input{flex:1;border:none;background:transparent;font-size:13px;font-family:var(--font-dm-sans),sans-serif;color:#1a1d23;resize:none;outline:none;line-height:1.5;max-height:80px;text-align:left;}
         .jai-input::placeholder{color:#9ca3af;}
         .jai-input:disabled{cursor:not-allowed;}
         .jai-input-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
@@ -797,16 +803,17 @@ export default function JeetGPTPage() {
         .jai-send-btn:hover:not(:disabled){background:#374151;}
         .jai-send-btn.active{background:#f0a500;}
         .jai-send-btn:disabled{opacity:.5;cursor:default;}
-        .jai-disclaimer{text-align:center;font-size:10px;color:#c9cfd8;margin-top:8px;}
-        .jai-disclaimer span{color:#f0a500;font-weight:500;}
+        .jai-disclaimer{text-align:center;font-size:10px;color:#9ca3af;margin-top:8px;}
+        .jai-disclaimer span{color:#9ca3af;font-weight:500;}
 
         .jai-msg-user{display:flex;justify-content:flex-end;margin-bottom:14px;}
         .jai-msg-user-bubble{max-width:70%;background:#1a1d23;color:#e6edf3;padding:10px 14px;border-radius:12px 12px 2px 12px;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;}
         .jai-msg-ai{display:flex;gap:8px;margin-bottom:14px;align-items:flex-start;}
-        .jai-msg-ai-av{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;font-family:var(--font-sora),sans-serif;}
-        .jai-msg-ai-bubble{background:#f8f9fa;border:0.5px solid #e2e5ed;padding:10px 14px;border-radius:2px 12px 12px 12px;font-size:13px;color:#374151;line-height:1.6;max-width:75%;overflow-x:auto;}
+        .jai-msg-ai-av{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+        .jai-msg-ai-av img{width:100%;height:100%;object-fit:contain;}
+        .jai-msg-ai-bubble{background:#FFFFFF;border:0.8px solid #E5E7EB;padding:10px 14px;border-radius:2px 12px 12px 12px;font-size:13px;color:#374151;line-height:1.6;max-width:75%;overflow-x:auto;}
         .jai-msg-ai-head{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
-        .jai-msg-ai-name{font-size:11px;font-weight:600;color:#6366f1;font-family:var(--font-sora),sans-serif;}
+        .jai-msg-ai-name{font-size:11px;font-weight:600;font-family:var(--font-sora),sans-serif;}
         .jai-msg-ai-time{font-size:10px;color:#9ca3af;}
         .jai-typing{display:flex;gap:4px;padding:5px 2px;}
         .jai-typing span{width:7px;height:7px;border-radius:50%;background:#c7c9d1;animation:jaiBounce 1.2s infinite;}

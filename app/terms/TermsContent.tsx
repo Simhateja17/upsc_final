@@ -303,7 +303,7 @@ export default function TermsContent() {
               <div className="lc-num">08</div>
               <div className="lc-h2">AI Tools and Educational Disclaimer</div>
               <p className="lc-p">
-                RiseWithJeet uses artificial intelligence (&ldquo;AI&rdquo;) to support features such as the Mains Evaluator, performance tracking, personalised insights, and the Jeet AI assistant. These tools are designed to help learners improve their preparation experience and provide additional academic support.
+                RiseWithJeet uses artificial intelligence (&ldquo;AI&rdquo;) to support features such as the Mains Evaluator, performance tracking, personalised insights, and the Jeet AI Mentor assistant. These tools are designed to help learners improve their preparation experience and provide additional academic support.
               </p>
               <p className="lc-p">When using AI-powered features, please keep the following in mind:</p>
               <ul className="lc-list">

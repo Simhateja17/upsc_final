@@ -712,7 +712,7 @@ const PerformanceStatsWidget = () => {
             </span>
           </Link>
         </div>
-        <p className="mt-2 text-center text-[11px] text-white/70">Subscribe to a test series to unlock scheduled series reminders.</p>
+        <p className="mt-2 text-center text-[11px] text-white/70"></p>
       </div>
     </div>
   );

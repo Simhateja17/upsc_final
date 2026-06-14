@@ -23,7 +23,7 @@ interface ResultsData {
 type SlideKey = 'feedback' | 'markup' | 'rubric' | 'next';
 
 const BETA_DISCLAIMER =
-  'Jeet AI is currently in beta and evolving every day alongside you. Our evaluation engine is built to deliver meaningful, structured, and exam-relevant feedback, but it can still make mistakes. Use it as a smart companion alongside your mentors, notes, and judgment.';
+  'Jeet AI Mentor is currently in beta and evolving every day alongside you. Our evaluation engine is built to deliver meaningful, structured, and exam-relevant feedback, but it can still make mistakes. Use it as a smart companion alongside your mentors, notes, and judgment.';
 
 export default function ResultsPage() {
   const router = useRouter();

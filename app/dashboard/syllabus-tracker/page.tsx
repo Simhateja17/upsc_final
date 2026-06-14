@@ -13,7 +13,6 @@ import TopicList from './components/TopicList';
 import SubTopicsList from './components/SubTopicsList';
 import RightPanel from './components/RightPanel';
 import StatusModal from './components/StatusModal';
-import { UpgradePrompt, UsageMeter } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 export type Mode = 'prelims' | 'mains' | 'optional';
@@ -60,7 +59,7 @@ export default function SyllabusTrackerPage() {
     right_panel_title: 'Subject Progress',
     right_panel_view_all: 'View all →',
     cta_title: "Plan Today's Study",
-    cta_subtitle: 'Set daily goals with Jeet AI and stay on track for UPSC 2026.',
+    cta_subtitle: 'Set daily goals with Jeet AI Mentor and stay on track for UPSC 2026.',
     cta_button: '+ Add in Study Planner',
     modal_title: 'Syllabus Progress Overview',
     subtopic_placeholder_title: 'Sub-Topics',
@@ -306,18 +305,6 @@ export default function SyllabusTrackerPage() {
             userFirstName={user?.firstName}
           />
         </div>
-
-        {entitlements.isLimited('syllabus_tracker') && (
-          <div className="px-[12px] pt-[12px]">
-            <UpgradePrompt
-              title="Syllabus Tracker preview"
-              currentTier={entitlements.tier}
-              requiredTier="rise"
-              message="Free and Aspire plans can track up to 5 syllabus items. Upgrade to Rise for unlimited tracking across Prelims, Mains, and Optional."
-              status={entitlements.featureStatus('syllabus_tracker_items')}
-            />
-          </div>
-        )}
 
         {/* Stage Tabs */}
         <div className="px-[12px] pt-[12px] pb-0 overflow-x-auto">

@@ -632,7 +632,7 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
     features: [
       '5 Mains AI Evaluations / day',
       '5 Mock Test attempts / day',
-      'Jeet AI – 5 messages / day',
+      'Jeet AI Mentor – 5 messages / day',
       'Study Planner & Time Tracker',
       'Discussion Forum – Limited access',
       'Revision Suite – Limited access',
@@ -653,7 +653,7 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
       '25 Mock Test attempts / day',
       'Full Performance Analytics Dashboard',
       'Full Revision Suite – Flashcards, Mindmaps, Spaced Rep.',
-      'Jeet AI – 50 conversations / day',
+      'Jeet AI Mentor – 50 conversations / day',
       'Smart Syllabus Tracker',
       'Live Study Room 24×7',
     ],
@@ -669,7 +669,7 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
     description: 'Unlimited tools, personalised mentorship. For aspirants who leave nothing to chance.',
     features: [
       'Unlimited Mains Evaluations & Mock Tests',
-      'Jeet AI – Unlimited conversations',
+      'Jeet AI Mentor – Unlimited conversations',
       'Weekly 1-on-1 Mentorship Sessions',
       'Personalised Study Roadmap',
       'Dedicated Q&A – Quick Responses',
@@ -1358,7 +1358,7 @@ export default function ExplorePlansPage() {
                   { text: '10,000+ Previous Year Questions', limited: false },
                   { text: '5 Mains Answer Evaluation / day', limited: false },
                   { text: 'Simplified Video Lectures', limited: false },
-                  { text: 'Jeet AI Mentor – 5 Messages / day', limited: false },
+                  { text: 'Jeet AI Mentor Mentor – 5 Messages / day', limited: false },
                   { text: 'Study Planner & Time Tracker', limited: false },
                   { text: 'Daily Leaderboard', limited: false },
                   { text: 'Discussion Forum – Limited access', limited: false },
@@ -1407,7 +1407,7 @@ export default function ExplorePlansPage() {
                 <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>Everything in Aspire, plus:</span>
               </div>
               {[
-                { title: 'EVALUATION', items: ['25 Mains Answer Evaluation / day', '50 Prelims Mock Tests attempts / day', 'Jeet AI Mentor – 100 Messages / day'] },
+                { title: 'EVALUATION', items: ['25 Mains Answer Evaluation / day', '50 Prelims Mock Tests attempts / day', 'Jeet AI Mentor Mentor – 100 Messages / day'] },
                 { title: 'ANALYTICS', items: ['Full Performance Analytics Dashboard', 'Comprehensive Test Analytics'] },
                 { title: 'REVISION & AI TOOLS', items: ['Full Revision Suite – Flashcards, Mindmaps, Spaced Repetition, Smart Notes', 'Smart Syllabus Tracker', 'Live Study Room'] },
               ].map((section) => (
@@ -1460,7 +1460,7 @@ export default function ExplorePlansPage() {
                 <span style={{ fontSize: 13, color: '#0C1424', fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>Everything in Rise, plus:</span>
               </div>
               {[
-                { title: 'EVALUATION', items: ['Unlimited Mains Answer Evaluations', 'Unlimited Prelims Mock Test practice', 'Jeet AI – Unlimited messages'] },
+                { title: 'EVALUATION', items: ['Unlimited Mains Answer Evaluations', 'Unlimited Prelims Mock Test practice', 'Jeet AI Mentor – Unlimited messages'] },
                 { title: 'MENTOR-LED GROWTH', items: ['Bi-Weekly 1-on-1 mentorship sessions', 'Interview (Personality Test) prep module', 'Personalised Study Roadmap', 'Dedicated Support with Quick Responses', 'Monthly Performance Review Call', 'Early Access to New Features'] },
               ].map((section) => (
                 <div key={section.title} style={{ marginBottom: 12 }}>
@@ -1581,7 +1581,7 @@ export default function ExplorePlansPage() {
                       { feature: 'Prelims Mock Test', free: '1 Test / Lifetime', aspire: '5 Tests / day', rise: '50 / day, 5 / hour', ascent: 'Unlimited / day, 15 / hour' },
                     ] },
                     { icon: '💬', title: '24*7 DOUBT RESOLUTION', rows: [
-                      { feature: 'Jeet AI Mentor', free: '20 lifetime, 10 / hour', aspire: '5 Messages / day', rise: '25 / hour, 100 / day', ascent: '50 / hour, unlimited / day' },
+                      { feature: 'Jeet AI Mentor Mentor', free: '20 lifetime, 10 / hour', aspire: '5 Messages / day', rise: '25 / hour, 100 / day', ascent: '50 / hour, unlimited / day' },
                     ] },
                     { icon: '📊', title: 'ANALYTICS & TRACKER', rows: [
                       { feature: 'Performance Analytics Dashboard', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },

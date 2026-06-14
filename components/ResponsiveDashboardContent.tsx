@@ -609,7 +609,7 @@ const ResponsiveDashboardContent = () => {
             </svg>
             <input
               type="text"
-              placeholder="Ask Jeet AI: 'Explain current affairs'"
+              placeholder="Ask Jeet AI Mentor: 'Explain current affairs'"
               value={searchInput}
               onFocus={() => router.push('/dashboard/jeet-gpt')}
               onChange={e => setSearchInput(e.target.value)}

@@ -42,6 +42,8 @@ export default function DashboardLayout({
   const isPublicRoute = PUBLIC_DASHBOARD_ROUTES.some((r) => pathname.startsWith(r));
   const userId = user?.id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(pathname === '/dashboard/jeet-gpt');
+  const previousPathnameRef = useRef<string | null>(null);
   const [showMilestone, setShowMilestone] = useState(false);
   const [milestoneValue, setMilestoneValue] = useState<number | null>(null);
   const [milestoneTitle, setMilestoneTitle] = useState<string | undefined>(undefined);
@@ -95,6 +97,43 @@ export default function DashboardLayout({
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
+
+  // Auto-collapse sidebar when entering Jeet AI Mentor and restore preference when leaving.
+  // On initial load, read the saved preference (unless already on Jeet AI Mentor).
+  useEffect(() => {
+    const prev = previousPathnameRef.current;
+    const current = pathname;
+
+    if (current === '/dashboard/jeet-gpt' && prev !== '/dashboard/jeet-gpt') {
+      setSidebarCollapsed(true);
+    } else if (prev === '/dashboard/jeet-gpt' && current !== '/dashboard/jeet-gpt') {
+      try {
+        const saved = localStorage.getItem('rwj_sidebar_collapsed') === 'true';
+        setSidebarCollapsed(saved);
+      } catch {
+        // ignore
+      }
+    } else if (prev === null && current !== '/dashboard/jeet-gpt') {
+      try {
+        const saved = localStorage.getItem('rwj_sidebar_collapsed') === 'true';
+        setSidebarCollapsed(saved);
+      } catch {
+        // ignore
+      }
+    }
+
+    previousPathnameRef.current = current;
+  }, [pathname]);
+
+  const handleSidebarToggle = () => {
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    try {
+      localStorage.setItem('rwj_sidebar_collapsed', String(next));
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     if (isLoading || isAuthenticated || isPublicRoute) return;
@@ -150,7 +189,7 @@ export default function DashboardLayout({
       <div className="flex flex-col" style={{ height: '100dvh' }}>
         <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} mobileOnly={hideSidebar} />
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} mobileOnly={hideSidebar} collapsed={sidebarCollapsed} onToggle={handleSidebarToggle} />
           <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0" style={{ background: '#FAFBFE' }}>
             {children}
           </main>

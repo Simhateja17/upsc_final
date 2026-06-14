@@ -29,6 +29,91 @@ function subjectIcon(name: string): string {
   return '\uD83D\uDCDA';
 }
 
+// Tag colors sourced from upsc_subject_color_palette.html
+const SUBJECT_PALETTE: Record<string, { bg: string; color: string; topic: string }[]> = {
+  history: [
+    { bg: '#F5E8D4', color: '#7A5230', topic: 'Ancient India' },
+    { bg: '#EDD5E6', color: '#7A3D72', topic: 'Medieval India' },
+    { bg: '#FDE9C0', color: '#8A6010', topic: 'Art & Culture' },
+    { bg: '#D8E4CC', color: '#445E38', topic: 'Modern History' },
+  ],
+  geography: [
+    { bg: '#C8E8F4', color: '#1E6A9A', topic: 'Physical Geo \u2013 World' },
+    { bg: '#D8F0DC', color: '#2E6E3E', topic: 'Physical Geo \u2013 India' },
+    { bg: '#F4EDD0', color: '#826020', topic: 'Economic Geography' },
+    { bg: '#ECD8F4', color: '#6A3A90', topic: 'Human Geography' },
+  ],
+  polity: [
+    { bg: '#D0DDF4', color: '#2A4490', topic: 'Polity' },
+  ],
+  economy: [
+    { bg: '#F8EDD8', color: '#7A5818', topic: 'Basic Economy' },
+    { bg: '#D0ECD8', color: '#2E6848', topic: 'Public Finance' },
+    { bg: '#C8ECF4', color: '#1E6880', topic: 'External Sector' },
+    { bg: '#D8F0CC', color: '#3A6828', topic: 'Agriculture' },
+    { bg: '#F4F0CC', color: '#6A6018', topic: 'Sectors of Economy' },
+    { bg: '#D4DCE8', color: '#3A4A62', topic: 'Infrastructure' },
+    { bg: '#F4E0D8', color: '#7A3A28', topic: 'Human Resource Dev.' },
+  ],
+  environment: [
+    { bg: '#C8ECCC', color: '#2A6438', topic: 'Ecology & Ecosystem' },
+    { bg: '#D0F0D4', color: '#1E5C34', topic: 'Biodiversity' },
+    { bg: '#E8E4DC', color: '#5A5248', topic: 'Pollution' },
+    { bg: '#D8ECF8', color: '#1E5A80', topic: 'Climate Change' },
+    { bg: '#D4EEDC', color: '#2A6040', topic: 'Conservation Efforts' },
+  ],
+  science: [
+    { bg: '#DCF0F8', color: '#1A5878', topic: 'General Science' },
+    { bg: '#CCF0D4', color: '#1A5830', topic: 'Biotechnology' },
+    { bg: '#F8DCDC', color: '#7A2828', topic: 'Human Health & Diseases' },
+    { bg: '#D4D0F4', color: '#3A2A90', topic: 'Space' },
+    { bg: '#D8E0CC', color: '#3A4828', topic: 'Defence' },
+    { bg: '#F4F0BC', color: '#6A6010', topic: 'Nuclear Energy' },
+    { bg: '#C8ECF8', color: '#1A5870', topic: 'Electronics & IT' },
+    { bg: '#E8E4F4', color: '#4A3880', topic: 'Nano Science' },
+  ],
+};
+
+function hashIndex(str: string, mod: number): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return mod > 0 ? h % mod : 0;
+}
+
+const NEUTRAL_TAG_STYLE = { bg: '#F3F4F6', color: '#6A7282' };
+
+// Returns distinct pill colors for the topic tag and the sub-subject tag,
+// preferring an exact palette match for the sub-subject and never letting
+// the two pills land on the same color.
+function getTagStyles(subjectName: string, topicText: string, subSubjectText: string): {
+  topic: { bg: string; color: string };
+  subSubject: { bg: string; color: string };
+} {
+  const lower = subjectName.toLowerCase();
+  const chips = Object.entries(SUBJECT_PALETTE).find(([key]) => lower.includes(key))?.[1];
+  if (!chips || chips.length === 0) {
+    return { topic: NEUTRAL_TAG_STYLE, subSubject: NEUTRAL_TAG_STYLE };
+  }
+
+  const findChipIndex = (text: string) => {
+    const matchedIdx = chips.findIndex((c) => c.topic.toLowerCase() === text.toLowerCase());
+    return matchedIdx !== -1 ? matchedIdx : hashIndex(text, chips.length);
+  };
+
+  const subIdx = findChipIndex(subSubjectText);
+  let topicIdx = findChipIndex(topicText);
+  if (topicIdx === subIdx) {
+    topicIdx = chips.length > 1 ? (topicIdx + 1) % chips.length : topicIdx;
+  }
+
+  const subChip = chips[subIdx];
+  const topicChip = chips.length > 1 ? chips[topicIdx] : NEUTRAL_TAG_STYLE;
+  return {
+    topic: { bg: topicChip.bg, color: topicChip.color },
+    subSubject: { bg: subChip.bg, color: subChip.color },
+  };
+}
+
 const COMING_SOON_SUBJECTS = [
   'Advanced Polity Compendium',
   'Geography Map Workbook',
@@ -119,6 +204,7 @@ export default function LibraryPage() {
   const [readModal, setReadModal] = useState<{ url: string; title: string } | null>(null);
   const [loadingRead, setLoadingRead] = useState<string | null>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(100);
   const selectedApiSubject = apiSubjects.find(s => s.name === selectedSubject) ?? null;
 
   // Fetch subjects on mount
@@ -162,6 +248,7 @@ export default function LibraryPage() {
       const url = res.data?.url || res.data?.downloadUrl || res.data;
       if (url && typeof url === 'string') {
         setIframeLoaded(false);
+        setZoomLevel(100);
         setReadModal({ url, title: material.title || material.name || 'Note' });
         entitlements.refreshEntitlements();
       }
@@ -184,49 +271,14 @@ export default function LibraryPage() {
   const tabs = ['Notes', 'PYQ Notes', 'Tricks & Mnemonics', 'Current Affairs'] as const;
   type TabKey = typeof tabs[number];
 
-  const TAB_CONFIG: Record<TabKey, { color: string; activeColor: string; activeBg: string; borderColor: string; icon: (active: boolean) => React.ReactNode }> = {
-    'Notes': {
-      color: '#155DFC', activeColor: '#155DFC', activeBg: '#EFF6FF', borderColor: '#155DFC',
-      icon: (active) => (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <rect x="2" y="1" width="12" height="14" rx="2" fill={active ? '#DBEAFE' : '#F3F4F6'} stroke={active ? '#155DFC' : '#6A7282'} strokeWidth="1.3"/>
-          <line x1="5" y1="5" x2="11" y2="5" stroke={active ? '#155DFC' : '#9CA3AF'} strokeWidth="1.2"/>
-          <line x1="5" y1="8" x2="11" y2="8" stroke={active ? '#155DFC' : '#9CA3AF'} strokeWidth="1.2"/>
-          <line x1="5" y1="11" x2="9" y2="11" stroke={active ? '#155DFC' : '#9CA3AF'} strokeWidth="1.2"/>
-        </svg>
-      ),
-    },
-    'PYQ Notes': {
-      color: '#D97706', activeColor: '#D97706', activeBg: '#FEF3C7', borderColor: '#D97706',
-      icon: (active) => (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <rect x="1" y="2" width="6" height="12" rx="1" fill={active ? '#FDE68A' : '#F3F4F6'} stroke={active ? '#D97706' : '#6A7282'} strokeWidth="1.2"/>
-          <rect x="9" y="2" width="6" height="12" rx="1" fill={active ? '#FDE68A' : '#F3F4F6'} stroke={active ? '#D97706' : '#6A7282'} strokeWidth="1.2"/>
-          <line x1="3" y1="5" x2="5" y2="5" stroke={active ? '#D97706' : '#9CA3AF'} strokeWidth="1"/>
-          <line x1="3" y1="7.5" x2="5" y2="7.5" stroke={active ? '#D97706' : '#9CA3AF'} strokeWidth="1"/>
-          <line x1="11" y1="5" x2="13" y2="5" stroke={active ? '#D97706' : '#9CA3AF'} strokeWidth="1"/>
-          <line x1="11" y1="7.5" x2="13" y2="7.5" stroke={active ? '#D97706' : '#9CA3AF'} strokeWidth="1"/>
-        </svg>
-      ),
-    },
-    'Tricks & Mnemonics': {
-      color: '#7C3AED', activeColor: '#7C3AED', activeBg: '#EDE9FE', borderColor: '#7C3AED',
-      icon: (active) => (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 1.5L10 6H14.5L11 9L12.5 13.5L8 11L3.5 13.5L5 9L1.5 6H6L8 1.5Z" fill={active ? '#C4B5FD' : '#E5E7EB'} stroke={active ? '#7C3AED' : '#6A7282'} strokeWidth="1.1" strokeLinejoin="round"/>
-        </svg>
-      ),
-    },
-    'Current Affairs': {
-      color: '#059669', activeColor: '#059669', activeBg: '#D1FAE5', borderColor: '#059669',
-      icon: (active) => (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <circle cx="8" cy="8" r="6.5" fill={active ? '#A7F3D0' : '#F3F4F6'} stroke={active ? '#059669' : '#6A7282'} strokeWidth="1.2"/>
-          <path d="M5 8.5L7 10.5L11 6" stroke={active ? '#059669' : '#9CA3AF'} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M8 4V5.5" stroke={active ? '#059669' : '#9CA3AF'} strokeWidth="1.2" strokeLinecap="round"/>
-        </svg>
-      ),
-    },
+  const ACTIVE_TAB_COLOR = '#0F172B';
+  const ACTIVE_TAB_BG = '#E8EAF0';
+
+  const TAB_CONFIG: Record<TabKey, { icon: string }> = {
+    'Notes': { icon: '📄' },
+    'PYQ Notes': { icon: '📌' },
+    'Tricks & Mnemonics': { icon: '💡' },
+    'Current Affairs': { icon: '📰' },
   };
 
   const getChaptersForTab = (tab: string) => {
@@ -431,22 +483,6 @@ export default function LibraryPage() {
                         </div>
                       </div>
                     </div>
-                    {(subject.tags?.[0]) && (
-                      <div
-                        className="font-arimo font-bold"
-                        style={{
-                          fontSize: 'clamp(9px, 0.75vw, 11px)',
-                          color: '#FFFFFF',
-                          background: '#16A34A',
-                          borderRadius: '4px',
-                          padding: 'clamp(2px, 0.3vw, 4px) clamp(6px, 0.6vw, 8px)',
-                          flexShrink: 0,
-                          letterSpacing: '0.3px',
-                        }}
-                      >
-                        {subject.tags[0].toUpperCase()}
-                      </div>
-                    )}
                   </button>
                 );
               })}
@@ -611,15 +647,6 @@ export default function LibraryPage() {
                         PDFs
                       </div>
                     </div>
-                    <div style={{ width: '1px', height: '48px', background: '#E5E7EB' }} />
-                    <div className="flex flex-col items-center">
-                      <div className="font-arimo font-bold" style={{ fontSize: isMobile ? '32px' : '40px', color: '#C68A0B', lineHeight: 1.1 }}>
-                        {selectedApiSubject?.pageCount ?? selectedApiSubject?.pages ?? selectedApiSubject?.chapterCount ?? 0}
-                      </div>
-                      <div className="font-arimo" style={{ fontSize: '14px', color: '#6A7282' }}>
-                        Pages
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -634,10 +661,12 @@ export default function LibraryPage() {
                     <div
                       className="flex items-center"
                       style={{
-                        gap: '8px',
-                        padding: '5px',
-                        background: '#F3F4F6',
-                        borderRadius: '12px',
+                        gap: '6px',
+                        padding: '6px',
+                        background: 'linear-gradient(180deg, #FFFFFF 0%, #F6F8FC 100%)',
+                        borderRadius: '999px',
+                        border: '1px solid #E4E9F2',
+                        boxShadow: '0 10px 30px -22px rgba(15, 23, 43, 0.35), inset 0 1px 0 rgba(255,255,255,0.95)',
                         display: 'inline-flex',
                         maxWidth: '100%',
                         overflowX: 'auto',
@@ -653,17 +682,18 @@ export default function LibraryPage() {
                             className="font-arimo font-bold flex items-center transition-all"
                             style={{
                               gap: '6px',
-                              padding: isMobile ? '7px 12px' : '7px 18px',
+                              padding: isMobile ? '10px 16px' : '12px 22px',
                               flexShrink: 0,
-                              borderRadius: '8px',
+                              borderRadius: '999px',
                               fontSize: '13px',
                               border: 'none',
                               cursor: 'pointer',
-                              background: active ? '#FFFFFF' : 'transparent',
-                              color: active ? '#101828' : '#6A7282',
-                              boxShadow: active ? '0px 1px 3px rgba(0,0,0,0.12)' : 'none',
+                              background: active ? '#0F172B' : 'transparent',
+                              color: active ? '#FFFFFF' : '#17223E',
+                              boxShadow: active ? '0 8px 20px rgba(15, 23, 43, 0.24)' : 'none',
                               lineHeight: '20px',
                               whiteSpace: 'nowrap',
+                              transition: 'background 200ms ease, color 200ms ease, box-shadow 200ms ease',
                             }}
                           >
                             <span style={{ fontSize: '14px' }}>{icon}</span>
@@ -716,10 +746,10 @@ export default function LibraryPage() {
                       className="font-arimo font-bold"
                       style={{
                         fontSize: 'clamp(12px, 1.05vw, 14px)',
-                        color: isActive ? cfg.activeColor : '#6A7282',
+                        color: isActive ? ACTIVE_TAB_COLOR : '#6A7282',
                         background: 'none',
                         border: 'none',
-                        borderBottom: isActive ? `2px solid ${cfg.borderColor}` : '2px solid transparent',
+                        borderBottom: isActive ? `2px solid ${ACTIVE_TAB_COLOR}` : '2px solid transparent',
                         padding: 'clamp(8px, 0.8vw, 12px) 0',
                         marginBottom: '-2px',
                         cursor: 'pointer',
@@ -730,14 +760,14 @@ export default function LibraryPage() {
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {cfg.icon(isActive)}
+                      <span style={{ fontSize: '16px', lineHeight: 1 }}>{cfg.icon}</span>
                       {tab}
                       <span
                         className="font-arimo font-bold"
                         style={{
                           fontSize: 'clamp(10px, 0.82vw, 12px)',
-                          background: isActive ? cfg.activeBg : '#F3F4F6',
-                          color: isActive ? cfg.activeColor : '#6A7282',
+                          background: isActive ? ACTIVE_TAB_COLOR : ACTIVE_TAB_BG,
+                          color: isActive ? '#FFFFFF' : ACTIVE_TAB_COLOR,
                           borderRadius: '999px',
                           padding: '2px clamp(6px, 0.5vw, 8px)',
                         }}
@@ -800,9 +830,9 @@ export default function LibraryPage() {
                     padding: '0 14px',
                     borderRadius: '8px',
                     fontSize: '13px',
-                    border: showSearch ? `1px solid ${TAB_CONFIG[activeTab as TabKey]?.activeColor ?? '#155DFC'}` : '1px solid #E5E7EB',
-                    background: showSearch ? (TAB_CONFIG[activeTab as TabKey]?.activeBg ?? '#EFF6FF') : '#FFFFFF',
-                    color: showSearch ? (TAB_CONFIG[activeTab as TabKey]?.activeColor ?? '#155DFC') : '#6A7282',
+                    border: showSearch ? `1px solid ${ACTIVE_TAB_COLOR}` : '1px solid #E5E7EB',
+                    background: showSearch ? ACTIVE_TAB_BG : '#FFFFFF',
+                    color: showSearch ? ACTIVE_TAB_COLOR : '#6A7282',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
                   }}
@@ -837,12 +867,9 @@ export default function LibraryPage() {
                 const materialId = material._id || material.id;
                 const materialTitle = material.title || material.name || '';
                 const materialPages = material.pageCount || material.pages || 0;
-                const materialSize = material.fileSize
-                  ? `${(material.fileSize / (1024 * 1024)).toFixed(1)} MB`
-                  : material.size || '';
                 const cardKey = materialId || materialTitle + idx;
                 const isHovered = hoveredCard === cardKey;
-                const tabColor = TAB_CONFIG[activeTab as TabKey]?.activeColor ?? '#155DFC';
+                const tabColor = ACTIVE_TAB_COLOR;
                 return (
                 <div
                   key={cardKey}
@@ -883,22 +910,17 @@ export default function LibraryPage() {
                   {/* Document icon */}
                   <div
                     style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '10px',
-                      background: '#FEF2F2',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '8px',
+                      background: '#F9EDE8',
+                      display: 'grid',
+                      placeItems: 'center',
+                      fontSize: '18px',
                       flexShrink: 0,
                     }}
                   >
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M6 2H11L16 7V17C16 17.5523 15.5523 18 15 18H6C5.44772 18 5 17.5523 5 17V3C5 2.44772 5.44772 2 6 2Z" fill="#EF4444" opacity="0.85" />
-                      <path d="M11 2V7H16" fill="#FECACA" />
-                      <path d="M11 2L16 7" stroke="#DC2626" strokeWidth="0.5" />
-                      <path d="M11 2V6C11 6.55228 11.4477 7 12 7H16" stroke="#DC2626" strokeWidth="0.5" fill="#FECACA" />
-                    </svg>
+                    {material.isLocked ? '🔒' : '📌'}
                   </div>
 
                   {/* Title & subtitle */}
@@ -918,17 +940,59 @@ export default function LibraryPage() {
                       {materialTitle}
                     </div>
                     <div
-                      className="font-arimo"
+                      className="font-arimo flex items-center flex-wrap"
                       style={{
                         fontSize: '14px',
                         lineHeight: '20px',
                         color: '#6A7282',
+                        gap: '6px',
                       }}
                     >
-                      {'\uD83D\uDCC4'} {material.topicTitle} · {material.subSubjectTitle}
-                      {materialPages ? ` · ${materialPages} pages` : ''}
-                      {materialSize ? ` · ${materialSize}` : ''}
-                      {material.isLocked ? ' · Locked' : ''}
+                      <span>{'\uD83D\uDCC4'}</span>
+                      {(() => {
+                        const tagStyles = getTagStyles(selectedSubject, material.topicTitle || '', material.subSubjectTitle || '');
+                        return (
+                          <>
+                            {material.topicTitle && (
+                              <span
+                                className="font-arimo font-bold"
+                                style={{
+                                  fontSize: '12px',
+                                  lineHeight: '18px',
+                                  padding: '2px 10px',
+                                  borderRadius: '999px',
+                                  background: tagStyles.topic.bg,
+                                  color: tagStyles.topic.color,
+                                }}
+                              >
+                                {material.topicTitle}
+                              </span>
+                            )}
+                            {material.subSubjectTitle && (
+                              <span
+                                className="font-arimo font-bold"
+                                style={{
+                                  fontSize: '12px',
+                                  lineHeight: '18px',
+                                  padding: '2px 10px',
+                                  borderRadius: '999px',
+                                  background: tagStyles.subSubject.bg,
+                                  color: tagStyles.subSubject.color,
+                                }}
+                              >
+                                {material.subSubjectTitle}
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
+                      {(() => {
+                        const extras = [
+                          materialPages ? `${materialPages} pages` : null,
+                          material.isLocked ? 'Locked' : null,
+                        ].filter(Boolean).join(' · ');
+                        return extras ? <span>{extras}</span> : null;
+                      })()}
                     </div>
                   </div>
 
@@ -936,31 +1000,7 @@ export default function LibraryPage() {
                   <div className="flex items-center" style={{ gap: '10px', flexShrink: 0, flexBasis: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'flex-end' : undefined }}>
                     {material.isLocked ? (
                       <>
-                        {/* Unlock */}
-                        <button
-                          className="font-arimo font-bold active:translate-y-[3px]"
-                          onClick={handleUpgrade}
-                          style={{
-                            fontSize: '13px',
-                            background: '#EDE9FE',
-                            color: '#6D28D9',
-                            borderRadius: '10px',
-                            height: '38px',
-                            padding: '0 18px',
-                            border: '1.5px solid #C4B5FD',
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '7px',
-                            boxShadow: '0 4px 0 0 #A78BFA',
-                            transition: 'transform 0.08s ease, box-shadow 0.08s ease',
-                          }}
-                        >
-                          <span style={{ fontSize: '15px', lineHeight: 1 }}>🔒</span>
-                          Unlock
-                        </button>
-                        {/* Upgrade */}
+                        {/* Unlock & Get PDF */}
                         <button
                           className="font-arimo font-bold active:translate-y-[3px]"
                           onClick={handleUpgrade}
@@ -981,33 +1021,40 @@ export default function LibraryPage() {
                             transition: 'transform 0.08s ease, box-shadow 0.08s ease',
                           }}
                         >
-                          <span style={{ fontSize: '15px', lineHeight: 1 }}>✦</span>
-                          Upgrade
+                          <span style={{ fontSize: '15px', lineHeight: 1 }}>🔒</span>
+                          Unlock & Get PDF
                         </button>
                       </>
                     ) : (
                       <>
                         {/* Read — opens protected in-app viewer */}
                         <button
-                          className="font-arimo font-bold active:translate-y-[3px]"
+                          className="font-arimo font-bold"
                           onClick={() => materialId && handleRead(material)}
                           disabled={loadingRead === materialId}
                           style={{
                             fontSize: '13px',
-                            background: '#F0FDF4',
-                            color: '#166534',
-                            borderRadius: '10px',
+                            background: '#E8F0E9',
+                            color: '#3A7A4F',
+                            borderRadius: '20px',
                             height: '38px',
                             padding: '0 18px',
-                            border: '1.5px solid #86EFAC',
+                            border: '1.5px solid rgba(109,191,138,0.3)',
                             cursor: 'pointer',
                             whiteSpace: 'nowrap',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '7px',
+                            gap: '6px',
                             opacity: loadingRead === materialId ? 0.6 : 1,
-                            boxShadow: '0 4px 0 0 #4ADE80',
-                            transition: 'transform 0.08s ease, box-shadow 0.08s ease',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#D0F0DC';
+                            e.currentTarget.style.borderColor = '#6DBF8A';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#E8F0E9';
+                            e.currentTarget.style.borderColor = 'rgba(109,191,138,0.3)';
                           }}
                         >
                           <span style={{ fontSize: '15px', lineHeight: 1 }}>📖</span>
@@ -1015,26 +1062,34 @@ export default function LibraryPage() {
                         </button>
                         {/* Get PDF — always goes to upgrade */}
                         <button
-                          className="font-arimo font-bold active:translate-y-[3px]"
+                          className="font-arimo font-bold"
                           onClick={handleGetPdf}
                           style={{
                             fontSize: '13px',
-                            background: '#F59E0B',
+                            background: 'linear-gradient(135deg, #E6A817, #F4A97A)',
                             color: '#FFFFFF',
-                            borderRadius: '10px',
+                            borderRadius: '20px',
                             height: '38px',
                             padding: '0 18px',
-                            border: '1.5px solid #D97706',
+                            border: 'none',
                             cursor: 'pointer',
                             whiteSpace: 'nowrap',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '7px',
-                            boxShadow: '0 4px 0 0 #B45309',
-                            transition: 'transform 0.08s ease, box-shadow 0.08s ease',
+                            gap: '6px',
+                            boxShadow: '0 2px 8px rgba(230,168,23,0.3)',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.boxShadow = '0 4px 14px rgba(230,168,23,0.4)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(230,168,23,0.3)';
                           }}
                         >
-                          <span style={{ fontSize: '15px', lineHeight: 1 }}>⬇️</span>
+                          <span style={{ fontSize: '15px', lineHeight: 1 }}>⬇</span>
                           Get PDF
                         </button>
                       </>
@@ -1430,20 +1485,74 @@ export default function LibraryPage() {
               </div>
             )}
 
-            {/* Google Docs viewer iframe */}
-            <iframe
-              key={readModal.url}
-              src={`https://docs.google.com/viewer?url=${encodeURIComponent(readModal.url)}&embedded=true`}
+            {/* Google Docs viewer iframe — wrapped so we can apply a zoom transform */}
+            <div
               style={{
-                width: '100%', height: '100%',
-                border: 'none', display: 'block',
-                opacity: iframeLoaded ? 1 : 0,
-                transition: 'opacity 0.35s ease',
+                width: `${10000 / zoomLevel}%`,
+                height: `${10000 / zoomLevel}%`,
+                transform: `scale(${zoomLevel / 100})`,
+                transformOrigin: 'top left',
               }}
-              title={readModal.title}
-              onLoad={() => setIframeLoaded(true)}
-              allow="fullscreen"
-            />
+            >
+              <iframe
+                key={readModal.url}
+                src={`https://docs.google.com/viewer?url=${encodeURIComponent(readModal.url)}&embedded=true`}
+                style={{
+                  width: '100%', height: '100%',
+                  border: 'none', display: 'block',
+                  opacity: iframeLoaded ? 1 : 0,
+                  transition: 'opacity 0.35s ease',
+                }}
+                title={readModal.title}
+                onLoad={() => setIframeLoaded(true)}
+                allow="fullscreen"
+              />
+            </div>
+
+            {/* ── Zoom controls ── */}
+            {iframeLoaded && (
+              <div
+                className="flex items-center font-arimo font-bold"
+                style={{
+                  position: 'absolute',
+                  top: '10px',
+                  right: '10px',
+                  zIndex: 15,
+                  gap: '4px',
+                  background: '#FFFFFF',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '8px',
+                  padding: '4px 6px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                }}
+              >
+                <button
+                  onClick={() => setZoomLevel((z) => Math.max(50, z - 10))}
+                  style={{
+                    width: '24px', height: '24px', borderRadius: '6px',
+                    background: '#F3F4F6', border: 'none', color: '#374151',
+                    cursor: 'pointer', fontSize: '14px', lineHeight: 1,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  −
+                </button>
+                <span style={{ fontSize: '12px', color: '#374151', minWidth: '40px', textAlign: 'center' }}>
+                  {zoomLevel}%
+                </span>
+                <button
+                  onClick={() => setZoomLevel((z) => Math.min(200, z + 10))}
+                  style={{
+                    width: '24px', height: '24px', borderRadius: '6px',
+                    background: '#F3F4F6', border: 'none', color: '#374151',
+                    cursor: 'pointer', fontSize: '14px', lineHeight: 1,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  +
+                </button>
+              </div>
+            )}
 
             {/* ── Watermark overlay ──
                 Sits above the iframe (pointer-events:none so scroll is unaffected).

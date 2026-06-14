@@ -30,7 +30,7 @@ interface PageData {
 const SECTION_GROUPS: Record<string, { label: string; keys: string[] }> = {
   hero: { label: 'Hero Section', keys: ['hero_badge', 'hero_title', 'hero_subtitle', 'hero_cta_primary', 'hero_cta_secondary', 'hero_image', 'hero_bg'] },
   features: { label: 'Features Grid', keys: ['features_title', 'features'] },
-  jeetai: { label: 'Jeet AI Section', keys: ['jeetai_title', 'jeetai_features'] },
+  jeetai: { label: 'Jeet AI Mentor Section', keys: ['jeetai_title', 'jeetai_features'] },
   dashboard_preview: { label: 'Dashboard Preview', keys: ['dashboard_preview_title', 'dashboard_preview_image'] },
   mentorship: { label: 'Mentorship', keys: ['mentorship_title', 'mentorship_subtitle', 'mentorship_quote', 'mentorship_author', 'mentorship_features', 'mentorship_image'] },
   study_planner: { label: 'Study Planner', keys: ['study_planner_title', 'study_planner_features'] },
