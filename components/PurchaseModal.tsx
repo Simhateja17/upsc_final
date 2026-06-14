@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import Script from 'next/script';
+import { useRouter } from 'next/navigation';
 import { billingService, pricingService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -78,11 +79,26 @@ const listItems = [
 ];
 
 export default function PurchaseModal(props: PurchaseModalProps) {
+  const router = useRouter();
   if (props.itemType === 'test_series') {
     return <TestSeriesCheckoutModal {...props} />;
   }
 
-  return <LegacyPurchaseModal {...props} />;
+  if (!props.open) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,23,42,0.62)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ width: '100%', maxWidth: 420, borderRadius: 16, background: '#fff', padding: 24, boxShadow: '0 24px 70px rgba(15,23,42,0.28)' }}>
+        <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#101828' }}>Choose an AutoPay plan</h3>
+        <p style={{ margin: '10px 0 20px', fontSize: 14, lineHeight: 1.6, color: '#667085' }}>
+          Paid plans now use Razorpay Subscriptions with UPI AutoPay. Continue to the billing page to select a tier and billing cycle.
+        </p>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button type="button" onClick={props.onClose} style={{ borderRadius: 9, border: '1px solid #D0D5DD', background: '#fff', padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#344054', cursor: 'pointer' }}>Close</button>
+          <button type="button" onClick={() => { props.onClose(); router.push('/dashboard/billing/plans'); }} style={{ borderRadius: 9, border: 'none', background: '#0B1525', padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer' }}>View plans</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function TestSeriesCheckoutModal({ open, onClose, itemId, itemName, amount, onSuccess }: PurchaseModalProps) {
