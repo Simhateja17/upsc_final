@@ -5,6 +5,8 @@ import Link from 'next/link';
 import CreateFlashcardModal from '@/components/CreateFlashcardModal';
 import { flashcardService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import { UpgradePrompt } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 type Deck = {
   id: string;
@@ -42,6 +44,7 @@ function displaySubjectName(subject: string) {
 }
 
 export default function FlashcardsPage() {
+  const entitlements = useEntitlements();
   const [showAddModal, setShowAddModal] = useState(false);
   const [prefillSubject, setPrefillSubject] = useState('');
   const [decks, setDecks] = useState<Deck[]>([]);
@@ -80,6 +83,9 @@ export default function FlashcardsPage() {
       masteredCards: deck?.masteredCards ?? 0,
     };
   });
+  const hasFullAccess = entitlements.canAccess('flashcards', ['full']);
+  const previewCount = entitlements.preview.flashcard_subjects ?? subjectCards.length;
+  const visibleSubjectCards = hasFullAccess ? subjectCards : subjectCards.slice(0, previewCount || 0);
 
   return (
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: '100%' }}>
@@ -93,6 +99,17 @@ export default function FlashcardsPage() {
         />
 
         <div className="w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+          {!hasFullAccess && (
+            <div className="mb-6">
+              <UpgradePrompt
+                title="Flashcards preview"
+                currentTier={entitlements.tier}
+                requiredTier="rise"
+                message={`Your plan includes ${previewCount || 0} preview subjects. Upgrade to Rise to create flashcards and unlock the full subject vault.`}
+              />
+            </div>
+          )}
+
           <div className="mb-2 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div
@@ -108,12 +125,14 @@ export default function FlashcardsPage() {
 
             <button
               type="button"
-              onClick={() => setShowAddModal(true)}
+              onClick={() => hasFullAccess ? setShowAddModal(true) : undefined}
+              disabled={!hasFullAccess}
               className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
               style={{
                 background: '#FFFFFF',
                 border: '1.5px solid #2563EB',
                 boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.06)',
+                opacity: hasFullAccess ? 1 : 0.55,
                 fontFamily: 'Inter',
                 fontWeight: 700,
                 fontSize: 14,
@@ -144,7 +163,7 @@ export default function FlashcardsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
-              {subjectCards.map((item) => {
+              {visibleSubjectCards.map((item) => {
                 const hasDeck = Boolean(item.deck);
                 const due = item.totalCards - item.masteredCards;
                 const progressWidth = hasDeck ? Math.max(item.mastery, 10) : 0;
@@ -221,6 +240,7 @@ export default function FlashcardsPage() {
                     key={item.id}
                     type="button"
                     onClick={() => {
+                      if (!hasFullAccess) return;
                       setPrefillSubject(item.subject);
                       setShowAddModal(true);
                     }}

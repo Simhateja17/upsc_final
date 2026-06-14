@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { mentalHealthService } from '@/lib/services';
+import { EntitlementGate } from '@/components/entitlements';
 
 // ── constants ────────────────────────────────────────────────────────────────
 
@@ -401,6 +402,13 @@ export default function MentalHealthPage() {
     : ['The UPSC exam tests your consistency, not your brilliance. Show up every single day and the result will take care of itself.'];
 
   return (
+    <EntitlementGate
+      accessKey="mental_health_buddy"
+      allowed={['full']}
+      requiredTier="aspire"
+      title="Mental Health Buddy is available on Aspire+"
+      message="Upgrade to Aspire for wellness check-ins, guided tools, stress insights, and daily support."
+    >
     <div className="min-h-screen font-arimo" style={{ background: '#F9FAFB' }}>
 
       {/* ── slider styles ── */}
@@ -1029,5 +1037,6 @@ export default function MentalHealthPage() {
 
       </div>
     </div>
+    </EntitlementGate>
   );
 }

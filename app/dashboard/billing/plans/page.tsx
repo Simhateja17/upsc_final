@@ -604,8 +604,8 @@ function PaymentFailureDialog({
   );
 }
 
-// ── Checkout modal (shared by Rise & Ascent) ─────────────────────────────────
-type PlanKey = 'rise' | 'ascent';
+// ── Checkout modal (shared by paid plans) ────────────────────────────────────
+type PlanKey = 'aspire' | 'rise' | 'ascent';
 
 type PlanConfig = {
   name: string;
@@ -623,6 +623,25 @@ type PlanConfig = {
 };
 
 const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
+  aspire: {
+    name: 'Aspire',
+    badge: 'Aspire Plan',
+    description: 'Daily structured prep with AI evaluation and core tools.',
+    features: [
+      '5 Mains AI Evaluations / day',
+      '5 Mock Test attempts / day',
+      'Jeet AI – 5 messages / day',
+      'Study Planner & Time Tracker',
+      'Discussion Forum – Limited access',
+      'Revision Suite – Limited access',
+      'Performance Analytics – Limited view',
+    ],
+    cycles: {
+      monthly:   { label: 'Monthly',   total: '199.00',  perMonth: '199', save: '',         duration: '1 month',   gstStrike: '45.61'  },
+      quarterly: { label: 'Quarterly', total: '479.00',  perMonth: '159', save: 'Save 20%', duration: '3 months',  gstStrike: '73.07'  },
+      yearly:    { label: 'Yearly',    total: '1439.00', perMonth: '119', save: 'Save 40%', duration: '12 months', gstStrike: '219.51' },
+    },
+  },
   rise: {
     name: 'Rise',
     badge: 'Rise Plan',
@@ -1156,6 +1175,7 @@ export default function ExplorePlansPage() {
   const [checkoutPlan, setCheckoutPlan] = useState<PlanKey | null>(null);
 
   const handleUpgrade = () => router.push('/dashboard');
+  const handleOpenAspireCheckout = () => setCheckoutPlan('aspire');
   const handleOpenRiseCheckout = () => setCheckoutPlan('rise');
   const handleOpenAscentCheckout = () => setCheckoutPlan('ascent');
 
@@ -1242,7 +1262,7 @@ export default function ExplorePlansPage() {
                   </li>
                 ))}
               </ul>
-              <button type="button" onClick={handleUpgrade} style={{ marginTop: 'auto', width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: '1.5px solid #D1D5DB', background: 'transparent', color: '#0C1424', fontFamily: '"DM Sans", Inter, system-ui, sans-serif' }}>
+              <button type="button" onClick={handleOpenAspireCheckout} style={{ marginTop: 'auto', width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: '1.5px solid #D1D5DB', background: 'transparent', color: '#0C1424', fontFamily: '"DM Sans", Inter, system-ui, sans-serif' }}>
                 Get Aspire →
               </button>
             </div>
@@ -1447,16 +1467,16 @@ export default function ExplorePlansPage() {
                       { feature: 'Daily Leaderboard', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
                     ] },
                     { icon: '🔥', title: 'PRACTICE (EVALUATIONS & MOCK TESTS)', rows: [
-                      { feature: 'Mains Answer Evaluation', free: '3 / Lifetime', aspire: '5 / day', rise: '25 / day', ascent: 'Unlimited' },
-                      { feature: 'Prelims Mock Test', free: '1 Test / Lifetime', aspire: '5 Tests / day', rise: '50 Tests / day', ascent: 'Unlimited' },
+                      { feature: 'Mains Answer Evaluation', free: '3 / Lifetime', aspire: '5 / day', rise: '25 / day, 7 / hour', ascent: 'Unlimited / day, 10 / hour' },
+                      { feature: 'Prelims Mock Test', free: '1 Test / Lifetime', aspire: '5 Tests / day', rise: '50 / day, 5 / hour', ascent: 'Unlimited / day, 15 / hour' },
                     ] },
                     { icon: '💬', title: '24*7 DOUBT RESOLUTION', rows: [
-                      { feature: 'Jeet AI Mentor', free: '1 Chat Session / Lifetime', aspire: '5 Messages / day', rise: '100 Messages / day', ascent: 'Unlimited Messages' },
+                      { feature: 'Jeet AI Mentor', free: '20 lifetime, 10 / hour', aspire: '5 Messages / day', rise: '25 / hour, 100 / day', ascent: '50 / hour, unlimited / day' },
                     ] },
                     { icon: '📊', title: 'ANALYTICS & TRACKER', rows: [
                       { feature: 'Performance Analytics Dashboard', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
                       { feature: 'Test Analytics', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
-                      { feature: 'Smart Syllabus Tracker', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
+                      { feature: 'Smart Syllabus Tracker', free: '5 tracked items', aspire: '5 tracked items', rise: 'Full Access', ascent: 'Full Access' },
                     ] },
                     { icon: '🗂️', title: 'REVISION SUITE', rows: [
                       { feature: 'Flashcards', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
@@ -1513,7 +1533,7 @@ export default function ExplorePlansPage() {
                     </button>
                   </td>
                   <td style={{ padding: '20px 16px', textAlign: 'center' }}>
-                    <button type="button" onClick={handleUpgrade} style={{ borderRadius: 8, border: '1.5px solid #D1D5DB', background: 'transparent', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#1A2540', cursor: 'pointer', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
+                    <button type="button" onClick={handleOpenAspireCheckout} style={{ borderRadius: 8, border: '1.5px solid #D1D5DB', background: 'transparent', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#1A2540', cursor: 'pointer', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
                       Get Aspire
                     </button>
                   </td>
@@ -1651,7 +1671,7 @@ export default function ExplorePlansPage() {
           {/* 2-column FAQ grid */}
           {(() => {
             const faqs = [
-              { q: 'Is Aspire really free forever?', a: 'Yes! Aspire is completely free with no expiry date, no credit card required, and no hidden charges. You get access to daily MCQs, mains challenge, current affairs, and more.' },
+              { q: 'Is there a free plan?', a: 'Yes. Every signed-in user starts with limited free access. Aspire, Rise, and Ascent are paid plans that unlock higher limits and more preparation tools.' },
               { q: "What's the difference between Rise and Ascent?", a: 'Rise gives you unlimited AI evaluations, full analytics, and the complete revision suite. Ascent adds weekly 1-on-1 mentorship, a personalised roadmap, priority Q&A support, and monthly performance review calls.' },
               { q: 'Is there a money-back guarantee?', a: 'Yes. All paid plans come with a 3-day money-back guarantee, no questions asked. Just reach out to our support team within 3 days of purchase.' },
               { q: 'How much do I save on quarterly & yearly plans?', a: 'Quarterly plans save you ~10% compared to monthly billing. Yearly plans give you up to 40% off – the best value for committed aspirants.' },
@@ -1716,11 +1736,11 @@ export default function ExplorePlansPage() {
             <br />the Right Way
           </h2>
           <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.5)', maxWidth: 480, margin: '0 auto 32px', lineHeight: 1.65 }}>
-            Join 15,000+ aspirants. Start free with Aspire – no card, no commitment, no expiry. Upgrade only when you feel it.
+            Join 15,000+ aspirants. Start with free access, or choose Aspire, Rise, or Ascent when you need higher limits.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
-            <button type="button" onClick={handleUpgrade} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              Start Free with Aspire →
+            <button type="button" onClick={handleOpenAspireCheckout} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              Get Aspire →
             </button>
             <button type="button" onClick={() => router.push('/help-support')} style={{ borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.2)', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 600, color: '#fff', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               Contact Us
@@ -1751,4 +1771,3 @@ export default function ExplorePlansPage() {
     </div>
   );
 }
-

@@ -13,6 +13,8 @@ import TopicList from './components/TopicList';
 import SubTopicsList from './components/SubTopicsList';
 import RightPanel from './components/RightPanel';
 import StatusModal from './components/StatusModal';
+import { UpgradePrompt, UsageMeter } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 export type Mode = 'prelims' | 'mains' | 'optional';
 export type Status = 'none' | 'done' | 'in-progress' | 'needs-revision' | 'weak';
@@ -45,6 +47,7 @@ export interface TrackerState {
 
 export default function SyllabusTrackerPage() {
   const { user } = useAuth();
+  const entitlements = useEntitlements();
   const { content: cms, loading: cmsLoading } = useCmsContent('dashboard/syllabus-tracker', {
     hero_badge: 'Personalized Syllabus Tracker',
     hero_title_prefix: 'Know Exactly Where You Stand',
@@ -180,6 +183,18 @@ export default function SyllabusTrackerPage() {
     `${subjectId}__${topicIndex}__${subTopicIndex}`;
 
   const updateSubTopicState = (key: string, update: Partial<SubTopicState>) => {
+    const isNewTrackedItem = !states[key] || states[key]?.status === 'none';
+    const nextStatus = update.status;
+    if (
+      entitlements.isLimited('syllabus_tracker') &&
+      isNewTrackedItem &&
+      nextStatus &&
+      nextStatus !== 'none' &&
+      Object.values(states).filter((state) => state.status && state.status !== 'none').length >= 5
+    ) {
+      return;
+    }
+
     setStates(prev => ({
       ...prev,
       [key]: {
@@ -291,6 +306,18 @@ export default function SyllabusTrackerPage() {
             userFirstName={user?.firstName}
           />
         </div>
+
+        {entitlements.isLimited('syllabus_tracker') && (
+          <div className="px-[12px] pt-[12px]">
+            <UpgradePrompt
+              title="Syllabus Tracker preview"
+              currentTier={entitlements.tier}
+              requiredTier="rise"
+              message="Free and Aspire plans can track up to 5 syllabus items. Upgrade to Rise for unlimited tracking across Prelims, Mains, and Optional."
+              status={entitlements.featureStatus('syllabus_tracker_items')}
+            />
+          </div>
+        )}
 
         {/* Stage Tabs */}
         <div className="px-[12px] pt-[12px] pb-0 overflow-x-auto">

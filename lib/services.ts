@@ -1,4 +1,4 @@
-import api from './api';
+import api, { ApiRequestError } from './api';
 import { getStoredTokens, storeTokens } from './auth';
 import { supabase } from './supabase';
 
@@ -124,7 +124,7 @@ export const dailyAnswerService = {
       }
     );
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Upload failed');
+    if (!res.ok) throw new ApiRequestError(json.message || 'Upload failed', res.status, json);
     return json;
   },
   getEvaluationStatus: (attemptId?: string) =>
@@ -202,7 +202,7 @@ export const mockTestService = {
       }
     );
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Submit failed');
+    if (!res.ok) throw new ApiRequestError(json.message || 'Submit failed', res.status, json);
     return json;
   },
   getMainsEvaluationStatus: (testId: string, attemptId: string) =>
@@ -267,7 +267,7 @@ export const pricingService = {
 
 export const billingService = {
   createRazorpayOrder: (data:
-    | { planKey: 'rise' | 'ascent'; cycle: 'monthly' | 'quarterly' | 'yearly' }
+    | { planKey: 'aspire' | 'rise' | 'ascent'; cycle: 'monthly' | 'quarterly' | 'yearly' }
     | { itemType: 'test_series'; itemId: string }
   ) =>
     api.post<any>('/create-order', data, authConfig()),

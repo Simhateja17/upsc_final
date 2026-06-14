@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth } from '@/contexts/AuthContext';
 import { jeetAIService } from '@/lib/services';
+import { handleEntitlementError } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 /* ── Spinner ── */
 const Spinner = () => (
@@ -254,14 +257,15 @@ const IconBook = () => (
 
 /* ══════════════════════════════════════════════════════════════════════════ */
 export default function JeetGPTPage() {
+  const router = useRouter();
   const { user } = useAuth();
+  const entitlements = useEntitlements();
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [queriesUsed, setQueriesUsed] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -315,7 +319,6 @@ export default function JeetGPTPage() {
       if (res.status === 'success' && res.data) {
         setMessages(res.data.messages as Message[]);
         setActiveConversationId(id);
-        setQueriesUsed(0);
         setShowUpgradeModal(false);
         setHistoryOpen(false);
         setError(null);
@@ -342,8 +345,7 @@ export default function JeetGPTPage() {
     setMessages([]);
     setActiveConversationId(null);
     setInputValue('');
-    setQueriesUsed(0);
-    setError(null);
+      setError(null);
     setShowUpgradeModal(false);
     setHistoryOpen(false);
   };
@@ -351,7 +353,11 @@ export default function JeetGPTPage() {
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const trimmed = inputValue.trim();
-    if (!trimmed || isLoading || queriesUsed >= DAILY_QUERY_LIMIT) return;
+    const quota = entitlements.featureStatus('jeet_ai_message');
+    if (!trimmed || isLoading || quota?.allowed === false) {
+      if (quota?.allowed === false) setShowUpgradeModal(true);
+      return;
+    }
 
     const tempId = 'temp-' + Date.now();
     const tempUserMsg: Message = { id: tempId, role: 'user', content: trimmed, createdAt: new Date().toISOString() };
@@ -365,17 +371,15 @@ export default function JeetGPTPage() {
       if (res.status === 'success' && res.data) {
         const { conversationId, reply } = res.data;
         setActiveConversationId(conversationId);
-        setQueriesUsed((prev) => {
-          const next = prev + 1;
-          if (next >= DAILY_QUERY_LIMIT) setShowUpgradeModal(true);
-          return next;
-        });
         const aiMsg: Message = { id: 'ai-' + Date.now(), role: 'assistant', content: reply, createdAt: new Date().toISOString() };
         setMessages((prev) => [...prev, aiMsg]);
         fetchConversations();
+        entitlements.refreshEntitlements();
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to get response. Please try again.');
+      const parsed = handleEntitlementError(err);
+      setError(parsed.message || 'Failed to get response. Please try again.');
+      if (parsed.title === 'Limit reached' || parsed.title === 'Slow down for a bit') setShowUpgradeModal(true);
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
     } finally {
       setIsLoading(false);
@@ -389,15 +393,19 @@ export default function JeetGPTPage() {
     }
   };
 
-  const queriesExhausted = queriesUsed >= DAILY_QUERY_LIMIT;
+  const aiQuota = entitlements.featureStatus('jeet_ai_message');
+  const queriesExhausted = aiQuota?.allowed === false;
   const showChat = messages.length > 0;
   const displayName = user
     ? ((user.firstName ?? '') + (user.firstName && user.lastName ? ' ' : '') + (user.lastName ?? '')).trim() || user.email
     : 'Loading...';
   const initials = getInitials(user?.firstName, user?.lastName, user?.email);
-  const userPlan = user?.role === 'admin' ? 'Admin' : 'Free plan';
+  const userPlan = user?.role === 'admin' ? 'Admin' : `${entitlements.tier[0].toUpperCase()}${entitlements.tier.slice(1)} plan`;
   const canSend = inputValue.trim().length > 0 && !isLoading && !queriesExhausted;
-  const fillPct = Math.round((queriesUsed / DAILY_QUERY_LIMIT) * 100);
+  const quotaLimit = aiQuota?.limit ?? null;
+  const quotaUsed = aiQuota?.used ?? 0;
+  const quotaRemaining = aiQuota?.remaining ?? null;
+  const fillPct = quotaLimit ? Math.min(100, Math.round((quotaUsed / quotaLimit) * 100)) : 0;
 
   const allConvos: { label: string; items: ConversationSummary[] }[] = [
     { label: 'Today', items: conversations.today },
@@ -456,12 +464,17 @@ export default function JeetGPTPage() {
         <div className="jai-sidebar-bottom">
           <div className="jai-query-wrap">
             <div className="jai-query-top">
-              <span className="jai-query-label">Daily queries used</span>
-              <span className="jai-query-count">{queriesUsed} / {DAILY_QUERY_LIMIT}</span>
+              <span className="jai-query-label">Jeet AI quota</span>
+              <span className="jai-query-count">{quotaLimit === null ? 'Unlimited' : `${quotaUsed} / ${quotaLimit}`}</span>
             </div>
             <div className="jai-query-bar">
               <div className="jai-query-fill" style={{ width: fillPct + '%' }} />
             </div>
+            {quotaLimit !== null && (
+              <div style={{ marginTop: 6, fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>
+                {quotaRemaining ?? 0} left {aiQuota?.period ? `per ${aiQuota.period}` : ''}
+              </div>
+            )}
           </div>
           <Link href="/dashboard/profile" className="jai-user-row">
             <div className="jai-user-av">{initials}</div>
@@ -469,7 +482,29 @@ export default function JeetGPTPage() {
               <div className="jai-user-name">{displayName}</div>
               <div className="jai-user-plan">
                 {userPlan}
-                {user?.role !== 'admin' && <> · <span className="jai-upgrade-link">Upgrade ↗</span></>}
+                {user?.role !== 'admin' && (
+                  <> ·{' '}
+                    <span
+                      className="jai-upgrade-link"
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        router.push('/dashboard/billing/plans');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          router.push('/dashboard/billing/plans');
+                        }
+                      }}
+                    >
+                      Upgrade ↗
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </Link>
@@ -575,7 +610,7 @@ export default function JeetGPTPage() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={queriesExhausted ? 'Daily limit reached — upgrade for unlimited queries' : 'Ask me anything about your preparation…'}
+              placeholder={queriesExhausted ? (aiQuota?.message || 'Jeet AI limit reached - upgrade for higher access') : 'Ask me anything about your preparation...'}
               disabled={isLoading || queriesExhausted}
             />
             <div className="jai-input-actions">
@@ -630,15 +665,15 @@ export default function JeetGPTPage() {
             </div>
 
             <h2 className="text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '22px', fontWeight: 700, color: '#0E1D54', lineHeight: 1.3, margin: '0 0 8px' }}>
-              You&apos;ve hit <span style={{ color: '#C9A84C' }}>{DAILY_QUERY_LIMIT} / {DAILY_QUERY_LIMIT}</span><br />queries today!
+              Jeet AI access paused<br />for your current plan
             </h2>
             <p className="text-center" style={{ fontSize: '13px', color: '#6B7899', lineHeight: 1.6, margin: '0 0 22px' }}>
-              Your free quota is up. Upgrade to <strong style={{ color: '#0E1D54' }}>Jeet Pro</strong> and prep without limits — every day, all day.
+              {aiQuota?.message || 'Your current quota is up. Upgrade for higher Jeet AI access and priority answers.'}
             </p>
 
             <div className="flex justify-between items-center" style={{ marginBottom: '7px' }}>
-              <span style={{ fontSize: '12px', color: '#8A96B4', fontWeight: 500 }}>Daily queries</span>
-              <strong style={{ fontSize: '12px', fontWeight: 700, color: '#C05A2A' }}>{DAILY_QUERY_LIMIT} / {DAILY_QUERY_LIMIT} used</strong>
+              <span style={{ fontSize: '12px', color: '#8A96B4', fontWeight: 500 }}>Jeet AI quota</span>
+              <strong style={{ fontSize: '12px', fontWeight: 700, color: '#C05A2A' }}>{quotaLimit === null ? 'Unlimited' : `${quotaUsed} / ${quotaLimit} used`}</strong>
             </div>
             <div style={{ height: '7px', background: '#EEF2FF', borderRadius: '99px', overflow: 'hidden', marginBottom: '22px' }}>
               <div className="jeet-prog-fill" style={{ height: '100%', background: 'linear-gradient(90deg, #E05A28 0%, #C9A84C 100%)', borderRadius: '99px', width: '100%' }} />

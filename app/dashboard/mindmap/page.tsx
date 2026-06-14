@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { mindmapService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import { UpgradePrompt } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 const Icons = {
   Polity: () => (
@@ -56,6 +58,7 @@ type SubjectData = {
 };
 
 export default function MindmapPage() {
+  const entitlements = useEntitlements();
   const [subjects, setSubjects] = useState<SubjectData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -74,6 +77,9 @@ export default function MindmapPage() {
   const mastered = totalExplored;
   const coverage = totalMaps > 0 ? Math.round((totalExplored / totalMaps) * 100) : 0;
   const needReview = Math.max(0, totalMaps - totalExplored);
+  const hasFullAccess = entitlements.canAccess('mindmaps', ['full']);
+  const previewCount = entitlements.preview.mindmaps ?? subjects.length;
+  const visibleSubjects = hasFullAccess ? subjects : subjects.slice(0, previewCount || 0);
 
   return (
     <div className="min-h-screen font-arimo" style={{ background: '#F9FAFB' }}>
@@ -111,6 +117,16 @@ export default function MindmapPage() {
         }}
       >
       <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 pb-12">
+        {!hasFullAccess && (
+          <div className="mb-6 ml-0 sm:ml-11">
+            <UpgradePrompt
+              title="Mindmaps preview"
+              currentTier={entitlements.tier}
+              requiredTier="rise"
+              message={`Your plan includes ${previewCount || 0} preview mindmap. Upgrade to Rise to unlock the full visual learning library.`}
+            />
+          </div>
+        )}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-8 h-8 rounded-full bg-[#10182D] text-white flex items-center justify-center font-semibold text-[14px]">1</div>
           <h2 className="text-[36px] font-bold text-[#10182D] font-serif">
@@ -132,7 +148,7 @@ export default function MindmapPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
-            {subjects.map((subject) => {
+            {visibleSubjects.map((subject) => {
               const color = SUBJECT_COLORS[subject.slug] ?? '#6B7280';
               const cardStyle = SUBJECT_CARD_STYLES[subject.slug] ?? { bg: '#FFFFFF', border: '#E5E7EB', bar: color };
               return (

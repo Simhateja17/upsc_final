@@ -5,6 +5,8 @@ import { dashboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import Toast from '@/components/Toast';
+import { EntitlementGate, UpgradePrompt } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 
 // ─── SVG Line Chart ───────────────────────────────────────────────────────────
@@ -99,6 +101,7 @@ export default function TestAnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<any | null>(null);
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const entitlements = useEntitlements();
 
   useEffect(() => {
     if (authLoading) return;
@@ -175,6 +178,13 @@ export default function TestAnalyticsPage() {
   const maxQuestions = Math.max(...dailyActivity.map(d => d.questionsAttempted), 1);
 
   return (
+    <EntitlementGate
+      accessKey="test_analytics"
+      allowed={['full', 'limited']}
+      requiredTier="aspire"
+      title="Test Analytics are available on Aspire+"
+      message="Upgrade to Aspire for limited test insights, or Rise for full analytics."
+    >
     <div
       className="flex overflow-hidden font-arimo"
       style={{ background: '#F9FAFB', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
@@ -210,6 +220,16 @@ export default function TestAnalyticsPage() {
           />
         </div>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+          {entitlements.isLimited('test_analytics') && (
+            <div className="mb-6">
+              <UpgradePrompt
+                title="You are viewing limited test analytics"
+                currentTier={entitlements.tier}
+                requiredTier="rise"
+                message="Rise unlocks full score trends, subject breakdowns, and mock-test history insights."
+              />
+            </div>
+          )}
           {/* ── 5 Summary Cards ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             {summaryCards.map((card) => (
@@ -610,5 +630,6 @@ export default function TestAnalyticsPage() {
         </div>
       )}
     </div>
+    </EntitlementGate>
   );
 }

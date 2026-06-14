@@ -6,6 +6,8 @@ import { mockTestService, dashboardService, pricingService } from '@/lib/service
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { liveStudentCount } from '@/lib/liveCount';
 import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
+import { handleEntitlementError, UsageMeter } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 /* ─── Static Config (UI structure only, not data) ─── */
 
@@ -264,6 +266,7 @@ function StepHeader({ step, label }: { step: number; label: string }) {
 function MockTestsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const entitlements = useEntitlements();
   const [selectedSource, setSelectedSource] = useState('daily-mcq');
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [selectedExamMode, setSelectedExamMode] = useState('prelims');
@@ -438,6 +441,13 @@ function MockTestsPageInner() {
 
   /* ─── Generate Test Handler ─── */
   const handleGenerateTest = async () => {
+    const featureKey = selectedExamMode === 'mains' ? 'mains_evaluation' : 'prelims_mock_attempt';
+    const quota = entitlements.featureStatus(featureKey);
+    if (quota?.allowed === false) {
+      setError(quota.message || 'You have used your current plan limit.');
+      return;
+    }
+
     setGenerating(true);
     setError(null);
     try {
@@ -457,7 +467,7 @@ function MockTestsPageInner() {
       router.push(`/dashboard/mock-tests/attempt?testId=${testId}&examMode=${selectedExamMode}`);
     } catch (err: any) {
       console.error('Failed to generate test:', err);
-      setError(err.message || 'Failed to generate test. Please try again.');
+      setError(handleEntitlementError(err).message || 'Failed to generate test. Please try again.');
       setGenerating(false);
     }
   };
@@ -474,6 +484,8 @@ function MockTestsPageInner() {
     : (prelimsPaperTypes.find(p => p.id === selectedPaperType)?.label ?? 'GS Paper I');
   const subjectLabel = availableSubjects.find(s => s.name === selectedSubject)?.name ?? selectedSubject ?? 'All Topics';
   const difficultyLabel = difficulties.find(d => d.id === selectedDifficulty)?.label ?? 'Medium';
+  const activeQuota = entitlements.featureStatus(selectedExamMode === 'mains' ? 'mains_evaluation' : 'prelims_mock_attempt');
+  const quotaExhausted = activeQuota?.allowed === false;
 
   /* ─── Card style helper ─── */
   const cardStyle: React.CSSProperties = {
@@ -874,6 +886,11 @@ function MockTestsPageInner() {
           {/* ── Step 1: Question Source ── */}
           {!loading && (
           <div style={cardStyle}>
+                <UsageMeter
+                  status={activeQuota}
+                  label={selectedExamMode === 'mains' ? 'Mains evaluation quota' : 'Prelims mock quota'}
+                  className="mb-4"
+                />
                 <StepHeader step={2} label="Question Source" />
                 <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '8px', overflowX: 'auto' }}>
               {questionSources.map(src => {
@@ -1338,10 +1355,10 @@ function MockTestsPageInner() {
               {/* Generate Test Button */}
               <button
                 onClick={handleGenerateTest}
-                disabled={generating || loading}
+                disabled={generating || loading || quotaExhausted}
                 style={{
                 width: '100%',
-                background: generating ? '#9CA3AF' : 'linear-gradient(90deg, #FDC700, #FF8904, #FF6900)',
+                background: generating || quotaExhausted ? '#9CA3AF' : 'linear-gradient(90deg, #FDC700, #FF8904, #FF6900)',
                 border: 'none',
                 borderRadius: '14px',
                 padding: 'clamp(12px, 1vw, 16px)',
@@ -1349,10 +1366,10 @@ function MockTestsPageInner() {
                 fontWeight: 800,
                 fontSize: 'clamp(14px, 0.95vw, 17px)',
                 color: '#FFF',
-                cursor: generating || loading ? 'not-allowed' : 'pointer',
+                cursor: generating || loading || quotaExhausted ? 'not-allowed' : 'pointer',
                 letterSpacing: '0.02em',
                 marginBottom: 'clamp(14px, 1.1vw, 20px)',
-                opacity: generating || loading ? 0.7 : 1,
+                opacity: generating || loading || quotaExhausted ? 0.7 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1372,7 +1389,7 @@ function MockTestsPageInner() {
                     <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
                   </>
                 ) : (
-                  '🚀 Generate Test'
+                  quotaExhausted ? 'Limit reached - upgrade to continue' : '🚀 Generate Test'
                 )}
               </button>
 
