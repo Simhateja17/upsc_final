@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth } from '@/contexts/AuthContext';
@@ -256,6 +257,7 @@ const IconBook = () => (
 
 /* ══════════════════════════════════════════════════════════════════════════ */
 export default function JeetGPTPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const entitlements = useEntitlements();
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -480,7 +482,29 @@ export default function JeetGPTPage() {
               <div className="jai-user-name">{displayName}</div>
               <div className="jai-user-plan">
                 {userPlan}
-                {user?.role !== 'admin' && <> · <span className="jai-upgrade-link">Upgrade ↗</span></>}
+                {user?.role !== 'admin' && (
+                  <> ·{' '}
+                    <span
+                      className="jai-upgrade-link"
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        router.push('/dashboard/billing/plans');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          router.push('/dashboard/billing/plans');
+                        }
+                      }}
+                    >
+                      Upgrade ↗
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </Link>

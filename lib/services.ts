@@ -267,7 +267,7 @@ export const pricingService = {
 
 export const billingService = {
   createRazorpayOrder: (data:
-    | { planKey: 'rise' | 'ascent'; cycle: 'monthly' | 'quarterly' | 'yearly' }
+    | { planKey: 'aspire' | 'rise' | 'ascent'; cycle: 'monthly' | 'quarterly' | 'yearly' }
     | { itemType: 'test_series'; itemId: string }
   ) =>
     api.post<any>('/create-order', data, authConfig()),
