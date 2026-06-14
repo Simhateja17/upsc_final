@@ -1144,7 +1144,10 @@ export default function DailyEditorialPage() {
           }
 
           if (tl.includes('key term')) {
-            const terms = body.split(/[\n,]/).map(t => t.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').trim()).filter(Boolean);
+            const terms = body.split('\n')
+              .map(t => t.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').trim())
+              .filter(Boolean)
+              .map(t => t.charAt(0).toUpperCase() + t.slice(1));
             return (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {terms.map((term, i) => (
@@ -1155,7 +1158,9 @@ export default function DailyEditorialPage() {
           }
 
           if (tl.includes('exam question') || tl.includes('potential')) {
-            const qs = body.split('\n').map(l => l.replace(/^[-*"'0-9.\s]+/, '').replace(/['"]/g, '').trim()).filter(Boolean);
+            const qs = body.split('\n')
+              .map(l => l.replace(/\*\*/g, '').replace(/^[-*"'0-9.\s]+/, '').replace(/['"\s]+$/, '').trim())
+              .filter(Boolean);
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {qs.map((q, i) => (
@@ -1172,14 +1177,7 @@ export default function DailyEditorialPage() {
             .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#1a2233;font-weight:700">$1</strong>')
             .replace(/\n\n/g, '<br/><br/>');
           return (
-            <div>
-              <div style={{ fontSize: 13, color: '#4a5a72', lineHeight: 1.75 }} dangerouslySetInnerHTML={{ __html: html }} />
-              {tl.includes('critical') && (
-                <div style={{ display: 'inline-block', background: '#fff8e6', border: '1px solid #f5d98a', color: '#8a5a00', fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 6, marginTop: 10 }}>
-                  💡 Key UPSC Takeaway: Balance and nuance in every answer
-                </div>
-              )}
-            </div>
+            <div style={{ fontSize: 13, color: '#4a5a72', lineHeight: 1.75 }} dangerouslySetInnerHTML={{ __html: html }} />
           );
         };
 
