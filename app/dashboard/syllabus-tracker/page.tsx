@@ -13,7 +13,6 @@ import TopicList from './components/TopicList';
 import SubTopicsList from './components/SubTopicsList';
 import RightPanel from './components/RightPanel';
 import StatusModal from './components/StatusModal';
-import { UpgradePrompt, UsageMeter } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 export type Mode = 'prelims' | 'mains' | 'optional';
@@ -306,18 +305,6 @@ export default function SyllabusTrackerPage() {
             userFirstName={user?.firstName}
           />
         </div>
-
-        {entitlements.isLimited('syllabus_tracker') && (
-          <div className="px-[12px] pt-[12px]">
-            <UpgradePrompt
-              title="Syllabus Tracker preview"
-              currentTier={entitlements.tier}
-              requiredTier="rise"
-              message="Free and Aspire plans can track up to 5 syllabus items. Upgrade to Rise for unlimited tracking across Prelims, Mains, and Optional."
-              status={entitlements.featureStatus('syllabus_tracker_items')}
-            />
-          </div>
-        )}
 
         {/* Stage Tabs */}
         <div className="px-[12px] pt-[12px] pb-0 overflow-x-auto">
