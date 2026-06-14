@@ -279,6 +279,21 @@ export const billingService = {
   }) => api.post<any>('/verify-payment', data, authConfig()),
   markRazorpayPaymentFailed: (data: { paymentId: string; status: 'failed'; failureReason?: string }) =>
     api.post<any>('/verify-payment', data, authConfig()),
+  createRazorpaySubscription: (data: {
+    planKey: 'aspire' | 'rise' | 'ascent';
+    cycle: 'monthly' | 'quarterly' | 'yearly';
+    couponCode?: string;
+  }) => api.post<any>('/billing/subscriptions/create', data, authConfig()),
+  verifyRazorpaySubscription: (data: {
+    subscriptionId: string;
+    razorpay_payment_id: string;
+    razorpay_subscription_id: string;
+    razorpay_signature: string;
+  }) => api.post<any>('/billing/subscriptions/verify', data, authConfig()),
+  getBillingSubscription: () => api.get<any>('/billing/subscription', authConfig()),
+  cancelRazorpaySubscription: (id: string) => api.post<any>(`/billing/subscriptions/${id}/cancel`, {}, authConfig()),
+  pauseRazorpaySubscription: (id: string) => api.post<any>(`/billing/subscriptions/${id}/pause`, {}, authConfig()),
+  resumeRazorpaySubscription: (id: string) => api.post<any>(`/billing/subscriptions/${id}/resume`, {}, authConfig()),
 };
 
 export const entitlementService = {
