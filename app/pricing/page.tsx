@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { pricingService } from '@/lib/services';
 
 type PricingMode = 'explore' | 'billing';
 type BillingCycle = 'monthly' | 'yearly';
@@ -12,7 +13,8 @@ type PlanItem = {
 };
 
 type PlanCard = {
-  id: 'starter' | 'scholar' | 'pro';
+  id: 'free' | 'aspire' | 'rise' | 'ascent';
+  tier: 'free' | 'aspire' | 'rise' | 'ascent';
   label: string;
   name: string;
   description: string;
@@ -30,9 +32,10 @@ type PlanCard = {
 
 const PLAN_CARDS: PlanCard[] = [
   {
-    id: 'starter',
+    id: 'free',
+    tier: 'free',
     label: 'Forever Free',
-    name: 'Starter',
+    name: 'Free',
     description: 'Build daily study habits. Begin your UPSC prep without spending a rupee.',
     textTone: 'dark',
     subtitle: 'Always free, no card needed',
@@ -44,19 +47,20 @@ const PLAN_CARDS: PlanCard[] = [
       { text: '10,000+ Previous Year Questions' },
       { text: 'Study Planner & Time Tracker' },
       { text: 'Daily Leaderboard' },
-      { text: 'Jeet AI – 10 chats/day' },
+      { text: 'Jeet AI - 20 lifetime messages, 10/hour throttle' },
       { text: 'Limited Revision Suite' },
     ],
   },
   {
-    id: 'scholar',
+    id: 'aspire',
+    tier: 'aspire',
     label: 'Dedicated Study',
-    name: 'Scholar',
+    name: 'Aspire',
     description: 'For serious aspirants who study daily and want measurable progress.',
     textTone: 'light',
     featured: true,
-    monthlyPrice: 499,
-    yearlyPrice: 415,
+    monthlyPrice: 199,
+    yearlyPrice: 119,
     billedMonthlyText: '₹5,988/yr · billed annually',
     billedYearlyText: '₹4,988/yr · billed annually',
     subtitle: '',
@@ -64,40 +68,68 @@ const PLAN_CARDS: PlanCard[] = [
     sections: [
       { text: 'Everything in Starter' },
       { title: 'Evaluation', text: '5 AI Mains Evaluations / day' },
-      { text: '10 Mock Test attempts / month' },
-      { text: 'Syllabus Tracker' },
-      { title: 'Analytics', text: 'Test Analytics' },
-      { text: 'Performance Analytics Dashboard' },
-      { title: 'Revision & AI', text: 'Full Revision Suite – Flashcards, Mindmap, Spaced Rep.' },
-      { text: 'Jeet AI – 50 chats/day' },
-      { text: 'Study Groups & Discussion Forum' },
+      { text: '5 Prelims mock attempts / day' },
+      { text: 'Syllabus Tracker - 5 tracked items' },
+      { title: 'Analytics', text: 'Limited Test & Performance Analytics' },
+      { title: 'Revision & AI', text: 'Flashcards and Mindmaps preview; 2-question Spaced Rep preview' },
+      { text: 'Jeet AI - 5 messages / day' },
+      { text: 'Mental Health Buddy' },
     ],
   },
   {
-    id: 'pro',
+    id: 'rise',
+    tier: 'rise',
     label: 'Maximum Learning',
-    name: 'Pro Aspirant',
+    name: 'Rise',
     description: 'Unlimited tools, zero limits. For aspirants who leave nothing to chance.',
     textTone: 'light',
-    currentPlan: true,
-    monthlyPrice: 999,
-    yearlyPrice: 832,
+    monthlyPrice: 499,
+    yearlyPrice: 299,
     billedMonthlyText: '₹11,988/yr · billed annually',
     billedYearlyText: '₹9,988/yr · billed annually',
     subtitle: '',
     cta: "You're on this plan ✓",
     sections: [
-      { text: 'Everything in Scholar' },
-      { title: 'Unlimited Access', text: 'Unlimited AI Mains Evaluations' },
-      { text: 'Unlimited Mock Test Practice' },
-      { text: 'Jeet AI – Unlimited chats' },
-      { title: 'Priority Features', text: 'Priority Answer Review' },
-      { text: 'Q&A Forum – Priority Responses' },
-      { text: 'Mental Health Buddy' },
+      { text: 'Everything in Aspire' },
+      { title: 'Evaluations', text: 'Mains: 25/day, 7/hour throttle' },
+      { text: 'Prelims mocks: 50/day, 5/hour throttle' },
+      { text: 'Jeet AI - 25/hour, 100/day' },
+      { title: 'Full Access', text: 'Full analytics, revision suite, syllabus tracker, and study groups' },
+      { text: 'Discussion Forum & Mental Health Buddy' },
+    ],
+  },
+  {
+    id: 'ascent',
+    tier: 'ascent',
+    label: 'Mentor-Led Growth',
+    name: 'Ascent',
+    description: 'Premium access with mentorship, higher hourly throttles, and growth support.',
+    textTone: 'light',
+    monthlyPrice: 1999,
+    yearlyPrice: 1199,
+    billedMonthlyText: 'Billed monthly',
+    billedYearlyText: 'Billed yearly',
+    subtitle: '',
+    cta: 'Join Ascent ->',
+    sections: [
+      { text: 'Everything in Rise' },
+      { title: 'Unlimited Daily Access', text: 'Mains: unlimited/day, 10/hour throttle' },
+      { text: 'Prelims: unlimited/day, 15/hour throttle' },
+      { text: 'Jeet AI - 50/hour, unlimited/day' },
+      { title: 'Mentorship', text: 'Bi-weekly 1-on-1 mentorship and personalised roadmap' },
       { text: 'Early Access to New Features' },
     ],
   },
 ];
+
+type BackendPlan = {
+  tier?: string;
+  billingCycle?: string;
+  price?: number | string;
+  originalPrice?: number | string | null;
+  duration?: string;
+  name?: string;
+};
 
 function formatPrice(num: number) {
   return num.toLocaleString('en-IN');
@@ -106,8 +138,23 @@ function formatPrice(num: number) {
 export default function PricingPage() {
   const [mode, setMode] = useState<PricingMode>('explore');
   const [cycle, setCycle] = useState<BillingCycle>('yearly');
+  const [backendPlans, setBackendPlans] = useState<BackendPlan[]>([]);
 
   const cards = useMemo(() => PLAN_CARDS, []);
+  const backendPlanMap = useMemo(() => {
+    const map = new Map<string, BackendPlan>();
+    for (const plan of backendPlans) {
+      if (!plan.tier || !plan.billingCycle) continue;
+      map.set(`${plan.tier}:${plan.billingCycle}`, plan);
+    }
+    return map;
+  }, [backendPlans]);
+
+  useEffect(() => {
+    pricingService.getPlans()
+      .then((res) => setBackendPlans(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setBackendPlans([]));
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F0F1F5]">
@@ -229,15 +276,19 @@ export default function PricingPage() {
             {cards.map((card) => {
               const isDark = card.textTone === 'light';
               const effectivePrice =
-                card.id === 'starter'
+                card.id === 'free'
                   ? 0
+                  : backendPlanMap.get(`${card.tier}:${cycle}`)?.price != null
+                  ? Math.round(Number(backendPlanMap.get(`${card.tier}:${cycle}`)?.price) / (cycle === 'yearly' ? 12 : 1))
                   : cycle === 'yearly'
                   ? card.yearlyPrice ?? 0
                   : card.monthlyPrice ?? 0;
 
               const billedText =
-                card.id === 'starter'
+                card.id === 'free'
                   ? card.subtitle
+                  : backendPlanMap.get(`${card.tier}:${cycle}`)
+                  ? `₹${Number(backendPlanMap.get(`${card.tier}:${cycle}`)?.price).toLocaleString('en-IN')} billed ${cycle}`
                   : cycle === 'yearly'
                   ? card.billedYearlyText
                   : card.billedMonthlyText;
@@ -294,7 +345,7 @@ export default function PricingPage() {
                       >
                         {formatPrice(effectivePrice)}
                       </span>
-                      {card.id !== 'starter' && <span className="pb-2 text-[12px] text-white/35">/mo</span>}
+                      {card.id !== 'free' && <span className="pb-2 text-[12px] text-white/35">/mo</span>}
                     </div>
 
                     <p
@@ -340,7 +391,7 @@ export default function PricingPage() {
                       </button>
                     ) : (
                       <Link
-                        href={card.id === 'starter' ? '/?auth=signup' : '/dashboard/billing'}
+                        href={card.id === 'free' ? '/?auth=signup' : '/dashboard/billing/plans'}
                         className={`mt-10 flex h-[48px] w-full items-center justify-center rounded-[10px] border text-[14px] font-bold ${
                           card.featured
                             ? 'border-[#E8B84B] bg-[#E8B84B] text-[#090E1C]'

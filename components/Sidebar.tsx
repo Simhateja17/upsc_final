@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 interface SidebarProps {
   forceShow?: boolean;
@@ -14,6 +15,7 @@ interface SidebarProps {
 
 const Sidebar = ({ isOpen, onClose, mobileOnly = false }: SidebarProps) => {
   const pathname = usePathname();
+  const entitlements = useEntitlements();
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false }: SidebarProps) => {
         { id: 'overview', label: 'Overview', icon: '/sidebar-overview.png', path: '/dashboard' },
         { id: 'study-planner', label: 'Study Planner', icon: '/sidebar-study-planner.png', path: '/dashboard/study-planner' },
         { id: 'jeet-gpt', label: 'Jeet AI', icon: '/sidebar-jeet-gpt.png', path: '/dashboard/jeet-gpt' },
-        { id: 'syllabus-tracker', label: 'Syllabus Tracker', icon: '/sidebar-syllabus-new.png', path: '/dashboard/syllabus-tracker' },
+        { id: 'syllabus-tracker', label: 'Syllabus Tracker', icon: '/sidebar-syllabus-new.png', path: '/dashboard/syllabus-tracker', accessKey: 'syllabus_tracker', allowed: ['full', 'limited'] },
       ],
     },
     {
@@ -61,25 +63,25 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false }: SidebarProps) => {
     {
       title: 'ANALYTICS',
       items: [
-        { id: 'performance', label: 'Performance Analytics', icon: '/sidebar-performance-new.png', path: '/dashboard/performance' },
-        { id: 'test-analytics', label: 'Test Analytics', icon: '/sidebar-analytics-new.png', path: '/dashboard/test-analytics' },
+        { id: 'performance', label: 'Performance Analytics', icon: '/sidebar-performance-new.png', path: '/dashboard/performance', accessKey: 'analytics', allowed: ['full', 'limited'] },
+        { id: 'test-analytics', label: 'Test Analytics', icon: '/sidebar-analytics-new.png', path: '/dashboard/test-analytics', accessKey: 'test_analytics', allowed: ['full', 'limited'] },
       ],
     },
     {
       title: 'REVISION TOOLS',
       items: [
-        { id: 'flashcards', label: 'Flashcards', icon: '/sidebar-flashcards-new.png', path: '/dashboard/flashcards' },
-        { id: 'mindmap', label: 'Mindmaps', icon: '/sidebar-mindmap-new.png', path: '/dashboard/mindmap' },
-        { id: 'spaced-repetition', label: 'Spaced Repetition', icon: '/sidebar-spaced-repetition.png', path: '/dashboard/spaced-repetition' },
+        { id: 'flashcards', label: 'Flashcards', icon: '/sidebar-flashcards-new.png', path: '/dashboard/flashcards', accessKey: 'flashcards', allowed: ['full', 'limited'] },
+        { id: 'mindmap', label: 'Mindmaps', icon: '/sidebar-mindmap-new.png', path: '/dashboard/mindmap', accessKey: 'mindmaps', allowed: ['full', 'limited'] },
+        { id: 'spaced-repetition', label: 'Spaced Repetition', icon: '/sidebar-spaced-repetition.png', path: '/dashboard/spaced-repetition', accessKey: 'spaced_repetition', allowed: ['full', 'limited'] },
       ],
     },
     {
       title: 'COMMUNITY',
       items: [
-        { id: 'study-groups', label: 'Study Groups', icon: '/sidebar-mindmap.png', path: '/dashboard/study-groups' },
+        { id: 'study-groups', label: 'Study Groups', icon: '/sidebar-mindmap.png', path: '/dashboard/study-groups', accessKey: 'live_study_room', allowed: ['full'] },
         { id: 'leaderboard', label: 'Leaderboard', icon: '/sidebar-study-groups.png', path: '/dashboard/leaderboard' },
         { id: 'discussion', label: 'Discussion Forum', icon: '/sidebar-discussion.png', path: '/dashboard/discussion' },
-        { id: 'mental-health', label: 'Mental Health Buddy', icon: '/sidebar-mental-health-new.png', path: '/dashboard/mental-health' },
+        { id: 'mental-health', label: 'Mental Health Buddy', icon: '/sidebar-mental-health-new.png', path: '/dashboard/mental-health', accessKey: 'mental_health_buddy', allowed: ['full'] },
       ],
     },
   ];
@@ -138,7 +140,9 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false }: SidebarProps) => {
               )}
 
               <ul className="space-y-0.5">
-                {section.items.map((item) => (
+                {section.items.map((item) => {
+                  const locked = item.accessKey ? !entitlements.canAccess(item.accessKey, item.allowed as any) : false;
+                  return (
                   <li key={item.id}>
                     <Link
                       href={item.path}
@@ -163,13 +167,20 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false }: SidebarProps) => {
                         className="w-[18px] h-[18px] flex-shrink-0 object-contain"
                       />
                       {!collapsed && (
-                        <span className="font-inter font-medium text-[13px] leading-none whitespace-nowrap">
-                          {item.label}
-                        </span>
+                        <>
+                          <span className="font-inter font-medium text-[13px] leading-none whitespace-nowrap">
+                            {item.label}
+                          </span>
+                          {locked && (
+                            <span className="ml-auto rounded-full bg-[#FFF7E0] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-[#9A7020]">
+                              Lock
+                            </span>
+                          )}
+                        </>
                       )}
                     </Link>
                   </li>
-                ))}
+                )})}
               </ul>
             </div>
           ))}

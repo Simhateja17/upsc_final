@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { dashboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import { EntitlementGate, UpgradePrompt } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 type DayActivity = { questionsAttempted: number; hours: number };
 type SubjectRow = { name: string; accuracy: number; questions: number; tag?: string; color?: string };
@@ -130,6 +132,7 @@ export default function PerformancePage() {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const entitlements = useEntitlements();
 
   useEffect(() => {
     let mounted = true;
@@ -312,6 +315,13 @@ export default function PerformancePage() {
   const daysToPrelims = useMemo(getDaysToPrelims, []);
 
   return (
+    <EntitlementGate
+      accessKey="analytics"
+      allowed={['full', 'limited']}
+      requiredTier="aspire"
+      title="Performance analytics are available on Aspire+"
+      message="Upgrade to Aspire for a preview, or Rise for full analytics."
+    >
     <div
       className="flex overflow-hidden font-arimo"
       style={{ background: '#F9FAFB', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
@@ -328,6 +338,16 @@ export default function PerformancePage() {
           stats={summaryCards.slice(0, 4).map(c => ({ value: c.value, label: c.title.toUpperCase(), color: c.valueColor }))}
         />
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+          {entitlements.isLimited('analytics') && (
+            <div className="mb-6">
+              <UpgradePrompt
+                title="You are viewing limited analytics"
+                currentTier={entitlements.tier}
+                requiredTier="rise"
+                message="Rise unlocks full subject, trend, and weak-area analytics across tests and study activity."
+              />
+            </div>
+          )}
 
           <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {summaryCards.map((card) => (
@@ -614,5 +634,6 @@ export default function PerformancePage() {
         </div>
       </div>
     </div>
+    </EntitlementGate>
   );
 }

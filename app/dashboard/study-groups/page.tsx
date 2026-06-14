@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { studyGroupService } from '@/lib/services';
+import { EntitlementGate } from '@/components/entitlements';
 
 const SUBJECTS = ['All Rooms', 'Polity', 'History', 'Economy', 'Geography', 'Current Affairs', 'Ethics', 'Sci & Tech'];
 const STATUSES = ['All', 'open', 'live', 'closed'];
@@ -364,6 +365,13 @@ export default function StudyGroupsPage() {
   };
 
   return (
+    <EntitlementGate
+      accessKey="live_study_room"
+      allowed={['full']}
+      requiredTier="rise"
+      title="Study Groups are available on Rise+"
+      message="Upgrade to Rise to join live study rooms, group accountability, and focused community sessions."
+    >
     <div className="min-h-screen bg-[#F9FAFB] font-arimo text-[#0C1424]">
       <DashboardPageHero
         // eslint-disable-next-line @next/next/no-img-element
@@ -1028,5 +1036,6 @@ export default function StudyGroupsPage() {
         </div>
       )}
     </div>
+    </EntitlementGate>
   );
 }

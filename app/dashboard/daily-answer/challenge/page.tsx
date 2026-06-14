@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { dailyAnswerService, leaderboardService } from '@/lib/services';
 import Link from 'next/link';
+import { handleEntitlementError, UsageMeter } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 interface QuestionData {
   id: string;
@@ -96,6 +98,7 @@ const ACHIEVEMENTS = [
 
 export default function DailyMainsChallengeContextPage() {
   const router = useRouter();
+  const entitlements = useEntitlements();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [data, setData] = useState<QuestionData | null>(null);
@@ -217,6 +220,11 @@ export default function DailyMainsChallengeContextPage() {
   };
 
   const handleSubmit = async () => {
+    const quota = entitlements.featureStatus('mains_evaluation');
+    if (quota?.allowed === false) {
+      setSubmitError(quota.message || 'You have used your Mains evaluation quota.');
+      return;
+    }
     if (!answerText.trim() && !selectedFile) {
       setSubmitError('Please write your answer or upload a file before submitting.');
       return;
@@ -231,9 +239,10 @@ export default function DailyMainsChallengeContextPage() {
       if (attemptId && typeof window !== 'undefined') {
         sessionStorage.setItem('dailyAnswerAttemptId', attemptId);
       }
+      entitlements.refreshEntitlements();
       router.push('/dashboard/daily-answer/challenge/attempt/evaluating');
     } catch (err: any) {
-      setSubmitError(err.message || 'Failed to submit answer. Please try again.');
+      setSubmitError(handleEntitlementError(err).message || 'Failed to submit answer. Please try again.');
       setSubmitting(false);
     }
   };
@@ -288,6 +297,10 @@ export default function DailyMainsChallengeContextPage() {
             Practice one UPSC level question every day. Get structured feedback,
             personalized insights, model answers, and actionable improvement points to steadily boost your mains scores.
           </p>
+
+          <div className="mb-6 w-full max-w-[720px]">
+            <UsageMeter status={entitlements.featureStatus('mains_evaluation')} label="Mains evaluation quota" />
+          </div>
 
           {/* Question Card */}
           <div

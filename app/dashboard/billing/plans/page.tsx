@@ -1447,16 +1447,16 @@ export default function ExplorePlansPage() {
                       { feature: 'Daily Leaderboard', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
                     ] },
                     { icon: '🔥', title: 'PRACTICE (EVALUATIONS & MOCK TESTS)', rows: [
-                      { feature: 'Mains Answer Evaluation', free: '3 / Lifetime', aspire: '5 / day', rise: '25 / day', ascent: 'Unlimited' },
-                      { feature: 'Prelims Mock Test', free: '1 Test / Lifetime', aspire: '5 Tests / day', rise: '50 Tests / day', ascent: 'Unlimited' },
+                      { feature: 'Mains Answer Evaluation', free: '3 / Lifetime', aspire: '5 / day', rise: '25 / day, 7 / hour', ascent: 'Unlimited / day, 10 / hour' },
+                      { feature: 'Prelims Mock Test', free: '1 Test / Lifetime', aspire: '5 Tests / day', rise: '50 / day, 5 / hour', ascent: 'Unlimited / day, 15 / hour' },
                     ] },
                     { icon: '💬', title: '24*7 DOUBT RESOLUTION', rows: [
-                      { feature: 'Jeet AI Mentor', free: '1 Chat Session / Lifetime', aspire: '5 Messages / day', rise: '100 Messages / day', ascent: 'Unlimited Messages' },
+                      { feature: 'Jeet AI Mentor', free: '20 lifetime, 10 / hour', aspire: '5 Messages / day', rise: '25 / hour, 100 / day', ascent: '50 / hour, unlimited / day' },
                     ] },
                     { icon: '📊', title: 'ANALYTICS & TRACKER', rows: [
                       { feature: 'Performance Analytics Dashboard', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
                       { feature: 'Test Analytics', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
-                      { feature: 'Smart Syllabus Tracker', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
+                      { feature: 'Smart Syllabus Tracker', free: '5 tracked items', aspire: '5 tracked items', rise: 'Full Access', ascent: 'Full Access' },
                     ] },
                     { icon: '🗂️', title: 'REVISION SUITE', rows: [
                       { feature: 'Flashcards', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
@@ -1751,4 +1751,3 @@ export default function ExplorePlansPage() {
     </div>
   );
 }
-

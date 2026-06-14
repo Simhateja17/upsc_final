@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { dashboardService, spacedRepService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import { EntitlementGate, UpgradePrompt } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 import {
   SUBJECT_HEALTH,
   difficultyOptions,
@@ -16,6 +18,7 @@ import {
 } from './shared';
 
 export default function SpacedRepetitionPage() {
+  const entitlements = useEntitlements();
   const [items, setItems] = useState<SpacedRepItem[]>([]);
   const [streakDays, setStreakDays] = useState(0);
   const [subjectAccuracy, setSubjectAccuracy] = useState<Record<string, number>>({});
@@ -116,6 +119,13 @@ export default function SpacedRepetitionPage() {
   })();
 
   return (
+    <EntitlementGate
+      accessKey="spaced_repetition"
+      allowed={['full', 'limited']}
+      requiredTier="aspire"
+      title="Spaced Repetition starts on Aspire"
+      message="Free users can preview other revision tools. Aspire unlocks a 2-question spaced-repetition preview; Rise unlocks the full system."
+    >
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
         <DashboardPageHero
@@ -127,6 +137,16 @@ export default function SpacedRepetitionPage() {
           stats={heroStats.map(s => ({ value: String(s.value), label: s.label, color: s.valueColor }))}
         />
         <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          {entitlements.isLimited('spaced_repetition') && (
+            <div className="mb-6">
+              <UpgradePrompt
+                title="Aspire preview: 2 spaced-repetition questions"
+                currentTier={entitlements.tier}
+                requiredTier="rise"
+                message="Upgrade to Rise to add unlimited weak-area questions and unlock the full revision queue."
+              />
+            </div>
+          )}
 
           {/* Choose a Subject */}
           <div className="mb-2 flex flex-wrap items-center justify-between gap-4">
@@ -144,9 +164,11 @@ export default function SpacedRepetitionPage() {
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
+              disabled={entitlements.isLimited('spaced_repetition')}
               className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
               style={{
                 background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
+                opacity: entitlements.isLimited('spaced_repetition') ? 0.55 : 1,
                 boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
                 fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF',
               }}
@@ -323,5 +345,6 @@ export default function SpacedRepetitionPage() {
         </div>
       )}
     </div>
+    </EntitlementGate>
   );
 }
