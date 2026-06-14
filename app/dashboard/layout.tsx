@@ -10,6 +10,7 @@ import Sidebar from '@/components/Sidebar';
 import MilestonePopup from '@/components/MilestonePopup';
 import OnboardingFlow from '@/components/OnboardingFlow';
 import PhoneLinkPrompt from '@/components/PhoneLinkPrompt';
+import { EntitlementsProvider } from '@/contexts/EntitlementsContext';
 
 const HIDE_SIDEBAR_ROUTES = ['/dashboard/profile', '/dashboard/settings', '/dashboard/billing', '/dashboard/feedback'];
 const PUBLIC_DASHBOARD_ROUTES = ['/dashboard/pyq'];
@@ -145,29 +146,31 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex flex-col" style={{ height: '100dvh' }}>
-      <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} mobileOnly={hideSidebar} />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0" style={{ background: '#FAFBFE' }}>
-          {children}
-        </main>
+    <EntitlementsProvider>
+      <div className="flex flex-col" style={{ height: '100dvh' }}>
+        <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} mobileOnly={hideSidebar} />
+          <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0" style={{ background: '#FAFBFE' }}>
+            {children}
+          </main>
+        </div>
+
+        {/* Onboarding flow – shown once for new users */}
+        <OnboardingFlow />
+        {/* Temporarily disabled for local dev */}
+        {/* <PhoneLinkPrompt /> */}
+
+        {/* Milestone Popup – WIP placeholder */}
+        <MilestonePopup
+          isOpen={showMilestone}
+          onClose={() => setShowMilestone(false)}
+          type="streak"
+          value={milestoneValue ?? 30}
+          title={milestoneTitle}
+          description={milestoneDescription}
+        />
       </div>
-
-      {/* Onboarding flow – shown once for new users */}
-      <OnboardingFlow />
-      {/* Temporarily disabled for local dev */}
-      {/* <PhoneLinkPrompt /> */}
-
-      {/* Milestone Popup – WIP placeholder */}
-      <MilestonePopup
-        isOpen={showMilestone}
-        onClose={() => setShowMilestone(false)}
-        type="streak"
-        value={milestoneValue ?? 30}
-        title={milestoneTitle}
-        description={milestoneDescription}
-      />
-    </div>
+    </EntitlementsProvider>
   );
 }

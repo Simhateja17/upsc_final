@@ -5,6 +5,8 @@ import { libraryService } from '@/lib/services';
 import { useCmsContent } from '@/hooks/useCmsContent';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { handleEntitlementError, UsageMeter } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -56,6 +58,7 @@ const heroStatItems = [
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 export default function LibraryPage() {
+  const entitlements = useEntitlements();
   const { content: cms } = useCmsContent('dashboard/library', {
     hero_badge: 'STUDY MATERIAL',
     hero_title: 'Master UPSC with Expert Notes and Simplified Resources',
@@ -160,8 +163,11 @@ export default function LibraryPage() {
       if (url && typeof url === 'string') {
         setIframeLoaded(false);
         setReadModal({ url, title: material.title || material.name || 'Note' });
+        entitlements.refreshEntitlements();
       }
-    } catch (_e) {}
+    } catch (err) {
+      alert(handleEntitlementError(err).message);
+    }
     finally { setLoadingRead(null); }
   };
 
@@ -297,6 +303,11 @@ export default function LibraryPage() {
           padding: '0 clamp(16px, 2vw, 30px)',
         }}
       >
+        <UsageMeter
+          status={entitlements.featureStatus('study_material_download')}
+          label="Study material download quota"
+          className="mb-5"
+        />
 
         {/* ============================================================ */}
         {/*  SECTION 2: SUBJECT SIDEBAR + CONTENT PANEL                   */}

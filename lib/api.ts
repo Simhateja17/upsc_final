@@ -12,6 +12,18 @@ interface RequestConfig extends RequestInit {
   timeout?: number; // milliseconds
 }
 
+export class ApiRequestError extends Error {
+  statusCode: number;
+  payload: any;
+
+  constructor(message: string, statusCode: number, payload: any) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.statusCode = statusCode;
+    this.payload = payload;
+  }
+}
+
 async function request<T>(
   endpoint: string,
   config: RequestConfig = {}
@@ -39,10 +51,10 @@ async function request<T>(
     });
 
     clearTimeout(timeoutId);
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(data.message || `Error: ${response.status} ${response.statusText}`);
+      throw new ApiRequestError(data.message || `Error: ${response.status} ${response.statusText}`, response.status, data);
     }
 
     return data;
