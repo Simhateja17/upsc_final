@@ -5,6 +5,7 @@ import Script from 'next/script';
 import { useRouter } from 'next/navigation';
 import { billingService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
+import { PlanTier, useEntitlements } from '@/contexts/EntitlementsContext';
 
 // ── Hero ──────────────────────────────────────────────────────────────────────
 function BillingHero() {
@@ -59,7 +60,8 @@ function BillingHero() {
 type BillingCycle = 'monthly' | 'quarterly' | 'yearly';
 type RazorpaySuccessResponse = {
   razorpay_payment_id: string;
-  razorpay_order_id: string;
+  razorpay_order_id?: string;
+  razorpay_subscription_id?: string;
   razorpay_signature: string;
 };
 
@@ -682,11 +684,12 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
   },
 };
 
-type CheckoutStep = 'checkout' | 'success' | 'failed';
+type CheckoutStep = 'checkout' | 'pending' | 'success' | 'failed';
 
 function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => void }) {
   const router = useRouter();
   const { user } = useAuth();
+  const entitlements = useEntitlements();
   const plan = PLAN_CONFIGS[planKey];
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [coupon, setCoupon] = useState('');
@@ -696,13 +699,6 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
   const [isPaying, setIsPaying] = useState(false);
   const [paymentError, setPaymentError] = useState('');
 
-  const VALID_COUPONS: Record<string, { discount: number; label: string }> = {
-    'RISE10': { discount: 10, label: '10% off applied!' },
-    'JEET20': { discount: 20, label: '20% off applied!' },
-    'UPSC15': { discount: 15, label: '15% off applied!' },
-    'WELCOME25': { discount: 25, label: '25% off applied!' },
-  };
-
   const applyCoupon = () => {
     const code = coupon.trim().toUpperCase();
     if (!code) {
@@ -710,22 +706,34 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
       setCouponMessage('Please enter a coupon code.');
       return;
     }
-    const found = VALID_COUPONS[code];
-    if (found) {
-      setCouponStatus('valid');
-      setCouponDiscount(found.discount);
-      setCouponMessage(found.label);
-    } else {
+    if (entitlements.tier !== 'free') {
       setCouponStatus('invalid');
       setCouponDiscount(0);
-      setCouponMessage('Invalid or expired coupon code.');
+      setCouponMessage('Coupons are available only for first paid purchases.');
+      return;
     }
+    setCouponStatus('valid');
+    setCouponDiscount(0);
+    setCouponMessage('Coupon will be validated by Razorpay at checkout.');
   };
   const [step, setStep] = useState<CheckoutStep>('checkout');
   const [successData, setSuccessData] = useState<SuccessData | null>(null);
   const [failureData, setFailureData] = useState<FailureData | null>(null);
   const [showInvoice, setShowInvoice] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState('');
   const active = plan.cycles[cycle];
+
+  const pollForActivation = async (localSubscriptionId: string) => {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < 60000) {
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      await entitlements.refreshEntitlements();
+      const billing = await billingService.getBillingSubscription().catch(() => null);
+      const status = billing?.data?.status;
+      if (billing?.data?.id === localSubscriptionId && status === 'active') return true;
+    }
+    return false;
+  };
 
   const startCheckout = async () => {
     setIsPaying(true);
@@ -736,46 +744,65 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
         throw new Error('Payment checkout is still loading. Please try again in a moment.');
       }
 
-      const orderResponse = await billingService.createRazorpayOrder({ planKey, cycle });
-      const order = orderResponse.data;
+      const subscriptionResponse = await billingService.createRazorpaySubscription({
+        planKey,
+        cycle,
+        couponCode: couponStatus === 'valid' ? coupon.trim().toUpperCase() : undefined,
+      });
+      const order = subscriptionResponse.data;
 
-      if (!order?.order_id || !order?.paymentId || !order?.key) {
-        throw new Error('Unable to start payment. Please try again.');
+      if (!order?.razorpaySubscriptionId || !order?.subscriptionId || !order?.key) {
+        throw new Error('Unable to start subscription checkout. Please try again.');
       }
 
       const checkout = new window.Razorpay({
         key: order.key,
-        amount: order.amount,
-        currency: order.currency,
+        subscription_id: order.razorpaySubscriptionId,
         name: 'RiseWithJeet',
         description: `${plan.name} Plan - ${active.label}`,
-        order_id: order.order_id,
         prefill: {
           name: user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : '',
           email: user?.email ?? '',
         },
         handler: async (response: RazorpaySuccessResponse) => {
           try {
-            await billingService.verifyRazorpayPayment({
-              paymentId: order.paymentId,
+            if (!response.razorpay_subscription_id) {
+              throw new Error('Razorpay did not return a subscription id.');
+            }
+            const verification = await billingService.verifyRazorpaySubscription({
+              subscriptionId: order.subscriptionId,
               razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
+              razorpay_subscription_id: response.razorpay_subscription_id,
               razorpay_signature: response.razorpay_signature,
             });
             const subtotal = subtotalFromTotal(active.total);
-            setSuccessData({
+            const nextSuccessData = {
               razorpayPaymentId: response.razorpay_payment_id,
               planName: plan.name,
               planLabel: active.label,
               amountTotal: active.total,
               nextBilling: nextBillingDate(cycle),
               billedToEmail: user?.email ?? '',
-              paymentMethod: 'Razorpay',
+              paymentMethod: 'Razorpay AutoPay',
               cycle,
               subtotal,
               gst: gstFromTotal(active.total),
-            });
-            setStep('success');
+            };
+            if (verification.data?.activationStatus === 'active') {
+              await entitlements.refreshEntitlements();
+              setSuccessData(nextSuccessData);
+              setStep('success');
+            } else {
+              setPendingMessage('Your AutoPay mandate is authorised. We are waiting for Razorpay confirmation.');
+              setStep('pending');
+              const activated = await pollForActivation(order.subscriptionId);
+              if (activated) {
+                setSuccessData(nextSuccessData);
+                setStep('success');
+              } else {
+                setPendingMessage('We will activate access automatically once Razorpay confirms the subscription.');
+              }
+            }
           } catch (err: any) {
             setFailureData({
               razorpayPaymentId: response.razorpay_payment_id,
@@ -801,7 +828,7 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
       checkout.on('payment.failed', async (response: any) => {
         const reason = response?.error?.description || 'Payment failed. Please try another payment method.';
         setFailureData({
-          razorpayPaymentId: order.paymentId,
+          razorpayPaymentId: order.subscriptionId,
           planName: plan.name, planLabel: active.label,
           amountTotal: active.total,
           errorReason: reason,
@@ -810,15 +837,6 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
         });
         setStep('failed');
         setIsPaying(false);
-        try {
-          await billingService.markRazorpayPaymentFailed({
-            paymentId: order.paymentId,
-            status: 'failed',
-            failureReason: reason,
-          });
-        } catch {
-          // UI shows gateway failure even if backend logging is unavailable.
-        }
       });
 
       checkout.open();
@@ -827,6 +845,31 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
       setIsPaying(false);
     }
   };
+
+  if (step === 'pending') {
+    return (
+      <div
+        style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(8,15,35,0.65)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 16, overflowY: 'auto',
+        }}
+      >
+        <div style={{ width: '100%', maxWidth: 440, borderRadius: 16, background: '#fff', padding: 28, textAlign: 'center', boxShadow: '0 24px 80px rgba(8,15,35,0.28)' }}>
+          <div style={{ width: 42, height: 42, borderRadius: '50%', border: '3px solid #E8B84B', borderTopColor: 'transparent', margin: '0 auto 18px', animation: 'spin 1s linear infinite' }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <h3 style={{ margin: 0, fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, color: '#101828' }}>Setting up your subscription</h3>
+          <p style={{ margin: '12px 0 0', fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, lineHeight: 1.6, color: '#667085' }}>
+            {pendingMessage || 'Waiting for Razorpay confirmation.'}
+          </p>
+          <button type="button" onClick={onClose} style={{ marginTop: 22, borderRadius: 10, border: '1px solid #D0D5DD', background: '#fff', padding: '11px 18px', fontFamily: 'Inter, system-ui, sans-serif', fontSize: 13, fontWeight: 700, color: '#344054', cursor: 'pointer' }}>
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ── Success step ──
   if (step === 'success' && successData) {
@@ -1170,14 +1213,44 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
 // ── Plans page ────────────────────────────────────────────────────────────────
 export default function ExplorePlansPage() {
   const router = useRouter();
+  const entitlements = useEntitlements();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanKey | null>(null);
+  const [manageBusy, setManageBusy] = useState<string | null>(null);
+  const [manageMessage, setManageMessage] = useState('');
 
   const handleUpgrade = () => router.push('/dashboard');
-  const handleOpenAspireCheckout = () => setCheckoutPlan('aspire');
-  const handleOpenRiseCheckout = () => setCheckoutPlan('rise');
-  const handleOpenAscentCheckout = () => setCheckoutPlan('ascent');
+  const currentTier = entitlements.tier;
+  const currentRank = { free: 0, aspire: 1, rise: 2, ascent: 3 }[currentTier];
+  const isPaidValid = currentTier !== 'free' && !!entitlements.subscription;
+  const canShowPlan = (plan: PlanKey) => ({ aspire: 1, rise: 2, ascent: 3 }[plan] > currentRank);
+  const handleOpenCheckout = (plan: PlanKey) => {
+    if (!canShowPlan(plan)) return;
+    setCheckoutPlan(plan);
+  };
+  const handleOpenAspireCheckout = () => handleOpenCheckout('aspire');
+  const handleOpenRiseCheckout = () => handleOpenCheckout('rise');
+  const handleOpenAscentCheckout = () => handleOpenCheckout('ascent');
+  const currentPlanName = entitlements.plan?.name || (currentTier !== 'free' ? `${currentTier[0].toUpperCase()}${currentTier.slice(1)} plan` : 'Free');
+  const currentSubscription = entitlements.subscription;
+  const formatMaybeDate = (value?: string | Date | null) => value ? formatDate(new Date(value)) : 'Not available';
+  const manageAction = async (action: 'cancel' | 'pause' | 'resume') => {
+    if (!currentSubscription?.id) return;
+    setManageBusy(action);
+    setManageMessage('');
+    try {
+      if (action === 'cancel') await billingService.cancelRazorpaySubscription(currentSubscription.id);
+      if (action === 'pause') await billingService.pauseRazorpaySubscription(currentSubscription.id);
+      if (action === 'resume') await billingService.resumeRazorpaySubscription(currentSubscription.id);
+      await entitlements.refreshEntitlements();
+      setManageMessage(action === 'cancel' ? 'AutoPay cancelled. Access continues until period end.' : action === 'pause' ? 'AutoPay paused. Access continues until period end.' : 'AutoPay resumed.');
+    } catch (err: any) {
+      setManageMessage(err?.message || 'Unable to update subscription. Please try again.');
+    } finally {
+      setManageBusy(null);
+    }
+  };
 
   useEffect(() => {
     if (!checkoutPlan) return;
@@ -1199,6 +1272,42 @@ export default function ExplorePlansPage() {
       <BillingHero />
 
       <div className="mx-auto mt-3 flex w-full max-w-[1120px] flex-col gap-8 px-4 pb-20 sm:px-6 lg:px-8">
+        {isPaidValid && (
+          <section style={{ marginTop: 18, borderRadius: 14, border: '1px solid #E5E7EB', background: '#fff', padding: 20, boxShadow: '0 2px 10px rgba(11,22,40,0.06)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <div>
+                <p style={{ margin: '0 0 5px', fontSize: 11, fontWeight: 800, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#C8972A', fontFamily: 'Inter, system-ui, sans-serif' }}>Current subscription</p>
+                <h2 style={{ margin: 0, fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 30, color: '#101828' }}>{currentPlanName}</h2>
+                <p style={{ margin: '8px 0 0', fontSize: 13, color: '#667085', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  Status: <strong>{currentSubscription?.status}</strong> · Access until {formatMaybeDate(currentSubscription?.endDate)}
+                  {currentSubscription?.graceEndsAt ? ` · Grace until ${formatMaybeDate(currentSubscription.graceEndsAt)}` : ''}
+                </p>
+                {currentSubscription?.chargeAt && currentSubscription?.autoRenew && (
+                  <p style={{ margin: '5px 0 0', fontSize: 13, color: '#667085', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    Next charge: {formatMaybeDate(currentSubscription.chargeAt)}
+                  </p>
+                )}
+                {manageMessage && <p style={{ margin: '10px 0 0', fontSize: 13, color: '#166534', fontFamily: 'Inter, system-ui, sans-serif' }}>{manageMessage}</p>}
+              </div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {currentSubscription?.status !== 'paused' ? (
+                  <button type="button" disabled={!!manageBusy} onClick={() => manageAction('pause')} style={{ borderRadius: 9, border: '1px solid #D0D5DD', background: '#fff', padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#344054', cursor: manageBusy ? 'not-allowed' : 'pointer' }}>
+                    {manageBusy === 'pause' ? 'Pausing...' : 'Pause AutoPay'}
+                  </button>
+                ) : (
+                  <button type="button" disabled={!!manageBusy} onClick={() => manageAction('resume')} style={{ borderRadius: 9, border: 'none', background: '#0B1525', padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#fff', cursor: manageBusy ? 'not-allowed' : 'pointer' }}>
+                    {manageBusy === 'resume' ? 'Resuming...' : 'Resume AutoPay'}
+                  </button>
+                )}
+                {currentSubscription?.autoRenew && (
+                  <button type="button" disabled={!!manageBusy} onClick={() => manageAction('cancel')} style={{ borderRadius: 9, border: '1px solid #FECACA', background: '#FEF2F2', padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#B42318', cursor: manageBusy ? 'not-allowed' : 'pointer' }}>
+                    {manageBusy === 'cancel' ? 'Cancelling...' : 'Cancel AutoPay'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Billing cycle toggle */}
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 16 }}>
@@ -1224,7 +1333,7 @@ export default function ExplorePlansPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 16, alignItems: 'stretch' }}>
 
           {/* Aspire */}
-          <article style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <article style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: canShowPlan('aspire') ? 'flex' : 'none', flexDirection: 'column' }}>
             <div style={{ padding: '28px 24px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
               <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}>Foundation</p>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Aspire</h3>
@@ -1269,7 +1378,7 @@ export default function ExplorePlansPage() {
           </article>
 
           {/* Rise (Most Popular) */}
-          <article style={{ borderRadius: 20, border: '2px solid #E8B84B', background: '#0B1525', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+          <article style={{ borderRadius: 20, border: '2px solid #E8B84B', background: '#0B1525', overflow: 'hidden', position: 'relative', display: canShowPlan('rise') ? 'flex' : 'none', flexDirection: 'column' }}>
             <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', background: '#E8B84B', color: '#090E1C', padding: '5px 20px', borderRadius: '0 0 12px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
               Most Popular
             </div>
@@ -1325,7 +1434,7 @@ export default function ExplorePlansPage() {
           </article>
 
           {/* Ascent */}
-          <article style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <article style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: canShowPlan('ascent') ? 'flex' : 'none', flexDirection: 'column' }}>
             <div style={{ padding: '28px 24px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
               <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}>Maximum Edge</p>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Ascent</h3>
@@ -1533,17 +1642,17 @@ export default function ExplorePlansPage() {
                     </button>
                   </td>
                   <td style={{ padding: '20px 16px', textAlign: 'center' }}>
-                    <button type="button" onClick={handleOpenAspireCheckout} style={{ borderRadius: 8, border: '1.5px solid #D1D5DB', background: 'transparent', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#1A2540', cursor: 'pointer', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
+                    <button type="button" onClick={handleOpenAspireCheckout} style={{ display: canShowPlan('aspire') ? 'inline-block' : 'none', borderRadius: 8, border: '1.5px solid #D1D5DB', background: 'transparent', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#1A2540', cursor: 'pointer', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
                       Get Aspire
                     </button>
                   </td>
                   <td style={{ padding: '20px 16px', textAlign: 'center', background: 'rgba(232,184,75,0.04)' }}>
-                    <button type="button" onClick={handleOpenRiseCheckout} style={{ borderRadius: 8, border: 'none', background: '#E8B84B', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#090E1C', cursor: 'pointer', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
+                    <button type="button" onClick={handleOpenRiseCheckout} style={{ display: canShowPlan('rise') ? 'inline-block' : 'none', borderRadius: 8, border: 'none', background: '#E8B84B', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#090E1C', cursor: 'pointer', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
                       Unlock Rise
                     </button>
                   </td>
                   <td style={{ padding: '20px 16px', textAlign: 'center' }}>
-                    <button type="button" onClick={handleOpenAscentCheckout} style={{ borderRadius: 8, border: 'none', background: '#090E1C', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
+                    <button type="button" onClick={handleOpenAscentCheckout} style={{ display: canShowPlan('ascent') ? 'inline-block' : 'none', borderRadius: 8, border: 'none', background: '#090E1C', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
                       Join Ascent
                     </button>
                   </td>
@@ -1739,9 +1848,21 @@ export default function ExplorePlansPage() {
             Join 15,000+ aspirants. Start with free access, or choose Aspire, Rise, or Ascent when you need higher limits.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
-            <button type="button" onClick={handleOpenAspireCheckout} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              Get Aspire →
-            </button>
+            {canShowPlan('aspire') && (
+              <button type="button" onClick={handleOpenAspireCheckout} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                Get Aspire →
+              </button>
+            )}
+            {!canShowPlan('aspire') && canShowPlan('rise') && (
+              <button type="button" onClick={handleOpenRiseCheckout} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                Upgrade to Rise →
+              </button>
+            )}
+            {!canShowPlan('rise') && canShowPlan('ascent') && (
+              <button type="button" onClick={handleOpenAscentCheckout} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                Upgrade to Ascent →
+              </button>
+            )}
             <button type="button" onClick={() => router.push('/help-support')} style={{ borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.2)', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 600, color: '#fff', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               Contact Us
             </button>
