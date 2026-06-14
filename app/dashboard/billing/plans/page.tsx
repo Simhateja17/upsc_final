@@ -1290,16 +1290,17 @@ export default function ExplorePlansPage() {
                 {manageMessage && <p style={{ margin: '10px 0 0', fontSize: 13, color: '#166534', fontFamily: 'Inter, system-ui, sans-serif' }}>{manageMessage}</p>}
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                {currentSubscription?.status !== 'paused' ? (
+                {currentSubscription?.status === 'active' && currentSubscription?.autoRenew && (
                   <button type="button" disabled={!!manageBusy} onClick={() => manageAction('pause')} style={{ borderRadius: 9, border: '1px solid #D0D5DD', background: '#fff', padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#344054', cursor: manageBusy ? 'not-allowed' : 'pointer' }}>
                     {manageBusy === 'pause' ? 'Pausing...' : 'Pause AutoPay'}
                   </button>
-                ) : (
+                )}
+                {currentSubscription?.status === 'paused' && (
                   <button type="button" disabled={!!manageBusy} onClick={() => manageAction('resume')} style={{ borderRadius: 9, border: 'none', background: '#0B1525', padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#fff', cursor: manageBusy ? 'not-allowed' : 'pointer' }}>
                     {manageBusy === 'resume' ? 'Resuming...' : 'Resume AutoPay'}
                   </button>
                 )}
-                {currentSubscription?.autoRenew && (
+                {currentSubscription?.status === 'active' && currentSubscription?.autoRenew && (
                   <button type="button" disabled={!!manageBusy} onClick={() => manageAction('cancel')} style={{ borderRadius: 9, border: '1px solid #FECACA', background: '#FEF2F2', padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#B42318', cursor: manageBusy ? 'not-allowed' : 'pointer' }}>
                     {manageBusy === 'cancel' ? 'Cancelling...' : 'Cancel AutoPay'}
                   </button>
