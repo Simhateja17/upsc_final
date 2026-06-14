@@ -91,7 +91,6 @@ function MindmapFlowInner({ tree, onNodeClick, className }: Props) {
         proOptions={{ hideAttribution: true }}
         nodesDraggable={false}
         nodesConnectable={false}
-        elementsSelectable={false}
         panOnScroll
         zoomOnDoubleClick={false}
         className="!bg-[#F8FAFC]"
