@@ -15,7 +15,10 @@ function getGreeting() {
 }
 
 function getDashboardUserName(firstName?: string, email?: string) {
-  if (firstName?.trim()) return firstName.trim();
+  if (firstName?.trim()) {
+    const trimmed = firstName.trim();
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  }
   const emailPrefix = email?.split('@')[0]?.trim().toLowerCase();
   if (!emailPrefix) return '';
   const withoutDigits = emailPrefix.replace(/\d+$/g, '');

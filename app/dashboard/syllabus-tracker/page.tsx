@@ -100,10 +100,46 @@ export default function SyllabusTrackerPage() {
       mains.push(essay);
     }
 
+    // Deduplicate sub-topics where prelims and mains data was merged, keeping the more detailed entry.
+    // Normalizes British/American spelling and strips "— detail" suffixes before comparing.
+    const dedupeBase = (s: string) =>
+      s.split(/\s*[—–]\s*/)[0]
+        .toLowerCase()
+        .replace(/isation\b/g, 'ization')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const deduplicateSubs = (subs: string[]): string[] => {
+      const seen = new Map<string, number>();
+      const result: string[] = [];
+      for (const sub of subs) {
+        const key = dedupeBase(sub);
+        if (seen.has(key)) {
+          const existingIdx = seen.get(key)!;
+          if (sub.length > result[existingIdx].length) {
+            result[existingIdx] = sub;
+          }
+        } else {
+          seen.set(key, result.length);
+          result.push(sub);
+        }
+      }
+      return result;
+    };
+
+    const dedupeSubjects = (subjects: Subject[]): Subject[] =>
+      subjects.map(subject => ({
+        ...subject,
+        topics: subject.topics.map(topic => ({
+          ...topic,
+          subs: deduplicateSubs(topic.subs),
+        })),
+      }));
+
     return {
-      prelims: raw.prelims?.length ? raw.prelims : PRELIMS_CSV_SUBJECTS,
-      mains,
-      optional: raw.optional || [],
+      prelims: dedupeSubjects(raw.prelims?.length ? raw.prelims : PRELIMS_CSV_SUBJECTS),
+      mains: dedupeSubjects(mains),
+      optional: dedupeSubjects(raw.optional || []),
     };
   }, []);
 
