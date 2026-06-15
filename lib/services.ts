@@ -105,18 +105,24 @@ export const dailyMcqService = {
 
 export const dailyAnswerService = {
   getToday: () => api.get<any>('/daily-answer/today', authConfig()),
-  getFullQuestion: () => api.get<any>('/daily-answer/today/question', authConfig()),
-  submitText: (answerText: string) =>
-    api.post<{ status: string; data?: { attemptId: string; status: string }; message?: string }>('/daily-answer/today/submit-text', { answerText }, authConfig()),
-  upload: (fileUrl: string) =>
-    api.post<any>('/daily-answer/today/upload', { fileUrl }, authConfig()),
-  uploadFile: async (file: File): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
+  getFullQuestion: (date?: string) =>
+    api.get<any>(`/daily-answer/today/question${date ? `?date=${encodeURIComponent(date)}` : ''}`, authConfig()),
+  submitText: (answerText: string, date?: string) =>
+    api.post<{ status: string; data?: { attemptId: string; status: string }; message?: string }>(
+      `/daily-answer/today/submit-text${date ? `?date=${encodeURIComponent(date)}` : ''}`,
+      { answerText },
+      authConfig()
+    ),
+  upload: (fileUrl: string, date?: string) =>
+    api.post<any>(`/daily-answer/today/upload${date ? `?date=${encodeURIComponent(date)}` : ''}`, { fileUrl }, authConfig()),
+  uploadFile: async (file: File, date?: string): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
     const fd = new FormData();
     fd.append('file', file);
 
     const token = getToken();
+    const suffix = date ? `?date=${encodeURIComponent(date)}` : '';
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/daily-answer/today/upload`,
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/daily-answer/today/upload${suffix}`,
       {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -127,10 +133,47 @@ export const dailyAnswerService = {
     if (!res.ok) throw new ApiRequestError(json.message || 'Upload failed', res.status, json);
     return json;
   },
-  getEvaluationStatus: (attemptId?: string) =>
-    api.get<any>(`/daily-answer/today/evaluation-status${attemptId ? `?attemptId=${encodeURIComponent(attemptId)}` : ''}`, authConfig()),
-  getResults: (attemptId?: string) =>
-    api.get<any>(`/daily-answer/today/results${attemptId ? `?attemptId=${encodeURIComponent(attemptId)}` : ''}`, authConfig()),
+  uploadFiles: async (files: File[], date?: string): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
+    const fd = new FormData();
+    files.forEach((file) => fd.append('file', file));
+
+    const token = getToken();
+    const suffix = date ? `?date=${encodeURIComponent(date)}` : '';
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/daily-answer/today/upload${suffix}`,
+      {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      }
+    );
+    const json = await res.json();
+    if (!res.ok) throw new ApiRequestError(json.message || 'Upload failed', res.status, json);
+    return json;
+  },
+  getEvaluationStatus: (attemptId?: string, date?: string) => {
+    const qs: string[] = [];
+    if (attemptId) qs.push(`attemptId=${encodeURIComponent(attemptId)}`);
+    if (date) qs.push(`date=${encodeURIComponent(date)}`);
+    const suffix = qs.length ? `?${qs.join('&')}` : '';
+    return api.get<any>(`/daily-answer/today/evaluation-status${suffix}`, authConfig());
+  },
+  getResults: (attemptId?: string, date?: string) => {
+    const qs: string[] = [];
+    if (attemptId) qs.push(`attemptId=${encodeURIComponent(attemptId)}`);
+    if (date) qs.push(`date=${encodeURIComponent(date)}`);
+    const suffix = qs.length ? `?${qs.join('&')}` : '';
+    return api.get<any>(`/daily-answer/today/results${suffix}`, authConfig());
+  },
+  getCalendar: (params?: { from?: string; to?: string; page?: number; limit?: number }) => {
+    const qs: string[] = [];
+    if (params?.from) qs.push(`from=${encodeURIComponent(params.from)}`);
+    if (params?.to) qs.push(`to=${encodeURIComponent(params.to)}`);
+    if (params?.page) qs.push(`page=${params.page}`);
+    if (params?.limit) qs.push(`limit=${params.limit}`);
+    const suffix = qs.length ? `?${qs.join('&')}` : '';
+    return api.get<any>(`/daily-answer/calendar${suffix}`, authConfig());
+  },
 };
 
 // ==================== Editorials ====================
@@ -251,6 +294,8 @@ export const libraryService = {
   getChapters: (subjectId: string) => api.get<any>(`/library/subjects/${subjectId}/chapters`, authConfig()),
   getDownloadUrl: (chapterId: string) => api.get<any>(`/library/download/${chapterId}`, authConfig()),
   getMaterialDownloadUrl: (materialId: string) => api.get<any>(`/library/download/material/${materialId}`, authConfig()),
+  getMaterialViewPages: (materialId: string, maxPages = 50) =>
+    api.get<any>(`/library/view/material/${materialId}/pages?maxPages=${maxPages}`, { ...authConfig(), timeout: 120000 }),
 };
 
 // ==================== Pricing & Mentorship ====================

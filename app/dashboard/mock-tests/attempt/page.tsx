@@ -736,7 +736,9 @@ function MockTestAttemptInner() {
                   tabIndex={0}
                   onClick={() => fileInputRef.current?.click()}
                   onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-                  style={{ border: '1.5px dashed #CBD5E1', borderRadius: 12, background: '#F9FAFB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, cursor: 'pointer', gap: 5, minHeight: 120 }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#17223E'; e.currentTarget.style.backgroundColor = 'rgba(23, 34, 62, 0.06)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; e.currentTarget.style.backgroundColor = '#F9FAFB'; }}
+                  style={{ border: '1.5px dashed #CBD5E1', borderRadius: 12, backgroundColor: '#F9FAFB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, cursor: 'pointer', gap: 5, minHeight: 120, outline: 'none', transition: 'border-color 0.15s, background-color 0.15s' }}
                 >
                   <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" style={{ display: 'none' }} onChange={handleMainsFileSelect} />
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: '#17223E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { dailyAnswerService } from '@/lib/services';
@@ -22,7 +22,22 @@ export default function DailyMainsChallengePage() {
   const [data, setData] = useState<AnswerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(5);
+  const AUTO_START_SECONDS = 3;
+  const [countdown, setCountdown] = useState(AUTO_START_SECONDS);
+  const [autoStarting, setAutoStarting] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const destination = data?.attempted
+    ? '/dashboard/daily-answer/challenge/attempt/results'
+    : '/dashboard/daily-answer/challenge';
+
+  const startNow = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    router.push(destination);
+  };
 
   useEffect(() => {
     dailyAnswerService.getToday()
@@ -31,27 +46,33 @@ export default function DailyMainsChallengePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Auto-start countdown
+  // Auto-start countdown only for users who haven't attempted yet
   useEffect(() => {
-    if (loading || error || !data) return;
+    if (loading || error || !data || data.attempted) return;
 
-    const timer = setInterval(() => {
+    setAutoStarting(true);
+    timerRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          clearInterval(timer);
-          if (data.attempted) {
-            router.push('/dashboard/daily-answer/challenge/attempt/results');
-          } else {
-            router.push('/dashboard/daily-answer/challenge');
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
           }
+          setAutoStarting(false);
+          router.push(destination);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [loading, error, data, router]);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [loading, error, data, router, destination]);
 
   if (loading) {
     return (
@@ -149,44 +170,40 @@ export default function DailyMainsChallengePage() {
           </div>
 
           {/* Action Button */}
-          {data.attempted ? (
-            <Link href="/dashboard/daily-answer/challenge/attempt/results">
-              <button
-                className="w-[232px] h-[52px] bg-green-600 text-white rounded-[10px] hover:bg-green-700 transition-all flex items-center justify-center gap-2 mx-auto font-arimo font-bold text-[20px] leading-[24px]"
-                style={{ marginTop: '10px' }}
-              >
-                View Results
-              </button>
-            </Link>
-          ) : (
-            <Link href="/dashboard/daily-answer/challenge">
-              <button
-                className="w-[232px] h-[52px] bg-[#101828] text-white rounded-[10px] hover:bg-[#1A1A1A] transition-all flex items-center justify-center gap-2 mx-auto font-arimo font-bold text-[20px] leading-[24px]"
-                style={{ marginTop: '10px' }}
-              >
+          <button
+            type="button"
+            onClick={startNow}
+            className={`w-[232px] h-[52px] text-white rounded-[10px] transition-all flex items-center justify-center gap-2 mx-auto font-arimo font-bold text-[20px] leading-[24px] ${
+              data.attempted ? 'bg-green-600 hover:bg-green-700' : 'bg-[#101828] hover:bg-[#1A1A1A]'
+            }`}
+            style={{ marginTop: '10px' }}
+          >
+            {data.attempted ? (
+              'Completed'
+            ) : autoStarting ? (
+              <>
+                <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                Starting in {countdown}...
+              </>
+            ) : (
+              <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/icon-1.png" alt="" className="w-5 h-5 object-contain" />
                 Start Now
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white ml-1">
                   <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </button>
-            </Link>
-          )}
+              </>
+            )}
+          </button>
 
           <button
             type="button"
-            onClick={() => {
-              if (data.attempted) {
-                router.push('/dashboard/daily-answer/challenge/attempt/results');
-              } else {
-                router.push('/dashboard/daily-answer/challenge');
-              }
-            }}
+            onClick={startNow}
             className="text-[#6A7282] mt-4 font-normal hover:text-[#101828] transition-colors"
             style={{ fontSize: '12px', background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            Skip intro (auto-start in {countdown}s)
+            {!data.attempted && (autoStarting ? 'Click to start immediately' : `Skip intro (auto-start in ${countdown}s)`)}
           </button>
         </div>
       </main>
