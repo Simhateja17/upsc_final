@@ -1063,3 +1063,19 @@ export const forumService = {
   getBookmarks: () => api.get<any>('/forum/bookmarks', authConfig()),
   getSubjects: () => api.get<any>('/forum/subjects', authConfig()),
 };
+
+export const bookmarkService = {
+  list: (type?: string) => api.get<any>(`/bookmarks${type ? `?type=${type}` : ''}`, authConfig()),
+  toggle: (data: { entityType: string; entityId: string; title: string; source: string; sourceUrl?: string; tag?: string; tagColor?: string; content?: any }) =>
+    api.post<any>('/bookmarks/toggle', data, authConfig()),
+  remove: (id: string) => api.delete<any>(`/bookmarks/${id}`, authConfig()),
+  check: (type: string, id: string) => api.get<any>(`/bookmarks/check?type=${type}&id=${id}`, authConfig()),
+  togglePin: (id: string) => api.patch<any>(`/bookmarks/${id}/pin`, {}, authConfig()),
+};
+
+export const flagService = {
+  toggle: (data: { questionType: string; questionId: string; questionText: string; reason?: string }) =>
+    api.post<any>('/flags', data, authConfig()),
+  check: (questionType: string, ids: string[]) =>
+    api.get<any>(`/flags/check?questionType=${questionType}&ids=${ids.join(',')}`, authConfig()),
+};
