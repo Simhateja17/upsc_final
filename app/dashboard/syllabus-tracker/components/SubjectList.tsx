@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { Subject, Mode, TrackerState } from '../page';
 
 interface SubjectListProps {
@@ -11,6 +12,7 @@ interface SubjectListProps {
   onSearchChange: (query: string) => void;
   states: TrackerState;
   mode: Mode;
+  optionalNoSelection?: boolean;
 }
 
 export default function SubjectList({
@@ -20,6 +22,7 @@ export default function SubjectList({
   searchQuery,
   onSearchChange,
   states,
+  optionalNoSelection = false,
 }: SubjectListProps) {
   const getSubjectStats = (subject: Subject) => {
     let total = 0;
@@ -75,7 +78,25 @@ export default function SubjectList({
       </div>
 
       <div className="flex-1 overflow-y-auto p-[10px]">
-        {filteredSubjects.map((subject) => {
+        {optionalNoSelection ? (
+          <div className="flex flex-col items-center justify-center text-center px-[14px] py-[28px] gap-[8px]">
+            <div className="text-[26px]">🎯</div>
+            <div className="text-[13px] font-bold text-[#0f1f3d]">Pick your optional subject</div>
+            <div className="text-[11px] text-[#8795ae] leading-relaxed">
+              Set your UPSC optional in your profile to track its sub-subjects here.
+            </div>
+            <Link
+              href="/dashboard/profile"
+              className="mt-[4px] inline-flex items-center gap-[5px] px-[16px] py-[8px] rounded-[9px] text-[11.5px] font-extrabold text-[#0f1f3d] no-underline transition-all duration-200"
+              style={{
+                background: 'linear-gradient(135deg, #e8a820, #c9921a)',
+                boxShadow: '0 2px 8px rgba(201,146,26,.28)',
+              }}
+            >
+              Choose in Profile →
+            </Link>
+          </div>
+        ) : filteredSubjects.map((subject) => {
           const stats = getSubjectStats(subject);
           const isActive = activeSubject === subject.id;
           const r = 15;

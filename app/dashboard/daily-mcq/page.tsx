@@ -16,12 +16,22 @@ interface MCQData {
   attempted: boolean;
 }
 
+const DAILY_MCQ_SUBJECTS = [
+  { label: 'History', icon: '🏛️' },
+  { label: 'Polity', icon: '⚖️' },
+  { label: 'Economy', icon: '📈' },
+  { label: 'Environment & Ecology', icon: '🌿' },
+  { label: 'Science & Technology', icon: '🔬' },
+  { label: 'Geography', icon: '🌍' },
+  { label: 'Current Affairs', icon: '📰' },
+];
+
 export default function DailyMcqIntroPage() {
   const router = useRouter();
   const [mcq, setMcq] = useState<MCQData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [introCountdown, setIntroCountdown] = useState(15);
+  const [introCountdown, setIntroCountdown] = useState(3);
 
   const FIXED_QUESTION_COUNT = 10;
   const FIXED_TIME_LIMIT = 10;
@@ -88,10 +98,14 @@ export default function DailyMcqIntroPage() {
             Sharpen your knowledge with focused practice questions
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
-            {mcq.tags.flatMap((tag) => tag.split(/[|•]/).map((part) => part.trim()).filter(Boolean)).map((tag) => (
-              <span key={tag} className="px-3 py-1 bg-[#EFF6FF] text-[#101828] rounded-full font-arimo text-[14px] leading-[20px] whitespace-nowrap">
-                {tag}
+          <div className="flex max-w-[520px] flex-wrap items-center justify-center gap-2 mb-8">
+            {DAILY_MCQ_SUBJECTS.map((subject) => (
+              <span
+                key={subject.label}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#D9E7FF] bg-[#EFF6FF] px-3 py-1.5 font-arimo text-[13px] leading-[18px] text-[#101828] whitespace-nowrap"
+              >
+                <span aria-hidden="true" className="text-[15px] leading-none">{subject.icon}</span>
+                {subject.label}
               </span>
             ))}
           </div>
@@ -132,25 +146,29 @@ export default function DailyMcqIntroPage() {
               </button>
             </Link>
           ) : (
-            <Link href="/dashboard/daily-mcq/challenge">
-              <button className="w-[232px] h-[52px] bg-[#101828] text-white rounded-[10px] hover:bg-[#1A1A1A] transition-all flex items-center justify-center gap-2 mx-auto font-arimo font-bold text-[20px] leading-[24px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/icon-1.png" alt="" className="w-5 h-5 object-contain" />
-                Start Now
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white ml-1">
-                  <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+            <div className="w-full max-w-[380px]">
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard/daily-mcq/challenge')}
+                className="h-[52px] w-full rounded-[12px] bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white shadow-[0_12px_24px_-10px_rgba(79,70,229,0.65)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_28px_-10px_rgba(79,70,229,0.75)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#C4B5FD]"
+                aria-label={`Start daily MCQ now. Auto-starting in ${introCountdown} seconds`}
+              >
+                <span className="flex items-center justify-center gap-3 font-arimo text-[18px] font-bold leading-[24px]">
+                  <span
+                    className="h-6 w-6 animate-spin rounded-full border-2 border-white/45 border-t-white"
+                    aria-hidden="true"
+                  />
+                  Starting in {introCountdown}...
+                </span>
               </button>
-            </Link>
-          )}
-
-          {!mcq.attempted && (
-            <button
-              onClick={() => setIntroCountdown(0)}
-              className="font-arimo text-[#9CA3AF] text-[12px] mt-4 cursor-pointer hover:text-gray-600"
-            >
-              Skip intro (auto-start in {introCountdown}s)
-            </button>
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard/daily-mcq/challenge')}
+                className="mt-3 font-arimo text-[12px] text-[#98A2B3] transition-colors hover:text-[#667085] focus-visible:outline-none focus-visible:underline"
+              >
+                Click to start immediately
+              </button>
+            </div>
           )}
         </div>
       </main>

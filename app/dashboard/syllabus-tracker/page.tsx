@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { userService, syllabusService } from '@/lib/services';
 import { useCmsContent } from '@/hooks/useCmsContent';
 import { useAuth } from '@/contexts/AuthContext';
@@ -70,6 +70,7 @@ export default function SyllabusTrackerPage() {
   });
 
   const [mode, setMode] = useState<Mode>('prelims');
+  const [optionalSubject, setOptionalSubject] = useState<string>('');
   const [activeSubject, setActiveSubject] = useState<string | null>(null);
   const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
   const [selectedTopic, setSelectedTopic] = useState<{ subjectId: string; topicIndex: number } | null>(null);
@@ -162,6 +163,17 @@ export default function SyllabusTrackerPage() {
         if (saved) try { setStates(JSON.parse(saved)); } catch {}
       });
   }, []);
+
+  // Load the user's chosen optional subject from their profile
+  useEffect(() => {
+    const fromUser = (user as any)?.profile?.optionalSubject;
+    if (fromUser) setOptionalSubject(fromUser);
+    userService.getProfile()
+      .then((res) => {
+        if (res?.data?.optionalSubject) setOptionalSubject(res.data.optionalSubject);
+      })
+      .catch(() => {});
+  }, [user]);
 
   // Debounced save to API + localStorage whenever state changes
   const debouncedSave = useCallback((newStates: TrackerState, currentMode: string) => {
@@ -276,6 +288,45 @@ export default function SyllabusTrackerPage() {
     updateSubTopicState(key, { important: !current });
   };
 
+  // Match the user's chosen optional (a subject-name string) to one syllabus subject.
+  // Names may carry an "(Opt.)" suffix, so compare on a normalized form.
+  const matchedOptional = useMemo(() => {
+    if (!syllabusData || !optionalSubject) return null;
+    const norm = (s: string) =>
+      (s || '')
+        .toLowerCase()
+        .replace(/\(\s*opt\.?\s*\)/g, '')
+        .replace(/optional/g, '')
+        .replace(/[^a-z0-9]/g, '');
+    const target = norm(optionalSubject);
+    if (!target) return null;
+    return (
+      syllabusData.optional.find((s) => {
+        const n = norm(s.name);
+        const sh = norm(s.short);
+        return n === target || sh === target || (!!n && (n.includes(target) || target.includes(n)));
+      }) || null
+    );
+  }, [syllabusData, optionalSubject]);
+
+  // In Optional mode, auto-select the user's chosen subject so its sub-subjects show.
+  useEffect(() => {
+    if (mode === 'optional' && matchedOptional) {
+      setActiveSubject((prev) => (prev === matchedOptional.id ? prev : matchedOptional.id));
+    }
+  }, [mode, matchedOptional]);
+
+  // Open a sub-subject (topic) from the right panel and select it in the middle columns.
+  const handleSelectSubTopic = (subjectId: string, topicIndex: number) => {
+    setActiveSubject(subjectId);
+    setOpenTopics((prev) => {
+      const next = new Set(prev);
+      next.add(`${subjectId}__${topicIndex}`);
+      return next;
+    });
+    setSelectedTopic({ subjectId, topicIndex });
+  };
+
   if (syllabusLoading || !syllabusData) {
     return (
       <div className="flex items-center justify-center h-full bg-[#f3f6fb]">
@@ -287,7 +338,14 @@ export default function SyllabusTrackerPage() {
     );
   }
 
-  const currentSubjects = syllabusData[mode];
+  // Optional tab shows only the user's chosen optional subject (if any).
+  const currentSubjects =
+    mode === 'optional'
+      ? matchedOptional
+        ? [matchedOptional]
+        : []
+      : syllabusData[mode];
+  const optionalNoSelection = mode === 'optional' && !matchedOptional;
   const currentSubject = activeSubject
     ? currentSubjects.find(s => s.id === activeSubject)
     : null;
@@ -329,6 +387,7 @@ export default function SyllabusTrackerPage() {
               onSearchChange={setSearchQuery}
               states={states}
               mode={mode}
+              optionalNoSelection={optionalNoSelection}
             />
           </div>
 
@@ -366,6 +425,8 @@ export default function SyllabusTrackerPage() {
             states={states}
             syllabusData={syllabusData}
             cms={cms}
+            optionalSubject={currentSubject || currentSubjects[0] || null}
+            onSelectSubTopic={handleSelectSubTopic}
           />
         </div>
       </div>

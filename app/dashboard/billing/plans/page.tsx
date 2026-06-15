@@ -1311,8 +1311,8 @@ export default function ExplorePlansPage() {
         )}
 
         {/* Billing cycle toggle */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 16 }}>
-          <div style={{ display: 'inline-flex', background: '#fff', border: '1px solid rgba(11,22,40,0.09)', borderRadius: 999, padding: 4, boxShadow: '0 2px 8px rgba(11,22,40,0.07)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: 16 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', background: '#fff', border: '1px solid rgba(11,22,40,0.09)', borderRadius: 999, padding: 4, boxShadow: '0 2px 8px rgba(11,22,40,0.07)' }}>
             {(['monthly', 'quarterly', 'yearly'] as const).map((c) => (
               <button key={c} type="button" onClick={() => setCycle(c)} style={{
                 borderRadius: 999, padding: '9px 22px', fontSize: 13, fontWeight: 600,
@@ -1320,14 +1320,15 @@ export default function ExplorePlansPage() {
                 background: cycle === c ? '#090E1C' : 'transparent',
                 color: cycle === c ? '#fff' : '#374560',
                 fontFamily: 'Inter, system-ui, sans-serif',
+                whiteSpace: 'nowrap',
               }}>
                 {c.charAt(0).toUpperCase() + c.slice(1)}
               </button>
             ))}
+            <span style={{ borderRadius: 999, padding: '7px 14px', fontSize: 12, fontWeight: 600, background: 'rgba(34,197,94,0.12)', color: '#16A34A', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap', marginLeft: 4 }}>
+              Save up to 40%
+            </span>
           </div>
-          <span style={{ borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 600, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#16A34A', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
-            Save up to 40%
-          </span>
         </div>
 
         {/* 3 plan cards */}
@@ -1342,7 +1343,7 @@ export default function ExplorePlansPage() {
                 Daily structured prep with AI evaluation &amp; core tools.
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#9AA3B8', textDecoration: 'line-through' }}>{cycle === 'monthly' ? '₹299' : cycle === 'quarterly' ? '₹249/month' : '₹299/month'}</span>
+                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹299' : cycle === 'quarterly' ? '₹249/month' : '₹299/month'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '55%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
                   <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>₹{cycle === 'monthly' ? '199' : cycle === 'quarterly' ? '159' : '119'}</span>
                   <span style={{ fontSize: 13, color: '#9AA3B8', paddingBottom: 6, fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
@@ -1390,7 +1391,7 @@ export default function ExplorePlansPage() {
                 Everything in Aspire, plus:
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>{cycle === 'monthly' ? '₹699' : cycle === 'quarterly' ? '₹599/month' : '₹699/month'}</span>
+                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: 'rgba(255,255,255,0.4)' }}>{cycle === 'monthly' ? '₹699' : cycle === 'quarterly' ? '₹599/month' : '₹699/month'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '55%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
                   <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>
                     ₹{cycle === 'monthly' ? '499' : cycle === 'quarterly' ? '399' : '299'}
@@ -1443,7 +1444,7 @@ export default function ExplorePlansPage() {
                 Everything in Rise, plus:
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#9AA3B8', textDecoration: 'line-through' }}>{cycle === 'monthly' ? '₹2,499' : cycle === 'quarterly' ? '₹2,249/month' : '₹2,499/month'}</span>
+                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹2,499' : cycle === 'quarterly' ? '₹2,249/month' : '₹2,499/month'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '55%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
                   <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>
                     ₹{cycle === 'monthly' ? '1,999' : cycle === 'quarterly' ? '1,599' : '1,199'}

@@ -7,44 +7,26 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import { UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 
-const Icons = {
-  Polity: () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 21H21" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 21V7" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M19 21V7" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 7L12 3L19 7" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M10 21V11C10 10.4477 10.4477 10 11 10H13C13.5523 10 14 10.4477 14 11V21" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  Default: () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="10" stroke="#4B5563" strokeWidth="2" />
-      <path d="M2 12H22" stroke="#4B5563" strokeWidth="2" />
-    </svg>
-  ),
-};
-
-const SUBJECT_COLORS: Record<string, string> = {
-  'indian-polity':  '#EA580C', // orange
-  'modern-history': '#92400E', // brown
-  'geography':      '#0D9488', // teal
-  'indian-economy': '#7C3AED', // purple
-  'environment':    '#16A34A', // green
-  'gs-iv-ethics':   '#4F46E5', // indigo
-  'current-affairs':'#EF4444', // red
-  'science-and-tech':'#0369A1',// sky blue
-};
-
 const SUBJECT_CARD_STYLES: Record<string, { bg: string; border: string; bar: string }> = {
-  'indian-polity':  { bg: 'linear-gradient(145deg, #FFF4E2 0%, #FBE9CC 100%)', border: '#F4CCA0', bar: '#EA580C' }, // orange
-  'modern-history': { bg: 'linear-gradient(145deg, #FDF5EB 0%, #F0E2CC 100%)', border: '#DBBF99', bar: '#92400E' }, // sepia-brown
-  geography:        { bg: 'linear-gradient(145deg, #E0F7F6 0%, #CCEEEC 100%)', border: '#99D9D6', bar: '#0D9488' }, // teal
-  'indian-economy': { bg: 'linear-gradient(145deg, #F3EEFF 0%, #E7DEFF 100%)', border: '#D7C8FF', bar: '#7C3AED' }, // purple
-  environment:      { bg: 'linear-gradient(145deg, #EEFBF4 0%, #DCF5E8 100%)', border: '#BCE9D1', bar: '#16A34A' }, // green
-  'gs-iv-ethics':   { bg: 'linear-gradient(145deg, #EEF0FF 0%, #E0E3FF 100%)', border: '#C4C9F8', bar: '#4F46E5' }, // indigo
-  'current-affairs':{ bg: 'linear-gradient(145deg, #FFF1F2 0%, #FDE7EA 100%)', border: '#F6C6CF', bar: '#EF4444' }, // red
-  'science-and-tech':{ bg: 'linear-gradient(145deg, #E0F4FF 0%, #CCE8FF 100%)', border: '#99CFEE', bar: '#0369A1' }, // sky blue
+  'indian-polity': { bg: '#FDF0DE', border: '#C0D9F5', bar: '#E9A12D' },
+  'modern-history': { bg: '#FFF8EE', border: '#FFD5A8', bar: '#E8B164' },
+  geography: { bg: 'rgba(201, 168, 76, 0.19)', border: '#B2EDD0', bar: '#D5A53C' },
+  'indian-economy': { bg: 'linear-gradient(139deg, #F3EFFD 0%, #EDE7FB 100%)', border: '#E8E1FD', bar: '#F16CB0' },
+  environment: { bg: 'linear-gradient(139deg, #EDF9F3 0%, #E0F5EA 100%)', border: '#B2EDD0', bar: '#D6A437' },
+  'science-and-tech': { bg: 'linear-gradient(139deg, #E0EBF9 0%, #D4E4F7 100%)', border: '#C0D9F5', bar: '#E0A446' },
+  'current-affairs': { bg: 'linear-gradient(139deg, #FFF1E8 0%, #FFE6D5 100%)', border: '#FFD1AA', bar: '#F39A3C' },
+  'gs-iv-ethics': { bg: 'linear-gradient(139deg, #EEF0FF 0%, #E0E3FF 100%)', border: '#C4C9F8', bar: '#4F46E5' },
+};
+
+const SUBJECT_NAMES: Record<string, string> = {
+  'indian-polity': 'Polity',
+  'modern-history': 'History',
+  geography: 'Geography',
+  'indian-economy': 'Economy',
+  environment: 'Environment',
+  'science-and-tech': 'Science & Tech',
+  'current-affairs': 'Current Affairs',
+  'gs-iv-ethics': 'Ethics',
 };
 
 type SubjectData = {
@@ -127,18 +109,18 @@ export default function MindmapPage() {
             />
           </div>
         )}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-2">
           <div className="w-8 h-8 rounded-full bg-[#10182D] text-white flex items-center justify-center font-semibold text-[14px]">1</div>
           <h2 className="text-[36px] font-bold text-[#10182D] font-serif">
             Choose a <span className="italic text-[#E8B84B]">Subject</span>
           </h2>
         </div>
-        <p className="text-[#6A7282] text-[14px] mb-8 ml-11">Select the subject whose mindmaps you want to study today</p>
+        <p className="text-[#6A7282] text-[14px] mb-6 ml-11">Select the subject whose mindmaps you want to study today</p>
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-white rounded-[16px] h-[190px] animate-pulse" />
+              <div key={i} className="h-[190px] animate-pulse rounded-[16px] border border-[#E5E7EB] bg-white" />
             ))}
           </div>
         ) : subjects.length === 0 ? (
@@ -149,34 +131,51 @@ export default function MindmapPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
             {visibleSubjects.map((subject) => {
-              const color = SUBJECT_COLORS[subject.slug] ?? '#6B7280';
-              const cardStyle = SUBJECT_CARD_STYLES[subject.slug] ?? { bg: '#FFFFFF', border: '#E5E7EB', bar: color };
+              const cardStyle = SUBJECT_CARD_STYLES[subject.slug] ?? { bg: '#FFFFFF', border: '#E5E7EB', bar: '#16A34A' };
+              const subjectName = SUBJECT_NAMES[subject.slug] ?? subject.name;
+              const toGo = Math.max(0, subject.total - subject.explored);
+              const progressWidth = subject.total > 0 ? Math.max(subject.progress, 10) : 0;
               return (
-                <Link key={subject.slug} href={`/dashboard/mindmap/${subject.slug}`} className="block">
-                  <div className="rounded-[16px] overflow-hidden shadow-sm flex flex-col h-[190px] relative group hover:-translate-y-0.5 hover:shadow-md transition-all" style={{ background: cardStyle.bg, border: `1.5px solid ${cardStyle.border}` }}>
-                    <div className="h-[4px] w-full" style={{ backgroundColor: cardStyle.bar }} />
-                    <div className="p-5 flex flex-col justify-between h-full">
-                      <div>
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="w-10 h-10 rounded-full bg-white/70 flex items-center justify-center text-xl">
-                            {subject.icon}
-                          </div>
-                        </div>
-                        <h3 className="text-[16px] font-bold text-[#1A1A1A] font-inter mb-1">{subject.name}</h3>
-                        <p className="text-[12px] text-[#6B7280] font-inter">{subject.total} mindmaps</p>
-                      </div>
-                      <div className="mt-4">
-                        <div className="flex justify-between items-center text-[11px] font-medium mb-2">
-                          <span className="text-[#374151] font-bold">{subject.progress}% explored</span>
-                          <span className="px-2 py-0.5 rounded text-[10px] text-[#6B7280]" style={{ backgroundColor: `${color}15` }}>
-                            {subject.explored === 0 ? 'Not started' : `${subject.explored} explored`}
-                          </span>
-                        </div>
-                        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full transition-all duration-300" style={{ width: `${subject.progress}%`, backgroundColor: cardStyle.bar }} />
-                        </div>
-                      </div>
-                    </div>
+                <Link
+                  key={subject.slug}
+                  href={`/dashboard/mindmap/${subject.slug}`}
+                  className="block h-[190px] rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
+                  style={{ border: `1px solid ${cardStyle.border}`, background: cardStyle.bg }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span aria-hidden style={{ fontSize: 24, lineHeight: '24px' }}>{subject.icon}</span>
+                    {toGo > 0 && (
+                      <span
+                        className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
+                        style={{ background: '#EF4444', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
+                      >
+                        {toGo} due
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="mt-3" style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 17, lineHeight: '22px', color: '#22304D' }}>
+                    {subjectName}
+                  </h3>
+
+                  <p className="mt-1" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, lineHeight: '15px', color: '#8A94A6' }}>
+                    {subject.total} cards · {subject.total} topics
+                  </p>
+
+                  <div className="mt-4 h-[4px] w-full rounded-full" style={{ background: 'rgba(0,0,0,0.08)' }}>
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${progressWidth}%`, background: '#16A34A' }}
+                    />
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#16A34A' }}>
+                      ✓ {subject.explored} mastered
+                    </span>
+                    <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '18px', color: toGo === 0 ? '#16A34A' : '#EF4444' }}>
+                      {toGo === 0 ? '✓ All done' : `${toGo} to go`}
+                    </span>
                   </div>
                 </Link>
               );
