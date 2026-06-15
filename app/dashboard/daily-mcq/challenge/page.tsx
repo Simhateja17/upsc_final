@@ -2,8 +2,9 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { dailyMcqService } from '@/lib/services';
+import { dailyMcqService, bookmarkService, flagService } from '@/lib/services';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { getDistinctChipStyles } from '@/lib/subjectPalette';
 
 interface Question {
   id: string;
@@ -11,6 +12,7 @@ interface Question {
   questionText: string;
   category: string;
   difficulty: string;
+  pyqYear?: number | null;
   options: { id?: string; label?: string; text: string }[];
   correctOption: string;
   explanation: string | null;
@@ -53,13 +55,14 @@ export default function DailyMcqChallengePage() {
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [skipped, setSkipped] = useState<Record<string, boolean>>({});
-  const [marked] = useState<Record<string, boolean>>({});
-  const [bookmarks] = useState<Record<string, boolean>>({});
+  const [flagged, setFlagged] = useState<Record<string, boolean>>({});
+  const [bookmarked, setBookmarked] = useState<Record<string, boolean>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
 
@@ -93,6 +96,68 @@ export default function DailyMcqChallengePage() {
       })
       .finally(() => setLoading(false));
   }, [router]);
+
+  // Hydrate flag/bookmark state once questions are loaded
+  useEffect(() => {
+    if (questions.length === 0) return;
+    const ids = questions.map((qu) => qu.id);
+
+    flagService.check('mcq', ids)
+      .then((res) => setFlagged(res.data?.flagged || {}))
+      .catch(() => {});
+
+    bookmarkService.list('mcq')
+      .then((res) => {
+        const items: { entityId: string }[] = res.data?.bookmarks || [];
+        const map: Record<string, boolean> = {};
+        for (const item of items) {
+          if (ids.includes(item.entityId)) map[item.entityId] = true;
+        }
+        setBookmarked(map);
+      })
+      .catch(() => {});
+  }, [questions]);
+
+  const handleToggleFlag = async (question: Question) => {
+    const wasFlagged = !!flagged[question.id];
+    setFlagged((prev) => ({ ...prev, [question.id]: !wasFlagged }));
+    try {
+      await flagService.toggle({ questionType: 'mcq', questionId: question.id, questionText: question.questionText });
+    } catch {
+      setFlagged((prev) => ({ ...prev, [question.id]: wasFlagged }));
+    }
+  };
+
+  const handleToggleBookmark = async (question: Question) => {
+    const wasBookmarked = !!bookmarked[question.id];
+    setBookmarked((prev) => ({ ...prev, [question.id]: !wasBookmarked }));
+    try {
+      const [, difficultyStyle] = getDistinctChipStyles(question.category, [
+        `category:${question.category}`,
+        `difficulty:${question.difficulty}`,
+        `pyq:${question.pyqYear ?? ''}`,
+      ]);
+      await bookmarkService.toggle({
+        entityType: 'mcq',
+        entityId: question.id,
+        title: question.questionText.slice(0, 140),
+        source: 'Daily MCQ Challenge',
+        tag: question.category,
+        tagColor: difficultyStyle.color,
+        content: {
+          questionText: question.questionText,
+          options: question.options,
+          correctOption: question.correctOption,
+          difficulty: question.difficulty,
+          category: question.category,
+          selectedOption: answers[question.id] ?? null,
+          status: submitted ? (answers[question.id] === question.correctOption ? 'attempted' : 'gotWrong') : 'new',
+        },
+      });
+    } catch {
+      setBookmarked((prev) => ({ ...prev, [question.id]: wasBookmarked }));
+    }
+  };
 
   const handleSubmit = useCallback(async () => {
     if (submitting || submitted) return;
@@ -164,7 +229,7 @@ export default function DailyMcqChallengePage() {
   // Already attempted screen
   if (!loading && mcqInfo?.attempted) {
     return (
-      <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#FAFBFE' }}>
+      <div className="flex flex-col min-h-full items-center justify-center" style={{ background: '#FAFBFE' }}>
         <div style={{ maxWidth: '600px', width: '100%', padding: '40px', background: '#FFFFFF', borderRadius: '16px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
           <h1 className="font-arimo font-bold text-[#101828] mb-3" style={{ fontSize: '24px' }}>
@@ -194,7 +259,7 @@ export default function DailyMcqChallengePage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#FAFBFE' }}>
+      <div className="flex flex-col min-h-full items-center justify-center" style={{ background: '#FAFBFE' }}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
@@ -216,10 +281,10 @@ export default function DailyMcqChallengePage() {
   const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   const totalQuestions = questions.length;
-  const answeredCount = questions.filter((qu) => answers[qu.id] && !marked[qu.id]).length;
-  const skippedCount = questions.filter((qu) => skipped[qu.id] && !answers[qu.id] && !marked[qu.id]).length;
-  const markedCount = questions.filter((qu) => marked[qu.id]).length;
-  const bookmarkedCount = questions.filter((qu) => bookmarks[qu.id]).length;
+  const answeredCount = questions.filter((qu) => answers[qu.id] && !flagged[qu.id]).length;
+  const skippedCount = questions.filter((qu) => skipped[qu.id] && !answers[qu.id] && !flagged[qu.id]).length;
+  const markedCount = questions.filter((qu) => flagged[qu.id]).length;
+  const bookmarkedCount = questions.filter((qu) => bookmarked[qu.id]).length;
   const unansweredCount = Math.max(0, totalQuestions - answeredCount - skippedCount - markedCount);
   const isLast = currentQuestion === totalQuestions - 1;
 
@@ -234,10 +299,10 @@ export default function DailyMcqChallengePage() {
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, overflow: 'auto', flex: 1, alignContent: 'flex-start' }}>
         {questions.map((qu, idx) => {
           const isCurrent = idx === currentQuestion;
-          const isAnswered = !!answers[qu.id] && !marked[qu.id];
-          const isSkipped = !!skipped[qu.id] && !answers[qu.id] && !marked[qu.id];
-          const isMarked = !!marked[qu.id];
-          const isBookmarked = !!bookmarks[qu.id];
+          const isAnswered = !!answers[qu.id] && !flagged[qu.id];
+          const isSkipped = !!skipped[qu.id] && !answers[qu.id] && !flagged[qu.id];
+          const isMarked = !!flagged[qu.id];
+          const isBookmarked = !!bookmarked[qu.id];
 
           let bg = '#F3F4F6';
           let color = '#6B7280';
@@ -287,7 +352,7 @@ export default function DailyMcqChallengePage() {
           {answeredCount} answered · {unansweredCount} unanswered · {skippedCount} skipped
         </div>
         <button
-          onClick={handleSubmit}
+          onClick={() => setShowSubmitConfirm(true)}
           disabled={submitting}
           style={{ width: '100%', height: 38, background: '#0F172B', border: 'none', borderRadius: 10, color: '#FFFFFF', fontWeight: 700, fontSize: 13, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
         >
@@ -331,9 +396,27 @@ export default function DailyMcqChallengePage() {
 
               {/* Tag + timer */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 22px 0', flexShrink: 0 }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 999, padding: '5px 12px' }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#1D4ED8' }}>{q.category} • {q.difficulty}</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {(() => {
+                    const keys = [`category:${q.category}`, `difficulty:${q.difficulty}`, `pyq:${q.pyqYear ?? ''}`];
+                    const [categoryStyle, difficultyStyle, pyqStyle] = getDistinctChipStyles(q.category, keys);
+                    return (
+                      <>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: categoryStyle.bg, border: `1px solid ${categoryStyle.color}33`, borderRadius: 999, padding: '5px 12px' }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={categoryStyle.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: categoryStyle.color }}>{q.category}</span>
+                        </div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', background: difficultyStyle.bg, border: `1px solid ${difficultyStyle.color}33`, borderRadius: 999, padding: '5px 12px' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: difficultyStyle.color }}>{q.difficulty}</span>
+                        </div>
+                        {q.pyqYear && (
+                          <div style={{ display: 'inline-flex', alignItems: 'center', background: pyqStyle.bg, border: `1px solid ${pyqStyle.color}33`, borderRadius: 999, padding: '5px 12px' }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: pyqStyle.color }}>PYQ {q.pyqYear}</span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
                 {!submitted && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -349,6 +432,27 @@ export default function DailyMcqChallengePage() {
 
               {/* Content: question (fills) + options (2-col grid) */}
               <div style={{ flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: 'column', padding: '12px 22px 14px', overflow: isMobile ? 'visible' : 'hidden' }}>
+                <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
+                  <button
+                    onClick={() => handleToggleFlag(q)}
+                    title={flagged[q.id] ? 'Unflag question' : 'Flag question as incorrect'}
+                    style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid #D1D5DB', background: flagged[q.id] ? '#FEF3C7' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill={flagged[q.id] ? '#D97706' : 'none'} stroke={flagged[q.id] ? '#D97706' : '#6B7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                      <line x1="4" y1="22" x2="4" y2="15" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleToggleBookmark(q)}
+                    title={bookmarked[q.id] ? 'Remove bookmark' : 'Bookmark question'}
+                    style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid #D1D5DB', background: bookmarked[q.id] ? '#EFF6FF' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarked[q.id] ? '#1E3A8A' : 'none'} stroke={bookmarked[q.id] ? '#1E3A8A' : '#6B7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </button>
+                </div>
                 <div style={{ flex: isMobile ? 'none' : '1 1 auto', minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', whiteSpace: 'pre-line', fontSize: 14, lineHeight: '23px', color: '#1A1D23', paddingRight: 6 }}>
                   <span style={{ fontWeight: 700 }}>Question {currentQuestion + 1}: </span>
                   {normalizeQuestionText(q.questionText)}
@@ -426,6 +530,50 @@ export default function DailyMcqChallengePage() {
           </aside>
         </div>
       </div>
+
+      {/* Submit confirmation modal */}
+      {showSubmitConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 24, padding: '32px 36px', maxWidth: 460, width: '100%', textAlign: 'center', boxShadow: '0px 20px 40px -10px rgba(0,0,0,0.25)' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>📋</div>
+            <h2 className="font-arimo font-bold text-[#101828]" style={{ fontSize: 22, marginBottom: 8 }}>Submit Quiz?</h2>
+            <p className="font-arimo text-[#6B7280]" style={{ fontSize: 14, marginBottom: 20 }}>
+              Are you sure you want to submit your answers?
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
+              <div style={{ background: '#F3F4F6', borderRadius: 12, padding: '14px 8px' }}>
+                <div className="font-arimo font-bold" style={{ fontSize: 24, color: '#22C55E' }}>{answeredCount}</div>
+                <div className="font-arimo" style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Answered</div>
+              </div>
+              <div style={{ background: '#F3F4F6', borderRadius: 12, padding: '14px 8px' }}>
+                <div className="font-arimo font-bold" style={{ fontSize: 24, color: '#F59E0B' }}>{skippedCount}</div>
+                <div className="font-arimo" style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Skipped</div>
+              </div>
+              <div style={{ background: '#F3F4F6', borderRadius: 12, padding: '14px 8px' }}>
+                <div className="font-arimo font-bold" style={{ fontSize: 24, color: '#F59E0B' }}>{bookmarkedCount}</div>
+                <div className="font-arimo" style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Bookmarked</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => setShowSubmitConfirm(false)}
+                className="font-arimo font-bold"
+                style={{ flex: 1, height: 48, background: '#F3F4F6', border: 'none', borderRadius: 12, color: '#101828', fontSize: 15, cursor: 'pointer' }}
+              >
+                Review More
+              </button>
+              <button
+                onClick={() => { setShowSubmitConfirm(false); handleSubmit(); }}
+                disabled={submitting}
+                className="font-arimo font-bold"
+                style={{ flex: 1, height: 48, background: '#101828', border: 'none', borderRadius: 12, color: '#FFFFFF', fontSize: 15, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
+              >
+                Submit Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -170,8 +170,6 @@ export default function DailyMcqResultsPage() {
   const [reviewQuestions, setReviewQuestions] = useState<ReviewQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [showQuestionReview, setShowQuestionReview] = useState(false);
-  const [openReviewQuestion, setOpenReviewQuestion] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.allSettled([
@@ -369,148 +367,20 @@ export default function DailyMcqResultsPage() {
             </div>
 
             <div className="space-y-[clamp(0.65rem,0.85vw,0.9rem)]">
-              <button
-                type="button"
-                onClick={() => setShowQuestionReview((show) => !show)}
-                className="w-full bg-white border border-[#E5E7EB] rounded-[clamp(8px,0.52vw,10px)] text-[#364153] font-arimo font-bold flex items-center justify-center gap-2 hover:border-[#9CA3AF] transition-colors"
-                style={{ padding: 'clamp(9px,0.73vw,12px)', fontSize: 'clamp(12px,0.73vw,14px)' }}>
-                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M5.5 3.5H13M5.5 8H13M5.5 12.5H13M3 3.5H3.01M3 8H3.01M3 12.5H3.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-                View Question-wise Review
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ transform: showQuestionReview ? 'rotate(180deg)' : undefined, transition: 'transform 0.2s' }}>
-                  <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-
-              {showQuestionReview && (
-                <div className="space-y-3">
-                  {reviewQuestions.length > 0 ? reviewQuestions.map((question, index) => {
-                    const isOpen = openReviewQuestion === index;
-                    const status = question.selectedOption === null
-                      ? { label: 'Skipped', color: '#D97706', background: '#FFFBEB', border: '#FDE68A' }
-                      : question.isCorrect
-                        ? { label: 'Correct', color: '#059669', background: '#F0FDF4', border: '#BBF7D0' }
-                        : { label: 'Wrong', color: '#DC2626', background: '#FEF2F2', border: '#FECACA' };
-
-                    return (
-                      <div
-                        key={question.id || index}
-                        className="overflow-hidden rounded-2xl border border-white/60 bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-300">
-                        <button
-                          type="button"
-                          aria-expanded={isOpen}
-                          onClick={() => setOpenReviewQuestion(isOpen ? null : index)}
-                          className="flex w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-gray-50/50">
-                          <span
-                            className="flex h-7 min-w-7 flex-shrink-0 items-center justify-center rounded-lg font-arimo text-xs font-bold text-white"
-                            style={{ background: '#818CF8' }}>
-                            {question.questionNum || index + 1}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span
-                              className="line-clamp-2 block font-arimo text-sm leading-relaxed text-[#374151]">
-                              {question.questionText}
-                            </span>
-                            <span className="mt-1.5 flex flex-wrap items-center gap-2">
-                              <span
-                                className="rounded-full px-2 py-0.5 font-arimo text-xs"
-                                style={{ background: '#E0E7FF', color: '#4F46E5' }}>
-                                {question.category || 'Daily MCQ'}
-                              </span>
-                              {question.difficulty && (
-                                <span
-                                  className="rounded-full bg-[#F3F4F6] px-2 py-0.5 font-arimo text-xs text-[#6B7280]">
-                                  {question.difficulty}
-                                </span>
-                              )}
-                            </span>
-                          </span>
-                          <span className="flex flex-shrink-0 items-center gap-2">
-                            <span
-                              className="rounded-lg border px-2 py-1 font-arimo text-xs font-semibold"
-                              style={{ color: status.color, background: status.background, borderColor: status.border }}>
-                              {status.label}
-                            </span>
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 16 16"
-                              fill="none"
-                              aria-hidden="true"
-                              className="text-[#9CA3AF] transition-transform duration-300"
-                              style={{ transform: isOpen ? 'rotate(180deg)' : undefined }}>
-                              <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </span>
-                        </button>
-
-                        {isOpen && (
-                          <div className="space-y-4 border-t border-[#F3F4F6] px-5 py-4">
-                            <div className="rounded-xl bg-[#F8FAFF] p-3.5">
-                              <p className="font-arimo text-sm font-medium leading-relaxed text-[#374151]">
-                                {question.questionText}
-                              </p>
-                            </div>
-
-                            <div className="space-y-2">
-                              {question.options.map((option, optionIdx) => {
-                                const optionKey = getOptionKey(option, optionIdx);
-                                const isCorrectOption = optionKey === question.correctOption;
-                                const isSelectedWrong = optionKey === question.selectedOption && !isCorrectOption;
-
-                                return (
-                                  <div
-                                    key={option.id || optionIdx}
-                                    className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 font-arimo"
-                                    style={{
-                                      background: isCorrectOption ? '#F0FDF4' : isSelectedWrong ? '#FEF2F2' : '#F9FAFB',
-                                      border: isCorrectOption ? '2px solid #22C55E' : isSelectedWrong ? '2px solid #EF4444' : '1.5px solid #E5E7EB',
-                                      color: isCorrectOption ? '#15803D' : isSelectedWrong ? '#DC2626' : '#374151',
-                                    }}>
-                                    <span
-                                      className="flex h-6 min-w-6 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold"
-                                      style={{
-                                        background: isCorrectOption ? '#22C55E' : isSelectedWrong ? '#EF4444' : '#E5E7EB',
-                                        color: isCorrectOption || isSelectedWrong ? '#FFFFFF' : '#6B7280',
-                                      }}>
-                                      {optionKey}
-                                    </span>
-                                    <span className="flex-1 text-sm">{option.text}</span>
-                                    {isCorrectOption && <span className="ml-auto text-xs font-bold text-[#22C55E]">Correct</span>}
-                                    {isSelectedWrong && <span className="ml-auto text-xs font-bold text-[#EF4444]">Wrong</span>}
-                                  </div>
-                                );
-                              })}
-                            </div>
-
-                            <div className="font-arimo text-sm text-[#6B7280]">
-                              You picked:{' '}
-                              <span className="font-bold" style={{ color: status.color }}>
-                                {question.selectedOption ? `Option ${question.selectedOption}` : 'Skipped'}
-                              </span>
-                            </div>
-
-                            <div className="rounded-xl border border-[#C7D2FE] bg-[#EEF2FF] p-4">
-                              <h4 className="mb-2 font-arimo text-xs font-bold uppercase tracking-wider text-[#4F46E5]">
-                                Explanation
-                              </h4>
-                              <p className="font-arimo text-sm leading-relaxed text-[#374151]">
-                                {question.explanation || 'Explanation is not available for this question yet.'}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }) : (
-                    <div className="bg-white border border-[#E5E7EB] rounded-[clamp(8px,0.52vw,10px)] text-center font-arimo text-[#4A5565]"
-                      style={{ padding: 'clamp(0.75rem,1vw,1.25rem)', fontSize: 'clamp(12px,0.68vw,14px)' }}>
-                      No question review data available yet.
-                    </div>
-                  )}
-                </div>
-              )}
+              <Link href="/dashboard/daily-mcq/review">
+                <button
+                  type="button"
+                  className="w-full bg-white border border-[#E5E7EB] rounded-[clamp(8px,0.52vw,10px)] text-[#364153] font-arimo font-bold flex items-center justify-center gap-2 hover:border-[#9CA3AF] transition-colors"
+                  style={{ padding: 'clamp(9px,0.73vw,12px)', fontSize: 'clamp(12px,0.73vw,14px)' }}>
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M5.5 3.5H13M5.5 8H13M5.5 12.5H13M3 3.5H3.01M3 8H3.01M3 12.5H3.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  View Question-wise Review
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ transform: 'rotate(-90deg)' }}>
+                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </Link>
 
               <div className="grid grid-cols-3 gap-[clamp(0.5rem,0.65vw,0.75rem)]">
                 <button
