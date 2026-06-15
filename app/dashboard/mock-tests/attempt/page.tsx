@@ -648,21 +648,31 @@ function MockTestAttemptInner() {
       return acc + (a && (a.text.trim() || a.file) ? 1 : 0);
     }, 0);
 
-    /* ── Questions screen (mains) — compact one-screen layout ── */
-    return (
-      <div style={{ height: isMobile ? 'auto' : '100vh', minHeight: isMobile ? '100%' : undefined, overflow: isMobile ? 'visible' : 'hidden', background: '#F2F4F8', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' }}>
+    /* ── Questions screen (mains) — styled like Daily Answer Writing ── */
+    const mainsCircumference = 2 * Math.PI * 44;
+    const mainsTimerPct = mainsWritingSeconds / Math.max(1, minPerQ * 60);
 
+    return (
+      <div
+        className="font-arimo"
+        style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         {/* ── Header ── */}
-        <div style={{ background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)', padding: '9px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+        <div style={{ background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)', padding: '10px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 14 }}>✍️</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 18 }}>✍️</span>
               <div>
-                <span style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 13 }}>{title}</span>
-                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, marginTop: 1 }}>Mains Mock Test · {totalQuestions} Questions</div>
+                <span style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 14 }}>{title}</span>
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 1 }}>Mains Mock Test · {totalQuestions} Questions</div>
               </div>
             </div>
-            <span style={{ color: '#FDC700', fontWeight: 700, fontSize: 12 }}>
+            <span style={{ color: '#FDC700', fontWeight: 700, fontSize: 13 }}>
               {answeredCount} of {totalQuestions} answered
             </span>
           </div>
@@ -670,162 +680,178 @@ function MockTestAttemptInner() {
 
         {/* Progress bar */}
         <div style={{ flexShrink: 0, height: 3, background: '#E5E7EB' }}>
-          <div style={{ height: '100%', width: `${Math.round((answeredCount / Math.max(1, totalQuestions)) * 100)}%`, background: '#F59E0B', transition: 'width 0.3s ease' }} />
+          <div style={{ height: '100%', width: `${Math.round((answeredCount / Math.max(1, totalQuestions)) * 100)}%`, background: '#FDC700', transition: 'width 0.3s ease' }} />
         </div>
 
         {/* Error */}
         {error && (
-          <div style={{ background: '#FEF2F2', borderBottom: '1px solid #FECACA', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <span style={{ fontSize: 13 }}>⚠️</span>
+          <div style={{ background: '#FEF2F2', borderBottom: '1px solid #FECACA', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <span>⚠️</span>
             <span style={{ fontSize: 13, color: '#991B1B' }}>{error}</span>
           </div>
         )}
 
         {/* ── Body ── */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12, padding: isMobile ? '10px' : '10px 16px 10px', overflow: isMobile ? 'visible' : 'hidden', boxSizing: 'border-box', minHeight: 0 }}>
-
+        <div
+          className={isMobile ? 'flex flex-col gap-4 p-3' : 'flex flex-row gap-5 p-5'}
+          style={{ flex: 1, boxSizing: 'border-box' }}
+        >
           {/* ── Left column ── */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0, overflow: isMobile ? 'visible' : 'hidden' }}>
+          <div className="flex flex-col gap-4" style={{ flex: 1, minWidth: 0 }}>
 
             {/* Question card */}
-            <div style={{ background: '#FFFFFF', borderRadius: 14, padding: '14px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)', flexShrink: 0 }}>
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '16px',
+                padding: '20px 24px',
+                boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
+              }}
+            >
               {/* Chips row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexWrap: 'wrap' }}>
-                <div style={{ background: '#EFF6FF', borderRadius: 999, padding: '3px 10px' }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#155DFC' }}>{(currentQ as any).paper || 'GS Paper I'}</span>
-                </div>
+              <div className="flex items-center flex-wrap gap-2 mb-3">
+                <span style={{ background: '#EFF6FF', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: '#155DFC' }}>
+                  {(currentQ as any).paper || 'GS Paper I'}
+                </span>
                 {currentQ.subject && (
-                  <div style={{ background: '#F3E8FF', borderRadius: 999, padding: '3px 10px' }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#6B21A8' }}>{currentQ.subject}</span>
-                  </div>
+                  <span style={{ background: '#F3E8FF', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: '#6B21A8' }}>
+                    {currentQ.subject}
+                  </span>
                 )}
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#EF4444' }}>LIVE NOW</span>
+                <div className="ml-auto flex items-center gap-1">
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#EF4444', letterSpacing: '0.05em' }}>LIVE NOW</span>
                 </div>
               </div>
 
-              {/* Question badge + marks */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <div style={{ background: '#0F172B', color: '#FFFFFF', fontWeight: 700, fontSize: 11, padding: '3px 10px', borderRadius: 6 }}>
+              {/* Badge + marks */}
+              <div className="flex items-center justify-between mb-3">
+                <span style={{ background: '#101828', color: '#FFFFFF', fontWeight: 700, fontSize: 11, padding: '4px 12px', borderRadius: 8 }}>
                   QUESTION {currentIdx + 1} OF {totalQuestions}
-                </div>
-                <span style={{ fontSize: 12, color: '#6B7280' }}>{marksPerQ} marks · {minPerQ} min</span>
+                </span>
+                <span style={{ fontSize: 13, color: '#6A7282', fontWeight: 500 }}>{marksPerQ} marks · {minPerQ} min</span>
               </div>
 
-              {/* Question text — scrolls internally if too long */}
-              <div style={{ fontSize: 14, fontWeight: 500, color: '#17223E', lineHeight: '22px', maxHeight: 110, overflowY: 'auto', paddingRight: 4 }}>
+              {/* Question text */}
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#17223E', lineHeight: '24px', margin: '0 0 12px' }}>
                 {currentQ.text}
-              </div>
+              </p>
 
-              {/* Meta */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 12, color: '#9CA3AF', marginTop: 8 }}>
+              {/* Meta row */}
+              <div className="flex items-center gap-4" style={{ fontSize: 12, color: '#9CA3AF' }}>
                 <span>⏱ {minPerQ} min</span>
                 <span>📝 ~250 words</span>
                 <span>⭐ {marksPerQ} marks</span>
               </div>
             </div>
 
-            {/* Answer card — flex:1, holds upload + submit */}
-            <div style={{ background: '#FFFFFF', borderRadius: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.07)', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '12px 16px' }}>
-
-              {/* Upload zone (primary) or file confirmation */}
+            {/* Answer card */}
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '16px',
+                boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
+                padding: '20px 24px',
+              }}
+              className="flex flex-col gap-3"
+            >
+              {/* Upload zone or file confirmation */}
               {!currentAnswer.file ? (
                 <div
                   role="button"
                   tabIndex={0}
                   onClick={() => fileInputRef.current?.click()}
                   onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#17223E'; e.currentTarget.style.backgroundColor = 'rgba(23, 34, 62, 0.06)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; e.currentTarget.style.backgroundColor = '#F9FAFB'; }}
-                  style={{ border: '1.5px dashed #CBD5E1', borderRadius: 12, backgroundColor: '#F9FAFB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, cursor: 'pointer', gap: 5, minHeight: 120, outline: 'none', transition: 'border-color 0.15s, background-color 0.15s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#17223E'; e.currentTarget.style.background = 'rgba(23,34,62,0.04)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; e.currentTarget.style.background = '#F9FAFB'; }}
+                  style={{
+                    border: '1.5px dashed #CBD5E1',
+                    borderRadius: '14px',
+                    background: '#F9FAFB',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '200px',
+                    cursor: 'pointer',
+                    gap: 8,
+                    outline: 'none',
+                    transition: 'border-color 0.15s, background 0.15s',
+                  }}
                 >
                   <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" style={{ display: 'none' }} onChange={handleMainsFileSelect} />
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: '#17223E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: '#17223E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                       <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 12l4-4m0 0l4 4m-4-4v8" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: '#101828' }}>Drop your answer script here</div>
-                  <div style={{ fontSize: 12, color: '#6B7280' }}>Upload handwritten answers for AI evaluation</div>
-                  <div style={{ display: 'flex', gap: 5, marginTop: 2 }}>
-                    {['JPG', 'PNG', 'PDF', 'DOCX'].map(fmt => (
-                      <span key={fmt} style={{ background: '#E5E7EB', borderRadius: 4, padding: '2px 7px', fontSize: 11, color: '#374151' }}>{fmt}</span>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: '#101828', margin: 0 }}>Drop your answer script here</p>
+                  <p style={{ fontSize: 13, color: '#6A7282', margin: 0 }}>Upload handwritten answers for AI evaluation</p>
+                  <div className="flex gap-2 mt-1">
+                    {['JPG', 'PNG', 'PDF', 'DOCX', 'Max 10MB'].map(fmt => (
+                      <span key={fmt} style={{ background: '#F3F4F6', borderRadius: 6, padding: '3px 8px', fontSize: 11, color: '#374151', fontWeight: 600 }}>{fmt}</span>
                     ))}
-                    <span style={{ background: '#E5E7EB', borderRadius: 4, padding: '2px 7px', fontSize: 11, color: '#374151' }}>Max 10MB</span>
                   </div>
-                  <button type="button" style={{ marginTop: 6, background: '#FFFFFF', border: '1px solid #D1D5DB', borderRadius: 8, padding: '6px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer', color: '#111827' }}>
+                  <button type="button" style={{ marginTop: 4, background: '#FFFFFF', border: '1.5px solid #D1D5DB', borderRadius: 10, padding: '7px 20px', fontWeight: 700, fontSize: 13, cursor: 'pointer', color: '#111827' }}>
                     Browse Files
                   </button>
                 </div>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 12, padding: '10px 14px', flex: 1, maxHeight: 72 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0FDF4', border: '1.5px solid #86EFAC', borderRadius: '14px', padding: '14px 18px' }}>
                   <div>
                     <div style={{ fontSize: 14, color: '#15803D', fontWeight: 700 }}>📎 {currentAnswer.file.name}</div>
-                    <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{(currentAnswer.file.size / 1024 / 1024).toFixed(2)} MB</div>
+                    <div style={{ fontSize: 12, color: '#6B7280', marginTop: 3 }}>{(currentAnswer.file.size / 1024 / 1024).toFixed(2)} MB</div>
                   </div>
-                  <button type="button" onClick={handleMainsRemoveFile} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#15803D', fontSize: 18, fontWeight: 700 }}>✕</button>
+                  <button type="button" onClick={handleMainsRemoveFile} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#15803D', fontSize: 20, fontWeight: 700, lineHeight: 1 }}>✕</button>
                 </div>
               )}
 
-              {/* OR Type your answer */}
-              <div style={{ textAlign: 'center', marginTop: 7 }}>
+              {/* OR Type answer toggle */}
+              <div style={{ textAlign: 'center' }}>
                 <button
                   type="button"
                   onClick={() => setShowMainsTypeAnswer(s => !s)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#6B7280', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#6A7282', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                 >
                   OR Type your answer {showMainsTypeAnswer ? '▲' : '▼'}
                 </button>
               </div>
 
-              {/* Textarea (collapsible) */}
               {showMainsTypeAnswer && (
-                <div style={{ marginTop: 6 }}>
+                <div>
                   <textarea
                     value={currentAnswer.text}
                     onChange={(e) => handleMainsTextChange(e.target.value)}
                     placeholder="Write your answer here..."
-                    rows={3}
-                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #D1D5DB', borderRadius: 10, fontSize: 13, lineHeight: '19px', color: '#0F172B', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', background: '#FAFAFA' }}
+                    rows={5}
+                    style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #E5E7EB', borderRadius: '12px', fontSize: 14, lineHeight: '22px', color: '#0F172B', fontFamily: 'Arimo, sans-serif', resize: 'vertical', boxSizing: 'border-box', background: '#FAFAFA', outline: 'none' }}
                   />
-                  <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
+                  <p style={{ fontSize: 12, color: '#9CA3AF', margin: '4px 0 0' }}>
                     {currentAnswer.text.trim() ? `${currentAnswer.text.trim().split(/\s+/).filter(Boolean).length} words` : '0 words'}
-                  </div>
+                  </p>
                 </div>
               )}
 
-              {/* ── Bottom actions ── */}
-              <div style={{ marginTop: 8, flexShrink: 0 }}>
-                {/* Prev link */}
+              {/* Actions */}
+              <div className="flex flex-col gap-2 mt-1">
                 {currentIdx > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleMainsPrev}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#9CA3AF', fontWeight: 600, marginBottom: 6, display: 'inline-flex', alignItems: 'center', gap: 3 }}
-                  >
+                  <button type="button" onClick={handleMainsPrev} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#6A7282', fontWeight: 600, textAlign: 'left', display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0 }}>
                     ← Previous Question
                   </button>
                 )}
-                {/* Primary CTA */}
                 {isLast ? (
                   <button
                     type="button"
                     disabled={mainsSubmitting}
                     onClick={handleMainsSubmitAll}
-                    style={{ width: '100%', height: 44, background: '#17223E', color: '#FFFFFF', border: 'none', borderRadius: 12, fontWeight: 800, fontSize: 14, cursor: mainsSubmitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: mainsSubmitting ? 0.75 : 1 }}
+                    className="w-full flex items-center justify-center gap-2 text-white font-bold transition-transform hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    style={{ height: '52px', background: '#17223E', borderRadius: '14px', fontSize: '16px', border: 'none', cursor: mainsSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)' }}
                   >
                     {mainsSubmitting ? (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="animate-spin" style={{ flexShrink: 0 }}>
-                          <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5" />
-                          <path d="M12 2a10 10 0 0 1 10 10" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
-                        </svg>
-                        Submitting...
-                      </>
+                      <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />Submitting...</>
                     ) : (
                       <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
                           <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                         Submit Answer for Evaluation
@@ -836,57 +862,73 @@ function MockTestAttemptInner() {
                   <button
                     type="button"
                     onClick={handleMainsNext}
-                    style={{ width: '100%', height: 44, background: '#17223E', color: '#FFFFFF', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                    className="w-full flex items-center justify-center gap-2 text-white font-bold transition-transform hover:scale-[1.01]"
+                    style={{ height: '52px', background: '#17223E', borderRadius: '14px', fontSize: '16px', border: 'none', cursor: 'pointer', boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)' }}
                   >
                     Save &amp; Next Question →
                   </button>
                 )}
-                <div style={{ textAlign: 'center', fontSize: 11, color: '#9CA3AF', marginTop: 5 }}>✦ Get detailed feedback in 60 seconds</div>
+                <p style={{ textAlign: 'center', fontSize: 12, color: '#9CA3AF', margin: 0 }}>✦ Get detailed feedback in 60 seconds</p>
               </div>
             </div>
           </div>
 
-          {/* ── Right: Writing Timer ── */}
-          <div style={{ width: isMobile ? '100%' : 200, flexShrink: 0, display: 'flex', flexDirection: 'column', order: isMobile ? -1 : 0 }}>
-            <div style={{ background: '#FFFFFF', borderRadius: 14, padding: '18px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.07em', color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 14, textAlign: 'center' }}>
-                WRITING TIMER
+          {/* ── Right column: Writing Timer ── */}
+          <div style={{ width: isMobile ? '100%' : '280px', flexShrink: 0, order: isMobile ? -1 : 0 }}>
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '20px',
+                padding: '20px',
+                boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
+              }}
+              className="flex flex-col items-center"
+            >
+              <p style={{ fontWeight: 600, fontSize: 11, letterSpacing: '0.08em', color: '#6A7282', textTransform: 'uppercase', marginBottom: 14, textAlign: 'center' }}>
+                Writing Timer
+              </p>
+
+              {/* SVG circular timer */}
+              <div style={{ position: 'relative', width: 100, height: 100, marginBottom: 12 }}>
+                <svg width="100" height="100" style={{ transform: 'rotate(-90deg)' }}>
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="#F3F4F6" strokeWidth="6" />
+                  <circle
+                    cx="50" cy="50" r="44" fill="none"
+                    stroke={isMainsTimerRunning ? '#00BC7D' : mainsWritingSeconds === 0 ? '#EF4444' : '#101828'}
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeDasharray={mainsCircumference}
+                    strokeDashoffset={mainsCircumference - mainsTimerPct * mainsCircumference}
+                    style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }}
+                  />
+                </svg>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontWeight: 700, fontSize: 20, color: '#101828' }}>{formatTime(mainsWritingSeconds)}</span>
+                </div>
               </div>
-              {/* Circular timer */}
-              <div style={{
-                width: 108, height: 108, borderRadius: '50%',
-                border: `4px solid ${isMainsTimerRunning ? '#17223E' : '#E5E7EB'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 10, transition: 'border-color 0.3s',
-                background: isMainsTimerRunning ? 'rgba(15,26,48,0.04)' : 'transparent',
-              }}>
-                <span style={{ fontWeight: 700, fontSize: 22, color: '#101828', fontFamily: 'Inter, sans-serif' }}>
-                  {formatTime(mainsWritingSeconds)}
-                </span>
-              </div>
-              {/* Status label */}
-              <div style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.07em', color: isMainsTimerRunning ? '#17223E' : '#9CA3AF', textTransform: 'uppercase', marginBottom: 14, textAlign: 'center' }}>
+
+              <p style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.07em', color: isMainsTimerRunning ? '#00BC7D' : '#9CA3AF', textTransform: 'uppercase', marginBottom: 16, textAlign: 'center' }}>
                 {isMainsTimerRunning ? 'IN PROGRESS' : mainsWritingSeconds === 0 ? 'COMPLETE' : 'PAUSED'}
-              </div>
-              {/* Start/Pause */}
+              </p>
+
               <button
                 type="button"
                 onClick={() => setIsMainsTimerRunning(r => !r)}
-                style={{ width: '100%', height: 40, background: isMainsTimerRunning ? '#DC2626' : '#00BC7D', border: 'none', borderRadius: 10, color: '#FFFFFF', fontWeight: 700, fontSize: 13, cursor: 'pointer', marginBottom: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                className="w-full flex items-center justify-center gap-2 font-bold text-white"
+                style={{ height: 44, background: isMainsTimerRunning ? '#EF4444' : '#00BC7D', border: 'none', borderRadius: '12px', fontSize: 14, cursor: 'pointer', marginBottom: 8 }}
               >
                 {isMainsTimerRunning ? '⏸ Pause' : '▶ Start'}
               </button>
-              {/* Reset */}
               <button
                 type="button"
                 onClick={() => { setIsMainsTimerRunning(false); setMainsWritingSeconds(minPerQ * 60); }}
-                style={{ width: '100%', height: 40, background: '#FFFFFF', border: '1.5px solid #E5E7EB', borderRadius: 10, color: '#374151', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                className="w-full flex items-center justify-center gap-2 font-bold"
+                style={{ height: 44, background: '#FFFFFF', border: '1.5px solid #E5E7EB', borderRadius: '12px', color: '#374151', fontSize: 14, cursor: 'pointer' }}
               >
                 ↺ Reset
               </button>
             </div>
           </div>
-
         </div>
       </div>
     );

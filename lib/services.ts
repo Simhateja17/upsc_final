@@ -265,9 +265,9 @@ export const mockTestService = {
 export const studyPlannerService = {
   getTodayTasks: (date?: string) =>
     api.get<any>(`/study-plan/today${date ? `?date=${encodeURIComponent(date)}` : ''}`, authConfig()),
-  createTask: (task: { title: string; description?: string; subject?: string; type?: string; date?: string; startTime?: string; endTime?: string; duration?: number }) =>
+  createTask: (task: { title: string; description?: string; subject?: string; type?: string; date?: string; startTime?: string; endTime?: string; duration?: number; actualDuration?: number }) =>
     api.post<any>('/study-plan/tasks', task, authConfig()),
-  updateTask: (id: string, updates: any) =>
+  updateTask: (id: string, updates: { title?: string; description?: string; subject?: string; type?: string; date?: string; startTime?: string; endTime?: string; duration?: number; actualDuration?: number; isCompleted?: boolean }) =>
     api.put<any>(`/study-plan/tasks/${id}`, updates, authConfig()),
   deleteTask: (id: string) => api.delete<any>(`/study-plan/tasks/${id}`, authConfig()),
   getStreak: () => api.get<any>('/study-plan/streak', authConfig()),

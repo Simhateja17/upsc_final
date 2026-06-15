@@ -196,7 +196,7 @@ function ResultsPageInner() {
     return (
       <div
         className="min-h-screen font-arimo flex items-center justify-center"
-        style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}
+        style={{ background: '#FAFBFE' }}
       >
         <div className="text-center px-6">
           <h2 className="text-xl font-bold text-gray-800 mb-2">Could not load results</h2>
@@ -211,7 +211,7 @@ function ResultsPageInner() {
 
   return (
     <>
-    <div className="min-h-screen font-arimo" style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}>
+    <div className="min-h-screen font-arimo" style={{ background: '#FAFBFE' }}>
       <div className="flex flex-col items-center py-10 px-6 gap-6">
         {data.question && (
           <p className="text-[#4A5565]" style={{ width: '100%', maxWidth: '988px', fontSize: '13px', fontWeight: 500 }}>

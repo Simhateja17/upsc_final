@@ -68,6 +68,8 @@ interface Task {
   type: string;
   startTime?: string;
   endTime?: string;
+  duration?: number;
+  actualDuration?: number;
   isCompleted: boolean;
   recur?: string;
 }
@@ -173,6 +175,37 @@ const SUBJECT_OPTIONS = [
   'Optional Paper 1',
   'Optional Paper 2',
 ];
+
+// Maps syllabus subject short/full names to their canonical Quick Add to Plan
+// subject name. Subjects with no entry here (e.g. optional-paper subjects like
+// Philosophy, Sociology) are excluded from Syllabus Coverage.
+const SYLLABUS_SUBJECT_ALIASES: Record<string, string> = {
+  Polity: 'Polity',
+  History: 'History',
+  'Geog.': 'Geography',
+  Geography: 'Geography',
+  Economy: 'Economy',
+  'Env.': 'Environment & Ecology',
+  'Enviro.': 'Environment & Ecology',
+  'Environment & Ecology': 'Environment & Ecology',
+  'S&T': 'Science & Technology',
+  Science: 'Science & Technology',
+  'Science & Technology': 'Science & Technology',
+  'Curr. Aff.': 'Current Affairs',
+  'Current Affairs': 'Current Affairs',
+  Society: 'Society',
+  Governance: 'Governance',
+  IR: 'International Relations',
+  'International Relations': 'International Relations',
+  'Social Justice': 'Social Justice',
+  Agriculture: 'Agriculture',
+  'Int. Security': 'Internal Security',
+  'Internal Security': 'Internal Security',
+  'Disaster Mgmt': 'Disaster Management',
+  'Disaster Management': 'Disaster Management',
+  Ethics: 'Ethics',
+  Essay: 'Essay',
+};
 
 const SUBJECT_ICON_MAP: Record<string, string> = {
   Polity: '/study-planner-icons/polity.png',
@@ -280,10 +313,14 @@ export default function StudyPlannerPage() {
         }
         const stateMap = states ?? {};
         const stages: ('prelims' | 'mains' | 'optional')[] = ['prelims', 'mains', 'optional'];
-        const rows: { subject: string; percentage: number; done: number; total: number }[] = [];
+        const subjectMap = new Map<string, { subject: string; done: number; total: number }>();
         stages.forEach((stage) => {
           const subjects = Array.isArray(data[stage]) ? data[stage] : [];
           subjects.forEach((subject: any) => {
+            // Only keep subjects that also appear in the Quick Add to Plan list,
+            // so Syllabus Coverage matches the Study Planner's subject set.
+            const canonical = SYLLABUS_SUBJECT_ALIASES[subject.short] || SYLLABUS_SUBJECT_ALIASES[subject.name];
+            if (!canonical) return;
             let total = 0;
             let done = 0;
             (subject.topics ?? []).forEach((topic: any, ti: number) => {
@@ -292,14 +329,19 @@ export default function StudyPlannerPage() {
                 if (stateMap[`${subject.id}__${ti}__${si}`]?.status === 'done') done += 1;
               });
             });
-            rows.push({
-              subject: subject.short || subject.name,
-              percentage: total > 0 ? Math.round((done / total) * 100) : 0,
-              done,
-              total,
-            });
+            const existing = subjectMap.get(canonical);
+            if (existing) {
+              existing.done += done;
+              existing.total += total;
+            } else {
+              subjectMap.set(canonical, { subject: canonical, done, total });
+            }
           });
         });
+        const rows = Array.from(subjectMap.values()).map((item) => ({
+          ...item,
+          percentage: item.total > 0 ? Math.round((item.done / item.total) * 100) : 0,
+        }));
         setSyllabusCoverage(rows);
       })
       .catch(() => {});
@@ -316,8 +358,25 @@ export default function StudyPlannerPage() {
 
   useEffect(() => {
     studyPlannerService.getTodayTasks(toDateParam(currentDate))
-      .then(res => { if (res.data) setTasks(res.data); else setTasks([]); })
-      .catch(() => setTasks([]));
+      .then(res => {
+        if (res.data) {
+          setTasks(res.data);
+          const actualMap: Record<string, number> = {};
+          res.data.forEach((t: any) => {
+            if (t.actualDuration && t.actualDuration > 0) {
+              actualMap[t.id] = Number(t.actualDuration);
+            }
+          });
+          setActualSecondsByTask(actualMap);
+        } else {
+          setTasks([]);
+          setActualSecondsByTask({});
+        }
+      })
+      .catch(() => {
+        setTasks([]);
+        setActualSecondsByTask({});
+      });
   }, [currentDate]);
 
   useEffect(() => {
@@ -509,7 +568,10 @@ export default function StudyPlannerPage() {
       setActualSecondsByTask(prev => ({ ...prev, [task.id]: focusTaskSecs }));
     }
     if (task && !task.isCompleted) {
-      await handleToggleTask(task.id, false);
+      try {
+        await studyPlannerService.updateTask(task.id, { isCompleted: true, actualDuration: focusTaskSecs });
+        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, isCompleted: true, actualDuration: focusTaskSecs } : t));
+      } catch {}
     }
     const updated = focusSessionTasks.map((t, i) => i === focusTaskIdx ? { ...t, isCompleted: true } : t);
     setFocusSessionTasks(updated);
