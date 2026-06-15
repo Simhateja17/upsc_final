@@ -215,3 +215,24 @@ html, body {
   animation: shimmer-border 3s linear infinite;
   z-index: -1;
 }
+
+/* Siren / live pulse dot */
+@keyframes live-siren {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(220, 38, 38, 0);
+    transform: scale(1.15);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+    transform: scale(1);
+  }
+}
+
+.live-siren-dot {
+  animation: live-siren 1.4s ease-out infinite;
+  border-radius: 9999px;
+}

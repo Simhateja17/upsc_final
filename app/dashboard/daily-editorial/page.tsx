@@ -1088,18 +1088,6 @@ export default function DailyEditorialPage() {
           return sections;
         };
 
-        const sectionIcons: Record<string, string> = {
-          'key arguments': '💬',
-          'upsc relevance': '🎯',
-          'key terms': '🔑',
-          'potential exam': '📝',
-          'critical analysis': '🔬',
-        };
-        const getSectionIcon = (title: string) => {
-          const key = Object.keys(sectionIcons).find(k => title.toLowerCase().includes(k));
-          return key ? sectionIcons[key] : '📌';
-        };
-
         /* ── render section body by type ── */
         const renderSectionBody = (title: string, body: string) => {
           const tl = title.toLowerCase();

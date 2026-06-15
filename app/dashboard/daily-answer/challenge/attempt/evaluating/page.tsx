@@ -7,6 +7,15 @@ import { dailyAnswerService } from '@/lib/services';
 const STEPS = [
   {
     id: 1,
+    icon: '/eval-upload.png',
+    emoji: '🔍',
+    bg: '#E0F2FE',
+    title: 'Uploading Answer Script',
+    subtitle: 'Scanning and processing your handwritten answer',
+    key: 'upload',
+  },
+  {
+    id: 2,
     icon: '/eval-structural.png',
     emoji: '📝',
     bg: '#FEF3C7',
@@ -15,7 +24,7 @@ const STEPS = [
     key: 'structural',
   },
   {
-    id: 2,
+    id: 3,
     icon: '/eval-content.png',
     emoji: '📚',
     bg: '#DBEAFE',
@@ -24,7 +33,7 @@ const STEPS = [
     key: 'content',
   },
   {
-    id: 3,
+    id: 4,
     icon: '/eval-balance.png',
     emoji: '⚖️',
     bg: '#FCE7F3',
@@ -33,7 +42,7 @@ const STEPS = [
     key: 'balance',
   },
   {
-    id: 4,
+    id: 5,
     icon: '/eval-fact.png',
     emoji: '📊',
     bg: '#DCFCE7',
@@ -42,13 +51,22 @@ const STEPS = [
     key: 'fact',
   },
   {
-    id: 5,
+    id: 6,
     icon: '/eval-pillar.png',
     emoji: '🎯',
     bg: '#EDE9FE',
     title: '6-Pillar Rubric Scoring',
     subtitle: 'Direct   Demand   Structure   Substantiation',
     key: 'scoring',
+  },
+  {
+    id: 7,
+    icon: '/eval-feedback.png',
+    emoji: '💡',
+    bg: '#FEF9C3',
+    title: 'Preparing Personalised Feedback',
+    subtitle: 'Crafting actionable insights tailored to your answer',
+    key: 'feedback',
   },
 ];
 
@@ -73,6 +91,8 @@ const SpinnerIcon = () => (
   </svg>
 );
 
+const MIN_DISPLAY_SECONDS = 60;
+
 export default function EvaluatingPage() {
   const router = useRouter();
   const [elapsed, setElapsed] = useState(0);
@@ -81,10 +101,24 @@ export default function EvaluatingPage() {
   const [error, setError] = useState<string | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const navigatedRef = useRef(false);
+  const resultsReadyRef = useRef(false);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const maxRetriesRef = useRef(0);
+  const elapsedRef = useRef(0);
 
-  const navigateToResultsIfReady = useCallback(async () => {
+  // Keep elapsedRef in sync so the navigate effect can read the latest value
+  useEffect(() => {
+    elapsedRef.current = elapsed;
+  }, [elapsed]);
+
+  const navigateToResults = useCallback(() => {
+    if (navigatedRef.current) return;
+    navigatedRef.current = true;
+    if (pollRef.current) clearInterval(pollRef.current);
+    router.push('/dashboard/daily-answer/challenge/attempt/results');
+  }, [router]);
+
+  const checkResultsReady = useCallback(async () => {
     if (!attemptId || navigatedRef.current) return false;
     try {
       const resultsRes = await dailyAnswerService.getResults(attemptId);
@@ -100,16 +134,18 @@ export default function EvaluatingPage() {
         );
 
       if (hasUsableResults) {
-        navigatedRef.current = true;
-        if (pollRef.current) clearInterval(pollRef.current);
-        router.push('/dashboard/daily-answer/challenge/attempt/results');
+        resultsReadyRef.current = true;
+        // Navigate immediately only if we've already waited long enough
+        if (elapsedRef.current >= MIN_DISPLAY_SECONDS) {
+          navigateToResults();
+        }
         return true;
       }
     } catch (err) {
       console.log('Results not ready yet, staying on evaluating screen');
     }
     return false;
-  }, [attemptId, router]);
+  }, [attemptId, navigateToResults]);
 
   // Get attemptId from sessionStorage on mount
   useEffect(() => {
@@ -142,17 +178,13 @@ export default function EvaluatingPage() {
         setStatus(evalStatus);
         console.log('Status:', evalStatus);
       }
-      if (data?.completedSteps) {
-        setCompletedSteps(data.completedSteps);
-        console.log('Completed steps:', data.completedSteps);
-      }
+      // Step ticks are driven by elapsed time only — ignore backend completedSteps
 
-      // Only leave this screen once the results endpoint is actually ready.
+      // Check results when backend signals completion, but honour MIN_DISPLAY_SECONDS
       const isComplete = data?.isComplete || evalStatus === 'completed' || evalStatus === 'done';
       if (isComplete && !navigatedRef.current) {
         console.log('Evaluation marked complete, verifying results payload...');
-        setCompletedSteps(STEPS.map((step) => step.key));
-        await navigateToResultsIfReady();
+        await checkResultsReady();
       }
 
       if (evalStatus === 'failed') {
@@ -170,7 +202,7 @@ export default function EvaluatingPage() {
       console.error('Poll error:', err);
       // Don't set error immediately, let it retry
     }
-  }, [attemptId, navigateToResultsIfReady]);
+  }, [attemptId, checkResultsReady]);
 
   // Start polling when attemptId is available
   useEffect(() => {
@@ -190,21 +222,27 @@ export default function EvaluatingPage() {
   // Elapsed timer for display
   useEffect(() => {
     const timer = setInterval(() => {
-      setElapsed((prev) => prev + 1);
+      setElapsed((prev) => {
+        const next = prev + 1;
+        // Once minimum wait is reached, navigate if results are already in
+        if (next >= MIN_DISPLAY_SECONDS && resultsReadyRef.current && !navigatedRef.current) {
+          navigatedRef.current = true;
+          if (pollRef.current) clearInterval(pollRef.current);
+          router.push('/dashboard/daily-answer/challenge/attempt/results');
+        }
+        return next;
+      });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [router]);
 
-  // Simulate step progression in 10-second increments until the
-  // backend confirms completion. Advances past the first step.
+  // Step ticks are purely time-driven: each step gets an equal slice of MIN_DISPLAY_SECONDS.
+  // A step's tick appears only after its full interval has elapsed.
+  const STEP_INTERVAL = MIN_DISPLAY_SECONDS / STEPS.length;
   useEffect(() => {
-    if (status === 'completed' || status === 'done') return;
-    const stepsToComplete = Math.min(STEPS.length, Math.floor(elapsed / 10));
-    setCompletedSteps((prev) => {
-      const simulated = STEPS.slice(0, stepsToComplete).map((s) => s.key);
-      return simulated.length > prev.length ? simulated : prev;
-    });
-  }, [elapsed, status]);
+    const stepsToComplete = Math.min(STEPS.length, Math.floor(elapsed / STEP_INTERVAL));
+    setCompletedSteps(STEPS.slice(0, stepsToComplete).map((s) => s.key));
+  }, [elapsed, STEP_INTERVAL]);
 
   // Preload step icons so they appear instantly instead of popping in
   useEffect(() => {
@@ -255,37 +293,37 @@ export default function EvaluatingPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center font-arimo p-4"
+      className="h-screen overflow-hidden flex items-center justify-center font-arimo p-3"
       style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}
     >
       <div
-        className="relative flex flex-col px-6 py-8 sm:px-10 sm:py-8"
+        className="relative flex flex-col px-6 py-5 sm:px-8"
         style={{
           width: '100%',
-          maxWidth: '768px',
+          maxWidth: '700px',
           borderRadius: '16px',
           background: '#FFFFFF',
           boxShadow: '0px 8px 10px -6px #0000001A, 0px 20px 25px -5px #0000001A',
         }}
       >
         {/* Header */}
-        <div className="flex flex-col items-center mb-4">
+        <div className="flex flex-col items-center mb-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/eval-header.png"
             alt="Evaluating"
-            style={{ width: '64px', height: '64px', objectFit: 'contain', marginBottom: '12px' }}
+            style={{ width: '44px', height: '44px', objectFit: 'contain', marginBottom: '6px' }}
           />
           <h1
             style={{
               fontFamily: 'Arimo',
               fontWeight: 700,
-              fontSize: '26px',
-              lineHeight: '32px',
+              fontSize: '22px',
+              lineHeight: '28px',
               letterSpacing: '0px',
               color: '#1E2939',
               textAlign: 'center',
-              marginBottom: '6px',
+              marginBottom: '2px',
             }}
           >
             Evaluating Your Answer
@@ -294,11 +332,11 @@ export default function EvaluatingPage() {
             style={{
               fontFamily: 'Arimo',
               fontWeight: 400,
-              fontSize: '15px',
-              lineHeight: '22px',
+              fontSize: '13px',
+              lineHeight: '18px',
               color: '#4A5565',
               textAlign: 'center',
-              marginBottom: '2px',
+              marginBottom: '1px',
             }}
           >
             Analyzing with UPSC examiner&apos;s lens
@@ -307,8 +345,8 @@ export default function EvaluatingPage() {
             style={{
               fontFamily: 'Arimo',
               fontWeight: 400,
-              fontSize: '13px',
-              lineHeight: '18px',
+              fontSize: '12px',
+              lineHeight: '16px',
               color: '#6A7282',
               textAlign: 'center',
             }}
@@ -319,7 +357,7 @@ export default function EvaluatingPage() {
 
         {/* Error Banner */}
         {error && (
-          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-[10px] text-red-700 text-center" style={{ fontSize: '14px' }}>
+          <div className="mb-3 px-4 py-2 bg-red-50 border border-red-200 rounded-[10px] text-red-700 text-center" style={{ fontSize: '13px' }}>
             {error}
             <div className="mt-2">
               <button
@@ -333,28 +371,29 @@ export default function EvaluatingPage() {
         )}
 
         {/* Steps */}
-        <div className="flex flex-col gap-0 mb-4">
+        <div className="flex flex-col gap-0 mb-3">
           {STEPS.map((step, idx) => {
             const done = isStepDone(step);
             const active = isStepActive(step, idx);
             return (
               <div key={step.id}>
-                <div className="flex items-center justify-between py-3">
+                <div className="flex items-center justify-between py-2">
                   {/* Left: icon + text */}
                   <div className="flex items-center gap-3">
                     <span
                       aria-hidden="true"
                       style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '10px',
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '8px',
                         background: step.bg,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '20px',
+                        fontSize: '16px',
                         opacity: done || active ? 1 : 0.4,
                         transition: 'opacity 0.4s',
+                        flexShrink: 0,
                       }}
                     >
                       {step.emoji}
@@ -364,8 +403,8 @@ export default function EvaluatingPage() {
                         style={{
                           fontFamily: 'Arimo',
                           fontWeight: 700,
-                          fontSize: '15px',
-                          lineHeight: '20px',
+                          fontSize: '13px',
+                          lineHeight: '18px',
                           color: '#17223E',
                         }}
                       >
@@ -375,8 +414,8 @@ export default function EvaluatingPage() {
                         style={{
                           fontFamily: 'Arimo',
                           fontWeight: 400,
-                          fontSize: '13px',
-                          lineHeight: '18px',
+                          fontSize: '11px',
+                          lineHeight: '15px',
                           color: '#17223E',
                         }}
                       >
@@ -394,8 +433,8 @@ export default function EvaluatingPage() {
                     ) : (
                       <div
                         style={{
-                          width: '24px',
-                          height: '24px',
+                          width: '22px',
+                          height: '22px',
                           borderRadius: '50%',
                           border: '2px solid #D1D5DB',
                         }}
@@ -424,19 +463,19 @@ export default function EvaluatingPage() {
             borderRadius: '10px',
             borderLeft: '4px solid #FDC700',
             background: '#FEFCE8',
-            padding: '18px 28px',
+            padding: '12px 20px',
           }}
         >
           {/* Timer row */}
-          <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="flex items-center justify-center gap-2 mb-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/eval-timer.png" alt="Timer" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+            <img src="/eval-timer.png" alt="Timer" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
             <span
               style={{
                 fontFamily: 'DM Sans',
                 fontWeight: 700,
-                fontSize: '14px',
-                lineHeight: '20px',
+                fontSize: '13px',
+                lineHeight: '18px',
                 color: '#101828',
               }}
             >
@@ -446,11 +485,11 @@ export default function EvaluatingPage() {
 
           {/* Progress bar */}
           <div
-            className="mx-auto mb-3"
+            className="mx-auto mb-2"
             style={{
               width: '100%',
               maxWidth: '362px',
-              height: '5px',
+              height: '4px',
               borderRadius: '10px',
               background: '#D9D9D9',
               overflow: 'hidden',
@@ -469,11 +508,11 @@ export default function EvaluatingPage() {
 
           {/* While you wait text */}
           <p
-            className="text-center mb-2"
+            className="text-center mb-1"
             style={{
               fontFamily: 'Arimo',
-              fontSize: '13px',
-              lineHeight: '18px',
+              fontSize: '12px',
+              lineHeight: '17px',
               color: '#364153',
             }}
           >
@@ -489,7 +528,7 @@ export default function EvaluatingPage() {
               fontWeight: 400,
               fontStyle: 'italic',
               fontSize: '11px',
-              lineHeight: '15px',
+              lineHeight: '14px',
               color: '#6A7282',
             }}
           >

@@ -6,7 +6,7 @@ import { mockTestService, dashboardService, pricingService } from '@/lib/service
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { liveStudentCount } from '@/lib/liveCount';
 import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
-import { handleEntitlementError, UsageMeter } from '@/components/entitlements';
+import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 /* ─── Static Config (UI structure only, not data) ─── */
@@ -886,11 +886,6 @@ function MockTestsPageInner() {
           {/* ── Step 1: Question Source ── */}
           {!loading && (
           <div style={cardStyle}>
-                <UsageMeter
-                  status={activeQuota}
-                  label={selectedExamMode === 'mains' ? 'Mains evaluation quota' : 'Prelims mock quota'}
-                  className="mb-4"
-                />
                 <StepHeader step={2} label="Question Source" />
                 <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '8px', overflowX: 'auto' }}>
               {questionSources.map(src => {
