@@ -274,7 +274,7 @@ export default function EvaluatingPage() {
     return (
       <div
         className="min-h-screen flex items-center justify-center font-arimo"
-        style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}
+        style={{ background: '#FAFBFE' }}
       >
         <div className="text-center px-6">
           <span style={{ fontSize: '48px' }}>⚠️</span>
@@ -294,7 +294,7 @@ export default function EvaluatingPage() {
   return (
     <div
       className="h-screen overflow-hidden flex items-center justify-center font-arimo p-3"
-      style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}
+      style={{ background: '#FAFBFE' }}
     >
       <div
         className="relative flex flex-col px-6 py-5 sm:px-8"
@@ -396,7 +396,9 @@ export default function EvaluatingPage() {
                         flexShrink: 0,
                       }}
                     >
-                      {step.emoji}
+                      <span className={step.key === 'feedback' && active ? 'bulb-grow' : undefined}>
+                        {step.emoji}
+                      </span>
                     </span>
                     <div>
                       <p

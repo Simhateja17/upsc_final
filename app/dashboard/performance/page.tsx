@@ -22,12 +22,15 @@ function clamp(value: number, min = 0, max = 100) {
 function formatHours(value: number) {
   if (!Number.isFinite(value) || value <= 0) return '0h';
 
-  const hours = Math.floor(value);
-  const minutes = Math.round((value - hours) * 60);
+  const totalSeconds = Math.round(value * 3600);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
 
-  if (hours === 0) return `${minutes}m`;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h${minutes}m`;
+  if (hours === 0 && minutes === 0) return `${seconds}s`;
+  if (hours === 0) return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+  if (minutes === 0) return seconds > 0 ? `${hours}h ${seconds}s` : `${hours}h`;
+  return seconds > 0 ? `${hours}h ${minutes}m ${seconds}s` : `${hours}h ${minutes}m`;
 }
 
 function getDaysToPrelims() {
