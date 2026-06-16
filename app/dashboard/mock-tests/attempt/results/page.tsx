@@ -131,10 +131,18 @@ interface ResultsData {
   testLabel?: string;
 }
 
+interface ParameterScore {
+  parameter: string;
+  score: number;
+  maxScore: number;
+  comment?: string;
+}
+
 interface MainsPerQuestion {
   idx: number;
   questionText: string;
   subject: string;
+  paper?: string;
   score: number;
   maxScore: number;
   strengths: string[];
@@ -146,7 +154,15 @@ interface MainsPerQuestion {
   checkedCopyUrl?: string | null;
   checkedCopyPages?: Array<{ pageNumber: number; checkedCopyUrl?: string | null; status?: string; reason?: string }>;
   checkedCopyStatus?: string | null;
+  parameterScores?: ParameterScore[];
+  keyTerms?: Array<{ term: string; found: boolean }>;
+  nextAttemptFocus?: string | null;
+  evaluatorConclusion?: string | null;
+  modelAnswerKeyPoints?: string[];
+  modelAnswerContent?: string;
 }
+
+type MainsSlideKey = 'feedback' | 'markup' | 'rubric';
 
 /* ─── Next-steps types ─── */
 interface CardItem {
@@ -241,11 +257,15 @@ function MockTestResultsInner() {
   const [error, setError] = useState<string | null>(null);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(1);
   const [mainsData, setMainsData] = useState<MainsPerQuestion[] | null>(null);
+  const [selectedQ, setSelectedQ] = useState(0);        // mains: which question's score card is shown
+  const [qSlide, setQSlide] = useState<MainsSlideKey>('feedback'); // mains: inner slide for the selected question
+  const [modelOpen, setModelOpen] = useState(false);    // mains: model answer modal
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
   /* ─── Next-steps tab state ─── */
-  const [activeTab, setActiveTab] = useState<'next-steps' | 'review'>('next-steps');
+  // Mains opens directly on the score card; prelims keeps the next-steps landing.
+  const [activeTab, setActiveTab] = useState<'next-steps' | 'review'>(isMains ? 'review' : 'next-steps');
   const [cards, setCards] = useState<CardItem[]>(fallbackCards);
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [heroTitle, setHeroTitle] = useState('Great session!');
@@ -334,6 +354,7 @@ function MockTestResultsInner() {
             idx: i + 1,
             questionText: d.question?.questionText || '',
             subject: d.question?.subject || '',
+            paper: d.question?.paper || '',
             score: Number(d.score ?? 0),
             maxScore: Number(d.maxScore ?? 15),
             strengths: Array.isArray(d.strengths) ? d.strengths : [],
@@ -345,6 +366,12 @@ function MockTestResultsInner() {
             checkedCopyUrl: d.checkedCopyUrl,
             checkedCopyPages: Array.isArray(d.checkedCopyPages) ? d.checkedCopyPages : [],
             checkedCopyStatus: d.checkedCopyStatus,
+            parameterScores: Array.isArray(d.parameterScores) ? d.parameterScores : [],
+            keyTerms: Array.isArray(d.keyTerms) ? d.keyTerms : [],
+            nextAttemptFocus: d.nextAttemptFocus,
+            evaluatorConclusion: d.evaluatorConclusion,
+            modelAnswerKeyPoints: Array.isArray(d.modelAnswerKeyPoints) ? d.modelAnswerKeyPoints : [],
+            modelAnswerContent: d.modelAnswerContent,
           });
         }
         if (!cancelled) {
@@ -748,18 +775,10 @@ function MockTestResultsInner() {
       : pct >= 50 ? 'Good attempt — solid foundation'
       : 'Keep practising — real progress ahead';
 
-    const gradeFor = (s: number, m: number): string => {
-      const p = m > 0 ? (s / m) * 100 : 0;
-      if (p >= 85) return 'A';
-      if (p >= 75) return 'A-';
-      if (p >= 65) return 'B+';
-      if (p >= 55) return 'B';
-      if (p >= 45) return 'C+';
-      if (p >= 35) return 'C';
-      return 'D';
-    };
+    const selected = mainsData[Math.min(selectedQ, mainsData.length - 1)];
 
     return (
+      <>
       <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
         <div style={{ maxWidth: 960, margin: '0 auto' }}>
           <button
@@ -806,118 +825,416 @@ function MockTestResultsInner() {
           {/* Next steps tab */}
           {activeTab === 'next-steps' && nextStepsContent}
 
-          {/* Review tab */}
-          {activeTab === 'review' && (
-            <>
+          {/* Review tab — per-question score card (ported from Daily Answer Writing) */}
+          {activeTab === 'review' && (() => {
+            const q = mainsData[Math.min(selectedQ, mainsData.length - 1)];
+            const qPct = q.maxScore > 0 ? Math.round((q.score / q.maxScore) * 100) : 0;
+            const detailedParas = (q.detailedFeedback || '').split(/\n+/).map((s) => s.trim()).filter(Boolean);
+            const checkedPages = (q.checkedCopyPages || []).filter((p) => p.checkedCopyUrl);
+            const displayPages = checkedPages.length > 0
+              ? checkedPages
+              : q.checkedCopyUrl ? [{ pageNumber: 1, checkedCopyUrl: q.checkedCopyUrl }] : [];
+            const markupReady = displayPages.length > 0;
+
+            const summaryCards = [
+              { id: 'score', label: 'Question Score', value: `${q.score}/${q.maxScore}`, hint: `${qPct}% examiner alignment`, bg: '#FEF3C7', border: '#FCD34D', color: '#92400E' },
+              { id: 'str', label: 'Strong Points', value: `${q.strengths.length}`, hint: 'Well-handled elements', bg: '#DCFCE7', border: '#86EFAC', color: '#166534' },
+              { id: 'imp', label: 'Needs Work', value: `${q.improvements.length}`, hint: 'Priority fix areas', bg: '#FEF3C7', border: '#FDE68A', color: '#A16207' },
+              { id: 'words', label: 'Word Count', value: `${q.wordCount ?? 0}`, hint: 'From your submission', bg: '#DBEAFE', border: '#93C5FD', color: '#1D4ED8' },
+            ];
+
+            const innerSlides: Array<{ key: MainsSlideKey; label: string }> = [
+              { key: 'feedback', label: 'Feedback' },
+              { key: 'markup', label: "Examiner's Markup" },
+              { key: 'rubric', label: 'Score Breakdown' },
+            ];
+
+            return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {mainsData.map((q) => {
-                  const grade = gradeFor(q.score, q.maxScore);
-                  return (
-                    <div key={q.idx} style={{ background: '#F1F5F9', borderRadius: 16, padding: '22px 24px' }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#64748B', marginBottom: 10 }}>
-                        QUESTION {q.idx}{q.subject ? ` · ${q.subject.toUpperCase()}` : ''}
-                      </div>
-                      <p style={{ fontSize: 15, lineHeight: '24px', color: '#334155', margin: '0 0 14px', whiteSpace: 'pre-line' }}>
-                        {q.questionText}
-                      </p>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
-                        <span style={{ fontSize: 28, fontWeight: 800, color: '#1E3A5F' }}>{grade}</span>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: '#64748B' }}>
-                          {q.score}/{q.maxScore} marks
+                {/* Question selector */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {mainsData.map((mq, i) => {
+                    const active = i === selectedQ;
+                    const mPct = mq.maxScore > 0 ? Math.round((mq.score / mq.maxScore) * 100) : 0;
+                    const tone = mPct >= 60 ? '#16A34A' : mPct >= 40 ? '#D97706' : '#DC2626';
+                    return (
+                      <button
+                        key={mq.idx}
+                        onClick={() => { setSelectedQ(i); setQSlide('feedback'); }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '9px 14px', borderRadius: 10, cursor: 'pointer',
+                          border: active ? '1.5px solid #17223E' : '1px solid #E5E7EB',
+                          background: active ? '#17223E' : '#FFFFFF',
+                          color: active ? '#FFFFFF' : '#374151',
+                          fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                        }}
+                      >
+                        Q{mq.idx}
+                        <span style={{ fontSize: 11, fontWeight: 700, color: active ? '#FDC700' : tone }}>
+                          {mq.score}/{mq.maxScore}
                         </span>
-                        {typeof q.wordCount === 'number' && q.wordCount > 0 && (
-                          <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', background: '#E2E8F0', borderRadius: 8, padding: '4px 10px' }}>
-                            {q.wordCount} words
-                          </span>
-                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Question text + score hero */}
+                <div style={{ borderRadius: 14, background: 'linear-gradient(90deg, #101828 0%, #17223E 100%)', padding: '24px 28px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#D1D5DC', textTransform: 'uppercase', marginBottom: 10 }}>
+                    Question {q.idx}{q.subject ? ` · ${q.subject}` : ''}{q.paper ? ` · ${q.paper}` : ''}
+                  </div>
+                  <p className="italic" style={{ fontSize: 16, lineHeight: '26px', color: '#E5E7EB', fontFamily: 'var(--font-merriweather), Georgia, serif', margin: '0 0 18px', whiteSpace: 'pre-line' }}>
+                    &quot;{q.questionText}&quot;
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                    <span style={{ fontWeight: 700, fontSize: 64, lineHeight: '60px', color: '#FDC700' }}>{q.score}</span>
+                    <span style={{ fontWeight: 700, fontSize: 28, color: '#FDC70087' }}>/{q.maxScore}</span>
+                  </div>
+                  <p style={{ marginTop: 10, color: '#D1D5DC', fontSize: 13 }}>
+                    Examiner score based on structure, depth, relevance, and substantiation.
+                  </p>
+                </div>
+
+                {/* Inner slide tabs */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {innerSlides.map((s) => (
+                    <button
+                      key={s.key}
+                      onClick={() => setQSlide(s.key)}
+                      style={{
+                        padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                        border: qSlide === s.key ? 'none' : '1px solid #E5E7EB',
+                        background: qSlide === s.key ? '#17223E' : '#FFFFFF',
+                        color: qSlide === s.key ? '#FFFFFF' : '#4A5565',
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* FEEDBACK slide */}
+                {qSlide === 'feedback' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {/* Summary metric cards */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {summaryCards.map((m) => (
+                        <div key={m.id} className="flex flex-col items-center justify-center rounded-[10px] p-4" style={{ background: m.bg, border: `1px solid ${m.border}` }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: '#6A7282', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>{m.label}</span>
+                          <span style={{ fontSize: 22, fontWeight: 700, color: m.color }}>{m.value}</span>
+                          <span className="text-center mt-2" style={{ fontSize: 12, color: '#4A5565', lineHeight: '18px' }}>{m.hint}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Personalised Feedback */}
+                    <div style={{ background: '#FFFFFF', borderRadius: 14, boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '28px 28px 24px' }}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span style={{ fontSize: 20 }}>🎯</span>
+                        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#101828' }}>Personalised Feedback</h2>
                       </div>
-
-                      {(() => {
-                        const checkedCopyPages = (q.checkedCopyPages || []).filter((page) => page.checkedCopyUrl);
-                        const displayCheckedCopyPages = checkedCopyPages.length > 0
-                          ? checkedCopyPages
-                          : q.checkedCopyUrl
-                            ? [{ pageNumber: 1, checkedCopyUrl: q.checkedCopyUrl }]
-                            : [];
-                        if (displayCheckedCopyPages.length === 0) return null;
-                        return (
-                          <div style={{ marginBottom: 14, border: '1px solid #E2E8F0', borderRadius: 12, background: '#FFFFFF', padding: 12 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-                              <span style={{ fontSize: 13, fontWeight: 800, color: '#991B1B' }}>Checked copy markup</span>
-                              <a href={displayCheckedCopyPages[0].checkedCopyUrl || '#'} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>
-                                Open full size
-                              </a>
-                            </div>
-                            {displayCheckedCopyPages.map((page) => (
-                              <div key={page.pageNumber} style={{ marginTop: 10 }}>
-                                <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', marginBottom: 6 }}>Page {page.pageNumber}</div>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={page.checkedCopyUrl || ''}
-                                  alt={`Checked copy page ${page.pageNumber} markup for question ${q.idx}`}
-                                  style={{ width: '100%', borderRadius: 10, border: '1px solid #E5E7EB', background: '#F8FAFC' }}
-                                />
+                      <p style={{ fontSize: 13, color: '#6A7282', marginBottom: 24 }}>Actionable insights to help you improve, not just a score</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        {/* Strengths */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span style={{ width: 28, height: 28, borderRadius: 7, background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>✅</span>
+                            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#101828' }}>What You Did Well</h3>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {q.strengths.length > 0 ? q.strengths.map((item, i) => (
+                              <div key={i} className="flex items-start gap-2 rounded-[8px] px-3 py-2.5" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                                <span style={{ color: '#16A34A', fontSize: 13, flexShrink: 0, marginTop: 1 }}>→</span>
+                                <span style={{ fontSize: 13, color: '#166534', lineHeight: '20px' }}>{item}</span>
                               </div>
-                            ))}
+                            )) : (
+                              <div className="rounded-[8px] px-3 py-2.5" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                                <span style={{ fontSize: 13, color: '#166534' }}>No structured strengths returned yet.</span>
+                              </div>
+                            )}
                           </div>
-                        );
-                      })()}
-
-                      <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {q.strengths.length > 0 && (
-                          <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
-                            <span style={{ color: '#15803D', fontWeight: 700, flexShrink: 0 }}>✓ Strengths:</span>
-                            <span>{q.strengths.join(' ')}</span>
+                        </div>
+                        {/* Improvements */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span style={{ width: 28, height: 28, borderRadius: 7, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>⚠️</span>
+                            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>Areas to Improve</h3>
                           </div>
-                        )}
-                        {q.improvements.length > 0 && (
-                          <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
-                            <span style={{ color: '#EA580C', fontWeight: 700, flexShrink: 0 }}>↑ Improve:</span>
-                            <span>{q.improvements.join(' ')}</span>
+                          <div className="flex flex-col gap-2">
+                            {q.improvements.length > 0 ? q.improvements.map((item, i) => (
+                              <div key={i} className="flex items-start gap-2 rounded-[8px] px-3 py-2.5" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                                <span style={{ color: '#D97706', fontSize: 13, flexShrink: 0, marginTop: 1 }}>▲</span>
+                                <span style={{ fontSize: 13, color: '#92400E', lineHeight: '20px' }}>{item}</span>
+                              </div>
+                            )) : (
+                              <div className="rounded-[8px] px-3 py-2.5" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                                <span style={{ fontSize: 13, color: '#92400E' }}>No improvement bullets returned.</span>
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {q.suggestions.length > 0 && (
-                          <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
-                            <span style={{ color: '#DC2626', fontWeight: 700, flexShrink: 0 }}>✕ Key misses:</span>
-                            <span>{q.suggestions.join(' ')}</span>
+                        </div>
+                        {/* Suggestions */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span style={{ width: 28, height: 28, borderRadius: 7, background: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>💡</span>
+                            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1D4ED8' }}>Value-Add Ideas</h3>
                           </div>
-                        )}
-                        {q.detailedFeedback && (
-                          <div style={{ marginTop: 6, fontSize: 13, color: '#475569', lineHeight: '20px', background: '#FFFFFF', borderRadius: 10, padding: '10px 14px', border: '1px solid #E2E8F0' }}>
-                            {q.detailedFeedback}
+                          <div className="flex flex-col gap-2">
+                            {q.suggestions.length > 0 ? q.suggestions.map((item, i) => (
+                              <div key={i} className="flex items-start gap-2 rounded-[8px] px-3 py-2.5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+                                <span style={{ color: '#2563EB', fontSize: 13, flexShrink: 0, marginTop: 1 }}>◆</span>
+                                <span style={{ fontSize: 13, color: '#1E40AF', lineHeight: '20px' }}>{item}</span>
+                              </div>
+                            )) : (
+                              <div className="rounded-[8px] px-3 py-2.5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+                                <span style={{ fontSize: 13, color: '#1E40AF' }}>No extra suggestions returned yet.</span>
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
 
-              {/* Overall feedback */}
-              <div style={{ marginTop: 24, background: '#1E293B', borderRadius: 16, padding: '24px 28px' }}>
-                <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', color: '#94A3B8', marginBottom: 12 }}>
-                  📊 JEET SIR&apos;S OVERALL FEEDBACK
-                </div>
-                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
-                    <span>💡</span>
-                    <span>Overall you scored <strong>{totalScore}/{totalMax}</strong> ({pct}%). Focus next on the questions below 50% to lift your average quickly.</span>
-                  </li>
-                  <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
-                    <span>📖</span>
-                    <span>Layer in recent policy / current-affairs examples — examiners consistently reward contemporary linkage on mains.</span>
-                  </li>
-                  <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
-                    <span>🎯</span>
-                    <span>Push for multi-dimensional analysis: social, economic, political, and environmental angles strengthen answers significantly.</span>
-                  </li>
-                </ul>
+                    {/* Key Terms */}
+                    {q.keyTerms && q.keyTerms.length > 0 && (
+                      <div style={{ background: '#FFFFFF', borderRadius: 14, boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '24px 28px' }}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span style={{ fontSize: 18 }}>🔑</span>
+                          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#101828' }}>Key Terms Analysis</h2>
+                        </div>
+                        <p style={{ fontSize: 13, color: '#6A7282', marginBottom: 16 }}>Terms an examiner would expect in a {q.maxScore}-mark answer</p>
+                        <div className="flex flex-wrap gap-2">
+                          {q.keyTerms.map((kt, i) => (
+                            <span key={i} className="flex items-center gap-1.5 rounded-full px-3 py-1.5" style={{ fontSize: 13, fontWeight: 500, background: kt.found ? '#F0FDF4' : '#FEF2F2', border: `1px solid ${kt.found ? '#BBF7D0' : '#FECACA'}`, color: kt.found ? '#166534' : '#B91C1C' }}>
+                              <span>{kt.found ? '✓' : '✗'}</span>{kt.term}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Next Attempt Focus */}
+                    {q.nextAttemptFocus && (
+                      <div style={{ background: '#EEF2FF', borderRadius: 14, padding: '20px 24px', border: '1px solid #C7D2FE' }}>
+                        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#4338CA', marginBottom: 10 }}>🎯 Next Attempt Focus</p>
+                        <p style={{ fontSize: 14, color: '#3730A3', lineHeight: '22px' }}>{q.nextAttemptFocus}</p>
+                      </div>
+                    )}
+
+                    {/* Evaluator's Conclusion */}
+                    {q.evaluatorConclusion && (
+                      <div style={{ background: '#F0FDF4', borderRadius: 14, padding: '20px 24px', border: '1px solid #BBF7D0' }}>
+                        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#166534', marginBottom: 10 }}>✅ Evaluator&apos;s Conclusion</p>
+                        <p style={{ fontSize: 14, color: '#14532D', lineHeight: '22px' }}>{q.evaluatorConclusion}</p>
+                      </div>
+                    )}
+
+                    {/* Model Answer CTA */}
+                    {(q.modelAnswerContent || (q.modelAnswerKeyPoints && q.modelAnswerKeyPoints.length > 0)) && (
+                      <div style={{ background: 'linear-gradient(90deg, #101828 0%, #17223E 100%)', borderRadius: 14, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                        <div>
+                          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#FDC700', marginBottom: 6 }}>📋 Model Answer Available</p>
+                          <p style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>See how an ideal answer looks</p>
+                          <p style={{ fontSize: 13, color: '#9CA3AF' }}>Compare your answer with an expert-crafted model answer.</p>
+                        </div>
+                        <button onClick={() => setModelOpen(true)} style={{ flexShrink: 0, background: '#FDC700', color: '#101828', fontWeight: 700, fontSize: 14, padding: '10px 20px', borderRadius: 10, whiteSpace: 'nowrap', border: 'none', cursor: 'pointer' }}>
+                          View Now →
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* MARKUP slide */}
+                {qSlide === 'markup' && (
+                  <div style={{ borderRadius: 14, background: '#FFFFFF', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: 32 }}>
+                    <h2 className="font-bold text-[#101828] mb-2" style={{ fontSize: 22 }}>{markupReady ? 'Checked Copy' : "Examiner's Markup"}</h2>
+                    <p className="text-[#4A5565] mb-6" style={{ fontSize: 14 }}>
+                      {markupReady ? 'Teacher-style checked copy is ready.' : 'Visual markup is generated for handwritten image uploads.'}
+                    </p>
+                    {markupReady ? (
+                      <div className="space-y-4">
+                        {displayPages.map((page) => (
+                          <div key={page.pageNumber} className="rounded-[12px] border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <span className="rounded-full bg-[#FEE2E2] px-3 py-1 text-[12px] font-bold text-[#B91C1C]">BETA</span>
+                                <span className="text-[13px] font-bold text-[#364153]">Page {page.pageNumber}</span>
+                              </div>
+                              <a href={page.checkedCopyUrl || '#'} target="_blank" rel="noreferrer" className="text-[13px] font-bold text-[#2563EB]">Open full size</a>
+                            </div>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={page.checkedCopyUrl || ''} alt={`Checked copy page ${page.pageNumber}`} className="w-full rounded-[10px]" style={{ border: '1px solid #E5E7EB', background: '#FFFFFF' }} />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <div className="rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] p-5">
+                          <h3 className="font-bold text-[#166534] mb-3" style={{ fontSize: 15 }}>Positive examiner notes</h3>
+                          {q.strengths.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {q.strengths.map((item, i) => (
+                                <span key={i} className="rounded-full px-3 py-2" style={{ background: '#DCFCE7', color: '#166534', fontSize: 13, lineHeight: '18px' }}>{item}</span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[#166534]" style={{ fontSize: 13, lineHeight: '20px' }}>Positive markup will appear here when line-level comments are returned.</p>
+                          )}
+                        </div>
+                        <div className="rounded-[12px] border border-[#FDE68A] bg-[#FEFCE8] p-5">
+                          <h3 className="font-bold text-[#A16207] mb-3" style={{ fontSize: 15 }}>Attention areas</h3>
+                          {q.improvements.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {q.improvements.map((item, i) => (
+                                <span key={i} className="rounded-full px-3 py-2" style={{ background: '#FEF3C7', color: '#A16207', fontSize: 13, lineHeight: '18px' }}>{item}</span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[#A16207]" style={{ fontSize: 13, lineHeight: '20px' }}>Improvement markup will appear here when line-level comments are returned.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div className="mt-6 rounded-[12px] border border-[#E5E7EB] bg-[#F9FAFB] p-6">
+                      <h3 className="font-bold text-[#101828] mb-3" style={{ fontSize: 16 }}>Detailed examiner commentary</h3>
+                      {detailedParas.length > 0 ? (
+                        <div className="space-y-3">
+                          {detailedParas.map((p, i) => (
+                            <p key={i} className="text-[#374151]" style={{ fontSize: 14, lineHeight: '24px' }}>{p}</p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[#4A5565]" style={{ fontSize: 14, lineHeight: '24px' }}>Detailed commentary was not returned for this submission.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* RUBRIC slide */}
+                {qSlide === 'rubric' && (
+                  <div style={{ borderRadius: 14, background: '#FFFFFF', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: 32 }}>
+                    <div className="flex items-center gap-2 mb-6">
+                      <span style={{ fontSize: 22 }}>⭐</span>
+                      <h2 className="font-bold text-[#101828]" style={{ fontSize: 22 }}>Score Breakdown</h2>
+                    </div>
+                    {q.parameterScores && q.parameterScores.length > 0 ? (
+                      <div className="flex flex-col gap-5">
+                        {q.parameterScores.map((param, idx) => {
+                          const ppct = param.maxScore > 0 ? Math.round((param.score / param.maxScore) * 100) : 0;
+                          const COLORS = [
+                            { dot: '#2563EB', pctBg: '#DBEAFE', pctText: '#1D4ED8' },
+                            { dot: '#7C3AED', pctBg: '#EDE9FE', pctText: '#5B21B6' },
+                            { dot: '#4338CA', pctBg: '#E0E7FF', pctText: '#3730A3' },
+                            { dot: '#16A34A', pctBg: '#DCFCE7', pctText: '#15803D' },
+                            { dot: '#D97706', pctBg: '#FEF3C7', pctText: '#B45309' },
+                            { dot: '#DC2626', pctBg: '#FEE2E2', pctText: '#B91C1C' },
+                            { dot: '#0D9488', pctBg: '#CCFBF1', pctText: '#0F766E' },
+                          ];
+                          const c = COLORS[idx % COLORS.length];
+                          return (
+                            <div key={param.parameter}>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: c.dot, flexShrink: 0, display: 'inline-block' }} />
+                                  <span style={{ fontSize: 15, fontWeight: 700, color: '#101828' }}>{param.parameter}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span style={{ fontSize: 15, fontWeight: 700, color: '#EA580C' }}>{param.score}/{param.maxScore}</span>
+                                  <span style={{ fontSize: 13, fontWeight: 700, color: c.pctText, background: c.pctBg, borderRadius: 6, padding: '2px 8px' }}>{ppct}%</span>
+                                </div>
+                              </div>
+                              <div style={{ width: '100%', height: 8, borderRadius: 99, background: '#E5E7EB', overflow: 'hidden', marginBottom: 8 }}>
+                                <div style={{ height: '100%', width: `${ppct}%`, background: c.dot, borderRadius: 99, transition: 'width 0.6s ease' }} />
+                              </div>
+                              {param.comment && (
+                                <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 8, padding: '10px 14px' }}>
+                                  <p style={{ fontSize: 13, color: '#374151', lineHeight: '20px' }}>{param.comment}</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-[#4A5565]" style={{ fontSize: 14, lineHeight: '24px' }}>
+                        A parameter-wise breakdown was not returned for this question.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
-            </>
-          )}
+            );
+          })()}
         </div>
       </div>
+
+      {/* Model Answer Modal (selected question) */}
+      {modelOpen && (
+        <div
+          onClick={() => setModelOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: '#FFFFFF', borderRadius: 16, width: '100%', maxWidth: 640, maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          >
+            <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div className="flex items-center gap-3">
+                <span style={{ fontSize: 28 }}>🌟</span>
+                <div>
+                  <p style={{ fontSize: 17, fontWeight: 700, color: '#101828' }}>AI Model Answer</p>
+                  <p style={{ fontSize: 13, color: '#6A7282' }}>Question {selected.idx} · Expert-crafted response for reference</p>
+                </div>
+              </div>
+              <button onClick={() => setModelOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#6A7282', lineHeight: 1, padding: 2 }}>×</button>
+            </div>
+            <div style={{ padding: '12px 24px', background: '#FFFBEB', borderBottom: '1px solid #FDE68A', flexShrink: 0 }}>
+              <p style={{ fontSize: 13, color: '#B45309', lineHeight: '20px' }}>
+                <strong>⚡ Reference Only</strong> — Read after you&apos;ve written your own answer. Use this to understand gaps, not to memorise.
+              </p>
+            </div>
+            <div style={{ overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {selected.modelAnswerKeyPoints && selected.modelAnswerKeyPoints.length > 0 && (
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#B45309', marginBottom: 14 }}>📌 KEY POINTS CHECKLIST</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {selected.modelAnswerKeyPoints.map((point, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: '12px 16px' }}>
+                        <span style={{ flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: '#17223E', color: '#FFFFFF', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
+                        <p style={{ fontSize: 14, color: '#374151', lineHeight: '22px' }}>{point}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6A7282', marginBottom: 16 }}>📄 FULL MODEL ANSWER</p>
+                {selected.modelAnswerContent ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {selected.modelAnswerContent.split(/\n+/).map((p) => p.trim()).filter(Boolean).map((paragraph, i) => {
+                      const colonIdx = paragraph.indexOf(':');
+                      const looksLikeHeading = colonIdx > 0 && colonIdx < 60 && !paragraph.startsWith('"');
+                      return (
+                        <p key={i} style={{ fontSize: 15, color: '#1F2937', lineHeight: '26px' }}>
+                          {looksLikeHeading ? (<><strong>{paragraph.slice(0, colonIdx + 1)}</strong>{paragraph.slice(colonIdx + 1)}</>) : paragraph}
+                        </p>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 14, color: '#6A7282', fontStyle: 'italic' }}>Full model answer will appear here once available for this question.</p>
+                )}
+              </div>
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: 12, flexShrink: 0 }}>
+              <button onClick={() => setModelOpen(false)} style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid #E5E7EB', background: '#FFFFFF', fontSize: 14, fontWeight: 600, color: '#374151', cursor: 'pointer' }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
     );
   }
 

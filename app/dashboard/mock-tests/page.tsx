@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService, dashboardService, pricingService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import GeneratingTestModal from '@/components/GeneratingTestModal';
 import { liveStudentCount } from '@/lib/liveCount';
 import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
 import { handleEntitlementError } from '@/components/entitlements';
@@ -286,6 +287,7 @@ function MockTestsPageInner() {
   const entitlements = useEntitlements();
   const [selectedSource, setSelectedSource] = useState('daily-mcq');
   const [focusSubjectOpen, setFocusSubjectOpen] = useState(false);
+  const [markingPatternOpen, setMarkingPatternOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [selectedExamMode, setSelectedExamMode] = useState('prelims');
   const [selectedPaperType, setSelectedPaperType] = useState('gs1');
@@ -304,7 +306,9 @@ function MockTestsPageInner() {
   const [platformStats, setPlatformStats] = useState<{ questionsCount: number; testsCount: number; usersCount: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [generatedTestId, setGeneratedTestId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [generateBtnHovered, setGenerateBtnHovered] = useState(false);
   const [pricingPlans, setPricingPlans] = useState<any[]>([]);
   const questionPresets = selectedExamMode === 'mains'
     ? [
@@ -347,10 +351,10 @@ function MockTestsPageInner() {
   const mainsMarksPattern = selectedExamMode === 'mains' ? buildMainsMarksPattern(questionCount) : [];
 
   const difficultyDisplay: Record<string, { short: string; imgSrc: string; label: string; description: string }> = {
-    easy: { short: '🌱', imgSrc: '/diff-easy.png', label: 'Easy', description: 'Build confidence' },
-    medium: { short: '⚡', imgSrc: '/diff-medium.png', label: 'Medium', description: 'UPSC standard' },
-    hard: { short: '🔥', imgSrc: '/diff-hard.png', label: 'Hard', description: 'Push limits' },
-    mixed: { short: '🎯', imgSrc: '/diff-mixed.png', label: 'Mixed', description: 'Real exam feel' },
+    easy: { short: '🌱', imgSrc: '/diff-easy.png', label: 'Easy', description: 'Foundational · single-dimensional' },
+    medium: { short: '⚖️', imgSrc: '/diff-medium.png', label: 'Medium', description: 'Standard UPSC level · analytical' },
+    hard: { short: '🔥', imgSrc: '/diff-hard.png', label: 'Hard', description: 'Multi-dimensional · interlinked' },
+    mixed: { short: '🌀', imgSrc: '/diff-mixed.png', label: 'Mixed', description: 'Real-exam balance · recommended' },
   };
 
   /* ─── Load all data from API ─── */
@@ -467,6 +471,7 @@ function MockTestsPageInner() {
     }
 
     setGenerating(true);
+    setGeneratedTestId(null);
     setError(null);
     try {
       const config = {
@@ -482,11 +487,14 @@ function MockTestsPageInner() {
       if (!testId) {
         throw new Error('No test ID returned from server');
       }
-      router.push(`/dashboard/mock-tests/attempt?testId=${testId}&examMode=${selectedExamMode}`);
+      // Hand the id to the modal — it finishes its progress animation and
+      // then navigates via onComplete.
+      setGeneratedTestId(testId);
     } catch (err: any) {
       console.error('Failed to generate test:', err);
       setError(handleEntitlementError(err).message || 'Failed to generate test. Please try again.');
       setGenerating(false);
+      setGeneratedTestId(null);
     }
   };
 
@@ -516,6 +524,25 @@ function MockTestsPageInner() {
 
   return (
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
+
+      {/* ── Generating Test popup (blurred backdrop + pop-out) ── */}
+      {generating && (
+        <GeneratingTestModal
+          isReady={!!generatedTestId}
+          onComplete={() => {
+            if (generatedTestId) {
+              const params = new URLSearchParams({
+                testId: generatedTestId,
+                examMode: selectedExamMode,
+                paper: paperLabel,
+                subject: subjectLabel,
+                difficulty: difficultyLabel,
+              });
+              router.push(`/dashboard/mock-tests/attempt?${params.toString()}`);
+            }
+          }}
+        />
+      )}
 
       {/* ── Pro Upgrade Modal ── */}
 
@@ -985,27 +1012,47 @@ function MockTestsPageInner() {
               return (
                 <div style={{
                   background: '#F8F4E8', border: '1px solid #E8DFC0',
-                  borderRadius: '12px', padding: '16px 18px', marginBottom: '20px',
+                  borderRadius: '12px', marginBottom: '20px', overflow: 'hidden',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '16px' }}>📐</span>
-                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#17223E' }}>
-                      Mains marking &amp; timing pattern
-                    </span>
-                  </div>
-                  {[{ marker: 10, min: 7, words: 150 }, { marker: 15, min: 11, words: 200 }, { marker: 20, min: 14, words: 250 }].map(row => (
-                    <div key={row.marker} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px dashed #E0D4B0' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#C9A227', display: 'inline-block', flexShrink: 0 }} />
-                        <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#17223E' }}>{row.marker} marker</span>
-                      </div>
-                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280' }}>approx. {row.min} min</span>
-                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#C9A227' }}>{row.words} words</span>
+                  {/* Toggle header */}
+                  <button
+                    onClick={() => setMarkingPatternOpen(o => !o)}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '14px 18px', background: 'none', border: 'none', cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '16px' }}>📐</span>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#17223E' }}>
+                        Mains marking &amp; timing pattern
+                      </span>
                     </div>
-                  ))}
-                  <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#17223E', marginTop: '10px' }}>
-                    Your set: {count10 > 0 && `${count10} × 10-marker`}{count10 > 0 && count15 > 0 && ' + '}{count15 > 0 && `${count15} × 15-marker`} · ~{estimatedMinutes} min · {totalWords} words total
-                  </div>
+                    <span style={{
+                      fontSize: '16px', color: '#9CA3AF', lineHeight: 1,
+                      transition: 'transform 0.2s ease',
+                      transform: markingPatternOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      display: 'inline-block',
+                    }}>▾</span>
+                  </button>
+                  {/* Collapsible content */}
+                  {markingPatternOpen && (
+                    <div style={{ padding: '0 18px 16px' }}>
+                      {[{ marker: 10, min: 7, words: 150 }, { marker: 15, min: 11, words: 200 }, { marker: 20, min: 14, words: 250 }].map(row => (
+                        <div key={row.marker} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed #E0D4B0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#C9A227', display: 'inline-block', flexShrink: 0 }} />
+                            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#17223E' }}>{row.marker} marker</span>
+                          </div>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280' }}>approx. {row.min} min</span>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#C9A227' }}>{row.words} words</span>
+                        </div>
+                      ))}
+                      <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#17223E', marginTop: '10px' }}>
+                        Your set: {count10 > 0 && `${count10} × 10-marker`}{count10 > 0 && count15 > 0 && ' + '}{count15 > 0 && `${count15} × 15-marker`} · ~{estimatedMinutes} min · {totalWords} words total
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -1013,18 +1060,38 @@ function MockTestsPageInner() {
             {/* Guideline Banner */}
             {selectedExamMode === 'mains' ? (
               <div style={{
-                background: '#EEF2FF', border: '1px solid #C7D2FE',
-                borderRadius: '12px', padding: '14px 18px',
-                display: 'flex', alignItems: 'flex-start', gap: '10px',
+                background: '#ECFDF5', border: '1px solid #6EE7B7',
+                borderRadius: '14px', padding: '14px 18px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px',
               }}>
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginTop: '1px' }}>
-                  <circle cx="9" cy="9" r="8" stroke="#6366F1" strokeWidth="1.5"/>
-                  <path d="M9 8v5" stroke="#6366F1" strokeWidth="1.5" strokeLinecap="round"/>
-                  <circle cx="9" cy="5.5" r="0.75" fill="#6366F1"/>
-                </svg>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#3730A3', lineHeight: '20px', margin: 0 }}>
-                  <strong>You&apos;re setting {questionCount} questions.</strong> Free users get <strong>2 questions/day</strong>. Upgrade to Rise Pro for unlimited sets and AI evaluation depth.
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '36px', height: '36px', borderRadius: '50%',
+                    background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <circle cx="9" cy="9" r="8" stroke="#10B981" strokeWidth="1.5"/>
+                      <path d="M5.5 9l2.5 2.5 4.5-4.5" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#065F46' }}>
+                      ✅ Free evaluation available
+                    </div>
+                    <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#047857', marginTop: '2px' }}>
+                      3 of 3 evaluations remaining. Upgrade for unlimited and in-depth evaluation.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => router.push('/dashboard/billing/plans?plan=pro&source=mock-tests')}
+                  style={{
+                    background: '#17223E', color: '#FDC700', border: 'none', borderRadius: '999px',
+                    padding: '9px 20px', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px',
+                    cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px',
+                  }}>
+                  <span style={{ fontSize: '15px' }}>⚡</span> Unlock
+                </button>
               </div>
             ) : (
               <div style={{
@@ -1062,7 +1129,7 @@ function MockTestsPageInner() {
           {/* ── Step 4: Difficulty ── */}
           {!loading && (
           <div style={cardStyle}>
-            <StepHeader step={4} label="Difficulty" />
+            <StepHeader step={4} label="Difficulty" subtitle="Tune the cognitive load. We'll calibrate prompt depth accordingly." />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(150px, 100%), 1fr))', gap: 'clamp(18px, 1.6vw, 28px)' }}>
               {difficulties.map(diff => {
                 const isSelected = selectedDifficulty === diff.id;
@@ -1089,8 +1156,7 @@ function MockTestsPageInner() {
                     }}
                   >
                     <div style={{ width: 36, height: 36, margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={display.imgSrc} alt={display.label} style={{ width: 36, height: 36, objectFit: 'contain' }} />
+                      <span style={{ fontSize: 28, lineHeight: 1 }}>{display.short}</span>
                     </div>
                     <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 800, fontSize: '16px', lineHeight: '22px', color: '#101828', marginBottom: '3px' }}>
                       {display.label}
@@ -1109,12 +1175,23 @@ function MockTestsPageInner() {
 
         {/* ── Right Column: Sticky Test Summary ── */}
         <div className="hidden xl:block" style={{ width: 'clamp(280px, 20vw, 340px)', flexShrink: 0 }}>
-            <div style={{ position: 'sticky', top: '80px' }}>
+            <div style={{
+              position: 'sticky',
+              top: '80px',
+              height: 'calc(100vh - clamp(90px, 5.78vw, 111px) - 80px - clamp(12px, 1.2vw, 20px) - clamp(14px, 1.2vw, 20px))',
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
               <div style={{
                 background: 'linear-gradient(135deg, #162456 0%, #0F172B 50%, #030712 100%)',
                 borderRadius: '20px',
                 padding: 'clamp(20px, 1.6vw, 28px)',
                 color: '#FFF',
+                flex: 1,
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                overflowY: 'auto',
               }}>
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'clamp(16px, 1.3vw, 24px)' }}>
@@ -1127,7 +1204,7 @@ function MockTestsPageInner() {
                   color: '#FDC700',
                   textTransform: 'uppercase' as const,
                 }}>
-                  Test Summary - Ready to Begin?
+                  Test Summary — Ready to Begin?
                 </span>
               </div>
 
@@ -1141,17 +1218,29 @@ function MockTestsPageInner() {
                 {[
                   { emoji: '📋', value: `${questionCount}`, label: 'Questions' },
                   { emoji: '⏱', value: `${estimatedMinutes} min`, label: 'Duration' },
-                  { emoji: '📚', value: sourceLabel, label: 'Source' },
-                  { emoji: '🌍', value: paperLabel, label: 'Paper' },
+                  { emoji: '🔥', value: sourceLabel, label: 'Source' },
+                  { emoji: '📘', value: paperLabel, label: 'Paper' },
                   { emoji: '⚡', value: difficultyLabel, label: 'Difficulty' },
-                  { emoji: '🌐', value: subjectLabel, label: 'Focus Subject' },
+                  { emoji: '🎯', value: subjectLabel, label: 'Subject' },
                 ].map((item, i) => (
                   <div key={i} style={{
                     background: 'rgba(255,255,255,0.06)',
                     borderRadius: '10px',
                     padding: 'clamp(10px, 0.8vw, 14px)',
                   }}>
-                    <div style={{ fontSize: 'clamp(14px, 1vw, 18px)', marginBottom: '4px' }}>{item.emoji}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                      <span style={{ fontSize: 'clamp(13px, 0.9vw, 16px)', lineHeight: 1, flexShrink: 0 }}>{item.emoji}</span>
+                      <span style={{
+                        fontFamily: 'var(--font-inter), Inter, sans-serif',
+                        fontWeight: 600,
+                        fontSize: 'clamp(9px, 0.6vw, 10px)',
+                        letterSpacing: '0.07em',
+                        color: '#94A3B8',
+                        textTransform: 'uppercase' as const,
+                      }}>
+                        {item.label}
+                      </span>
+                    </div>
                     <div style={{
                       fontFamily: 'var(--font-inter), Inter, sans-serif',
                       fontWeight: 700,
@@ -1163,16 +1252,6 @@ function MockTestsPageInner() {
                     }}>
                       {item.value}
                     </div>
-                    <div style={{
-                      fontFamily: 'var(--font-inter), Inter, sans-serif',
-                      fontWeight: 600,
-                      fontSize: 'clamp(10px, 0.65vw, 11px)',
-                      letterSpacing: '0.06em',
-                      color: '#94A3B8',
-                      textTransform: 'uppercase' as const,
-                    }}>
-                      {item.label}
-                    </div>
                   </div>
                 ))}
               </div>
@@ -1181,16 +1260,14 @@ function MockTestsPageInner() {
               <div style={{ marginBottom: 'clamp(18px, 1.4vw, 26px)' }}>
                 <div style={{
                   fontFamily: 'var(--font-inter), Inter, sans-serif',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   fontSize: 'clamp(11px, 0.72vw, 13px)',
-                  letterSpacing: '0.06em',
                   color: '#94A3B8',
-                  textTransform: 'uppercase' as const,
                   marginBottom: 'clamp(10px, 0.8vw, 14px)',
                 }}>
-                  Your Activity
+                  Your activity
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 0.8vw, 14px)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(8px, 0.6vw, 11px)' }}>
                   {[
                     {
                       emoji: '🔥',
@@ -1206,8 +1283,8 @@ function MockTestsPageInner() {
                     },
                     {
                       emoji: '📚',
-                      label: platformStats ? `${platformStats.questionsCount.toLocaleString('en-IN')} questions available` : 'Loading...',
-                      color: '#16A34A',
+                      label: platformStats ? `${platformStats.questionsCount.toLocaleString('en-IN')} questions ready` : 'Loading...',
+                      color: '#EAB308',
                       width: '100%',
                     },
                   ].map((b, i) => (
@@ -1216,14 +1293,14 @@ function MockTestsPageInner() {
                         fontFamily: 'var(--font-inter), Inter, sans-serif',
                         fontSize: 'clamp(11px, 0.72vw, 13px)',
                         color: '#CBD5E1',
-                        marginBottom: '5px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
+                        marginBottom: '5px',
                       }}>
                         <span>{b.emoji}</span> {b.label}
                       </div>
-                      <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '6px', height: '8px', overflow: 'hidden' }}>
+                      <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '6px', height: '6px', overflow: 'hidden' }}>
                         <div style={{ background: b.color, width: b.width, height: '100%', borderRadius: '6px', transition: 'width 0.3s ease' }} />
                       </div>
                     </div>
@@ -1235,9 +1312,16 @@ function MockTestsPageInner() {
               <button
                 onClick={handleGenerateTest}
                 disabled={generating || loading || quotaExhausted}
+                onMouseEnter={() => setGenerateBtnHovered(true)}
+                onMouseLeave={() => setGenerateBtnHovered(false)}
                 style={{
                 width: '100%',
-                background: generating || quotaExhausted ? '#9CA3AF' : 'linear-gradient(90deg, #FDC700, #FF8904, #FF6900)',
+                marginTop: 'auto',
+                background: generating || quotaExhausted
+                  ? '#9CA3AF'
+                  : generateBtnHovered
+                  ? 'linear-gradient(90deg, #E6B000, #E87200, #E05800)'
+                  : 'linear-gradient(90deg, #FDC700, #FF8904, #FF6900)',
                 border: 'none',
                 borderRadius: '14px',
                 padding: 'clamp(12px, 1vw, 16px)',
@@ -1253,6 +1337,7 @@ function MockTestsPageInner() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
+                transition: 'background 0.2s ease',
               }}>
                 {generating ? (
                   <>
@@ -1268,7 +1353,7 @@ function MockTestsPageInner() {
                     <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
                   </>
                 ) : (
-                  quotaExhausted ? 'Limit reached - upgrade to continue' : '🚀 Generate Test'
+                  quotaExhausted ? 'Limit reached - upgrade to continue' : '🚀 Generate My Mock Test'
                 )}
               </button>
 
@@ -1284,20 +1369,20 @@ function MockTestsPageInner() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                   {[
-                    { initials: 'AK', bg: '#3B82F6' },
-                    { initials: 'PS', bg: '#8B5CF6' },
-                    { initials: 'RV', bg: '#14B8A6' },
+                    { initials: 'A', bg: '#E8A838' },
+                    { initials: 'P', bg: '#4CAF7D' },
+                    { initials: 'R', bg: '#3DB87A' },
                   ].map((a, i) => (
                     <span
                       key={a.initials}
                       style={{
-                        width: '20px',
-                        height: '20px',
+                        width: '22px',
+                        height: '22px',
                         borderRadius: '50%',
                         background: a.bg,
                         border: '1.5px solid #0F172B',
                         color: '#FFFFFF',
-                        fontSize: '8px',
+                        fontSize: '9px',
                         fontWeight: 700,
                         display: 'flex',
                         alignItems: 'center',
@@ -1310,7 +1395,7 @@ function MockTestsPageInner() {
                     </span>
                   ))}
                 </div>
-                <span>{liveStudentCount('mock-tests')} students are taking tests right now</span>
+                <span>{liveStudentCount('mock-tests')} students writing right now</span>
               </div>
               </div>
             </div>
