@@ -256,7 +256,7 @@ export default function FlashcardsPage() {
                       <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#16A34A' }}>
                         {hasDeck ? `✓ ${item.masteredCards} mastered` : 'Create first card'}
                       </span>
-                      <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '18px', color: hasDeck && due === 0 ? '#16A34A' : '#EF4444' }}>
+                      <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', color: hasDeck && due === 0 ? '#16A34A' : '#EF4444' }}>
                         {hasDeck ? (due === 0 ? '✓ All done' : `${due} to go`) : 'New deck'}
                       </span>
                     </div>
