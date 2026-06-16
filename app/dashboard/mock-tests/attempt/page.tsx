@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService } from '@/lib/services';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import ExamInstructions from '@/components/ExamInstructions';
+import FilePreviewThumb from '@/components/FilePreviewThumb';
 
 interface Question {
   id: number;
@@ -907,17 +908,37 @@ function MockTestAttemptInner() {
                   {isHandwrite && showUpload && (
                     /* Handwrite mode, writing done: per-question upload slot */
                     <div>
-                      <label
-                        htmlFor={`mains-file-${i}`}
-                        className="w-full flex items-center justify-between"
-                        style={{ padding: '14px 16px', borderRadius: 12, border: `1.5px ${answer.file ? 'solid #00BC7D' : 'dashed #CBD5E1'}`, background: answer.file ? '#F0FDF4' : '#F9FAFB', cursor: 'pointer' }}
-                      >
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13.5, fontWeight: 600, color: '#17223E' }}>
-                          {answer.file ? '✅' : '📤'}
-                          {answer.file ? answer.file.name : `Upload your answer page for Q${i + 1}`}
-                        </span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#155DFC' }}>{answer.file ? 'Replace' : 'Browse'}</span>
-                      </label>
+                      {!answer.file ? (
+                        <label
+                          htmlFor={`mains-file-${i}`}
+                          className="w-full flex items-center justify-between"
+                          style={{ padding: '14px 16px', borderRadius: 12, border: '1.5px dashed #CBD5E1', background: '#F9FAFB', cursor: 'pointer' }}
+                        >
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13.5, fontWeight: 600, color: '#17223E' }}>
+                            📤 Upload your answer page for Q{i + 1}
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#155DFC' }}>Browse</span>
+                        </label>
+                      ) : (
+                        /* Uploaded: show first-page preview + file info + replace */
+                        <div
+                          className="flex items-center gap-3"
+                          style={{ padding: '12px 14px', borderRadius: 12, border: '1.5px solid #00BC7D', background: '#F0FDF4' }}
+                        >
+                          <FilePreviewThumb file={answer.file} size={56} />
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, fontWeight: 700, color: '#166534', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              ✅ <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{answer.file.name}</span>
+                            </div>
+                            <div style={{ fontSize: 12, color: '#6A7282', marginTop: 2 }}>
+                              {(answer.file.size / 1024 / 1024).toFixed(2)} MB
+                            </div>
+                          </div>
+                          <label htmlFor={`mains-file-${i}`} style={{ fontSize: 12, fontWeight: 700, color: '#155DFC', cursor: 'pointer', flexShrink: 0 }}>
+                            Replace
+                          </label>
+                        </div>
+                      )}
                       <input
                         id={`mains-file-${i}`}
                         type="file"
