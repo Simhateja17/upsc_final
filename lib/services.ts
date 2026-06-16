@@ -521,6 +521,7 @@ export const spacedRepService = {
   },
   addItem: (data: {
     questionText: string;
+    answer?: string;
     subject: string;
     source?: string;
     sourceType?: string;
