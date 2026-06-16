@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService } from '@/lib/services';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import ExamInstructions from '@/components/ExamInstructions';
 
 interface Question {
   id: number;
@@ -136,6 +137,12 @@ function MockTestAttemptInner() {
   const examMode = searchParams.get('examMode') || 'prelims';
   const isMains = examMode === 'mains';
   const title = searchParams.get('title') || (isMains ? 'Mains Practice' : 'Prelims Practice');
+  const paperParam = searchParams.get('paper') || '';
+  const subjectParam = searchParams.get('subject') || '';
+  const difficultyParam = searchParams.get('difficulty') || 'Medium';
+
+  /* ─── Pre-test instructions gate ─── */
+  const [started, setStarted] = useState(false);
 
   /* ─── API / Loading State ─── */
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -151,17 +158,17 @@ function MockTestAttemptInner() {
   const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
   const [questionStatuses, setQuestionStatuses] = useState<Record<number, QuestionStatus>>({});
   const [timeLeft, setTimeLeft] = useState(0);
+  const [examTotalSeconds, setExamTotalSeconds] = useState(0); // full exam duration (for the single timer ring)
+  const [examRunning, setExamRunning] = useState(true);        // single exam-wide timer running/paused
   const [startTime] = useState(Date.now());
 
   /* ─── Mains State ─── */
   const [mainsSubmitting, setMainsSubmitting] = useState(false);
   const [mainsAnswers, setMainsAnswers] = useState<Record<number, MainsAnswer>>({});
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  /* ─── Mains writing timer ─── */
-  const [isMainsTimerRunning, setIsMainsTimerRunning] = useState(false);
-  const [mainsWritingSeconds, setMainsWritingSeconds] = useState(20 * 60);
-  const [showMainsTypeAnswer, setShowMainsTypeAnswer] = useState(false);
-  const mainsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [openEditors, setOpenEditors] = useState<Record<number, boolean>>({}); // which answer editors are expanded
+  const [answerMode, setAnswerMode] = useState<'type' | 'handwrite' | null>(null); // mains: how the user will answer
+  const [doneWriting, setDoneWriting] = useState(false); // handwrite mode: user finished writing → show upload step
+  const [openTip, setOpenTip] = useState<string | null>(null); // mains: which "quick tips" accordion is open
 
   /* ─── Load questions from API ─── */
   useEffect(() => {
@@ -174,6 +181,7 @@ function MockTestAttemptInner() {
       });
       setQuestionStatuses(statuses);
       setTimeLeft(15 * 60);
+      setExamTotalSeconds(15 * 60);
       setLoading(false);
       setError(null);
       return;
@@ -207,6 +215,7 @@ function MockTestAttemptInner() {
         // Set timer based on API duration (minutes or seconds) with a safe fallback.
         const durationSeconds = normalizeDurationToSeconds(res.data?.duration, qs.length, isMains);
         setTimeLeft(durationSeconds);
+        setExamTotalSeconds(durationSeconds);
       } catch (err: any) {
         if (!cancelled) {
           console.error('Failed to load questions:', err);
@@ -223,7 +232,9 @@ function MockTestAttemptInner() {
   // Timer countdown (prelims auto-runs; mains uses writing timer instead)
   useEffect(() => {
     if (loading || questions.length === 0) return;
-    if (isMains) return; // mains uses manual writing timer
+    if (!started) return;    // hold the clock until the user begins from instructions
+    if (isMains && !answerMode) return; // hold the clock until the user picks type vs handwrite
+    if (!examRunning) return; // single exam-wide timer can be paused
     const interval = setInterval(() => {
       setTimeLeft(t => {
         if (t <= 1) { clearInterval(interval); return 0; }
@@ -231,37 +242,7 @@ function MockTestAttemptInner() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [loading, questions.length, isMains]);
-
-  // Mains writing timer (manual start/pause)
-  useEffect(() => {
-    if (!isMains) return;
-    if (isMainsTimerRunning) {
-      mainsTimerRef.current = setInterval(() => {
-        setMainsWritingSeconds(s => {
-          if (s <= 1) {
-            setIsMainsTimerRunning(false);
-            return 0;
-          }
-          return s - 1;
-        });
-      }, 1000);
-    } else {
-      if (mainsTimerRef.current) clearInterval(mainsTimerRef.current);
-    }
-    return () => { if (mainsTimerRef.current) clearInterval(mainsTimerRef.current); };
-  }, [isMainsTimerRunning, isMains]);
-
-
-  // Reset writing timer when navigating to a new question
-  useEffect(() => {
-    if (!isMains || questions.length === 0) return;
-    setIsMainsTimerRunning(false);
-    setShowMainsTypeAnswer(false);
-    const marksPerQ = totalMarks && questions.length ? Math.round(totalMarks / questions.length) : 15;
-    const minPerQ = Math.max(8, Math.round(marksPerQ * 0.8));
-    setMainsWritingSeconds(minPerQ * 60);
-  }, [currentIdx, isMains, questions.length, totalMarks]);
+  }, [loading, questions.length, started, examRunning, isMains, answerMode]);
 
   const totalQuestions = questions.length;
 
@@ -309,40 +290,6 @@ function MockTestAttemptInner() {
   };
 
   /* ─── Mains handlers ─── */
-  const currentAnswer: MainsAnswer = mainsAnswers[currentIdx] || { text: '', file: null };
-
-  const handleMainsTextChange = (value: string) => {
-    setMainsAnswers(prev => ({
-      ...prev,
-      [currentIdx]: { ...(prev[currentIdx] || { text: '', file: null }), text: value },
-    }));
-  };
-
-  const handleMainsFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setMainsAnswers(prev => ({
-      ...prev,
-      [currentIdx]: { ...(prev[currentIdx] || { text: '', file: null }), file },
-    }));
-    // Reset input so re-selecting the same file still fires change
-    e.target.value = '';
-  };
-
-  const handleMainsRemoveFile = () => {
-    setMainsAnswers(prev => ({
-      ...prev,
-      [currentIdx]: { ...(prev[currentIdx] || { text: '', file: null }), file: null },
-    }));
-  };
-
-  const handleMainsNext = () => {
-    if (currentIdx < totalQuestions - 1) setCurrentIdx(i => i + 1);
-  };
-
-  const handleMainsPrev = () => {
-    if (currentIdx > 0) setCurrentIdx(i => i - 1);
-  };
-
   const handleMainsSubmitAll = async () => {
     if (!testId) {
       setError('Cannot submit without a test session. Please regenerate the test.');
@@ -351,11 +298,16 @@ function MockTestAttemptInner() {
 
     const missing = questions.findIndex((_, i) => {
       const a = mainsAnswers[i];
-      return !a || (!a.text.trim() && !a.file);
+      if (answerMode === 'handwrite') return !a || !a.file;   // handwriting: each answer needs an uploaded page
+      return !a || !a.text.trim();                            // typing: each answer needs text
     });
     if (missing !== -1) {
       setCurrentIdx(missing);
-      setError(`Please provide an answer for Question ${missing + 1} before submitting.`);
+      setError(
+        answerMode === 'handwrite'
+          ? `Please upload your answer page for Question ${missing + 1} before submitting.`
+          : `Please provide an answer for Question ${missing + 1} before submitting.`
+      );
       return;
     }
 
@@ -638,19 +590,205 @@ function MockTestAttemptInner() {
 
   if (!currentQ) return null;
 
+  /* ─── Pre-test instructions gate (shown once, before the test UI) ─── */
+  if (!started) {
+    const paperLabel = [paperParam, subjectParam].filter(Boolean).join(' · ')
+      || (currentQ as any).paper
+      || (isMains ? 'GS Paper I' : 'GS Paper I');
+    let totalTimeMinutes: number;
+    if (isMains) {
+      const marksPerQ = totalMarks && totalQuestions ? Math.round(totalMarks / totalQuestions) : 15;
+      const minPerQ = Math.max(8, Math.round(marksPerQ * 0.8));
+      totalTimeMinutes = minPerQ * totalQuestions;
+    } else {
+      totalTimeMinutes = Math.max(1, Math.round(timeLeft / 60));
+    }
+    return (
+      <ExamInstructions
+        isMains={isMains}
+        questionCount={totalQuestions}
+        totalTimeMinutes={totalTimeMinutes}
+        paperLabel={paperLabel}
+        difficultyLabel={difficultyParam}
+        onBack={() => router.push('/dashboard/mock-tests')}
+        onStart={() => setStarted(true)}
+      />
+    );
+  }
+
+  /* ─────────────── MAINS: choose how to answer (type vs handwrite) ─────────────── */
+  if (isMains && !answerMode) {
+    const SERIF = "var(--font-playfair), 'Palatino Linotype', Georgia, serif";
+    const SANS = 'var(--font-inter), Inter, system-ui, sans-serif';
+    const totalMinutes = examTotalSeconds > 0 ? Math.round(examTotalSeconds / 60) : 0;
+
+    const TypeIcon = (
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <rect x="2" y="5" width="20" height="14" rx="2.5" stroke="#155DFC" strokeWidth="1.8" />
+        <path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 12.5h.01M10 12.5h.01M14 12.5h.01M18 12.5h.01M8 15.5h8" stroke="#155DFC" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+    const HandIcon = (
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <path d="M12 20h7" stroke="#B45309" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M14.5 5.5l2.5 2.5L8 17l-3.2.7L5.5 14.5 14.5 5.5z" stroke="#B45309" strokeWidth="1.8" strokeLinejoin="round" />
+        <path d="M13 7l3 3" stroke="#B45309" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+
+    const modeCard = (
+      mode: 'type' | 'handwrite',
+      icon: React.ReactNode,
+      iconTint: string,
+      accent: string,
+      tag: string,
+      tagBg: string,
+      tagColor: string,
+      heading: string,
+      blurb: string,
+      points: string[],
+    ) => (
+      <button
+        type="button"
+        onClick={() => setAnswerMode(mode)}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 24px 48px -28px rgba(15,23,42,0.4)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#EEF1F5'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px -8px rgba(15,23,42,0.18)'; }}
+        className="flex flex-col text-left"
+        style={{
+          flex: 1,
+          minWidth: isMobile ? '100%' : 260,
+          background: '#FFFFFF',
+          border: '1.5px solid #EEF1F5',
+          borderRadius: 20,
+          padding: 'clamp(20px, 2.4vw, 28px)',
+          cursor: 'pointer',
+          gap: 14,
+          boxShadow: '0 4px 14px -8px rgba(15,23,42,0.18)',
+          transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ width: 52, height: 52, borderRadius: 14, background: iconTint, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {icon}
+          </span>
+          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: tagColor, background: tagBg, padding: '5px 11px', borderRadius: 999 }}>
+            {tag}
+          </span>
+        </div>
+        <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 'clamp(19px, 1.7vw, 23px)', color: '#0F172B', lineHeight: 1.1 }}>{heading}</span>
+        <span style={{ fontSize: 13.5, color: '#64748B', lineHeight: 1.5 }}>{blurb}</span>
+        <div style={{ height: 1, background: '#F1F5F9', margin: '2px 0' }} />
+        <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9 }}>
+          {points.map((p) => (
+            <li key={p} style={{ fontSize: 13, color: '#475569', display: 'flex', gap: 10, alignItems: 'flex-start', lineHeight: 1.4 }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
+                <circle cx="8" cy="8" r="8" fill={iconTint} />
+                <path d="M4.5 8.2L6.8 10.5L11.5 5.5" stroke={accent} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {p}
+            </li>
+          ))}
+        </ul>
+        <span
+          style={{
+            marginTop: 6,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            height: 44, borderRadius: 12,
+            background: '#0F172B', color: '#FCD34D',
+            fontWeight: 800, fontSize: 14.5,
+          }}
+        >
+          Choose this →
+        </span>
+      </button>
+    );
+
+    return (
+      <div
+        style={{ minHeight: '100vh', background: '#FAFBFE', fontFamily: SANS, display: 'flex', flexDirection: 'column', animation: 'mode-fade 0.3s ease' }}
+      >
+        {/* ── Navy hero ── */}
+        <div style={{ background: 'linear-gradient(135deg, #1D293D 0%, #0F172B 55%, #162456 100%)', padding: 'clamp(26px, 3vw, 44px) clamp(20px, 3vw, 40px)' }}>
+          <div style={{ maxWidth: 820, margin: '0 auto', textAlign: 'center' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 16px', borderRadius: 999, border: '1px solid rgba(250,204,21,0.35)', background: 'rgba(250,204,21,0.06)', marginBottom: 18 }}>
+              <span style={{ color: '#FCD34D', fontSize: 12 }}>✦</span>
+              <span style={{ color: '#FCD34D', fontWeight: 800, fontSize: 11.5, letterSpacing: '0.12em' }}>MAINS MOCK TEST · CHOOSE YOUR MODE</span>
+            </div>
+            <h1 style={{ margin: 0, fontFamily: SERIF, fontWeight: 600, color: '#FFFFFF', fontSize: 'clamp(26px, 3vw, 40px)', lineHeight: 1.08, letterSpacing: '-0.01em' }}>
+              How will you answer this test?
+            </h1>
+            <p style={{ margin: '14px auto 0', maxWidth: 560, color: '#94A3B8', fontSize: 'clamp(13px, 1.15vw, 15.5px)', lineHeight: 1.5 }}>
+              The timer (<strong style={{ color: '#E2E8F0', fontWeight: 700 }}>{totalMinutes} min</strong>) starts once you choose. Pick how you’ll actually write — you can’t switch midway.
+            </p>
+          </div>
+        </div>
+
+        {/* ── Cards ── */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(20px, 3vw, 44px)' }}>
+          <div style={{ width: '100%', maxWidth: 820, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(18px, 2.4vw, 28px)', marginTop: 'clamp(-44px, -4vw, -68px)' }}>
+            <div className={isMobile ? 'flex flex-col' : 'flex flex-row'} style={{ gap: 'clamp(16px, 1.8vw, 22px)', width: '100%', alignItems: 'stretch' }}>
+              {modeCard(
+                'type', TypeIcon, '#E6EEFF', '#155DFC', 'Fastest', '#EFF6FF', '#155DFC',
+                'Type my answers',
+                'Write each answer in the app while the clock runs.',
+                ['One clean text box per question', 'Submit the moment you finish', 'Live word count as you write'],
+              )}
+              {modeCard(
+                'handwrite', HandIcon, '#FEF3C7', '#D97706', 'Real exam feel', '#FFFBEB', '#B45309',
+                'Write by hand',
+                'Write on paper now — scan and upload after the test ends.',
+                ['No typing — just your booklet & pen', 'Upload your scans when time’s up', 'Closest to the real UPSC Mains'],
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard/mock-tests')}
+              style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', padding: 8 }}
+            >
+              ← Back to tests
+            </button>
+          </div>
+        </div>
+
+        <style>{`@keyframes mode-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+      </div>
+    );
+  }
+
   /* ──────────────────────────── MAINS UI ──────────────────────────── */
   if (isMains) {
     const marksPerQ = totalMarks && totalQuestions ? Math.round(totalMarks / totalQuestions) : 15;
     const minPerQ = Math.max(1, Math.round(marksPerQ * 0.5));
-    const isLast = currentIdx === totalQuestions - 1;
+    const isHandwrite = answerMode === 'handwrite';
     const answeredCount = questions.reduce((acc, _, i) => {
       const a = mainsAnswers[i];
-      return acc + (a && (a.text.trim() || a.file) ? 1 : 0);
+      if (isHandwrite) return acc + (a && a.file ? 1 : 0);
+      return acc + (a && a.text.trim() ? 1 : 0);
     }, 0);
+    const timeUp = timeLeft <= 0;
+    // Handwrite mode reveals the upload step once the user finishes writing or time runs out.
+    const showUpload = isHandwrite && (doneWriting || timeUp);
 
-    /* ── Questions screen (mains) — styled like Daily Answer Writing ── */
-    const mainsCircumference = 2 * Math.PI * 44;
-    const mainsTimerPct = mainsWritingSeconds / Math.max(1, minPerQ * 60);
+    // Per-question text setter (all questions are on screen at once)
+    const setAnswerText = (i: number, value: string) => {
+      setMainsAnswers(prev => ({
+        ...prev,
+        [i]: { ...(prev[i] || { text: '', file: null }), text: value },
+      }));
+    };
+
+    // Per-question file setter (handwrite mode upload step)
+    const setAnswerFile = (i: number, file: File | null) => {
+      setMainsAnswers(prev => ({
+        ...prev,
+        [i]: { ...(prev[i] || { text: '', file: null }), file },
+      }));
+    };
+
+    /* ── Single exam-wide timer ring ── */
+    const examCircumference = 2 * Math.PI * 44;
+    const examTimerPct = examTotalSeconds > 0 ? timeLeft / examTotalSeconds : 0;
+    const ringColor = timeUp ? '#EF4444' : examRunning ? '#00BC7D' : '#101828';
 
     return (
       <div
@@ -696,185 +834,195 @@ function MockTestAttemptInner() {
           className={isMobile ? 'flex flex-col gap-4 p-3' : 'flex flex-row gap-5 p-5'}
           style={{ flex: 1, boxSizing: 'border-box' }}
         >
-          {/* ── Left column ── */}
+          {/* ── Left column: ALL questions stacked ── */}
           <div className="flex flex-col gap-4" style={{ flex: 1, minWidth: 0 }}>
 
-            {/* Question card */}
-            <div
-              style={{
-                background: '#FFFFFF',
-                borderRadius: '16px',
-                padding: '20px 24px',
-                boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
-              }}
-            >
-              {/* Chips row */}
-              <div className="flex items-center flex-wrap gap-2 mb-3">
-                <span style={{ background: '#EFF6FF', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: '#155DFC' }}>
-                  {(currentQ as any).paper || 'GS Paper I'}
-                </span>
-                {currentQ.subject && (
-                  <span style={{ background: '#F3E8FF', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: '#6B21A8' }}>
-                    {currentQ.subject}
-                  </span>
-                )}
-                <div className="ml-auto flex items-center gap-1">
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#EF4444', letterSpacing: '0.05em' }}>LIVE NOW</span>
-                </div>
-              </div>
-
-              {/* Badge + marks */}
-              <div className="flex items-center justify-between mb-3">
-                <span style={{ background: '#101828', color: '#FFFFFF', fontWeight: 700, fontSize: 11, padding: '4px 12px', borderRadius: 8 }}>
-                  QUESTION {currentIdx + 1} OF {totalQuestions}
-                </span>
-                <span style={{ fontSize: 13, color: '#6A7282', fontWeight: 500 }}>{marksPerQ} marks · {minPerQ} min</span>
-              </div>
-
-              {/* Question text */}
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#17223E', lineHeight: '24px', margin: '0 0 12px' }}>
-                {currentQ.text}
-              </p>
-
-              {/* Meta row */}
-              <div className="flex items-center gap-4" style={{ fontSize: 12, color: '#9CA3AF' }}>
-                <span>⏱ {minPerQ} min</span>
-                <span>📝 ~250 words</span>
-                <span>⭐ {marksPerQ} marks</span>
-              </div>
-            </div>
-
-            {/* Answer card */}
-            <div
-              style={{
-                background: '#FFFFFF',
-                borderRadius: '16px',
-                boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
-                padding: '20px 24px',
-              }}
-              className="flex flex-col gap-3"
-            >
-              {/* Upload zone or file confirmation */}
-              {!currentAnswer.file ? (
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => fileInputRef.current?.click()}
-                  onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#17223E'; e.currentTarget.style.background = 'rgba(23,34,62,0.04)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; e.currentTarget.style.background = '#F9FAFB'; }}
-                  style={{
-                    border: '1.5px dashed #CBD5E1',
-                    borderRadius: '14px',
-                    background: '#F9FAFB',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minHeight: '200px',
-                    cursor: 'pointer',
-                    gap: 8,
-                    outline: 'none',
-                    transition: 'border-color 0.15s, background 0.15s',
-                  }}
-                >
-                  <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" style={{ display: 'none' }} onChange={handleMainsFileSelect} />
-                  <div style={{ width: 48, height: 48, borderRadius: 14, background: '#17223E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 12l4-4m0 0l4 4m-4-4v8" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: '#101828', margin: 0 }}>Drop your answer script here</p>
-                  <p style={{ fontSize: 13, color: '#6A7282', margin: 0 }}>Upload handwritten answers for AI evaluation</p>
-                  <div className="flex gap-2 mt-1">
-                    {['JPG', 'PNG', 'PDF', 'DOCX', 'Max 10MB'].map(fmt => (
-                      <span key={fmt} style={{ background: '#F3F4F6', borderRadius: 6, padding: '3px 8px', fontSize: 11, color: '#374151', fontWeight: 600 }}>{fmt}</span>
-                    ))}
-                  </div>
-                  <button type="button" style={{ marginTop: 4, background: '#FFFFFF', border: '1.5px solid #D1D5DB', borderRadius: 10, padding: '7px 20px', fontWeight: 700, fontSize: 13, cursor: 'pointer', color: '#111827' }}>
-                    Browse Files
-                  </button>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0FDF4', border: '1.5px solid #86EFAC', borderRadius: '14px', padding: '14px 18px' }}>
-                  <div>
-                    <div style={{ fontSize: 14, color: '#15803D', fontWeight: 700 }}>📎 {currentAnswer.file.name}</div>
-                    <div style={{ fontSize: 12, color: '#6B7280', marginTop: 3 }}>{(currentAnswer.file.size / 1024 / 1024).toFixed(2)} MB</div>
-                  </div>
-                  <button type="button" onClick={handleMainsRemoveFile} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#15803D', fontSize: 20, fontWeight: 700, lineHeight: 1 }}>✕</button>
-                </div>
-              )}
-
-              {/* OR Type answer toggle */}
-              <div style={{ textAlign: 'center' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowMainsTypeAnswer(s => !s)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#6A7282', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                >
-                  OR Type your answer {showMainsTypeAnswer ? '▲' : '▼'}
-                </button>
-              </div>
-
-              {showMainsTypeAnswer && (
+            {/* Handwrite-mode banner */}
+            {isHandwrite && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: showUpload ? '#EFF6FF' : '#FFFBEB', border: `1px solid ${showUpload ? '#BFDBFE' : '#FDE68A'}`, borderRadius: 14, padding: '14px 18px' }}>
+                <span style={{ fontSize: 20 }}>{showUpload ? '📤' : '📝'}</span>
                 <div>
-                  <textarea
-                    value={currentAnswer.text}
-                    onChange={(e) => handleMainsTextChange(e.target.value)}
-                    placeholder="Write your answer here..."
-                    rows={5}
-                    style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #E5E7EB', borderRadius: '12px', fontSize: 14, lineHeight: '22px', color: '#0F172B', fontFamily: 'Arimo, sans-serif', resize: 'vertical', boxSizing: 'border-box', background: '#FAFAFA', outline: 'none' }}
-                  />
-                  <p style={{ fontSize: 12, color: '#9CA3AF', margin: '4px 0 0' }}>
-                    {currentAnswer.text.trim() ? `${currentAnswer.text.trim().split(/\s+/).filter(Boolean).length} words` : '0 words'}
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#17223E' }}>
+                    {showUpload ? 'Upload your answer pages' : 'Handwriting mode — write on paper'}
+                  </p>
+                  <p style={{ margin: '2px 0 0', fontSize: 12.5, color: '#6A7282', lineHeight: '18px' }}>
+                    {showUpload
+                      ? 'Attach the scan/photo of each answer below, then submit for evaluation.'
+                      : 'Write each answer in your booklet while the timer runs. When you finish, tap “I’m done writing” to upload your scans.'}
                   </p>
                 </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex flex-col gap-2 mt-1">
-                {currentIdx > 0 && (
-                  <button type="button" onClick={handleMainsPrev} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#6A7282', fontWeight: 600, textAlign: 'left', display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0 }}>
-                    ← Previous Question
-                  </button>
-                )}
-                {isLast ? (
-                  <button
-                    type="button"
-                    disabled={mainsSubmitting}
-                    onClick={handleMainsSubmitAll}
-                    className="w-full flex items-center justify-center gap-2 text-white font-bold transition-transform hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    style={{ height: '52px', background: '#17223E', borderRadius: '14px', fontSize: '16px', border: 'none', cursor: mainsSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)' }}
-                  >
-                    {mainsSubmitting ? (
-                      <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />Submitting...</>
-                    ) : (
-                      <>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                          <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        Submit Answer for Evaluation
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleMainsNext}
-                    className="w-full flex items-center justify-center gap-2 text-white font-bold transition-transform hover:scale-[1.01]"
-                    style={{ height: '52px', background: '#17223E', borderRadius: '14px', fontSize: '16px', border: 'none', cursor: 'pointer', boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)' }}
-                  >
-                    Save &amp; Next Question →
-                  </button>
-                )}
-                <p style={{ textAlign: 'center', fontSize: 12, color: '#9CA3AF', margin: 0 }}>✦ Get detailed feedback in 60 seconds</p>
               </div>
+            )}
+
+            {questions.map((q, i) => {
+              const answer = mainsAnswers[i] || { text: '', file: null };
+              const wordCount = answer.text.trim() ? answer.text.trim().split(/\s+/).filter(Boolean).length : 0;
+              return (
+                <div
+                  key={q.id ?? i}
+                  style={{
+                    background: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '20px 24px',
+                    boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
+                  }}
+                  className="flex flex-col gap-3"
+                >
+                  {/* Chips row */}
+                  <div className="flex items-center flex-wrap gap-2">
+                    <span style={{ background: '#EFF6FF', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: '#155DFC' }}>
+                      {(q as any).paper || paperParam || 'GS Paper I'}
+                    </span>
+                    {q.subject && (
+                      <span style={{ background: '#F3E8FF', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: '#6B21A8' }}>
+                        {q.subject}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Badge + marks */}
+                  <div className="flex items-center justify-between">
+                    <span style={{ background: '#101828', color: '#FFFFFF', fontWeight: 700, fontSize: 11, padding: '4px 12px', borderRadius: 8 }}>
+                      QUESTION {i + 1} OF {totalQuestions}
+                    </span>
+                    <span style={{ fontSize: 13, color: '#6A7282', fontWeight: 500 }}>{marksPerQ} marks · ~250 words</span>
+                  </div>
+
+                  {/* Question text — gold-bordered serif blockquote (matches Daily Answer Writing) */}
+                  <div style={{ borderRadius: 10, background: '#F9FAFB', padding: 16, boxShadow: '0px 1px 2px -1px #0000001A', borderLeft: '4px solid #C9A84C' }}>
+                    <p className="italic" style={{ fontSize: 16, lineHeight: '26px', color: '#101828', fontFamily: 'var(--font-merriweather), Georgia, serif', margin: 0 }}>
+                      &quot;{q.text}&quot;
+                    </p>
+                  </div>
+
+                  {/* Answer area — depends on the chosen mode */}
+                  {isHandwrite && !showUpload && (
+                    /* Handwrite mode, timer running: no editor — they write on paper */
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 12, border: '1.5px dashed #E5E7EB', background: '#F9FAFB' }}>
+                      <span style={{ fontSize: 18 }}>📝</span>
+                      <span style={{ fontSize: 13, color: '#6A7282' }}>Write this answer in your booklet. You’ll upload your scan after the test.</span>
+                    </div>
+                  )}
+
+                  {isHandwrite && showUpload && (
+                    /* Handwrite mode, writing done: per-question upload slot */
+                    <div>
+                      <label
+                        htmlFor={`mains-file-${i}`}
+                        className="w-full flex items-center justify-between"
+                        style={{ padding: '14px 16px', borderRadius: 12, border: `1.5px ${answer.file ? 'solid #00BC7D' : 'dashed #CBD5E1'}`, background: answer.file ? '#F0FDF4' : '#F9FAFB', cursor: 'pointer' }}
+                      >
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13.5, fontWeight: 600, color: '#17223E' }}>
+                          {answer.file ? '✅' : '📤'}
+                          {answer.file ? answer.file.name : `Upload your answer page for Q${i + 1}`}
+                        </span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#155DFC' }}>{answer.file ? 'Replace' : 'Browse'}</span>
+                      </label>
+                      <input
+                        id={`mains-file-${i}`}
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.pdf,.docx"
+                        style={{ display: 'none' }}
+                        onChange={(e) => setAnswerFile(i, e.target.files?.[0] || null)}
+                      />
+                      <p style={{ fontSize: 11.5, color: '#9CA3AF', margin: '6px 0 0' }}>JPG · PNG · PDF · DOCX · Max 10MB</p>
+                    </div>
+                  )}
+
+                  {!isHandwrite && (() => {
+                    const isOpen = !!openEditors[i];
+                    return (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => setOpenEditors(prev => ({ ...prev, [i]: !prev[i] }))}
+                          className="w-full flex items-center justify-between"
+                          style={{
+                            padding: '12px 16px',
+                            borderRadius: isOpen ? '12px 12px 0 0' : '12px',
+                            border: '1.5px solid #E5E7EB',
+                            borderBottom: isOpen ? 'none' : '1.5px solid #E5E7EB',
+                            background: '#F9FAFB',
+                            cursor: 'pointer',
+                            fontWeight: 700,
+                            fontSize: 14,
+                            color: '#17223E',
+                          }}
+                        >
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                            ✍️ Write Your Answer
+                            {wordCount > 0 && (
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#15803D', background: '#DCFCE7', borderRadius: 999, padding: '2px 8px' }}>
+                                {wordCount} words
+                              </span>
+                            )}
+                          </span>
+                          <span style={{ fontSize: 12, color: '#6A7282', transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'none' }}>▼</span>
+                        </button>
+                        {isOpen && (
+                          <div>
+                            <textarea
+                              value={answer.text}
+                              onChange={(e) => setAnswerText(i, e.target.value)}
+                              placeholder="Write your answer here..."
+                              rows={8}
+                              autoFocus
+                              disabled={timeUp}
+                              style={{ width: '100%', padding: '14px 16px', border: '1.5px solid #E5E7EB', borderTop: 'none', borderRadius: '0 0 12px 12px', fontSize: 14, lineHeight: '24px', color: '#0F172B', fontFamily: 'Arimo, sans-serif', resize: 'vertical', boxSizing: 'border-box', background: timeUp ? '#F3F4F6' : '#FAFAFA', outline: 'none' }}
+                            />
+                            <p style={{ fontSize: 12, color: '#9CA3AF', margin: '6px 0 0' }}>
+                              {wordCount} words
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              );
+            })}
+
+            {/* Submit all — handwrite mode gates this behind "I'm done writing" */}
+            <div className="flex flex-col gap-2">
+              {isHandwrite && !showUpload ? (
+                <button
+                  type="button"
+                  onClick={() => setDoneWriting(true)}
+                  className="w-full flex items-center justify-center gap-2 text-white font-bold transition-transform hover:scale-[1.01]"
+                  style={{ height: '52px', background: '#17223E', borderRadius: '14px', fontSize: '16px', border: 'none', cursor: 'pointer', boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)' }}
+                >
+                  📤 I’m done writing — Upload my answers
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={mainsSubmitting}
+                  onClick={handleMainsSubmitAll}
+                  className="w-full flex items-center justify-center gap-2 text-white font-bold transition-transform hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  style={{ height: '52px', background: '#17223E', borderRadius: '14px', fontSize: '16px', border: 'none', cursor: mainsSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)' }}
+                >
+                  {mainsSubmitting ? (
+                    <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />Submitting...</>
+                  ) : (
+                    <>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                        <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Submit {totalQuestions} Answers for Evaluation
+                    </>
+                  )}
+                </button>
+              )}
+              <p style={{ textAlign: 'center', fontSize: 12, color: '#9CA3AF', margin: 0 }}>
+                {isHandwrite && !showUpload
+                  ? '✦ Finish your booklet, then upload each page'
+                  : '✦ Get detailed feedback in 60 seconds'}
+              </p>
             </div>
           </div>
 
-          {/* ── Right column: Writing Timer ── */}
-          <div style={{ width: isMobile ? '100%' : '280px', flexShrink: 0, order: isMobile ? -1 : 0 }}>
+          {/* ── Right column: Exam Timer + Quick Tips (sticky together) ── */}
+          <div style={{ width: isMobile ? '100%' : '280px', flexShrink: 0, order: isMobile ? -1 : 0, position: isMobile ? 'static' : 'sticky', top: 20, alignSelf: 'flex-start' }}>
             <div
               style={{
                 background: '#FFFFFF',
@@ -885,49 +1033,94 @@ function MockTestAttemptInner() {
               className="flex flex-col items-center"
             >
               <p style={{ fontWeight: 600, fontSize: 11, letterSpacing: '0.08em', color: '#6A7282', textTransform: 'uppercase', marginBottom: 14, textAlign: 'center' }}>
-                Writing Timer
+                Exam Timer
               </p>
 
               {/* SVG circular timer */}
-              <div style={{ position: 'relative', width: 100, height: 100, marginBottom: 12 }}>
-                <svg width="100" height="100" style={{ transform: 'rotate(-90deg)' }}>
-                  <circle cx="50" cy="50" r="44" fill="none" stroke="#F3F4F6" strokeWidth="6" />
+              <div style={{ position: 'relative', width: 110, height: 110, marginBottom: 12 }}>
+                <svg width="110" height="110" style={{ transform: 'rotate(-90deg)' }}>
+                  <circle cx="55" cy="55" r="44" fill="none" stroke="#F3F4F6" strokeWidth="6" />
                   <circle
-                    cx="50" cy="50" r="44" fill="none"
-                    stroke={isMainsTimerRunning ? '#00BC7D' : mainsWritingSeconds === 0 ? '#EF4444' : '#101828'}
+                    cx="55" cy="55" r="44" fill="none"
+                    stroke={ringColor}
                     strokeWidth="6"
                     strokeLinecap="round"
-                    strokeDasharray={mainsCircumference}
-                    strokeDashoffset={mainsCircumference - mainsTimerPct * mainsCircumference}
+                    strokeDasharray={examCircumference}
+                    strokeDashoffset={examCircumference - examTimerPct * examCircumference}
                     style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }}
                   />
                 </svg>
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontWeight: 700, fontSize: 20, color: '#101828' }}>{formatTime(mainsWritingSeconds)}</span>
+                  <span style={{ fontWeight: 700, fontSize: 22, color: '#101828' }}>{formatTime(timeLeft)}</span>
                 </div>
               </div>
 
-              <p style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.07em', color: isMainsTimerRunning ? '#00BC7D' : '#9CA3AF', textTransform: 'uppercase', marginBottom: 16, textAlign: 'center' }}>
-                {isMainsTimerRunning ? 'IN PROGRESS' : mainsWritingSeconds === 0 ? 'COMPLETE' : 'PAUSED'}
+              <p style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.07em', color: timeUp ? '#EF4444' : examRunning ? '#00BC7D' : '#9CA3AF', textTransform: 'uppercase', marginBottom: 16, textAlign: 'center' }}>
+                {timeUp ? "TIME'S UP" : examRunning ? 'IN PROGRESS' : 'PAUSED'}
               </p>
 
               <button
                 type="button"
-                onClick={() => setIsMainsTimerRunning(r => !r)}
-                className="w-full flex items-center justify-center gap-2 font-bold text-white"
-                style={{ height: 44, background: isMainsTimerRunning ? '#EF4444' : '#00BC7D', border: 'none', borderRadius: '12px', fontSize: 14, cursor: 'pointer', marginBottom: 8 }}
+                disabled={timeUp}
+                onClick={() => setExamRunning(r => !r)}
+                className="w-full flex items-center justify-center gap-2 font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ height: 44, background: examRunning ? '#EF4444' : '#00BC7D', border: 'none', borderRadius: '12px', fontSize: 14, cursor: timeUp ? 'not-allowed' : 'pointer' }}
               >
-                {isMainsTimerRunning ? '⏸ Pause' : '▶ Start'}
+                {examRunning ? '⏸ Pause' : '▶ Resume'}
               </button>
-              <button
-                type="button"
-                onClick={() => { setIsMainsTimerRunning(false); setMainsWritingSeconds(minPerQ * 60); }}
-                className="w-full flex items-center justify-center gap-2 font-bold"
-                style={{ height: 44, background: '#FFFFFF', border: '1.5px solid #E5E7EB', borderRadius: '12px', color: '#374151', fontSize: 14, cursor: 'pointer' }}
-              >
-                ↺ Reset
-              </button>
+
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #F0F2F5', width: '100%', textAlign: 'center' }}>
+                <span style={{ fontSize: 22, fontWeight: 800, color: '#17223E' }}>{answeredCount}</span>
+                <span style={{ fontSize: 14, color: '#9CA3AF', fontWeight: 600 }}> / {totalQuestions}</span>
+                <p style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', margin: '2px 0 0' }}>Answered</p>
+              </div>
             </div>
+
+            {/* Quick Tips for Best Evaluation (handwrite mode only — matches Daily Answer Writing) */}
+            {isHandwrite && (
+              <div
+                className="bg-white overflow-hidden"
+                style={{ borderRadius: 20, marginTop: 16, boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}
+              >
+                <div className="flex items-center gap-2" style={{ padding: '14px 20px', background: '#FEFCE8', borderBottom: '1px solid #FEF08A' }}>
+                  <span style={{ fontSize: 18 }}>💡</span>
+                  <span className="font-bold text-[#101828]" style={{ fontSize: 13, letterSpacing: '0.04em' }}>QUICK TIPS FOR BEST EVALUATION</span>
+                </div>
+                {[
+                  { key: 'ink', icon: '✏️', label: 'Ink & Paper', points: ['Use dark blue or black ink only', 'Unruled sheets work best for evaluation', 'Avoid pencil — AI may miss faint marks'] },
+                  { key: 'photo', icon: '📷', label: 'Photography', points: ['Take photos in bright, shadow-free lighting', 'Keep camera parallel to paper (no angle)', 'Avoid reflections — turn off flash if needed'] },
+                  { key: 'format', icon: '📝', label: 'Writing Format', points: ['Leave proper margins on both sides', 'Write question numbers clearly at the top', 'Upload pages in correct order (P1, P2...)'] },
+                  { key: 'accuracy', icon: '🎯', label: 'For Accuracy', points: ['Number each page if multi-page answer', 'Keep handwriting legible — not too rushed', 'Upload the right page for each question'] },
+                ].map((tip) => (
+                  <div key={tip.key} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                    <button
+                      type="button"
+                      onClick={() => setOpenTip(openTip === tip.key ? null : tip.key)}
+                      className="w-full flex items-center justify-between hover:bg-[#F9FAFB] transition-colors text-left"
+                      style={{ padding: '14px 20px' }}
+                    >
+                      <span className="flex items-center gap-2 font-semibold text-[#101828]" style={{ fontSize: 14 }}>
+                        <span>{tip.icon}</span>
+                        {tip.label}
+                      </span>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: '#9CA3AF', transition: 'transform 0.2s', transform: openTip === tip.key ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                        <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    {openTip === tip.key && (
+                      <div style={{ padding: '0 20px 14px' }}>
+                        {tip.points.map((pt, idx) => (
+                          <div key={idx} className="flex items-start gap-3" style={{ marginBottom: 8 }}>
+                            <span className="font-bold flex-shrink-0" style={{ color: '#0F766E', fontSize: 14, marginTop: 1 }}>✓</span>
+                            <span className="text-[#4A5565]" style={{ fontSize: 13, lineHeight: '20px' }}>{pt}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
