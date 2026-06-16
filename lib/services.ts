@@ -504,6 +504,12 @@ export const flashcardService = {
   }) => api.post<any>('/flashcards', data, await freshAuthConfig()),
   updateProgress: (cardId: string, mastered: boolean) =>
     api.patch<any>(`/flashcards/${cardId}/progress`, { mastered }, authConfig()),
+  deleteSubject: (subjectId: string) =>
+    api.delete<any>(`/flashcards/subjects/${subjectId}`, authConfig()),
+  deleteCard: (cardId: string) =>
+    api.delete<any>(`/flashcards/${cardId}`, authConfig()),
+  deleteTopic: (subjectId: string, topicId: string) =>
+    api.delete<any>(`/flashcards/${subjectId}/topics/${topicId}`, authConfig()),
 };
 
 // ==================== Spaced Repetition ====================
