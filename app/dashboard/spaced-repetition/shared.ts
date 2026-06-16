@@ -4,6 +4,7 @@
 export type SpacedRepItem = {
   id: string;
   questionText: string;
+  answer?: string;
   source: string;
   sourceType: string;
   subject: string;
@@ -80,13 +81,14 @@ export function sourceColor(sourceType: string): string {
 
 export function subjectBg(subject: string): string {
   const map: Record<string, string> = {
-    Polity: '#D0DDF4',
-    History: '#F5E8D4',
-    Geography: '#C8E8F4',
-    Economy: '#F8EDD8',
-    'Environment & Ecology': '#C8ECCC',
-    'Science & Technology': '#DCF0F8',
-    'Current Affairs': '#FEE2E2',
+    Polity: '#FDF0DE',
+    History: '#FFF8EE',
+    Geography: 'rgba(201, 168, 76, 0.19)',
+    Economy: 'linear-gradient(139deg, #F3EFFD 0%, #EDE7FB 100%)',
+    'Environment & Ecology': 'linear-gradient(139deg, #EDF9F3 0%, #E0F5EA 100%)',
+    'Science & Technology': 'linear-gradient(139deg, #E0EBF9 0%, #D4E4F7 100%)',
+    'Current Affairs': 'linear-gradient(139deg, #FFF1E8 0%, #FFE6D5 100%)',
+    Ethics: 'linear-gradient(139deg, #EEF0FF 0%, #E0E3FF 100%)',
     Society: '#FCE7F3',
     Governance: '#E0E7FF',
     'International Relations': '#F3E8FF',
@@ -94,11 +96,10 @@ export function subjectBg(subject: string): string {
     Agriculture: '#D8F0CC',
     'Internal Security': '#FFE4E6',
     'Disaster Management': '#FEF9C3',
-    Ethics: '#F5F3FF',
-    GS1: '#D0DDF4',
-    GS2: '#F5E8D4',
-    GS3: '#F8EDD8',
-    GS4: '#C8ECCC',
+    GS1: '#FDF0DE',
+    GS2: '#FFF8EE',
+    GS3: 'linear-gradient(139deg, #F3EFFD 0%, #EDE7FB 100%)',
+    GS4: 'linear-gradient(139deg, #EDF9F3 0%, #E0F5EA 100%)',
     Essay: '#FCE7F3',
     'Optional Paper 1': '#E0E7FF',
     'Optional Paper 2': '#F3E8FF',
@@ -110,14 +111,14 @@ export type SubjectHealth = { id: string; label: string; shortLabel?: string; ic
 
 // Subjects shown in the "Choose a Subject" health grid (matches the dashboard subject set).
 export const SUBJECT_HEALTH: SubjectHealth[] = [
-  { id: 'polity', label: 'Polity', icon: '🏛️', border: '#B8C8E8', bar: '#4A68B0' },
-  { id: 'geography', label: 'Geography', icon: '🌍', border: '#A8D0EC', bar: '#5B9BD5' },
-  { id: 'history', label: 'History', icon: '📜', border: '#E0C89A', bar: '#C49A6C' },
-  { id: 'economy', label: 'Economy', icon: '📈', border: '#F0D498', bar: '#E6A817' },
-  { id: 'environment-ecology', label: 'Environment & Ecology', shortLabel: 'Environment', icon: '🌿', border: '#A8DEB8', bar: '#6DBF8A' },
-  { id: 'science-technology', label: 'Science & Technology', shortLabel: 'Science', icon: '🔬', border: '#C4B8E0', bar: '#8B6FC4' },
-  { id: 'current-affairs', label: 'Current Affairs', icon: '📰', border: '#FECACA', bar: '#EF4444' },
-  { id: 'ethics', label: 'Ethics', icon: '📘', border: '#DDD6FE', bar: '#6366F1' },
+  { id: 'polity', label: 'Polity', icon: '🏛️', border: '#C0D9F5', bar: '#E9A12D' },
+  { id: 'geography', label: 'Geography', icon: '🌍', border: '#B2EDD0', bar: '#D5A53C' },
+  { id: 'history', label: 'History', icon: '📜', border: '#FFD5A8', bar: '#E8B164' },
+  { id: 'economy', label: 'Economy', icon: '📈', border: '#E8E1FD', bar: '#F16CB0' },
+  { id: 'environment-ecology', label: 'Environment & Ecology', shortLabel: 'Environment', icon: '🌿', border: '#B2EDD0', bar: '#D6A437' },
+  { id: 'science-technology', label: 'Science & Technology', shortLabel: 'Science', icon: '🔬', border: '#C0D9F5', bar: '#E0A446' },
+  { id: 'current-affairs', label: 'Current Affairs', icon: '📰', border: '#FFD1AA', bar: '#F39A3C' },
+  { id: 'ethics', label: 'Ethics', icon: '📘', border: '#C4C9F8', bar: '#4F46E5' },
 ];
 
 export function subjectHealthById(id: string): SubjectHealth | undefined {
@@ -229,3 +230,50 @@ export function reviewInfo(nextReviewAt: string): ReviewInfo {
 }
 
 export const FREE_QUESTION_LIMIT = 10;
+
+export const MODAL_SUBJECTS = [
+  { id: 'polity', icon: '🏛️', label: 'Polity' },
+  { id: 'geography', icon: '🌍', label: 'Geography' },
+  { id: 'history', icon: '📜', label: 'History' },
+  { id: 'economy', icon: '📈', label: 'Economy' },
+  { id: 'environment-ecology', icon: '🌿', label: 'Environment' },
+  { id: 'science-technology', icon: '🔬', label: 'Science' },
+  { id: 'current-affairs', icon: '📰', label: 'Current Affairs' },
+  { id: 'ethics', icon: '⚖️', label: 'Ethics' },
+  { id: 'gs1', icon: '1️⃣', label: 'GS1' },
+  { id: 'gs2', icon: '2️⃣', label: 'GS2' },
+  { id: 'gs3', icon: '3️⃣', label: 'GS3' },
+  { id: 'gs4', icon: '4️⃣', label: 'GS4' },
+  { id: 'essay', icon: '✍️', label: 'Essay' },
+  { id: 'optional-paper-1', icon: '📗', label: 'Optional Paper 1' },
+  { id: 'optional-paper-2', icon: '📕', label: 'Optional Paper 2' },
+];
+
+export const MODAL_TYPE_OPTIONS = [
+  { id: 'custom', label: 'Custom', icon: '✏️' },
+  { id: 'mcq', label: 'MCQ', icon: '📚' },
+  { id: 'mains', label: 'Mains', icon: '✍️' },
+  { id: 'pyq', label: 'PYQ', icon: '📖' },
+];
+
+export const MODAL_SCHEDULE_OPTIONS = [
+  { id: 'tomorrow', label: 'Tomorrow', icon: '⚡', days: 1 },
+  { id: '3days', label: 'In 3 days', icon: '📅', days: 3 },
+  { id: '7days', label: 'In 7 days', icon: '📅', days: 7 },
+  { id: 'custom', label: 'Custom date', icon: '🗓️', days: null as number | null },
+];
+
+export type ModalScheduleId = 'tomorrow' | '3days' | '7days' | 'custom';
+
+export function scheduleToDays(schedule: ModalScheduleId, customDays: string): number[] {
+  if (schedule === 'tomorrow') return [1];
+  if (schedule === '3days') return [3];
+  if (schedule === '7days') return [7];
+  const n = parseInt(customDays, 10);
+  return [Number.isFinite(n) && n > 0 ? n : 3];
+}
+
+export function sourceTypeToLabel(sourceType: string): string {
+  const map: Record<string, string> = { custom: 'Custom', mcq: 'MCQ', mains: 'Mains', pyq: 'PYQ' };
+  return map[sourceType] ?? 'Custom';
+}
