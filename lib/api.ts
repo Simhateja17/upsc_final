@@ -1,5 +1,5 @@
 // Default aligns with `.env.example` and backend `upsc_backend` dev port.
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
 interface ApiResponse<T> {
   status: 'success' | 'error';
@@ -30,8 +30,9 @@ async function request<T>(
 ): Promise<ApiResponse<T>> {
   const { token, timeout = 15000, ...fetchConfig } = config;
 
+  const isFormData = fetchConfig.body instanceof FormData;
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    ...(!isFormData ? { 'Content-Type': 'application/json' } : {}),
     ...config.headers,
   };
 
@@ -79,6 +80,13 @@ export const api = {
       ...config,
       method: 'POST',
       body: JSON.stringify(body),
+    }),
+
+  postForm: <T>(endpoint: string, body: FormData, config?: RequestConfig) =>
+    request<T>(endpoint, {
+      ...config,
+      method: 'POST',
+      body,
     }),
 
   put: <T>(endpoint: string, body: unknown, config?: RequestConfig) =>
