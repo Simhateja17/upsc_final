@@ -172,14 +172,17 @@ export default function DashboardPageHero({
               lineHeight: '1.4',
               color: 'rgba(255,255,255,0.5)',
               maxWidth: '780px',
-              marginBottom: buttons ? '20px' : 0,
+              marginBottom: buttons ? '30px' : 0,
             }}
           >
             {subtitle}
           </p>
 
           {buttons && (
-            <div className="flex items-center gap-3">
+            <div
+              className="relative z-20 flex flex-wrap items-center justify-center gap-3"
+              style={{ marginTop: 0, transform: 'translateY(18px)', pointerEvents: 'auto' }}
+            >
               {buttons}
             </div>
           )}

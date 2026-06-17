@@ -148,7 +148,7 @@ export default function MindmapViewPage() {
         localStorage.setItem('userPlan', 'trial');
       }
       setShowProModal(false);
-      router.push('/dashboard/billing?trial=started');
+      router.push('/dashboard/billing/plans?trial=started');
     } catch (err: any) {
       alert(err?.message || 'Could not start trial. Please try again.');
     }

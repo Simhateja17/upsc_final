@@ -39,7 +39,7 @@ const PLAN_CARDS: PlanCard[] = [
     description: 'Build daily study habits. Begin your UPSC prep without spending a rupee.',
     textTone: 'dark',
     subtitle: 'Always free, no card needed',
-    cta: 'Get Started Free →',
+    cta: 'Start Free',
     sections: [
       { text: '10 MCQs / day' },
       { text: 'Daily Mains Challenge (1 Q)' },

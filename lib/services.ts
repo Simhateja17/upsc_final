@@ -569,8 +569,13 @@ export const studyGroupService = {
 
 export const userService = {
   getProfile: () => api.get<any>('/user/profile', authConfig()),
-  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; bio?: string; state?: string; targetYear?: string; optionalSubject?: string; gender?: string; dateOfBirth?: string }) =>
+  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; bio?: string; state?: string; targetYear?: string; optionalSubject?: string; gender?: string; dateOfBirth?: string; avatarUrl?: string }) =>
     api.put<any>('/user/profile', data, authConfig()),
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append('avatar', file);
+    return api.postForm<{ avatarUrl: string }>('/user/profile/avatar', form, authConfig());
+  },
   updateSettings: (data: { notifications?: any; preferences?: any; privacy?: any; profile?: any }) =>
     api.put<any>('/user/settings', data, authConfig()),
   submitFeedback: (data: { rating: number; category?: string; workingWell?: string; couldBeBetter?: string }) =>

@@ -397,9 +397,17 @@ export default function MentalHealthPage() {
     };
   });
 
-  const affirmations = dailyContent
-    ? [dailyContent.affirmation]
-    : ['The UPSC exam tests your consistency, not your brilliance. Show up every single day and the result will take care of itself.'];
+  const affirmations = [
+    ...(dailyContent ? [dailyContent.affirmation] : []),
+    'The UPSC exam tests your consistency, not your brilliance. Show up every single day and the result will take care of itself.',
+    'I am exactly where I need to be. Every hour I study today brings me closer to my dream.',
+    'My preparation is unique to me. I don\'t need to compare my chapter 3 to someone else\'s chapter 20.',
+    'I am capable of handling uncertainty. The process itself is building my resilience.',
+    'Every mock test is data, not destiny. I learn, I adjust, I improve.',
+    'I deserve rest. I deserve breaks. I deserve to be kind to myself.',
+    'Consistency over intensity. Small daily efforts compound into extraordinary results.',
+    'Every page I read today is a brick in the foundation of my success.',
+  ];
 
   return (
     <EntitlementGate
@@ -645,7 +653,7 @@ export default function MentalHealthPage() {
               🔖 Save
             </button>
             <span style={{ fontFamily: dm, fontSize: 11, color: 'rgba(255,255,255,0.3)', marginLeft: 'auto' }}>
-              {affIdx + 1} of {affirmations.length} affirmations
+              {(affIdx % affirmations.length) + 1} of {affirmations.length} affirmations
             </span>
           </div>
         </div>
