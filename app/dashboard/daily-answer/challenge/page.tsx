@@ -937,7 +937,7 @@ function DailyMainsChallengeInner() {
                 onDrop={handleDrop}
                 onClick={selectedFiles.length === 0 ? () => fileInputRef.current?.click() : undefined}
               >
-                <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" multiple onChange={handleFileSelect} className="hidden" />
+                <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.pdf" multiple onChange={handleFileSelect} className="hidden" />
 
                 {selectedFiles.length > 0 ? (
                   <div className="w-full" onClick={e => e.stopPropagation()}>
@@ -1008,7 +1008,7 @@ function DailyMainsChallengeInner() {
                     <p className="font-bold text-[#101828] mb-1" style={{ fontSize: '15px' }}>Drop your answer script here</p>
                     <p className="text-[#4A5565] mb-3" style={{ fontSize: '13px' }}>Upload handwritten answers for AI evaluation</p>
                     <div className="flex gap-2 mb-4 flex-wrap justify-center">
-                      {['JPG', 'PNG', 'PDF', 'DOCX', 'Max 10MB'].map(f => (
+                      {['JPG', 'PNG', 'PDF', 'Max 10MB'].map(f => (
                         <span key={f} className="px-2.5 py-1 bg-[#E5E7EB] rounded text-[#374151]" style={{ fontSize: '12px' }}>{f}</span>
                       ))}
                     </div>

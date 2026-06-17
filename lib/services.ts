@@ -135,7 +135,7 @@ export const dailyAnswerService = {
   },
   uploadFiles: async (files: File[], date?: string): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
     const fd = new FormData();
-    files.forEach((file) => fd.append('file', file));
+    files.forEach((file) => fd.append('files', file));
 
     const token = getToken();
     const suffix = date ? `?date=${encodeURIComponent(date)}` : '';
@@ -234,7 +234,7 @@ export const mockTestService = {
     fd.append('mockTestQuestionId', questionId);
     if (opts.answerText) fd.append('answerText', opts.answerText);
     if (opts.files?.length) {
-      opts.files.forEach((f) => fd.append('file', f));
+      opts.files.forEach((f) => fd.append('files', f));
     } else if (opts.file) {
       fd.append('file', opts.file);
     }

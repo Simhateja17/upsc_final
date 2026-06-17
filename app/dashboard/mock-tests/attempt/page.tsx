@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService } from '@/lib/services';
+import { handleEntitlementError } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import ExamInstructions from '@/components/ExamInstructions';
 import FilePreviewThumb from '@/components/FilePreviewThumb';
@@ -133,6 +135,7 @@ const SAMPLE_QUESTIONS: Question[] = [
 function MockTestAttemptInner() {
   const router = useRouter();
   const isMobile = useIsMobile();
+  const entitlements = useEntitlements();
   const [navOpen, setNavOpen] = useState(false);
   const searchParams = useSearchParams();
   const testId = searchParams.get('testId');
@@ -332,9 +335,47 @@ function MockTestAttemptInner() {
     setMainsSubmitting(true);
 
     try {
-      const attemptIds: string[] = [];
+      const storageKey = `mockTestMainsAttempts:${testId}`;
+      let byQuestion: Record<string, string> = {};
+      if (typeof window !== 'undefined') {
+        try {
+          const existing = JSON.parse(sessionStorage.getItem(storageKey) || '{}');
+          byQuestion = existing?.byQuestion && typeof existing.byQuestion === 'object'
+            ? { ...existing.byQuestion }
+            : {};
+        } catch {
+          byQuestion = {};
+        }
+      }
+
+      const pendingQuestions = questions
+        .map((q) => ({ q }))
+        .filter(({ q }) => !byQuestion[String(q.id)]);
+
+      if (pendingQuestions.length === 0) {
+        router.push(
+          `/dashboard/mock-tests/attempt/evaluating?testId=${testId}&title=${encodeURIComponent(title)}`
+        );
+        return;
+      }
+
+      const quota = entitlements.featureStatus('mains_evaluation');
+      if (quota?.allowed === false) {
+        setError(quota.message || 'You have used your Mains evaluation quota for this period.');
+        setMainsSubmitting(false);
+        return;
+      }
+      if (quota && quota.remaining !== null && quota.remaining < pendingQuestions.length) {
+        setError(
+          `This mock test needs ${pendingQuestions.length} Mains evaluation credit${pendingQuestions.length === 1 ? '' : 's'}, but you have ${quota.remaining} remaining.`
+        );
+        setMainsSubmitting(false);
+        return;
+      }
+
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
+        if (byQuestion[String(q.id)]) continue;
         const a = mainsAnswers[i];
         const resp = await mockTestService.submitMainsAnswer(testId, String(q.id), {
           answerText: a?.text?.trim() || undefined,
@@ -342,21 +383,34 @@ function MockTestAttemptInner() {
           files: a?.files?.length ? a.files : undefined,
         });
         const id = resp.data?.attemptId;
-        if (id) attemptIds.push(id);
+        if (id) {
+          byQuestion[String(q.id)] = id;
+          if (typeof window !== 'undefined') {
+            const attemptIds = questions.map((question) => byQuestion[String(question.id)]).filter(Boolean);
+            sessionStorage.setItem(
+              storageKey,
+              JSON.stringify({ attemptIds, byQuestion, title })
+            );
+          }
+        }
       }
 
       if (typeof window !== 'undefined') {
+        const attemptIds = questions.map((q) => byQuestion[String(q.id)]).filter(Boolean);
         sessionStorage.setItem(
-          `mockTestMainsAttempts:${testId}`,
-          JSON.stringify({ attemptIds, title })
+          storageKey,
+          JSON.stringify({ attemptIds, byQuestion, title })
         );
       }
+      await entitlements.refreshEntitlements();
       router.push(
         `/dashboard/mock-tests/attempt/evaluating?testId=${testId}&title=${encodeURIComponent(title)}`
       );
     } catch (err: any) {
       console.error('Mains submit failed:', err);
-      setError(err.message || 'Failed to submit answers. Please try again.');
+      entitlements.refreshEntitlements().catch(() => {});
+      const parsed = handleEntitlementError(err);
+      setError(parsed.message || err.message || 'Failed to submit answers. Please try again.');
       setMainsSubmitting(false);
     }
   };
@@ -1107,7 +1161,7 @@ function MockTestAttemptInner() {
                             <input
                               id={`mains-file-replace-${i}-${fi}`}
                               type="file"
-                              accept=".jpg,.jpeg,.png,.pdf,.docx"
+                              accept=".jpg,.jpeg,.png,.pdf"
                               style={{ display: 'none' }}
                               onChange={(e) => {
                                 const newFile = e.target.files?.[0];
@@ -1141,7 +1195,7 @@ function MockTestAttemptInner() {
                       <input
                         id={`mains-file-${i}`}
                         type="file"
-                        accept=".jpg,.jpeg,.png,.pdf,.docx"
+                        accept=".jpg,.jpeg,.png,.pdf"
                         multiple
                         style={{ display: 'none' }}
                         onChange={(e) => {
@@ -1150,7 +1204,7 @@ function MockTestAttemptInner() {
                           e.target.value = '';
                         }}
                       />
-                      <p style={{ fontSize: 11.5, color: '#9CA3AF', margin: '2px 0 0' }}>JPG · PNG · PDF · DOCX · Max 10MB per file · Multiple files allowed</p>
+                      <p style={{ fontSize: 11.5, color: '#9CA3AF', margin: '2px 0 0' }}>JPG · PNG · PDF · Max 10MB per file · Multiple files allowed</p>
                     </div>
                   )}
 
