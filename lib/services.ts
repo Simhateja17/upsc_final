@@ -228,12 +228,16 @@ export const mockTestService = {
   submitMainsAnswer: async (
     testId: string,
     questionId: string,
-    opts: { answerText?: string; file?: File }
+    opts: { answerText?: string; file?: File; files?: File[] }
   ): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
     const fd = new FormData();
     fd.append('mockTestQuestionId', questionId);
     if (opts.answerText) fd.append('answerText', opts.answerText);
-    if (opts.file) fd.append('file', opts.file);
+    if (opts.files?.length) {
+      opts.files.forEach((f) => fd.append('file', f));
+    } else if (opts.file) {
+      fd.append('file', opts.file);
+    }
 
     const token = getToken();
     const res = await fetch(
