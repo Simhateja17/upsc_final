@@ -264,8 +264,8 @@ function MockTestResultsInner() {
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
   /* ─── Next-steps tab state ─── */
-  // Mains opens directly on the score card; prelims keeps the next-steps landing.
-  const [activeTab, setActiveTab] = useState<'next-steps' | 'review'>(isMains ? 'review' : 'next-steps');
+  // Both modes open on the review/answers view; "Next" reveals the recommendations.
+  const [activeTab, setActiveTab] = useState<'next-steps' | 'review'>('review');
   const [cards, setCards] = useState<CardItem[]>(fallbackCards);
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [heroTitle, setHeroTitle] = useState('Great session!');
@@ -607,33 +607,6 @@ function MockTestResultsInner() {
       : card
   );
 
-  /* ─── Shared: tab bar ─── */
-  const tabBar = (
-    <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-      {(['next-steps', 'review'] as const).map(tab => (
-        <button
-          key={tab}
-          type="button"
-          onClick={() => setActiveTab(tab)}
-          style={{
-            padding: '10px 20px',
-            borderRadius: 10,
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: 14,
-            fontFamily: 'Inter, sans-serif',
-            background: activeTab === tab ? '#17223E' : '#E5E7EB',
-            color: activeTab === tab ? '#FFFFFF' : '#374151',
-            transition: 'background 0.15s ease, color 0.15s ease',
-          }}
-        >
-          {tab === 'next-steps' ? 'What would you like to do next? →' : 'Review Answers'}
-        </button>
-      ))}
-    </div>
-  );
-
   /* ─── Shared: next steps content ─── */
   const nextStepsContent = (
     <div style={{ width: '100%', maxWidth: '988px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -756,6 +729,26 @@ function MockTestResultsInner() {
 
     const selected = mainsData[Math.min(selectedQ, mainsData.length - 1)];
 
+    if (activeTab === 'next-steps') {
+      return (
+        <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
+          <div style={{ maxWidth: 988, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('review');
+                if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#374151', fontWeight: 700, fontSize: 14, cursor: 'pointer', padding: 0 }}
+            >
+              ← Back to results
+            </button>
+            {nextStepsContent}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <>
       <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
@@ -792,67 +785,8 @@ function MockTestResultsInner() {
             </div>
           </div>
 
-          {/* Detailed feedback — aggregate strengths & improvements */}
+          {/* Per-question score card */}
           {(() => {
-            const allStrengths = mainsData.flatMap((q) => q.strengths).filter(Boolean);
-            const allImprovements = mainsData.flatMap((q) => q.improvements).filter(Boolean);
-            if (allStrengths.length === 0 && allImprovements.length === 0) return null;
-            return (
-              <div style={{ background: '#FFFFFF', borderRadius: 16, padding: '28px 28px 26px', marginBottom: 24, boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}>
-                <div className="flex items-center gap-2 mb-5">
-                  <span style={{ fontSize: 22 }}>🧭</span>
-                  <h2 style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontSize: 24, fontWeight: 700, color: '#101828', margin: 0 }}>Detailed feedback</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
-                  <div style={{ background: '#EEF4EA', borderRadius: 14, padding: '22px 24px', border: '1px solid #D6E4CC' }}>
-                    <div className="flex items-center gap-2 mb-4">
-                      <span style={{ color: '#4D7C4E', fontSize: 14 }}>&#10003;</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#4D7C4E', textTransform: 'uppercase', letterSpacing: '1.2px' }}>What Worked Well</span>
-                    </div>
-                    {allStrengths.length > 0 ? (
-                      <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        {allStrengths.slice(0, 5).map((s, i) => (
-                          <li key={i} className="flex items-start gap-3">
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#6B9A5E', marginTop: 8, flexShrink: 0 }} />
-                            <span style={{ fontSize: 15, color: '#374151', lineHeight: '24px' }}>{s}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p style={{ fontSize: 14, color: '#6B7280', margin: 0, fontStyle: 'italic', lineHeight: '22px' }}>No strengths identified yet. Retake with a clearer photo for better analysis.</p>
-                    )}
-                  </div>
-                  <div style={{ background: '#FBEEE8', borderRadius: 14, padding: '22px 24px', border: '1px solid #F2D9CC' }}>
-                    <div className="flex items-center gap-2 mb-4">
-                      <span style={{ color: '#C2663B', fontSize: 13 }}>&#8599;</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#C2663B', textTransform: 'uppercase', letterSpacing: '1.2px' }}>Areas to Improve</span>
-                    </div>
-                    {allImprovements.length > 0 ? (
-                      <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        {allImprovements.slice(0, 5).map((s, i) => (
-                          <li key={i} className="flex items-start gap-3">
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#D2764A', marginTop: 8, flexShrink: 0 }} />
-                            <span style={{ fontSize: 15, color: '#374151', lineHeight: '24px' }}>{s}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p style={{ fontSize: 14, color: '#6B7280', margin: 0, fontStyle: 'italic', lineHeight: '22px' }}>No improvement areas identified yet. Retake with a clearer photo for better analysis.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Tab bar */}
-          {tabBar}
-
-          {/* Next steps tab */}
-          {activeTab === 'next-steps' && nextStepsContent}
-
-          {/* Review tab — per-question score card (ported from Daily Answer Writing) */}
-          {activeTab === 'review' && (() => {
             const q = mainsData[Math.min(selectedQ, mainsData.length - 1)];
             const qPct = q.maxScore > 0 ? Math.round((q.score / q.maxScore) * 100) : 0;
             const detailedParas = (q.detailedFeedback || '').split(/\n+/).map((s) => s.trim()).filter(Boolean);
@@ -1009,16 +943,14 @@ function MockTestResultsInner() {
                             <span style={{ width: 28, height: 28, borderRadius: 7, background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>✅</span>
                             <h3 style={{ fontSize: 14, fontWeight: 700, color: '#101828' }}>What You Did Well</h3>
                           </div>
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-2.5 rounded-[10px] px-4 py-3.5" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
                             {q.strengths.length > 0 ? q.strengths.map((item, i) => (
-                              <div key={i} className="flex items-start gap-2 rounded-[8px] px-3 py-2.5" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                              <div key={i} className="flex items-start gap-2">
                                 <span style={{ color: '#16A34A', fontSize: 13, flexShrink: 0, marginTop: 1 }}>→</span>
                                 <span style={{ fontSize: 13, color: '#166534', lineHeight: '20px' }}>{item}</span>
                               </div>
                             )) : (
-                              <div className="rounded-[8px] px-3 py-2.5" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-                                <span style={{ fontSize: 13, color: '#166534' }}>No structured strengths returned yet.</span>
-                              </div>
+                              <span style={{ fontSize: 13, color: '#166534' }}>No structured strengths returned yet.</span>
                             )}
                           </div>
                         </div>
@@ -1028,16 +960,14 @@ function MockTestResultsInner() {
                             <span style={{ width: 28, height: 28, borderRadius: 7, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>⚠️</span>
                             <h3 style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>Areas to Improve</h3>
                           </div>
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-2.5 rounded-[10px] px-4 py-3.5" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
                             {q.improvements.length > 0 ? q.improvements.map((item, i) => (
-                              <div key={i} className="flex items-start gap-2 rounded-[8px] px-3 py-2.5" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                              <div key={i} className="flex items-start gap-2">
                                 <span style={{ color: '#D97706', fontSize: 13, flexShrink: 0, marginTop: 1 }}>▲</span>
                                 <span style={{ fontSize: 13, color: '#92400E', lineHeight: '20px' }}>{item}</span>
                               </div>
                             )) : (
-                              <div className="rounded-[8px] px-3 py-2.5" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
-                                <span style={{ fontSize: 13, color: '#92400E' }}>No improvement bullets returned.</span>
-                              </div>
+                              <span style={{ fontSize: 13, color: '#92400E' }}>No improvement bullets returned.</span>
                             )}
                           </div>
                         </div>
@@ -1047,16 +977,14 @@ function MockTestResultsInner() {
                             <span style={{ width: 28, height: 28, borderRadius: 7, background: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>💡</span>
                             <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1D4ED8' }}>Value-Add Ideas</h3>
                           </div>
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-2.5 rounded-[10px] px-4 py-3.5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
                             {q.suggestions.length > 0 ? q.suggestions.map((item, i) => (
-                              <div key={i} className="flex items-start gap-2 rounded-[8px] px-3 py-2.5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+                              <div key={i} className="flex items-start gap-2">
                                 <span style={{ color: '#2563EB', fontSize: 13, flexShrink: 0, marginTop: 1 }}>◆</span>
                                 <span style={{ fontSize: 13, color: '#1E40AF', lineHeight: '20px' }}>{item}</span>
                               </div>
                             )) : (
-                              <div className="rounded-[8px] px-3 py-2.5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
-                                <span style={{ fontSize: 13, color: '#1E40AF' }}>No extra suggestions returned yet.</span>
-                              </div>
+                              <span style={{ fontSize: 13, color: '#1E40AF' }}>No extra suggestions returned yet.</span>
                             )}
                           </div>
                         </div>
@@ -1234,6 +1162,20 @@ function MockTestResultsInner() {
               </div>
             );
           })()}
+
+          {/* Next → What's next to do? */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('next-steps');
+                if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '13px 30px', borderRadius: 12, border: 'none', background: '#0F172B', color: '#FFFFFF', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+            >
+              Next →
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1443,13 +1385,21 @@ function MockTestResultsInner() {
           </div>
         </div>
 
-        {/* Tab bar */}
-        {tabBar}
+        {/* Next steps view */}
+        {activeTab === 'next-steps' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('review')}
+              style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#374151', fontWeight: 700, fontSize: 14, cursor: 'pointer', padding: 0 }}
+            >
+              ← Back to answers
+            </button>
+            {nextStepsContent}
+          </div>
+        )}
 
-        {/* Next steps tab */}
-        {activeTab === 'next-steps' && nextStepsContent}
-
-        {/* Review tab */}
+        {/* Review view */}
         {activeTab === 'review' && (
           <div id="mt-full-analysis" style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800, color: '#101828', marginBottom: 12 }}>
@@ -1646,6 +1596,19 @@ function MockTestResultsInner() {
                   </div>
                 );
               })}
+            </div>
+            {/* Next → reveals the recommendations */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('next-steps');
+                  if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 28px', borderRadius: 12, border: 'none', background: '#17223E', color: '#FFFFFF', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+              >
+                Next →
+              </button>
             </div>
           </div>
         )}

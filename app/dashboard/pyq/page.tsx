@@ -6,6 +6,8 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import { pyqService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
 import prelimsSyllabus from '@/data/syllabus/prelimsSyllabus.json';
+import { handleEntitlementError, formatPeriod } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 const AI_EVAL_STEPS = [
   'Reading your answer',
@@ -23,6 +25,13 @@ const YEAR_OPTIONS = Array.from(
   { length: LATEST_EXAM_YEAR - EARLIEST_EXAM_YEAR + 1 },
   (_, index) => LATEST_EXAM_YEAR - index
 );
+
+function formatResetAt(resetAt?: string | null) {
+  if (!resetAt) return null;
+  const date = new Date(resetAt);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
 
 type SubjectTreeNode = {
   label: string;
@@ -289,6 +298,8 @@ const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
 };
 
 export default function PyqPage() {
+  const entitlements = useEntitlements();
+  const mainsQuota = entitlements.featureStatus('mains_evaluation');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
   const [questionStates, setQuestionStates] = useState<Record<string, { selected: string | null; submitted: boolean }>>({});
@@ -2086,6 +2097,17 @@ export default function PyqPage() {
                 }
               </div>
 
+              {mainsQuota && (
+                <div className="mt-3 flex items-center justify-between gap-3 text-sm" style={{ width: 832, maxWidth: '100%', fontFamily: 'Inter', color: '#4B5563' }}>
+                  <span>Mains evaluations</span>
+                  <span>
+                    {mainsQuota.limit === null || mainsQuota.period === 'unlimited'
+                      ? 'Unlimited'
+                      : `${mainsQuota.remaining ?? 0} left ${formatPeriod(mainsQuota.period)}`}
+                  </span>
+                </div>
+              )}
+
               {/* Submit for AI Evaluation */}
               <button
                 id="pyq-mains-submit-btn"
@@ -2103,9 +2125,15 @@ export default function PyqPage() {
                       setMainsAttemptId(res.data.attemptId);
                       setShowMainsWriteModal(false);
                       setShowAiEvalModal(true);
+                      void entitlements.refreshEntitlements();
                     }
                   } catch (err: any) {
-                    setMainsSubmitError(err.message || 'Failed to submit. Please try again.');
+                    const entitlementError = handleEntitlementError(err);
+                    const resetAt = formatResetAt(entitlementError.resetAt);
+                    const message = resetAt
+                      ? `${entitlementError.message} Try again after ${resetAt}.`
+                      : entitlementError.message;
+                    setMainsSubmitError(message || err.message || 'Failed to submit. Please try again.');
                   } finally {
                     setMainsSubmitting(false);
                   }

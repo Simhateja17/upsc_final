@@ -1221,7 +1221,7 @@ function MockTestsPageInner() {
                   { emoji: '🔥', value: sourceLabel, label: 'Source' },
                   { emoji: '📘', value: paperLabel, label: 'Paper' },
                   { emoji: '⚡', value: difficultyLabel, label: 'Difficulty' },
-                  { emoji: '🎯', value: subjectLabel, label: 'Subject' },
+                  { emoji: '🎯', value: subjectLabel, label: 'Focus Subject' },
                 ].map((item, i) => (
                   <div key={i} style={{
                     background: 'rgba(255,255,255,0.06)',

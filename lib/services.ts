@@ -474,8 +474,8 @@ export const pyqService = {
         body: fd,
       }
     );
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Submit failed');
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiRequestError(json.message || 'Submit failed', res.status, json);
     return json;
   },
   getMainsEvaluationStatus: (questionId: string, attemptId: string) =>
