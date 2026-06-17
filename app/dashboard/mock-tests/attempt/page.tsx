@@ -872,7 +872,7 @@ function MockTestAttemptInner() {
                         width: 24,
                         height: 5,
                         borderRadius: 999,
-                        background: tickedQuestions[idx] ? '#155DFC' : '#FDC700',
+                        background: tickedQuestions[idx] ? '#0F172B' : '#FDC700',
                         transition: 'background 0.15s ease',
                       }}
                     />
@@ -1011,18 +1011,31 @@ function MockTestAttemptInner() {
                         </span>
                       )}
                     </div>
-                    {showUpload && answer.files.length > 0 && (
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '5px 14px', borderRadius: 999,
-                        background: '#F0FDF4', border: '1px solid #BBF7D0',
-                        fontSize: 12.5, fontWeight: 600, color: '#16A34A',
-                      }}>
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path d="M3 7.5L5.5 10L11 4" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        Uploaded{answer.files.length > 1 ? ` (${answer.files.length})` : ''}
-                      </span>
+                    {!showUpload && (
+                      <button
+                        type="button"
+                        onClick={() => setTickedQuestions(prev => ({ ...prev, [i]: !prev[i] }))}
+                        style={{
+                          width: 30,
+                          height: 30,
+                          borderRadius: 10,
+                          border: `2px solid ${tickedQuestions[i] ? '#0F172B' : '#D1D5DB'}`,
+                          background: tickedQuestions[i] ? '#0F172B' : '#FFFFFF',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease',
+                          padding: 0,
+                        }}
+                      >
+                        {tickedQuestions[i] && (
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M3 7.5L5.5 10L11 4" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </button>
                     )}
                   </div>
 
@@ -1046,14 +1059,6 @@ function MockTestAttemptInner() {
                   </div>
 
                   {/* Answer area — depends on the chosen mode */}
-                  {isHandwrite && !showUpload && (
-                    /* Handwrite mode, timer running: no editor — they write on paper */
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 12, border: '1.5px dashed #E5E7EB', background: '#F9FAFB' }}>
-                      <span style={{ fontSize: 18 }}>📝</span>
-                      <span style={{ fontSize: 13, color: '#6A7282' }}>Write this answer in your booklet. You'll upload your scan after the test.</span>
-                    </div>
-                  )}
-
                   {isHandwrite && showUpload && (
                     /* Handwrite mode, writing done: per-question multi-file upload */
                     <div className="flex flex-col gap-2">
@@ -1199,51 +1204,6 @@ function MockTestAttemptInner() {
                     );
                   })()}
 
-                  {/* Mark as done / Marked as done bar (hidden in upload phase) */}
-                  {!showUpload && tickedQuestions[i] ? (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: 12, background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#155DFC', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.5L4.5 8.5L9.5 3.5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#155DFC' }}>Marked as done</span>
-                          <p style={{ margin: '1px 0 0', fontSize: 11.5, color: '#6A7282' }}>You can still revisit this question before submission.</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setTickedQuestions(prev => ({ ...prev, [i]: false }))}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 6,
-                          padding: '8px 16px', borderRadius: 10,
-                          background: '#FFFFFF', border: '1.5px solid #155DFC',
-                          cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#155DFC',
-                        }}
-                      >
-                        <span>✏️</span> Revisit
-                      </button>
-                    </div>
-                  ) : !showUpload ? (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button
-                        type="button"
-                        onClick={() => setTickedQuestions(prev => ({ ...prev, [i]: true }))}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 6,
-                          padding: '8px 18px', borderRadius: 10,
-                          background: '#FFFFFF', border: '1.5px solid #FDC700',
-                          cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#92400E',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#FDC700', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.5L4.5 8.5L9.5 3.5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                        </span>
-                        Mark as Done
-                      </button>
-                    </div>
-                  ) : null}
                 </div>
               );
             })}
@@ -1279,11 +1239,6 @@ function MockTestAttemptInner() {
                   )}
                 </button>
               )}
-              <p style={{ textAlign: 'center', fontSize: 12, color: '#9CA3AF', margin: 0 }}>
-                {isHandwrite && !showUpload
-                  ? '✦ Finish your booklet, then upload each page'
-                  : '✦ Get detailed feedback in 60 seconds'}
-              </p>
             </div>
           </div>
 
