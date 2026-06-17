@@ -636,130 +636,109 @@ function MockTestResultsInner() {
 
   /* ─── Shared: next steps content ─── */
   const nextStepsContent = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Hero card */}
-      <div style={{
-        borderRadius: 32,
-        background: '#1D293D',
-        boxShadow: '0 8px 10px -6px rgba(0,0,0,0.1), 0 20px 25px -5px rgba(0,0,0,0.1)',
-        padding: '48px 32px',
-        display: 'flex',
-        flexDirection: 'column' as const,
-        alignItems: 'center',
-        gap: 16,
-      }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/emoji-6.png" alt="celebration" style={{ width: 72, height: 72, objectFit: 'contain' }} />
-        <h2 style={{ fontSize: 40, fontWeight: 700, color: '#FFFFFF', margin: 0, textAlign: 'center', lineHeight: '48px' }}>
-          {heroTitle}
-        </h2>
-        <p style={{ fontSize: 16, color: '#BEDBFF', margin: 0, textAlign: 'center', lineHeight: '26px' }}>
-          {heroSubtitle}
+    <div style={{ width: '100%', maxWidth: '988px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Header */}
+      <div className="text-center">
+        <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6A7282', marginBottom: '6px' }}>
+          🎯 SMART NEXT STEPS
         </p>
+        <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#101828' }}>
+          Personalised recommendations based on your evaluation
+        </h2>
       </div>
 
-      {/* 2×2 action cards */}
-      <div>
-        <p style={{
-          fontSize: 12,
-          fontWeight: 800,
-          letterSpacing: '1.2px',
-          textTransform: 'uppercase' as const,
-          color: '#6B7280',
-          margin: '0 0 16px 4px',
-        }}>
-          Next Steps
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 20 }}>
-          {displayCards.map((card) => (
-            <div
-              key={card.title}
-              onClick={() => router.push(card.href)}
-              style={{
-                borderRadius: 32,
-                background: card.dark ? '#1D293D' : '#FFFFFF',
-                boxShadow: '0 4px 6px -4px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.1)',
-                padding: 32,
-                display: 'flex',
-                flexDirection: 'column' as const,
-                gap: 12,
-                cursor: 'pointer',
-                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -4px rgba(0,0,0,0.15), 0 16px 24px -3px rgba(0,0,0,0.1)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 6px -4px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.1)';
-              }}
-            >
-              <div style={{
-                width: 52, height: 52, borderRadius: 14,
-                background: card.iconBg,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: card.icon === '+' ? 36 : 26, fontWeight: 700,
-                color: card.iconColor || '#fff', overflow: 'hidden',
-              }}>
-                {card.imgSrc
-                  ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={card.imgSrc} alt={card.title} style={{ width: 30, height: 36, objectFit: 'contain' }} />
-                  )
-                  : <span style={{ lineHeight: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{card.icon}</span>
-                }
-              </div>
-              <h3 style={{ fontSize: 22, fontWeight: 700, margin: 0, lineHeight: '30px', color: card.dark ? '#FFFFFF' : '#0F172B' }}>
-                {card.title}
-              </h3>
-              <p style={{ fontSize: 14, margin: 0, lineHeight: '22px', color: card.dark ? '#BEDBFF' : '#4A5565', flex: 1 }}>
-                {card.desc}
-              </p>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center',
-                background: card.badgeBg, borderRadius: 999,
-                padding: '6px 16px', alignSelf: 'flex-start',
-              }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: card.badgeColor, lineHeight: '16px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {card.title === 'Unlock Pro Practice' && (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z"/>
-                    </svg>
-                  )}
-                  {card.badge}
-                </span>
-              </div>
-            </div>
-          ))}
+      {/* 2x2 action cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Retake this test */}
+        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex items-start justify-between">
+            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🔄</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#FFFFFF', background: '#4338CA', borderRadius: '99px', padding: '3px 10px' }}>Recommended</span>
+          </div>
+          <div>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Retake this Test</p>
+            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Same config, fresh attempt. Ideal for reinforcing weak areas.</p>
+          </div>
+          <button
+            onClick={() => router.push(`/dashboard/mock-tests/attempt?testId=${testId}`)}
+            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#17223E', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+          >
+            Retake Test →
+          </button>
+        </div>
+
+        {/* Build a new test */}
+        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex items-start justify-between">
+            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>➕</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#166534', background: '#DCFCE7', borderRadius: '99px', padding: '3px 10px' }}>Popular</span>
+          </div>
+          <div>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Build a New Test</p>
+            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Change subject, difficulty or source. Keep the variety going.</p>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/mock-tests')}
+            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#16A34A', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+          >
+            Create New Test →
+          </button>
+        </div>
+
+        {/* Try Mains Writing */}
+        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex items-start justify-between">
+            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>✍️</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#1447E6', background: '#DBEAFE', borderRadius: '99px', padding: '3px 10px' }}>Mains prep</span>
+          </div>
+          <div>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Try Mains Writing</p>
+            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Practice answer writing with AI markup feedback. Build answer skills.</p>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/daily-answer')}
+            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#FFFBEB', color: '#B45309', fontSize: '14px', fontWeight: 700, border: '1px solid #FDE68A', cursor: 'pointer' }}
+          >
+            Start Writing →
+          </button>
+        </div>
+
+        {/* Practice PYQs */}
+        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex items-start justify-between">
+            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>📚</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#5B21B6', background: '#EDE9FE', borderRadius: '99px', padding: '3px 10px' }}>PYQ bank</span>
+          </div>
+          <div>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Practice Previous Years</p>
+            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Solve real UPSC questions from past years to build exam temperament.</p>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/pyq')}
+            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#7C3AED', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+          >
+            Browse PYQs →
+          </button>
         </div>
       </div>
 
-      {/* Streak card */}
-      <div style={{
-        borderRadius: 32,
-        background: '#FFFFFF',
-        boxShadow: '0 4px 6px -4px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.1)',
-        padding: 32,
-        display: 'flex', alignItems: 'center', gap: 24,
-      }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/fire-emoji.png" alt="streak" style={{ width: 52, height: 52, objectFit: 'contain', flexShrink: 0 }} />
-        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: '#0F172B', margin: 0, lineHeight: '28px' }}>
-            {streak
-              ? `${streak.days}-day streak – you're in the top ${streak.percentile}%!`
-              : "12-day streak – you're in the top 18%!"}
-          </h3>
-          <p style={{ fontSize: 16, color: '#364153', margin: 0, lineHeight: '26px' }}>
-            {streak?.message || (
-              <>
-                Come back tomorrow to extend your streak.{' '}
-                <strong style={{ fontWeight: 600 }}>Consistent practice</strong>{' '}
-                is the biggest predictor of clearing Prelims. See you tomorrow!
-              </>
-            )}
-          </p>
+      {/* Other Actions */}
+      <div style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #E5E7EB', padding: '20px 24px' }}>
+        <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6A7282', marginBottom: '12px' }}>
+          OTHER ACTIONS
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => router.push('/dashboard')}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '99px', border: '1px solid #E5E7EB', background: '#FFFFFF', fontSize: '13px', fontWeight: 600, color: '#374151', cursor: 'pointer' }}
+          >
+            🏠 Back to Dashboard
+          </button>
+          <button
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '99px', border: '1px solid #FDE68A', background: '#FFFBEB', fontSize: '13px', fontWeight: 600, color: '#B45309', cursor: 'pointer' }}
+          >
+            🔗 Share Result
+          </button>
         </div>
       </div>
     </div>
@@ -781,43 +760,90 @@ function MockTestResultsInner() {
       <>
       <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
         <div style={{ maxWidth: 960, margin: '0 auto' }}>
-          <button
-            type="button"
-            onClick={() => router.push('/dashboard/mock-tests')}
-            style={{ background: 'transparent', border: 'none', color: '#374151', fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}
-          >
-            ← Back to Mock Tests
-          </button>
-
           {/* Header card — always visible */}
-          <div style={{ borderRadius: 24, background: '#0F172B', overflow: 'hidden', marginBottom: 24 }}>
-            <div style={{ padding: '28px 32px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: '#1E3A5F', flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#FBBF24', textTransform: 'uppercase', marginBottom: 8 }}>
-                  🖥 AI EVALUATION COMPLETE
+          <div style={{ borderRadius: 20, background: '#0F172B', overflow: 'hidden', marginBottom: 24 }}>
+            <div style={{ padding: '36px 40px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, background: '#0F172B', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', color: '#FBBF24', textTransform: 'uppercase', marginBottom: 16 }}>
+                  JEET AI &middot; EVALUATION READY
                 </div>
-                <h2 style={{ fontSize: 24, fontWeight: 800, color: '#FFFFFF', margin: '0 0 4px' }}>{headline}</h2>
-                <p style={{ fontSize: 14, color: '#94A3B8', margin: 0 }}>
-                  {title} · Mains · {mainsData.length} Questions evaluated
+                <h2 style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontSize: 36, fontWeight: 700, color: '#FFFFFF', margin: '0 0 12px', lineHeight: 1.15 }}>
+                  Your mock has been <em style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontStyle: 'italic', color: '#FBBF24' }}>evaluated</em>.
+                </h2>
+                <p style={{ fontSize: 15, color: '#94A3B8', margin: 0, lineHeight: 1.5 }}>
+                  Below is your aggregated scorecard along with model answers and improvement notes for each question.
                 </p>
               </div>
-              <div style={{ position: 'relative', width: 96, height: 96 }}>
-                <svg width="96" height="96" viewBox="0 0 96 96" style={{ transform: 'rotate(-90deg)' }}>
-                  <circle cx="48" cy="48" r="42" fill="none" stroke="#64748B" strokeWidth="6" />
+              <div style={{ position: 'relative', width: 120, height: 120, flexShrink: 0 }}>
+                <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="#D4C9A8" strokeWidth="8" />
                   <circle
-                    cx="48" cy="48" r="42" fill="none" stroke="#FBBF24" strokeWidth="6"
-                    strokeDasharray={`${2 * Math.PI * 42}`}
-                    strokeDashoffset={2 * Math.PI * 42 * (1 - Math.min(1, Math.max(0, pct / 100)))}
+                    cx="60" cy="60" r="52" fill="none" stroke="#C8A84E" strokeWidth="8"
+                    strokeDasharray={`${2 * Math.PI * 52}`}
+                    strokeDashoffset={2 * Math.PI * 52 * (1 - Math.min(1, Math.max(0, pct / 100)))}
                     strokeLinecap="round"
                   />
                 </svg>
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 20, fontWeight: 800, color: '#FFFFFF', lineHeight: 1 }}>{pct}%</span>
-                  <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600, letterSpacing: '0.1em', marginTop: 4 }}>MARKS</span>
+                  <span style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontSize: 34, fontWeight: 700, color: '#FFFFFF', lineHeight: 1, fontStyle: 'italic' }}>{totalScore}</span>
+                  <span style={{ fontSize: 16, color: '#64748B', fontWeight: 500, marginTop: 2 }}>/ {totalMax}</span>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Detailed feedback — aggregate strengths & improvements */}
+          {(() => {
+            const allStrengths = mainsData.flatMap((q) => q.strengths).filter(Boolean);
+            const allImprovements = mainsData.flatMap((q) => q.improvements).filter(Boolean);
+            if (allStrengths.length === 0 && allImprovements.length === 0) return null;
+            return (
+              <div style={{ background: '#FFFFFF', borderRadius: 16, padding: '28px 28px 26px', marginBottom: 24, boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}>
+                <div className="flex items-center gap-2 mb-5">
+                  <span style={{ fontSize: 22 }}>🧭</span>
+                  <h2 style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontSize: 24, fontWeight: 700, color: '#101828', margin: 0 }}>Detailed feedback</h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+                  <div style={{ background: '#EEF4EA', borderRadius: 14, padding: '22px 24px', border: '1px solid #D6E4CC' }}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span style={{ color: '#4D7C4E', fontSize: 14 }}>&#10003;</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#4D7C4E', textTransform: 'uppercase', letterSpacing: '1.2px' }}>What Worked Well</span>
+                    </div>
+                    {allStrengths.length > 0 ? (
+                      <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {allStrengths.slice(0, 5).map((s, i) => (
+                          <li key={i} className="flex items-start gap-3">
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#6B9A5E', marginTop: 8, flexShrink: 0 }} />
+                            <span style={{ fontSize: 15, color: '#374151', lineHeight: '24px' }}>{s}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p style={{ fontSize: 14, color: '#6B7280', margin: 0, fontStyle: 'italic', lineHeight: '22px' }}>No strengths identified yet. Retake with a clearer photo for better analysis.</p>
+                    )}
+                  </div>
+                  <div style={{ background: '#FBEEE8', borderRadius: 14, padding: '22px 24px', border: '1px solid #F2D9CC' }}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span style={{ color: '#C2663B', fontSize: 13 }}>&#8599;</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#C2663B', textTransform: 'uppercase', letterSpacing: '1.2px' }}>Areas to Improve</span>
+                    </div>
+                    {allImprovements.length > 0 ? (
+                      <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {allImprovements.slice(0, 5).map((s, i) => (
+                          <li key={i} className="flex items-start gap-3">
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#D2764A', marginTop: 8, flexShrink: 0 }} />
+                            <span style={{ fontSize: 15, color: '#374151', lineHeight: '24px' }}>{s}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p style={{ fontSize: 14, color: '#6B7280', margin: 0, fontStyle: 'italic', lineHeight: '22px' }}>No improvement areas identified yet. Retake with a clearer photo for better analysis.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Tab bar */}
           {tabBar}
@@ -837,10 +863,10 @@ function MockTestResultsInner() {
             const markupReady = displayPages.length > 0;
 
             const summaryCards = [
-              { id: 'score', label: 'Question Score', value: `${q.score}/${q.maxScore}`, hint: `${qPct}% examiner alignment`, bg: '#FEF3C7', border: '#FCD34D', color: '#92400E' },
-              { id: 'str', label: 'Strong Points', value: `${q.strengths.length}`, hint: 'Well-handled elements', bg: '#DCFCE7', border: '#86EFAC', color: '#166534' },
-              { id: 'imp', label: 'Needs Work', value: `${q.improvements.length}`, hint: 'Priority fix areas', bg: '#FEF3C7', border: '#FDE68A', color: '#A16207' },
-              { id: 'words', label: 'Word Count', value: `${q.wordCount ?? 0}`, hint: 'From your submission', bg: '#DBEAFE', border: '#93C5FD', color: '#1D4ED8' },
+              { id: 'score', label: 'Question Score', value: `${q.score}/${q.maxScore}`, hint: `${qPct}% examiner alignment`, variant: 'dramatic' as const, accent: '#FDC700', glow: 'rgba(253,199,0,0.35)', glowInner: 'rgba(253,199,0,0.08)' },
+              { id: 'str', label: 'Strong Points', value: `${q.strengths.length}`, hint: 'Well-handled elements', variant: 'dramatic' as const, accent: '#16A34A', glow: 'rgba(22,163,74,0.30)', glowInner: 'rgba(22,163,74,0.07)' },
+              { id: 'imp', label: 'Needs Work', value: `${q.improvements.length}`, hint: 'Priority fix areas', variant: 'dramatic' as const, accent: '#EF4444', glow: 'rgba(239,68,68,0.30)', glowInner: 'rgba(239,68,68,0.07)' },
+              { id: 'words', label: 'Word Count', value: `${q.wordCount ?? 0}`, hint: 'From your submission', variant: 'dramatic' as const, accent: '#6366F1', glow: 'rgba(99,102,241,0.30)', glowInner: 'rgba(99,102,241,0.07)' },
             ];
 
             const innerSlides: Array<{ key: MainsSlideKey; label: string }> = [
@@ -880,20 +906,29 @@ function MockTestResultsInner() {
                 </div>
 
                 {/* Question text + score hero */}
-                <div style={{ borderRadius: 14, background: 'linear-gradient(90deg, #101828 0%, #17223E 100%)', padding: '24px 28px' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#D1D5DC', textTransform: 'uppercase', marginBottom: 10 }}>
-                    Question {q.idx}{q.subject ? ` · ${q.subject}` : ''}{q.paper ? ` · ${q.paper}` : ''}
+                <div style={{ borderRadius: 14, background: '#FFFFFF', padding: '24px 28px', border: '1px solid #E5E7EB' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {q.paper && (
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#7C3AED', background: '#F3E8FF', borderRadius: 8, padding: '4px 10px' }}>
+                          {q.paper}
+                        </span>
+                      )}
+                      {q.subject && (
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#2563EB', background: '#DBEAFE', borderRadius: 8, padding: '4px 10px' }}>
+                          {q.subject}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#6B7280', textTransform: 'uppercase' }}>
+                      Question {q.idx}
+                    </span>
                   </div>
-                  <p className="italic" style={{ fontSize: 16, lineHeight: '26px', color: '#E5E7EB', fontFamily: 'var(--font-merriweather), Georgia, serif', margin: '0 0 18px', whiteSpace: 'pre-line' }}>
-                    &quot;{q.questionText}&quot;
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                    <span style={{ fontWeight: 700, fontSize: 64, lineHeight: '60px', color: '#FDC700' }}>{q.score}</span>
-                    <span style={{ fontWeight: 700, fontSize: 28, color: '#FDC70087' }}>/{q.maxScore}</span>
+                  <div className="p-5 rounded-[10px] bg-[#F9FAFB]" style={{ boxShadow: '0px 1px 2px -1px #0000001A', borderLeft: '4px solid #C9A84C' }}>
+                    <p className="text-[#101828] italic" style={{ fontSize: '16px', lineHeight: '26px', fontFamily: 'var(--font-merriweather)', margin: 0, whiteSpace: 'pre-line' }}>
+                      &quot;{q.questionText}&quot;
+                    </p>
                   </div>
-                  <p style={{ marginTop: 10, color: '#D1D5DC', fontSize: 13 }}>
-                    Examiner score based on structure, depth, relevance, and substantiation.
-                  </p>
                 </div>
 
                 {/* Inner slide tabs */}
@@ -918,12 +953,44 @@ function MockTestResultsInner() {
                 {qSlide === 'feedback' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {/* Summary metric cards */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <style>{`
+                      .stat-card-float {
+                        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+                        cursor: default;
+                      }
+                      .stat-card-float .stat-glow-bar {
+                        transition: height 0.3s ease, opacity 0.3s ease;
+                        height: 2px;
+                        opacity: 0.4;
+                      }
+                      .stat-card-float:hover {
+                        transform: translateY(-6px) !important;
+                        box-shadow:
+                          0 20px 50px rgba(0,0,0,0.08),
+                          0 8px 20px rgba(0,0,0,0.05),
+                          0 0 0 1px rgba(255,255,255,0.95) inset !important;
+                      }
+                      .stat-card-float:hover .stat-glow-bar {
+                        height: 6px !important;
+                        opacity: 1 !important;
+                      }
+                    `}</style>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
                       {summaryCards.map((m) => (
-                        <div key={m.id} className="flex flex-col items-center justify-center rounded-[10px] p-4" style={{ background: m.bg, border: `1px solid ${m.border}` }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: '#6A7282', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>{m.label}</span>
-                          <span style={{ fontSize: 22, fontWeight: 700, color: m.color }}>{m.value}</span>
-                          <span className="text-center mt-2" style={{ fontSize: 12, color: '#4A5565', lineHeight: '18px' }}>{m.hint}</span>
+                        <div key={m.id} className="stat-card-float flex flex-col items-center justify-center rounded-[16px]" style={{
+                          padding: '22px 16px 20px',
+                          background: 'rgba(255,255,255,0.75)',
+                          backdropFilter: 'blur(16px)',
+                          WebkitBackdropFilter: 'blur(16px)',
+                          boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,0.9) inset',
+                          border: '1px solid rgba(255,255,255,0.6)',
+                          position: 'relative',
+                          overflow: 'hidden',
+                        }}>
+                          <div className="stat-glow-bar" style={{ position: 'absolute', top: 0, left: 0, right: 0, background: `linear-gradient(90deg, transparent 5%, ${m.accent} 50%, transparent 95%)`, borderRadius: '0 0 4px 4px' }} />
+                          <span style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 12, position: 'relative' }}>{m.label}</span>
+                          <span style={{ fontSize: 32, fontWeight: 800, color: m.accent, letterSpacing: '-1px', position: 'relative' }}>{m.value}</span>
+                          <span className="text-center" style={{ fontSize: 11, color: '#94A3B8', lineHeight: '16px', marginTop: 10, position: 'relative' }}>{m.hint}</span>
                         </div>
                       ))}
                     </div>

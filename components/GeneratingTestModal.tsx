@@ -20,10 +20,10 @@ type Props = {
 };
 
 const STEPS = [
-  { label: 'Analyzing your preferences...', emoji: '⚖️' },
-  { label: 'Selecting relevant questions...', emoji: '📝' },
-  { label: 'Preparing AI evaluation rubrics...', emoji: '✨' },
-  { label: 'Your test is ready!', emoji: '✅' },
+  { label: 'Analyzing your preferences', emoji: '⚖️' },
+  { label: 'Selecting UPSC-standard questions', emoji: '📝' },
+  { label: 'Preparing evaluation rubric', emoji: '✨' },
+  { label: 'Launching your mock test…', emoji: '🚀' },
 ] as const;
 
 export default function GeneratingTestModal({ isReady, onComplete }: Props) {
@@ -159,7 +159,7 @@ export default function GeneratingTestModal({ isReady, onComplete }: Props) {
             letterSpacing: '-0.01em',
           }}
         >
-          Generating Your Test
+          Generating Your Mains Mock Test
         </h2>
 
         {/* ── Progress bar ── */}

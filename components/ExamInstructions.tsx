@@ -22,19 +22,19 @@ type Props = {
 const MAINS_GUIDELINES: { title: string; body: string }[] = [
   { title: 'Answer in your own words.', body: 'Stick to the prescribed word limit (150 / 200 / 250 words). Brevity and structure carry weight.' },
   { title: 'Write neatly and legibly.', body: 'Clear handwriting and clean presentation help you maximize your marks.' },
-  { title: 'Write on paper:', body: 'You can upload a clear photo / PDF of your handwritten answer once you click “Submit All & Upload”.' },
+  { title: 'Write on paper:', body: 'You can upload a clear photo / PDF of your handwritten answer once you click "Submit All & Upload".' },
   { title: 'Structure your answer:', body: 'proper introduction · body with sub-headings or points · brief conclusion. Use of diagrams, flowcharts and maps is encouraged where appropriate.' },
-  { title: 'One timer for the whole paper:', body: 'The clock starts when you begin — pause is allowed but shouldn’t be misused, and it auto-submits when time runs out.' },
-  { title: 'Jeet AI will evaluate:', body: 'on Content · Structure · Examples · Conclusion · Presentation, and you’ll receive marks plus detailed feedback post submission.' },
+  { title: 'One timer for the whole paper:', body: "The clock starts when you begin. Pause is allowed but shouldn't be misused, and it auto-submits when time runs out." },
+  { title: 'Jeet AI will evaluate:', body: "on Content · Structure · Examples · Conclusion · Presentation, and you'll receive marks plus detailed feedback post submission." },
 ];
 
 const PRELIMS_GUIDELINES: { title: string; body: string }[] = [
-  { title: 'Single best answer.', body: 'Each question has exactly one correct option — pick the best fit before moving on.' },
+  { title: 'Single best answer.', body: 'Each question has exactly one correct option. Pick the best fit before moving on.' },
   { title: 'One timer for the whole paper.', body: 'The clock starts when you begin and submits automatically when it reaches zero.' },
   { title: 'Mark & review.', body: 'Flag tricky questions and revisit them any time before final submission.' },
-  { title: 'No external help.', body: 'Treat it like the real exam — no notes, books or searches while attempting.' },
-  { title: 'AI explains every answer', body: '— after submission you get the correct option plus a clear explanation.' },
-  { title: 'Stay honest.', body: 'This is a self-paced rehearsal — closing the tab will auto-submit your attempt.' },
+  { title: 'No external help.', body: 'Treat it like the real exam. No notes, books or searches while attempting.' },
+  { title: 'AI explains every answer.', body: 'After submission you get the correct option plus a clear explanation.' },
+  { title: 'Stay honest.', body: 'This is a self-paced rehearsal. Closing the tab will auto-submit your attempt.' },
 ];
 
 const SERIF = "var(--font-playfair), 'Palatino Linotype', Georgia, serif";

@@ -95,7 +95,16 @@ const MIN_DISPLAY_SECONDS = 60;
 
 export default function EvaluatingPage() {
   const router = useRouter();
-  const [elapsed, setElapsed] = useState(0);
+  const evalStartKey = 'dailyAnswerEvalStart';
+  const [elapsed, setElapsed] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    const stored = sessionStorage.getItem(evalStartKey);
+    if (stored) {
+      return Math.max(0, Math.floor((Date.now() - Number(stored)) / 1000));
+    }
+    sessionStorage.setItem(evalStartKey, String(Date.now()));
+    return 0;
+  });
   const [status, setStatus] = useState<string>('evaluating');
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -115,6 +124,7 @@ export default function EvaluatingPage() {
     if (navigatedRef.current) return;
     navigatedRef.current = true;
     if (pollRef.current) clearInterval(pollRef.current);
+    sessionStorage.removeItem(evalStartKey);
     router.push('/dashboard/daily-answer/challenge/attempt/results');
   }, [router]);
 
@@ -293,71 +303,35 @@ export default function EvaluatingPage() {
 
   return (
     <div
-      className="h-screen overflow-hidden flex items-center justify-center font-arimo p-3"
+      className="h-full overflow-hidden flex items-center justify-center font-arimo"
       style={{ background: '#FAFBFE' }}
     >
       <div
-        className="relative flex flex-col px-6 py-5 sm:px-8"
+        className="relative flex flex-col px-6 py-4 sm:px-8"
         style={{
           width: '100%',
-          maxWidth: '700px',
+          maxWidth: '620px',
+          maxHeight: 'calc(100vh - 80px)',
           borderRadius: '16px',
           background: '#FFFFFF',
           boxShadow: '0px 8px 10px -6px #0000001A, 0px 20px 25px -5px #0000001A',
         }}
       >
         {/* Header */}
-        <div className="flex flex-col items-center mb-3">
+        <div className="flex flex-col items-center" style={{ marginBottom: 8 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/eval-header.png"
-            alt="Evaluating"
-            style={{ width: '44px', height: '44px', objectFit: 'contain', marginBottom: '6px' }}
-          />
-          <h1
-            style={{
-              fontFamily: 'Arimo',
-              fontWeight: 700,
-              fontSize: '22px',
-              lineHeight: '28px',
-              letterSpacing: '0px',
-              color: '#1E2939',
-              textAlign: 'center',
-              marginBottom: '2px',
-            }}
-          >
+          <img src="/eval-header.png" alt="Evaluating" style={{ width: '36px', height: '36px', objectFit: 'contain', marginBottom: '4px' }} />
+          <h1 style={{ fontFamily: 'Arimo', fontWeight: 700, fontSize: '20px', lineHeight: '26px', color: '#1E2939', textAlign: 'center', marginBottom: '2px' }}>
             Evaluating Your Answer
           </h1>
-          <p
-            style={{
-              fontFamily: 'Arimo',
-              fontWeight: 400,
-              fontSize: '13px',
-              lineHeight: '18px',
-              color: '#4A5565',
-              textAlign: 'center',
-              marginBottom: '1px',
-            }}
-          >
-            Analyzing with UPSC examiner&apos;s lens
-          </p>
-          <p
-            style={{
-              fontFamily: 'Arimo',
-              fontWeight: 400,
-              fontSize: '12px',
-              lineHeight: '16px',
-              color: '#6A7282',
-              textAlign: 'center',
-            }}
-          >
-            This usually takes 30-60 seconds
+          <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: '12px', lineHeight: '16px', color: '#4A5565', textAlign: 'center', margin: 0 }}>
+            Analyzing with UPSC examiner&apos;s lens · Usually takes 30-60 seconds
           </p>
         </div>
 
         {/* Error Banner */}
         {error && (
-          <div className="mb-3 px-4 py-2 bg-red-50 border border-red-200 rounded-[10px] text-red-700 text-center" style={{ fontSize: '13px' }}>
+          <div className="mb-2 px-4 py-2 bg-red-50 border border-red-200 rounded-[10px] text-red-700 text-center" style={{ fontSize: '13px' }}>
             {error}
             <div className="mt-2">
               <button
@@ -371,169 +345,60 @@ export default function EvaluatingPage() {
         )}
 
         {/* Steps */}
-        <div className="flex flex-col gap-0 mb-3">
+        <div className="flex flex-col gap-0" style={{ marginBottom: 8 }}>
           {STEPS.map((step, idx) => {
             const done = isStepDone(step);
             const active = isStepActive(step, idx);
             return (
               <div key={step.id}>
-                <div className="flex items-center justify-between py-2">
-                  {/* Left: icon + text */}
+                <div className="flex items-center justify-between" style={{ padding: '6px 0' }}>
                   <div className="flex items-center gap-3">
                     <span
                       aria-hidden="true"
                       style={{
-                        width: '30px',
-                        height: '30px',
-                        borderRadius: '8px',
-                        background: step.bg,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '16px',
-                        opacity: done || active ? 1 : 0.4,
-                        transition: 'opacity 0.4s',
-                        flexShrink: 0,
+                        width: '28px', height: '28px', borderRadius: '8px', background: step.bg,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px',
+                        opacity: done || active ? 1 : 0.4, transition: 'opacity 0.4s', flexShrink: 0,
                       }}
                     >
-                      <span className={step.key === 'feedback' && active ? 'bulb-grow' : undefined}>
-                        {step.emoji}
-                      </span>
+                      <span className={step.key === 'feedback' && active ? 'bulb-grow' : undefined}>{step.emoji}</span>
                     </span>
                     <div>
-                      <p
-                        style={{
-                          fontFamily: 'Arimo',
-                          fontWeight: 700,
-                          fontSize: '13px',
-                          lineHeight: '18px',
-                          color: '#17223E',
-                        }}
-                      >
-                        {step.title}
-                      </p>
-                      <p
-                        style={{
-                          fontFamily: 'Arimo',
-                          fontWeight: 400,
-                          fontSize: '11px',
-                          lineHeight: '15px',
-                          color: '#17223E',
-                        }}
-                      >
-                        {step.subtitle}
-                      </p>
+                      <p style={{ fontFamily: 'Arimo', fontWeight: 700, fontSize: '13px', lineHeight: '17px', color: '#17223E', margin: 0 }}>{step.title}</p>
+                      <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: '11px', lineHeight: '14px', color: '#6A7282', margin: 0 }}>{step.subtitle}</p>
                     </div>
                   </div>
-
-                  {/* Right: status icon */}
-                  <div className="flex items-center gap-3">
-                    {done ? (
-                      <CheckIcon />
-                    ) : active ? (
-                      <SpinnerIcon />
-                    ) : (
-                      <div
-                        style={{
-                          width: '22px',
-                          height: '22px',
-                          borderRadius: '50%',
-                          border: '2px solid #D1D5DB',
-                        }}
-                      />
+                  <div className="flex items-center">
+                    {done ? <CheckIcon /> : active ? <SpinnerIcon /> : (
+                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: '2px solid #D1D5DB' }} />
                     )}
                   </div>
                 </div>
-                {/* Divider (skip after last) */}
-                {idx < STEPS.length - 1 && (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '1px',
-                      background: '#B1B1B1',
-                    }}
-                  />
-                )}
+                {idx < STEPS.length - 1 && <div style={{ width: '100%', height: '1px', background: '#E5E7EB' }} />}
               </div>
             );
           })}
         </div>
 
         {/* Bottom yellow card */}
-        <div
-          style={{
-            borderRadius: '10px',
-            borderLeft: '4px solid #FDC700',
-            background: '#FEFCE8',
-            padding: '12px 20px',
-          }}
-        >
-          {/* Timer row */}
-          <div className="flex items-center justify-center gap-2 mb-1">
+        <div style={{ borderRadius: '10px', borderLeft: '4px solid #FDC700', background: '#FEFCE8', padding: '10px 16px' }}>
+          <div className="flex items-center justify-center gap-2" style={{ marginBottom: 4 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/eval-timer.png" alt="Timer" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-            <span
-              style={{
-                fontFamily: 'DM Sans',
-                fontWeight: 700,
-                fontSize: '13px',
-                lineHeight: '18px',
-                color: '#101828',
-              }}
-            >
+            <img src="/eval-timer.png" alt="Timer" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+            <span style={{ fontFamily: 'DM Sans', fontWeight: 700, fontSize: '12px', lineHeight: '16px', color: '#101828' }}>
               {secondsRemaining > 0 ? `${secondsRemaining} Seconds Remaining` : 'Almost done...'}
             </span>
           </div>
 
-          {/* Progress bar */}
-          <div
-            className="mx-auto mb-2"
-            style={{
-              width: '100%',
-              maxWidth: '362px',
-              height: '4px',
-              borderRadius: '10px',
-              background: '#D9D9D9',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                height: '100%',
-                width: `${progressPercent}%`,
-                borderRadius: '10px',
-                background: '#101828',
-                transition: 'width 1s linear',
-              }}
-            />
+          <div className="mx-auto" style={{ width: '100%', maxWidth: '362px', height: '4px', borderRadius: '10px', background: '#D9D9D9', overflow: 'hidden', marginBottom: 6 }}>
+            <div style={{ height: '100%', width: `${progressPercent}%`, borderRadius: '10px', background: '#101828', transition: 'width 1s linear' }} />
           </div>
 
-          {/* While you wait text */}
-          <p
-            className="text-center mb-1"
-            style={{
-              fontFamily: 'Arimo',
-              fontSize: '12px',
-              lineHeight: '17px',
-              color: '#364153',
-            }}
-          >
-            <strong>While you wait:</strong> This 60-second pause is deliberate. In the actual exam, this is the time you&apos;d
-            spend reviewing your answer. Use this moment to mentally note one improvement you could make.
+          <p className="text-center" style={{ fontFamily: 'Arimo', fontSize: '11px', lineHeight: '16px', color: '#364153', margin: '0 0 2px' }}>
+            <strong>While you wait:</strong> In the actual exam, this is the time you&apos;d spend reviewing your answer.
           </p>
 
-          {/* Quote */}
-          <p
-            className="text-center"
-            style={{
-              fontFamily: 'Arimo',
-              fontWeight: 400,
-              fontStyle: 'italic',
-              fontSize: '11px',
-              lineHeight: '14px',
-              color: '#6A7282',
-            }}
-          >
+          <p className="text-center" style={{ fontFamily: 'Arimo', fontWeight: 400, fontStyle: 'italic', fontSize: '10px', lineHeight: '14px', color: '#6A7282', margin: 0 }}>
             &quot;Consistency matters more than perfection. You&apos;re building a skill that compounds.&quot;
           </p>
         </div>
