@@ -68,7 +68,7 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
         { id: 'daily-mcq', label: 'Daily MCQ Challenge', icon: '/target-icon.png', path: '/dashboard/daily-mcq' },
         { id: 'daily-answer', label: 'Daily Answer Writing', icon: '/sidebar-daily-answer-new.png', path: '/dashboard/daily-answer' },
         { id: 'mock-tests', label: 'Mock Tests', icon: '/sidebar-mock-tests-new.png', path: '/dashboard/mock-tests' },
-        { id: 'mains-answer-evaluator', label: 'Mains Answer Evaluator', icon: '/sidebar-daily-answer-new.png', path: '/dashboard/mains-answer-evaluator' },
+        { id: 'mains-answer-evaluator', label: 'Mains Answer Evaluator', icon: '✍️', path: '/dashboard/mains-answer-evaluator' },
         { id: 'pyq', label: 'Previous Year Questions', icon: '/sidebar-pyq-new.png', path: '/dashboard/pyq' },
       ],
     },
@@ -172,12 +172,21 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
                         }
                       `}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.icon}
-                        alt={item.label}
-                        className="w-[18px] h-[18px] flex-shrink-0 object-contain"
-                      />
+                      {item.icon.startsWith('/') ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.icon}
+                          alt={item.label}
+                          className="w-[18px] h-[18px] flex-shrink-0 object-contain"
+                        />
+                      ) : (
+                        <span
+                          aria-hidden="true"
+                          className="w-[18px] h-[18px] flex-shrink-0 flex items-center justify-center text-[15px] leading-none"
+                        >
+                          {item.icon}
+                        </span>
+                      )}
                       {!collapsed && (
                         <>
                           <span className="font-inter font-medium text-[13px] leading-none whitespace-nowrap">
