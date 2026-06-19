@@ -68,6 +68,7 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
         { id: 'daily-mcq', label: 'Daily MCQ Challenge', icon: '/target-icon.png', path: '/dashboard/daily-mcq' },
         { id: 'daily-answer', label: 'Daily Answer Writing', icon: '/sidebar-daily-answer-new.png', path: '/dashboard/daily-answer' },
         { id: 'mock-tests', label: 'Mock Tests', icon: '/sidebar-mock-tests-new.png', path: '/dashboard/mock-tests' },
+        { id: 'mains-answer-evaluator', label: 'Mains Answer Evaluator', icon: '/sidebar-daily-answer-new.png', path: '/dashboard/mains-answer-evaluator' },
         { id: 'pyq', label: 'Previous Year Questions', icon: '/sidebar-pyq-new.png', path: '/dashboard/pyq' },
       ],
     },
