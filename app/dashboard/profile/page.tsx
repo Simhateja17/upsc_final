@@ -37,7 +37,8 @@ export default function ProfilePage() {
   const [gender, setGender] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [saving, setSaving] = useState(false);
-  const [stats, setStats] = useState<any>(null);
+  const [perfStats, setPerfStats] = useState<any>(null);
+  const [dashStats, setDashStats] = useState<any>(null);
   const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null);
 
   const [showCalendar, setShowCalendar] = useState(false);
@@ -91,8 +92,11 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
+    dashboardService.getPerformance().then((res) => {
+      if (res.data) setPerfStats(res.data);
+    }).catch(() => {});
     dashboardService.getDashboard().then((res) => {
-      if (res.data) setStats(res.data);
+      if (res.data) setDashStats(res.data);
     }).catch(() => {});
   }, []);
 
@@ -173,7 +177,7 @@ export default function ProfilePage() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-[#FAFBFE] px-6 py-8 relative" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="h-screen bg-[#FAFBFE] px-6 py-4 relative overflow-hidden flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Toast */}
       {toast && (
         <div
@@ -195,7 +199,7 @@ export default function ProfilePage() {
       )}
 
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 mb-4">
+      <nav className="flex items-center gap-2 mb-2">
         <Link href="/dashboard" className="font-normal text-[14px] leading-[20px] text-[#62748e] hover:text-[#314158]">
           Home
         </Link>
@@ -204,15 +208,15 @@ export default function ProfilePage() {
       </nav>
 
       {/* Page Title */}
-      <h1 className="text-[30px] leading-[36px] text-[#0f172b] mb-8" style={{ fontFamily: "'Georgia', serif" }}>
+      <h1 className="text-[26px] leading-[32px] text-[#0f172b] mb-4" style={{ fontFamily: "'Georgia', serif" }}>
         My Profile
       </h1>
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
         {/* Left Column - Profile Form */}
         <div className="flex-1 min-w-0">
           <div
-            className="bg-white rounded-[14px] pt-8 px-8 pb-8 flex flex-col gap-8"
+            className="bg-white rounded-[14px] pt-5 px-6 pb-5 flex flex-col gap-5"
             style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
           >
             {/* Avatar + Name Header */}
@@ -239,7 +243,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Form Fields */}
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
               {/* First name / Last name */}
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 flex flex-col gap-2">
@@ -248,7 +252,7 @@ export default function ProfilePage() {
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
+                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
                   />
                 </div>
                 <div className="flex-1 flex flex-col gap-2">
@@ -257,7 +261,7 @@ export default function ProfilePage() {
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
+                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
                   />
                 </div>
               </div>
@@ -274,7 +278,7 @@ export default function ProfilePage() {
                   type="email"
                   value={user?.email || ''}
                   disabled
-                  className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-[#f8fafc] font-normal text-[16px] leading-[24px] text-[#62748e] cursor-not-allowed"
+                  className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-[#f8fafc] font-normal text-[16px] leading-[24px] text-[#62748e] cursor-not-allowed"
                 />
               </div>
 
@@ -286,7 +290,7 @@ export default function ProfilePage() {
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
                   >
                     <option value="">Select Gender</option>
                     <option value="Male">Male</option>
@@ -303,7 +307,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => setShowCalendar(v => !v)}
-                      className="w-full h-[45.6px] px-4 rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-left focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent flex items-center justify-between gap-2 transition-colors hover:border-[#d08700]"
+                      className="w-full h-[40px] px-4 rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-left focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent flex items-center justify-between gap-2 transition-colors hover:border-[#d08700]"
                     >
                       <span className={dateOfBirth ? 'text-[#0a0a0a]' : 'text-[#90a1b9]'}>
                         {dateOfBirth ? formatDisplayDate(dateOfBirth) : 'Select date'}
@@ -427,7 +431,7 @@ export default function ProfilePage() {
                     value={phone}
                     onChange={(e) => handlePhoneChange(e.target.value)}
                     placeholder="9876543210"
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
+                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
                   />
                   {phone && phone.length !== 10 && (
                     <span className="text-[12px] text-[#DC2626]">Enter exactly 10 digits</span>
@@ -438,7 +442,7 @@ export default function ProfilePage() {
                   <select
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
                   >
                     <option value="">Select State</option>
                     {INDIAN_STATES.map((s) => (
@@ -455,7 +459,7 @@ export default function ProfilePage() {
                   <select
                     value={targetYear}
                     onChange={(e) => setTargetYear(e.target.value)}
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
                   >
                     <option value="">Select year</option>
                     <option value="2026">2026</option>
@@ -469,7 +473,7 @@ export default function ProfilePage() {
                   <select
                     value={optionalSubject}
                     onChange={(e) => setOptionalSubject(e.target.value)}
-                    className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
                   >
                     <option value="">Select Subject</option>
                     <option value="Agriculture">Agriculture</option>
@@ -506,7 +510,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-end gap-3">
                 <button
                   onClick={handleDiscard}
-                  className="h-[45.6px] px-6 rounded-[10px] border-[0.8px] border-[#cad5e2] bg-white font-medium text-[16px] leading-[24px] text-[#314158] hover:bg-[#f8fafc] transition-colors"
+                  className="h-[40px] px-6 rounded-[10px] border-[0.8px] border-[#cad5e2] bg-white font-medium text-[16px] leading-[24px] text-[#314158] hover:bg-[#f8fafc] transition-colors"
                 >
                   Discard
                 </button>
@@ -524,10 +528,10 @@ export default function ProfilePage() {
         </div>
 
         {/* Right Column - Stats + Achievements */}
-        <div className="w-full lg:w-[339px] flex flex-col gap-6">
+        <div className="w-full lg:w-[339px] flex flex-col gap-4">
           {/* My Stats Card */}
           <div
-            className="bg-white rounded-[14px] pt-6 px-6 pb-6 flex flex-col gap-6"
+            className="bg-white rounded-[14px] pt-4 px-5 pb-4 flex flex-col gap-4"
             style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
           >
             <div className="flex items-center gap-2">
@@ -543,18 +547,18 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">MCQs attempted</span>
-                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{stats?.mcqsAttempted?.toLocaleString() || '0'}</span>
+                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{perfStats?.questionsAttempted?.toLocaleString() || '0'}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Answers evaluated</span>
-                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{stats?.answersEvaluated?.toLocaleString() || '0'}</span>
+                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Tests taken</span>
+                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{perfStats?.testsTaken?.toLocaleString() || '0'}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Mock tests taken</span>
-                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{stats?.mockTestsTaken?.toLocaleString() || '0'}</span>
+                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Syllabus coverage</span>
+                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{perfStats?.syllabusCoverage ?? 0}%</span>
               </div>
               {(() => {
-                const streakDays = stats?.streak?.currentStreak ?? 0;
+                const streakDays = dashStats?.streak?.currentStreak ?? 0;
                 return (
                   <div className="flex items-center justify-between border-t border-[#f1f5f9] pt-2">
                     <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Streak</span>
@@ -568,7 +572,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Current rank</span>
                 <span className="font-semibold text-[14px] leading-[20px] text-[#d08700]">
-                  {stats?.rank ? `#${stats.rank.toLocaleString()} / ${stats.totalUsers?.toLocaleString() || '50,000'}` : '-'}
+                  {perfStats?.rank ? `#${perfStats.rank.toLocaleString()}` : '-'}
                 </span>
               </div>
             </div>
@@ -576,7 +580,7 @@ export default function ProfilePage() {
 
           {/* Achievements Card */}
           <div
-            className="bg-white rounded-[14px] pt-6 px-6 pb-6 flex flex-col gap-6"
+            className="bg-white rounded-[14px] pt-4 px-5 pb-4 flex flex-col gap-4"
             style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
           >
             <div className="flex items-center gap-2">
@@ -587,15 +591,13 @@ export default function ProfilePage() {
 
             {(() => {
               const earned: { icon: string; label: string }[] = [];
-              const streakDays = stats?.streak?.currentStreak ?? 0;
+              const streakDays = dashStats?.streak?.currentStreak ?? 0;
               if (streakDays >= 3) earned.push({ icon: '/icons/fire.png', label: `${streakDays}-day streak` });
-              const mcqs = stats?.mcqsAttempted ?? 0;
+              const mcqs = perfStats?.questionsAttempted ?? 0;
               if (mcqs >= 100) earned.push({ icon: '/icons/target.png', label: `${mcqs.toLocaleString()} MCQs` });
-              const answers = stats?.answersEvaluated ?? 0;
-              if (answers >= 10) earned.push({ icon: '/icons/pencil.png', label: `${answers} Answers` });
-              const mocks = stats?.mockTestsTaken ?? 0;
-              if (mocks >= 5) earned.push({ icon: '/icons/trophy2.png', label: `${mocks} Mock Tests` });
-              if (stats?.rank && stats?.totalUsers && stats.rank / stats.totalUsers <= 0.1) {
+              const tests = perfStats?.testsTaken ?? 0;
+              if (tests >= 5) earned.push({ icon: '/icons/trophy2.png', label: `${tests} Tests` });
+              if (perfStats?.rankPercentile && perfStats.rankPercentile <= 10) {
                 earned.push({ icon: '/icons/trophy2.png', label: `Top 10% rank` });
               }
 
