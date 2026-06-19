@@ -7,13 +7,18 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import { EntitlementGate, UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import {
+  MODAL_SUBJECTS,
+  MODAL_SCHEDULE_OPTIONS,
+  MODAL_TYPE_OPTIONS,
   SUBJECT_HEALTH,
-  difficultyOptions,
   isSameLocalDate,
   resolveAccuracy,
+  scheduleToDays,
+  sourceTypeToLabel,
   strengthMeta,
   subjectBg,
   subjectOptions,
+  type ModalScheduleId,
   type SpacedRepItem,
 } from './shared';
 
@@ -26,8 +31,11 @@ export default function SpacedRepetitionPage() {
 
   // Modal state
   const [modalDeck, setModalDeck] = useState('polity');
-  const [modalDifficulty, setModalDifficulty] = useState('Hard');
+  const [modalSourceType, setModalSourceType] = useState('custom');
   const [modalQuestion, setModalQuestion] = useState('');
+  const [modalAnswer, setModalAnswer] = useState('');
+  const [modalSchedule, setModalSchedule] = useState<ModalScheduleId>('3days');
+  const [modalCustomDays, setModalCustomDays] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -72,15 +80,20 @@ export default function SpacedRepetitionPage() {
     const subjectLabel = subjectOptions.find((d) => d.id === modalDeck)?.label ?? modalDeck;
     spacedRepService.addItem({
       questionText: modalQuestion,
+      answer: modalAnswer || undefined,
       subject: subjectLabel,
-      source: 'Custom',
-      sourceType: 'custom',
-      scheduleDays: [3],
+      source: sourceTypeToLabel(modalSourceType),
+      sourceType: modalSourceType,
+      scheduleDays: scheduleToDays(modalSchedule, modalCustomDays),
     })
       .then((res) => {
         if (res.status === 'success') {
           setItems((prev) => [res.data, ...prev]);
           setModalQuestion('');
+          setModalAnswer('');
+          setModalSourceType('custom');
+          setModalSchedule('3days');
+          setModalCustomDays('');
           setShowAddModal(false);
         }
       })
@@ -183,7 +196,7 @@ export default function SpacedRepetitionPage() {
             Pick the subject you want to revise today
           </p>
 
-          <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
             {SUBJECT_HEALTH.map((s) => {
               const acc = resolveAccuracy(subjectAccuracy, s);
               const meta = strengthMeta(acc);
@@ -194,7 +207,7 @@ export default function SpacedRepetitionPage() {
                   key={s.id}
                   href={`/dashboard/spaced-repetition/${s.id}`}
                   className="flex flex-col rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
-                  style={{ border: `1.5px solid ${s.border}`, background: subjectBg(s.label), height: 190 }}
+                  style={{ border: `1px solid ${s.border}`, background: subjectBg(s.label), height: 190 }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span aria-hidden style={{ fontSize: 22, lineHeight: '22px' }}>{s.icon}</span>
@@ -229,101 +242,176 @@ export default function SpacedRepetitionPage() {
       {/* Add Question modal */}
       {showAddModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.5)' }}
+          className="fixed inset-0 z-50 overflow-y-auto"
+          style={{ background: 'rgba(0,0,0,0.55)' }}
           onClick={() => setShowAddModal(false)}
         >
+          <div className="flex min-h-full items-start justify-center p-4 py-8">
           <div
-            className="rounded-[16px] bg-white flex flex-col w-full max-w-[512px] overflow-hidden shadow-xl"
+            className="bg-white flex flex-col w-full max-w-[560px] shadow-2xl"
+            style={{ borderRadius: 24 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '0.8px solid #E5E7EB', minHeight: 60.8 }}>
-              <div className="flex items-center gap-2">
-                <span aria-hidden style={{ fontSize: 22 }}>📇</span>
-                <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '24px', color: '#101828' }}>Add Question to Review</span>
+            {/* Header */}
+            <div className="flex items-center justify-between px-7 pt-6 pb-4">
+              <div className="flex items-center gap-3">
+                <span aria-hidden style={{ fontSize: 22 }}>📝</span>
+                <span style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 20, color: '#101828' }}>
+                  Add Question to Review
+                </span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="w-7 h-7 rounded-[10px] flex items-center justify-center text-[18px] font-bold"
-                style={{ background: '#F3F4F6', color: '#364153' }}
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: '#F3F4F6', color: '#6A7282', fontSize: 18, fontWeight: 700, lineHeight: 1 }}
                 aria-label="Close"
               >
                 ×
               </button>
             </div>
 
-            <div className="p-6 space-y-5" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
-              <div className="space-y-2">
-                <label className="block uppercase tracking-[0.5px]" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, lineHeight: '15px', color: '#99A1AF' }}>
-                  QUESTION
+            {/* Body */}
+            <div className="px-7 pb-5 space-y-4">
+
+              {/* Question */}
+              <div className="space-y-1.5">
+                <label style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, letterSpacing: '0.7px', color: '#99A1AF', textTransform: 'uppercase', display: 'block' }}>
+                  YOUR QUESTION / TOPIC
                 </label>
                 <textarea
-                  placeholder="e.g. What is the Coriolis Effect?"
+                  placeholder="e.g. Why does the Coriolis force deflect objects to the right in the Northern Hemisphere?"
                   value={modalQuestion}
                   onChange={(e) => setModalQuestion(e.target.value)}
-                  rows={3}
-                  className="w-full rounded-[10px] px-4 py-2.5 border outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent resize-y"
-                  style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', background: '#F9FAFB', border: '0.8px solid #E5E7EB', color: '#101828' }}
+                  rows={2}
+                  className="w-full rounded-[12px] px-4 py-2.5 outline-none resize-none"
+                  style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '21px', background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#101828' }}
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="block uppercase tracking-[0.5px]" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, lineHeight: '15px', color: '#99A1AF' }}>
-                  SELECT SUBJECT
+              {/* Answer (optional) */}
+              <div className="space-y-1.5">
+                <label style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, letterSpacing: '0.7px', color: '#99A1AF', textTransform: 'uppercase', display: 'block' }}>
+                  YOUR ANSWER / KEY POINTS <span style={{ color: '#C4C9D4', fontWeight: 500 }}>(OPTIONAL)</span>
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {subjectOptions.map((deck) => (
-                    <button
-                      key={deck.id}
-                      type="button"
-                      onClick={() => setModalDeck(deck.id)}
-                      className="flex items-center gap-2 rounded-[10px] px-3 py-2.5 text-left border transition-colors"
-                      style={{
-                        border: '0.8px solid ' + (modalDeck === deck.id ? '#FDC700' : '#E5E7EB'),
-                        background: modalDeck === deck.id ? '#FEFCE8' : '#FFFFFF',
-                        fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px',
-                        color: modalDeck === deck.id ? '#101828' : '#364153',
-                      }}
-                    >
-                      <span aria-hidden>{deck.icon}</span>
-                      <span className="flex-1">{deck.label}</span>
-                      {modalDeck === deck.id && <span className="w-2 h-2 rounded-full bg-orange-500" />}
-                    </button>
-                  ))}
+                <textarea
+                  placeholder="Add what you want to remember..."
+                  value={modalAnswer}
+                  onChange={(e) => setModalAnswer(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-[12px] px-4 py-2.5 outline-none resize-none"
+                  style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '21px', background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#101828' }}
+                />
+              </div>
+
+              {/* Type */}
+              <div className="space-y-1.5">
+                <label style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, letterSpacing: '0.7px', color: '#99A1AF', textTransform: 'uppercase', display: 'block' }}>
+                  TYPE
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {MODAL_TYPE_OPTIONS.map((t) => {
+                    const active = modalSourceType === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setModalSourceType(t.id)}
+                        className="flex items-center gap-1.5 rounded-[10px] px-4 py-2 transition-colors"
+                        style={{
+                          fontFamily: 'Inter', fontWeight: 600, fontSize: 14,
+                          background: active ? '#101828' : '#FFFFFF',
+                          border: active ? '1px solid #101828' : '1px solid #E5E7EB',
+                          color: active ? '#FFFFFF' : '#364153',
+                        }}
+                      >
+                        <span aria-hidden>{t.icon}</span> {t.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block uppercase tracking-[0.5px]" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, lineHeight: '15px', color: '#99A1AF' }}>
-                  DIFFICULTY
+              {/* Subject */}
+              <div className="space-y-1.5">
+                <label style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, letterSpacing: '0.7px', color: '#99A1AF', textTransform: 'uppercase', display: 'block' }}>
+                  SUBJECT
+                </label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {MODAL_SUBJECTS.map((s) => {
+                    const active = modalDeck === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setModalDeck(s.id)}
+                        className="flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-left transition-colors"
+                        style={{
+                          fontFamily: 'Inter', fontWeight: 500, fontSize: 13,
+                          background: active ? '#101828' : '#FFFFFF',
+                          border: active ? '1px solid #101828' : '1px solid #E5E7EB',
+                          color: active ? '#FFFFFF' : '#364153',
+                        }}
+                      >
+                        <span aria-hidden style={{ flexShrink: 0 }}>{s.icon}</span>
+                        <span className="truncate">{s.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Review Schedule */}
+              <div className="space-y-1.5">
+                <label style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, letterSpacing: '0.7px', color: '#99A1AF', textTransform: 'uppercase', display: 'block' }}>
+                  REVIEW SCHEDULE
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {difficultyOptions.map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => setModalDifficulty(d)}
-                      className="rounded-[10px] px-4 py-2 border"
-                      style={{
-                        fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px',
-                        border: '0.8px solid ' + (modalDifficulty === d ? '#101828' : '#E5E7EB'),
-                        background: modalDifficulty === d ? '#101828' : '#FFFFFF',
-                        color: modalDifficulty === d ? '#FFFFFF' : '#364153',
-                      }}
-                    >
-                      {d}
-                    </button>
-                  ))}
+                  {MODAL_SCHEDULE_OPTIONS.map((s) => {
+                    const active = modalSchedule === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setModalSchedule(s.id as ModalScheduleId)}
+                        className="flex items-center gap-1.5 rounded-full px-4 py-2 transition-colors"
+                        style={{
+                          fontFamily: 'Inter', fontWeight: 600, fontSize: 13,
+                          background: active ? '#FFFBEB' : '#FFFFFF',
+                          border: active ? '1.5px solid #E8B84B' : '1px solid #E5E7EB',
+                          color: active ? '#D97706' : '#364153',
+                        }}
+                      >
+                        <span aria-hidden>{s.icon}</span> {s.label}
+                      </button>
+                    );
+                  })}
                 </div>
+                {modalSchedule === 'custom' && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={365}
+                      placeholder="Days"
+                      value={modalCustomDays}
+                      onChange={(e) => setModalCustomDays(e.target.value)}
+                      className="rounded-[10px] px-3 py-2 outline-none w-24"
+                      style={{ fontFamily: 'Inter', fontSize: 14, background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#101828' }}
+                    />
+                    <span style={{ fontFamily: 'Inter', fontSize: 13, color: '#6A7282' }}>days from today</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="flex items-center justify-between px-6 py-4 border-t border-[#E5E7EB]">
+            {/* Footer */}
+            <div className="flex items-center gap-3 px-7 py-4" style={{ borderTop: '1px solid #F3F4F6' }}>
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, color: '#6A7282' }}
+                className="rounded-[12px] py-3 border transition-colors"
+                style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 15, borderColor: '#E5E7EB', color: '#374151', flex: 1, background: '#FFFFFF' }}
               >
                 Cancel
               </button>
@@ -331,16 +419,18 @@ export default function SpacedRepetitionPage() {
                 type="button"
                 onClick={handleAddItem}
                 disabled={saving || !modalQuestion.trim()}
-                className="flex items-center gap-2 rounded-[10px] px-5 py-2.5 disabled:opacity-50"
+                className="rounded-[12px] py-3 disabled:opacity-50 transition-opacity"
                 style={{
+                  flex: 2,
                   background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
-                  boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
-                  fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF',
+                  fontFamily: 'Inter', fontWeight: 700, fontSize: 15, color: '#17223E',
+                  boxShadow: '0px 1px 3px rgba(0,0,0,0.12)',
                 }}
               >
-                <span aria-hidden>✓</span> {saving ? 'Saving...' : 'Add Question'}
+                ✓ {saving ? 'Saving...' : 'Add to Review Queue'}
               </button>
             </div>
+          </div>
           </div>
         </div>
       )}

@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { libraryService } from '@/lib/services';
 import { useCmsContent } from '@/hooks/useCmsContent';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { handleEntitlementError, UsageMeter } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+
+const PdfViewer = dynamic(() => import('@/components/PdfViewer'), { ssr: false });
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -201,9 +204,12 @@ export default function LibraryPage() {
   const [loadingChapters, setLoadingChapters] = useState(false);
   const [downloadingChapter, setDownloadingChapter] = useState<string | null>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
-  const [readModal, setReadModal] = useState<{ url: string; title: string } | null>(null);
+  const [readModal, setReadModal] = useState<{ pages: string[]; title: string } | null>(null);
   const [loadingRead, setLoadingRead] = useState<string | null>(null);
-  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [docLoaded, setDocLoaded] = useState(false);
+  const [docError, setDocError] = useState(false);
+  const [numPages, setNumPages] = useState(0);
+  const [pageNumber, setPageNumber] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(100);
   const selectedApiSubject = apiSubjects.find(s => s.name === selectedSubject) ?? null;
 
@@ -238,19 +244,28 @@ export default function LibraryPage() {
       .finally(() => setLoadingChapters(false));
   }, [selectedSubject, apiSubjects]);
 
-  // Read: fetch URL and open in protected in-app viewer (no download)
+  // Read: fetch rendered page images and open in protected in-app viewer (no raw PDF URL)
   const handleRead = async (material: any) => {
     const materialId = material._id || material.id;
     if (!materialId) return;
     setLoadingRead(materialId);
     try {
-      const res: any = await libraryService.getMaterialDownloadUrl(materialId);
-      const url = res.data?.url || res.data?.downloadUrl || res.data;
-      if (url && typeof url === 'string') {
-        setIframeLoaded(false);
+      const res: any = await libraryService.getMaterialViewPages(materialId, 50);
+      const data = res.data?.data || res.data || {};
+      const pages = Array.isArray(data.pages)
+        ? data.pages.map((page: any) => page?.url).filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
+        : [];
+
+      if (pages.length > 0) {
+        setDocLoaded(false);
+        setDocError(false);
+        setNumPages(pages.length);
+        setPageNumber(1);
         setZoomLevel(100);
-        setReadModal({ url, title: material.title || material.name || 'Note' });
+        setReadModal({ pages, title: data.title || material.title || material.name || 'Note' });
         entitlements.refreshEntitlements();
+      } else {
+        setDocError(true);
       }
     } catch (err) {
       alert(handleEntitlementError(err).message);
@@ -920,7 +935,15 @@ export default function LibraryPage() {
                       flexShrink: 0,
                     }}
                   >
-                    {material.isLocked ? '🔒' : '📌'}
+                    {material.isLocked ? '🔒' : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="7" y="3" width="13" height="18" rx="2" fill="#9CA3AF" />
+                        <rect x="4" y="6" width="13" height="15" rx="2" fill="#E5E7EB" stroke="#D1D5DB" strokeWidth="1" />
+                        <line x1="7" y1="10" x2="14" y2="10" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round" />
+                        <line x1="7" y1="13" x2="14" y2="13" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round" />
+                        <line x1="7" y1="16" x2="11" y2="16" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round" />
+                      </svg>
+                    )}
                   </div>
 
                   {/* Title & subtitle */}
@@ -1002,23 +1025,31 @@ export default function LibraryPage() {
                       <>
                         {/* Unlock & Get PDF */}
                         <button
-                          className="font-arimo font-bold active:translate-y-[3px]"
+                          className="font-arimo font-bold"
                           onClick={handleUpgrade}
                           style={{
                             fontSize: '13px',
-                            background: '#F59E0B',
+                            background: 'linear-gradient(135deg, #E6A817, #F4A97A)',
                             color: '#FFFFFF',
-                            borderRadius: '10px',
+                            borderRadius: '20px',
                             height: '38px',
                             padding: '0 18px',
-                            border: '1.5px solid #D97706',
+                            border: 'none',
                             cursor: 'pointer',
                             whiteSpace: 'nowrap',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '7px',
-                            boxShadow: '0 4px 0 0 #B45309',
-                            transition: 'transform 0.08s ease, box-shadow 0.08s ease',
+                            gap: '6px',
+                            boxShadow: '0 2px 8px rgba(230,168,23,0.3)',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.boxShadow = '0 4px 14px rgba(230,168,23,0.4)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(230,168,23,0.3)';
                           }}
                         >
                           <span style={{ fontSize: '15px', lineHeight: 1 }}>🔒</span>
@@ -1426,6 +1457,45 @@ export default function LibraryPage() {
 
             {/* Right: lock badge + upgrade + close */}
             <div className="flex items-center gap-2 flex-shrink-0">
+              {docLoaded && (
+                <div
+                  className="flex items-center font-arimo font-bold"
+                  style={{
+                    gap: '4px',
+                    background: '#FFFFFF',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '8px',
+                    padding: '4px 6px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  }}
+                >
+                  <button
+                    onClick={() => setZoomLevel((z) => Math.max(50, z - 10))}
+                    style={{
+                      width: '24px', height: '24px', borderRadius: '6px',
+                      background: '#F3F4F6', border: 'none', color: '#374151',
+                      cursor: 'pointer', fontSize: '14px', lineHeight: 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    -
+                  </button>
+                  <span style={{ fontSize: '12px', color: '#374151', minWidth: '40px', textAlign: 'center' }}>
+                    {zoomLevel}%
+                  </span>
+                  <button
+                    onClick={() => setZoomLevel((z) => Math.min(200, z + 10))}
+                    style={{
+                      width: '24px', height: '24px', borderRadius: '6px',
+                      background: '#F3F4F6', border: 'none', color: '#374151',
+                      cursor: 'pointer', fontSize: '14px', lineHeight: 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+              )}
               <div className="font-arimo font-bold" style={{
                 fontSize: '10px', padding: '3px 9px', borderRadius: '20px',
                 background: '#FEF3C7', color: '#D97706', letterSpacing: '0.4px',
@@ -1435,17 +1505,34 @@ export default function LibraryPage() {
               </div>
               <button
                 onClick={handleGetPdf}
-                className="font-arimo font-bold active:translate-y-[1px] flex items-center gap-1.5"
+                className="font-arimo font-bold flex items-center"
                 style={{
-                  fontSize: '12px', background: '#F59E0B', color: '#fff',
-                  borderRadius: '8px', height: '30px', padding: '0 12px',
-                  border: '1.5px solid #D97706', cursor: 'pointer',
-                  boxShadow: '0 3px 0 0 #B45309',
-                  transition: 'transform 0.08s ease',
+                  fontSize: '13px',
+                  background: 'linear-gradient(135deg, #E6A817, #F4A97A)',
+                  color: '#FFFFFF',
+                  borderRadius: '20px',
+                  height: '34px',
+                  padding: '0 16px',
+                  border: 'none',
+                  cursor: 'pointer',
                   whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 8px rgba(230,168,23,0.3)',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(230,168,23,0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(230,168,23,0.3)';
                 }}
               >
-                ⬇️ Get PDF
+                <span style={{ fontSize: '15px', lineHeight: 1 }}>⬇</span>
+                Get PDF
               </button>
               <button
                 onClick={() => setReadModal(null)}
@@ -1461,14 +1548,14 @@ export default function LibraryPage() {
             </div>
           </div>
 
-          {/* ── Viewer area with watermark + iframe ── */}
+          {/* ── Viewer area with watermark + self-hosted PDF renderer ── */}
           <div
             className="flex-1 relative overflow-hidden"
             style={{ background: '#E8ECF3', userSelect: 'none' }}
             onContextMenu={(e) => e.preventDefault()}
           >
             {/* Loading skeleton */}
-            {!iframeLoaded && (
+            {!docLoaded && !docError && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-5"
                 style={{ background: '#F1F4FA', zIndex: 20 }}>
                 <div style={{
@@ -1485,40 +1572,37 @@ export default function LibraryPage() {
               </div>
             )}
 
-            {/* Google Docs viewer iframe — wrapped so we can apply a zoom transform */}
-            <div
-              style={{
-                width: `${10000 / zoomLevel}%`,
-                height: `${10000 / zoomLevel}%`,
-                transform: `scale(${zoomLevel / 100})`,
-                transformOrigin: 'top left',
-              }}
-            >
-              <iframe
-                key={readModal.url}
-                src={`https://docs.google.com/viewer?url=${encodeURIComponent(readModal.url)}&embedded=true`}
-                style={{
-                  width: '100%', height: '100%',
-                  border: 'none', display: 'block',
-                  opacity: iframeLoaded ? 1 : 0,
-                  transition: 'opacity 0.35s ease',
-                }}
-                title={readModal.title}
-                onLoad={() => setIframeLoaded(true)}
-                allow="fullscreen"
+            {/* Error state */}
+            {docError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2"
+                style={{ background: '#F1F4FA', zIndex: 20 }}>
+                <p className="font-arimo font-bold" style={{ fontSize: '14px', color: '#374151' }}>Couldn't load this note</p>
+                <p className="font-arimo" style={{ fontSize: '12px', color: '#9CA3AF' }}>Please close and try again</p>
+              </div>
+            )}
+
+            {/* Self-hosted PDF renderer — no pop-out, no download UI */}
+            <div className="absolute inset-0 overflow-auto flex justify-center" style={{ padding: '24px' }}>
+              <PdfViewer
+                pages={readModal.pages}
+                pageNumber={pageNumber}
+                zoomLevel={zoomLevel}
+                onLoadSuccess={(numPages) => { setNumPages(numPages); setDocLoaded(true); }}
+                onLoadError={() => setDocError(true)}
               />
             </div>
 
-            {/* ── Zoom controls ── */}
-            {iframeLoaded && (
+            {/* ── Page navigation ── */}
+            {docLoaded && numPages > 1 && (
               <div
                 className="flex items-center font-arimo font-bold"
                 style={{
                   position: 'absolute',
-                  top: '10px',
-                  right: '10px',
+                  bottom: '14px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
                   zIndex: 15,
-                  gap: '4px',
+                  gap: '8px',
                   background: '#FFFFFF',
                   border: '1px solid #E5E7EB',
                   borderRadius: '8px',
@@ -1527,37 +1611,41 @@ export default function LibraryPage() {
                 }}
               >
                 <button
-                  onClick={() => setZoomLevel((z) => Math.max(50, z - 10))}
+                  onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+                  disabled={pageNumber <= 1}
                   style={{
                     width: '24px', height: '24px', borderRadius: '6px',
                     background: '#F3F4F6', border: 'none', color: '#374151',
-                    cursor: 'pointer', fontSize: '14px', lineHeight: 1,
+                    cursor: pageNumber <= 1 ? 'default' : 'pointer', fontSize: '14px', lineHeight: 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: pageNumber <= 1 ? 0.4 : 1,
                   }}
                 >
-                  −
+                  ‹
                 </button>
-                <span style={{ fontSize: '12px', color: '#374151', minWidth: '40px', textAlign: 'center' }}>
-                  {zoomLevel}%
+                <span style={{ fontSize: '12px', color: '#374151', minWidth: '64px', textAlign: 'center' }}>
+                  Page {pageNumber} of {numPages}
                 </span>
                 <button
-                  onClick={() => setZoomLevel((z) => Math.min(200, z + 10))}
+                  onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
+                  disabled={pageNumber >= numPages}
                   style={{
                     width: '24px', height: '24px', borderRadius: '6px',
                     background: '#F3F4F6', border: 'none', color: '#374151',
-                    cursor: 'pointer', fontSize: '14px', lineHeight: 1,
+                    cursor: pageNumber >= numPages ? 'default' : 'pointer', fontSize: '14px', lineHeight: 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: pageNumber >= numPages ? 0.4 : 1,
                   }}
                 >
-                  +
+                  ›
                 </button>
               </div>
             )}
 
             {/* ── Watermark overlay ──
-                Sits above the iframe (pointer-events:none so scroll is unaffected).
+                Sits above the rendered page (pointer-events:none so scroll is unaffected).
                 The repeated diagonal text appears in any screenshot. */}
-            {iframeLoaded && (
+            {docLoaded && (
               <div
                 aria-hidden="true"
                 style={{

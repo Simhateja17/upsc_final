@@ -24,6 +24,13 @@ type RazorpaySuccessResponse = {
   razorpay_signature: string;
 };
 
+const RAZORPAY_BRAND = {
+  name: 'RiseWithJeet',
+  primaryColor: '#0B1525',
+  backdropColor: 'rgba(8, 15, 35, 0.74)',
+  logoPath: '/logo.png',
+};
+
 declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => {
@@ -143,7 +150,8 @@ function TestSeriesCheckoutModal({ open, onClose, itemId, itemName, amount, onSu
         key: order.key,
         amount: order.amount,
         currency: order.currency || 'INR',
-        name: 'RiseWithJeet',
+        name: RAZORPAY_BRAND.name,
+        image: `${window.location.origin}${RAZORPAY_BRAND.logoPath}`,
         description: displayName,
         order_id: order.order_id || order.providerOrderId,
         prefill: {
@@ -174,7 +182,10 @@ function TestSeriesCheckoutModal({ open, onClose, itemId, itemName, amount, onSu
         modal: {
           ondismiss: () => setIsPaying(false),
         },
-        theme: { color: '#E8B84B' },
+        theme: {
+          color: RAZORPAY_BRAND.primaryColor,
+          backdrop_color: RAZORPAY_BRAND.backdropColor,
+        },
       });
 
       checkout.on('payment.failed', async (response: any) => {
@@ -541,7 +552,7 @@ function LegacyPurchaseModal({ open, onClose, itemType, itemId, itemName, amount
                   <span style={{ textDecoration: 'line-through' }}>Rs.89.82</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '24px', color: '#1E9D4F', marginBottom: '8px' }}>
-                  <span>7-Day Money-Back Guarantee</span>
+                  <span>3-Day Money-Back Guarantee</span>
                   <span>Included</span>
                 </div>
                 <div style={{ borderTop: '1px solid #D4D4D8', paddingTop: '9px', display: 'flex', justifyContent: 'space-between', fontSize: '30px', fontWeight: 700, color: '#111827' }}>

@@ -33,6 +33,7 @@ export default function FlashcardReviewPage() {
   const [revealed, setRevealed] = useState(false);
   const [showSessionComplete, setShowSessionComplete] = useState(false);
   const [masteredCount, setMasteredCount] = useState(0);
+  const [deletingCard, setDeletingCard] = useState(false);
 
   useEffect(() => {
     if (!subjectId || !topicId) return;
@@ -74,6 +75,20 @@ export default function FlashcardReviewPage() {
         goNext();
       })
       .catch(() => goNext());
+  };
+  const handleDeleteCard = () => {
+    if (!card || deletingCard) return;
+    setDeletingCard(true);
+    flashcardService.deleteCard(card.id)
+      .then(() => {
+        const newCards = cards.filter((c) => c.id !== card.id);
+        setCards(newCards);
+        if (newCards.length === 0) { setShowSessionComplete(true); return; }
+        setCurrentIndex((i) => Math.min(i, newCards.length - 1));
+        setRevealed(false);
+      })
+      .catch(() => {})
+      .finally(() => setDeletingCard(false));
   };
 
   if (loading) {
@@ -133,13 +148,22 @@ export default function FlashcardReviewPage() {
               Card {currentIndex + 1} / {totalCards}
             </span>
 
-            {/* Keyboard hints — right */}
-            <div className="ml-auto hidden sm:flex items-center gap-2" style={{ fontFamily: 'Inter', fontSize: 11, color: '#C9CFD8' }}>
-              <span style={{ background: '#F1F3F5', border: '0.5px solid #E2E5ED', borderRadius: 4, padding: '1px 6px', fontSize: 10, color: '#6B7280' }}>Space</span>
-              <span>Flip</span>
-              <span style={{ background: '#F1F3F5', border: '0.5px solid #E2E5ED', borderRadius: 4, padding: '1px 6px', fontSize: 10, color: '#6B7280' }}>→</span>
-              <span>Next</span>
-              <span style={{ marginLeft: 8, color: '#9CA3AF' }}>{ratedCount} of {totalCards} seen</span>
+            {/* Delete card button — right */}
+            <div className="ml-auto flex items-center gap-3">
+              <span style={{ fontFamily: 'Inter', fontSize: 11, color: '#9CA3AF' }}>{ratedCount} of {totalCards} seen</span>
+              <button
+                type="button"
+                onClick={handleDeleteCard}
+                disabled={deletingCard}
+                title="Delete this card"
+                className="flex items-center gap-1.5 rounded-[6px] px-3 py-1.5 transition-colors hover:bg-red-50"
+                style={{ border: '1px solid #FCA5A5', background: '#FFF5F5', color: '#EF4444', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, opacity: deletingCard ? 0.6 : 1 }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+                {deletingCard ? 'Deleting…' : 'Delete Card'}
+              </button>
             </div>
           </div>
 
@@ -235,60 +259,89 @@ export default function FlashcardReviewPage() {
               >
                 {/* Front */}
                 <div
-                  className="absolute inset-0 rounded-[18px] p-7 flex flex-col"
+                  className="absolute inset-0 rounded-[24px] flex flex-col"
                   style={{
                     backfaceVisibility: 'hidden',
-                    background: 'linear-gradient(145deg, #1A1D23, #2D3140)',
-                    border: '0.5px solid #30363D',
+                    background: 'linear-gradient(180deg, #0F1419 0%, #1A2332 50%, #0D1218 100%)',
+                    border: '0.8px solid rgba(30,41,57,0.5)',
+                    boxShadow: '0px 20px 30px rgba(0,0,0,0.5)',
                     minHeight: 280,
+                    overflow: 'hidden',
                   }}
                 >
-                  <span
-                    className="uppercase tracking-[1.5px] mb-5"
-                    style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: '#6E7681' }}
-                  >
-                    Question
-                  </span>
-                  <div className="flex-1 flex items-center">
-                    <p style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, lineHeight: '36px', color: '#FFFFFF' }}>
+                  {/* Top row: QUESTION label + SUBJECT · TOPIC */}
+                  <div className="flex items-center justify-between px-8 pt-7 pb-0">
+                    <span
+                      style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, color: '#6A7282', letterSpacing: '2px', textTransform: 'uppercase' }}
+                    >
+                      Question
+                    </span>
+                    <span
+                      style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, color: '#F0B100', letterSpacing: '1.5px', textTransform: 'uppercase' }}
+                    >
+                      {pretty(subjectId)} · {pretty(topicId)}
+                    </span>
+                  </div>
+
+                  {/* Question text — left-aligned with padding, vertically centred */}
+                  <div className="flex-1 flex items-center px-16 py-6">
+                    <p style={{ fontFamily: 'Georgia, serif', fontWeight: 400, fontSize: 28, lineHeight: '46px', color: '#FFFFFF' }}>
                       {card.question}
                     </p>
                   </div>
-                  {/* Subtle "click to reveal" hint bottom-right */}
-                  <div className="flex justify-end mt-4">
-                    <span style={{ fontFamily: 'Inter', fontSize: 11, color: '#484F58', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1v7M8 1L5 4M8 1l3 3" stroke="#484F58" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 9v4a1 1 0 001 1h8a1 1 0 001-1V9" stroke="#484F58" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                      Click to reveal answer
-                    </span>
+
+                  {/* Divider + tap hint */}
+                  <div className="px-16 pb-7">
+                    <div className="w-full mb-4" style={{ height: '0.8px', background: 'rgba(255,255,255,0.1)' }} />
+                    <div className="flex items-center justify-center gap-2">
+                      <span style={{ fontSize: 14 }}>👆</span>
+                      <span style={{ fontFamily: 'Inter', fontSize: 12, color: '#6A7282' }}>Tap to reveal answer</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Back */}
                 <div
-                  className="absolute inset-0 rounded-[18px] p-7 flex flex-col"
+                  className="absolute inset-0 rounded-[16px] flex flex-col"
                   style={{
                     backfaceVisibility: 'hidden',
                     transform: 'rotateY(180deg)',
                     background: '#FFFFFF',
-                    border: '1.5px solid #E2E5ED',
+                    border: '0.8px solid #E5E7EB',
+                    boxShadow: '0px 1px 1.5px rgba(0,0,0,0.1), 0px 1px 1px rgba(0,0,0,0.1)',
                     minHeight: 280,
+                    overflow: 'hidden',
                   }}
                 >
-                  <span
-                    className="uppercase tracking-[1.5px] mb-5"
-                    style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: '#9CA3AF' }}
-                  >
-                    Answer
-                  </span>
-                  <div className="flex-1 flex flex-col justify-center">
+                  {/* Top row: ANSWER label + SUBJECT · TOPIC */}
+                  <div className="flex items-center justify-between px-8 pt-7 pb-0">
+                    <span
+                      style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, color: '#101828', letterSpacing: '0.3px', textTransform: 'uppercase' }}
+                    >
+                      Answer
+                    </span>
+                    <span
+                      style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 10, color: '#101828', letterSpacing: '1.5px', textTransform: 'uppercase' }}
+                    >
+                      {pretty(subjectId)} · {pretty(topicId)}
+                    </span>
+                  </div>
+
+                  {/* Answer text */}
+                  <div className="flex-1 flex items-center px-12 py-6">
                     <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 16, lineHeight: '26px', color: '#101828' }}>
                       {card.answer}
                     </p>
                   </div>
-                  <div className="h-px w-full mt-4 mb-3" style={{ background: '#F1F3F5' }} />
-                  <p style={{ fontFamily: 'Inter', fontSize: 11, color: '#9CA3AF' }}>
-                    How well did you know this? Mark below.
-                  </p>
+
+                  {/* Divider + tap to hide hint */}
+                  <div className="px-12 pb-7">
+                    <div className="w-full mb-4" style={{ height: '0.8px', background: '#E5E7EB' }} />
+                    <div className="flex items-center justify-center gap-1">
+                      <span style={{ fontSize: 16 }}>👆</span>
+                      <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#6A7282' }}>Tap to hide answer</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -307,31 +360,32 @@ export default function FlashcardReviewPage() {
               ‹ Prev
             </button>
 
-            {/* Flip Card — amber bg, dark navy text, rotate icon */}
-            <button
-              type="button"
-              onClick={handleFlip}
-              className="flex items-center gap-2 rounded-[10px] px-6 py-2.5"
-              style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, color: '#101828', background: '#F0AE00', minWidth: 148 }}
-            >
-              {/* Rotate / flip icon */}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
-              </svg>
-              {revealed ? 'Flip Back' : 'Flip Card'}
-            </button>
-
-            {/* Got it — only when revealed and not yet mastered */}
-            {revealed && !card?.mastered && (
+            {/* Center group — Flip Card/Back + Got it stay together */}
+            <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={handleMastered}
-                className="rounded-[10px] px-5 py-2.5"
-                style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, color: '#FFFFFF', background: '#16A34A', minWidth: 110 }}
+                onClick={handleFlip}
+                className="flex items-center justify-center gap-2 rounded-[10px] px-6 py-2.5"
+                style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, color: '#FFFFFF', background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)', boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)', minWidth: 148 }}
               >
-                ✓ Got it!
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                </svg>
+                {revealed ? 'Flip Back' : 'Flip Card'}
               </button>
-            )}
+
+              {/* Got it — only when revealed and not yet mastered */}
+              {revealed && !card?.mastered && (
+                <button
+                  type="button"
+                  onClick={handleMastered}
+                  className="rounded-[10px] px-5 py-2.5"
+                  style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, color: '#FFFFFF', background: '#16A34A', minWidth: 110 }}
+                >
+                  ✓ Got it!
+                </button>
+              )}
+            </div>
 
             {/* Next */}
             <button

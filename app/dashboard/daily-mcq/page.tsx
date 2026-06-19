@@ -150,21 +150,20 @@ export default function DailyMcqIntroPage() {
               <button
                 type="button"
                 onClick={() => router.push('/dashboard/daily-mcq/challenge')}
-                className="h-[52px] w-full rounded-[12px] bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white shadow-[0_12px_24px_-10px_rgba(79,70,229,0.65)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_28px_-10px_rgba(79,70,229,0.75)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#C4B5FD]"
+                className="w-[232px] h-[52px] bg-[#101828] hover:bg-[#1A1A1A] text-white rounded-[10px] transition-all flex items-center justify-center gap-2 mx-auto font-arimo font-bold text-[20px] leading-[24px]"
                 aria-label={`Start daily MCQ now. Auto-starting in ${introCountdown} seconds`}
               >
-                <span className="flex items-center justify-center gap-3 font-arimo text-[18px] font-bold leading-[24px]">
-                  <span
-                    className="h-6 w-6 animate-spin rounded-full border-2 border-white/45 border-t-white"
-                    aria-hidden="true"
-                  />
-                  Starting in {introCountdown}...
-                </span>
+                <span
+                  className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                  aria-hidden="true"
+                />
+                Starting in {introCountdown}...
               </button>
               <button
                 type="button"
                 onClick={() => router.push('/dashboard/daily-mcq/challenge')}
-                className="mt-3 font-arimo text-[12px] text-[#98A2B3] transition-colors hover:text-[#667085] focus-visible:outline-none focus-visible:underline"
+                className="text-[#6A7282] mt-4 font-normal hover:text-[#101828] transition-colors block mx-auto"
+                style={{ fontSize: '12px', background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 Click to start immediately
               </button>

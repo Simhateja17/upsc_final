@@ -105,18 +105,24 @@ export const dailyMcqService = {
 
 export const dailyAnswerService = {
   getToday: () => api.get<any>('/daily-answer/today', authConfig()),
-  getFullQuestion: () => api.get<any>('/daily-answer/today/question', authConfig()),
-  submitText: (answerText: string) =>
-    api.post<{ status: string; data?: { attemptId: string; status: string }; message?: string }>('/daily-answer/today/submit-text', { answerText }, authConfig()),
-  upload: (fileUrl: string) =>
-    api.post<any>('/daily-answer/today/upload', { fileUrl }, authConfig()),
-  uploadFile: async (file: File): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
+  getFullQuestion: (date?: string) =>
+    api.get<any>(`/daily-answer/today/question${date ? `?date=${encodeURIComponent(date)}` : ''}`, authConfig()),
+  submitText: (answerText: string, date?: string) =>
+    api.post<{ status: string; data?: { attemptId: string; status: string }; message?: string }>(
+      `/daily-answer/today/submit-text${date ? `?date=${encodeURIComponent(date)}` : ''}`,
+      { answerText },
+      authConfig()
+    ),
+  upload: (fileUrl: string, date?: string) =>
+    api.post<any>(`/daily-answer/today/upload${date ? `?date=${encodeURIComponent(date)}` : ''}`, { fileUrl }, authConfig()),
+  uploadFile: async (file: File, date?: string): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
     const fd = new FormData();
     fd.append('file', file);
 
     const token = getToken();
+    const suffix = date ? `?date=${encodeURIComponent(date)}` : '';
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/daily-answer/today/upload`,
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/daily-answer/today/upload${suffix}`,
       {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -127,10 +133,47 @@ export const dailyAnswerService = {
     if (!res.ok) throw new ApiRequestError(json.message || 'Upload failed', res.status, json);
     return json;
   },
-  getEvaluationStatus: (attemptId?: string) =>
-    api.get<any>(`/daily-answer/today/evaluation-status${attemptId ? `?attemptId=${encodeURIComponent(attemptId)}` : ''}`, authConfig()),
-  getResults: (attemptId?: string) =>
-    api.get<any>(`/daily-answer/today/results${attemptId ? `?attemptId=${encodeURIComponent(attemptId)}` : ''}`, authConfig()),
+  uploadFiles: async (files: File[], date?: string): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
+    const fd = new FormData();
+    files.forEach((file) => fd.append('files', file));
+
+    const token = getToken();
+    const suffix = date ? `?date=${encodeURIComponent(date)}` : '';
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/daily-answer/today/upload${suffix}`,
+      {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      }
+    );
+    const json = await res.json();
+    if (!res.ok) throw new ApiRequestError(json.message || 'Upload failed', res.status, json);
+    return json;
+  },
+  getEvaluationStatus: (attemptId?: string, date?: string) => {
+    const qs: string[] = [];
+    if (attemptId) qs.push(`attemptId=${encodeURIComponent(attemptId)}`);
+    if (date) qs.push(`date=${encodeURIComponent(date)}`);
+    const suffix = qs.length ? `?${qs.join('&')}` : '';
+    return api.get<any>(`/daily-answer/today/evaluation-status${suffix}`, authConfig());
+  },
+  getResults: (attemptId?: string, date?: string) => {
+    const qs: string[] = [];
+    if (attemptId) qs.push(`attemptId=${encodeURIComponent(attemptId)}`);
+    if (date) qs.push(`date=${encodeURIComponent(date)}`);
+    const suffix = qs.length ? `?${qs.join('&')}` : '';
+    return api.get<any>(`/daily-answer/today/results${suffix}`, authConfig());
+  },
+  getCalendar: (params?: { from?: string; to?: string; page?: number; limit?: number }) => {
+    const qs: string[] = [];
+    if (params?.from) qs.push(`from=${encodeURIComponent(params.from)}`);
+    if (params?.to) qs.push(`to=${encodeURIComponent(params.to)}`);
+    if (params?.page) qs.push(`page=${params.page}`);
+    if (params?.limit) qs.push(`limit=${params.limit}`);
+    const suffix = qs.length ? `?${qs.join('&')}` : '';
+    return api.get<any>(`/daily-answer/calendar${suffix}`, authConfig());
+  },
 };
 
 // ==================== Editorials ====================
@@ -185,12 +228,16 @@ export const mockTestService = {
   submitMainsAnswer: async (
     testId: string,
     questionId: string,
-    opts: { answerText?: string; file?: File }
+    opts: { answerText?: string; file?: File; files?: File[] }
   ): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
     const fd = new FormData();
     fd.append('mockTestQuestionId', questionId);
     if (opts.answerText) fd.append('answerText', opts.answerText);
-    if (opts.file) fd.append('file', opts.file);
+    if (opts.files?.length) {
+      opts.files.forEach((f) => fd.append('files', f));
+    } else if (opts.file) {
+      fd.append('file', opts.file);
+    }
 
     const token = getToken();
     const res = await fetch(
@@ -222,9 +269,9 @@ export const mockTestService = {
 export const studyPlannerService = {
   getTodayTasks: (date?: string) =>
     api.get<any>(`/study-plan/today${date ? `?date=${encodeURIComponent(date)}` : ''}`, authConfig()),
-  createTask: (task: { title: string; description?: string; subject?: string; type?: string; date?: string; startTime?: string; endTime?: string; duration?: number }) =>
+  createTask: (task: { title: string; description?: string; subject?: string; type?: string; date?: string; startTime?: string; endTime?: string; duration?: number; actualDuration?: number }) =>
     api.post<any>('/study-plan/tasks', task, authConfig()),
-  updateTask: (id: string, updates: any) =>
+  updateTask: (id: string, updates: { title?: string; description?: string; subject?: string; type?: string; date?: string; startTime?: string; endTime?: string; duration?: number; actualDuration?: number; isCompleted?: boolean }) =>
     api.put<any>(`/study-plan/tasks/${id}`, updates, authConfig()),
   deleteTask: (id: string) => api.delete<any>(`/study-plan/tasks/${id}`, authConfig()),
   getStreak: () => api.get<any>('/study-plan/streak', authConfig()),
@@ -251,6 +298,8 @@ export const libraryService = {
   getChapters: (subjectId: string) => api.get<any>(`/library/subjects/${subjectId}/chapters`, authConfig()),
   getDownloadUrl: (chapterId: string) => api.get<any>(`/library/download/${chapterId}`, authConfig()),
   getMaterialDownloadUrl: (materialId: string) => api.get<any>(`/library/download/material/${materialId}`, authConfig()),
+  getMaterialViewPages: (materialId: string, maxPages = 50) =>
+    api.get<any>(`/library/view/material/${materialId}/pages?maxPages=${maxPages}`, { ...authConfig(), timeout: 120000 }),
 };
 
 // ==================== Pricing & Mentorship ====================
@@ -425,8 +474,8 @@ export const pyqService = {
         body: fd,
       }
     );
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Submit failed');
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiRequestError(json.message || 'Submit failed', res.status, json);
     return json;
   },
   getMainsEvaluationStatus: (questionId: string, attemptId: string) =>
@@ -459,6 +508,12 @@ export const flashcardService = {
   }) => api.post<any>('/flashcards', data, await freshAuthConfig()),
   updateProgress: (cardId: string, mastered: boolean) =>
     api.patch<any>(`/flashcards/${cardId}/progress`, { mastered }, authConfig()),
+  deleteSubject: (subjectId: string) =>
+    api.delete<any>(`/flashcards/subjects/${subjectId}`, authConfig()),
+  deleteCard: (cardId: string) =>
+    api.delete<any>(`/flashcards/${cardId}`, authConfig()),
+  deleteTopic: (subjectId: string, topicId: string) =>
+    api.delete<any>(`/flashcards/${subjectId}/topics/${topicId}`, authConfig()),
 };
 
 // ==================== Spaced Repetition ====================
@@ -470,6 +525,7 @@ export const spacedRepService = {
   },
   addItem: (data: {
     questionText: string;
+    answer?: string;
     subject: string;
     source?: string;
     sourceType?: string;
@@ -524,8 +580,13 @@ export const studyGroupService = {
 
 export const userService = {
   getProfile: () => api.get<any>('/user/profile', authConfig()),
-  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; bio?: string; state?: string; targetYear?: string; optionalSubject?: string; gender?: string; dateOfBirth?: string }) =>
+  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; bio?: string; state?: string; targetYear?: string; optionalSubject?: string; gender?: string; dateOfBirth?: string; avatarUrl?: string }) =>
     api.put<any>('/user/profile', data, authConfig()),
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append('avatar', file);
+    return api.postForm<{ avatarUrl: string }>('/user/profile/avatar', form, authConfig());
+  },
   updateSettings: (data: { notifications?: any; preferences?: any; privacy?: any; profile?: any }) =>
     api.put<any>('/user/settings', data, authConfig()),
   submitFeedback: (data: { rating: number; category?: string; workingWell?: string; couldBeBetter?: string }) =>
@@ -1017,4 +1078,20 @@ export const forumService = {
   getMyAnswers: () => api.get<any>('/forum/my-answers', authConfig()),
   getBookmarks: () => api.get<any>('/forum/bookmarks', authConfig()),
   getSubjects: () => api.get<any>('/forum/subjects', authConfig()),
+};
+
+export const bookmarkService = {
+  list: (type?: string) => api.get<any>(`/bookmarks${type ? `?type=${type}` : ''}`, authConfig()),
+  toggle: (data: { entityType: string; entityId: string; title: string; source: string; sourceUrl?: string; tag?: string; tagColor?: string; content?: any }) =>
+    api.post<any>('/bookmarks/toggle', data, authConfig()),
+  remove: (id: string) => api.delete<any>(`/bookmarks/${id}`, authConfig()),
+  check: (type: string, id: string) => api.get<any>(`/bookmarks/check?type=${type}&id=${id}`, authConfig()),
+  togglePin: (id: string) => api.patch<any>(`/bookmarks/${id}/pin`, {}, authConfig()),
+};
+
+export const flagService = {
+  toggle: (data: { questionType: string; questionId: string; questionText: string; reason?: string }) =>
+    api.post<any>('/flags', data, authConfig()),
+  check: (questionType: string, ids: string[]) =>
+    api.get<any>(`/flags/check?questionType=${questionType}&ids=${ids.join(',')}`, authConfig()),
 };

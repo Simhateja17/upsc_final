@@ -697,13 +697,6 @@ export default function AuthModal() {
               {/* Help row */}
               <p style={{ textAlign: 'center', fontSize: 12.5, color: '#6B7280', marginTop: 18, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
                 <a
-                  onClick={() => window.alert('Password reset link will be sent to your registered mobile number.')}
-                  style={{ color: '#C9933A', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
-                >
-                  Forgot password?
-                </a>
-                <span style={{ color: '#E5E3DE', margin: '0 8px' }}>|</span>
-                <a
                   onClick={() => window.alert('Contact support@risewithjeet.com for assistance.')}
                   style={{ color: '#C9933A', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
                 >

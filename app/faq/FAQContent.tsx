@@ -20,6 +20,46 @@ interface FAQSection {
 
 const faqData: FAQSection[] = [
   {
+    id: 'cat-pricing',
+    title: 'Pricing & Plans',
+    icon: '/funds-icon.png',
+    iconBg: 'rgba(232,184,75,0.12)',
+    items: [
+      {
+        question: 'Is free plan really free forever?',
+        answer: '<p>Yes, absolutely. Our Free plan gives you lifetime free access to daily MCQ, daily news analysis, 10,000+ PYQs, study planner, leaderboard, plus 3 mains evaluations (lifetime), 1 Prelims test (lifetime) and 1 Jeet AI chat session. No card, no expiry, no hidden upgrades.</p>',
+      },
+      {
+        question: 'Are the current prices a promotional offer?',
+        answer: '<p>Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, so lock in these rates while you can. Once you subscribe, your price remains locked for as long as you stay subscribed, even if prices increase for new users later.</p>',
+      },
+      {
+        question: 'Can I upgrade or cancel my subscription anytime?',
+        answer: '<p>Absolutely. You can upgrade from Aspire to Rise or Ascent instantly (pro-rated). Cancellation is self-serve from your dashboard - you keep full access until the end of your billing cycle. No cancellation fees, no hassle.</p>',
+      },
+      {
+        question: 'What is the refund policy?',
+        answer: '<p>We offer a 3-day, no-questions-asked refund on all paid subscriptions. Just reach out to support within 3 days of your purchase and we will process the refund within 24 hours. After 3 days, refunds are not applicable but you can cancel future billing.</p>',
+      },
+      {
+        question: 'What\'s the difference between Aspire, Rise and Ascent?',
+        answer: '<p><strong>Aspire:</strong> 5 mains evaluations/day, 5 Prelims tests/day, 5 Jeet AI messages/day, limited analytics & revision suite.</p><p><strong>Rise:</strong> 25 mains evals/day, 50 Prelims tests/day, 100 AI messages, full analytics dashboard, full revision suite (flashcards, mindmaps, spaced repetition), smart syllabus tracker, live study room.</p><p><strong>Ascent:</strong> Everything in Rise, plus unlimited evaluations & tests, unlimited AI messages, bi-weekly 1-on-1 mentorship, interview prep module, personalised roadmap, priority support, monthly review call and early access.</p>',
+      },
+      {
+        question: 'How much do I save on quarterly & yearly plans?',
+        answer: '<p>As we are running promotional offers currently, Quarterly plans save you 20% compared to monthly billing. Yearly plans save you 40% - that\'s almost 5 months free. For example, Rise monthly is ₹499, but yearly brings it down to ₹299/month. Discounts are automatically applied at checkout.</p>',
+      },
+      {
+        question: 'How does AI Mains Evaluation work?',
+        answer: '<p>You can upload a photo of your handwritten answer. Jeet AI evaluates it against UPSC marking schemes - structure, content, keyword density, presentation, relevance etc. You get detailed feedback in under 60 seconds, including a score and actionable suggestions to improve.</p>',
+      },
+      {
+        question: 'Is this suitable for first-attempt aspirants?',
+        answer: '<p>Absolutely. Our study planner, syllabus tracker, daily MCQs, mains answer evaluation and simplified video lectures are designed to guide you from day one - whether it\'s your first attempt or your third. Start with the Aspire to build momentum, then upgrade as you get more serious as you master consistency.</p>',
+      },
+    ],
+  },
+  {
     id: 'cat-general',
     title: 'General',
     icon: '/sidebar-overview.png',
@@ -310,7 +350,7 @@ const faqData: FAQSection[] = [
 ];
 
 export default function FAQContent() {
-  const [activeSection, setActiveSection] = useState('cat-general');
+  const [activeSection, setActiveSection] = useState('cat-pricing');
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});

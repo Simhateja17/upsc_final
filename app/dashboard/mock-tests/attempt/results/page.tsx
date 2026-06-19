@@ -131,10 +131,18 @@ interface ResultsData {
   testLabel?: string;
 }
 
+interface ParameterScore {
+  parameter: string;
+  score: number;
+  maxScore: number;
+  comment?: string;
+}
+
 interface MainsPerQuestion {
   idx: number;
   questionText: string;
   subject: string;
+  paper?: string;
   score: number;
   maxScore: number;
   strengths: string[];
@@ -146,7 +154,15 @@ interface MainsPerQuestion {
   checkedCopyUrl?: string | null;
   checkedCopyPages?: Array<{ pageNumber: number; checkedCopyUrl?: string | null; status?: string; reason?: string }>;
   checkedCopyStatus?: string | null;
+  parameterScores?: ParameterScore[];
+  keyTerms?: Array<{ term: string; found: boolean }>;
+  nextAttemptFocus?: string | null;
+  evaluatorConclusion?: string | null;
+  modelAnswerKeyPoints?: string[];
+  modelAnswerContent?: string;
 }
+
+type MainsSlideKey = 'feedback' | 'markup' | 'rubric';
 
 /* ─── Next-steps types ─── */
 interface CardItem {
@@ -241,11 +257,15 @@ function MockTestResultsInner() {
   const [error, setError] = useState<string | null>(null);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(1);
   const [mainsData, setMainsData] = useState<MainsPerQuestion[] | null>(null);
+  const [selectedQ, setSelectedQ] = useState(0);        // mains: which question's score card is shown
+  const [qSlide, setQSlide] = useState<MainsSlideKey>('feedback'); // mains: inner slide for the selected question
+  const [modelOpen, setModelOpen] = useState(false);    // mains: model answer modal
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
   /* ─── Next-steps tab state ─── */
-  const [activeTab, setActiveTab] = useState<'next-steps' | 'review'>('next-steps');
+  // Both modes open on the review/answers view; "Next" reveals the recommendations.
+  const [activeTab, setActiveTab] = useState<'next-steps' | 'review'>('review');
   const [cards, setCards] = useState<CardItem[]>(fallbackCards);
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [heroTitle, setHeroTitle] = useState('Great session!');
@@ -334,6 +354,7 @@ function MockTestResultsInner() {
             idx: i + 1,
             questionText: d.question?.questionText || '',
             subject: d.question?.subject || '',
+            paper: d.question?.paper || '',
             score: Number(d.score ?? 0),
             maxScore: Number(d.maxScore ?? 15),
             strengths: Array.isArray(d.strengths) ? d.strengths : [],
@@ -345,6 +366,12 @@ function MockTestResultsInner() {
             checkedCopyUrl: d.checkedCopyUrl,
             checkedCopyPages: Array.isArray(d.checkedCopyPages) ? d.checkedCopyPages : [],
             checkedCopyStatus: d.checkedCopyStatus,
+            parameterScores: Array.isArray(d.parameterScores) ? d.parameterScores : [],
+            keyTerms: Array.isArray(d.keyTerms) ? d.keyTerms : [],
+            nextAttemptFocus: d.nextAttemptFocus,
+            evaluatorConclusion: d.evaluatorConclusion,
+            modelAnswerKeyPoints: Array.isArray(d.modelAnswerKeyPoints) ? d.modelAnswerKeyPoints : [],
+            modelAnswerContent: d.modelAnswerContent,
           });
         }
         if (!cancelled) {
@@ -580,159 +607,111 @@ function MockTestResultsInner() {
       : card
   );
 
-  /* ─── Shared: tab bar ─── */
-  const tabBar = (
-    <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-      {(['next-steps', 'review'] as const).map(tab => (
-        <button
-          key={tab}
-          type="button"
-          onClick={() => setActiveTab(tab)}
-          style={{
-            padding: '10px 20px',
-            borderRadius: 10,
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: 14,
-            fontFamily: 'Inter, sans-serif',
-            background: activeTab === tab ? '#17223E' : '#E5E7EB',
-            color: activeTab === tab ? '#FFFFFF' : '#374151',
-            transition: 'background 0.15s ease, color 0.15s ease',
-          }}
-        >
-          {tab === 'next-steps' ? 'What would you like to do next? →' : 'Review Answers'}
-        </button>
-      ))}
-    </div>
-  );
-
   /* ─── Shared: next steps content ─── */
   const nextStepsContent = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Hero card */}
-      <div style={{
-        borderRadius: 32,
-        background: '#1D293D',
-        boxShadow: '0 8px 10px -6px rgba(0,0,0,0.1), 0 20px 25px -5px rgba(0,0,0,0.1)',
-        padding: '48px 32px',
-        display: 'flex',
-        flexDirection: 'column' as const,
-        alignItems: 'center',
-        gap: 16,
-      }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/emoji-6.png" alt="celebration" style={{ width: 72, height: 72, objectFit: 'contain' }} />
-        <h2 style={{ fontSize: 40, fontWeight: 700, color: '#FFFFFF', margin: 0, textAlign: 'center', lineHeight: '48px' }}>
-          {heroTitle}
-        </h2>
-        <p style={{ fontSize: 16, color: '#BEDBFF', margin: 0, textAlign: 'center', lineHeight: '26px' }}>
-          {heroSubtitle}
+    <div style={{ width: '100%', maxWidth: '988px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Header */}
+      <div className="text-center">
+        <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6A7282', marginBottom: '6px' }}>
+          🎯 SMART NEXT STEPS
         </p>
+        <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#101828' }}>
+          Personalised recommendations based on your evaluation
+        </h2>
       </div>
 
-      {/* 2×2 action cards */}
-      <div>
-        <p style={{
-          fontSize: 12,
-          fontWeight: 800,
-          letterSpacing: '1.2px',
-          textTransform: 'uppercase' as const,
-          color: '#6B7280',
-          margin: '0 0 16px 4px',
-        }}>
-          Next Steps
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 20 }}>
-          {displayCards.map((card) => (
-            <div
-              key={card.title}
-              onClick={() => router.push(card.href)}
-              style={{
-                borderRadius: 32,
-                background: card.dark ? '#1D293D' : '#FFFFFF',
-                boxShadow: '0 4px 6px -4px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.1)',
-                padding: 32,
-                display: 'flex',
-                flexDirection: 'column' as const,
-                gap: 12,
-                cursor: 'pointer',
-                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -4px rgba(0,0,0,0.15), 0 16px 24px -3px rgba(0,0,0,0.1)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 6px -4px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.1)';
-              }}
-            >
-              <div style={{
-                width: 52, height: 52, borderRadius: 14,
-                background: card.iconBg,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: card.icon === '+' ? 36 : 26, fontWeight: 700,
-                color: card.iconColor || '#fff', overflow: 'hidden',
-              }}>
-                {card.imgSrc
-                  ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={card.imgSrc} alt={card.title} style={{ width: 30, height: 36, objectFit: 'contain' }} />
-                  )
-                  : <span style={{ lineHeight: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{card.icon}</span>
-                }
-              </div>
-              <h3 style={{ fontSize: 22, fontWeight: 700, margin: 0, lineHeight: '30px', color: card.dark ? '#FFFFFF' : '#0F172B' }}>
-                {card.title}
-              </h3>
-              <p style={{ fontSize: 14, margin: 0, lineHeight: '22px', color: card.dark ? '#BEDBFF' : '#4A5565', flex: 1 }}>
-                {card.desc}
-              </p>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center',
-                background: card.badgeBg, borderRadius: 999,
-                padding: '6px 16px', alignSelf: 'flex-start',
-              }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: card.badgeColor, lineHeight: '16px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {card.title === 'Unlock Pro Practice' && (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z"/>
-                    </svg>
-                  )}
-                  {card.badge}
-                </span>
-              </div>
-            </div>
-          ))}
+      {/* 2x2 action cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Retake this test */}
+        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex items-start justify-between">
+            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🔄</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#FFFFFF', background: '#4338CA', borderRadius: '99px', padding: '3px 10px' }}>Recommended</span>
+          </div>
+          <div>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Retake this Test</p>
+            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Same config, fresh attempt. Ideal for reinforcing weak areas.</p>
+          </div>
+          <button
+            onClick={() => router.push(`/dashboard/mock-tests/attempt?testId=${testId}`)}
+            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#17223E', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+          >
+            Retake Test →
+          </button>
+        </div>
+
+        {/* Build a new test */}
+        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex items-start justify-between">
+            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>➕</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#166534', background: '#DCFCE7', borderRadius: '99px', padding: '3px 10px' }}>Popular</span>
+          </div>
+          <div>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Build a New Test</p>
+            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Change subject, difficulty or source. Keep the variety going.</p>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/mock-tests')}
+            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#16A34A', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+          >
+            Create New Test →
+          </button>
+        </div>
+
+        {/* Try Mains Writing */}
+        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex items-start justify-between">
+            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>✍️</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#1447E6', background: '#DBEAFE', borderRadius: '99px', padding: '3px 10px' }}>Mains prep</span>
+          </div>
+          <div>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Try Mains Writing</p>
+            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Practice answer writing with AI markup feedback. Build answer skills.</p>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/daily-answer')}
+            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#FFFBEB', color: '#B45309', fontSize: '14px', fontWeight: 700, border: '1px solid #FDE68A', cursor: 'pointer' }}
+          >
+            Start Writing →
+          </button>
+        </div>
+
+        {/* Practice PYQs */}
+        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex items-start justify-between">
+            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>📚</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#5B21B6', background: '#EDE9FE', borderRadius: '99px', padding: '3px 10px' }}>PYQ bank</span>
+          </div>
+          <div>
+            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Practice Previous Years</p>
+            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Solve real UPSC questions from past years to build exam temperament.</p>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/pyq')}
+            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#7C3AED', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+          >
+            Browse PYQs →
+          </button>
         </div>
       </div>
 
-      {/* Streak card */}
-      <div style={{
-        borderRadius: 32,
-        background: '#FFFFFF',
-        boxShadow: '0 4px 6px -4px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.1)',
-        padding: 32,
-        display: 'flex', alignItems: 'center', gap: 24,
-      }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/fire-emoji.png" alt="streak" style={{ width: 52, height: 52, objectFit: 'contain', flexShrink: 0 }} />
-        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: '#0F172B', margin: 0, lineHeight: '28px' }}>
-            {streak
-              ? `${streak.days}-day streak – you're in the top ${streak.percentile}%!`
-              : "12-day streak – you're in the top 18%!"}
-          </h3>
-          <p style={{ fontSize: 16, color: '#364153', margin: 0, lineHeight: '26px' }}>
-            {streak?.message || (
-              <>
-                Come back tomorrow to extend your streak.{' '}
-                <strong style={{ fontWeight: 600 }}>Consistent practice</strong>{' '}
-                is the biggest predictor of clearing Prelims. See you tomorrow!
-              </>
-            )}
-          </p>
+      {/* Other Actions */}
+      <div style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #E5E7EB', padding: '20px 24px' }}>
+        <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6A7282', marginBottom: '12px' }}>
+          OTHER ACTIONS
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => router.push('/dashboard')}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '99px', border: '1px solid #E5E7EB', background: '#FFFFFF', fontSize: '13px', fontWeight: 600, color: '#374151', cursor: 'pointer' }}
+          >
+            🏠 Back to Dashboard
+          </button>
+          <button
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '99px', border: '1px solid #FDE68A', background: '#FFFBEB', fontSize: '13px', fontWeight: 600, color: '#B45309', cursor: 'pointer' }}
+          >
+            🔗 Share Result
+          </button>
         </div>
       </div>
     </div>
@@ -748,176 +727,523 @@ function MockTestResultsInner() {
       : pct >= 50 ? 'Good attempt — solid foundation'
       : 'Keep practising — real progress ahead';
 
-    const gradeFor = (s: number, m: number): string => {
-      const p = m > 0 ? (s / m) * 100 : 0;
-      if (p >= 85) return 'A';
-      if (p >= 75) return 'A-';
-      if (p >= 65) return 'B+';
-      if (p >= 55) return 'B';
-      if (p >= 45) return 'C+';
-      if (p >= 35) return 'C';
-      return 'D';
-    };
+    const selected = mainsData[Math.min(selectedQ, mainsData.length - 1)];
+
+    if (activeTab === 'next-steps') {
+      return (
+        <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
+          <div style={{ maxWidth: 988, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('review');
+                if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#374151', fontWeight: 700, fontSize: 14, cursor: 'pointer', padding: 0 }}
+            >
+              ← Back to results
+            </button>
+            {nextStepsContent}
+          </div>
+        </div>
+      );
+    }
 
     return (
+      <>
       <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
         <div style={{ maxWidth: 960, margin: '0 auto' }}>
-          <button
-            type="button"
-            onClick={() => router.push('/dashboard/mock-tests')}
-            style={{ background: 'transparent', border: 'none', color: '#374151', fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}
-          >
-            ← Back to Mock Tests
-          </button>
-
           {/* Header card — always visible */}
-          <div style={{ borderRadius: 24, background: '#0F172B', overflow: 'hidden', marginBottom: 24 }}>
-            <div style={{ padding: '28px 32px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: '#1E3A5F', flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#FBBF24', textTransform: 'uppercase', marginBottom: 8 }}>
-                  🖥 AI EVALUATION COMPLETE
+          <div style={{ borderRadius: 20, background: '#0F172B', overflow: 'hidden', marginBottom: 24 }}>
+            <div style={{ padding: '36px 40px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, background: '#0F172B', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', color: '#FBBF24', textTransform: 'uppercase', marginBottom: 16 }}>
+                  JEET AI &middot; EVALUATION READY
                 </div>
-                <h2 style={{ fontSize: 24, fontWeight: 800, color: '#FFFFFF', margin: '0 0 4px' }}>{headline}</h2>
-                <p style={{ fontSize: 14, color: '#94A3B8', margin: 0 }}>
-                  {title} · Mains · {mainsData.length} Questions evaluated
+                <h2 style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontSize: 36, fontWeight: 700, color: '#FFFFFF', margin: '0 0 12px', lineHeight: 1.15 }}>
+                  Your mock has been <em style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontStyle: 'italic', color: '#FBBF24' }}>evaluated</em>.
+                </h2>
+                <p style={{ fontSize: 15, color: '#94A3B8', margin: 0, lineHeight: 1.5 }}>
+                  Below is your aggregated scorecard along with model answers and improvement notes for each question.
                 </p>
               </div>
-              <div style={{ position: 'relative', width: 96, height: 96 }}>
-                <svg width="96" height="96" viewBox="0 0 96 96" style={{ transform: 'rotate(-90deg)' }}>
-                  <circle cx="48" cy="48" r="42" fill="none" stroke="#64748B" strokeWidth="6" />
+              <div style={{ position: 'relative', width: 120, height: 120, flexShrink: 0 }}>
+                <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="#D4C9A8" strokeWidth="8" />
                   <circle
-                    cx="48" cy="48" r="42" fill="none" stroke="#FBBF24" strokeWidth="6"
-                    strokeDasharray={`${2 * Math.PI * 42}`}
-                    strokeDashoffset={2 * Math.PI * 42 * (1 - Math.min(1, Math.max(0, pct / 100)))}
+                    cx="60" cy="60" r="52" fill="none" stroke="#C8A84E" strokeWidth="8"
+                    strokeDasharray={`${2 * Math.PI * 52}`}
+                    strokeDashoffset={2 * Math.PI * 52 * (1 - Math.min(1, Math.max(0, pct / 100)))}
                     strokeLinecap="round"
                   />
                 </svg>
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 20, fontWeight: 800, color: '#FFFFFF', lineHeight: 1 }}>{pct}%</span>
-                  <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600, letterSpacing: '0.1em', marginTop: 4 }}>MARKS</span>
+                  <span style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontSize: 34, fontWeight: 700, color: '#FFFFFF', lineHeight: 1, fontStyle: 'italic' }}>{totalScore}</span>
+                  <span style={{ fontSize: 16, color: '#64748B', fontWeight: 500, marginTop: 2 }}>/ {totalMax}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Tab bar */}
-          {tabBar}
+          {/* Per-question score card */}
+          {(() => {
+            const q = mainsData[Math.min(selectedQ, mainsData.length - 1)];
+            const qPct = q.maxScore > 0 ? Math.round((q.score / q.maxScore) * 100) : 0;
+            const detailedParas = (q.detailedFeedback || '').split(/\n+/).map((s) => s.trim()).filter(Boolean);
+            const checkedPages = (q.checkedCopyPages || []).filter((p) => p.checkedCopyUrl);
+            const displayPages = checkedPages.length > 0
+              ? checkedPages
+              : q.checkedCopyUrl ? [{ pageNumber: 1, checkedCopyUrl: q.checkedCopyUrl }] : [];
+            const markupReady = displayPages.length > 0;
 
-          {/* Next steps tab */}
-          {activeTab === 'next-steps' && nextStepsContent}
+            const summaryCards = [
+              { id: 'score', label: 'Question Score', value: `${q.score}/${q.maxScore}`, hint: `${qPct}% examiner alignment`, variant: 'dramatic' as const, accent: '#FDC700', glow: 'rgba(253,199,0,0.35)', glowInner: 'rgba(253,199,0,0.08)' },
+              { id: 'str', label: 'Strong Points', value: `${q.strengths.length}`, hint: 'Well-handled elements', variant: 'dramatic' as const, accent: '#16A34A', glow: 'rgba(22,163,74,0.30)', glowInner: 'rgba(22,163,74,0.07)' },
+              { id: 'imp', label: 'Needs Work', value: `${q.improvements.length}`, hint: 'Priority fix areas', variant: 'dramatic' as const, accent: '#EF4444', glow: 'rgba(239,68,68,0.30)', glowInner: 'rgba(239,68,68,0.07)' },
+              { id: 'words', label: 'Word Count', value: `${q.wordCount ?? 0}`, hint: 'From your submission', variant: 'dramatic' as const, accent: '#6366F1', glow: 'rgba(99,102,241,0.30)', glowInner: 'rgba(99,102,241,0.07)' },
+            ];
 
-          {/* Review tab */}
-          {activeTab === 'review' && (
-            <>
+            const innerSlides: Array<{ key: MainsSlideKey; label: string }> = [
+              { key: 'feedback', label: 'Feedback' },
+              { key: 'markup', label: "Examiner's Markup" },
+              { key: 'rubric', label: 'Score Breakdown' },
+            ];
+
+            return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {mainsData.map((q) => {
-                  const grade = gradeFor(q.score, q.maxScore);
-                  return (
-                    <div key={q.idx} style={{ background: '#F1F5F9', borderRadius: 16, padding: '22px 24px' }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#64748B', marginBottom: 10 }}>
-                        QUESTION {q.idx}{q.subject ? ` · ${q.subject.toUpperCase()}` : ''}
-                      </div>
-                      <p style={{ fontSize: 15, lineHeight: '24px', color: '#334155', margin: '0 0 14px', whiteSpace: 'pre-line' }}>
-                        {q.questionText}
-                      </p>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
-                        <span style={{ fontSize: 28, fontWeight: 800, color: '#1E3A5F' }}>{grade}</span>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: '#64748B' }}>
-                          {q.score}/{q.maxScore} marks
+                {/* Question selector */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {mainsData.map((mq, i) => {
+                    const active = i === selectedQ;
+                    const mPct = mq.maxScore > 0 ? Math.round((mq.score / mq.maxScore) * 100) : 0;
+                    const tone = mPct >= 60 ? '#16A34A' : mPct >= 40 ? '#D97706' : '#DC2626';
+                    return (
+                      <button
+                        key={mq.idx}
+                        onClick={() => { setSelectedQ(i); setQSlide('feedback'); }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '9px 14px', borderRadius: 10, cursor: 'pointer',
+                          border: active ? '1.5px solid #17223E' : '1px solid #E5E7EB',
+                          background: active ? '#17223E' : '#FFFFFF',
+                          color: active ? '#FFFFFF' : '#374151',
+                          fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+                        }}
+                      >
+                        Q{mq.idx}
+                        <span style={{ fontSize: 11, fontWeight: 700, color: active ? '#FDC700' : tone }}>
+                          {mq.score}/{mq.maxScore}
                         </span>
-                        {typeof q.wordCount === 'number' && q.wordCount > 0 && (
-                          <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', background: '#E2E8F0', borderRadius: 8, padding: '4px 10px' }}>
-                            {q.wordCount} words
-                          </span>
-                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Question text + score hero */}
+                <div style={{ borderRadius: 14, background: '#FFFFFF', padding: '24px 28px', border: '1px solid #E5E7EB' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {q.paper && (
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#7C3AED', background: '#F3E8FF', borderRadius: 8, padding: '4px 10px' }}>
+                          {q.paper}
+                        </span>
+                      )}
+                      {q.subject && (
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#2563EB', background: '#DBEAFE', borderRadius: 8, padding: '4px 10px' }}>
+                          {q.subject}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#6B7280', textTransform: 'uppercase' }}>
+                      Question {q.idx}
+                    </span>
+                  </div>
+                  <div className="p-5 rounded-[10px] bg-[#F9FAFB]" style={{ boxShadow: '0px 1px 2px -1px #0000001A', borderLeft: '4px solid #C9A84C' }}>
+                    <p className="text-[#101828] italic" style={{ fontSize: '16px', lineHeight: '26px', fontFamily: 'var(--font-merriweather)', margin: 0, whiteSpace: 'pre-line' }}>
+                      &quot;{q.questionText}&quot;
+                    </p>
+                  </div>
+                </div>
+
+                {/* Inner slide tabs */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {innerSlides.map((s) => (
+                    <button
+                      key={s.key}
+                      onClick={() => setQSlide(s.key)}
+                      style={{
+                        padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                        border: qSlide === s.key ? 'none' : '1px solid #E5E7EB',
+                        background: qSlide === s.key ? '#17223E' : '#FFFFFF',
+                        color: qSlide === s.key ? '#FFFFFF' : '#4A5565',
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* FEEDBACK slide */}
+                {qSlide === 'feedback' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {/* Summary metric cards */}
+                    <style>{`
+                      .stat-card-float {
+                        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+                        cursor: default;
+                      }
+                      .stat-card-float .stat-glow-bar {
+                        transition: height 0.3s ease, opacity 0.3s ease;
+                        height: 2px;
+                        opacity: 0.4;
+                      }
+                      .stat-card-float:hover {
+                        transform: translateY(-6px) !important;
+                        box-shadow:
+                          0 20px 50px rgba(0,0,0,0.08),
+                          0 8px 20px rgba(0,0,0,0.05),
+                          0 0 0 1px rgba(255,255,255,0.95) inset !important;
+                      }
+                      .stat-card-float:hover .stat-glow-bar {
+                        height: 6px !important;
+                        opacity: 1 !important;
+                      }
+                    `}</style>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+                      {summaryCards.map((m) => (
+                        <div key={m.id} className="stat-card-float flex flex-col items-center justify-center rounded-[16px]" style={{
+                          padding: '22px 16px 20px',
+                          background: 'rgba(255,255,255,0.75)',
+                          backdropFilter: 'blur(16px)',
+                          WebkitBackdropFilter: 'blur(16px)',
+                          boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,0.9) inset',
+                          border: '1px solid rgba(255,255,255,0.6)',
+                          position: 'relative',
+                          overflow: 'hidden',
+                        }}>
+                          <div className="stat-glow-bar" style={{ position: 'absolute', top: 0, left: 0, right: 0, background: `linear-gradient(90deg, transparent 5%, ${m.accent} 50%, transparent 95%)`, borderRadius: '0 0 4px 4px' }} />
+                          <span style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 12, position: 'relative' }}>{m.label}</span>
+                          <span style={{ fontSize: 32, fontWeight: 800, color: m.accent, letterSpacing: '-1px', position: 'relative' }}>{m.value}</span>
+                          <span className="text-center" style={{ fontSize: 11, color: '#94A3B8', lineHeight: '16px', marginTop: 10, position: 'relative' }}>{m.hint}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Personalised Feedback */}
+                    <div style={{ background: '#FFFFFF', borderRadius: 14, boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '28px 28px 24px' }}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span style={{ fontSize: 20 }}>🎯</span>
+                        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#101828' }}>Personalised Feedback</h2>
                       </div>
-
-                      {(() => {
-                        const checkedCopyPages = (q.checkedCopyPages || []).filter((page) => page.checkedCopyUrl);
-                        const displayCheckedCopyPages = checkedCopyPages.length > 0
-                          ? checkedCopyPages
-                          : q.checkedCopyUrl
-                            ? [{ pageNumber: 1, checkedCopyUrl: q.checkedCopyUrl }]
-                            : [];
-                        if (displayCheckedCopyPages.length === 0) return null;
-                        return (
-                          <div style={{ marginBottom: 14, border: '1px solid #E2E8F0', borderRadius: 12, background: '#FFFFFF', padding: 12 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-                              <span style={{ fontSize: 13, fontWeight: 800, color: '#991B1B' }}>Checked copy markup</span>
-                              <a href={displayCheckedCopyPages[0].checkedCopyUrl || '#'} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>
-                                Open full size
-                              </a>
-                            </div>
-                            {displayCheckedCopyPages.map((page) => (
-                              <div key={page.pageNumber} style={{ marginTop: 10 }}>
-                                <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', marginBottom: 6 }}>Page {page.pageNumber}</div>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={page.checkedCopyUrl || ''}
-                                  alt={`Checked copy page ${page.pageNumber} markup for question ${q.idx}`}
-                                  style={{ width: '100%', borderRadius: 10, border: '1px solid #E5E7EB', background: '#F8FAFC' }}
-                                />
+                      <p style={{ fontSize: 13, color: '#6A7282', marginBottom: 24 }}>Actionable insights to help you improve, not just a score</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        {/* Strengths */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span style={{ width: 28, height: 28, borderRadius: 7, background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>✅</span>
+                            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#101828' }}>What You Did Well</h3>
+                          </div>
+                          <div className="flex flex-col gap-2.5 rounded-[10px] px-4 py-3.5" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                            {q.strengths.length > 0 ? q.strengths.map((item, i) => (
+                              <div key={i} className="flex items-start gap-2">
+                                <span style={{ color: '#16A34A', fontSize: 13, flexShrink: 0, marginTop: 1 }}>→</span>
+                                <span style={{ fontSize: 13, color: '#166534', lineHeight: '20px' }}>{item}</span>
                               </div>
-                            ))}
+                            )) : (
+                              <span style={{ fontSize: 13, color: '#166534' }}>No structured strengths returned yet.</span>
+                            )}
                           </div>
-                        );
-                      })()}
-
-                      <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {q.strengths.length > 0 && (
-                          <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
-                            <span style={{ color: '#15803D', fontWeight: 700, flexShrink: 0 }}>✓ Strengths:</span>
-                            <span>{q.strengths.join(' ')}</span>
+                        </div>
+                        {/* Improvements */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span style={{ width: 28, height: 28, borderRadius: 7, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>⚠️</span>
+                            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>Areas to Improve</h3>
                           </div>
-                        )}
-                        {q.improvements.length > 0 && (
-                          <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
-                            <span style={{ color: '#EA580C', fontWeight: 700, flexShrink: 0 }}>↑ Improve:</span>
-                            <span>{q.improvements.join(' ')}</span>
+                          <div className="flex flex-col gap-2.5 rounded-[10px] px-4 py-3.5" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                            {q.improvements.length > 0 ? q.improvements.map((item, i) => (
+                              <div key={i} className="flex items-start gap-2">
+                                <span style={{ color: '#D97706', fontSize: 13, flexShrink: 0, marginTop: 1 }}>▲</span>
+                                <span style={{ fontSize: 13, color: '#92400E', lineHeight: '20px' }}>{item}</span>
+                              </div>
+                            )) : (
+                              <span style={{ fontSize: 13, color: '#92400E' }}>No improvement bullets returned.</span>
+                            )}
                           </div>
-                        )}
-                        {q.suggestions.length > 0 && (
-                          <div style={{ display: 'flex', gap: 8, fontSize: 14, color: '#334155', lineHeight: '22px' }}>
-                            <span style={{ color: '#DC2626', fontWeight: 700, flexShrink: 0 }}>✕ Key misses:</span>
-                            <span>{q.suggestions.join(' ')}</span>
+                        </div>
+                        {/* Suggestions */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span style={{ width: 28, height: 28, borderRadius: 7, background: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>💡</span>
+                            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1D4ED8' }}>Value-Add Ideas</h3>
                           </div>
-                        )}
-                        {q.detailedFeedback && (
-                          <div style={{ marginTop: 6, fontSize: 13, color: '#475569', lineHeight: '20px', background: '#FFFFFF', borderRadius: 10, padding: '10px 14px', border: '1px solid #E2E8F0' }}>
-                            {q.detailedFeedback}
+                          <div className="flex flex-col gap-2.5 rounded-[10px] px-4 py-3.5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+                            {q.suggestions.length > 0 ? q.suggestions.map((item, i) => (
+                              <div key={i} className="flex items-start gap-2">
+                                <span style={{ color: '#2563EB', fontSize: 13, flexShrink: 0, marginTop: 1 }}>◆</span>
+                                <span style={{ fontSize: 13, color: '#1E40AF', lineHeight: '20px' }}>{item}</span>
+                              </div>
+                            )) : (
+                              <span style={{ fontSize: 13, color: '#1E40AF' }}>No extra suggestions returned yet.</span>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
 
-              {/* Overall feedback */}
-              <div style={{ marginTop: 24, background: '#1E293B', borderRadius: 16, padding: '24px 28px' }}>
-                <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', color: '#94A3B8', marginBottom: 12 }}>
-                  📊 JEET SIR&apos;S OVERALL FEEDBACK
-                </div>
-                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
-                    <span>💡</span>
-                    <span>Overall you scored <strong>{totalScore}/{totalMax}</strong> ({pct}%). Focus next on the questions below 50% to lift your average quickly.</span>
-                  </li>
-                  <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
-                    <span>📖</span>
-                    <span>Layer in recent policy / current-affairs examples — examiners consistently reward contemporary linkage on mains.</span>
-                  </li>
-                  <li style={{ display: 'flex', gap: 10, color: '#E2E8F0', fontSize: 14, lineHeight: '22px' }}>
-                    <span>🎯</span>
-                    <span>Push for multi-dimensional analysis: social, economic, political, and environmental angles strengthen answers significantly.</span>
-                  </li>
-                </ul>
+                    {/* Key Terms */}
+                    {q.keyTerms && q.keyTerms.length > 0 && (
+                      <div style={{ background: '#FFFFFF', borderRadius: 14, boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '24px 28px' }}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span style={{ fontSize: 18 }}>🔑</span>
+                          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#101828' }}>Key Terms Analysis</h2>
+                        </div>
+                        <p style={{ fontSize: 13, color: '#6A7282', marginBottom: 16 }}>Terms an examiner would expect in a {q.maxScore}-mark answer</p>
+                        <div className="flex flex-wrap gap-2">
+                          {q.keyTerms.map((kt, i) => (
+                            <span key={i} className="flex items-center gap-1.5 rounded-full px-3 py-1.5" style={{ fontSize: 13, fontWeight: 500, background: kt.found ? '#F0FDF4' : '#FEF2F2', border: `1px solid ${kt.found ? '#BBF7D0' : '#FECACA'}`, color: kt.found ? '#166534' : '#B91C1C' }}>
+                              <span>{kt.found ? '✓' : '✗'}</span>{kt.term}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Next Attempt Focus */}
+                    {q.nextAttemptFocus && (
+                      <div style={{ background: '#EEF2FF', borderRadius: 14, padding: '20px 24px', border: '1px solid #C7D2FE' }}>
+                        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#4338CA', marginBottom: 10 }}>🎯 Next Attempt Focus</p>
+                        <p style={{ fontSize: 14, color: '#3730A3', lineHeight: '22px' }}>{q.nextAttemptFocus}</p>
+                      </div>
+                    )}
+
+                    {/* Evaluator's Conclusion */}
+                    {q.evaluatorConclusion && (
+                      <div style={{ background: '#F0FDF4', borderRadius: 14, padding: '20px 24px', border: '1px solid #BBF7D0' }}>
+                        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#166534', marginBottom: 10 }}>✅ Evaluator&apos;s Conclusion</p>
+                        <p style={{ fontSize: 14, color: '#14532D', lineHeight: '22px' }}>{q.evaluatorConclusion}</p>
+                      </div>
+                    )}
+
+                    {/* Model Answer CTA */}
+                    {(q.modelAnswerContent || (q.modelAnswerKeyPoints && q.modelAnswerKeyPoints.length > 0)) && (
+                      <div style={{ background: 'linear-gradient(90deg, #101828 0%, #17223E 100%)', borderRadius: 14, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                        <div>
+                          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#FDC700', marginBottom: 6 }}>📋 Model Answer Available</p>
+                          <p style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>See how an ideal answer looks</p>
+                          <p style={{ fontSize: 13, color: '#9CA3AF' }}>Compare your answer with an expert-crafted model answer.</p>
+                        </div>
+                        <button onClick={() => setModelOpen(true)} style={{ flexShrink: 0, background: '#FDC700', color: '#101828', fontWeight: 700, fontSize: 14, padding: '10px 20px', borderRadius: 10, whiteSpace: 'nowrap', border: 'none', cursor: 'pointer' }}>
+                          View Now →
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* MARKUP slide */}
+                {qSlide === 'markup' && (
+                  <div style={{ borderRadius: 14, background: '#FFFFFF', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: 32 }}>
+                    <h2 className="font-bold text-[#101828] mb-2" style={{ fontSize: 22 }}>{markupReady ? 'Checked Copy' : "Examiner's Markup"}</h2>
+                    <p className="text-[#4A5565] mb-6" style={{ fontSize: 14 }}>
+                      {markupReady ? 'Teacher-style checked copy is ready.' : 'Visual markup is generated for handwritten image uploads.'}
+                    </p>
+                    {markupReady ? (
+                      <div className="space-y-4">
+                        {displayPages.map((page) => (
+                          <div key={page.pageNumber} className="rounded-[12px] border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <span className="rounded-full bg-[#FEE2E2] px-3 py-1 text-[12px] font-bold text-[#B91C1C]">BETA</span>
+                                <span className="text-[13px] font-bold text-[#364153]">Page {page.pageNumber}</span>
+                              </div>
+                              <a href={page.checkedCopyUrl || '#'} target="_blank" rel="noreferrer" className="text-[13px] font-bold text-[#2563EB]">Open full size</a>
+                            </div>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={page.checkedCopyUrl || ''} alt={`Checked copy page ${page.pageNumber}`} className="w-full rounded-[10px]" style={{ border: '1px solid #E5E7EB', background: '#FFFFFF' }} />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <div className="rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] p-5">
+                          <h3 className="font-bold text-[#166534] mb-3" style={{ fontSize: 15 }}>Positive examiner notes</h3>
+                          {q.strengths.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {q.strengths.map((item, i) => (
+                                <span key={i} className="rounded-full px-3 py-2" style={{ background: '#DCFCE7', color: '#166534', fontSize: 13, lineHeight: '18px' }}>{item}</span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[#166534]" style={{ fontSize: 13, lineHeight: '20px' }}>Positive markup will appear here when line-level comments are returned.</p>
+                          )}
+                        </div>
+                        <div className="rounded-[12px] border border-[#FDE68A] bg-[#FEFCE8] p-5">
+                          <h3 className="font-bold text-[#A16207] mb-3" style={{ fontSize: 15 }}>Attention areas</h3>
+                          {q.improvements.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {q.improvements.map((item, i) => (
+                                <span key={i} className="rounded-full px-3 py-2" style={{ background: '#FEF3C7', color: '#A16207', fontSize: 13, lineHeight: '18px' }}>{item}</span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[#A16207]" style={{ fontSize: 13, lineHeight: '20px' }}>Improvement markup will appear here when line-level comments are returned.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div className="mt-6 rounded-[12px] border border-[#E5E7EB] bg-[#F9FAFB] p-6">
+                      <h3 className="font-bold text-[#101828] mb-3" style={{ fontSize: 16 }}>Detailed examiner commentary</h3>
+                      {detailedParas.length > 0 ? (
+                        <div className="space-y-3">
+                          {detailedParas.map((p, i) => (
+                            <p key={i} className="text-[#374151]" style={{ fontSize: 14, lineHeight: '24px' }}>{p}</p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[#4A5565]" style={{ fontSize: 14, lineHeight: '24px' }}>Detailed commentary was not returned for this submission.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* RUBRIC slide */}
+                {qSlide === 'rubric' && (
+                  <div style={{ borderRadius: 14, background: '#FFFFFF', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: 32 }}>
+                    <div className="flex items-center gap-2 mb-6">
+                      <span style={{ fontSize: 22 }}>⭐</span>
+                      <h2 className="font-bold text-[#101828]" style={{ fontSize: 22 }}>Score Breakdown</h2>
+                    </div>
+                    {q.parameterScores && q.parameterScores.length > 0 ? (
+                      <div className="flex flex-col gap-5">
+                        {q.parameterScores.map((param, idx) => {
+                          const ppct = param.maxScore > 0 ? Math.round((param.score / param.maxScore) * 100) : 0;
+                          const COLORS = [
+                            { dot: '#2563EB', pctBg: '#DBEAFE', pctText: '#1D4ED8' },
+                            { dot: '#7C3AED', pctBg: '#EDE9FE', pctText: '#5B21B6' },
+                            { dot: '#4338CA', pctBg: '#E0E7FF', pctText: '#3730A3' },
+                            { dot: '#16A34A', pctBg: '#DCFCE7', pctText: '#15803D' },
+                            { dot: '#D97706', pctBg: '#FEF3C7', pctText: '#B45309' },
+                            { dot: '#DC2626', pctBg: '#FEE2E2', pctText: '#B91C1C' },
+                            { dot: '#0D9488', pctBg: '#CCFBF1', pctText: '#0F766E' },
+                          ];
+                          const c = COLORS[idx % COLORS.length];
+                          return (
+                            <div key={param.parameter}>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: c.dot, flexShrink: 0, display: 'inline-block' }} />
+                                  <span style={{ fontSize: 15, fontWeight: 700, color: '#101828' }}>{param.parameter}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span style={{ fontSize: 15, fontWeight: 700, color: '#EA580C' }}>{param.score}/{param.maxScore}</span>
+                                  <span style={{ fontSize: 13, fontWeight: 700, color: c.pctText, background: c.pctBg, borderRadius: 6, padding: '2px 8px' }}>{ppct}%</span>
+                                </div>
+                              </div>
+                              <div style={{ width: '100%', height: 8, borderRadius: 99, background: '#E5E7EB', overflow: 'hidden', marginBottom: 8 }}>
+                                <div style={{ height: '100%', width: `${ppct}%`, background: c.dot, borderRadius: 99, transition: 'width 0.6s ease' }} />
+                              </div>
+                              {param.comment && (
+                                <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 8, padding: '10px 14px' }}>
+                                  <p style={{ fontSize: 13, color: '#374151', lineHeight: '20px' }}>{param.comment}</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-[#4A5565]" style={{ fontSize: 14, lineHeight: '24px' }}>
+                        A parameter-wise breakdown was not returned for this question.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
-            </>
-          )}
+            );
+          })()}
+
+          {/* Next → What's next to do? */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('next-steps');
+                if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '13px 30px', borderRadius: 12, border: 'none', background: '#0F172B', color: '#FFFFFF', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+            >
+              Next →
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Model Answer Modal (selected question) */}
+      {modelOpen && (
+        <div
+          onClick={() => setModelOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: '#FFFFFF', borderRadius: 16, width: '100%', maxWidth: 640, maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          >
+            <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div className="flex items-center gap-3">
+                <span style={{ fontSize: 28 }}>🌟</span>
+                <div>
+                  <p style={{ fontSize: 17, fontWeight: 700, color: '#101828' }}>AI Model Answer</p>
+                  <p style={{ fontSize: 13, color: '#6A7282' }}>Question {selected.idx} · Expert-crafted response for reference</p>
+                </div>
+              </div>
+              <button onClick={() => setModelOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#6A7282', lineHeight: 1, padding: 2 }}>×</button>
+            </div>
+            <div style={{ padding: '12px 24px', background: '#FFFBEB', borderBottom: '1px solid #FDE68A', flexShrink: 0 }}>
+              <p style={{ fontSize: 13, color: '#B45309', lineHeight: '20px' }}>
+                <strong>⚡ Reference Only</strong> — Read after you&apos;ve written your own answer. Use this to understand gaps, not to memorise.
+              </p>
+            </div>
+            <div style={{ overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {selected.modelAnswerKeyPoints && selected.modelAnswerKeyPoints.length > 0 && (
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#B45309', marginBottom: 14 }}>📌 KEY POINTS CHECKLIST</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {selected.modelAnswerKeyPoints.map((point, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: '12px 16px' }}>
+                        <span style={{ flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: '#17223E', color: '#FFFFFF', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
+                        <p style={{ fontSize: 14, color: '#374151', lineHeight: '22px' }}>{point}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6A7282', marginBottom: 16 }}>📄 FULL MODEL ANSWER</p>
+                {selected.modelAnswerContent ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {selected.modelAnswerContent.split(/\n+/).map((p) => p.trim()).filter(Boolean).map((paragraph, i) => {
+                      const colonIdx = paragraph.indexOf(':');
+                      const looksLikeHeading = colonIdx > 0 && colonIdx < 60 && !paragraph.startsWith('"');
+                      return (
+                        <p key={i} style={{ fontSize: 15, color: '#1F2937', lineHeight: '26px' }}>
+                          {looksLikeHeading ? (<><strong>{paragraph.slice(0, colonIdx + 1)}</strong>{paragraph.slice(colonIdx + 1)}</>) : paragraph}
+                        </p>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 14, color: '#6A7282', fontStyle: 'italic' }}>Full model answer will appear here once available for this question.</p>
+                )}
+              </div>
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: 12, flexShrink: 0 }}>
+              <button onClick={() => setModelOpen(false)} style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid #E5E7EB', background: '#FFFFFF', fontSize: 14, fontWeight: 600, color: '#374151', cursor: 'pointer' }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
     );
   }
 
@@ -1059,13 +1385,21 @@ function MockTestResultsInner() {
           </div>
         </div>
 
-        {/* Tab bar */}
-        {tabBar}
+        {/* Next steps view */}
+        {activeTab === 'next-steps' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('review')}
+              style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#374151', fontWeight: 700, fontSize: 14, cursor: 'pointer', padding: 0 }}
+            >
+              ← Back to answers
+            </button>
+            {nextStepsContent}
+          </div>
+        )}
 
-        {/* Next steps tab */}
-        {activeTab === 'next-steps' && nextStepsContent}
-
-        {/* Review tab */}
+        {/* Review view */}
         {activeTab === 'review' && (
           <div id="mt-full-analysis" style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800, color: '#101828', marginBottom: 12 }}>
@@ -1262,6 +1596,19 @@ function MockTestResultsInner() {
                   </div>
                 );
               })}
+            </div>
+            {/* Next → reveals the recommendations */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('next-steps');
+                  if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 28px', borderRadius: 12, border: 'none', background: '#17223E', color: '#FFFFFF', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+              >
+                Next →
+              </button>
             </div>
           </div>
         )}

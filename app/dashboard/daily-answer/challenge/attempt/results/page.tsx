@@ -1,9 +1,16 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { dailyAnswerService } from '@/lib/services';
+
+interface ParameterScore {
+  parameter: string;
+  score: number;
+  maxScore: number;
+  comment?: string;
+}
 
 interface ResultsData {
   score: number;
@@ -18,6 +25,22 @@ interface ResultsData {
   annotationPlan?: unknown;
   wordCount?: number | null;
   submittedAt?: string | null;
+  keyTerms?: Array<{ term: string; found: boolean }>;
+  nextAttemptFocus?: string | null;
+  evaluatorConclusion?: string | null;
+  modelAnswerUrl?: string | null;
+  modelAnswerKeyPoints?: string[];
+  modelAnswerContent?: string;
+  parameterScores?: ParameterScore[];
+  question?: {
+    title: string;
+    subject: string;
+    paper: string;
+    date: string;
+    marks: number;
+    wordLimit: number;
+    timeLimit: number;
+  };
 }
 
 type SlideKey = 'feedback' | 'markup' | 'rubric' | 'next';
@@ -25,20 +48,25 @@ type SlideKey = 'feedback' | 'markup' | 'rubric' | 'next';
 const BETA_DISCLAIMER =
   'Jeet AI Mentor is currently in beta and evolving every day alongside you. Our evaluation engine is built to deliver meaningful, structured, and exam-relevant feedback, but it can still make mistakes. Use it as a smart companion alongside your mentors, notes, and judgment.';
 
-export default function ResultsPage() {
+function ResultsPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const dateParam = searchParams.get('date');
   const [data, setData] = useState<ResultsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [slide, setSlide] = useState<SlideKey>('feedback');
+  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
+  const [modelAnswerOpen, setModelAnswerOpen] = useState(false);
 
   useEffect(() => {
+    if (dateParam) return;
     if (typeof window !== 'undefined') {
       const storedAttemptId = sessionStorage.getItem('dailyAnswerAttemptId');
       if (storedAttemptId) setAttemptId(storedAttemptId);
     }
-  }, []);
+  }, [dateParam]);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,11 +74,11 @@ export default function ResultsPage() {
     setLoading(true);
     setError(null);
 
-    dailyAnswerService.getResults(attemptId || undefined)
+    dailyAnswerService.getResults(dateParam ? undefined : attemptId || undefined, dateParam || undefined)
       .then((res) => {
         if (cancelled) return;
         setData(res.data);
-        if (typeof window !== 'undefined') {
+        if (!dateParam && typeof window !== 'undefined') {
           sessionStorage.removeItem('dailyAnswerAttemptId');
         }
       })
@@ -65,12 +93,12 @@ export default function ResultsPage() {
     return () => {
       cancelled = true;
     };
-  }, [attemptId]);
+  }, [attemptId, dateParam]);
 
   const slides: Array<{ key: SlideKey; label: string }> = [
     { key: 'feedback', label: 'Feedback' },
     { key: 'markup', label: "Examiner's Markup" },
-    { key: 'rubric', label: 'Score' },
+    { key: 'rubric', label: 'Score Breakdown' },
     { key: 'next', label: "What's Next" },
   ];
 
@@ -168,7 +196,7 @@ export default function ResultsPage() {
     return (
       <div
         className="min-h-screen font-arimo flex items-center justify-center"
-        style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}
+        style={{ background: '#FAFBFE' }}
       >
         <div className="text-center px-6">
           <h2 className="text-xl font-bold text-gray-800 mb-2">Could not load results</h2>
@@ -182,8 +210,14 @@ export default function ResultsPage() {
   }
 
   return (
-    <div className="min-h-screen font-arimo" style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}>
+    <>
+    <div className="min-h-screen font-arimo" style={{ background: '#FAFBFE' }}>
       <div className="flex flex-col items-center py-10 px-6 gap-6">
+        {data.question && (
+          <p className="text-[#4A5565]" style={{ width: '100%', maxWidth: '988px', fontSize: '13px', fontWeight: 500 }}>
+            Result · {new Date(`${data.question.date}T00:00:00.000Z`).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })} · {data.question.paper} · {data.question.subject}
+          </p>
+        )}
         <div
           className="flex flex-col items-center justify-center px-6"
           style={{
@@ -234,27 +268,9 @@ export default function ResultsPage() {
         </div>
 
         {slide === 'feedback' && (
-          <div
-            style={{
-              width: '100%', maxWidth: '988px',
-              borderRadius: '14px',
-              background: '#FFFFFF',
-              boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
-              padding: '32px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '24px',
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/feedback-header.png" alt="Personalized Feedback" style={{ width: '100%', maxWidth: '924px', objectFit: 'fill' }} />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/feedback-subtitle.png"
-              alt="Actionable insights to help you improve, not just a score"
-              style={{ width: '100%', maxWidth: '924px', objectFit: 'fill' }}
-            />
+          <div style={{ width: '100%', maxWidth: '988px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
+            {/* Summary metric cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {summaryCards.map((metric) => (
                 <div
@@ -273,59 +289,180 @@ export default function ResultsPage() {
               ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="rounded-[10px] border border-[#B9F8CF] bg-[#F0FDF4] p-5">
-                <h3 className="font-bold text-[#0D542B] mb-3" style={{ fontSize: '15px' }}>What You Did Well</h3>
-                {strengths.length > 0 ? (
-                  <ul className="space-y-2">
-                    {strengths.map((item, index) => (
-                      <li key={`${item}-${index}`} className="flex items-start gap-2 text-[#0D542B]" style={{ fontSize: '13px', lineHeight: '20px' }}>
-                        <span className="mt-0.5 flex-shrink-0">&#10003;</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-[#166534]" style={{ fontSize: '13px', lineHeight: '20px' }}>
-                    The evaluator did not return structured strengths for this answer yet.
-                  </p>
-                )}
+            {/* Personalised Feedback card — new design */}
+            <div style={{ background: '#FFFFFF', borderRadius: '14px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '28px 28px 24px' }}>
+              <div className="flex items-center gap-2 mb-1">
+                <span style={{ fontSize: '20px' }}>🎯</span>
+                <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#101828' }}>Personalised Feedback</h2>
               </div>
+              <p style={{ fontSize: '13px', color: '#6A7282', marginBottom: '24px' }}>Actionable insights to help you improve, not just a score</p>
 
-              <div className="rounded-[10px] border border-[#FFF085] bg-[#FEFCE8] p-5">
-                <h3 className="font-bold text-[#713F12] mb-3" style={{ fontSize: '15px' }}>Areas to Improve</h3>
-                {improvements.length > 0 ? (
-                  <ul className="space-y-2">
-                    {improvements.map((item, index) => (
-                      <li key={`${item}-${index}`} className="flex items-start gap-2 text-[#713F12]" style={{ fontSize: '13px', lineHeight: '20px' }}>
-                        <span className="mt-0.5 flex-shrink-0">&#9888;</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-[#713F12]" style={{ fontSize: '13px', lineHeight: '20px' }}>
-                    No explicit improvement bullets were returned by the evaluator.
-                  </p>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                {/* What You Did Well */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span style={{ width: '28px', height: '28px', borderRadius: '7px', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>✅</span>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#101828' }}>What You Did Well</h3>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {strengths.length > 0 ? strengths.map((item, i) => (
+                      <div key={i} className="flex items-start gap-2 rounded-[8px] px-3 py-2.5" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                        <span style={{ color: '#16A34A', fontSize: '13px', flexShrink: 0, marginTop: '1px' }}>→</span>
+                        <span style={{ fontSize: '13px', color: '#166534', lineHeight: '20px' }}>{item}</span>
+                      </div>
+                    )) : (
+                      <div className="rounded-[8px] px-3 py-2.5" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                        <span style={{ fontSize: '13px', color: '#166534' }}>The evaluator did not return structured strengths yet.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Areas to Improve */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span style={{ width: '28px', height: '28px', borderRadius: '7px', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>⚠️</span>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#92400E' }}>Areas to Improve</h3>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {improvements.length > 0 ? improvements.map((item, i) => (
+                      <div key={i} className="flex items-start gap-2 rounded-[8px] px-3 py-2.5" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                        <span style={{ color: '#D97706', fontSize: '13px', flexShrink: 0, marginTop: '1px' }}>▲</span>
+                        <span style={{ fontSize: '13px', color: '#92400E', lineHeight: '20px' }}>{item}</span>
+                      </div>
+                    )) : (
+                      <div className="rounded-[8px] px-3 py-2.5" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                        <span style={{ fontSize: '13px', color: '#92400E' }}>No improvement bullets returned by the evaluator.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Value-Add Ideas */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span style={{ width: '28px', height: '28px', borderRadius: '7px', background: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>💡</span>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1D4ED8' }}>Value-Add Ideas</h3>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {suggestions.length > 0 ? suggestions.map((item, i) => (
+                      <div key={i} className="flex items-start gap-2 rounded-[8px] px-3 py-2.5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+                        <span style={{ color: '#2563EB', fontSize: '13px', flexShrink: 0, marginTop: '1px' }}>◆</span>
+                        <span style={{ fontSize: '13px', color: '#1E40AF', lineHeight: '20px' }}>{item}</span>
+                      </div>
+                    )) : (
+                      <div className="rounded-[8px] px-3 py-2.5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+                        <span style={{ fontSize: '13px', color: '#1E40AF' }}>No extra suggestions returned for this answer yet.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
+            </div>
 
-              <div className="rounded-[10px] border border-[#E5E7EB] bg-[#F9FAFB] p-5">
-                <h3 className="font-bold text-[#101828] mb-3" style={{ fontSize: '15px' }}>Value-Add Ideas</h3>
-                {suggestions.length > 0 ? (
-                  <ul className="space-y-2">
-                    {suggestions.map((item, index) => (
-                      <li key={`${item}-${index}`} className="flex items-start gap-2 text-[#374151]" style={{ fontSize: '13px', lineHeight: '20px' }}>
-                        <span className="mt-0.5 flex-shrink-0">&#128161;</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-[#374151]" style={{ fontSize: '13px', lineHeight: '20px' }}>
-                    No extra suggestions were returned for this answer yet.
-                  </p>
+            {/* Key Terms Analysis */}
+            {(data.keyTerms && data.keyTerms.length > 0) && (
+              <div style={{ background: '#FFFFFF', borderRadius: '14px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '24px 28px' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span style={{ fontSize: '18px' }}>🔑</span>
+                  <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#101828' }}>Key Terms Analysis</h2>
+                </div>
+                <p style={{ fontSize: '13px', color: '#6A7282', marginBottom: '16px' }}>
+                  Terms an examiner would expect to see in a {data.question?.marks ?? 15}-mark answer
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {data.keyTerms.map((kt, i) => (
+                    <span
+                      key={i}
+                      className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        background: kt.found ? '#F0FDF4' : '#FEF2F2',
+                        border: `1px solid ${kt.found ? '#BBF7D0' : '#FECACA'}`,
+                        color: kt.found ? '#166534' : '#B91C1C',
+                      }}
+                    >
+                      <span>{kt.found ? '✓' : '✗'}</span>
+                      {kt.term}
+                    </span>
+                  ))}
+                </div>
+                <p style={{ fontSize: '13px', color: '#B91C1C' }}>
+                  <strong>✗ Missed</strong> <span style={{ color: '#6A7282' }}>terms should appear in your next attempt.</span>
+                </p>
+              </div>
+            )}
+
+            {/* Next Attempt Focus */}
+            {data.nextAttemptFocus && (
+              <div style={{ background: '#EEF2FF', borderRadius: '14px', padding: '20px 24px', border: '1px solid #C7D2FE' }}>
+                <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#4338CA', marginBottom: '10px' }}>
+                  🎯 Next Attempt Focus
+                </p>
+                <p style={{ fontSize: '14px', color: '#3730A3', lineHeight: '22px' }}>{data.nextAttemptFocus}</p>
+              </div>
+            )}
+
+            {/* Evaluator's Conclusion */}
+            {data.evaluatorConclusion && (
+              <div style={{ background: '#F0FDF4', borderRadius: '14px', padding: '20px 24px', border: '1px solid #BBF7D0' }}>
+                <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#166534', marginBottom: '10px' }}>
+                  ✅ Evaluator&apos;s Conclusion
+                </p>
+                <p style={{ fontSize: '14px', color: '#14532D', lineHeight: '22px' }}>{data.evaluatorConclusion}</p>
+              </div>
+            )}
+
+            {/* Model Answer CTA */}
+            <div style={{ background: 'linear-gradient(90deg, #101828 0%, #17223E 100%)', borderRadius: '14px', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+              <div>
+                <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#FDC700', marginBottom: '6px' }}>
+                  📋 Model Answer Available
+                </p>
+                <p style={{ fontSize: '15px', fontWeight: 700, color: '#FFFFFF', marginBottom: '4px' }}>See how an ideal answer looks</p>
+                <p style={{ fontSize: '13px', color: '#9CA3AF' }}>Compare your answer with an expert-crafted model answer written by our UPSC faculty.</p>
+              </div>
+              <button
+                onClick={() => setModelAnswerOpen(true)}
+                style={{ flexShrink: 0, background: '#FDC700', color: '#101828', fontWeight: 700, fontSize: '14px', padding: '10px 20px', borderRadius: '10px', whiteSpace: 'nowrap', border: 'none', cursor: 'pointer' }}
+              >
+                View Now →
+              </button>
+            </div>
+
+            {/* Bottom action bar */}
+            <div style={{ background: '#FFFFFF', borderRadius: '14px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              <button
+                onClick={() => router.push('/dashboard/daily-answer')}
+                className="flex items-center gap-2 text-[#4A5565] hover:text-[#101828] transition-colors"
+                style={{ fontSize: '14px', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                ← 🏠 Back to Dashboard
+              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#FFFFFF', fontSize: '13px', fontWeight: 600, color: '#374151', cursor: 'pointer' }}>
+                  🔗 Share
+                </button>
+                <button style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#FFFFFF', fontSize: '13px', fontWeight: 600, color: '#374151', cursor: 'pointer' }}>
+                  📥 Download PDF
+                </button>
+                {data.checkedCopyUrl && (
+                  <a
+                    href={data.checkedCopyUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#FFFFFF', fontSize: '13px', fontWeight: 600, color: '#374151', textDecoration: 'none' }}
+                  >
+                    📋 Download Copy
+                  </a>
                 )}
+                <button
+                  onClick={() => router.push('/dashboard/daily-answer/challenge')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '8px', background: '#17223E', fontSize: '13px', fontWeight: 700, color: '#FFFFFF', border: 'none', cursor: 'pointer' }}
+                >
+                  ✏️ Rewrite Answer
+                </button>
               </div>
             </div>
           </div>
@@ -342,7 +479,7 @@ export default function ResultsPage() {
             }}
           >
             <h2 className="font-bold text-[#101828] mb-2" style={{ fontSize: '22px' }}>
-              {checkedCopyReady ? 'Checked Copy' : 'Examiner&apos;s Markup'}
+              {checkedCopyReady ? 'Checked Copy' : "Examiner's Markup"}
             </h2>
             <p className="text-[#4A5565] mb-6" style={{ fontSize: '14px' }}>
               {markupLabel}
@@ -446,89 +583,407 @@ export default function ResultsPage() {
               padding: '32px',
             }}
           >
-            <h2 className="font-bold text-[#101828] mb-3" style={{ fontSize: '22px' }}>
-              Score Snapshot
-            </h2>
-            <p className="text-[#4A5565] mb-6" style={{ fontSize: '14px' }}>
-              The current backend returns an overall examiner score, plus structured strengths and improvement points.
-            </p>
-
-            <div className="mb-8">
-              <div className="flex justify-between text-sm text-[#101828] mb-2">
-                <span className="font-semibold">Overall evaluation score</span>
-                <span>{score}/{maxScore}</span>
-              </div>
-              <div className="w-full h-3 bg-[#E5E7EB] rounded-full overflow-hidden">
-                <div className="h-full bg-[#17223E]" style={{ width: `${scorePercent}%` }} />
-              </div>
+            <div className="flex items-center gap-2 mb-6">
+              <span style={{ fontSize: '22px' }}>⭐</span>
+              <h2 className="font-bold text-[#101828]" style={{ fontSize: '22px' }}>
+                7-Parameter Score Breakdown
+              </h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {rubricCards.map((card) => (
-                <div key={card.label} className="rounded-[12px] border border-[#E5E7EB] bg-[#F9FAFB] p-5">
-                  <div className="text-[#6A7282] uppercase mb-2" style={{ fontSize: '11px', letterSpacing: '0.4px', fontWeight: 700 }}>
-                    {card.label}
+            {data.parameterScores && data.parameterScores.length > 0 ? (
+              <div className="flex flex-col gap-5">
+                {data.parameterScores.map((param, idx) => {
+                  const pct = param.maxScore > 0 ? Math.round((param.score / param.maxScore) * 100) : 0;
+                  const PARAM_COLORS = [
+                    { dot: '#2563EB', bar: '#2563EB', score: '#EA580C', pctBg: '#DBEAFE', pctText: '#1D4ED8' },
+                    { dot: '#7C3AED', bar: '#7C3AED', score: '#EA580C', pctBg: '#EDE9FE', pctText: '#5B21B6' },
+                    { dot: '#4338CA', bar: '#4338CA', score: '#EA580C', pctBg: '#E0E7FF', pctText: '#3730A3' },
+                    { dot: '#16A34A', bar: '#16A34A', score: '#EA580C', pctBg: '#DCFCE7', pctText: '#15803D' },
+                    { dot: '#D97706', bar: '#D97706', score: '#EA580C', pctBg: '#FEF3C7', pctText: '#B45309' },
+                    { dot: '#DC2626', bar: '#DC2626', score: '#EA580C', pctBg: '#FEE2E2', pctText: '#B91C1C' },
+                    { dot: '#0D9488', bar: '#0D9488', score: '#EA580C', pctBg: '#CCFBF1', pctText: '#0F766E' },
+                  ];
+                  const c = PARAM_COLORS[idx % PARAM_COLORS.length];
+                  return (
+                    <div key={param.parameter}>
+                      {/* Header row */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: c.dot, flexShrink: 0, display: 'inline-block' }} />
+                          <span style={{ fontSize: '15px', fontWeight: 700, color: '#101828' }}>{param.parameter}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span style={{ fontSize: '15px', fontWeight: 700, color: c.score }}>{param.score}/{param.maxScore}</span>
+                          <span style={{ fontSize: '13px', fontWeight: 700, color: c.pctText, background: c.pctBg, borderRadius: '6px', padding: '2px 8px' }}>{pct}%</span>
+                        </div>
+                      </div>
+                      {/* Progress bar */}
+                      <div style={{ width: '100%', height: '8px', borderRadius: '99px', background: '#E5E7EB', overflow: 'hidden', marginBottom: '8px' }}>
+                        <div style={{ height: '100%', width: `${pct}%`, background: c.bar, borderRadius: '99px', transition: 'width 0.6s ease' }} />
+                      </div>
+                      {/* Comment */}
+                      {param.comment && (
+                        <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '10px 14px' }}>
+                          <p style={{ fontSize: '13px', color: '#374151', lineHeight: '20px' }}>{param.comment}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                {[
+                  { label: 'Demand Fulfilment', dot: '#2563EB' },
+                  { label: 'Conceptual Clarity', dot: '#7C3AED' },
+                  { label: 'Analysis & Depth', dot: '#4338CA' },
+                  { label: 'Knowledge Enrichment', dot: '#16A34A' },
+                  { label: 'Structure & Flow', dot: '#D97706' },
+                  { label: 'Value Addition', dot: '#DC2626' },
+                  { label: 'Presentation', dot: '#0D9488' },
+                ].map((p) => (
+                  <div key={p.label}>
+                    {/* Label row */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: p.dot, flexShrink: 0, display: 'inline-block' }} />
+                        <span style={{ fontSize: '15px', fontWeight: 700, color: '#101828' }}>{p.label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span style={{ width: '44px', height: '16px', borderRadius: '4px', background: '#D1D5DB', display: 'inline-block' }} />
+                        <span style={{ width: '34px', height: '22px', borderRadius: '6px', background: '#D1D5DB', display: 'inline-block' }} />
+                      </div>
+                    </div>
+                    {/* Progress bar placeholder */}
+                    <div style={{ width: '100%', height: '8px', borderRadius: '99px', background: '#E5E7EB', marginBottom: '10px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: '68%', borderRadius: '99px', background: '#D1D5DB' }} />
+                    </div>
+                    {/* Comment placeholder */}
+                    <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '12px 14px' }}>
+                      <div style={{ height: '12px', borderRadius: '4px', background: '#D1D5DB', width: '68%' }} />
+                    </div>
                   </div>
-                  <div className="font-bold text-[#101828] mb-2" style={{ fontSize: '28px', lineHeight: '34px' }}>
-                    {card.value}
-                  </div>
-                  <p className="text-[#4A5565]" style={{ fontSize: '13px', lineHeight: '20px' }}>{card.text}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {slide === 'next' && (
-          <div
-            style={{
-              width: '100%', maxWidth: '988px',
-              borderRadius: '14px',
-              background: '#FFFFFF',
-              boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
-              padding: '32px',
-            }}
-          >
-            <h2 className="font-bold text-[#101828] mb-6" style={{ fontSize: '22px' }}>
-              What would you like to do next?
-            </h2>
+          <div style={{ width: '100%', maxWidth: '988px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Header */}
+            <div className="text-center">
+              <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6A7282', marginBottom: '6px' }}>
+                🎯 SMART NEXT STEPS
+              </p>
+              <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#101828' }}>
+                Personalised recommendations based on your evaluation
+              </h2>
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              <button onClick={() => setSlide('feedback')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#EDE9FE] text-[#5B21B6] text-xl">F</div>
-                <div className="font-bold text-[#101828] mb-1">Review Feedback</div>
-                <div className="text-sm text-[#4A5565]">Revisit strengths, gaps, and suggestions</div>
-              </button>
+            {/* 2x2 action cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Rewrite with Feedback */}
+              <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="flex items-start justify-between">
+                  <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>✏️</span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#FFFFFF', background: '#4338CA', borderRadius: '99px', padding: '3px 10px' }}>Recommended</span>
+                </div>
+                <div>
+                  <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Rewrite with Feedback</p>
+                  <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Attempt this question again incorporating today&apos;s feedback to see your improvement.</p>
+                </div>
+                <button
+                  onClick={() => router.push('/dashboard/daily-answer/challenge')}
+                  style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#17223E', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                >
+                  Start Rewrite →
+                </button>
+              </div>
 
-              <button onClick={() => setSlide('markup')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#FEF3C7] text-[#B45309] text-xl">M</div>
-                <div className="font-bold text-[#101828] mb-1">Read Examiner Notes</div>
-                <div className="text-sm text-[#4A5565]">Study the narrative commentary carefully</div>
-              </button>
+              {/* View Model Answer */}
+              <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="flex items-start justify-between">
+                  <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>📖</span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#166534', background: '#DCFCE7', borderRadius: '99px', padding: '3px 10px' }}>Popular</span>
+                </div>
+                <div>
+                  <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>View Model Answer</p>
+                  <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Study the expert-crafted model answer to understand the ideal structure and content.</p>
+                </div>
+                <button
+                  onClick={() => setModelAnswerOpen(true)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#16A34A', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                >
+                  View Model Answer →
+                </button>
+              </div>
 
-              <button onClick={() => router.push('/dashboard/daily-answer')} className="rounded-[14px] border border-[#E5E7EB] p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#DCFCE7] text-[#166534] text-xl">N</div>
-                <div className="font-bold text-[#101828] mb-1">Practice Another One</div>
-                <div className="text-sm text-[#4A5565]">Return to daily answer writing and continue</div>
-              </button>
+              {/* Save to Notes */}
+              <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="flex items-start justify-between">
+                  <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>📝</span>
+                </div>
+                <div>
+                  <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Save to Notes</p>
+                  <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Save this feedback summary to your personal notes for quick revision before exam.</p>
+                </div>
+                <button
+                  style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#FFFBEB', color: '#B45309', fontSize: '14px', fontWeight: 700, border: '1px solid #FDE68A', cursor: 'pointer' }}
+                >
+                  Save to Notes →
+                </button>
+              </div>
+
+              {/* Practice Another Question */}
+              <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="flex items-start justify-between">
+                  <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🎯</span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#5B21B6', background: '#EDE9FE', borderRadius: '99px', padding: '3px 10px' }}>5 available</span>
+                </div>
+                <div>
+                  <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Practice Another Question</p>
+                  <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Jump to the next question from the practice bank to keep your momentum going.</p>
+                </div>
+                <button
+                  onClick={() => router.push('/dashboard/daily-answer')}
+                  style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#7C3AED', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                >
+                  Browse Questions →
+                </button>
+              </div>
+            </div>
+
+            {/* Other Actions */}
+            <div style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #E5E7EB', padding: '20px 24px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6A7282', marginBottom: '12px' }}>
+                OTHER ACTIONS
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => router.push('/dashboard/daily-answer')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '99px', border: '1px solid #E5E7EB', background: '#FFFFFF', fontSize: '13px', fontWeight: 600, color: '#374151', cursor: 'pointer' }}
+                >
+                  🏠 Back to Dashboard
+                </button>
+                {(data.checkedCopyUrl || checkedCopyPages.length > 0) && (
+                  <a
+                    href={checkedCopyPages[0]?.checkedCopyUrl || data.checkedCopyUrl || '#'}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '99px', border: '1px solid #BBF7D0', background: '#F0FDF4', fontSize: '13px', fontWeight: 600, color: '#166534', textDecoration: 'none' }}
+                  >
+                    📥 Download Evaluated Copy
+                  </a>
+                )}
+                <button
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '99px', border: '1px solid #FDE68A', background: '#FFFBEB', fontSize: '13px', fontWeight: 600, color: '#B45309', cursor: 'pointer' }}
+                >
+                  🔗 Share Result
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        <div
-          style={{
-            width: '100%', maxWidth: '988px',
-            borderRadius: '10px',
-            background: '#FEFCE8',
-            borderLeft: '4px solid #FDC700',
-            padding: '14px 20px',
-          }}
-        >
-          <p style={{ fontSize: '12px', lineHeight: '18px', color: '#713F12' }}>
-            <strong>Note:</strong> {BETA_DISCLAIMER}
-          </p>
+        {/* AI Disclaimer collapsible */}
+        <div style={{ width: '100%', maxWidth: '988px' }}>
+          <button
+            onClick={() => setDisclaimerOpen((o) => !o)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: '10px 16px',
+              borderRadius: disclaimerOpen ? '10px 10px 0 0' : '10px',
+              background: '#F3F4F6',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#4A5565',
+              fontSize: '13px',
+              fontFamily: 'Arimo',
+              fontWeight: 500,
+            }}
+          >
+            {/* info circle icon */}
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="10" cy="10" r="9" stroke="#6A7282" strokeWidth="1.8" />
+              <path d="M10 9v5" stroke="#6A7282" strokeWidth="1.8" strokeLinecap="round" />
+              <circle cx="10" cy="6.5" r="0.9" fill="#6A7282" />
+            </svg>
+            AI Disclaimer
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ transform: disclaimerOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+            >
+              <path d="M2 4l4 4 4-4" stroke="#6A7282" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          {disclaimerOpen && (
+            <div
+              style={{
+                borderRadius: '0 0 10px 10px',
+                background: '#FEFCE8',
+                borderLeft: '4px solid #FDC700',
+                padding: '14px 20px',
+              }}
+            >
+              <p style={{ fontSize: '12px', lineHeight: '18px', color: '#713F12' }}>
+                <strong>Note:</strong> {BETA_DISCLAIMER}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
+    {/* Model Answer Modal */}
+    {modelAnswerOpen && (
+      <div
+        onClick={() => setModelAnswerOpen(false)}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 50,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '16px',
+        }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '640px',
+            maxHeight: '88vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Modal header */}
+          <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
+            <div className="flex items-center gap-3">
+              <span style={{ fontSize: '28px' }}>🌟</span>
+              <div>
+                <p style={{ fontSize: '17px', fontWeight: 700, color: '#101828' }}>AI Model Answer</p>
+                <p style={{ fontSize: '13px', color: '#6A7282' }}>Expert-crafted response for reference</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setModelAnswerOpen(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#6A7282', lineHeight: 1, padding: '2px' }}
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Disclaimer banner */}
+          <div style={{ padding: '12px 24px', background: '#FFFBEB', borderBottom: '1px solid #FDE68A', flexShrink: 0 }}>
+            <p style={{ fontSize: '13px', color: '#B45309', lineHeight: '20px' }}>
+              <strong>⚡ Reference Only</strong> — Read after you&apos;ve written your own answer. Use this to understand gaps, not to memorise.
+            </p>
+          </div>
+
+          {/* Scrollable body */}
+          <div style={{ overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Key Points Checklist */}
+            {data.modelAnswerKeyPoints && data.modelAnswerKeyPoints.length > 0 && (
+              <div>
+                <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#B45309', marginBottom: '14px' }}>
+                  📌 KEY POINTS CHECKLIST
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {data.modelAnswerKeyPoints.map((point, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px 16px' }}>
+                      <span style={{
+                        flexShrink: 0,
+                        width: '26px', height: '26px',
+                        borderRadius: '50%',
+                        background: '#17223E',
+                        color: '#FFFFFF',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {i + 1}
+                      </span>
+                      <p style={{ fontSize: '14px', color: '#374151', lineHeight: '22px' }}>{point}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Full Model Answer */}
+            <div>
+              <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6A7282', marginBottom: '16px' }}>
+                📄 FULL MODEL ANSWER
+              </p>
+              {data.modelAnswerContent ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {data.modelAnswerContent
+                    .split(/\n+/)
+                    .map((p) => p.trim())
+                    .filter(Boolean)
+                    .map((paragraph, i) => {
+                      // Bold text before first colon if it looks like a heading
+                      const colonIdx = paragraph.indexOf(':');
+                      const looksLikeHeading = colonIdx > 0 && colonIdx < 60 && !paragraph.startsWith('"');
+                      return (
+                        <p key={i} style={{ fontSize: '15px', color: '#1F2937', lineHeight: '26px' }}>
+                          {looksLikeHeading ? (
+                            <>
+                              <strong>{paragraph.slice(0, colonIdx + 1)}</strong>
+                              {paragraph.slice(colonIdx + 1)}
+                            </>
+                          ) : paragraph}
+                        </p>
+                      );
+                    })}
+                </div>
+              ) : (
+                <p style={{ fontSize: '14px', color: '#6A7282', fontStyle: 'italic' }}>
+                  Full model answer will appear here once it is available for this question.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Sticky footer */}
+          <div style={{ padding: '16px 24px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: '12px', flexShrink: 0 }}>
+            <button
+              style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#FFFFFF', fontSize: '14px', fontWeight: 600, color: '#374151', cursor: 'pointer' }}
+            >
+              📝 Save to Notes
+            </button>
+            <button
+              onClick={() => { setModelAnswerOpen(false); router.push('/dashboard/daily-answer/challenge'); }}
+              style={{ flex: 2, padding: '12px', borderRadius: '10px', background: '#17223E', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+            >
+              ✍️ Rewrite with This Knowledge
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
+  );
+}
+
+export default function ResultsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen font-arimo flex items-center justify-center" style={{ background: '#FAFBFE' }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
+      </div>
+    }>
+      <ResultsPageInner />
+    </Suspense>
   );
 }

@@ -753,13 +753,19 @@ const ResponsiveDashboardContent = () => {
                   {mcqCount} Questions{mcqTopic ? ` - ${mcqTopic}` : ''}
                 </p>
 
-                <div className="w-full flex justify-center" role="button">
-                  <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2">
+                {isMcqCompleted ? (
+                  <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/mcq-completed-icon.png" alt="" className="w-[22px] h-[16px] object-contain flex-shrink-0" />
                     <span>Completed</span>
                   </div>
-                </div>
+                ) : (
+                  <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/TrioCard (1).png" alt="Attempt" className="w-5 h-5" />
+                    Attempt Now
+                  </div>
+                )}
               </Link>
 
               {/* Mains Question Card */}

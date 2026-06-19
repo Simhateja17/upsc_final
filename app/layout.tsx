@@ -3,7 +3,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { AuthModalProvider } from '@/contexts/AuthModalContext'
 import AuthModal from '@/components/AuthModal'
-import { Cormorant_Garamond, DM_Sans, Sora, Playfair_Display, Inter } from 'next/font/google'
+import { Cormorant_Garamond, DM_Sans, Sora, Playfair_Display, Inter, Merriweather } from 'next/font/google'
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -43,6 +43,14 @@ const dmSans = DM_Sans({
   display: 'swap',
 })
 
+const merriweather = Merriweather({
+  subsets: ['latin'],
+  weight: ['300', '400', '700', '900'],
+  style: ['normal', 'italic'],
+  variable: '--font-merriweather',
+  display: 'swap',
+})
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -71,7 +79,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${cormorant.variable} ${dmSans.variable} ${sora.variable} ${playfair.variable} ${interFont.variable}`}>
+      <body className={`${cormorant.variable} ${dmSans.variable} ${sora.variable} ${playfair.variable} ${interFont.variable} ${merriweather.variable}`}>
         <AuthProvider>
           <AuthModalProvider>
             {children}

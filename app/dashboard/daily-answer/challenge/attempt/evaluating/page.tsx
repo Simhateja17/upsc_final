@@ -7,6 +7,15 @@ import { dailyAnswerService } from '@/lib/services';
 const STEPS = [
   {
     id: 1,
+    icon: '/eval-upload.png',
+    emoji: '🔍',
+    bg: '#E0F2FE',
+    title: 'Uploading Answer Script',
+    subtitle: 'Scanning and processing your handwritten answer',
+    key: 'upload',
+  },
+  {
+    id: 2,
     icon: '/eval-structural.png',
     emoji: '📝',
     bg: '#FEF3C7',
@@ -15,7 +24,7 @@ const STEPS = [
     key: 'structural',
   },
   {
-    id: 2,
+    id: 3,
     icon: '/eval-content.png',
     emoji: '📚',
     bg: '#DBEAFE',
@@ -24,7 +33,7 @@ const STEPS = [
     key: 'content',
   },
   {
-    id: 3,
+    id: 4,
     icon: '/eval-balance.png',
     emoji: '⚖️',
     bg: '#FCE7F3',
@@ -33,7 +42,7 @@ const STEPS = [
     key: 'balance',
   },
   {
-    id: 4,
+    id: 5,
     icon: '/eval-fact.png',
     emoji: '📊',
     bg: '#DCFCE7',
@@ -42,13 +51,22 @@ const STEPS = [
     key: 'fact',
   },
   {
-    id: 5,
+    id: 6,
     icon: '/eval-pillar.png',
     emoji: '🎯',
     bg: '#EDE9FE',
     title: '6-Pillar Rubric Scoring',
     subtitle: 'Direct   Demand   Structure   Substantiation',
     key: 'scoring',
+  },
+  {
+    id: 7,
+    icon: '/eval-feedback.png',
+    emoji: '💡',
+    bg: '#FEF9C3',
+    title: 'Preparing Personalised Feedback',
+    subtitle: 'Crafting actionable insights tailored to your answer',
+    key: 'feedback',
   },
 ];
 
@@ -73,18 +91,44 @@ const SpinnerIcon = () => (
   </svg>
 );
 
+const MIN_DISPLAY_SECONDS = 60;
+
 export default function EvaluatingPage() {
   const router = useRouter();
-  const [elapsed, setElapsed] = useState(0);
+  const evalStartKey = 'dailyAnswerEvalStart';
+  const [elapsed, setElapsed] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    const stored = sessionStorage.getItem(evalStartKey);
+    if (stored) {
+      return Math.max(0, Math.floor((Date.now() - Number(stored)) / 1000));
+    }
+    sessionStorage.setItem(evalStartKey, String(Date.now()));
+    return 0;
+  });
   const [status, setStatus] = useState<string>('evaluating');
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const navigatedRef = useRef(false);
+  const resultsReadyRef = useRef(false);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const maxRetriesRef = useRef(0);
+  const elapsedRef = useRef(0);
 
-  const navigateToResultsIfReady = useCallback(async () => {
+  // Keep elapsedRef in sync so the navigate effect can read the latest value
+  useEffect(() => {
+    elapsedRef.current = elapsed;
+  }, [elapsed]);
+
+  const navigateToResults = useCallback(() => {
+    if (navigatedRef.current) return;
+    navigatedRef.current = true;
+    if (pollRef.current) clearInterval(pollRef.current);
+    sessionStorage.removeItem(evalStartKey);
+    router.push('/dashboard/daily-answer/challenge/attempt/results');
+  }, [router]);
+
+  const checkResultsReady = useCallback(async () => {
     if (!attemptId || navigatedRef.current) return false;
     try {
       const resultsRes = await dailyAnswerService.getResults(attemptId);
@@ -100,16 +144,18 @@ export default function EvaluatingPage() {
         );
 
       if (hasUsableResults) {
-        navigatedRef.current = true;
-        if (pollRef.current) clearInterval(pollRef.current);
-        router.push('/dashboard/daily-answer/challenge/attempt/results');
+        resultsReadyRef.current = true;
+        // Navigate immediately only if we've already waited long enough
+        if (elapsedRef.current >= MIN_DISPLAY_SECONDS) {
+          navigateToResults();
+        }
         return true;
       }
     } catch (err) {
       console.log('Results not ready yet, staying on evaluating screen');
     }
     return false;
-  }, [attemptId, router]);
+  }, [attemptId, navigateToResults]);
 
   // Get attemptId from sessionStorage on mount
   useEffect(() => {
@@ -142,17 +188,13 @@ export default function EvaluatingPage() {
         setStatus(evalStatus);
         console.log('Status:', evalStatus);
       }
-      if (data?.completedSteps) {
-        setCompletedSteps(data.completedSteps);
-        console.log('Completed steps:', data.completedSteps);
-      }
+      // Step ticks are driven by elapsed time only — ignore backend completedSteps
 
-      // Only leave this screen once the results endpoint is actually ready.
+      // Check results when backend signals completion, but honour MIN_DISPLAY_SECONDS
       const isComplete = data?.isComplete || evalStatus === 'completed' || evalStatus === 'done';
       if (isComplete && !navigatedRef.current) {
         console.log('Evaluation marked complete, verifying results payload...');
-        setCompletedSteps(STEPS.map((step) => step.key));
-        await navigateToResultsIfReady();
+        await checkResultsReady();
       }
 
       if (evalStatus === 'failed') {
@@ -170,7 +212,7 @@ export default function EvaluatingPage() {
       console.error('Poll error:', err);
       // Don't set error immediately, let it retry
     }
-  }, [attemptId, navigateToResultsIfReady]);
+  }, [attemptId, checkResultsReady]);
 
   // Start polling when attemptId is available
   useEffect(() => {
@@ -190,21 +232,27 @@ export default function EvaluatingPage() {
   // Elapsed timer for display
   useEffect(() => {
     const timer = setInterval(() => {
-      setElapsed((prev) => prev + 1);
+      setElapsed((prev) => {
+        const next = prev + 1;
+        // Once minimum wait is reached, navigate if results are already in
+        if (next >= MIN_DISPLAY_SECONDS && resultsReadyRef.current && !navigatedRef.current) {
+          navigatedRef.current = true;
+          if (pollRef.current) clearInterval(pollRef.current);
+          router.push('/dashboard/daily-answer/challenge/attempt/results');
+        }
+        return next;
+      });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [router]);
 
-  // Simulate step progression in 10-second increments until the
-  // backend confirms completion. Advances past the first step.
+  // Step ticks are purely time-driven: each step gets an equal slice of MIN_DISPLAY_SECONDS.
+  // A step's tick appears only after its full interval has elapsed.
+  const STEP_INTERVAL = MIN_DISPLAY_SECONDS / STEPS.length;
   useEffect(() => {
-    if (status === 'completed' || status === 'done') return;
-    const stepsToComplete = Math.min(STEPS.length, Math.floor(elapsed / 10));
-    setCompletedSteps((prev) => {
-      const simulated = STEPS.slice(0, stepsToComplete).map((s) => s.key);
-      return simulated.length > prev.length ? simulated : prev;
-    });
-  }, [elapsed, status]);
+    const stepsToComplete = Math.min(STEPS.length, Math.floor(elapsed / STEP_INTERVAL));
+    setCompletedSteps(STEPS.slice(0, stepsToComplete).map((s) => s.key));
+  }, [elapsed, STEP_INTERVAL]);
 
   // Preload step icons so they appear instantly instead of popping in
   useEffect(() => {
@@ -236,7 +284,7 @@ export default function EvaluatingPage() {
     return (
       <div
         className="min-h-screen flex items-center justify-center font-arimo"
-        style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}
+        style={{ background: '#FAFBFE' }}
       >
         <div className="text-center px-6">
           <span style={{ fontSize: '48px' }}>⚠️</span>
@@ -255,71 +303,35 @@ export default function EvaluatingPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center font-arimo p-4"
-      style={{ background: 'linear-gradient(180deg, #E6EAF0 0%, #DDE2EA 100%)' }}
+      className="h-full overflow-hidden flex items-center justify-center font-arimo"
+      style={{ background: '#FAFBFE' }}
     >
       <div
-        className="relative flex flex-col px-6 py-8 sm:px-10 sm:py-8"
+        className="relative flex flex-col px-6 py-4 sm:px-8"
         style={{
           width: '100%',
-          maxWidth: '768px',
+          maxWidth: '620px',
+          maxHeight: 'calc(100vh - 80px)',
           borderRadius: '16px',
           background: '#FFFFFF',
           boxShadow: '0px 8px 10px -6px #0000001A, 0px 20px 25px -5px #0000001A',
         }}
       >
         {/* Header */}
-        <div className="flex flex-col items-center mb-4">
+        <div className="flex flex-col items-center" style={{ marginBottom: 8 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/eval-header.png"
-            alt="Evaluating"
-            style={{ width: '64px', height: '64px', objectFit: 'contain', marginBottom: '12px' }}
-          />
-          <h1
-            style={{
-              fontFamily: 'Arimo',
-              fontWeight: 700,
-              fontSize: '26px',
-              lineHeight: '32px',
-              letterSpacing: '0px',
-              color: '#1E2939',
-              textAlign: 'center',
-              marginBottom: '6px',
-            }}
-          >
+          <img src="/eval-header.png" alt="Evaluating" style={{ width: '36px', height: '36px', objectFit: 'contain', marginBottom: '4px' }} />
+          <h1 style={{ fontFamily: 'Arimo', fontWeight: 700, fontSize: '20px', lineHeight: '26px', color: '#1E2939', textAlign: 'center', marginBottom: '2px' }}>
             Evaluating Your Answer
           </h1>
-          <p
-            style={{
-              fontFamily: 'Arimo',
-              fontWeight: 400,
-              fontSize: '15px',
-              lineHeight: '22px',
-              color: '#4A5565',
-              textAlign: 'center',
-              marginBottom: '2px',
-            }}
-          >
-            Analyzing with UPSC examiner&apos;s lens
-          </p>
-          <p
-            style={{
-              fontFamily: 'Arimo',
-              fontWeight: 400,
-              fontSize: '13px',
-              lineHeight: '18px',
-              color: '#6A7282',
-              textAlign: 'center',
-            }}
-          >
-            This usually takes 30-60 seconds
+          <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: '12px', lineHeight: '16px', color: '#4A5565', textAlign: 'center', margin: 0 }}>
+            Analyzing with UPSC examiner&apos;s lens · Usually takes 30-60 seconds
           </p>
         </div>
 
         {/* Error Banner */}
         {error && (
-          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-[10px] text-red-700 text-center" style={{ fontSize: '14px' }}>
+          <div className="mb-2 px-4 py-2 bg-red-50 border border-red-200 rounded-[10px] text-red-700 text-center" style={{ fontSize: '13px' }}>
             {error}
             <div className="mt-2">
               <button
@@ -333,166 +345,60 @@ export default function EvaluatingPage() {
         )}
 
         {/* Steps */}
-        <div className="flex flex-col gap-0 mb-4">
+        <div className="flex flex-col gap-0" style={{ marginBottom: 8 }}>
           {STEPS.map((step, idx) => {
             const done = isStepDone(step);
             const active = isStepActive(step, idx);
             return (
               <div key={step.id}>
-                <div className="flex items-center justify-between py-3">
-                  {/* Left: icon + text */}
+                <div className="flex items-center justify-between" style={{ padding: '6px 0' }}>
                   <div className="flex items-center gap-3">
                     <span
                       aria-hidden="true"
                       style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '10px',
-                        background: step.bg,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '20px',
-                        opacity: done || active ? 1 : 0.4,
-                        transition: 'opacity 0.4s',
+                        width: '28px', height: '28px', borderRadius: '8px', background: step.bg,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px',
+                        opacity: done || active ? 1 : 0.4, transition: 'opacity 0.4s', flexShrink: 0,
                       }}
                     >
-                      {step.emoji}
+                      <span className={step.key === 'feedback' && active ? 'bulb-grow' : undefined}>{step.emoji}</span>
                     </span>
                     <div>
-                      <p
-                        style={{
-                          fontFamily: 'Arimo',
-                          fontWeight: 700,
-                          fontSize: '15px',
-                          lineHeight: '20px',
-                          color: '#17223E',
-                        }}
-                      >
-                        {step.title}
-                      </p>
-                      <p
-                        style={{
-                          fontFamily: 'Arimo',
-                          fontWeight: 400,
-                          fontSize: '13px',
-                          lineHeight: '18px',
-                          color: '#17223E',
-                        }}
-                      >
-                        {step.subtitle}
-                      </p>
+                      <p style={{ fontFamily: 'Arimo', fontWeight: 700, fontSize: '13px', lineHeight: '17px', color: '#17223E', margin: 0 }}>{step.title}</p>
+                      <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: '11px', lineHeight: '14px', color: '#6A7282', margin: 0 }}>{step.subtitle}</p>
                     </div>
                   </div>
-
-                  {/* Right: status icon */}
-                  <div className="flex items-center gap-3">
-                    {done ? (
-                      <CheckIcon />
-                    ) : active ? (
-                      <SpinnerIcon />
-                    ) : (
-                      <div
-                        style={{
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          border: '2px solid #D1D5DB',
-                        }}
-                      />
+                  <div className="flex items-center">
+                    {done ? <CheckIcon /> : active ? <SpinnerIcon /> : (
+                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: '2px solid #D1D5DB' }} />
                     )}
                   </div>
                 </div>
-                {/* Divider (skip after last) */}
-                {idx < STEPS.length - 1 && (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '1px',
-                      background: '#B1B1B1',
-                    }}
-                  />
-                )}
+                {idx < STEPS.length - 1 && <div style={{ width: '100%', height: '1px', background: '#E5E7EB' }} />}
               </div>
             );
           })}
         </div>
 
         {/* Bottom yellow card */}
-        <div
-          style={{
-            borderRadius: '10px',
-            borderLeft: '4px solid #FDC700',
-            background: '#FEFCE8',
-            padding: '18px 28px',
-          }}
-        >
-          {/* Timer row */}
-          <div className="flex items-center justify-center gap-2 mb-2">
+        <div style={{ borderRadius: '10px', borderLeft: '4px solid #FDC700', background: '#FEFCE8', padding: '10px 16px' }}>
+          <div className="flex items-center justify-center gap-2" style={{ marginBottom: 4 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/eval-timer.png" alt="Timer" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
-            <span
-              style={{
-                fontFamily: 'DM Sans',
-                fontWeight: 700,
-                fontSize: '14px',
-                lineHeight: '20px',
-                color: '#101828',
-              }}
-            >
+            <img src="/eval-timer.png" alt="Timer" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+            <span style={{ fontFamily: 'DM Sans', fontWeight: 700, fontSize: '12px', lineHeight: '16px', color: '#101828' }}>
               {secondsRemaining > 0 ? `${secondsRemaining} Seconds Remaining` : 'Almost done...'}
             </span>
           </div>
 
-          {/* Progress bar */}
-          <div
-            className="mx-auto mb-3"
-            style={{
-              width: '100%',
-              maxWidth: '362px',
-              height: '5px',
-              borderRadius: '10px',
-              background: '#D9D9D9',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                height: '100%',
-                width: `${progressPercent}%`,
-                borderRadius: '10px',
-                background: '#101828',
-                transition: 'width 1s linear',
-              }}
-            />
+          <div className="mx-auto" style={{ width: '100%', maxWidth: '362px', height: '4px', borderRadius: '10px', background: '#D9D9D9', overflow: 'hidden', marginBottom: 6 }}>
+            <div style={{ height: '100%', width: `${progressPercent}%`, borderRadius: '10px', background: '#101828', transition: 'width 1s linear' }} />
           </div>
 
-          {/* While you wait text */}
-          <p
-            className="text-center mb-2"
-            style={{
-              fontFamily: 'Arimo',
-              fontSize: '13px',
-              lineHeight: '18px',
-              color: '#364153',
-            }}
-          >
-            <strong>While you wait:</strong> This 60-second pause is deliberate. In the actual exam, this is the time you&apos;d
-            spend reviewing your answer. Use this moment to mentally note one improvement you could make.
+          <p className="text-center" style={{ fontFamily: 'Arimo', fontSize: '11px', lineHeight: '16px', color: '#364153', margin: '0 0 2px' }}>
+            <strong>While you wait:</strong> In the actual exam, this is the time you&apos;d spend reviewing your answer.
           </p>
 
-          {/* Quote */}
-          <p
-            className="text-center"
-            style={{
-              fontFamily: 'Arimo',
-              fontWeight: 400,
-              fontStyle: 'italic',
-              fontSize: '11px',
-              lineHeight: '15px',
-              color: '#6A7282',
-            }}
-          >
+          <p className="text-center" style={{ fontFamily: 'Arimo', fontWeight: 400, fontStyle: 'italic', fontSize: '10px', lineHeight: '14px', color: '#6A7282', margin: 0 }}>
             &quot;Consistency matters more than perfection. You&apos;re building a skill that compounds.&quot;
           </p>
         </div>

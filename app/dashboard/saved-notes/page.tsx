@@ -1,64 +1,218 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { editorialService } from '@/lib/services';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { editorialService, bookmarkService } from '@/lib/services';
+import BookmarkCard, { BookmarkItem } from '@/components/BookmarkCard';
+import SaveBookmarkModal from '@/components/SaveBookmarkModal';
+import {
+  NewspaperIcon,
+  TargetIcon,
+  PencilIcon,
+  ArchiveIcon,
+  LayersIcon,
+  FilmIcon,
+  XCircleIcon,
+  StarIcon,
+} from '@/components/icons/BookmarkIcons';
 
-interface SavedEditorial {
-  id: string;
-  title: string;
-  summary: string | null;
-  source: string;
-  category: string;
-  tags: string[];
-  savedAt?: string;
+const TABS = [
+  { key: 'editorial', label: 'Current Affairs', icon: NewspaperIcon },
+  { key: 'mcq', label: 'MCQs', icon: TargetIcon },
+  { key: 'answer-writing', label: 'Answer Writing', icon: PencilIcon },
+  { key: 'pyq', label: 'PYQs', icon: ArchiveIcon },
+  { key: 'flashcard', label: 'Flashcards', icon: LayersIcon },
+  { key: 'video', label: 'Video Lectures', icon: FilmIcon },
+] as const;
+
+type TabKey = typeof TABS[number]['key'];
+
+const FILTER_CHIPS: Record<TabKey, string[]> = {
+  editorial: ['All', 'Unread', 'Read', 'For Revision', 'Starred'],
+  mcq: ['All', 'New', 'Attempted', 'Got Wrong', 'Starred'],
+  'answer-writing': ['All', 'Not Attempted', 'Draft', 'Submitted', 'Starred'],
+  pyq: ['All', 'Prelims', 'Mains', 'Starred'],
+  flashcard: ['All', 'New', 'Learning', 'Mastered', 'Starred'],
+  video: ['All', 'Not Watched', 'Watching', 'Watched', 'Starred'],
+};
+
+const CHIP_ICONS: Record<string, (props: { size?: number; className?: string }) => JSX.Element> = {
+  'Got Wrong': XCircleIcon,
+  Starred: StarIcon,
+};
+
+const SAVE_LABELS: Record<TabKey, string> = {
+  editorial: '+ Save Article',
+  mcq: '+ Save MCQ',
+  'answer-writing': '+ Save Question',
+  pyq: '+ Save PYQ',
+  flashcard: '+ Add Flashcard',
+  video: '+ Save Lecture',
+};
+
+const STATUS_LABEL_NORMALIZE: Record<string, string> = {
+  new: 'New',
+  attempted: 'Attempted',
+  gotwrong: 'Got Wrong',
+  notattempted: 'Not Attempted',
+  draft: 'Draft',
+  submitted: 'Submitted',
+  prelims: 'Prelims',
+  mains: 'Mains',
+  learning: 'Learning',
+  mastered: 'Mastered',
+  notwatched: 'Not Watched',
+  watching: 'Watching',
+  watched: 'Watched',
+};
+
+function statusFieldFor(tab: TabKey, item: BookmarkItem): string | undefined {
+  const c = item.content || {};
+  switch (tab) {
+    case 'mcq':
+    case 'answer-writing':
+      return c.status;
+    case 'pyq':
+      return c.paper;
+    case 'flashcard':
+      return c.mastery;
+    case 'video':
+      return c.watchStatus;
+    default:
+      return undefined;
+  }
 }
 
-const CARD_ACCENTS = ['#63BF7A', '#F59E0B', '#8B5CF6', '#60A5FA', '#EC4899'];
+const EMPTY_ITEMS: Record<TabKey, BookmarkItem[]> = {
+  editorial: [],
+  mcq: [],
+  'answer-writing': [],
+  pyq: [],
+  flashcard: [],
+  video: [],
+};
 
 export default function SavedNotesPage() {
-  const [savedNotes, setSavedNotes] = useState<SavedEditorial[]>([]);
+  const [itemsByTab, setItemsByTab] = useState<Record<TabKey, BookmarkItem[]>>(EMPTY_ITEMS);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [activeFilter, setActiveFilter] = useState('ALL');
+  const [activeTab, setActiveTab] = useState<TabKey>('editorial');
+  const [activeChip, setActiveChip] = useState('All');
+  const [modalOpen, setModalOpen] = useState(false);
 
-  useEffect(() => {
-    editorialService
-      .getStats()
-      .then((res) => {
-        if (res.data?.savedItems && Array.isArray(res.data.savedItems)) {
-          setSavedNotes(res.data.savedItems);
-        }
+  const loadAll = useCallback(() => {
+    setLoading(true);
+    Promise.all([
+      editorialService.getStats().catch(() => null),
+      bookmarkService.list('mcq').catch(() => null),
+      bookmarkService.list('answer-writing').catch(() => null),
+      bookmarkService.list('pyq').catch(() => null),
+      bookmarkService.list('flashcard').catch(() => null),
+      bookmarkService.list('video').catch(() => null),
+    ])
+      .then(([editorialRes, mcqRes, awRes, pyqRes, fcRes, videoRes]) => {
+        const editorialItems: BookmarkItem[] = (editorialRes?.data?.savedItems || []).map((note: any) => ({
+          id: note.id,
+          type: 'editorial',
+          entityId: note.id,
+          title: note.title,
+          source: note.source,
+          sourceUrl: null,
+          tag: note.category,
+          tagColor: null,
+          content: { summary: note.summary, tags: note.tags, category: note.category },
+          createdAt: note.savedAt,
+          isPinned: false,
+        }));
+
+        setItemsByTab({
+          editorial: editorialItems,
+          mcq: mcqRes?.data?.bookmarks || [],
+          'answer-writing': awRes?.data?.bookmarks || [],
+          pyq: pyqRes?.data?.bookmarks || [],
+          flashcard: fcRes?.data?.bookmarks || [],
+          video: videoRes?.data?.bookmarks || [],
+        });
       })
-      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const grouped = useMemo(() => {
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
+
+  useEffect(() => {
+    setActiveChip('All');
+  }, [activeTab]);
+
+  const chipCounts = useMemo(() => {
+    const items = itemsByTab[activeTab] || [];
     const query = search.trim().toLowerCase();
-    const filtered = savedNotes.filter((note) => {
-      const matchesFilter = activeFilter === 'ALL' || note.category === activeFilter;
-      if (!matchesFilter) return false;
+    const base = items.filter((item) => {
       if (!query) return true;
-      const haystack = `${note.title} ${note.summary ?? ''} ${note.source} ${(note.tags ?? []).join(' ')}`.toLowerCase();
+      const haystack = `${item.title} ${item.source} ${item.tag ?? ''} ${JSON.stringify(item.content ?? {})}`.toLowerCase();
       return haystack.includes(query);
     });
 
-    return filtered.reduce<Record<string, SavedEditorial[]>>((acc, note) => {
-      const key = note.category || 'General';
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(note);
-      return acc;
-    }, {});
-  }, [savedNotes, search, activeFilter]);
-
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { ALL: savedNotes.length };
-    for (const note of savedNotes) {
-      const key = note.category || 'General';
-      counts[key] = (counts[key] ?? 0) + 1;
-    }
+    const counts: Record<string, number> = {};
+    FILTER_CHIPS[activeTab].forEach((chip) => {
+      if (chip === 'All') {
+        counts[chip] = base.length;
+      } else if (chip === 'Starred') {
+        counts[chip] = base.filter((item) => item.isPinned).length;
+      } else {
+        counts[chip] = base.filter((item) => {
+          const status = statusFieldFor(activeTab, item);
+          const normalized = status ? STATUS_LABEL_NORMALIZE[status.toLowerCase().replace(/\s+/g, '')] : undefined;
+          return normalized === chip;
+        }).length;
+      }
+    });
     return counts;
-  }, [savedNotes]);
+  }, [itemsByTab, activeTab, search]);
+
+  const filteredItems = useMemo(() => {
+    const items = itemsByTab[activeTab] || [];
+    const query = search.trim().toLowerCase();
+
+    return items.filter((item) => {
+      if (activeChip !== 'All') {
+        if (activeChip === 'Starred') {
+          if (!item.isPinned) return false;
+        } else {
+          const status = statusFieldFor(activeTab, item);
+          const normalized = status ? STATUS_LABEL_NORMALIZE[status.toLowerCase().replace(/\s+/g, '')] : undefined;
+          if (normalized !== activeChip) return false;
+        }
+      }
+      if (!query) return true;
+      const haystack = `${item.title} ${item.source} ${item.tag ?? ''} ${JSON.stringify(item.content ?? {})}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [itemsByTab, activeTab, activeChip, search]);
+
+  const handleTogglePin = async (item: BookmarkItem) => {
+    try {
+      await bookmarkService.togglePin(item.id);
+      setItemsByTab((prev) => ({
+        ...prev,
+        [activeTab]: prev[activeTab].map((it) => (it.id === item.id ? { ...it, isPinned: !it.isPinned } : it)),
+      }));
+    } catch {}
+  };
+
+  const handleDelete = async (item: BookmarkItem) => {
+    try {
+      if (item.type === 'editorial') {
+        await editorialService.toggleSave(item.entityId);
+      } else {
+        await bookmarkService.remove(item.id);
+      }
+      setItemsByTab((prev) => ({
+        ...prev,
+        [activeTab]: prev[activeTab].filter((it) => it.id !== item.id),
+      }));
+    } catch {}
+  };
 
   return (
     <div className="min-h-screen bg-[#F5F7FB]">
@@ -118,89 +272,110 @@ export default function SavedNotesPage() {
       </section>
 
       <main className="mx-auto max-w-7xl px-4 pb-12 pt-5 sm:px-6 lg:px-10">
-        <div className="mb-7 flex flex-wrap items-center gap-3 border-b border-[#E5EAF3] pb-4 text-sm">
-          {Object.entries(categoryCounts).map(([name, count]) => (
-            <button
-              key={name}
-              onClick={() => setActiveFilter(name)}
-              className="rounded-full px-3 py-1.5 transition"
-              style={{
-                color: activeFilter === name ? '#C98A1D' : '#5A6B85',
-                background: activeFilter === name ? '#FFF4DD' : 'transparent',
-                fontWeight: activeFilter === name ? 600 : 500,
-              }}
-            >
-              {name} <span className="ml-1 text-xs opacity-70">{count}</span>
-            </button>
-          ))}
+        {/* Tab bar */}
+        <div
+          className="mb-4 flex flex-wrap items-center gap-1 rounded-t-xl px-2 text-sm"
+          style={{ background: '#F4F6FA', borderBottom: '1px solid rgba(11,22,40,0.09)', boxShadow: '0px 2px 6px rgba(11,22,40,0.06)' }}
+        >
+          {TABS.map(({ key, label, icon: Icon }) => {
+            const active = activeTab === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className="flex items-center gap-[7px] border-b-2 px-[18px] py-[14px] transition"
+                style={{
+                  color: active ? '#E8B84B' : '#6B7A99',
+                  borderColor: active ? '#E8B84B' : 'transparent',
+                  fontWeight: active ? 700 : 500,
+                }}
+              >
+                <Icon size={14} className="text-[#6B7A99]" />
+                {label}
+                <span
+                  className="rounded-[20px] px-[7px] py-[1px] text-[10px] font-bold"
+                  style={{ background: 'rgba(11,22,40,0.09)', color: '#6B7A99' }}
+                >
+                  {itemsByTab[key].length}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Sub-filter chips + Save button */}
+        <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {FILTER_CHIPS[activeTab].map((chip) => {
+              const active = activeChip === chip;
+              const ChipIcon = CHIP_ICONS[chip];
+              const iconColor = !active && chip === 'Got Wrong' ? '#DC2626' : !active && chip === 'Starred' ? '#D97706' : undefined;
+              return (
+                <button
+                  key={chip}
+                  onClick={() => setActiveChip(chip)}
+                  className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition"
+                  style={{
+                    borderColor: active ? '#101828' : '#E5EAF3',
+                    background: active ? '#101828' : '#FFFFFF',
+                    color: active ? '#FFFFFF' : '#5A6B85',
+                  }}
+                >
+                  {ChipIcon && (
+                    <span className="shrink-0" style={iconColor ? { color: iconColor } : undefined}>
+                      <ChipIcon size={13} />
+                    </span>
+                  )}
+                  {chip}
+                  <span
+                    className="rounded-full px-1.5 py-0.5 text-[11px]"
+                    style={{
+                      background: active ? 'rgba(255,255,255,0.16)' : '#EEF1F6',
+                      color: active ? '#FFFFFF' : '#8A97AE',
+                    }}
+                  >
+                    {chipCounts[chip] ?? 0}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="rounded-full px-4 py-2 text-xs font-semibold text-white"
+            style={{ background: '#101828' }}
+          >
+            {SAVE_LABELS[activeTab]}
+          </button>
         </div>
 
         {loading ? (
           <div className="py-16 text-center text-[#5A6B85]">Loading bookmarks...</div>
-        ) : Object.keys(grouped).length === 0 ? (
+        ) : filteredItems.length === 0 ? (
           <div className="rounded-2xl border border-[#E2E8F0] bg-white p-10 text-center text-[#5A6B85]">
             No bookmarks found for this filter.
           </div>
         ) : (
-          <div className="space-y-8">
-            {Object.entries(grouped).map(([section, items]) => (
-              <section key={section}>
-                <div className="mb-4 flex items-end justify-between border-b border-[#E5EAF3] pb-2">
-                  <div>
-                    <h2 className="text-[30px] font-semibold leading-none text-[#0B1323]">{section}</h2>
-                    <p className="mt-2 text-sm text-[#6A7892]">{items.length} resources</p>
-                  </div>
-                  <span className="text-2xl text-[#9AA7BD]">{items.length}</span>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {items.map((note, idx) => {
-                    const accent = CARD_ACCENTS[idx % CARD_ACCENTS.length];
-                    const chips = (note.tags?.length ? note.tags : [note.category]).slice(0, 3);
-                    return (
-                      <article
-                        key={note.id}
-                        className="rounded-2xl border border-[#E8EDF5] bg-white p-4"
-                        style={{ borderLeft: `3px solid ${accent}` }}
-                      >
-                        <div className="mb-3 flex items-center justify-between text-[11px] text-[#8A97AE]">
-                          <div className="flex items-center gap-1.5">
-                            <span className="rounded-full bg-[#EEF3FF] px-2 py-0.5 text-[#4F46E5]">GS</span>
-                            <span className="rounded-full bg-[#FFF4DD] px-2 py-0.5 text-[#C98A1D]">PRELIMS</span>
-                            <span>{note.source || 'Source'}</span>
-                          </div>
-                          <span>{note.savedAt ? new Date(note.savedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : ''}</span>
-                        </div>
-
-                        <h3 className="line-clamp-2 text-[21px] font-semibold leading-7 text-[#121A2D]">{note.title}</h3>
-                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#5C6B85]">{note.summary || 'Saved for quick revision.'}</p>
-
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          {chips.map((tag) => (
-                            <span key={tag} className="rounded-md bg-[#FFF4DD] px-2 py-1 text-[11px] text-[#B7791F]">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-
-                        <div className="mt-4 flex items-center justify-between border-t border-[#EEF2F8] pt-3">
-                          <span className="rounded-full bg-[#FFF4DD] px-2.5 py-1 text-xs text-[#A87216]">Revision</span>
-                          <button
-                            onClick={() => setSavedNotes((prev) => prev.filter((x) => x.id !== note.id))}
-                            className="rounded-lg border border-[#F4D7D9] px-2.5 py-1 text-xs text-[#C2414D]"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {filteredItems.map((item, index) => (
+              <BookmarkCard
+                key={item.id}
+                item={item}
+                index={index}
+                onTogglePin={activeTab === 'editorial' ? undefined : handleTogglePin}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         )}
       </main>
+
+      <SaveBookmarkModal
+        open={modalOpen}
+        entityType={activeTab}
+        onClose={() => setModalOpen(false)}
+        onSaved={loadAll}
+      />
     </div>
   );
 }

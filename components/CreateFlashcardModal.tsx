@@ -261,7 +261,7 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
               className="block uppercase tracking-[0.3px]"
               style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#4A5565' }}
             >
-              Deck
+              Topic
             </label>
             <select
               value={deck}
@@ -278,7 +278,7 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
                 color: '#101828',
               }}
             >
-              <option value="">Select deck</option>
+              <option value="">Select topic</option>
               {FLASHCARD_SUBJECT_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
