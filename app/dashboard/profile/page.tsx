@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { dashboardService, userService } from '@/lib/services';
@@ -36,10 +36,21 @@ export default function ProfilePage() {
   const [optionalSubject, setOptionalSubject] = useState('');
   const [gender, setGender] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
+  const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [perfStats, setPerfStats] = useState<any>(null);
   const [dashStats, setDashStats] = useState<any>(null);
   const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null);
+
+  const [originalPhone, setOriginalPhone] = useState('');
+  const [originalEmail, setOriginalEmail] = useState('');
+
+  const [otpModal, setOtpModal] = useState<{ type: 'phone' | 'email'; value: string } | null>(null);
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [showCalendar, setShowCalendar] = useState(false);
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
@@ -61,6 +72,9 @@ export default function ProfilePage() {
       setFirstName(user.firstName || '');
       setLastName(user.lastName || '');
       setPhone((user as any).phone || '');
+      setOriginalPhone((user as any).phone || '');
+      setEmail(user.email || '');
+      setOriginalEmail(user.email || '');
       const extra = (user as any).profile || {};
       setState(extra.state || '');
       setTargetYear(extra.targetYear || '');
@@ -77,6 +91,9 @@ export default function ProfilePage() {
         setFirstName(d.firstName || '');
         setLastName(d.lastName || '');
         setPhone(d.phone || '');
+        setOriginalPhone(d.phone || '');
+        setEmail(d.email || '');
+        setOriginalEmail(d.email || '');
         setState(d.state || '');
         setTargetYear(d.targetYear || '');
         setOptionalSubject(d.optionalSubject || '');
@@ -110,6 +127,9 @@ export default function ProfilePage() {
         setFirstName(d.firstName || '');
         setLastName(d.lastName || '');
         setPhone(d.phone || '');
+        setOriginalPhone(d.phone || '');
+        setEmail(d.email || '');
+        setOriginalEmail(d.email || '');
         setState(d.state || '');
         setTargetYear(d.targetYear || '');
         setOptionalSubject(d.optionalSubject || '');
@@ -119,14 +139,106 @@ export default function ProfilePage() {
     }).catch(() => {});
   };
 
+  const openOtpModal = useCallback(async (type: 'phone' | 'email', value: string) => {
+    setOtpDigits(['', '', '', '', '', '']);
+    setOtpError('');
+    setOtpLoading(true);
+    setOtpModal({ type, value });
+    try {
+      if (type === 'phone') {
+        await userService.sendPhoneOtp(value);
+      } else {
+        await userService.sendEmailOtp(value);
+      }
+      setResendTimer(30);
+    } catch (err: any) {
+      setOtpError(err?.message || `Failed to send OTP`);
+    } finally {
+      setOtpLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const id = setInterval(() => setResendTimer((t) => t - 1), 1000);
+    return () => clearInterval(id);
+  }, [resendTimer]);
+
+  const handleOtpVerify = async () => {
+    if (!otpModal) return;
+    const code = otpDigits.join('');
+    if (code.length !== 6) { setOtpError('Enter all 6 digits'); return; }
+
+    setOtpLoading(true);
+    setOtpError('');
+    try {
+      if (otpModal.type === 'phone') {
+        await userService.verifyPhoneOtp(otpModal.value, code);
+        setOriginalPhone(otpModal.value);
+        setPhone(otpModal.value);
+      } else {
+        await userService.verifyEmailOtp(otpModal.value, code);
+        setOriginalEmail(otpModal.value);
+        setEmail(otpModal.value);
+      }
+      setOtpModal(null);
+      setToast({ kind: 'success', msg: `${otpModal.type === 'phone' ? 'Phone number' : 'Email'} verified and updated!` });
+      setTimeout(() => setToast(null), 3500);
+    } catch (err: any) {
+      setOtpError(err?.message || 'Invalid or expired OTP');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleOtpInput = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const digit = value.slice(-1);
+    const newDigits = [...otpDigits];
+    newDigits[index] = digit;
+    setOtpDigits(newDigits);
+    if (digit && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length > 0) {
+      e.preventDefault();
+      const newDigits = [...otpDigits];
+      for (let i = 0; i < 6; i++) newDigits[i] = pasted[i] || '';
+      setOtpDigits(newDigits);
+      const focusIdx = Math.min(pasted.length, 5);
+      otpInputRefs.current[focusIdx]?.focus();
+    }
+  };
+
   const handleSave = async () => {
+    const phoneChanged = phone.trim() !== originalPhone;
+    const emailChanged = email.trim().toLowerCase() !== originalEmail.toLowerCase();
+
+    if (phoneChanged && phone.trim().length === 10) {
+      openOtpModal('phone', phone.trim());
+      return;
+    }
+    if (emailChanged && email.trim()) {
+      openOtpModal('email', email.trim());
+      return;
+    }
+
     setSaving(true);
     setToast(null);
     try {
       await userService.updateProfile({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        phone: phone.trim(),
         state: state.trim(),
         targetYear: targetYear.trim(),
         optionalSubject: optionalSubject.trim(),
@@ -177,7 +289,7 @@ export default function ProfilePage() {
     : 0;
 
   return (
-    <div className="h-screen bg-[#FAFBFE] px-6 py-4 relative overflow-hidden flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="h-screen bg-[#FAFBFE] px-6 py-3 relative overflow-hidden flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Toast */}
       {toast && (
         <div
@@ -199,98 +311,98 @@ export default function ProfilePage() {
       )}
 
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 mb-2">
-        <Link href="/dashboard" className="font-normal text-[14px] leading-[20px] text-[#62748e] hover:text-[#314158]">
+      <nav className="flex items-center gap-2 mb-1">
+        <Link href="/dashboard" className="font-normal text-[13px] leading-[18px] text-[#62748e] hover:text-[#314158]">
           Home
         </Link>
-        <span className="text-[14px] leading-[20px] text-[#90a1b9]">›</span>
-        <span className="font-medium text-[14px] leading-[20px] text-[#0f172b]">Profile</span>
+        <span className="text-[13px] leading-[18px] text-[#90a1b9]">›</span>
+        <span className="font-medium text-[13px] leading-[18px] text-[#0f172b]">Profile</span>
       </nav>
 
       {/* Page Title */}
-      <h1 className="text-[26px] leading-[32px] text-[#0f172b] mb-4" style={{ fontFamily: "'Georgia', serif" }}>
+      <h1 className="text-[22px] leading-[28px] text-[#0f172b] mb-2" style={{ fontFamily: "'Georgia', serif" }}>
         My Profile
       </h1>
 
-      <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+      <div className="flex flex-col lg:flex-row gap-3 flex-1 min-h-0">
         {/* Left Column - Profile Form */}
         <div className="flex-1 min-w-0">
           <div
-            className="bg-white rounded-[14px] pt-5 px-6 pb-5 flex flex-col gap-5"
+            className="bg-white rounded-[14px] pt-4 px-5 pb-4 flex flex-col gap-3"
             style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
           >
             {/* Avatar + Name Header */}
-            <div className="flex items-start gap-4 min-w-0">
-              <div className="relative w-16 h-16 flex-shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative w-12 h-12 flex-shrink-0">
                 <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center text-white font-semibold text-[24px] leading-[32px]"
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-[18px] leading-[24px]"
                   style={{ background: user?.avatarUrl ? `url(${user.avatarUrl}) center/cover` : '#d08700' }}
                 >
                   {!user?.avatarUrl && initials}
                 </div>
-                <div className="absolute left-[48px] top-[48px] w-4 h-4 bg-[#90a1b9] border-[1.6px] border-solid border-white rounded-full" />
+                <div className="absolute left-[36px] top-[36px] w-3 h-3 bg-[#90a1b9] border-[1.4px] border-solid border-white rounded-full" />
               </div>
               <div className="flex flex-col min-w-0">
-                <h2 className="font-semibold text-[20px] leading-[28px] text-[#0f172b] break-words">{displayName}</h2>
-                <p className="font-normal text-[14px] leading-[20px] text-[#62748e] truncate">{user?.email}</p>
-                <span
-                  className="inline-block mt-1 px-3 py-1 rounded-[4px] font-medium text-[12px] leading-[16px] text-[#a65f00]"
-                  style={{ background: '#fef9c2' }}
-                >
-                  {user?.role === 'admin' ? 'Admin' : 'Pro Aspirant'}
-                </span>
+                <h2 className="font-semibold text-[17px] leading-[22px] text-[#0f172b] break-words">{displayName}</h2>
+                <p className="font-normal text-[13px] leading-[18px] text-[#62748e] truncate">{user?.email}</p>
               </div>
+              <span
+                className="ml-auto px-3 py-1 rounded-[4px] font-medium text-[11px] leading-[14px] text-[#a65f00] flex-shrink-0"
+                style={{ background: '#fef9c2' }}
+              >
+                {user?.role === 'admin' ? 'Admin' : 'Pro Aspirant'}
+              </span>
             </div>
 
             {/* Form Fields */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {/* First name / Last name */}
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">First name</label>
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="flex-1 flex flex-col gap-1">
+                  <label className="font-medium text-[13px] leading-[18px] text-[#314158]">First name</label>
                   <input
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
+                    className="w-full h-[36px] px-3 py-[6px] rounded-[8px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[14px] leading-[20px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
                   />
                 </div>
-                <div className="flex-1 flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Last name</label>
+                <div className="flex-1 flex flex-col gap-1">
+                  <label className="font-medium text-[13px] leading-[18px] text-[#314158]">Last name</label>
                   <input
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
+                    className="w-full h-[36px] px-3 py-[6px] rounded-[8px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[14px] leading-[20px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
                   />
                 </div>
               </div>
 
               {/* Email */}
-              <div className="flex flex-col gap-2">
-                <label className="font-medium text-[14px] leading-[20px] text-[#314158]">
+              <div className="flex flex-col gap-1">
+                <label className="font-medium text-[13px] leading-[18px] text-[#314158]">
                   Email{' '}
-                  {user?.emailVerified !== false && (
+                  {email === originalEmail && user?.emailVerified !== false && (
                     <span className="text-[12px] leading-[16px] text-[#00a63e]">✓ Verified</span>
                   )}
                 </label>
                 <input
                   type="email"
-                  value={user?.email || ''}
-                  disabled
-                  className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-[#f8fafc] font-normal text-[16px] leading-[24px] text-[#62748e] cursor-not-allowed"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full h-[36px] px-3 py-[6px] rounded-[8px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[14px] leading-[20px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
                 />
               </div>
 
               {/* Gender / Date of Birth */}
-              <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex flex-col md:flex-row gap-3">
                 {/* Gender */}
-                <div className="flex-1 flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Gender</label>
+                <div className="flex-1 flex flex-col gap-1">
+                  <label className="font-medium text-[13px] leading-[18px] text-[#314158]">Gender</label>
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                    className="w-full h-[36px] px-3 py-[6px] rounded-[8px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[14px] leading-[20px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
                   >
                     <option value="">Select Gender</option>
                     <option value="Male">Male</option>
@@ -301,8 +413,8 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Date of Birth */}
-                <div className="flex-1 flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Date of Birth</label>
+                <div className="flex-1 flex flex-col gap-1">
+                  <label className="font-medium text-[13px] leading-[18px] text-[#314158]">Date of Birth</label>
                   <div className="relative" ref={calRef}>
                     <button
                       type="button"
@@ -420,9 +532,9 @@ export default function ProfilePage() {
               </div>
 
               {/* Phone / State */}
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Phone</label>
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="flex-1 flex flex-col gap-1">
+                  <label className="font-medium text-[13px] leading-[18px] text-[#314158]">Phone</label>
                   <input
                     type="tel"
                     inputMode="numeric"
@@ -431,18 +543,18 @@ export default function ProfilePage() {
                     value={phone}
                     onChange={(e) => handlePhoneChange(e.target.value)}
                     placeholder="9876543210"
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
+                    className="w-full h-[36px] px-3 py-[6px] rounded-[8px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[14px] leading-[20px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
                   />
                   {phone && phone.length !== 10 && (
                     <span className="text-[12px] text-[#DC2626]">Enter exactly 10 digits</span>
                   )}
                 </div>
-                <div className="flex-1 flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">State</label>
+                <div className="flex-1 flex flex-col gap-1">
+                  <label className="font-medium text-[13px] leading-[18px] text-[#314158]">State</label>
                   <select
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                    className="w-full h-[36px] px-3 py-[6px] rounded-[8px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[14px] leading-[20px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
                   >
                     <option value="">Select State</option>
                     {INDIAN_STATES.map((s) => (
@@ -453,13 +565,13 @@ export default function ProfilePage() {
               </div>
 
               {/* Target year / Optional subject */}
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Target year</label>
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="flex-1 flex flex-col gap-1">
+                  <label className="font-medium text-[13px] leading-[18px] text-[#314158]">Target year</label>
                   <select
                     value={targetYear}
                     onChange={(e) => setTargetYear(e.target.value)}
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                    className="w-full h-[36px] px-3 py-[6px] rounded-[8px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[14px] leading-[20px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
                   >
                     <option value="">Select year</option>
                     <option value="2026">2026</option>
@@ -468,12 +580,12 @@ export default function ProfilePage() {
                     <option value="Later">Later</option>
                   </select>
                 </div>
-                <div className="flex-1 flex flex-col gap-2">
-                  <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Optional subject</label>
+                <div className="flex-1 flex flex-col gap-1">
+                  <label className="font-medium text-[13px] leading-[18px] text-[#314158]">Optional subject</label>
                   <select
                     value={optionalSubject}
                     onChange={(e) => setOptionalSubject(e.target.value)}
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                    className="w-full h-[36px] px-3 py-[6px] rounded-[8px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[14px] leading-[20px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
                   >
                     <option value="">Select Subject</option>
                     <option value="Agriculture">Agriculture</option>
@@ -507,17 +619,17 @@ export default function ProfilePage() {
               </div>
 
               {/* Buttons */}
-              <div className="flex items-center justify-end gap-3">
+              <div className="flex items-center justify-end gap-3 pt-1">
                 <button
                   onClick={handleDiscard}
-                  className="h-[40px] px-6 rounded-[10px] border-[0.8px] border-[#cad5e2] bg-white font-medium text-[16px] leading-[24px] text-[#314158] hover:bg-[#f8fafc] transition-colors"
+                  className="h-[36px] px-5 rounded-[8px] border-[0.8px] border-[#cad5e2] bg-white font-medium text-[14px] leading-[20px] text-[#314158] hover:bg-[#f8fafc] transition-colors"
                 >
                   Discard
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="h-[44px] px-6 rounded-[10px] font-semibold text-[16px] leading-[24px] text-[#0f172b] transition-colors hover:opacity-90"
+                  className="h-[36px] px-5 rounded-[8px] font-semibold text-[14px] leading-[20px] text-[#0f172b] transition-colors hover:opacity-90"
                   style={{ background: '#f0b100' }}
                 >
                   {saving ? 'Saving...' : 'Save changes'}
@@ -528,41 +640,41 @@ export default function ProfilePage() {
         </div>
 
         {/* Right Column - Stats + Achievements */}
-        <div className="w-full lg:w-[339px] flex flex-col gap-4">
+        <div className="w-full lg:w-[300px] flex flex-col gap-3">
           {/* My Stats Card */}
           <div
-            className="bg-white rounded-[14px] pt-4 px-5 pb-4 flex flex-col gap-4"
+            className="bg-white rounded-[14px] pt-3 px-4 pb-3 flex flex-col gap-2"
             style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
           >
             <div className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/stats.png" alt="" width={28} height={28} className="w-7 h-7 object-contain" />
-              <h3 className="font-semibold text-[18px] leading-[28px] text-[#0f172b]">My Stats</h3>
+              <img src="/icons/stats.png" alt="" width={22} height={22} className="w-[22px] h-[22px] object-contain" />
+              <h3 className="font-semibold text-[15px] leading-[22px] text-[#0f172b]">My Stats</h3>
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Days on platform</span>
-                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{daysOnPlatform} days</span>
+                <span className="font-normal text-[13px] leading-[18px] text-[#45556c]">Days on platform</span>
+                <span className="font-semibold text-[13px] leading-[18px] text-[#0f172b]">{daysOnPlatform} days</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">MCQs attempted</span>
-                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{perfStats?.questionsAttempted?.toLocaleString() || '0'}</span>
+                <span className="font-normal text-[13px] leading-[18px] text-[#45556c]">MCQs attempted</span>
+                <span className="font-semibold text-[13px] leading-[18px] text-[#0f172b]">{perfStats?.questionsAttempted?.toLocaleString() || '0'}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Tests taken</span>
-                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{perfStats?.testsTaken?.toLocaleString() || '0'}</span>
+                <span className="font-normal text-[13px] leading-[18px] text-[#45556c]">Tests taken</span>
+                <span className="font-semibold text-[13px] leading-[18px] text-[#0f172b]">{perfStats?.testsTaken?.toLocaleString() || '0'}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Syllabus coverage</span>
-                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{perfStats?.syllabusCoverage ?? 0}%</span>
+                <span className="font-normal text-[13px] leading-[18px] text-[#45556c]">Syllabus coverage</span>
+                <span className="font-semibold text-[13px] leading-[18px] text-[#0f172b]">{perfStats?.syllabusCoverage ?? 0}%</span>
               </div>
               {(() => {
                 const streakDays = dashStats?.streak?.currentStreak ?? 0;
                 return (
                   <div className="flex items-center justify-between border-t border-[#f1f5f9] pt-2">
-                    <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Streak</span>
-                    <span className="font-semibold text-[14px] leading-[20px] text-[#d08700] flex items-center gap-1">
+                    <span className="font-normal text-[13px] leading-[18px] text-[#45556c]">Streak</span>
+                    <span className="font-semibold text-[13px] leading-[18px] text-[#d08700] flex items-center gap-1">
                       {streakDays > 0 && <span>🔥</span>}
                       {streakDays.toLocaleString()} {streakDays === 1 ? 'day' : 'days'}
                     </span>
@@ -570,8 +682,8 @@ export default function ProfilePage() {
                 );
               })()}
               <div className="flex items-center justify-between">
-                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Current rank</span>
-                <span className="font-semibold text-[14px] leading-[20px] text-[#d08700]">
+                <span className="font-normal text-[13px] leading-[18px] text-[#45556c]">Current rank</span>
+                <span className="font-semibold text-[13px] leading-[18px] text-[#d08700]">
                   {perfStats?.rank ? `#${perfStats.rank.toLocaleString()}` : '-'}
                 </span>
               </div>
@@ -580,13 +692,13 @@ export default function ProfilePage() {
 
           {/* Achievements Card */}
           <div
-            className="bg-white rounded-[14px] pt-4 px-5 pb-4 flex flex-col gap-4"
+            className="bg-white rounded-[14px] pt-3 px-4 pb-3 flex flex-col gap-2"
             style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
           >
             <div className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/trophy.png" alt="" width={28} height={28} className="w-7 h-7 object-contain" />
-              <h3 className="font-semibold text-[18px] leading-[28px] text-[#0f172b]">Achievements</h3>
+              <img src="/icons/trophy.png" alt="" width={22} height={22} className="w-[22px] h-[22px] object-contain" />
+              <h3 className="font-semibold text-[15px] leading-[22px] text-[#0f172b]">Achievements</h3>
             </div>
 
             {(() => {
@@ -603,10 +715,10 @@ export default function ProfilePage() {
 
               if (earned.length === 0) {
                 return (
-                  <div className="text-center py-4 px-2">
-                    <div className="text-[28px] mb-2">🌱</div>
-                    <p className="font-medium text-[14px] text-[#0f172b] mb-1">No badges yet</p>
-                    <p className="text-[12px] text-[#62748e]">
+                  <div className="text-center py-2 px-2">
+                    <div className="text-[22px] mb-1">🌱</div>
+                    <p className="font-medium text-[13px] text-[#0f172b] mb-0.5">No badges yet</p>
+                    <p className="text-[11px] text-[#62748e]">
                       Maintain a 3-day streak, attempt 100 MCQs, or evaluate 10 answers to earn your first badge.
                     </p>
                   </div>
@@ -614,17 +726,17 @@ export default function ProfilePage() {
               }
 
               return (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   {earned.map((achievement) => (
                     <div
                       key={achievement.label}
-                      className="flex flex-col items-center bg-[#f8fafc] rounded-[10px] pt-4 pb-4"
+                      className="flex flex-col items-center bg-[#f8fafc] rounded-[8px] py-2.5"
                     >
-                      <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center mb-2">
+                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-1.5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={achievement.icon} alt="" width={36} height={36} className="w-9 h-9 object-contain" />
+                        <img src={achievement.icon} alt="" width={28} height={28} className="w-7 h-7 object-contain" />
                       </div>
-                      <span className="font-normal text-[12px] leading-[16px] text-[#45556c] text-center">{achievement.label}</span>
+                      <span className="font-normal text-[11px] leading-[14px] text-[#45556c] text-center">{achievement.label}</span>
                     </div>
                   ))}
                 </div>
@@ -633,6 +745,86 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* OTP Verification Modal */}
+      {otpModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-[420px] rounded-[20px] bg-white p-8 shadow-2xl relative text-center">
+            <button
+              onClick={() => { setOtpModal(null); setOtpError(''); }}
+              className="absolute top-4 right-4 text-[#9CA3AF] hover:text-[#374151] text-[22px] leading-none"
+            >
+              ×
+            </button>
+
+            <div className="flex justify-center mb-4">
+              {otpModal.type === 'email' ? (
+                <div className="w-14 h-14 rounded-full bg-[#FFF8ED] flex items-center justify-center">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F5A623" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <polyline points="22,4 12,13 2,4"/>
+                  </svg>
+                </div>
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-[#FFF8ED] flex items-center justify-center">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F5A623" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                    <line x1="12" y1="18" x2="12" y2="18"/>
+                  </svg>
+                </div>
+              )}
+            </div>
+
+            <h2 className="font-bold text-[20px] text-[#0f172b] mb-1">
+              {otpModal.type === 'email' ? 'Verify Email' : 'Verify Mobile Number'}
+            </h2>
+            <p className="text-[14px] text-[#667085] mb-6">
+              {otpModal.type === 'email'
+                ? <>OTP sent to your new email address<br/>( {otpModal.value} )</>
+                : <>OTP sent to your phone number<br/>+91 {otpModal.value}</>
+              }
+            </p>
+
+            <div className="flex justify-center gap-3 mb-2" onPaste={handleOtpPaste}>
+              {otpDigits.map((d, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { otpInputRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={d}
+                  onChange={(e) => handleOtpInput(i, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                  className="w-11 h-12 rounded-[10px] border-[1.5px] text-center text-[20px] font-bold text-[#0f172b] focus:outline-none focus:border-[#F5A623] focus:ring-1 focus:ring-[#F5A623]"
+                  style={{ borderColor: d ? '#F5A623' : '#D1D5DB' }}
+                  autoFocus={i === 0}
+                />
+              ))}
+            </div>
+
+            <p className="text-[13px] text-[#9CA3AF] mb-4">Enter 6-digit OTP</p>
+
+            <p className="text-[13px] text-[#667085] mb-4">
+              {resendTimer > 0
+                ? <>Didn&apos;t receive OTP? Resend OTP in <span className="text-[#F5A623] font-semibold">00:{String(resendTimer).padStart(2, '0')}</span></>
+                : <button onClick={() => openOtpModal(otpModal.type, otpModal.value)} className="text-[#F5A623] font-semibold hover:underline">Resend OTP</button>
+              }
+            </p>
+
+            {otpError && <p className="text-[13px] text-[#DC2626] mb-3">{otpError}</p>}
+
+            <button
+              onClick={handleOtpVerify}
+              disabled={otpLoading || otpDigits.join('').length !== 6}
+              className="w-full h-[48px] rounded-[10px] font-bold text-[16px] text-[#0f172b] transition-colors hover:opacity-90 disabled:opacity-50"
+              style={{ background: '#F5A623' }}
+            >
+              {otpLoading ? 'Verifying...' : 'Verify'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
