@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { userService } from '@/lib/services';
+import { authService } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
 
 type TabId = 'profile' | 'security' | 'notifications' | 'preferences' | 'privacy';
@@ -153,6 +154,47 @@ export default function SettingsPage() {
     }
   };
 
+  const hasEmail = Boolean(email);
+
+  const savePassword = async () => {
+    if (hasEmail && !currentPw) {
+      notify('Please enter your current password.', false);
+      return;
+    }
+    if (!newPw || !confirmPw) {
+      notify('Please fill in all password fields.', false);
+      return;
+    }
+    if (newPw.length < 8) {
+      notify('New password must be at least 8 characters.', false);
+      return;
+    }
+    if (!/\d/.test(newPw)) {
+      notify('New password must contain a number.', false);
+      return;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPw)) {
+      notify('New password must contain a symbol.', false);
+      return;
+    }
+    if (newPw !== confirmPw) {
+      notify('New passwords do not match.', false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await authService.changePassword(email || undefined, currentPw, newPw);
+      notify('Password updated successfully.');
+      setCurrentPw('');
+      setNewPw('');
+      setConfirmPw('');
+    } catch (e: any) {
+      notify(e?.message || 'Could not update password.', false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const savePrivacy = async () => {
     setSaving(true);
     try {
@@ -211,22 +253,26 @@ export default function SettingsPage() {
 
   const securityView = (
     <div className="rounded-[16px] border border-[#E4E7EC] bg-white p-6 md:p-8" style={cardStyle}>
-      <h2 className="text-[20px] font-bold text-[#101828] mb-6">Security &amp; Password</h2>
+      <h2 className="text-[20px] font-bold text-[#101828] mb-6">
+        {hasEmail ? 'Security & Password' : 'Set Password'}
+      </h2>
 
       <div className="flex flex-col gap-5 max-w-[580px]">
-        <div>
-          <label className={lbl}>Current password</label>
-          <input
-            className={inp}
-            type="password"
-            placeholder="Enter current password"
-            value={currentPw}
-            onChange={(e) => setCurrentPw(e.target.value)}
-          />
-        </div>
+        {hasEmail && (
+          <div>
+            <label className={lbl}>Current password</label>
+            <input
+              className={inp}
+              type="password"
+              placeholder="Enter current password"
+              value={currentPw}
+              onChange={(e) => setCurrentPw(e.target.value)}
+            />
+          </div>
+        )}
 
         <div>
-          <label className={lbl}>New password</label>
+          <label className={lbl}>{hasEmail ? 'New password' : 'Password'}</label>
           <input
             className={inp}
             type="password"
@@ -242,7 +288,7 @@ export default function SettingsPage() {
         </div>
 
         <div>
-          <label className={lbl}>Confirm new password</label>
+          <label className={lbl}>{hasEmail ? 'Confirm new password' : 'Confirm password'}</label>
           <input
             className={inp}
             type="password"
@@ -253,7 +299,9 @@ export default function SettingsPage() {
         </div>
 
         <div>
-          <button className={primaryBtn}>Update password</button>
+          <button className={primaryBtn} onClick={savePassword} disabled={saving}>
+            {saving ? 'Updating…' : hasEmail ? 'Update password' : 'Set password'}
+          </button>
         </div>
       </div>
 

@@ -338,6 +338,19 @@ export const authService = {
     const response = await api.post<AuthResponse>('/auth/callback', { accessToken, refreshToken });
     return response.data!;
   },
+
+  changePassword: async (email: string | undefined, currentPassword: string, newPassword: string): Promise<void> => {
+    if (email) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword,
+      });
+      if (signInError) throw new Error('Current password is incorrect');
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(error.message);
+  },
 };
 
 export default authService;
