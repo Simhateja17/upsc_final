@@ -71,7 +71,6 @@ export default function SettingsPage() {
   const [dailyTarget,     setDailyTarget]     = useState('');
   const [answerReminder,  setAnswerReminder]  = useState('');
   const [language,        setLanguage]        = useState('');
-  const [theme,           setTheme]           = useState('');
 
   // Privacy
   const [privLeader,    setPrivLeader]    = useState(true);
@@ -107,7 +106,6 @@ export default function SettingsPage() {
         setDailyTarget(prefs.dailyTarget    || '');
         setAnswerReminder(prefs.answerReminder || '');
         setLanguage(prefs.language          || '');
-        setTheme(prefs.theme                || '');
 
         setPrivLeader(priv.leaderboard ?? true);
         setPrivStudy(priv.studyRoom    ?? true);
@@ -145,7 +143,7 @@ export default function SettingsPage() {
   const savePreferences = async () => {
     setSaving(true);
     try {
-      await userService.updateSettings({ preferences: { dailyTarget, answerReminder, language, theme } } as any);
+      await userService.updateSettings({ preferences: { dailyTarget, answerReminder, language } } as any);
       notify('Preferences saved.');
     } catch (e: any) {
       notify(e?.message || 'Could not save.', false);
@@ -412,18 +410,6 @@ export default function SettingsPage() {
             <option value="">Select language</option>
             <option value="english">English</option>
             <option value="hindi">Hindi (Beta)</option>
-          </select>
-        </div>
-        <div>
-          <label className={lbl}>Theme</label>
-          <select
-            className={`${inp} appearance-auto`}
-            value={theme}
-            onChange={(e) => setTheme(e.target.value)}
-          >
-            <option value="system">System Default</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
           </select>
         </div>
       </div>
