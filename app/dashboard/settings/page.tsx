@@ -253,12 +253,10 @@ export default function SettingsPage() {
 
   const securityView = (
     <div className="rounded-[16px] border border-[#E4E7EC] bg-white p-6 md:p-8" style={cardStyle}>
-      <h2 className="text-[20px] font-bold text-[#101828] mb-6">
-        {hasEmail ? 'Security & Password' : 'Set Password'}
-      </h2>
+      <h2 className="text-[20px] font-bold text-[#101828] mb-6">Security &amp; Password</h2>
 
       <div className="flex flex-col gap-5 max-w-[580px]">
-        {hasEmail && (
+        {hasEmail ? (
           <div>
             <label className={lbl}>Current password</label>
             <input
@@ -269,10 +267,17 @@ export default function SettingsPage() {
               onChange={(e) => setCurrentPw(e.target.value)}
             />
           </div>
+        ) : (
+          <div className="rounded-[10px] bg-[#EFF6FF] px-4 py-3 flex items-start gap-2">
+            <span className="text-[#1D4ED8] text-[14px] leading-none mt-0.5">ℹ</span>
+            <p className="text-[13px] text-[#475467] leading-[1.5]">
+              You signed in with your phone number. You can set or change your password here without entering a current password. To enable current password verification, link an email to your account in Profile settings.
+            </p>
+          </div>
         )}
 
         <div>
-          <label className={lbl}>{hasEmail ? 'New password' : 'Password'}</label>
+          <label className={lbl}>New password</label>
           <input
             className={inp}
             type="password"
@@ -288,7 +293,7 @@ export default function SettingsPage() {
         </div>
 
         <div>
-          <label className={lbl}>{hasEmail ? 'Confirm new password' : 'Confirm password'}</label>
+          <label className={lbl}>Confirm new password</label>
           <input
             className={inp}
             type="password"
@@ -300,7 +305,7 @@ export default function SettingsPage() {
 
         <div>
           <button className={primaryBtn} onClick={savePassword} disabled={saving}>
-            {saving ? 'Updating…' : hasEmail ? 'Update password' : 'Set password'}
+            {saving ? 'Updating…' : 'Update password'}
           </button>
         </div>
       </div>
