@@ -5,7 +5,7 @@ import Link from 'next/link';
 import PageHeroBackground from '@/components/PageHeroBackground';
 
 export type HeroStat = {
-  value: string;
+  value: React.ReactNode;
   label: string;
   color: string;
 };

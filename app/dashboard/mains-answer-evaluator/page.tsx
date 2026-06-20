@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import FilePreviewThumb from '@/components/FilePreviewThumb';
@@ -28,9 +28,9 @@ const FOCUS_SUBJECTS: Record<string, string[]> = {
 };
 
 const MARK_OPTIONS = [
-  { value: 10, words: 150 },
-  { value: 15, words: 250 },
-  { value: 20, words: 350 },
+  { value: 10, mins: 7, words: 150 },
+  { value: 15, mins: 11, words: 200 },
+  { value: 20, mins: 15, words: 250 },
 ];
 
 const SAMPLE_QUESTION = 'Analyze the role of technology in transforming Indian agriculture. What are the key barriers to its adoption?';
@@ -111,9 +111,9 @@ function ProgressStepper({ nodes, currentStep }: { nodes: { label: string; done:
       {nodes.map((s, i) => {
         const state: StepState = s.done ? 'done' : i === currentStep ? 'current' : 'upcoming';
         // current → blue, done → green, future → grey
-        const circleBg = state === 'current' ? '#1D4ED8' : state === 'done' ? '#16A34A' : '#EEF1F6';
+        const circleBg = state === 'current' ? '#1E2D4E' : state === 'done' ? '#16A34A' : '#EEF1F6';
         const numColor = state === 'upcoming' ? '#9AA3B2' : '#FFFFFF';
-        const labelColor = state === 'current' ? '#1D4ED8' : state === 'done' ? '#16A34A' : '#9AA3B2';
+        const labelColor = state === 'current' ? '#1E2D4E' : state === 'done' ? '#16A34A' : '#9AA3B2';
         return (
           <React.Fragment key={s.label}>
             <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
@@ -171,7 +171,7 @@ function ProgressStepper({ nodes, currentStep }: { nodes: { label: string; done:
 
 export default function MainsAnswerEvaluatorPage() {
   const [selectedPaper, setSelectedPaper] = useState('gs1');
-  const [paperTouched, setPaperTouched] = useState(false);
+  const [paperTouched, setPaperTouched] = useState(true);
   const [focusSubjectOpen, setFocusSubjectOpen] = useState(false);
   const [focusSubject, setFocusSubject] = useState('');
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
@@ -185,8 +185,26 @@ export default function MainsAnswerEvaluatorPage() {
   const [dropHover, setDropHover] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  /* ─── In-page file preview (modal) — build & revoke an object URL ─── */
+  useEffect(() => {
+    if (!previewFile) { setPreviewUrl(null); return; }
+    const url = URL.createObjectURL(previewFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [previewFile]);
+
+  // Close the preview modal on Escape
+  useEffect(() => {
+    if (!previewFile) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPreviewFile(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [previewFile]);
 
   const paperLabel = PAPERS.find(p => p.id === selectedPaper)?.label ?? 'GS Paper 1';
 
@@ -279,7 +297,7 @@ export default function MainsAnswerEvaluatorPage() {
             { value: '10,230+', label: 'Answers Evaluated', color: '#FDC700' },
             { value: '98.2%', label: 'Accuracy Rate', color: '#F97316' },
             { value: '< 60s', label: 'Evaluation Time', color: '#22C55E' },
-            { value: '4.8★', label: 'Average Rating', color: '#FFFFFF' },
+            { value: <>4.8<span style={{ color: '#FDC700' }}>★</span></>, label: 'Average Rating', color: '#FFFFFF' },
           ]}
         />
 
@@ -304,10 +322,10 @@ export default function MainsAnswerEvaluatorPage() {
                       <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#FFF' }}>1</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#101828', letterSpacing: '0.09em', textTransform: 'uppercase' as const }}>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '18px', color: '#101828', lineHeight: 1.25 }}>
                         Select Your Paper
                       </span>
-                      <p style={{ margin: 0, fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#6B7280' }}>
+                      <p style={{ margin: 0, fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280' }}>
                         Choose the paper, narrow to a subject, or pick your optional.
                       </p>
                     </div>
@@ -424,18 +442,17 @@ export default function MainsAnswerEvaluatorPage() {
                             background: isSelected ? '#EFF6FF' : '#FFF',
                             border: isSelected ? '2px solid #155DFC' : '1.5px solid #E5E7EB',
                             borderRadius: '14px',
-                            padding: '16px 16px',
+                            padding: '22px 16px',
                             cursor: 'pointer',
-                            textAlign: 'left',
+                            textAlign: 'center',
                             position: 'relative',
                             transition: 'all 0.15s ease',
                           }}
                         >
-                          <div style={{ marginBottom: '8px' }}>
-                            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '34px', lineHeight: 1, color: isSelected ? '#155DFC' : '#101828' }}>{m.value}</span>
-                          </div>
-                          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#101828', marginBottom: '4px' }}>Marks</div>
-                          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6B7280', lineHeight: 1.4 }}>~{m.words} words answer</div>
+                          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '40px', lineHeight: 1, color: isSelected ? '#155DFC' : '#1E2D4E' }}>{m.value}</div>
+                          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: isSelected ? '#155DFC' : '#1E2D4E', marginTop: '4px' }}>Marks</div>
+                          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280', lineHeight: 1.5, marginTop: '14px' }}>~{m.mins} mins</div>
+                          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280', lineHeight: 1.5 }}>{m.words} Words Answer</div>
                         </button>
                       );
                     })}
@@ -445,7 +462,7 @@ export default function MainsAnswerEvaluatorPage() {
                 {/* ── Step 3: Question (Optional) ── */}
                 <div style={cardStyle}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                    <StepHeader step={3} title="Question" badge="Optional" subtitle="type your question or let AI auto-detect from your answer sheet" state={stepState(2)} />
+                    <StepHeader step={3} title="Question" badge="Optional" subtitle="Type Your Question or let AI auto-detect from your answer sheet" state={stepState(2)} />
                     <button
                       onClick={() => setQuestion(SAMPLE_QUESTION)}
                       style={{
@@ -548,7 +565,7 @@ export default function MainsAnswerEvaluatorPage() {
                           </svg>
                         </div>
                         <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', color: '#101828', marginBottom: '4px' }}>
-                          {files.length > 0 ? 'Drag & Drop more pages here' : 'Drag & Drop Answer Scripts here'}
+                          Drag & Drop Answer Scripts here
                         </div>
                         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280' }}>
                           Upload handwritten answers
@@ -596,7 +613,7 @@ export default function MainsAnswerEvaluatorPage() {
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                                 <button
                                   type="button"
-                                  onClick={() => { const url = URL.createObjectURL(f); window.open(url, '_blank'); }}
+                                  onClick={() => setPreviewFile(f)}
                                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '8px 12px', background: 'none', border: '1px solid #E5E7EB', borderRadius: '10px', cursor: 'pointer' }}
                                 >
                                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="#6B7280" strokeWidth="2"/></svg>
@@ -674,6 +691,10 @@ export default function MainsAnswerEvaluatorPage() {
                     disabled={!canEvaluate || submitting}
                     style={{
                       width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '10px',
                       background: canEvaluate ? '#1E2D4E' : '#E5E7EB',
                       color: canEvaluate ? '#FFFFFF' : '#9AA3B2',
                       border: 'none',
@@ -688,7 +709,17 @@ export default function MainsAnswerEvaluatorPage() {
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    {submitting ? 'Submitting…' : (canEvaluate ? 'Evaluate My Answer' : 'Complete all steps to evaluate')}
+                    {submitting ? (
+                      'Submitting…'
+                    ) : canEvaluate ? (
+                      <>
+                        <span aria-hidden="true">🚀</span>
+                        <span>Evaluate My Answer</span>
+                        <span aria-hidden="true" style={{ fontSize: '1.1em', lineHeight: 1 }}>→</span>
+                      </>
+                    ) : (
+                      'Complete all steps to evaluate'
+                    )}
                   </button>
                   {!canEvaluate && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', marginTop: '14px' }}>
@@ -717,25 +748,22 @@ export default function MainsAnswerEvaluatorPage() {
                   )}
                 </div>
 
-                {/* ── Disclaimer (collapsible accordion) ── */}
-                <div style={{
-                  background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '14px',
-                  padding: disclaimerOpen ? '16px 20px' : '14px 20px',
-                }}>
+                {/* ── Disclaimer (plain text-row accordion) ── */}
+                <div>
                   <button
                     onClick={() => setDisclaimerOpen(o => !o)}
                     aria-expanded={disclaimerOpen}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+                      display: 'flex', alignItems: 'center', gap: '6px',
                       background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
                     }}
                   >
-                    <span style={{ fontSize: '18px', flexShrink: 0 }}>⚠️</span>
-                    <span style={{ flex: 1, fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#92400E' }}>
+                    <span style={{ fontSize: '14px', color: '#6B7280', flexShrink: 0 }}>ⓘ</span>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#6B7280' }}>
                       AI Disclaimer
                     </span>
                     <span style={{
-                      fontSize: '12px', color: '#92400E', flexShrink: 0,
+                      fontSize: '11px', color: '#6B7280', flexShrink: 0,
                       transition: 'transform 0.2s ease',
                       transform: disclaimerOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                     }}>
@@ -743,7 +771,7 @@ export default function MainsAnswerEvaluatorPage() {
                     </span>
                   </button>
                   {disclaimerOpen && (
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#92400E', lineHeight: 1.5, margin: '10px 0 0', paddingLeft: '28px' }}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280', lineHeight: 1.5, margin: '8px 0 0', paddingLeft: '20px' }}>
                       This AI-powered evaluation is for practice and self-improvement purposes only. Results are based on algorithmic
                       analysis and should not be considered as official UPSC feedback. Evaluation quality may vary based on handwriting
                       clarity and image resolution. <strong>Rise with Jeet</strong> does not guarantee specific scores in the actual examination.
@@ -788,8 +816,8 @@ export default function MainsAnswerEvaluatorPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                   {[
                     { icon: '📄', label: 'Paper', value: paperTouched ? paperLabel : 'Not selected' },
-                    { icon: '🌐', label: 'Language', value: 'English' },
                     { icon: '⭐', label: 'Max Marks', value: selectedMarks !== null ? `${selectedMarks} Marks` : 'Not selected' },
+                    { icon: '❓', label: 'Question', value: questionDone ? 'Entered' : 'Not Entered' },
                     { icon: '📎', label: 'Answer Sheet', value: files.length > 0 ? `${files.length} file${files.length > 1 ? 's' : ''}` : (answerText.trim() ? 'Typed' : 'Not uploaded') },
                   ].map(item => (
                     <div key={item.label} style={{ background: '#F8FAFC', borderRadius: '12px', padding: '14px' }}>
@@ -802,15 +830,6 @@ export default function MainsAnswerEvaluatorPage() {
                       </div>
                     </div>
                   ))}
-                </div>
-
-                {/* Question card */}
-                <div style={{ background: '#F8FAFC', borderRadius: '12px', padding: '16px', marginBottom: '18px' }}>
-                  <div style={{ fontSize: '18px', lineHeight: 1, marginBottom: '8px' }}>❓</div>
-                  <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#101828', marginBottom: '2px' }}>Question</div>
-                  <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#101828' }}>
-                    {questionDone ? 'Entered' : 'Not entered (optional)'}
-                  </div>
                 </div>
 
                 {/* Setup Progress */}
@@ -853,8 +872,20 @@ export default function MainsAnswerEvaluatorPage() {
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  {!canEvaluate && <span>⏳</span>}
-                  {submitting ? 'Submitting…' : (canEvaluate ? 'Evaluate My Answer' : 'Complete all steps to evaluate')}
+                  {submitting ? (
+                    'Submitting…'
+                  ) : canEvaluate ? (
+                    <>
+                      <span aria-hidden="true">🚀</span>
+                      <span>Evaluate My Answer</span>
+                      <span aria-hidden="true" style={{ fontSize: '1.1em', lineHeight: 1 }}>→</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>⏳</span>
+                      <span>Complete all steps to evaluate</span>
+                    </>
+                  )}
                 </button>
                 </div>
               </div>
@@ -903,6 +934,60 @@ export default function MainsAnswerEvaluatorPage() {
 
         </div>
       </main>
+
+      {/* ── In-page file preview modal ── */}
+      {previewFile && (
+        <div
+          onClick={() => setPreviewFile(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(15, 23, 43, 0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '24px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#FFFFFF', borderRadius: '16px', overflow: 'hidden',
+              width: 'min(900px, 100%)', maxHeight: '90vh',
+              display: 'flex', flexDirection: 'column',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '14px 18px', borderBottom: '1px solid #E5E7EB' }}>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#101828', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {previewFile.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPreviewFile(null)}
+                aria-label="Close preview"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#FFFFFF', cursor: 'pointer', flexShrink: 0 }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" /></svg>
+              </button>
+            </div>
+            {/* Body */}
+            <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {previewUrl && (
+                previewFile.type.startsWith('image/') ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={previewUrl} alt={previewFile.name} style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', display: 'block' }} />
+                ) : (previewFile.type === 'application/pdf' || previewFile.name.toLowerCase().endsWith('.pdf')) ? (
+                  <iframe src={previewUrl} title={previewFile.name} style={{ width: '100%', height: '80vh', border: 'none' }} />
+                ) : (
+                  <div style={{ padding: '48px 24px', textAlign: 'center', fontFamily: 'Inter, sans-serif', color: '#6B7280' }}>
+                    <div style={{ fontSize: '40px', marginBottom: '12px' }}>📄</div>
+                    <div style={{ fontSize: '14px' }}>Preview not available for this file type.</div>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
