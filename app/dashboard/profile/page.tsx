@@ -529,7 +529,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Right Column - Stats + Achievements */}
-        <div className="w-full lg:w-[339px] flex flex-col gap-4">
+        <div className="w-full lg:w-[339px] flex flex-col gap-4 overflow-y-auto min-h-0">
           {/* My Stats Card */}
           <div
             className="bg-white rounded-[14px] pt-4 px-5 pb-4 flex flex-col gap-4"
