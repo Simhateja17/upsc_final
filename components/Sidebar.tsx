@@ -47,7 +47,7 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
     {
       title: 'DASHBOARD',
       items: [
-        { id: 'overview', label: 'Overview', icon: '/sidebar-overview.png', path: '/dashboard' },
+        { id: 'overview', label: 'Home', icon: '/sidebar-overview.png', path: '/dashboard' },
         { id: 'study-planner', label: 'Study Planner', icon: '/sidebar-study-planner.png', path: '/dashboard/study-planner' },
         { id: 'jeet-gpt', label: 'Jeet AI Mentor', icon: '/sidebar-jeet-gpt.png', path: '/dashboard/jeet-gpt' },
         { id: 'syllabus-tracker', label: 'Syllabus Tracker', icon: '/sidebar-syllabus-new.png', path: '/dashboard/syllabus-tracker', accessKey: 'syllabus_tracker', allowed: ['full', 'limited'] },
@@ -121,17 +121,48 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
           transition: 'width 220ms ease, min-width 220ms ease, transform 220ms ease',
         }}
       >
-        {/* Hamburger toggle — desktop only */}
+        {/* Focus Mode + Hamburger toggle — desktop only.
+            Expanded: Focus Mode pill on the left, hamburger on the right (same row).
+            Collapsed: Focus Mode icon on top, hamburger below (stacked, centered). */}
         <div
           className={`
-            hidden lg:flex items-center flex-shrink-0 border-b border-[#F0F2F5]
-            ${collapsed ? 'justify-center px-0 py-3' : 'justify-end px-3 py-3'}
+            hidden lg:flex flex-shrink-0 border-b border-[#F0F2F5] gap-2
+            ${collapsed ? 'flex-col items-center px-0 py-3' : 'flex-row items-center justify-between px-3 py-3'}
           `}
         >
+          {/* Focus Mode button */}
+          <Link
+            href="/dashboard/study-groups?tab=solo"
+            title="Focus Mode"
+            onClick={onClose}
+            className={`
+              flex items-center rounded-full bg-white border border-[#E5E7EB]
+              hover:border-[#C7CDD6] hover:shadow-sm transition-all
+              ${collapsed ? 'justify-center w-9 h-9' : 'gap-2 px-3 py-1.5'}
+            `}
+          >
+            {/* Pulsing blue dot */}
+            <span className="relative flex h-2 w-2 flex-shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3B82F6] opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3B82F6]" />
+            </span>
+            {/* Focus icon (person) */}
+            <svg className="w-[15px] h-[15px] flex-shrink-0 text-[#4F46E5]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4.42 3.58-8 8-8s8 3.58 8 8z" />
+            </svg>
+            {!collapsed && (
+              <span className="font-inter font-semibold text-[13px] leading-none whitespace-nowrap text-[#1E2D4E]">
+                Focus Mode
+              </span>
+            )}
+          </Link>
+
+          {/* Hamburger toggle */}
           <button
             onClick={toggle}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="w-8 h-8 flex items-center justify-center rounded-[6px] text-[#9AA3B2] hover:bg-[#F3F4F6] hover:text-[#17223E] transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-[6px] flex-shrink-0 text-[#9AA3B2] hover:bg-[#F3F4F6] hover:text-[#17223E] transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect y="2.5" width="16" height="1.5" rx="0.75" fill="currentColor"/>

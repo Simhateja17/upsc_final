@@ -571,7 +571,7 @@ const ResponsiveDashboardContent = () => {
             className="px-[clamp(1rem,1.04vw,1.25rem)] py-[clamp(0.75rem,0.83vw,1rem)] rounded-[4px] flex items-center gap-3"
             style={{
               background: 'rgba(255, 255, 255, 0.1)',
-              borderLeft: '4px solid #FF8904',
+              borderLeft: '4px solid #FDC700',
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -609,7 +609,7 @@ const ResponsiveDashboardContent = () => {
             </svg>
             <input
               type="text"
-              placeholder="Ask Jeet AI Mentor: 'Explain current affairs'"
+              placeholder="Ask Jeet AI Mentor: 'Fundamental Rights vs DPSP'"
               value={searchInput}
               onFocus={() => router.push('/dashboard/jeet-gpt')}
               onChange={e => setSearchInput(e.target.value)}
@@ -721,7 +721,7 @@ const ResponsiveDashboardContent = () => {
               <Link
                 href="/dashboard/daily-mcq"
                 aria-label="Open Daily MCQ"
-                className="block bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] relative cursor-pointer h-full flex flex-col transition-colors"
+                className="block bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] relative cursor-pointer h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg"
                 style={{ borderColor: isMcqCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #22C55E' }}
               >
                 {isMcqCompleted && (
@@ -771,7 +771,7 @@ const ResponsiveDashboardContent = () => {
               {/* Mains Question Card */}
               <Link href="/dashboard/daily-answer" className="block h-full">
               <div
-                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-colors cursor-pointer relative"
+                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg cursor-pointer relative"
                 style={{ borderColor: isMainsCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #94A3B8' }}
               >
                 {isMainsCompleted && (
@@ -816,7 +816,7 @@ const ResponsiveDashboardContent = () => {
               {/* Daily Editorial Card */}
               <Link href="/dashboard/daily-editorial" className="block h-full">
               <div
-                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-colors cursor-pointer relative"
+                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg cursor-pointer relative"
                 style={{ borderColor: isEditorialCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #F59E0B' }}
               >
                 {isEditorialCompleted && (
