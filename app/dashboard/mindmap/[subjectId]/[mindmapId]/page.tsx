@@ -107,6 +107,9 @@ export default function MindmapViewPage() {
   const [selectedNodeData, setSelectedNodeData] = useState<MindmapNodeData | null>(null);
   const [selectedTreeNode, setSelectedTreeNode] = useState<TreeNode | null>(null);
 
+  // Tracks which top-level branches (by branchIndex) the user has opened
+  const [exploredBranches, setExploredBranches] = useState<Set<number>>(new Set());
+
   // Pricing
   const [proPricing, setProPricing] = useState({
     monthly: 299,
@@ -165,6 +168,14 @@ export default function MindmapViewPage() {
           if (!raw.viewed) {
             mindmapService.updateProgress(raw.id, raw.mastery, true).catch(() => {});
           }
+          if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem(`rwj_mindmap_explored_${raw.id}`);
+            if (saved) {
+              try {
+                setExploredBranches(new Set(JSON.parse(saved)));
+              } catch {}
+            }
+          }
         }
       })
       .catch(() => {})
@@ -178,8 +189,22 @@ export default function MindmapViewPage() {
       setSelectedNodeId(nodeId);
       setSelectedNodeData(nodeData);
       setSelectedTreeNode(treeNode);
+
+      // Mark top-level branches as explored and recompute mastery from progress.
+      if (nodeData.depth === 1 && !exploredBranches.has(nodeData.branchIndex)) {
+        const next = new Set(exploredBranches);
+        next.add(nodeData.branchIndex);
+        setExploredBranches(next);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`rwj_mindmap_explored_${data.id}`, JSON.stringify([...next]));
+        }
+        const topBranches = data.root.children?.length ?? 0;
+        const newMastery = topBranches > 0 ? Math.round((next.size / topBranches) * 100) : 0;
+        setData((prev) => (prev ? { ...prev, mastery: newMastery } : prev));
+        mindmapService.updateProgress(data.id, newMastery, true).catch(() => {});
+      }
     },
-    [data]
+    [data, exploredBranches]
   );
 
   const handleClosePanel = useCallback(() => {
@@ -333,6 +358,13 @@ export default function MindmapViewPage() {
                 <CheckmarkIcon />
               </div>
               <span className="text-[12px] text-[#047857] font-medium">{data.mastery}% mastered</span>
+            </div>
+
+            {/* Branches explored */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-gray-200 shadow-sm">
+              <span className="text-[12px] text-[#6B7280] font-medium">
+                Branches explored: {exploredBranches.size}/{topBranches}
+              </span>
             </div>
 
             {/* Quiz PRO button */}

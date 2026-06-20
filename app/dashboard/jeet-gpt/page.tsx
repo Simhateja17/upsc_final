@@ -95,26 +95,118 @@ function formatTime(dateStr?: string | Date): string {
 }
 
 /* ── Markdown renderer using react-markdown ── */
+/** Split a callout body into trimmed, non-empty lines (handles both single-line and multi-line bodies, with or without leading '>'). */
+function calloutBodyLines(body: string): string[] {
+  return body
+    .split('\n')
+    .map((line) => line.replace(/^\s*>?\s*/, '').trimEnd())
+    .filter(Boolean);
+}
+
 function normalizeJeetMarkup(content: string): string {
   return content
-    .replace(/>?\s*\[!ALERT[^\]]*\]\s*\n([\s\S]*?)\n>?\s*\[\/ALERT\]/g, (_match, body: string) => {
-      const lines = body
-        .split('\n')
-        .map((line) => line.replace(/^>\s?/, '').trimEnd())
-        .filter(Boolean);
-
-      return ['> **Important:**', ...lines.map((line) => `> ${line}`)].join('\n');
+    .replace(/>?\s*\[!ALERT[^\]]*\]\s*([\s\S]*?)\s*\[\/ALERT\]/g, (_match, body: string) => {
+      const lines = calloutBodyLines(body);
+      return '\n\n' + ['> **Important:**', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
     })
-    .replace(/>?\s*\[!TIP\]\s*\n([\s\S]*?)\n>?\s*\[\/TIP\]/g, (_match, body: string) => {
-      const lines = body
-        .split('\n')
-        .map((line) => line.replace(/^>\s?/, '').trimEnd())
-        .filter(Boolean);
-
-      return ['> **Tip:**', ...lines.map((line) => `> ${line}`)].join('\n');
+    .replace(/>?\s*\[!PRIORITY[^\]]*\]\s*([\s\S]*?)\s*\[\/PRIORITY\]/g, (_match, body: string) => {
+      const lines = calloutBodyLines(body);
+      return '\n\n' + ['> **🔥 UPSC HIGH-PRIORITY ALERT**', '>', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
+    })
+    .replace(/>?\s*\[!TIP\]\s*([\s\S]*?)\s*\[\/TIP\]/g, (_match, body: string) => {
+      const lines = calloutBodyLines(body);
+      return '\n\n' + ['> **💡 EXAMINER\'S TIP**', '>', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
+    })
+    .replace(/>?\s*\[!PYQ[^\]]*\]\s*([\s\S]*?)\s*\[\/PYQ\]/g, (_match, body: string) => {
+      const lines = calloutBodyLines(body);
+      return '\n\n' + ['> **📝 RELEVANT PYQ / EXAM QUESTION**', '>', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
+    })
+    .replace(/>?\s*\[!EXAM[^\]]*\]\s*([\s\S]*?)\s*\[\/EXAM\]/g, (_match, body: string) => {
+      const lines = calloutBodyLines(body);
+      return '\n\n' + ['> **🎯 EXAM RELEVANCE**', '>', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
+    })
+    .replace(/>?\s*\[!DIMENSION[^\]]*\]\s*([\s\S]*?)\s*\[\/DIMENSION\]/g, (_match, body: string) => {
+      const lines = calloutBodyLines(body);
+      return '\n\n' + ['> **📐 KEY DIMENSIONS TO COVER**', '>', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
+    })
+    .replace(/>?\s*\[!NOTE[^\]]*\]\s*([\s\S]*?)\s*\[\/NOTE\]/g, (_match, body: string) => {
+      const lines = calloutBodyLines(body);
+      return '\n\n' + ['> ** IMPORTANT NOTE**', '>', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
+    })
+    .replace(/>?\s*\[!NCERT[^\]]*\]\s*([\s\S]*?)\s*\[\/NCERT\]/g, (_match, body: string) => {
+      const lines = calloutBodyLines(body);
+      return '\n\n' + ['> **📚 NCERT REFERENCE**', '>', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
+    })
+    .replace(/>?\s*\[!CURRENT[^\]]*\]\s*([\s\S]*?)\s*\[\/CURRENT\]/g, (_match, body: string) => {
+      const lines = calloutBodyLines(body);
+      return '\n\n' + ['> **📰 CURRENT AFFAIRS LINK**', '>', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
+    })
+    .replace(/>?\s*\[!ETHICS[^\]]*\]\s*([\s\S]*?)\s*\[\/ETHICS\]/g, (_match, body: string) => {
+      const lines = calloutBodyLines(body);
+      return '\n\n' + ['> **️ ETHICS ANGLE**', '>', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
+    })
+    .replace(/>?\s*\[!PRELIMS[^\]]*\]\s*([\s\S]*?)\s*\[\/PRELIMS\]/g, (_match, body: string) => {
+      const lines = calloutBodyLines(body);
+      return '\n\n' + ['> **🔴 PRELIMS FOCUS**', '>', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
+    })
+    .replace(/>?\s*\[!MAINS[^\]]*\]\s*([\s\S]*?)\s*\[\/MAINS\]/g, (_match, body: string) => {
+      const lines = calloutBodyLines(body);
+      return '\n\n' + ['> ** MAINS FOCUS**', '>', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
     })
     .replace(/==[a-z]+{([^{}]+)}==/gi, '**$1**')
-    .replace(/^---\s*BADGES:\s*(.*?)\s*---$/gim, '**Tags:** $1');
+    .replace(/^---\s*BADGES:\s*(.*?)\s*---$/gim, '**Tags:** $1')
+    .replace(/[ \t]*•[ \t]*/g, '\n- ');
+}
+
+/** Recursively extract plain text from React children (for marker/tag detection). */
+function extractPlainText(node: React.ReactNode): string {
+  if (node == null || typeof node === 'boolean') return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractPlainText).join('');
+  if (React.isValidElement(node)) {
+    const props = node.props as { children?: React.ReactNode };
+    return extractPlainText(props.children);
+  }
+  return '';
+}
+
+const DIMENSION_COLORS = ['#4F46E5', '#0D9488', '#E11D48', '#7C3AED', '#D97706'];
+const BADGE_COLORS = [
+  { bg: '#F5F3FF', color: '#7C3AED', border: '#DDD6FE' },
+  { bg: '#F0FDFA', color: '#0D9488', border: '#99F6E4' },
+  { bg: '#FFFBEB', color: '#D97706', border: '#FDE68A' },
+  { bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' },
+];
+
+function StrongComponent({ children }: { children?: React.ReactNode }) {
+  return <strong style={{ color: '#1a1d23' }}>{children}</strong>;
+}
+
+function ParagraphComponent({ children }: { children?: React.ReactNode }) {
+  const text = extractPlainText(children);
+  const tagMatch = text.match(/^Tags:\s*(.+)$/);
+  if (tagMatch) {
+    const tags = tagMatch[1].split(',').map((t) => t.trim()).filter(Boolean);
+    return (
+      <div className="jai-tagrow">
+        {tags.map((tag, i) => {
+          const c = BADGE_COLORS[i % BADGE_COLORS.length];
+          return (
+            <span
+              key={i}
+              className="jai-tagpill"
+              style={{ background: c.bg, color: c.color, borderColor: c.border }}
+            >
+              {tag}
+            </span>
+          );
+        })}
+      </div>
+    );
+  }
+  return (
+    <p className="text-[13px] leading-6 mb-2" style={{ color: '#374151' }}>{children}</p>
+  );
 }
 
 function MarkdownRenderer({ content }: { content: string }) {
@@ -136,21 +228,57 @@ function MarkdownRenderer({ content }: { content: string }) {
         h4: ({ children }) => (
           <h4 className="font-bold text-[13px] leading-5 mt-3 mb-1" style={{ color: '#1a1d23' }}>{children}</h4>
         ),
-        p: ({ children }) => (
-          <p className="text-[13px] leading-6 mb-2" style={{ color: '#374151' }}>{children}</p>
-        ),
+        p: ParagraphComponent,
         ul: ({ children }) => (
-          <ul className="list-disc pl-5 space-y-1 mb-2">{children}</ul>
+          <ul className="list-disc pl-5 space-y-1 mb-2">
+            {React.Children.map(children, (child, idx) =>
+              React.isValidElement(child)
+                ? React.cloneElement(child as React.ReactElement<any>, { dimColor: DIMENSION_COLORS[idx % DIMENSION_COLORS.length] })
+                : child
+            )}
+          </ul>
         ),
         ol: ({ children }) => (
-          <ol className="list-decimal pl-5 space-y-1 mb-2">{children}</ol>
+          <ol className="list-decimal pl-5 space-y-1 mb-2">
+            {React.Children.map(children, (child, idx) =>
+              React.isValidElement(child)
+                ? React.cloneElement(child as React.ReactElement<any>, { dimColor: DIMENSION_COLORS[idx % DIMENSION_COLORS.length] })
+                : child
+            )}
+          </ol>
         ),
-        li: ({ children }) => (
-          <li className="text-[13px] leading-6" style={{ color: '#374151' }}>{children}</li>
-        ),
-        strong: ({ children }) => (
-          <strong style={{ color: '#1a1d23' }}>{children}</strong>
-        ),
+        li: ({ children, dimColor }: any) => {
+          const childArray = React.Children.toArray(children);
+
+          const colorizeLeadStrong = (arr: React.ReactNode[]): React.ReactNode[] => {
+            const [first, ...rest] = arr;
+            if (React.isValidElement(first) && first.type === StrongComponent) {
+              return [
+                <strong key="lead" style={{ color: dimColor }}>{(first.props as { children?: React.ReactNode }).children}</strong>,
+                ...rest,
+              ];
+            }
+            return arr;
+          };
+
+          let styled = childArray;
+          const [firstChild, ...restChildren] = childArray;
+          if (React.isValidElement(firstChild) && firstChild.type === ParagraphComponent) {
+            const pProps = firstChild.props as { children?: React.ReactNode };
+            const pChildren = colorizeLeadStrong(React.Children.toArray(pProps.children));
+            styled = [
+              React.cloneElement(firstChild as React.ReactElement<any>, { key: 'lead-p' }, ...pChildren),
+              ...restChildren,
+            ];
+          } else {
+            styled = colorizeLeadStrong(childArray);
+          }
+
+          return (
+            <li className="text-[13px] leading-6" style={{ color: '#374151' }}>{styled}</li>
+          );
+        },
+        strong: StrongComponent,
         em: ({ children }) => <em>{children}</em>,
         code: ({ className, children, ...props }) => {
           const isBlock = className?.includes('language-');
@@ -177,14 +305,118 @@ function MarkdownRenderer({ content }: { content: string }) {
             {children}
           </pre>
         ),
-        blockquote: ({ children }) => (
-          <blockquote
-            className="pl-3 mb-2 italic"
-            style={{ borderLeft: '3px solid #f0a500', color: '#4A5565' }}
-          >
-            {children}
-          </blockquote>
-        ),
+        blockquote: ({ children }) => {
+          const childArray = React.Children.toArray(children);
+          const firstText = extractPlainText(childArray[0]).trim();
+
+          if (firstText === ' UPSC HIGH-PRIORITY ALERT') {
+            return (
+              <div className="jai-callout jai-callout-priority">
+                <div className="jai-callout-title priority"><span>🔥</span> UPSC HIGH-PRIORITY ALERT</div>
+                <div className="jai-callout-body">{childArray.slice(1)}</div>
+              </div>
+            );
+          }
+
+          if (firstText === "💡 EXAMINER'S TIP") {
+            return (
+              <div className="jai-callout jai-callout-tip">
+                <div className="jai-callout-title tip"><span>💡</span> EXAMINER&apos;S TIP</div>
+                <div className="jai-callout-body">{childArray.slice(1)}</div>
+              </div>
+            );
+          }
+
+          if (firstText === '📝 RELEVANT PYQ / EXAM QUESTION') {
+            return (
+              <div className="jai-callout jai-callout-pyq">
+                <div className="jai-callout-title pyq"><span>📝</span> RELEVANT PYQ / EXAM QUESTION</div>
+                <div className="jai-callout-body">{childArray.slice(1)}</div>
+              </div>
+            );
+          }
+
+          if (firstText === '🎯 EXAM RELEVANCE') {
+            return (
+              <div className="jai-callout jai-callout-exam">
+                <div className="jai-callout-title exam"><span></span> EXAM RELEVANCE</div>
+                <div className="jai-callout-body">{childArray.slice(1)}</div>
+              </div>
+            );
+          }
+
+          if (firstText === '📐 KEY DIMENSIONS TO COVER') {
+            return (
+              <div className="jai-callout jai-callout-dimension">
+                <div className="jai-callout-title dimension"><span></span> KEY DIMENSIONS TO COVER</div>
+                <div className="jai-callout-body">{childArray.slice(1)}</div>
+              </div>
+            );
+          }
+
+          if (firstText === ' IMPORTANT NOTE') {
+            return (
+              <div className="jai-callout jai-callout-note">
+                <div className="jai-callout-title note"><span></span> IMPORTANT NOTE</div>
+                <div className="jai-callout-body">{childArray.slice(1)}</div>
+              </div>
+            );
+          }
+
+          if (firstText === '📚 NCERT REFERENCE') {
+            return (
+              <div className="jai-callout jai-callout-ncert">
+                <div className="jai-callout-title ncert"><span></span> NCERT REFERENCE</div>
+                <div className="jai-callout-body">{childArray.slice(1)}</div>
+              </div>
+            );
+          }
+
+          if (firstText === '📰 CURRENT AFFAIRS LINK') {
+            return (
+              <div className="jai-callout jai-callout-current">
+                <div className="jai-callout-title current"><span>📰</span> CURRENT AFFAIRS LINK</div>
+                <div className="jai-callout-body">{childArray.slice(1)}</div>
+              </div>
+            );
+          }
+
+          if (firstText === '️ ETHICS ANGLE') {
+            return (
+              <div className="jai-callout jai-callout-ethics">
+                <div className="jai-callout-title ethics"><span>️</span> ETHICS ANGLE</div>
+                <div className="jai-callout-body">{childArray.slice(1)}</div>
+              </div>
+            );
+          }
+
+          if (firstText === ' PRELIMS FOCUS') {
+            return (
+              <div className="jai-callout jai-callout-prelims">
+                <div className="jai-callout-title prelims"><span>🔴</span> PRELIMS FOCUS</div>
+                <div className="jai-callout-body">{childArray.slice(1)}</div>
+              </div>
+            );
+          }
+
+          if (firstText === ' MAINS FOCUS') {
+            return (
+              <div className="jai-callout jai-callout-mains">
+                <div className="jai-callout-title mains"><span></span> MAINS FOCUS</div>
+                <div className="jai-callout-body">{childArray.slice(1)}</div>
+              </div>
+            );
+          }
+
+          return (
+            <blockquote
+              className="pl-3 mb-2 italic"
+              style={{ borderLeft: '3px solid #f0a500', color: '#4A5565' }}
+            >
+              {children}
+            </blockquote>
+          );
+        },
         a: ({ href, children }) => (
           <a
             href={href}
@@ -764,6 +996,35 @@ export default function JeetGPTPage() {
         .jai-badge{display:flex;align-items:center;gap:4px;font-size:10px;padding:3px 8px;border-radius:10px;font-weight:500;white-space:nowrap;}
         .jai-badge.green{background:#f0fdf4;color:#16a34a;border:0.5px solid #bbf7d0;}
         .jai-badge.blue{background:#eff6ff;color:#1d4ed8;border:0.5px solid #bfdbfe;}
+
+        .jai-callout{border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;line-height:1.6;}
+        .jai-callout-title{font-size:11px;font-weight:700;letter-spacing:0.3px;margin-bottom:4px;display:flex;align-items:center;gap:6px;font-family:var(--font-sora),sans-serif;text-transform:uppercase;}
+        .jai-callout-body p{margin:0 0 4px;font-size:13px;line-height:1.6;color:#374151;}
+        .jai-callout-body p:last-child{margin-bottom:0;}
+        .jai-callout-priority{background:#FFF7ED;border:1px solid #FDBA74;}
+        .jai-callout-title.priority{color:#D97706;}
+        .jai-callout-tip{background:#EFF6FF;border:1px solid #BFDBFE;}
+        .jai-callout-title.tip{color:#1D4ED8;}
+        .jai-callout-pyq{background:#F0FDF4;border:1px solid #86EFAC;}
+        .jai-callout-title.pyq{color:#16A34A;}
+        .jai-callout-exam{background:#EFF6FF;border:1px solid #93C5FD;}
+        .jai-callout-title.exam{color:#2563EB;}
+        .jai-callout-dimension{background:#F5F3FF;border:1px solid #C4B5FD;}
+        .jai-callout-title.dimension{color:#7C3AED;}
+        .jai-callout-note{background:#FFFBEB;border:1px solid #FDE68A;}
+        .jai-callout-title.note{color:#D97706;}
+        .jai-callout-ncert{background:#ECFDF5;border:1px solid #6EE7B7;}
+        .jai-callout-title.ncert{color:#059669;}
+        .jai-callout-current{background:#FEF3C7;border:1px solid #FCD34D;}
+        .jai-callout-title.current{color:#D97706;}
+        .jai-callout-ethics{background:#FDF2F8;border:1px solid #F9A8D4;}
+        .jai-callout-title.ethics{color:#DB2777;}
+        .jai-callout-prelims{background:#FEE2E2;border:1px solid #FCA5A5;}
+        .jai-callout-title.prelims{color:#DC2626;}
+        .jai-callout-mains{background:#F3E8FF;border:1px solid #D8B4FE;}
+        .jai-callout-title.mains{color:#9333EA;}
+        .jai-tagrow{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;}
+        .jai-tagpill{display:inline-flex;align-items:center;font-size:10px;padding:3px 10px;border-radius:10px;font-weight:500;white-space:nowrap;border:0.5px solid;}
 
         .jai-chat-area{flex:1;overflow-y:auto;padding:24px 32px 16px;}
         .jai-welcome{text-align:center;max-width:480px;margin:0 auto;}

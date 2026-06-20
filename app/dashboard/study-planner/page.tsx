@@ -509,7 +509,14 @@ export default function StudyPlannerPage() {
       setActualSecondsByTask(prev => ({ ...prev, [task.id]: focusTaskSecs }));
     }
     if (task && !task.isCompleted) {
-      await handleToggleTask(task.id, false);
+      const actualMinutes = focusTaskSecs > 0 ? Math.max(1, Math.round(focusTaskSecs / 60)) : undefined;
+      try {
+        await studyPlannerService.updateTask(task.id, {
+          isCompleted: true,
+          ...(actualMinutes !== undefined ? { duration: actualMinutes } : {}),
+        });
+        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, isCompleted: true } : t));
+      } catch {}
     }
     const updated = focusSessionTasks.map((t, i) => i === focusTaskIdx ? { ...t, isCompleted: true } : t);
     setFocusSessionTasks(updated);

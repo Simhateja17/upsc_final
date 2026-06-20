@@ -459,6 +459,8 @@ export const flashcardService = {
   }) => api.post<any>('/flashcards', data, await freshAuthConfig()),
   updateProgress: (cardId: string, mastered: boolean) =>
     api.patch<any>(`/flashcards/${cardId}/progress`, { mastered }, authConfig()),
+  deleteTopic: (subjectId: string, topicId: string) =>
+    api.delete<any>(`/flashcards/${subjectId}/${topicId}`, authConfig()),
 };
 
 // ==================== Spaced Repetition ====================
@@ -526,6 +528,10 @@ export const userService = {
   getProfile: () => api.get<any>('/user/profile', authConfig()),
   updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; bio?: string; state?: string; targetYear?: string; optionalSubject?: string; gender?: string; dateOfBirth?: string }) =>
     api.put<any>('/user/profile', data, authConfig()),
+  sendEmailOtp: (email: string) => api.post<any>('/user/send-email-otp', { email }, authConfig()),
+  verifyEmailOtp: (email: string, otp: string) => api.post<any>('/user/verify-email-otp', { email, otp }, authConfig()),
+  sendPhoneOtp: (phone: string) => api.post<any>('/user/send-phone-otp', { phone }, authConfig()),
+  verifyPhoneOtp: (phone: string, otp: string) => api.post<any>('/user/verify-phone-otp', { phone, otp }, authConfig()),
   updateSettings: (data: { notifications?: any; preferences?: any; privacy?: any; profile?: any }) =>
     api.put<any>('/user/settings', data, authConfig()),
   submitFeedback: (data: { rating: number; category?: string; workingWell?: string; couldBeBetter?: string }) =>

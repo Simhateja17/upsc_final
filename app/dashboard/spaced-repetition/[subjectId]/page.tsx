@@ -82,6 +82,16 @@ export default function SpacedRepetitionSubjectPage() {
     }
   };
 
+  const handleDeleteItem = (id: string) => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    spacedRepService.deleteItem(id).catch(() => {
+      // rollback on failure
+      spacedRepService.getItems().then((res) => {
+        if (res.status === 'success') setItems(res.data);
+      });
+    });
+  };
+
   const toggleRemind = (id: string, current: boolean) => {
     spacedRepService.updateItem(id, { remindEnabled: !current })
       .then(async (res: { status: string }) => {
@@ -318,13 +328,14 @@ export default function SpacedRepetitionSubjectPage() {
           {/* Table header */}
           <div
             className="hidden md:grid px-6 py-3"
-            style={{ background: '#F9FAFB', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.6px', color: '#6A7282', textTransform: 'uppercase', gridTemplateColumns: '1fr 140px 120px 150px 80px', gap: 16 }}
+            style={{ background: '#F9FAFB', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', letterSpacing: '0.6px', color: '#6A7282', textTransform: 'uppercase', gridTemplateColumns: '1fr 140px 120px 150px 80px 40px', gap: 16 }}
           >
             <span>Question</span>
             <span>Subject</span>
             <span>Next Review</span>
             <span>Schedule</span>
             <span>Remind</span>
+            <span></span>
           </div>
 
           {/* Question rows */}
@@ -347,7 +358,7 @@ export default function SpacedRepetitionSubjectPage() {
                 return (
                   <div
                     key={q.id}
-                    className="grid grid-cols-1 md:grid-cols-[1fr_140px_120px_150px_80px] gap-4 items-start px-6 py-4 border-b border-[#F3F4F6]"
+                    className="group grid grid-cols-1 md:grid-cols-[1fr_140px_120px_150px_80px_40px] gap-4 items-start px-6 py-4 border-b border-[#F3F4F6]"
                     style={{ minHeight: 83, borderLeft: `4px solid ${rev.accent}` }}
                   >
                     <div>
@@ -420,6 +431,17 @@ export default function SpacedRepetitionSubjectPage() {
                           className="block w-4 h-4 rounded-full bg-white shadow transition-transform"
                           style={{ transform: q.remindEnabled ? 'translateX(20px)' : 'translateX(0)' }}
                         />
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteItem(q.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg p-1.5 hover:bg-red-50"
+                        title="Delete"
+                        style={{ color: '#EF4444' }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                       </button>
                     </div>
                   </div>

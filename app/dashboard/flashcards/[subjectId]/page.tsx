@@ -91,6 +91,7 @@ export default function FlashcardsSubjectPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [arrowImgFailed, setArrowImgFailed] = useState(false);
+  const [deletingTopicId, setDeletingTopicId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!subjectId) return;
@@ -104,6 +105,23 @@ export default function FlashcardsSubjectPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [subjectId]);
+
+  async function handleDeleteTopic(e: React.MouseEvent, topic: Topic) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (deletingTopicId) return;
+    if (!window.confirm(`Remove "${topic.name}" from your flashcard list? This cannot be undone.`)) return;
+
+    setDeletingTopicId(topic.id);
+    try {
+      await flashcardService.deleteTopic(subjectId, topic.id);
+      setTopics(prev => prev.filter(t => t.id !== topic.id));
+    } catch {
+      // Keep topic in list if deletion failed
+    } finally {
+      setDeletingTopicId(null);
+    }
+  }
 
   const totalCards = topics.reduce((s, t) => s + t.cards, 0);
   const totalMastered = topics.reduce((s, t) => s + Math.round((t.mastery / 100) * t.cards), 0);
@@ -235,6 +253,22 @@ export default function FlashcardsSubjectPage() {
                       <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, color: textColor, minWidth: 38, textAlign: 'right' }}>
                         {topic.mastery}%
                       </span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteTopic(e, topic)}
+                        disabled={deletingTopicId === topic.id}
+                        aria-label={`Delete ${topic.name}`}
+                        className="flex items-center justify-center rounded-[8px] transition-colors disabled:opacity-50"
+                        style={{ width: 32, height: 32, background: '#FEE2E2', color: '#EF4444', flexShrink: 0 }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                        </svg>
+                      </button>
                       <span style={{ color: '#D1D5DB', fontSize: 16 }} aria-hidden>›</span>
                     </div>
                   </Link>
