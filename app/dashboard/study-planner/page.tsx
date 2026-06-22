@@ -226,6 +226,7 @@ const quickAddIconBoxStyle: React.CSSProperties = {
   width: '24px',
   height: '24px',
   minWidth: '24px',
+  flexShrink: 0,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -254,10 +255,6 @@ export default function StudyPlannerPage() {
   const [adding, setAdding] = useState(false);
   const [studiedDays, setStudiedDays] = useState<number[]>([]);
   const [showSaveToast, setShowSaveToast] = useState(false);
-  const [calendarSyncEnabled, setCalendarSyncEnabled] = useState(false);
-  const [calendarSyncConnected, setCalendarSyncConnected] = useState(false);
-  const [calendarSyncLoading, setCalendarSyncLoading] = useState(false);
-  const [calendarSyncError, setCalendarSyncError] = useState('');
   const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Focus session state
@@ -380,16 +377,6 @@ export default function StudyPlannerPage() {
   }, [currentDate]);
 
   useEffect(() => {
-    studyPlannerService.getCalendarSyncStatus()
-      .then(res => {
-        setCalendarSyncEnabled(!!res.data?.enabled);
-        setCalendarSyncConnected(!!res.data?.connected);
-        setCalendarSyncError(res.data?.lastSyncError || '');
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
     studyPlannerService.getMonthlyActivity(currentDate.getFullYear(), currentDate.getMonth() + 1)
       .then(res => {
         if (res.data?.studiedDays) setStudiedDays(res.data.studiedDays);
@@ -473,43 +460,6 @@ export default function StudyPlannerPage() {
 
   const handleDeleteGoal = (i: number) => {
     persistGoals(weeklyGoals.filter((_, idx) => idx !== i));
-  };
-
-  const handleGoogleCalendarToggle = async () => {
-    if (calendarSyncLoading) return;
-    setCalendarSyncLoading(true);
-    setCalendarSyncError('');
-
-    try {
-      if (calendarSyncEnabled) {
-        const res = await studyPlannerService.updateCalendarSync(false);
-        setCalendarSyncEnabled(!!res.data?.enabled);
-        setCalendarSyncConnected(!!res.data?.connected);
-        setCalendarSyncError(res.data?.lastSyncError || '');
-        return;
-      }
-
-      if (!calendarSyncConnected) {
-        const res = await studyPlannerService.getGoogleCalendarAuthUrl();
-        if (res.data?.url) {
-          window.location.href = res.data.url;
-          return;
-        }
-      }
-
-      const res = await studyPlannerService.updateCalendarSync(true);
-      if (res.data?.needsAuth && res.data?.authUrl) {
-        window.location.href = res.data.authUrl;
-        return;
-      }
-      setCalendarSyncEnabled(!!res.data?.enabled);
-      setCalendarSyncConnected(!!res.data?.connected);
-      setCalendarSyncError(res.data?.lastSyncError || '');
-    } catch (error) {
-      setCalendarSyncError(error instanceof Error ? error.message : 'Google Calendar sync failed');
-    } finally {
-      setCalendarSyncLoading(false);
-    }
   };
 
   const showSaveAcknowledgement = () => {
@@ -1082,20 +1032,31 @@ export default function StudyPlannerPage() {
                       Study Type
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: '10px' }}>
-                      {studyTypes.map((type) => (
+                      {studyTypes.map((type) => {
+                        const selected = studyType === type.id;
+                        return (
                         <button
                           key={type.id}
                           onClick={() => setStudyType(type.id)}
-                          className="flex flex-col items-center justify-center font-arimo transition-colors"
+                          className="flex flex-col items-center justify-center font-arimo transition-all duration-150"
                           style={{
                             width: '100%',
                             height: '80px',
-                            borderRadius: '20px',
-                            border: studyType === type.id ? '2px solid #17223E' : '1px solid #E5E7EB',
+                            borderRadius: '12px',
+                            border: selected ? '2px solid #17223E' : '1px solid #E5E7EB',
                             background: '#FFFFFF',
-                            boxShadow: '0px 4px 4px 0px #00000040',
                             padding: '8px 6px',
                             gap: '4px',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (selected) return;
+                            e.currentTarget.style.borderColor = '#17223E';
+                            e.currentTarget.style.background = '#F9FAFB';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (selected) return;
+                            e.currentTarget.style.borderColor = '#E5E7EB';
+                            e.currentTarget.style.background = '#FFFFFF';
                           }}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1112,7 +1073,8 @@ export default function StudyPlannerPage() {
                             {type.label}
                           </span>
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -1435,7 +1397,7 @@ export default function StudyPlannerPage() {
             </div>
             </div>
 
-            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals + Planner Sync ── */}
+            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals + Time Distribution ── */}
             <div className="grid grid-cols-1 gap-4 mt-4 xl:grid-cols-[1fr_1fr_360px]">
 
               {/* Card 0: Syllabus Coverage */}
@@ -1507,32 +1469,6 @@ export default function StudyPlannerPage() {
               <div
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
               >
-                {/* Inline add-goal row */}
-                <div className="flex items-center gap-2 mb-5">
-                  <input
-                    type="text"
-                    value={newGoal}
-                    onChange={(e) => setNewGoal(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddGoal(); }}
-                    placeholder="Add a weekly goal..."
-                    className="flex-1 min-w-0 font-arimo outline-none transition-colors"
-                    style={{ height: '40px', borderRadius: '10px', border: '0.8px solid #E5E7EB', padding: '0 14px', fontSize: '14px', color: '#101828', background: '#FFFFFF' }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = '#4F78F6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(79, 120, 246, 0.15)'; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }}
-                  />
-                  <button
-                    onClick={handleAddGoal}
-                    disabled={!newGoal.trim()}
-                    className="flex items-center gap-1.5 font-arimo font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-40 flex-shrink-0"
-                    style={{ height: '40px', padding: '0 16px', borderRadius: '10px', background: '#17223E', fontSize: '13px' }}
-                  >
-                    <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none">
-                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                    </svg>
-                    Add
-                  </button>
-                </div>
-
                 {/* Header */}
                 <div className="flex items-center gap-2 mb-4">
                   {/* Target Icon */}
@@ -1562,7 +1498,7 @@ export default function StudyPlannerPage() {
                 })()}
 
                 {/* Goals list */}
-                <div className="space-y-3">
+                <div className="space-y-3 mb-5">
                   {weeklyGoals.length > 0 ? (
                     weeklyGoals.map((goal, i) => (
                       <div key={i} className="flex items-start gap-3 group">
@@ -1590,79 +1526,123 @@ export default function StudyPlannerPage() {
                     ))
                   ) : (
                     <p className="font-arimo text-[#6B7280] text-center" style={{ fontSize: '13px', paddingTop: '8px' }}>
-                      No goals yet — add one above to get started.
+                      No goals yet — add one below to get started.
                     </p>
                   )}
                 </div>
+
+                {/* Inline add-goal row — sits at the bottom, below the goals list */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newGoal}
+                    onChange={(e) => setNewGoal(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddGoal(); }}
+                    placeholder="Add weekly goal..."
+                    className="flex-1 min-w-0 font-arimo outline-none transition-colors"
+                    style={{ height: '40px', borderRadius: '10px', border: '0.8px solid #E5E7EB', padding: '0 14px', fontSize: '14px', color: '#101828', background: '#FFFFFF' }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = '#4F78F6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(79, 120, 246, 0.15)'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }}
+                  />
+                  <button
+                    onClick={handleAddGoal}
+                    disabled={!newGoal.trim()}
+                    className="flex items-center gap-1.5 font-arimo font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-40 flex-shrink-0"
+                    style={{ height: '40px', padding: '0 16px', borderRadius: '10px', background: '#17223E', fontSize: '13px' }}
+                  >
+                    <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none">
+                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
+                    Add
+                  </button>
+                </div>
               </div>
 
-              {/* Card 2: Planner Sync – fixed width matches "Your Plan is Empty" above */}
+              {/* Card 2: Time Distribution – dimensions match surrounding row cards */}
               <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] flex flex-col justify-between"
-                style={{ width: '100%', padding: '24px' }}
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] flex flex-col"
               >
-                <div>
-                    <div className="flex items-center gap-2 mb-4">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/image-removebg-preview%20(64)%201.png" alt="Sync" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
-                      <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '16px', lineHeight: '24px' }}>
-                        Planner Sync
-                      </h3>
-                    </div>
-
-                    <div className="space-y-3">
-                      {/* Google Calendar */}
-                      <div className="flex items-center justify-between pb-3 border-b border-[#F3F4F6]">
-                        <div className="flex items-center gap-3">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src="/Container%20(3).png" alt="GCal" style={{ width: '20px', height: '20px', objectFit: 'contain', flexShrink: 0 }} />
-                          <div>
-                            <span className="font-arimo text-[#101828]" style={{ fontSize: '14px' }}>Google Calendar</span>
-                            {calendarSyncError && (
-                              <p className="font-arimo text-[#DC2626] mt-1 max-w-[180px]" style={{ fontSize: '11px', lineHeight: '14px' }}>
-                                {calendarSyncError}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleGoogleCalendarToggle}
-                          disabled={calendarSyncLoading}
-                          aria-pressed={calendarSyncEnabled}
-                          aria-label={`${calendarSyncEnabled ? 'Disable' : 'Enable'} Google Calendar sync`}
-                          className={`w-10 h-6 rounded-full relative cursor-pointer transition-colors disabled:cursor-wait disabled:opacity-60 ${calendarSyncEnabled ? 'bg-[#101828]' : 'bg-[#D1D5DB]'}`}
-                        >
-                          <span
-                            className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${calendarSyncEnabled ? 'translate-x-4' : 'translate-x-0'}`}
-                          />
-                        </button>
-                      </div>
-
-                      {/* Smart Notifications */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src="/Container%20(4).png" alt="Notifications" style={{ width: '20px', height: '20px', objectFit: 'contain', flexShrink: 0 }} />
-                          <span className="font-arimo text-[#101828]" style={{ fontSize: '14px' }}>Smart Notifications</span>
-                        </div>
-                        {/* Toggle ON */}
-                         <div className="w-10 h-6 bg-[#101828] rounded-full relative cursor-pointer">
-                          <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-transform"></div>
-                        </div>
-                      </div>
-                    </div>
+                <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
+                  <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>
+                    <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
+                  </div>
+                  <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
+                    Time Distribution
+                  </span>
                 </div>
-                
-                {/* Button */}
-                <button
-                    onClick={startFocusSession}
-                    disabled={pendingTaskCount === 0}
-                    className="w-full bg-[#101828] text-white font-arimo font-bold rounded-[8px] hover:opacity-90 transition-opacity disabled:opacity-40"
-                    style={{ height: '40px', fontSize: '14px' }}
-                >
-                    Start Today&apos;s Session
-                </button>
+
+                {/* SVG Pie Chart */}
+                <div className="flex items-center justify-center" style={{ marginBottom: '12px' }}>
+                  {!hasCompletedTimeDistribution ? (
+                    <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
+                      Complete at least one task to see distribution
+                    </div>
+                  ) : (
+                    <svg viewBox="0 0 160 160" width="160" height="160">
+                      {(() => {
+                        const cx = 80, cy = 80, r = 60, strokeWidth = 20;
+                        const gap = timeByType.length > 1 ? 0.06 : 0; // small gap between segments
+                        let angle = -Math.PI / 2;
+                        return timeByType.map((slice) => {
+                          const sliceAngle = (slice.seconds / totalTypeSecs) * 2 * Math.PI;
+                          // Single full-ring segment: draw a plain circle (arc can't close 360°).
+                          if (timeByType.length === 1) {
+                            return (
+                              <circle
+                                key={slice.id}
+                                cx={cx}
+                                cy={cy}
+                                r={r}
+                                fill="none"
+                                stroke={slice.color}
+                                strokeWidth={strokeWidth}
+                              />
+                            );
+                          }
+                          const start = angle + gap / 2;
+                          const end = angle + sliceAngle - gap / 2;
+                          const path = donutArcPath(cx, cy, r, start, end);
+                          angle += sliceAngle;
+                          return (
+                            <path
+                              key={slice.id}
+                              d={path}
+                              fill="none"
+                              stroke={slice.color}
+                              strokeWidth={strokeWidth}
+                              strokeLinecap="round"
+                            />
+                          );
+                        });
+                      })()}
+                      <text x="80" y="74" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="26" fontFamily="Arimo, sans-serif">
+                        {fmtDuration(totalTypeSecs)}
+                      </text>
+                      <text x="80" y="96" textAnchor="middle" dominantBaseline="middle" fill="#9CA3AF" fontSize="12" fontFamily="Arimo, sans-serif">
+                        today
+                      </text>
+                    </svg>
+                  )}
+                </div>
+
+                {/* Legend */}
+                <div className="space-y-2">
+                  {!hasCompletedTimeDistribution ? (
+                    <div className="font-arimo text-[#9CA3AF] text-center" style={{ fontSize: '13px', paddingTop: '4px' }}>
+                      Complete tasks to see subject-wise distribution
+                    </div>
+                  ) : (
+                    timeByType.map(slice => (
+                      <div key={slice.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: slice.color }}></span>
+                          <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{slice.label}</span>
+                        </div>
+                        <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtDuration(slice.seconds)}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
 
             </div>
@@ -1771,6 +1751,8 @@ export default function StudyPlannerPage() {
                       color: '#374151',
                       padding: '8px 10px',
                       flex: '1 1 120px',
+                      minWidth: 0,
+                      overflow: 'hidden',
                       textAlign: 'left',
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -1779,13 +1761,14 @@ export default function StudyPlannerPage() {
                     }}
                   >
                     {SUBJECT_ICON_MAP[item] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={SUBJECT_ICON_MAP[item]}
-                        alt=""
-                        aria-hidden="true"
-                        style={{ ...quickAddIconBoxStyle, objectFit: 'contain' }}
-                      />
+                      <span aria-hidden="true" style={quickAddIconBoxStyle}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={SUBJECT_ICON_MAP[item]}
+                          alt=""
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }}
+                        />
+                      </span>
                     ) : (
                       <span
                         aria-hidden="true"
@@ -1794,102 +1777,11 @@ export default function StudyPlannerPage() {
                         {getSubjectEmoji(item)}
                       </span>
                     )}
-                    {item}
+                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item}
+                    </span>
                   </button>
                 ))}
-              </div>
-            </div>
-
-            {/* Time Distribution */}
-            <div
-              style={{
-                width: '100%',
-                borderRadius: '16px',
-                border: '0.8px solid #E5E7EB',
-                background: '#FFFFFF',
-                padding: '20px 16px',
-              }}
-            >
-              <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
-                <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>
-                  <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
-                </div>
-                <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
-                  Time Distribution
-                </span>
-              </div>
-
-              {/* SVG Pie Chart */}
-              <div className="flex items-center justify-center" style={{ marginBottom: '12px' }}>
-                {!hasCompletedTimeDistribution ? (
-                  <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
-                    Complete at least one task to see distribution
-                  </div>
-                ) : (
-                  <svg viewBox="0 0 160 160" width="160" height="160">
-                    {(() => {
-                      const cx = 80, cy = 80, r = 60, strokeWidth = 20;
-                      const gap = timeByType.length > 1 ? 0.06 : 0; // small gap between segments
-                      let angle = -Math.PI / 2;
-                      return timeByType.map((slice) => {
-                        const sliceAngle = (slice.seconds / totalTypeSecs) * 2 * Math.PI;
-                        // Single full-ring segment: draw a plain circle (arc can't close 360°).
-                        if (timeByType.length === 1) {
-                          return (
-                            <circle
-                              key={slice.id}
-                              cx={cx}
-                              cy={cy}
-                              r={r}
-                              fill="none"
-                              stroke={slice.color}
-                              strokeWidth={strokeWidth}
-                            />
-                          );
-                        }
-                        const start = angle + gap / 2;
-                        const end = angle + sliceAngle - gap / 2;
-                        const path = donutArcPath(cx, cy, r, start, end);
-                        angle += sliceAngle;
-                        return (
-                          <path
-                            key={slice.id}
-                            d={path}
-                            fill="none"
-                            stroke={slice.color}
-                            strokeWidth={strokeWidth}
-                            strokeLinecap="round"
-                          />
-                        );
-                      });
-                    })()}
-                    <text x="80" y="74" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="26" fontFamily="Arimo, sans-serif">
-                      {fmtDuration(totalTypeSecs)}
-                    </text>
-                    <text x="80" y="96" textAnchor="middle" dominantBaseline="middle" fill="#9CA3AF" fontSize="12" fontFamily="Arimo, sans-serif">
-                      today
-                    </text>
-                  </svg>
-                )}
-              </div>
-
-              {/* Legend */}
-              <div className="space-y-2">
-                {!hasCompletedTimeDistribution ? (
-                  <div className="font-arimo text-[#9CA3AF] text-center" style={{ fontSize: '13px', paddingTop: '4px' }}>
-                    Complete tasks to see subject-wise distribution
-                  </div>
-                ) : (
-                  timeByType.map(slice => (
-                    <div key={slice.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: slice.color }}></span>
-                        <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{slice.label}</span>
-                      </div>
-                      <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtDuration(slice.seconds)}</span>
-                    </div>
-                  ))
-                )}
               </div>
             </div>
 

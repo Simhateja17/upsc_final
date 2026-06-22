@@ -239,12 +239,6 @@ const IconPlus = () => (
 const IconSend = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
 );
-const IconPaperclip = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
-);
-const IconMic = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10a7 7 0 0 0 14 0M12 17v4" /></svg>
-);
 const IconChat = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
 );
@@ -267,6 +261,7 @@ export default function JeetGPTPage() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [proBannerDismissed, setProBannerDismissed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [conversations, setConversations] = useState<GroupedConversations>({
@@ -405,6 +400,18 @@ export default function JeetGPTPage() {
   const quotaLimit = aiQuota?.limit ?? null;
   const quotaUsed = aiQuota?.used ?? 0;
   const fillPct = quotaLimit ? Math.min(100, Math.round((quotaUsed / quotaLimit) * 100)) : 0;
+  const quotaRemaining = quotaLimit !== null ? Math.max(0, quotaLimit - quotaUsed) : null;
+  // Proactive "Explore Pro" nudge: shown once usage gets high (>= 50% of the daily
+  // cap) but before the cap is hit. The at-limit case is handled by the upgrade modal.
+  // NOTE: 50% threshold is a business choice — adjust HIGH_USAGE_THRESHOLD as needed.
+  const HIGH_USAGE_THRESHOLD = 0.5;
+  const showProBanner =
+    user?.role !== 'admin' &&
+    quotaLimit !== null &&
+    quotaLimit > 0 &&
+    !queriesExhausted &&
+    quotaUsed / quotaLimit >= HIGH_USAGE_THRESHOLD &&
+    !proBannerDismissed;
 
   const allConvos: { label: string; items: ConversationSummary[] }[] = [
     { label: 'Today', items: conversations.today },
@@ -607,6 +614,34 @@ export default function JeetGPTPage() {
         </div>
 
         <div className="jai-input-wrap">
+          {showProBanner && (
+            <div className="jai-pro-banner">
+              <div className="jai-pro-banner-text">
+                <strong>You&apos;re making great progress!</strong>
+                <span>
+                  Pro members get unlimited queries
+                  {quotaRemaining !== null ? ` — you have ${quotaRemaining} of ${quotaLimit} left today.` : '.'}
+                </span>
+              </div>
+              <div className="jai-pro-banner-actions">
+                <button
+                  type="button"
+                  className="jai-pro-banner-cta"
+                  onClick={() => router.push('/dashboard/billing/plans')}
+                >
+                  Explore Pro
+                </button>
+                <button
+                  type="button"
+                  className="jai-pro-banner-close"
+                  aria-label="Dismiss"
+                  onClick={() => setProBannerDismissed(true)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                </button>
+              </div>
+            </div>
+          )}
           <form className="jai-input-row" onSubmit={handleSubmit}>
             <textarea
               ref={textareaRef}
@@ -619,14 +654,11 @@ export default function JeetGPTPage() {
               disabled={isLoading || queriesExhausted}
             />
             <div className="jai-input-actions">
-              <div className="jai-action-btn" title="Attach file"><IconPaperclip /></div>
-              <div className="jai-action-btn" title="Voice input"><IconMic /></div>
               <button type="submit" className={`jai-send-btn${canSend ? ' active' : ''}`} disabled={!canSend}>
                 {isLoading ? <Spinner /> : <IconSend />}
               </button>
             </div>
           </form>
-          <div className="jai-disclaimer">Jeet AI Mentor may make mistakes. Always verify important facts from <span>NCERT &amp; official sources</span>.</div>
         </div>
       </div>
 
@@ -791,6 +823,15 @@ export default function JeetGPTPage() {
         .jai-chip:hover{border-color:#f0a500;color:#b07a00;background:#fffbf0;}
 
         .jai-input-wrap{padding:14px 20px;border-top:0.5px solid #f1f3f5;background:#fff;flex-shrink:0;}
+        .jai-pro-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;padding:10px 14px;border-radius:12px;background:#FFFBEB;border:1px solid #FDE68A;}
+        .jai-pro-banner-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
+        .jai-pro-banner-text strong{font-size:13px;color:#92400E;font-weight:700;}
+        .jai-pro-banner-text span{font-size:12px;color:#B45309;}
+        .jai-pro-banner-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+        .jai-pro-banner-cta{background:#FDC700;color:#101828;font-size:12px;font-weight:700;border:none;border-radius:9px;padding:8px 14px;cursor:pointer;white-space:nowrap;transition:background .2s;}
+        .jai-pro-banner-cta:hover{background:#F5C200;}
+        .jai-pro-banner-close{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border:none;background:transparent;color:#B45309;cursor:pointer;border-radius:7px;transition:background .2s;}
+        .jai-pro-banner-close:hover{background:#FDE68A;}
         .jai-input-row{display:flex;align-items:center;gap:10px;background:#f8f9fa;border:1px solid #e2e5ed;border-radius:14px;padding:10px 14px;transition:border .2s,background .2s;}
         .jai-input-row:focus-within{border-color:#f0a500;background:#fff;}
         .jai-input{flex:1;border:none;background:transparent;font-size:13px;font-family:var(--font-dm-sans),sans-serif;color:#1a1d23;resize:none;outline:none;line-height:1.5;max-height:80px;text-align:left;}
@@ -803,8 +844,6 @@ export default function JeetGPTPage() {
         .jai-send-btn:hover:not(:disabled){background:#374151;}
         .jai-send-btn.active{background:#f0a500;}
         .jai-send-btn:disabled{opacity:.5;cursor:default;}
-        .jai-disclaimer{text-align:center;font-size:10px;color:#9ca3af;margin-top:8px;}
-        .jai-disclaimer span{color:#9ca3af;font-weight:500;}
 
         .jai-msg-user{display:flex;justify-content:flex-end;margin-bottom:14px;}
         .jai-msg-user-bubble{max-width:70%;background:#1a1d23;color:#e6edf3;padding:10px 14px;border-radius:12px 12px 2px 12px;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;}

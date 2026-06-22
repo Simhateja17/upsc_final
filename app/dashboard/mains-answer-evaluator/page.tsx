@@ -439,20 +439,19 @@ export default function MainsAnswerEvaluatorPage() {
                           style={{
                             flex: '1 1 0',
                             minWidth: '120px',
-                            background: isSelected ? '#EFF6FF' : '#FFF',
-                            border: isSelected ? '2px solid #155DFC' : '1.5px solid #E5E7EB',
-                            borderRadius: '14px',
-                            padding: '22px 16px',
+                            background: isSelected ? '#EFF6FF' : '#FAFAFA',
+                            border: isSelected ? '1.8px solid #17223E' : '1.6px solid #E5E7EB',
+                            borderRadius: '12px',
+                            padding: '12px 14px',
                             cursor: 'pointer',
                             textAlign: 'center',
                             position: 'relative',
                             transition: 'all 0.15s ease',
                           }}
                         >
-                          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '40px', lineHeight: 1, color: isSelected ? '#155DFC' : '#1E2D4E' }}>{m.value}</div>
-                          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: isSelected ? '#155DFC' : '#1E2D4E', marginTop: '4px' }}>Marks</div>
-                          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280', lineHeight: 1.5, marginTop: '14px' }}>~{m.mins} mins</div>
-                          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280', lineHeight: 1.5 }}>{m.words} Words Answer</div>
+                          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 800, fontSize: '26px', lineHeight: 1, color: isSelected ? '#17223E' : '#1E2D4E' }}>{m.value}</div>
+                          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '12px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: isSelected ? '#17223E' : '#1E2D4E', marginTop: '2px' }}>Marks</div>
+                          <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6B7280', lineHeight: 1.4, marginTop: '8px' }}>~{m.mins} mins · {m.words} words</div>
                         </button>
                       );
                     })}
@@ -748,22 +747,23 @@ export default function MainsAnswerEvaluatorPage() {
                   )}
                 </div>
 
-                {/* ── Disclaimer (plain text-row accordion) ── */}
-                <div>
+                {/* ── Disclaimer (centered, subtle text-row accordion) ── */}
+                <div style={{ textAlign: 'center' }}>
                   <button
                     onClick={() => setDisclaimerOpen(o => !o)}
                     aria-expanded={disclaimerOpen}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: '6px',
-                      background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      margin: '0 auto',
+                      background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                     }}
                   >
-                    <span style={{ fontSize: '14px', color: '#6B7280', flexShrink: 0 }}>ⓘ</span>
-                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#6B7280' }}>
+                    <span style={{ fontSize: '13px', color: '#9CA3AF', flexShrink: 0 }}>ⓘ</span>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: '12px', color: '#9CA3AF' }}>
                       AI Disclaimer
                     </span>
                     <span style={{
-                      fontSize: '11px', color: '#6B7280', flexShrink: 0,
+                      fontSize: '10px', color: '#9CA3AF', flexShrink: 0,
                       transition: 'transform 0.2s ease',
                       transform: disclaimerOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                     }}>
@@ -771,7 +771,7 @@ export default function MainsAnswerEvaluatorPage() {
                     </span>
                   </button>
                   {disclaimerOpen && (
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280', lineHeight: 1.5, margin: '8px 0 0', paddingLeft: '20px' }}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#9CA3AF', lineHeight: 1.5, margin: '8px auto 0', maxWidth: '560px', textAlign: 'center' }}>
                       This AI-powered evaluation is for practice and self-improvement purposes only. Results are based on algorithmic
                       analysis and should not be considered as official UPSC feedback. Evaluation quality may vary based on handwriting
                       clarity and image resolution. <strong>Rise with Jeet</strong> does not guarantee specific scores in the actual examination.

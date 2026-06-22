@@ -48,42 +48,19 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData, cm
     { key: 'optional' as Mode, label: stageTabs.optional || 'Optional', pct: calculateModePct('optional') },
   ];
 
-  const highlightedTab = mode;
-  const highlightedIndex = tabs.findIndex((tab) => tab.key === highlightedTab);
-  const thumbLeft =
-    highlightedIndex === 0
-      ? '6px'
-      : highlightedIndex === 1
-        ? 'calc(12px + ((100% - 18px) / 3))'
-        : 'calc(18px + 2 * ((100% - 18px) / 3))';
-
   return (
     <div className="flex justify-start">
       <div
-        className="relative inline-flex items-center overflow-hidden min-w-max max-w-full"
+        className="relative inline-flex items-center min-w-max max-w-full"
         style={{
           background: 'linear-gradient(180deg, #FFFFFF 0%, #F6F8FC 100%)',
           borderRadius: '999px',
           padding: '6px',
+          gap: '4px',
           border: '1px solid #E4E9F2',
           boxShadow: '0 10px 30px -22px rgba(15, 23, 43, 0.35), inset 0 1px 0 rgba(255,255,255,0.95)',
         }}
       >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-[3px] bottom-[3px] z-0"
-        style={{
-          left: thumbLeft,
-          top: '6px',
-          bottom: '6px',
-          width: 'calc((100% - 18px) / 3)',
-          borderRadius: '999px',
-          background: '#0F172B',
-          boxShadow: '0 8px 20px rgba(15, 23, 43, 0.24)',
-          transition: 'left 220ms ease, width 220ms ease, background 220ms ease, box-shadow 220ms ease',
-        }}
-      />
-
       {tabs.map((tab) => {
         const isActive = mode === tab.key;
 
@@ -94,10 +71,14 @@ export default function StageTabs({ mode, onModeChange, states, syllabusData, cm
             className="relative z-10 flex items-center justify-center gap-2 whitespace-nowrap transition-colors duration-200"
             style={{
               padding: '12px 22px',
+              borderRadius: '999px',
               color: isActive ? '#FFFFFF' : '#17223E',
+              background: isActive ? '#0F172B' : 'transparent',
+              boxShadow: isActive ? '0 8px 20px rgba(15, 23, 43, 0.24)' : 'none',
               fontWeight: 700,
               fontSize: '14px',
               lineHeight: '1',
+              transition: 'background 220ms ease, color 200ms ease, box-shadow 220ms ease',
             }}
             aria-label={`${tab.label} ${tab.pct}% complete`}
           >
