@@ -12,6 +12,53 @@ import { useEntitlements } from '@/contexts/EntitlementsContext';
 const PdfViewer = dynamic(() => import('@/components/PdfViewer'), { ssr: false });
 
 /* ------------------------------------------------------------------ */
+/*  Study-material action button styling (Read / Get PDF / Unlock)     */
+/* ------------------------------------------------------------------ */
+
+// Glossy gold fill: a white shine layer over a vertical amber→gold gradient.
+const GOLD_GRADIENT =
+  'linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0) 100%), linear-gradient(180deg, #FBC02D 0%, #F59E0B 100%)';
+const GOLD_SHADOW = '0 4px 12px rgba(245,158,11,0.40)';
+const GOLD_SHADOW_HOVER = '0 6px 18px rgba(245,158,11,0.50)';
+
+const BookOpenIcon = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+  </svg>
+);
+
+const DownloadIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#42290A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+const SparklesIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFD96B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+    <path d="M5 3v4" />
+    <path d="M19 17v4" />
+    <path d="M3 5h4" />
+    <path d="M17 19h4" />
+  </svg>
+);
+
+// Premium "btn-pro" — dark navy brand gradient with gold text + gold glow.
+const PRO_GRADIENT = 'linear-gradient(135deg, #1A2440 0%, #0B1424 100%)';
+const PRO_SHADOW = 'inset 0 0 0 1px rgba(245,179,1,0.35), 0 8px 24px -10px rgba(245,179,1,0.35)';
+const PRO_SHADOW_HOVER = 'inset 0 0 0 1px rgba(245,179,1,0.5), 0 10px 28px -10px rgba(245,179,1,0.5)';
+
+/* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -177,9 +224,9 @@ export default function LibraryPage() {
     banner_subtitle: "Every PDF is designed with one obsession, your selection. Here's what makes us different from every other resource out there.",
     banner_stat_number: '15K+',
     banner_stat_label: "Aspirants trust\nRise with Jeet",
-    cta_title: 'Ready to start your IAS journey the right way?',
-    cta_subtitle: 'Access 100+ PDFs, PYQ notes, and study roadmaps, all designed to help you crack UPSC.',
-    cta_button_primary: 'Start Studying',
+    cta_title: 'Unlock Simplified Notes, Smart Mnemonic Tricks',
+    cta_subtitle: 'Get access to 100+ PYQ-backed notes, mnemonics, simplified mindmap PDFs - everything you need to crack UPSC.',
+    cta_button_primary: 'Download PDFs',
     cta_button_secondary: 'Watch on YouTube',
   });
 
@@ -192,9 +239,9 @@ export default function LibraryPage() {
   const bannerSubtitle = "Every PDF is designed with one obsession, your selection. Here's what makes us different from every other resource out there.";
   const bannerStatNumber = cms?.banner_stat_number || '15K+';
   const bannerStatLabel = cms?.banner_stat_label || "Aspirants trust\nRise with Jeet";
-  const ctaTitle = cms?.cta_title || 'Ready to start your IAS journey the right way?';
-  const ctaSubtitle = 'Access 100+ PDFs, PYQ notes, and study roadmaps, all designed to help you crack UPSC.';
-  const ctaButtonPrimary = 'Start Studying';
+  const ctaTitle = cms?.cta_title || 'Unlock Simplified Notes, Smart Mnemonic Tricks';
+  const ctaSubtitle = 'Get access to 100+ PYQ-backed notes, mnemonics, simplified mindmap PDFs - everything you need to crack UPSC.';
+  const ctaButtonPrimary = 'Download PDFs';
   const ctaButtonSecondary = cms?.cta_button_secondary || 'Watch on YouTube';
   const features = [
     { emoji: '🎯', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff, only what earns marks in Prelims and Mains.' },
@@ -225,6 +272,8 @@ export default function LibraryPage() {
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(100);
+  // Bumped on prev/next click so the viewer scrolls the requested page into view.
+  const [scrollRequest, setScrollRequest] = useState<{ page: number; n: number }>({ page: 1, n: 0 });
   const selectedApiSubject = apiSubjects.find(s => s.name === selectedSubject) ?? null;
 
   // Fetch subjects on mount
@@ -289,6 +338,7 @@ export default function LibraryPage() {
         setNumPages(pages.length);
         setPageNumber(1);
         setZoomLevel(100);
+        setScrollRequest({ page: 1, n: 0 });
         setReadModal({ pages, title: data.title || material.title || material.name || 'Note' });
         entitlements.refreshEntitlements();
       } else {
@@ -302,11 +352,6 @@ export default function LibraryPage() {
 
   // Get PDF: always go to upgrade/billing
   const handleGetPdf = () => {
-    window.location.href = '/dashboard/billing/plans?source=library';
-  };
-
-  // Upgrade (locked notes)
-  const handleUpgrade = () => {
     window.location.href = '/dashboard/billing/plans?source=library';
   };
 
@@ -1040,105 +1085,108 @@ export default function LibraryPage() {
                   {/* Action buttons */}
                   <div className="flex items-center" style={{ gap: '10px', flexShrink: 0, flexBasis: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'flex-end' : undefined }}>
                     {material.isLocked ? (
-                      <>
-                        {/* Unlock & Get PDF */}
-                        <button
-                          className="font-arimo font-bold"
-                          onClick={handleUpgrade}
-                          style={{
-                            fontSize: '13px',
-                            background: 'linear-gradient(135deg, #E6A817, #F4A97A)',
-                            color: '#FFFFFF',
-                            borderRadius: '20px',
-                            height: '38px',
-                            padding: '0 18px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            boxShadow: '0 2px 8px rgba(230,168,23,0.3)',
-                            transition: 'all 0.15s ease',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-1px)';
-                            e.currentTarget.style.boxShadow = '0 4px 14px rgba(230,168,23,0.4)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(230,168,23,0.3)';
-                          }}
-                        >
-                          <span style={{ fontSize: '15px', lineHeight: 1 }}>🔒</span>
-                          Unlock & Get PDF
-                        </button>
-                      </>
+                      /* Unlock & Get PDF — glossy gold, dark text + lock icon */
+                      <button
+                        className="font-arimo font-bold"
+                        onClick={handleGetPdf}
+                        style={{
+                          fontSize: '14px',
+                          background: GOLD_GRADIENT,
+                          color: '#42290A',
+                          borderRadius: '12px',
+                          height: '44px',
+                          padding: '0 20px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          boxShadow: GOLD_SHADOW,
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = GOLD_SHADOW_HOVER;
+                          e.currentTarget.style.filter = 'brightness(1.04)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = GOLD_SHADOW;
+                          e.currentTarget.style.filter = 'none';
+                        }}
+                      >
+                        <LockIcon />
+                        Unlock &amp; Get PDF
+                      </button>
                     ) : (
                       <>
-                        {/* Read — opens protected in-app viewer */}
+                        {/* Read — white, bordered, dark text + open-book icon */}
                         <button
                           className="font-arimo font-bold"
                           onClick={() => materialId && handleRead(material)}
                           disabled={loadingRead === materialId}
                           style={{
-                            fontSize: '13px',
-                            background: '#E8F0E9',
-                            color: '#3A7A4F',
-                            borderRadius: '20px',
-                            height: '38px',
-                            padding: '0 18px',
-                            border: '1.5px solid rgba(109,191,138,0.3)',
+                            fontSize: '14px',
+                            background: '#FFFFFF',
+                            color: '#1E293B',
+                            borderRadius: '12px',
+                            height: '44px',
+                            padding: '0 20px',
+                            border: '1px solid #E2E8F0',
                             cursor: 'pointer',
                             whiteSpace: 'nowrap',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px',
+                            gap: '8px',
+                            boxShadow: '0 1px 2px rgba(16,24,40,0.05)',
                             opacity: loadingRead === materialId ? 0.6 : 1,
                             transition: 'all 0.15s ease',
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#D0F0DC';
-                            e.currentTarget.style.borderColor = '#6DBF8A';
+                            e.currentTarget.style.background = '#F8FAFC';
+                            e.currentTarget.style.borderColor = '#CBD5E1';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.background = '#E8F0E9';
-                            e.currentTarget.style.borderColor = 'rgba(109,191,138,0.3)';
+                            e.currentTarget.style.background = '#FFFFFF';
+                            e.currentTarget.style.borderColor = '#E2E8F0';
                           }}
                         >
-                          <span style={{ fontSize: '15px', lineHeight: 1 }}>📖</span>
+                          <BookOpenIcon />
                           {loadingRead === materialId ? 'Opening…' : 'Read'}
                         </button>
-                        {/* Get PDF — always goes to upgrade */}
+                        {/* Get PDF — glossy gold, white text + download icon */}
                         <button
                           className="font-arimo font-bold"
                           onClick={handleGetPdf}
                           style={{
-                            fontSize: '13px',
-                            background: 'linear-gradient(135deg, #E6A817, #F4A97A)',
+                            fontSize: '14px',
+                            background: GOLD_GRADIENT,
                             color: '#FFFFFF',
-                            borderRadius: '20px',
-                            height: '38px',
-                            padding: '0 18px',
+                            borderRadius: '12px',
+                            height: '44px',
+                            padding: '0 20px',
                             border: 'none',
                             cursor: 'pointer',
                             whiteSpace: 'nowrap',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px',
-                            boxShadow: '0 2px 8px rgba(230,168,23,0.3)',
+                            gap: '8px',
+                            boxShadow: GOLD_SHADOW,
                             transition: 'all 0.15s ease',
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.transform = 'translateY(-1px)';
-                            e.currentTarget.style.boxShadow = '0 4px 14px rgba(230,168,23,0.4)';
+                            e.currentTarget.style.boxShadow = GOLD_SHADOW_HOVER;
+                            e.currentTarget.style.filter = 'brightness(1.04)';
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(230,168,23,0.3)';
+                            e.currentTarget.style.boxShadow = GOLD_SHADOW;
+                            e.currentTarget.style.filter = 'none';
                           }}
                         >
-                          <span style={{ fontSize: '15px', lineHeight: 1 }}>⬇</span>
+                          <DownloadIcon />
                           Get PDF
                         </button>
                       </>
@@ -1250,8 +1298,52 @@ export default function LibraryPage() {
         </div>
 
         {/* ============================================================ */}
-        {/*  SECTION 4: FEATURE CARDS (3x2 grid)                          */}
+        {/*  SECTION 4: FEATURE CARDS (heading + 5-up grid)               */}
         {/* ============================================================ */}
+        {/* Section heading — eyebrow + title + link (structure per reference) */}
+        <div
+          className="flex flex-wrap items-end justify-between"
+          style={{ gap: 'clamp(8px, 1vw, 16px)', marginBottom: 'clamp(18px, 1.8vw, 24px)' }}
+        >
+          <div style={{ minWidth: 'min(280px, 100%)' }}>
+            <div
+              className="font-arimo font-bold"
+              style={{
+                fontSize: 'clamp(10px, 0.82vw, 12px)',
+                color: '#D97706',
+                textTransform: 'uppercase',
+                letterSpacing: '0.22em',
+                marginBottom: 'clamp(6px, 0.6vw, 8px)',
+              }}
+            >
+              WHY ASPIRANTS PICK US
+            </div>
+            <h3
+              className="font-arimo font-bold"
+              style={{
+                fontSize: 'clamp(24px, 2.4vw, 32px)',
+                lineHeight: 1.15,
+                color: '#101828',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Built the way <span style={{ fontStyle: 'italic' }}>UPSC</span> tests you
+            </h3>
+          </div>
+          <a
+            href="/our-story"
+            className="font-arimo font-bold inline-flex items-center"
+            style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#334155', gap: '4px', textDecoration: 'none' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#0F172A'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#334155'; }}
+          >
+            See methodology
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M7 17 17 7" />
+              <path d="M7 7h10v10" />
+            </svg>
+          </a>
+        </div>
         <div
           style={{
             display: 'grid',
@@ -1371,6 +1463,7 @@ export default function LibraryPage() {
               </button>
               <button
                 className="font-arimo font-bold"
+                onClick={() => window.open('https://www.youtube.com/@RisewithJeet', '_blank', 'noopener,noreferrer')}
                 style={{
                   background: '#FFFFFF',
                   color: '#101828',
@@ -1429,6 +1522,16 @@ export default function LibraryPage() {
             0%   { background-position: -500px 0; }
             100% { background-position: 500px 0; }
           }
+          .rwj-shine { position: relative; overflow: hidden; }
+          .rwj-shine::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 1.2s ease;
+          }
+          .rwj-shine:hover::after { transform: translateX(100%); }
         `}</style>
 
         <div
@@ -1489,6 +1592,8 @@ export default function LibraryPage() {
                 >
                   <button
                     onClick={() => setZoomLevel((z) => Math.max(50, z - 10))}
+                    title="Zoom out"
+                    aria-label="Zoom out"
                     style={{
                       width: '24px', height: '24px', borderRadius: '6px',
                       background: '#F3F4F6', border: 'none', color: '#374151',
@@ -1496,13 +1601,15 @@ export default function LibraryPage() {
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >
-                    -
+                    −
                   </button>
                   <span style={{ fontSize: '12px', color: '#374151', minWidth: '40px', textAlign: 'center' }}>
                     {zoomLevel}%
                   </span>
                   <button
                     onClick={() => setZoomLevel((z) => Math.min(200, z + 10))}
+                    title="Zoom in"
+                    aria-label="Zoom in"
                     style={{
                       width: '24px', height: '24px', borderRadius: '6px',
                       background: '#F3F4F6', border: 'none', color: '#374151',
@@ -1525,31 +1632,33 @@ export default function LibraryPage() {
                 onClick={handleGetPdf}
                 className="font-arimo font-bold flex items-center"
                 style={{
-                  fontSize: '13px',
-                  background: 'linear-gradient(135deg, #E6A817, #F4A97A)',
+                  fontSize: '14px',
+                  background: GOLD_GRADIENT,
                   color: '#FFFFFF',
-                  borderRadius: '20px',
-                  height: '34px',
-                  padding: '0 16px',
+                  borderRadius: '12px',
+                  height: '44px',
+                  padding: '0 20px',
                   border: 'none',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 8px rgba(230,168,23,0.3)',
+                  gap: '8px',
+                  boxShadow: GOLD_SHADOW,
                   transition: 'all 0.15s ease',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(230,168,23,0.4)';
+                  e.currentTarget.style.boxShadow = GOLD_SHADOW_HOVER;
+                  e.currentTarget.style.filter = 'brightness(1.04)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(230,168,23,0.3)';
+                  e.currentTarget.style.boxShadow = GOLD_SHADOW;
+                  e.currentTarget.style.filter = 'none';
                 }}
               >
-                <span style={{ fontSize: '15px', lineHeight: 1 }}>⬇</span>
+                <DownloadIcon />
                 Get PDF
               </button>
               <button
@@ -1599,12 +1708,13 @@ export default function LibraryPage() {
               </div>
             )}
 
-            {/* Self-hosted PDF renderer — no pop-out, no download UI */}
-            <div className="absolute inset-0 overflow-auto flex justify-center" style={{ padding: '24px' }}>
+            {/* Self-hosted PDF renderer — continuous scroll, no pop-out, no download UI */}
+            <div className="absolute inset-0">
               <PdfViewer
                 pages={readModal.pages}
-                pageNumber={pageNumber}
                 zoomLevel={zoomLevel}
+                scrollRequest={scrollRequest}
+                onPageChange={(p) => setPageNumber(p)}
                 onLoadSuccess={(numPages) => { setNumPages(numPages); setDocLoaded(true); }}
                 onLoadError={() => setDocError(true)}
               />
@@ -1629,8 +1739,9 @@ export default function LibraryPage() {
                 }}
               >
                 <button
-                  onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+                  onClick={() => setScrollRequest((r) => ({ page: Math.max(1, pageNumber - 1), n: r.n + 1 }))}
                   disabled={pageNumber <= 1}
+                  title="Previous page"
                   style={{
                     width: '24px', height: '24px', borderRadius: '6px',
                     background: '#F3F4F6', border: 'none', color: '#374151',
@@ -1645,8 +1756,9 @@ export default function LibraryPage() {
                   Page {pageNumber} of {numPages}
                 </span>
                 <button
-                  onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
+                  onClick={() => setScrollRequest((r) => ({ page: Math.min(numPages, pageNumber + 1), n: r.n + 1 }))}
                   disabled={pageNumber >= numPages}
+                  title="Next page"
                   style={{
                     width: '24px', height: '24px', borderRadius: '6px',
                     background: '#F3F4F6', border: 'none', color: '#374151',
@@ -1681,28 +1793,43 @@ export default function LibraryPage() {
 
           {/* ── Footer ── */}
           <div
-            className="flex items-center justify-between flex-shrink-0"
+            className="flex items-center justify-end flex-shrink-0"
             style={{
-              background: '#FAFAFA',
+              background: 'linear-gradient(90deg, rgba(255,251,235,0.6), #FFFFFF)',
               borderTop: '1px solid #E5E7EB',
-              padding: '9px 18px',
+              padding: '10px 18px',
             }}
           >
-            <p className="font-arimo" style={{ fontSize: '11px', color: '#9CA3AF' }}>
-              🛡️ Protected · watermarked · right-click & selection disabled
-            </p>
             <button
               onClick={handleGetPdf}
-              className="font-arimo font-bold active:translate-y-[1px] flex items-center gap-2"
+              className="font-arimo font-bold rwj-shine flex items-center"
               style={{
-                fontSize: '12px', background: '#17223E', color: '#FFD272',
-                borderRadius: '9px', height: '34px', padding: '0 16px',
-                border: 'none', cursor: 'pointer',
-                boxShadow: '0 3px 0 0 #0A1220',
-                transition: 'transform 0.08s ease',
+                fontSize: '13px',
+                background: PRO_GRADIENT,
+                color: '#FFD96B',
+                borderRadius: '12px',
+                height: '40px',
+                padding: '0 18px',
+                border: 'none',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                gap: '8px',
+                boxShadow: PRO_SHADOW,
+                transition: 'all 0.15s ease',
               }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = PRO_SHADOW_HOVER;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = PRO_SHADOW;
+              }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(1px)'; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
             >
-              ✦ Upgrade to Download
+              <SparklesIcon />
+              Upgrade to Download
             </button>
           </div>
         </div>

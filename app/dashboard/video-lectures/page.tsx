@@ -313,6 +313,16 @@ function getSubjectHeroLabel(name: string) {
   return name.replace(/^Indian\s+/i, '').trim();
 }
 
+/* Topic subtitle shown under "<Subject> Simplified" in the playlist header. */
+const SUBJECT_TOPIC_SUBTITLES: Array<{ match: (n: string) => boolean; topics: string }> = [
+  { match: (n) => n.includes('econom'), topics: 'Planning, Budgets, Banking, Trade, Infrastructure, Agriculture' },
+];
+
+function getSubjectTopics(name: string) {
+  const n = normalizeSubjectKey(name);
+  return SUBJECT_TOPIC_SUBTITLES.find((entry) => entry.match(n))?.topics ?? '';
+}
+
 function getVideoViewCount(v: VideoItem) {
   return v.viewCount ?? getFallbackViewCount(`${v.id}-${v.title}`);
 }
@@ -357,6 +367,8 @@ export default function VideoLecturesPage() {
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [modalVideo, setModalVideo] = useState<VideoItem | null>(null);
+  const [shareModalVideo, setShareModalVideo] = useState<VideoItem | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
   const [videoSearch, setVideoSearch] = useState('');
   const selectedVideosRef = useRef<HTMLDivElement | null>(null);
   const selectedVideoGridRef = useRef<HTMLDivElement | null>(null);
@@ -435,9 +447,26 @@ export default function VideoLecturesPage() {
     });
   };
 
-  const openVideoActionModal = (_type: 'pdf', video: VideoItem) => {
+  const openVideoActionModal = (_type: 'pdf' | 'read', video: VideoItem) => {
     setModalVideo(video);
     setShowLoginModal(true);
+  };
+
+  const getVideoShareUrl = (video: VideoItem | null) => {
+    if (!video) return '';
+    const raw = (video.videoUrl || video.youtubeUrl || video.url || '').trim();
+    if (raw) return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    return typeof window !== 'undefined' ? window.location.href : '';
+  };
+
+  const copyShareUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      window.setTimeout(() => setShareCopied(false), 1800);
+    } catch {
+      /* clipboard blocked — no-op */
+    }
   };
 
   const handleQuizSubmit = async () => {
@@ -563,7 +592,7 @@ export default function VideoLecturesPage() {
         stats={[
           { value: '100+', label: 'Video Lectures', color: '#FDC700' },
           { value: `${apiStats?.totalSubjects ?? '12'}+`, label: 'Core Subjects', color: '#F87171' },
-          { value: `${apiStats?.totalHours ?? '15'}K+`, label: 'Subscribers', color: '#4ADE80' },
+          { value: '15K+', label: 'Subscribers', color: '#4ADE80' },
           { value: '4.9', label: 'Ratings', color: '#FFFFFF' },
         ]}
       />
@@ -700,10 +729,9 @@ export default function VideoLecturesPage() {
                     title={subject.name}
                     style={{
                       fontSize: '17px',
-                      lineHeight: '24px',
+                      lineHeight: '22px',
                       color: isSelected ? '#FFFFFF' : '#1E293B',
                       letterSpacing: '-0.3px',
-                      height: '48px',
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical',
@@ -712,27 +740,51 @@ export default function VideoLecturesPage() {
                   >
                     {subject.name}
                   </div>
-                  <div className="font-arimo" style={{ fontSize: '13px', lineHeight: '19.5px', color: isSelected ? 'rgba(255,255,255,0.75)' : '#94A3B8', marginTop: '4px', marginBottom: '2px' }}>
-                    {subject.videoCount ?? 0} videos{subject.totalDuration ? ` \u00B7 ${subject.totalDuration}` : ''}
-                  </div>
-                  <div className="font-arimo" style={{ fontSize: '12px', lineHeight: '18px', color: isSelected ? 'rgba(255,255,255,0.75)' : '#94A3B8', marginBottom: '12px' }}>
-                    {formatSubjectViews(getSubjectViewCount(subject))} views
-                  </div>
-                  <div className="flex items-center" style={{ gap: '8px', width: '100%' }}>
-                    <div className="rounded-full overflow-hidden" style={{ flex: 1, height: '5px', background: isSelected ? 'rgba(255,255,255,0.25)' : theme.border }}>
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${progressPct}%`,
-                          background: isSelected ? 'rgba(255,255,255,0.8)' : theme.color,
-                          transition: 'width 0.3s ease',
-                        }}
-                      />
-                    </div>
-                    <span className="font-arimo font-bold" style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.9)' : theme.color, flexShrink: 0, whiteSpace: 'nowrap' }}>
-                      {progressPct}% complete
+                  <div
+                    className="font-arimo flex items-center"
+                    style={{ fontSize: '13px', lineHeight: '18px', color: isSelected ? 'rgba(255,255,255,0.75)' : '#64748B', marginTop: '6px', marginBottom: '12px', gap: '14px', whiteSpace: 'nowrap' }}
+                  >
+                    <span className="inline-flex items-center" style={{ gap: '5px' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" />
+                        <polygon points="10 8 16 12 10 16 10 8" />
+                      </svg>
+                      {subject.videoCount ?? 0} videos
+                    </span>
+                    <span className="inline-flex items-center" style={{ gap: '5px' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      {formatSubjectViews(getSubjectViewCount(subject))}
                     </span>
                   </div>
+                  {(() => {
+                    const status = progressPct === 100 ? 'Completed' : progressPct > 0 ? 'In progress' : 'Not started';
+                    const barColor = isSelected ? 'rgba(255,255,255,0.85)' : progressPct === 100 ? '#2563EB' : theme.color;
+                    const labelColor = isSelected ? 'rgba(255,255,255,0.9)' : '#64748B';
+                    return (
+                      <>
+                        {/* Status + completion percentage */}
+                        <div
+                          className="flex items-center justify-between font-arimo font-bold"
+                          style={{ fontSize: '11px', color: labelColor, marginBottom: '6px', width: '100%' }}
+                        >
+                          <span>{status}</span>
+                          <span>{progressPct}%</span>
+                        </div>
+                        <div
+                          className="rounded-full overflow-hidden"
+                          style={{ width: '100%', height: '6px', background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.7)' }}
+                        >
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${progressPct}%`, background: barColor, transition: 'width 0.3s ease' }}
+                          />
+                        </div>
+                      </>
+                    );
+                  })()}
                 </button>
               );
             })}
@@ -840,7 +892,12 @@ export default function VideoLecturesPage() {
                     >
                       {getSubjectHeroLabel(selectedSubject)} Simplified
                     </h2>
-                    <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', color: '#94A3B8' }}>
+                    {getSubjectTopics(selectedSubject) && (
+                      <p className="font-arimo" style={{ fontSize: '13px', lineHeight: '18px', color: '#64748B', marginTop: '2px' }}>
+                        {getSubjectTopics(selectedSubject)}
+                      </p>
+                    )}
+                    <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', color: '#94A3B8', marginTop: '2px' }}>
                       {'\u{1F4FA}'} {visibleSubjectVideos.length} Video{visibleSubjectVideos.length !== 1 ? 's' : ''}
                       {matchedSelectedSubject?.totalDuration ? ` · ${matchedSelectedSubject.totalDuration}` : ''}
                     </p>
@@ -906,6 +963,42 @@ export default function VideoLecturesPage() {
               </div>
             ) : (
               <>
+                <style>{`
+                  .vl-card{background:#fff;border:1px solid #E6EAF2;border-radius:18px;padding:14px;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;}
+                  .vl-card:hover{transform:translateY(-3px);box-shadow:0 18px 40px -22px rgba(11,18,38,.25);border-color:rgba(15,26,53,.18);}
+                  .vl-thumb{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:16/9;background:#1A2240;display:flex;align-items:center;justify-content:center;}
+                  .vl-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease;}
+                  .vl-card:hover .vl-thumb img{transform:scale(1.04);}
+                  .vl-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(0,0,0,.55) 100%);}
+                  .vl-play-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .25s ease;background:rgba(11,18,38,.35);}
+                  .vl-card:hover .vl-play-overlay{opacity:1;}
+                  .vl-play-btn{width:56px;height:56px;border-radius:999px;background:#FF2D2D;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px -8px rgba(255,45,45,.6);border:none;cursor:pointer;}
+                  .vl-pill{position:absolute;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.02em;padding:4px 9px;border-radius:999px;z-index:2;}
+                  .vl-pill-dark{background:rgba(11,18,38,.85);color:#fff;backdrop-filter:blur(6px);}
+                  .vl-pill-gold{background:#E9B949;color:#1A1206;}
+                  .vl-pill-red{background:#FF2D2D;color:#fff;}
+                  .vl-pill-blue{background:#2563EB;color:#fff;}
+                  .vl-bookmark{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);cursor:pointer;transition:all .2s ease;border:none;z-index:2;}
+                  .vl-bookmark:hover{background:#fff;transform:scale(1.06);}
+                  .vl-bookmark.active{background:#E9B949;}
+                  .vl-watched-bar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(0,0,0,.4);z-index:2;}
+                  .vl-watched-bar>span{display:block;height:100%;background:#FF2D2D;}
+                  .vl-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#B88A1D;}
+                  .vl-title{font-weight:700;font-size:14.5px;line-height:1.35;margin-top:6px;color:#101828;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:42px;}
+                  .vl-actions{display:flex;align-items:center;gap:8px;padding-top:16px;margin-top:12px;border-top:1px solid #E6EAF2;}
+                  .vl-btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:13px;border-radius:12px;transition:all .2s ease;white-space:nowrap;cursor:pointer;}
+                  .vl-btn-watch{flex:1;justify-content:center;background:linear-gradient(135deg,#FF3B3B,#C61212);color:#fff;padding:10px 14px;box-shadow:0 8px 20px -10px rgba(198,18,18,.55),inset 0 1px 0 rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.08);position:relative;overflow:hidden;}
+                  .vl-btn-watch:hover{transform:translateY(-1px);box-shadow:0 12px 26px -10px rgba(198,18,18,.65),inset 0 1px 0 rgba(255,255,255,.22);}
+                  .vl-watch-icon{width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,.18);display:inline-flex;align-items:center;justify-content:center;}
+                  .vl-btn-read{background:#fff;color:#0F1A35;padding:10px 14px;border:1px solid rgba(15,26,53,.10);box-shadow:0 4px 10px -6px rgba(11,18,38,.18),inset 0 1px 0 #fff;}
+                  .vl-btn-read:hover{background:#0B1226;color:#fff;border-color:#0B1226;transform:translateY(-1px);}
+                  .vl-btn-getpdf{position:relative;overflow:hidden;background:linear-gradient(180deg,#FCD564 0%,#E9B949 55%,#CAA036 100%);color:#1A1206;padding:10px 16px;font-weight:700;border:1px solid rgba(184,138,29,.55);box-shadow:0 8px 18px -8px rgba(202,160,54,.55),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(133,98,16,.18);}
+                  .vl-btn-getpdf:hover{transform:translateY(-1px);box-shadow:0 12px 24px -8px rgba(202,160,54,.7),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -2px 0 rgba(133,98,16,.22);}
+                  .vl-getpdf-shine{position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(110deg,transparent 0%,rgba(255,255,255,0) 30%,rgba(255,255,255,.85) 50%,rgba(255,255,255,0) 70%,transparent 100%);transform:skewX(-20deg);animation:vl-shine 3.2s ease-in-out infinite;pointer-events:none;mix-blend-mode:overlay;}
+                  @keyframes vl-shine{0%{left:-60%}50%{left:120%}100%{left:120%}}
+                  .vl-icon-btn{width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid rgba(15,26,53,.10);display:inline-flex;align-items:center;justify-content:center;color:#0B1226;transition:all .2s ease;cursor:pointer;flex-shrink:0;}
+                  .vl-icon-btn:hover{background:#0B1226;color:#E9B949;border-color:#0B1226;transform:translateY(-1px);}
+                `}</style>
                 <div
                   ref={selectedVideoGridRef}
                   style={{
@@ -914,91 +1007,105 @@ export default function VideoLecturesPage() {
                     gap: 'clamp(16px, 1.8vw, 24px)',
                   }}
                 >
-                  {filteredSubjectVideos.map((video) => (
-                    <div
-                      key={video.id}
-                      style={{
-                        background: '#FFFFFF',
-                        borderRadius: '16px',
-                        boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.08), 0px 1px 2px -1px rgba(0,0,0,0.06)',
-                        overflow: 'hidden',
-                        border: '1.5px solid #F1F5F9',
-                      }}
-                    >
-                      <div
-                        className="font-arimo font-bold"
-                        style={{
-                          position: 'absolute',
-                          top: '10px',
-                          left: '10px',
-                          background: '#17223E',
-                          color: '#FFFFFF',
-                          borderRadius: '6px',
-                          padding: '4px 8px',
-                          fontSize: '10px',
-                          lineHeight: 1,
-                          zIndex: 1,
-                        }}
-                      >
-                        🔥 HOT
-                      </div>
-                      <div
-                        className="flex items-center justify-center"
-                        style={{ background: selectedSubjectTheme.tag, height: 'clamp(150px, 14vw, 190px)', position: 'relative' }}
-                      >
+                  {filteredSubjectVideos.map((video) => {
+                    const watchedIds = watchedBySubject[normalizeSubjectKey(selectedSubject ?? video.subject ?? '')] || [];
+                    const isWatched = watchedIds.includes(String(video.id));
+                    const badges = [
+                      { label: 'NEW', cls: 'vl-pill-red', pdf: false },
+                      { label: 'POPULAR', cls: 'vl-pill-gold', pdf: false },
+                      { label: 'PDF INCLUDED', cls: 'vl-pill-blue', pdf: true },
+                    ];
+                    const badge = badges[stableHash(String(video.id)) % badges.length];
+                    return (
+                    <article key={video.id} className="vl-card font-arimo">
+                      <div className="vl-thumb">
                         {video.thumbnailUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={video.thumbnailUrl} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={video.thumbnailUrl} alt={video.title} />
                         ) : (
                           <span style={{ fontSize: 'clamp(48px, 5vw, 64px)' }}>{subjectEmoji(selectedSubject)}</span>
                         )}
-                      </div>
-
-                      <div style={{ padding: 'clamp(14px, 1.5vw, 20px)' }}>
-                        <p
-                          className="font-arimo font-bold"
-                          style={{ fontSize: 'clamp(10px, 0.85vw, 12px)', color: selectedSubjectTheme.color, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 'clamp(4px, 0.4vw, 6px)' }}
-                        >
-                          {matchedSelectedSubject?.name ?? selectedSubject}
-                        </p>
-                        <h3
-                          className="font-arimo font-bold"
-                          style={{ fontSize: 'clamp(14px, 1.15vw, 15px)', color: '#101828', marginBottom: 'clamp(6px, 0.6vw, 8px)', lineHeight: 1.35 }}
-                        >
-                          {video.title}
-                        </h3>
-                        <p className="font-arimo" style={{ fontSize: 'clamp(11px, 0.9vw, 12px)', color: '#6A7282', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-                          {'\u{1F440}'} {formatViews(getVideoViewCount(video))} views
-                        </p>
-
-                        <div className="flex items-center" style={{ gap: '4px', flexWrap: 'nowrap', minWidth: 0 }}>
+                        <div className="vl-scrim" />
+                        {/* Top-left badge */}
+                        <span className={`vl-pill ${badge.cls}`} style={{ top: '10px', left: '10px' }}>
+                          {badge.pdf && (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                              <path d="M14 2v6h6" />
+                            </svg>
+                          )}
+                          {badge.label}
+                        </span>
+                        {/* Bookmark */}
+                        <button className="vl-bookmark" aria-label="Bookmark" onClick={(e) => e.currentTarget.classList.toggle('active')}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B1226" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                          </svg>
+                        </button>
+                        {/* Duration */}
+                        {video.duration && (
+                          <span className="vl-pill vl-pill-dark" style={{ bottom: '10px', right: '10px' }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
+                            </svg>
+                            {video.duration}
+                          </span>
+                        )}
+                        {/* Watched progress */}
+                        {isWatched && <div className="vl-watched-bar"><span style={{ width: '100%' }} /></div>}
+                        {/* Hover play overlay */}
+                        <div className="vl-play-overlay">
                           <button
+                            className="vl-play-btn"
+                            aria-label="Play video"
                             onClick={() => { markVideoWatched(selectedSubject ?? video.subject, video.id); openVideoInNewTab(video); }}
-                            className="flex items-center gap-1 font-arimo font-bold text-white"
-                            style={{ padding: '5px 8px', borderRadius: '10px', background: '#17223E', border: '1.5px solid #17223E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                              <rect width="24" height="24" rx="5" fill="#FF0000"/>
-                              <path d="M10 8l6 4-6 4V8z" fill="white"/>
-                            </svg>
-                            Watch
-                          </button>
-                          <button
-                            onClick={() => openVideoActionModal('pdf', video)}
-                            className="flex items-center gap-1 font-arimo font-bold"
-                            style={{ padding: '5px 8px', borderRadius: '10px', background: '#F0F4FA', border: '1.5px solid #CBD5E1', color: '#1A1A2E', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-                          >
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                              <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M7 11l5 5 5-5" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M12 4v12" stroke="#1A1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                            Download PDF
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
                           </button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+
+                      <div style={{ padding: '14px 4px 4px' }}>
+                        <div className="vl-chip">{matchedSelectedSubject?.name ?? selectedSubject}</div>
+                        <h3 className="vl-title" title={video.title}>{video.title}</h3>
+
+                        {/* Action row: Watch · Read · Get PDF · Share */}
+                        <div className="vl-actions">
+                          <button
+                            className="vl-btn vl-btn-watch"
+                            onClick={() => { markVideoWatched(selectedSubject ?? video.subject, video.id); openVideoInNewTab(video); }}
+                          >
+                            <span className="vl-watch-icon">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
+                            </span>
+                            {isWatched ? 'Resume' : 'Watch'}
+                          </button>
+                          <button className="vl-btn vl-btn-read" title="Read in Study Material" onClick={() => router.push('/dashboard/library')}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                            </svg>
+                            Read
+                          </button>
+                          <button className="vl-btn vl-btn-getpdf" title="Get PDF" onClick={() => openVideoActionModal('pdf', video)}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                              <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            Get PDF
+                            <span className="vl-getpdf-shine" />
+                          </button>
+                          <button className="vl-icon-btn" title="Share" aria-label="Share" onClick={() => setShareModalVideo(video)}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                    );
+                  })}
                 </div>
 
               </>
@@ -1256,37 +1363,129 @@ export default function VideoLecturesPage() {
         </div>
       )}
 
-      {/* Login Modal placeholder */}
+      {/* Shared modal styles (Get PDF + Share popups) */}
+      <style>{`
+        .vlm-backdrop{position:fixed;inset:0;z-index:120;background:rgba(8,12,28,.55);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;}
+        .vlm-modal{width:100%;max-width:460px;background:#fff;border-radius:22px;box-shadow:0 40px 80px -30px rgba(0,0,0,.5),0 0 0 1px rgba(15,26,53,.06);overflow:hidden;position:relative;animation:vlm-pop .3s cubic-bezier(.2,.9,.3,1.2);}
+        @keyframes vlm-pop{from{transform:translateY(14px) scale(.98);opacity:.4}to{transform:none;opacity:1}}
+        .vlm-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:all .2s ease;cursor:pointer;border:none;}
+        .vlm-head{position:relative;padding:26px 26px 18px;background:radial-gradient(600px 200px at 50% -20%,rgba(233,185,73,.18),transparent 70%),#0B1226;color:#fff;}
+        .vlm-head::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:18px;background:linear-gradient(180deg,transparent,#fff);}
+        .vlm-icon{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+        .vlm-title{font-size:24px;font-weight:700;line-height:1.2;}
+        .vlm-sub{color:rgba(255,255,255,.65);font-size:13px;margin-top:4px;}
+        .vlm-body{padding:8px 26px 26px;}
+        .vlm-actions{display:flex;gap:10px;margin-top:18px;}
+        .vlm-btn-primary{flex:1;background:linear-gradient(135deg,#E9B949,#B88A1D);color:#1A1206;padding:12px;border-radius:12px;font-weight:700;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 10px 22px -10px rgba(184,138,29,.55),inset 0 1px 0 rgba(255,255,255,.5);transition:all .2s ease;cursor:pointer;border:none;}
+        .vlm-btn-primary:hover{transform:translateY(-1px);box-shadow:0 14px 28px -10px rgba(184,138,29,.7),inset 0 1px 0 rgba(255,255,255,.6);}
+        .vlm-btn-secondary{background:#fff;color:#0B1226;padding:12px 16px;border-radius:12px;font-weight:600;font-size:14px;border:1px solid rgba(15,26,53,.14);transition:all .2s ease;cursor:pointer;}
+        .vlm-btn-secondary:hover{background:#0B1226;color:#fff;border-color:#0B1226;}
+        .vlm-share-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
+        .vlm-share-tile{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px;border-radius:14px;background:#F7F5EF;border:1px solid #E6EAF2;cursor:pointer;transition:all .2s ease;text-decoration:none;}
+        .vlm-share-tile:hover{transform:translateY(-2px);border-color:rgba(11,18,38,.2);box-shadow:0 10px 22px -14px rgba(11,18,38,.3);background:#fff;}
+        .vlm-share-ic{width:40px;height:40px;border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px -8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.2);}
+        .vlm-share-label{font-size:11px;font-weight:600;color:#0B1226;}
+        .vlm-copy{margin-top:16px;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 14px;background:#F7F5EF;border:1px dashed rgba(15,26,53,.18);border-radius:12px;}
+        .vlm-copy input{flex:1;background:transparent;border:0;outline:0;font-size:12.5px;color:#3A4358;}
+        .vlm-copy button{background:#0B1226;color:#fff;padding:7px 12px;border-radius:9px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .2s ease;cursor:pointer;border:none;white-space:nowrap;}
+        .vlm-copy button:hover{background:#E9B949;color:#1A1206;}
+        .vlm-copy button.copied{background:#16A34A;color:#fff;}
+      `}</style>
+
+      {/* ============ GET PDF POPUP (redirect to Study Material) ============ */}
       {showLoginModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.5)' }}
-              onClick={() => setShowLoginModal(false)}
-        >
-          <div
-            style={{ background: '#FFFFFF', borderRadius: '24px', padding: '32px', width: '100%', maxWidth: '420px', margin: '0 16px', textAlign: 'center' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/sidebar-study-material-new2.png" alt="Study Material" style={{ width: '56px', height: '56px', objectFit: 'contain', marginBottom: '16px' }} />
-            <h3 className="font-arimo font-bold" style={{ fontSize: '20px', color: '#101828', marginBottom: '8px' }}>
-              Download PDF
-            </h3>
-            <p className="font-arimo" style={{ fontSize: '14px', color: '#6A7282', marginBottom: '24px' }}>
-              {modalVideo
-                ? `Please navigate to study material to download the PDF for "${modalVideo.title}".`
-                : 'Please navigate to study material to download the PDF.'}
-            </p>
-            <button
-              onClick={() => setShowLoginModal(false)}
-              className="font-arimo font-bold text-white"
-              style={{ height: '44px', borderRadius: '12px', background: '#162456', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '0 32px' }}
-            >
-              Got it
+        <div className="vlm-backdrop font-arimo" onClick={() => setShowLoginModal(false)}>
+          <div className="vlm-modal" style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
+            <button className="vlm-close" style={{ background: 'rgba(15,26,53,.06)', color: '#0B1226' }} onClick={() => setShowLoginModal(false)} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
             </button>
+            <div style={{ padding: '28px', textAlign: 'center' }}>
+              {/* PDF icon with gold lock badge */}
+              <div style={{ margin: '0 auto 20px', position: 'relative', width: '64px', height: '74px' }}>
+                <div style={{ width: '64px', height: '74px', borderRadius: '10px', background: 'linear-gradient(180deg,#FF5252,#C61212)', boxShadow: '0 14px 30px -10px rgba(198,18,18,.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '8px', color: '#fff', fontSize: '11px', fontWeight: 800, letterSpacing: '.08em', position: 'relative' }}>
+                  PDF
+                  <span style={{ position: 'absolute', top: 0, right: 0, width: '18px', height: '18px', background: 'linear-gradient(225deg,#fff 50%,transparent 50%)', borderTopRightRadius: '10px' }} />
+                </div>
+                <span style={{ position: 'absolute', bottom: '-6px', right: '-8px', width: '26px', height: '26px', borderRadius: '999px', background: 'linear-gradient(135deg,#E9B949,#A87F1F)', color: '#1A1206', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #fff', boxShadow: '0 6px 12px -4px rgba(184,138,29,.6)' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                </span>
+              </div>
+              <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#0B1226' }}>Download PDF</h3>
+              <p style={{ fontSize: '14px', color: '#6B7280', marginTop: '8px', lineHeight: 1.6 }}>
+                Please navigate to <b style={{ color: '#0B1226' }}>Study Material</b> to download the PDF
+                {modalVideo ? <> for<br />&ldquo;<span style={{ color: '#0B1226', fontWeight: 500 }}>{modalVideo.title}</span>&rdquo;.</> : '.'}
+              </p>
+              <div className="vlm-actions">
+                <button className="vlm-btn-secondary" style={{ flex: 1 }} onClick={() => setShowLoginModal(false)}>Got it</button>
+                <button className="vlm-btn-primary" onClick={() => { setShowLoginModal(false); router.push('/dashboard/library'); }}>
+                  Go to Study Material
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
+
+      {/* ============ SHARE POPUP ============ */}
+      {shareModalVideo && (() => {
+        const shareUrl = getVideoShareUrl(shareModalVideo);
+        const shareText = shareModalVideo.title;
+        const u = encodeURIComponent(shareUrl);
+        const t = encodeURIComponent(shareText);
+        const tiles: Array<{ label: string; bg: string; icon: React.ReactNode; href?: string; copy?: boolean }> = [
+          { label: 'WhatsApp', bg: '#25D366', href: `https://wa.me/?text=${t}%20${u}`, icon: <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /> },
+          { label: 'Telegram', bg: '#0088CC', href: `https://t.me/share/url?url=${u}&text=${t}`, icon: <line x1="22" y1="2" x2="11" y2="13" /> },
+          { label: 'X / Twitter', bg: '#1D9BF0', href: `https://twitter.com/intent/tweet?url=${u}&text=${t}`, icon: <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z" /> },
+          { label: 'LinkedIn', bg: '#0A66C2', href: `https://www.linkedin.com/sharing/share-offsite/?url=${u}`, icon: <><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z" /><rect x="2" y="9" width="4" height="12" /><circle cx="4" cy="4" r="2" /></> },
+          { label: 'Facebook', bg: '#1877F2', href: `https://www.facebook.com/sharer/sharer.php?u=${u}`, icon: <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /> },
+          { label: 'Email', bg: '#EA4335', href: `mailto:?subject=${t}&body=${u}`, icon: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 5L2 7" /></> },
+          { label: 'Instagram', bg: 'linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)', copy: true, icon: <><rect x="2" y="2" width="20" height="20" rx="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></> },
+          { label: 'Copy Link', bg: '#0B1226', copy: true, icon: <><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></> },
+        ];
+        return (
+          <div className="vlm-backdrop font-arimo" onClick={() => setShareModalVideo(null)}>
+            <div className="vlm-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="vlm-head">
+                <button className="vlm-close" style={{ background: 'rgba(255,255,255,.08)', color: '#fff' }} onClick={() => setShareModalVideo(null)} aria-label="Close">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                </button>
+                <div className="vlm-icon" style={{ background: 'linear-gradient(135deg,#FF5252,#C61212)', color: '#fff', boxShadow: '0 12px 24px -10px rgba(198,18,18,.5), inset 0 1px 0 rgba(255,255,255,.3)' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
+                </div>
+                <div className="vlm-title">Share this Lecture</div>
+                <div className="vlm-sub">Help a fellow aspirant — share knowledge that compounds.</div>
+              </div>
+              <div className="vlm-body">
+                <div className="vlm-share-grid">
+                  {tiles.map((tile) => {
+                    const inner = (
+                      <>
+                        <span className="vlm-share-ic" style={{ background: tile.bg }}>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{tile.icon}</svg>
+                        </span>
+                        <span className="vlm-share-label">{tile.label}</span>
+                      </>
+                    );
+                    return tile.copy ? (
+                      <button key={tile.label} type="button" className="vlm-share-tile" onClick={() => copyShareUrl(shareUrl)}>{inner}</button>
+                    ) : (
+                      <a key={tile.label} className="vlm-share-tile" href={tile.href} target="_blank" rel="noopener noreferrer">{inner}</a>
+                    );
+                  })}
+                </div>
+                <div className="vlm-copy">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2" /><path d="M15 7h2a5 5 0 0 1 0 10h-2" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
+                  <input value={shareUrl} readOnly />
+                  <button className={shareCopied ? 'copied' : ''} onClick={() => copyShareUrl(shareUrl)}>
+                    {shareCopied ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
