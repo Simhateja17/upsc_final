@@ -339,6 +339,96 @@ function getYouTubeEmbedUrl(url: string) {
   return url;
 }
 
+/* Bottom "Join the Tribe" YouTube CTA — layout per reference design. */
+function YouTubeTribeCta() {
+  const avatars = [
+    { t: 'RJ', bg: '#E9B949', color: '#1A1206' },
+    { t: 'PS', bg: '#F87171', color: '#FFFFFF' },
+    { t: 'NS', bg: '#34D399', color: '#FFFFFF' },
+    { t: 'AG', bg: '#38BDF8', color: '#FFFFFF' },
+  ];
+  return (
+    <div style={{ marginTop: 'clamp(28px, 3vw, 40px)' }}>
+      <div
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: '24px',
+          background: '#0B1226',
+          backgroundImage: 'radial-gradient(900px 320px at 50% -20%, rgba(233,185,73,0.12), transparent 60%)',
+          color: '#FFFFFF',
+          padding: 'clamp(28px, 3.4vw, 48px)',
+        }}
+      >
+        <div
+          className="flex items-center justify-between"
+          style={{ gap: 'clamp(24px, 3vw, 40px)', position: 'relative', zIndex: 1, flexWrap: 'wrap' }}
+        >
+          <div style={{ flex: 1, minWidth: 'min(300px, 100%)' }}>
+            <div
+              className="font-arimo font-bold"
+              style={{ fontSize: '12px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#E9B949', marginBottom: '10px' }}
+            >
+              Join the Tribe
+            </div>
+            <h2 className="font-bold" style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontSize: 'clamp(32px, 3.6vw, 50px)', lineHeight: 1.08, letterSpacing: '-0.01em' }}>
+              Never Miss a <span style={{ color: '#F3C969', fontStyle: 'italic' }}>Lecture Again.</span>
+            </h2>
+            <p className="font-arimo" style={{ fontSize: 'clamp(14px, 1.2vw, 16px)', lineHeight: 1.6, color: 'rgba(255,255,255,0.7)', marginTop: '12px', maxWidth: '620px' }}>
+              Stay Consistent. Stay Ahead. Subscribe to Rise With Jeet on YouTube and get instant notifications for new lectures, current-affairs drops, mnemonics, and live sessions.
+            </p>
+            <div className="flex items-center" style={{ gap: 'clamp(14px, 1.6vw, 20px)', marginTop: '24px', flexWrap: 'wrap' }}>
+              <a
+                href="https://www.youtube.com/@RiseWithJeet"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 font-arimo font-bold text-white"
+                style={{ background: '#FF2D2D', borderRadius: '12px', padding: '12px 18px', fontSize: '14px', boxShadow: '0 8px 20px -10px rgba(255,45,45,0.6)' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                </svg>
+                Join Our YouTube Family
+              </a>
+              <div className="inline-flex items-center" style={{ gap: '10px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
+                <span className="inline-flex">
+                  {avatars.map((a, i) => (
+                    <span
+                      key={a.t}
+                      className="font-arimo font-bold inline-flex items-center justify-center"
+                      style={{ width: '28px', height: '28px', borderRadius: '999px', background: a.bg, color: a.color, fontSize: '10px', border: '2px solid #0B1226', marginLeft: i ? '-8px' : 0 }}
+                    >
+                      {a.t}
+                    </span>
+                  ))}
+                </span>
+                <span><b style={{ color: '#FFFFFF' }}>15,000+</b> UPSC Aspirants</span>
+              </div>
+            </div>
+          </div>
+          {/* Bell ring badge */}
+          <div
+            className="flex items-center justify-center"
+            style={{ width: 'clamp(120px, 12vw, 176px)', height: 'clamp(120px, 12vw, 176px)', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', boxShadow: 'inset 0 0 0 1px rgba(233,185,73,0.25)', flexShrink: 0 }}
+          >
+            <div
+              className="flex items-center justify-center"
+              style={{ width: 'clamp(86px, 8.5vw, 128px)', height: 'clamp(86px, 8.5vw, 128px)', borderRadius: '50%', background: 'linear-gradient(135deg, #E9B949, #A87F1F)' }}
+            >
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1A1206" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+                <path d="M22 8c0-2.3-.8-4.3-2-6" />
+                <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+                <path d="M4 2C2.8 3.7 2 5.7 2 8" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function openVideoInNewTab(video: VideoItem) {
   const raw = (video.videoUrl || video.youtubeUrl || video.url || '').trim();
   if (!raw || typeof window === 'undefined') return;
@@ -792,63 +882,7 @@ export default function VideoLecturesPage() {
         )}
 
         {/* YouTube CTA banner – shown below subjects when nothing is selected */}
-        {!selectedSubject && (
-          <div style={{ marginTop: 'clamp(28px, 3vw, 40px)' }}>
-            <div
-              style={{
-                background: 'linear-gradient(135deg, #0E182D, #172240)',
-                borderRadius: '24px',
-                padding: 'clamp(28px, 3vw, 44px) clamp(28px, 3vw, 42px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 'clamp(24px, 3vw, 40px)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <div style={{ flex: 1, zIndex: 1 }}>
-                <h3
-                  className="font-arimo font-bold"
-                  style={{ fontSize: 'clamp(28px, 2.7vw, 36px)', lineHeight: 1.2, color: '#FFFFFF', marginBottom: 'clamp(4px, 0.4vw, 6px)' }}
-                >
-                  Never Miss a<br />
-                  <span style={{ color: '#E8B84B' }}>Lecture Again.</span>
-                </h3>
-                <p className="font-arimo" style={{ fontSize: 'clamp(18px, 1.88vw, 25px)', color: '#FFFFFF', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-                  Stay Consistent. Stay Ahead.
-                </p>
-                <p className="font-arimo" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', lineHeight: 'clamp(20px, 1.88vw, 25px)', color: '#FFFFFF', marginBottom: 'clamp(20px, 2vw, 28px)', maxWidth: '560px' }}>
-                  Subscribe to Rise with Jeet IAS on YouTube and get instant notifications for new lectures, current affairs drops, and live sessions all completely free.
-                </p>
-                <div className="flex items-center" style={{ gap: 'clamp(12px, 1.4vw, 20px)', flexWrap: 'wrap' }}>
-                  <a
-                    href="https://www.youtube.com/@RiseWithJeet"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 font-arimo font-bold text-white"
-                    style={{ background: '#E7000B', borderRadius: '26843500px', padding: 'clamp(12px, 1.2vw, 14px) clamp(24px, 2.25vw, 30px)', fontSize: 'clamp(13px, 1.12vw, 15px)' }}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FFFFFF"/>
-                      <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#E7000B"/>
-                    </svg>
-                    Join Our YouTube Family
-                  </a>
-                  <p className="font-arimo font-bold" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#FFFFFF' }}>
-                    Join 15,000+ UPSC Aspirants Here
-                  </p>
-                </div>
-              </div>
-              <div
-                className="flex items-center justify-center"
-                style={{ width: 'clamp(100px, 10vw, 140px)', height: 'clamp(100px, 10vw, 140px)', borderRadius: '50%', background: 'rgba(25,60,184,0.3)', flexShrink: 0 }}
-              >
-                <span style={{ fontSize: 'clamp(48px, 5vw, 68px)' }}>{'\u{1F514}'}</span>
-              </div>
-            </div>
-          </div>
-        )}
+        {!selectedSubject && <YouTubeTribeCta />}
 
         {/* Inline videos for selected subject */}
         {selectedSubject && (
@@ -1114,63 +1148,7 @@ export default function VideoLecturesPage() {
             </div>
 
             {/* YouTube CTA Banner – always shown below videos when a subject is selected */}
-            {!subjectVideosLoading && (
-              <div style={{ marginTop: 'clamp(28px, 3vw, 40px)' }}>
-                <div
-                  style={{
-                    background: 'linear-gradient(135deg, #0E182D, #172240)',
-                    borderRadius: '24px',
-                    padding: 'clamp(28px, 3vw, 44px) clamp(28px, 3vw, 42px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 'clamp(24px, 3vw, 40px)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div style={{ flex: 1, zIndex: 1 }}>
-                    <h3
-                      className="font-arimo font-bold"
-                      style={{ fontSize: 'clamp(28px, 2.7vw, 36px)', lineHeight: 1.2, color: '#FFFFFF', marginBottom: 'clamp(4px, 0.4vw, 6px)' }}
-                    >
-                      Never Miss a<br />
-                      <span style={{ color: '#E8B84B' }}>Lecture Again.</span>
-                    </h3>
-                    <p className="font-arimo" style={{ fontSize: 'clamp(18px, 1.88vw, 25px)', color: '#FFFFFF', marginBottom: 'clamp(12px, 1.2vw, 16px)' }}>
-                      Stay Consistent. Stay Ahead.
-                    </p>
-                    <p className="font-arimo" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', lineHeight: 'clamp(20px, 1.88vw, 25px)', color: '#FFFFFF', marginBottom: 'clamp(20px, 2vw, 28px)', maxWidth: '560px' }}>
-                      Subscribe to Rise with Jeet IAS on YouTube and get instant notifications for new lectures, current affairs drops, and live sessions all completely free.
-                    </p>
-                    <div className="flex items-center" style={{ gap: 'clamp(12px, 1.4vw, 20px)', flexWrap: 'wrap' }}>
-                      <a
-                        href="https://www.youtube.com/@RiseWithJeet"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 font-arimo font-bold text-white"
-                        style={{ background: '#E7000B', borderRadius: '26843500px', padding: 'clamp(12px, 1.2vw, 14px) clamp(24px, 2.25vw, 30px)', fontSize: 'clamp(13px, 1.12vw, 15px)' }}
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                          <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" fill="#FFFFFF"/>
-                          <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z" fill="#E7000B"/>
-                        </svg>
-                        Join Our YouTube Family
-                      </a>
-                      <p className="font-arimo font-bold" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#FFFFFF' }}>
-                        Join 15,000+ UPSC Aspirants Here
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className="flex items-center justify-center"
-                    style={{ width: 'clamp(100px, 10vw, 140px)', height: 'clamp(100px, 10vw, 140px)', borderRadius: '50%', background: 'rgba(25,60,184,0.3)', flexShrink: 0 }}
-                  >
-                    <span style={{ fontSize: 'clamp(48px, 5vw, 68px)' }}>{'\u{1F514}'}</span>
-                  </div>
-                </div>
-              </div>
-            )}
+            {!subjectVideosLoading && <YouTubeTribeCta />}
           </div>
         )}
       </div>
