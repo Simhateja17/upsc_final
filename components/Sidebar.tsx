@@ -135,24 +135,28 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
             href="/dashboard/study-groups?tab=solo"
             title="Focus Mode"
             onClick={onClose}
+            style={{
+              boxShadow:
+                '0 1px 0 rgba(255,255,255,.7) inset, 0 1px 2px rgba(14,20,48,.06)',
+            }}
             className={`
-              flex items-center rounded-full bg-white border border-[#E5E7EB]
-              hover:border-[#C7CDD6] hover:shadow-sm transition-all
-              ${collapsed ? 'justify-center w-9 h-9' : 'gap-2 px-3 py-1.5'}
+              relative flex items-center select-none overflow-hidden
+              bg-white border border-[#E5E7EB]
+              hover:border-[#D9D2FF] transition-all
+              ${collapsed ? 'justify-center w-9 h-9 rounded-[0.6rem]' : 'gap-[0.55rem] px-[0.8rem] py-2 rounded-full'}
             `}
           >
-            {/* Pulsing blue dot */}
-            <span className="relative flex h-2 w-2 flex-shrink-0">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3B82F6] opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3B82F6]" />
-            </span>
+            {/* Pulsing indigo dot */}
+            {!collapsed && (
+              <span className="focus-pulse-dot h-[9px] w-[9px] flex-shrink-0" aria-hidden="true" />
+            )}
             {/* Focus icon (person) */}
-            <svg className="w-[15px] h-[15px] flex-shrink-0 text-[#4F46E5]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 20c0-4.42 3.58-8 8-8s8 3.58 8 8z" />
+            <svg className="w-[17px] h-[17px] flex-shrink-0 text-[#4F46E5]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <circle cx="12" cy="5.4" r="2.4" />
+              <path d="M12 9.2c-3.4 0-6 2.4-7 5.6-.4 1.2-1.3 1.5-2 1.7-.7.2-1 .7-1 1.3 0 .7.5 1.2 1.2 1.2h17.6c.7 0 1.2-.5 1.2-1.2 0-.6-.3-1.1-1-1.3-.7-.2-1.6-.5-2-1.7-1-3.2-3.6-5.6-7-5.6z" />
             </svg>
             {!collapsed && (
-              <span className="font-inter font-semibold text-[13px] leading-none whitespace-nowrap text-[#1E2D4E]">
+              <span className="font-inter font-semibold text-[0.9rem] leading-none whitespace-nowrap tracking-[0.1px] text-[#0E1430]">
                 Focus Mode
               </span>
             )}

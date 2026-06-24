@@ -33,6 +33,7 @@ interface AchievementBadge {
   status: BadgeState;
   icon?: string;
   iconNode?: React.ReactNode;
+  emoji?: string;
 }
 
 const PerformanceStatsWidget = () => {
@@ -121,6 +122,7 @@ const PerformanceStatsWidget = () => {
       key: 'streak',
       title: '30-Day Streak',
       note: `${currentStreak ?? 0} day streak`,
+      emoji: '🔥',
       icon: '/icons/dashboard/badge-streak.png',
       accent: '#F59E0B',
       tint: '#FFF7E8',
@@ -130,6 +132,7 @@ const PerformanceStatsWidget = () => {
       key: 'learner',
       title: 'Quick Learner',
       note: `${testsTaken ?? 0} tests done`,
+      emoji: '🧠',
       icon: '/icons/dashboard/badge-learner.png',
       accent: '#F59E0B',
       tint: '#FFF9EB',
@@ -139,6 +142,7 @@ const PerformanceStatsWidget = () => {
       key: 'accuracy',
       title: '95% Accuracy',
       note: rankPercentile !== null ? `Top ${rankPercentile}%` : 'Build accuracy',
+      emoji: '🎖️',
       icon: '/icons/dashboard/badge-accuracy.png',
       accent: '#4F7CFF',
       tint: '#EEF4FF',
@@ -191,11 +195,6 @@ const PerformanceStatsWidget = () => {
       ),
     },
   ];
-  const badgeTextByStatus: Record<BadgeState, string> = {
-    earned: 'Earned',
-    'in-progress': 'In Progress',
-    locked: 'Locked',
-  };
   const sectionTitleStyle: React.CSSProperties = {
     fontWeight: 700,
     fontSize: 'clamp(16px,1.04vw,20px)',
@@ -274,16 +273,16 @@ const PerformanceStatsWidget = () => {
               {dayLabels.map((day, index) => (
                 <div
                   key={index}
-                  className="flex-1 aspect-square rounded-lg flex items-center justify-center font-inter font-semibold"
+                  className="flex-1 aspect-square rounded-lg flex items-center justify-center font-inter font-semibold border"
                   style={
                     weekDays[index]
-                      ? { background: '#FDC700' }
-                      : { background: '#F1F3F5' }
+                      ? { background: 'linear-gradient(180deg,#ffd24a,#f5b400)', borderColor: '#F1D880' }
+                      : { background: '#EEF0F5', borderColor: '#E5E7EB' }
                   }
                 >
                   {weekDays[index] ? (
                     <svg className="w-[55%] h-[55%]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M5 13l4 4L19 7" stroke="#1A1A1A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M5 13l4 4L19 7" stroke="#1A1407" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   ) : (
                     <span className="text-[#9AA3B2]" style={{ fontSize: 'clamp(11px,0.68vw,13px)' }}>
@@ -434,40 +433,37 @@ const PerformanceStatsWidget = () => {
           </Link>
         </div>
         <div className="grid grid-cols-3 gap-[clamp(8px,0.52vw,12px)]">
-          {achievementBadges.map((badge) => {
-            const isLocked = badge.status === 'locked';
-            const isProgress = badge.status === 'in-progress';
-            const cardBorder = isLocked ? '#E5E7EB' : isProgress ? '#BFDBFE' : '#F3D27A';
-            const cardBackground = isLocked ? '#FFFFFF' : isProgress ? '#F8FBFF' : '#FFF9E8';
-            const iconColor = isLocked ? '#B8C1CC' : isProgress ? '#3B82F6' : badge.accent;
+          {achievementBadges.slice(0, 3).map((badge) => {
+            const isEarned = badge.status === 'earned';
             return (
               <div
                 key={badge.key}
-                className="rounded-[18px] border px-2 py-3 text-center"
+                className="rounded-[0.85rem] border text-center transition-all"
                 style={{
-                  borderColor: cardBorder,
-                  background: cardBackground,
+                  borderColor: isEarned ? '#F0E4B8' : '#EBEDF2',
+                  background: isEarned ? '#FFFDF5' : '#F5F6F8',
+                  padding: 'clamp(10px,0.85vw,14px) clamp(4px,0.5vw,8px)',
                 }}
               >
                 <div
-                  className="mx-auto mb-2 flex items-center justify-center"
+                  className="leading-none"
                   style={{
-                    width: 'clamp(40px,2.4vw,52px)',
-                    height: 'clamp(40px,2.4vw,52px)',
-                    color: iconColor,
-                    filter: isLocked ? 'grayscale(1)' : 'none',
+                    fontSize: 'clamp(20px,1.5vw,28px)',
+                    filter: isEarned ? 'none' : 'grayscale(1)',
+                    opacity: isEarned ? 1 : 0.3,
                   }}
                 >
-                  {badge.icon ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={badge.icon} alt={badge.title} style={{ width: '100%', height: 'auto' }} />
-                  ) : (
-                    badge.iconNode
-                  )}
+                  {badge.emoji}
                 </div>
-                <p className="font-arimo font-bold text-[#4B5563] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>{badge.title}</p>
-                <p className="font-arimo text-center mt-1" style={{ fontSize: 'clamp(9px,0.52vw,10px)', lineHeight: '1.2', color: isLocked ? '#B8C1CC' : isProgress ? '#2563EB' : '#D08700' }}>
-                  {badgeTextByStatus[badge.status]}
+                <p
+                  className="font-semibold mt-1"
+                  style={{
+                    fontSize: 'clamp(10px,0.63vw,12px)',
+                    lineHeight: '1.25',
+                    color: isEarned ? '#1A1A1A' : '#B0B5C0',
+                  }}
+                >
+                  {badge.title}
                 </p>
               </div>
             );

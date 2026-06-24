@@ -36,6 +36,30 @@ async function syncCurrentSessionWithBackend() {
   return { token: session.access_token };
 }
 
+function isAuthError(err: unknown): boolean {
+  if (err instanceof ApiRequestError) {
+    return err.statusCode === 401 || err.statusCode === 403;
+  }
+  return err instanceof Error && /auth|token|unauthor/i.test(err.message);
+}
+
+/**
+ * Runs an authenticated request and, if it fails because the stored access
+ * token is missing/expired, refreshes the Supabase session (re-syncing it with
+ * the backend) and retries once. Use for write operations where a stale token
+ * would otherwise surface as a generic failure to the user.
+ */
+async function withAuthRetry<T>(run: (config: { token?: string }) => Promise<T>): Promise<T> {
+  try {
+    return await run(await freshAuthConfig());
+  } catch (err) {
+    if (!isAuthError(err)) throw err;
+    const syncedConfig = await syncCurrentSessionWithBackend();
+    if (!syncedConfig) throw err;
+    return run(syncedConfig);
+  }
+}
+
 // ==================== Jeet AI Mentor Chat ====================
 
 export const jeetAIService = {
@@ -270,10 +294,10 @@ export const studyPlannerService = {
   getTodayTasks: (date?: string) =>
     api.get<any>(`/study-plan/today${date ? `?date=${encodeURIComponent(date)}` : ''}`, authConfig()),
   createTask: (task: { title: string; description?: string; subject?: string; type?: string; date?: string; startTime?: string; endTime?: string; duration?: number; actualDuration?: number }) =>
-    api.post<any>('/study-plan/tasks', task, authConfig()),
+    withAuthRetry(config => api.post<any>('/study-plan/tasks', task, config)),
   updateTask: (id: string, updates: { title?: string; description?: string; subject?: string; type?: string; date?: string; startTime?: string; endTime?: string; duration?: number; actualDuration?: number; isCompleted?: boolean }) =>
-    api.put<any>(`/study-plan/tasks/${id}`, updates, authConfig()),
-  deleteTask: (id: string) => api.delete<any>(`/study-plan/tasks/${id}`, authConfig()),
+    withAuthRetry(config => api.put<any>(`/study-plan/tasks/${id}`, updates, config)),
+  deleteTask: (id: string) => withAuthRetry(config => api.delete<any>(`/study-plan/tasks/${id}`, config)),
   getStreak: () => api.get<any>('/study-plan/streak', authConfig()),
   getWeeklyGoals: () => api.get<any>('/study-plan/weekly-goals', authConfig()),
   saveWeeklyGoals: (goals: { title: string; completed: boolean }[]) =>
