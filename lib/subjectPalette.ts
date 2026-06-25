@@ -45,6 +45,24 @@ export const SUBJECT_PALETTE: Record<string, { bg: string; color: string; topic:
 
 export const NEUTRAL_TAG_STYLE = { bg: '#F3F4F6', color: '#6A7282' };
 
+// One distinct badge color per subject (Polity→Purple, Geography→Blue,
+// Economy→Yellow, Environment→Green, …). Matched by substring so variant
+// names like "Indian Polity & Governance" still resolve correctly.
+export const SUBJECT_BADGE_STYLES: Array<{ match: (n: string) => boolean; bg: string; color: string }> = [
+  { match: (n) => n.includes('polit') || n.includes('governance'), bg: '#EDE9FE', color: '#6D28D9' }, // Purple
+  { match: (n) => n.includes('geo'), bg: '#DBEAFE', color: '#1D4ED8' }, // Blue
+  { match: (n) => n.includes('econ'), bg: '#FEF3C7', color: '#92400E' }, // Yellow
+  { match: (n) => n.includes('environ') || n.includes('ecolog'), bg: '#DCFCE7', color: '#15803D' }, // Green
+  { match: (n) => n.includes('histor') || n.includes('art') || n.includes('culture'), bg: '#FFEDD5', color: '#9A3412' }, // Orange
+  { match: (n) => n.includes('scien') || n.includes('tech'), bg: '#CFFAFE', color: '#0E7490' }, // Cyan
+  { match: (n) => n.includes('current') || n.includes('affair'), bg: '#FFE4E6', color: '#BE123C' }, // Rose
+];
+
+export function getSubjectBadgeStyle(subjectName: string): { bg: string; color: string } {
+  const n = (subjectName || '').toLowerCase();
+  return SUBJECT_BADGE_STYLES.find((s) => s.match(n)) ?? { bg: '#EFF6FF', color: '#17223E' };
+}
+
 export function hashIndex(str: string, mod: number): number {
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;

@@ -63,18 +63,22 @@ export default function DailyMcqChallengePage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  // Retake: when launched with ?retake=1, ignore the "already attempted" gate and start fresh.
+  const [isRetake, setIsRetake] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
 
   // Load MCQ info first to check if already attempted
   useEffect(() => {
+    const retake = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('retake') === '1';
+    setIsRetake(retake);
     dailyMcqService.getToday()
       .then((res) => {
         setMcqInfo(res.data);
-        if (res.data?.attempted) {
+        if (res.data?.attempted && !retake) {
           return;
         }
-        // Not attempted yet — load questions
+        // Not attempted (or retaking) — load questions
         return dailyMcqService.getQuestions();
       })
       .then((res) => {
@@ -226,8 +230,8 @@ export default function DailyMcqChallengePage() {
     setCurrentQuestion(nextIndex);
   };
 
-  // Already attempted screen
-  if (!loading && mcqInfo?.attempted) {
+  // Already attempted screen (skipped when retaking)
+  if (!loading && mcqInfo?.attempted && !isRetake) {
     return (
       <div className="flex flex-col min-h-full items-center justify-center" style={{ background: '#FAFBFE' }}>
         <div style={{ maxWidth: '600px', width: '100%', padding: '40px', background: '#FFFFFF', borderRadius: '16px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', textAlign: 'center' }}>
@@ -288,76 +292,77 @@ export default function DailyMcqChallengePage() {
   const unansweredCount = Math.max(0, totalQuestions - answeredCount - skippedCount - markedCount);
   const isLast = currentQuestion === totalQuestions - 1;
 
-  // Reusable navigator card (right-hand box)
+  // Reusable navigator + session-stats column (right-hand side)
+  const cardStyle: React.CSSProperties = { background: '#FFFFFF', borderRadius: 16, border: '1px solid #E5E7EB', padding: 16, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)', flexShrink: 0 };
+  const sectionHeading: React.CSSProperties = { fontWeight: 700, fontSize: 11, letterSpacing: '0.14em', color: '#8892A4', textTransform: 'uppercase' };
   const navigatorCard = (
-    <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 14, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>
-        Question Navigator
-      </div>
-
-      {/* Color-coded question buttons */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, overflow: 'auto', flex: 1, alignContent: 'flex-start' }}>
-        {questions.map((qu, idx) => {
-          const isCurrent = idx === currentQuestion;
-          const isAnswered = !!answers[qu.id] && !flagged[qu.id];
-          const isSkipped = !!skipped[qu.id] && !answers[qu.id] && !flagged[qu.id];
-          const isMarked = !!flagged[qu.id];
-          const isBookmarked = !!bookmarked[qu.id];
-
-          let bg = '#F3F4F6';
-          let color = '#6B7280';
-          if (isSkipped) { bg = '#DBEAFE'; color = '#2563EB'; }
-          if (isBookmarked) { bg = '#FFFBEB'; color = '#D97706'; }
-          if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
-          if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
-          if (isCurrent) { bg = '#0F172B'; color = '#FFFFFF'; }
-
-          return (
-            <button
-              key={qu.id}
-              onClick={() => navigateToQuestion(idx)}
-              style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #E5E7EB', background: bg, color, fontWeight: 700, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}
-            >
-              {idx + 1}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
-      <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 8, marginBottom: 8 }}>
-        <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 9 }}>
-          Session Stats
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Question Navigator card */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={sectionHeading}>Question Navigator</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF' }}>{questions.length} total</div>
         </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+          {questions.map((qu, idx) => {
+            const isCurrent = idx === currentQuestion;
+            const isAnswered = !!answers[qu.id] && !flagged[qu.id];
+            const isSkipped = !!skipped[qu.id] && !answers[qu.id] && !flagged[qu.id];
+            const isMarked = !!flagged[qu.id];
+            const isBookmarked = !!bookmarked[qu.id];
+
+            let bg = '#F4F6FA';
+            let color = '#475067';
+            if (isSkipped) { bg = '#DBEAFE'; color = '#2563EB'; }
+            if (isBookmarked) { bg = '#FFFBEB'; color = '#D97706'; }
+            if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
+            if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
+            if (isCurrent) { bg = '#2563EB'; color = '#FFFFFF'; }
+
+            return (
+              <button
+                key={qu.id}
+                onClick={() => navigateToQuestion(idx)}
+                style={{ height: 38, borderRadius: 10, border: isCurrent ? '1px solid #2563EB' : '1px solid transparent', background: bg, color, fontWeight: 700, fontSize: 13, cursor: 'pointer', boxShadow: isCurrent ? '0 0 0 3px rgba(37,99,235,0.18)' : 'none' }}
+              >
+                {idx + 1}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Session Stats card */}
+      <div style={cardStyle}>
+        <div style={{ ...sectionHeading, marginBottom: 12 }}>Session Stats</div>
         {[
           { label: 'Answered', color: '#22C55E', background: '#DCFCE7', value: answeredCount },
-          { label: 'Unanswered', color: '#D1D5DB', background: '#F3F4F6', value: unansweredCount },
+          { label: 'Not Visited', color: '#D1D5DB', background: '#F3F4F6', value: unansweredCount },
           { label: 'Skipped', color: '#2563EB', background: '#DBEAFE', value: skippedCount },
-          { label: 'Bookmarked', color: '#F59E0B', background: '#FFFBEB', value: bookmarkedCount },
-          { label: 'Marked for review', color: '#F59E0B', background: '#FEF3C7', value: markedCount },
+          { label: 'Mark for Review', color: '#F59E0B', background: '#FEF3C7', value: markedCount },
         ].map((row) => (
-          <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <div style={{ width: 14, height: 14, borderRadius: 3, background: row.background, border: `1px solid ${row.color}` }} />
-              <span style={{ fontSize: 11, color: '#374151' }}>{row.label}</span>
+          <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 12, height: 12, borderRadius: 3, background: row.background, border: `1px solid ${row.color}` }} />
+              <span style={{ fontSize: 12, color: '#374151' }}>{row.label}</span>
             </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>{row.value}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#111827' }}>{row.value}</span>
           </div>
         ))}
-      </div>
 
-      <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 10 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#111827', marginBottom: 2 }}>Ready to submit</div>
-        <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 10 }}>
-          {answeredCount} answered · {unansweredCount} unanswered · {skippedCount} skipped
+        <div style={{ borderTop: '1px solid #F1F3F5', paddingTop: 12, marginTop: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#111827', marginBottom: 3 }}>Ready to submit?</div>
+          <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 12 }}>
+            {answeredCount} answered · {unansweredCount} not visited · {skippedCount} skipped · {markedCount} marked
+          </div>
+          <button
+            onClick={() => setShowSubmitConfirm(true)}
+            disabled={submitting}
+            style={{ width: '100%', height: 44, background: 'linear-gradient(180deg, #F5C518, #E6A817)', border: 'none', borderRadius: 12, color: '#0B1426', fontWeight: 800, fontSize: 14, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, boxShadow: '0 6px 16px -6px rgba(245,197,24,0.6)' }}
+          >
+            {submitting ? 'Submitting...' : '✓ Submit Test'}
+          </button>
         </div>
-        <button
-          onClick={() => setShowSubmitConfirm(true)}
-          disabled={submitting}
-          style={{ width: '100%', height: 38, background: '#0F172B', border: 'none', borderRadius: 10, color: '#FFFFFF', fontWeight: 700, fontSize: 13, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
-        >
-          {submitting ? 'Submitting...' : '✓ Submit Test'}
-        </button>
       </div>
     </div>
   );
@@ -381,11 +386,13 @@ export default function DailyMcqChallengePage() {
 
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 22px 11px', flexWrap: 'wrap', flexShrink: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/daily-mcq-icon.png" alt="" style={{ width: 24, height: 24, objectFit: 'contain', flexShrink: 0 }} />
-                  <span style={{ fontFamily: 'Arimo, sans-serif', fontSize: 26, fontWeight: 700, lineHeight: '28px', color: '#101828' }}>Daily MCQ Challenge</span>
-                  <span style={{ fontFamily: 'Arimo, sans-serif', fontSize: 13, color: '#9CA3AF' }}>· ({formatOrdinalDate(new Date())})</span>
+                  <img src="/target-icon.png" alt="" style={{ width: 30, height: 30, objectFit: 'contain', flexShrink: 0 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                    <span style={{ fontFamily: 'Arimo, sans-serif', fontSize: 20, fontWeight: 700, lineHeight: '26px', color: '#101828' }}>Daily MCQ Challenge</span>
+                    <span style={{ fontFamily: 'Arimo, sans-serif', fontSize: 12.5, color: '#9CA3AF' }}>{formatOrdinalDate(new Date())} · {questions.length} Questions</span>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 999, padding: '4px 12px' }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
@@ -409,6 +416,27 @@ export default function DailyMcqChallengePage() {
                         <div style={{ display: 'inline-flex', alignItems: 'center', background: difficultyStyle.bg, border: `1px solid ${difficultyStyle.color}33`, borderRadius: 999, padding: '5px 12px' }}>
                           <span style={{ fontSize: 12, fontWeight: 600, color: difficultyStyle.color }}>{q.difficulty}</span>
                         </div>
+                        {/* Mark for Review — toggles the marked state (reference .mfr-chip) */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleFlag(q)}
+                          disabled={submitted}
+                          title={flagged[q.id] ? 'Marked for review' : 'Mark for review'}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            background: flagged[q.id] ? '#FEF3C7' : '#FFFFFF',
+                            border: `1px solid ${flagged[q.id] ? '#F5C518' : '#E5E7EB'}`,
+                            borderRadius: 999, padding: '5px 12px',
+                            cursor: submitted ? 'default' : 'pointer',
+                            color: flagged[q.id] ? '#7A5400' : '#475067',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => { if (!flagged[q.id] && !submitted) { e.currentTarget.style.background = '#FFF9E8'; e.currentTarget.style.borderColor = '#FCE3A5'; e.currentTarget.style.color = '#8A6306'; } }}
+                          onMouseLeave={(e) => { if (!flagged[q.id]) { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#475067'; } }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill={flagged[q.id] ? '#F5C518' : 'none'} stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 21V4h13l-2 4 2 4H4" /></svg>
+                          <span style={{ fontSize: 12, fontWeight: 600 }}>Mark for Review</span>
+                        </button>
                         {q.pyqYear && (
                           <div style={{ display: 'inline-flex', alignItems: 'center', background: pyqStyle.bg, border: `1px solid ${pyqStyle.color}33`, borderRadius: 999, padding: '5px 12px' }}>
                             <span style={{ fontSize: 12, fontWeight: 600, color: pyqStyle.color }}>PYQ {q.pyqYear}</span>
@@ -432,27 +460,6 @@ export default function DailyMcqChallengePage() {
 
               {/* Content: question (fills) + options (2-col grid) */}
               <div style={{ flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: 'column', padding: '12px 22px 14px', overflow: isMobile ? 'visible' : 'hidden' }}>
-                <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
-                  <button
-                    onClick={() => handleToggleFlag(q)}
-                    title={flagged[q.id] ? 'Unflag question' : 'Flag question as incorrect'}
-                    style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid #D1D5DB', background: flagged[q.id] ? '#FEF3C7' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill={flagged[q.id] ? '#D97706' : 'none'} stroke={flagged[q.id] ? '#D97706' : '#6B7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                      <line x1="4" y1="22" x2="4" y2="15" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleToggleBookmark(q)}
-                    title={bookmarked[q.id] ? 'Remove bookmark' : 'Bookmark question'}
-                    style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid #D1D5DB', background: bookmarked[q.id] ? '#EFF6FF' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarked[q.id] ? '#1E3A8A' : 'none'} stroke={bookmarked[q.id] ? '#1E3A8A' : '#6B7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                    </svg>
-                  </button>
-                </div>
                 <div style={{ flex: isMobile ? 'none' : '1 1 auto', minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', whiteSpace: 'pre-line', fontSize: 14, lineHeight: '23px', color: '#1A1D23', paddingRight: 6 }}>
                   <span style={{ fontWeight: 700 }}>Question {currentQuestion + 1}: </span>
                   {normalizeQuestionText(q.questionText)}
@@ -467,20 +474,20 @@ export default function DailyMcqChallengePage() {
                         onClick={() => handleSelectAnswer(q.id, optKey)}
                         style={{
                           display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderRadius: 12, minHeight: 50,
-                          border: isSelected ? '1.5px solid #2B7FFF' : '1px solid #E5E7EB',
-                          background: isSelected ? '#EFF6FF' : '#FFFFFF',
+                          border: isSelected ? '1.5px solid #0B1426' : '1px solid #E5E7EB',
+                          background: isSelected ? '#0B1426' : '#FFFFFF',
                           cursor: submitted ? 'default' : 'pointer', textAlign: 'left', transition: 'all 0.15s ease', width: '100%',
                           boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
                         }}
                       >
                         <span style={{
-                          width: 28, height: 28, borderRadius: '50%',
-                          border: isSelected ? '1.5px solid #2B7FFF' : '1.5px solid #D1D5DB',
+                          width: 30, height: 30, borderRadius: 8,
+                          border: 'none',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontWeight: 700, fontSize: 13, color: isSelected ? '#2B7FFF' : '#6B7280',
-                          background: isSelected ? '#DBEAFE' : 'transparent', flexShrink: 0,
+                          fontWeight: 700, fontSize: 13, color: isSelected ? '#0B1426' : '#475067',
+                          background: isSelected ? '#F5C518' : '#F1F4F9', flexShrink: 0,
                         }}>{optKey}</span>
-                        <span style={{ fontSize: 13.5, color: '#1E293B', fontWeight: isSelected ? 600 : 400 }}>{option.text}</span>
+                        <span style={{ fontSize: 13.5, color: isSelected ? '#FFFFFF' : '#1E293B', fontWeight: isSelected ? 600 : 400 }}>{option.text}</span>
                       </button>
                     );
                   })}
@@ -492,40 +499,33 @@ export default function DailyMcqChallengePage() {
                 <button
                   onClick={() => navigateToQuestion(Math.max(0, currentQuestion - 1))}
                   disabled={currentQuestion === 0}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 999, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: currentQuestion === 0 ? '#C7CDD6' : '#374151', cursor: currentQuestion === 0 ? 'not-allowed' : 'pointer' }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 10, padding: '9px 18px', fontSize: 13, fontWeight: 600, color: currentQuestion === 0 ? '#C7CDD6' : '#374151', cursor: currentQuestion === 0 ? 'not-allowed' : 'pointer' }}
                 >
                   ← Previous
                 </button>
 
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {questions.map((qu, idx) => {
-                    const isCurrent = idx === currentQuestion;
-                    const isAnswered = !!answers[qu.id];
-                    const isSkipped = !!skipped[qu.id] && !isAnswered;
-                    let dotBg = '#F3F4F6';
-                    let dotColor = '#6B7280';
-                    if (isSkipped) { dotBg = '#DBEAFE'; dotColor = '#2563EB'; }
-                    if (isAnswered) { dotBg = '#DCFCE7'; dotColor = '#166534'; }
-                    if (isCurrent) { dotBg = '#16A34A'; dotColor = '#FFFFFF'; }
-                    return (
-                      <button key={qu.id} onClick={() => navigateToQuestion(idx)} style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: dotBg, color: dotColor, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>{idx + 1}</button>
-                    );
-                  })}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <button
+                    onClick={() => !isLast && navigateToQuestion(currentQuestion + 1)}
+                    disabled={isLast}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 10, padding: '9px 20px', fontSize: 13, fontWeight: 600, color: isLast ? '#C7CDD6' : '#374151', cursor: isLast ? 'not-allowed' : 'pointer' }}
+                  >
+                    Skip
+                  </button>
+                  <button
+                    onClick={() => !isLast && navigateToQuestion(currentQuestion + 1)}
+                    disabled={isLast}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isLast ? '#9CA3AF' : '#0B1426', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: isLast ? 'not-allowed' : 'pointer' }}
+                  >
+                    Save &amp; Next →
+                  </button>
                 </div>
-
-                <button
-                  onClick={() => !isLast && navigateToQuestion(currentQuestion + 1)}
-                  disabled={isLast}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isLast ? '#9CA3AF' : '#1A1D23', border: 'none', borderRadius: 999, padding: '9px 20px', fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: isLast ? 'not-allowed' : 'pointer' }}
-                >
-                  Next →
-                </button>
               </div>
             </div>
           </div>
 
-          {/* RIGHT: navigator box */}
-          <aside style={{ width: isMobile ? '100%' : 300, flexShrink: 0, display: isMobile ? 'block' : 'flex', minHeight: isMobile ? 'auto' : 0 }}>
+          {/* RIGHT: navigator + session stats */}
+          <aside style={{ width: isMobile ? '100%' : 312, flexShrink: 0, minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', paddingRight: 2 }}>
             {navigatorCard}
           </aside>
         </div>

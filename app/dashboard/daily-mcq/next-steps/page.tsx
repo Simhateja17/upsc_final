@@ -1,191 +1,141 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { dailyMcqService } from '@/lib/services';
 
-interface Recommendation {
-  type: string;
+interface NextStepCard {
+  icon: string;
+  accent: string;
+  iconBg: string;
+  iconColor: string;
   title: string;
-  description: string;
-  action: string;
-  link: string;
+  desc: string;
+  chip: string;
+  chipBg: string;
+  chipColor: string;
+  chipBorder: string;
+  cta: string;
+  href: string;
+  pulse?: boolean;
 }
 
-const cardStyles: Record<string, { accent: string; iconSrc: string; badgeBg: string; badgeText: string; badgeDot: string }> = {
-  study: {
-    accent: '#FB2C36',
-    iconSrc: '/books-stack.png',
-    badgeBg: '#FEF2F2',
-    badgeText: '#DC2626',
-    badgeDot: '#DC2626',
-  },
-  practice: {
-    accent: '#635BFF',
-    iconSrc: '/target-icon.png',
-    badgeBg: '#EFF6FF',
-    badgeText: '#2563EB',
-    badgeDot: '#2563EB',
-  },
-  editorial: {
-    accent: '#F59E0B',
-    iconSrc: '/newspaper-icon.png',
-    badgeBg: '#EFF6FF',
-    badgeText: '#2563EB',
-    badgeDot: '#2563EB',
-  },
-  answer: {
-    accent: '#22C55E',
-    iconSrc: '/answer-writing-hand.png',
-    badgeBg: '#F0FDF4',
-    badgeText: '#16A34A',
-    badgeDot: '#16A34A',
-  },
-};
-
-const fallbackRecommendations: Recommendation[] = [
+// Smart Next Steps cards — recreated from the reference design.
+const NEXT_STEP_CARDS: NextStepCard[] = [
   {
-    type: 'study',
-    title: 'Review Weak Areas',
-    description: 'Focus on concepts that need revision from today\'s test.',
-    action: 'Do this first',
-    link: '/dashboard/daily-mcq/review',
-  },
-  {
-    type: 'practice',
+    icon: '🎯', accent: '#6366F1', iconBg: '#EEF2FF', iconColor: '#4338CA',
     title: 'Practice More MCQs',
-    description: 'Attempt targeted MCQs curated from your wrong answers.',
-    action: 'Recommended',
-    link: '/dashboard/mock-tests',
+    desc: '20 targeted MCQs curated based on your wrong answers today.',
+    chip: '~15 min', chipBg: '#EEF2FF', chipColor: '#4338CA', chipBorder: '#C7D2FE',
+    cta: 'Start', href: '/dashboard/mock-tests',
   },
   {
-    type: 'editorial',
-    title: 'Read Today\'s Editorial',
-    description: 'Revise current affairs linked to today\'s questions.',
-    action: 'Recommended',
-    link: '/dashboard/daily-editorial',
-  },
-  {
-    type: 'answer',
+    icon: '✍️', accent: '#E11D48', iconBg: '#FFF1F2', iconColor: '#BE123C',
     title: 'Practice Answer Writing',
-    description: 'Attempt a Mains question connected to today\'s concepts.',
-    action: 'Optional',
-    link: '/dashboard/daily-answer/challenge',
+    desc: "Attempt today's Mains question — builds on the concepts you missed.",
+    chip: '10 marks · 150 words', chipBg: '#FFF1F2', chipColor: '#BE123C', chipBorder: '#FECDD3',
+    cta: 'Write', href: '/dashboard/daily-answer/challenge',
+  },
+  {
+    icon: '📰', accent: '#10B981', iconBg: '#ECFDF5', iconColor: '#047857',
+    title: "Read Today's Editorial",
+    desc: 'Directly linked to questions you got wrong today. A quick 5-min read.',
+    chip: '5 min · The Hindu', chipBg: '#ECFDF5', chipColor: '#047857', chipBorder: '#A7F3D0',
+    cta: 'Read', href: '/dashboard/daily-editorial',
+  },
+  {
+    icon: '🎧', accent: '#F5C518', iconBg: '#FFFBEB', iconColor: '#B45309',
+    title: 'Enter Study Room',
+    desc: 'Join a focused, distraction-free session with the Pomodoro timer & live peers.',
+    chip: '1,284 studying now', chipBg: '#FFFBEB', chipColor: '#92400E', chipBorder: '#FDE68A',
+    cta: 'Enter', href: '/dashboard/study-groups', pulse: true,
   },
 ];
 
+const ArrowRight = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
+
 export default function NextStepsPage() {
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    dailyMcqService.getRecommendations()
-      .then(res => setRecommendations(res.data.recommendations || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
-        <main className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-        </main>
-      </div>
-    );
-  }
-
-  const items = recommendations.length > 0 ? recommendations : fallbackRecommendations;
-
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
-      <main className="flex-1 flex items-center justify-center py-[clamp(1rem,1.6vw,1.75rem)] px-[clamp(1rem,2.5vw,4rem)]">
+    <div className="flex flex-col overflow-y-auto" style={{ minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#F4F5F8' }}>
+      <style>{`
+        .ns-card{padding:18px;border-radius:16px;border:1px solid #E6EAF2;background:#fff;transition:all .2s ease;cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;height:100%;}
+        .ns-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px -16px rgba(11,20,38,.18);}
+        .ns-card .ns-glow{position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;opacity:.12;pointer-events:none;}
+        .ns-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:700;border:1px solid transparent;}
+        .ns-pulse{width:7px;height:7px;border-radius:50%;background:currentColor;animation:nsPulse 1.6s infinite;}
+        @keyframes nsPulse{0%{box-shadow:0 0 0 0 rgba(245,197,24,.55)}70%{box-shadow:0 0 0 6px rgba(245,197,24,0)}100%{box-shadow:0 0 0 0 rgba(245,197,24,0)}}
+        .ns-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .18s ease;width:100%;}
+        .ns-btn-ghost{background:#fff;color:#0B1426;border:1px solid #E2E6EF;}
+        .ns-btn-ghost:hover{background:#F7F9FC;}
+        .ns-btn-ink{background:#0B1426;color:#fff;border:1px solid #0B1426;}
+        .ns-btn-ink:hover{background:#13203A;}
+      `}</style>
+
+      <main className="flex-1 flex items-center justify-center py-[clamp(1.25rem,2vw,2.5rem)] px-[clamp(1rem,2.5vw,4rem)]">
         <div
-          className="rounded-xl"
-          style={{
-            width: 'min(100%, 1040px)',
-            padding: 'clamp(1.25rem,1.8vw,2rem)',
-            background: 'linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)',
-            boxShadow: '0 24px 58px -34px rgba(15,23,42,0.32), 0 10px 28px -22px rgba(15,23,42,0.22)',
-          }}
+          className="w-full rounded-[20px] bg-white"
+          style={{ maxWidth: 720, boxShadow: '0 1px 0 rgba(11,20,38,.04), 0 2px 6px rgba(11,20,38,.04), 0 30px 60px -28px rgba(11,20,38,.22)', border: '1px solid #EEF1F6' }}
         >
-          <div className="text-center mb-[clamp(1.1rem,1.4vw,1.6rem)]">
-            <h1
-              className="font-arimo font-bold text-[#101828] mb-2"
-              style={{ fontSize: 'clamp(22px,1.45vw,28px)', lineHeight: 'clamp(28px,1.85vw,36px)' }}
-            >
-              What would you like to do next?
-            </h1>
-            <p
-              className="font-arimo font-semibold text-[#98A2B3]"
-              style={{ fontSize: 'clamp(13px,0.78vw,15px)', lineHeight: '20px' }}
-            >
-              Smart recommendations based on your performance
-            </p>
+          {/* Header */}
+          <div className="flex items-start justify-between" style={{ padding: '24px 28px 20px', borderBottom: '1px solid #F0F2F6' }}>
+            <div>
+              <div className="font-arimo font-bold" style={{ fontSize: 11.5, letterSpacing: '0.16em', color: '#B7860B' }}>
+                ✨ SMART NEXT STEPS
+              </div>
+              <h1 className="font-arimo font-bold tracking-tight" style={{ fontSize: 'clamp(19px,1.3vw,22px)', color: '#0B1426', marginTop: 6 }}>
+                Personalized for your weak areas
+              </h1>
+              <p className="font-arimo" style={{ fontSize: 13, color: '#6B7689', marginTop: 4 }}>
+                Curated for you based on today&apos;s performance.
+              </p>
+            </div>
+            <Link href="/dashboard/daily-mcq/results" aria-label="Close" className="flex-shrink-0">
+              <span className="inline-flex items-center justify-center" style={{ width: 36, height: 36, borderRadius: 11, background: '#fff', border: '1px solid rgba(15,26,53,.10)', color: '#0B1226' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+              </span>
+            </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 mb-[clamp(1.1rem,1.4vw,1.6rem)]" style={{ gap: 'clamp(0.85rem,1vw,1.1rem)' }}>
-            {items.map((item, index) => {
-              const style = cardStyles[item.type] || cardStyles.practice;
-
-              return (
-                <Link key={index} href={item.link} className="min-w-0">
-                  <div
-                    className="bg-white border border-[#E5E7EB] rounded-xl hover:-translate-y-0.5 transition-all cursor-pointer relative overflow-hidden"
-                    style={{
-                      minHeight: '154px',
-                      padding: '22px 26px 20px',
-                      boxShadow: '0 12px 28px -22px rgba(15,23,42,0.42)',
-                    }}
-                  >
-                    <div style={{ position: 'absolute', inset: '0 0 auto 0', height: '4px', background: style.accent }} />
-                    <div className="mb-5 flex items-center" style={{ height: '30px' }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={style.iconSrc} alt="" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                    </div>
-                    <h3 className="font-arimo font-bold text-[#1F2937] mb-2" style={{ fontSize: '18px', lineHeight: '24px' }}>
-                      {item.title}
-                    </h3>
-                    <p className="font-arimo font-semibold text-[#9CA3AF] mb-4" style={{ fontSize: '13px', lineHeight: '20px' }}>
-                      {item.description}
-                    </p>
-                    <span
-                      className="inline-flex items-center gap-1.5 rounded-full font-arimo font-bold"
-                      style={{
-                        height: '24px',
-                        padding: '0 10px',
-                        background: style.badgeBg,
-                        color: style.badgeText,
-                        fontSize: '12px',
-                        lineHeight: '16px',
-                      }}
-                    >
-                      <span style={{ width: '12px', height: '12px', borderRadius: 999, background: `radial-gradient(circle at 35% 35%, #60A5FA 0%, ${style.badgeDot} 62%, #1E3A8A 100%)`, flexShrink: 0 }} />
-                      {item.action}
+          {/* Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 12, padding: 24 }}>
+            {NEXT_STEP_CARDS.map((card) => (
+              <Link key={card.title} href={card.href} className="min-w-0">
+                <div className="ns-card font-arimo">
+                  <div className="ns-glow" style={{ background: card.accent }} />
+                  <div className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 12, background: card.iconBg, color: card.iconColor, fontSize: 18 }}>
+                    {card.icon}
+                  </div>
+                  <div className="font-bold" style={{ fontSize: 15.5, lineHeight: 1.25, color: '#0B1426', marginTop: 12 }}>
+                    {card.title}
+                  </div>
+                  <div style={{ fontSize: 12.5, lineHeight: '20px', color: '#6B7689', marginTop: 4, flex: 1 }}>
+                    {card.desc}
+                  </div>
+                  <div className="flex items-center justify-between" style={{ marginTop: 12 }}>
+                    <span className="ns-chip" style={{ background: card.chipBg, color: card.chipColor, borderColor: card.chipBorder }}>
+                      {card.pulse && <span className="ns-pulse" />}
+                      {card.chip}
+                    </span>
+                    <span className="font-bold inline-flex items-center gap-1" style={{ fontSize: 12.5, color: card.iconColor }}>
+                      {card.cta} <ArrowRight />
                     </span>
                   </div>
-                </Link>
-              );
-            })}
+                </div>
+              </Link>
+            ))}
           </div>
 
-          <div className="flex justify-center">
-            <Link href="/dashboard">
-              <button
-                className="flex items-center justify-center gap-2 bg-white hover:bg-[#F8FAFC] transition-colors font-arimo"
-                style={{
-                  height: '46px',
-                  borderRadius: '10px',
-                  border: '1px solid #D8DEE9',
-                  boxShadow: '0 8px 22px -18px rgba(15,23,42,0.6)',
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  color: '#374151',
-                  padding: '0 28px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke="#374151" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          {/* Footer */}
+          <div className="grid grid-cols-2" style={{ gap: 12, padding: '0 24px 24px' }}>
+            <Link href="/dashboard/daily-mcq/results" className="min-w-0">
+              <button type="button" className="ns-btn ns-btn-ghost font-arimo">Maybe Later</button>
+            </Link>
+            <Link href="/dashboard" className="min-w-0">
+              <button type="button" className="ns-btn ns-btn-ink font-arimo">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12l9-9 9 9M5 10v10h14V10" /></svg>
                 Back to Dashboard
               </button>
             </Link>

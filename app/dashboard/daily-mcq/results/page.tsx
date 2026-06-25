@@ -275,6 +275,14 @@ export default function DailyMcqResultsPage() {
           <div className="card-elevated rounded-[clamp(10px,0.52vw,10px)]"
             style={{ width: 'clamp(640px,42vw,820px)', padding: 'clamp(1.25rem,1.6vw,2rem) clamp(1.4rem,1.8vw,2.2rem)', boxShadow: '0 26px 60px -30px rgba(15,23,42,0.24), 0 12px 28px -20px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.9)' }}>
 
+            <div className="flex justify-center mb-[clamp(0.5rem,0.8vw,0.85rem)]">
+              <span className="inline-flex items-center gap-1.5 rounded-full font-arimo font-bold"
+                style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '4px 12px', fontSize: 'clamp(11px,0.65vw,12px)', color: '#047857' }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+                Challenge Completed
+              </span>
+            </div>
+
             <div className="text-center mb-[clamp(0.9rem,1.2vw,1.25rem)]">
               <h1 className="font-arimo font-bold text-[#101828] mb-[clamp(0.25rem,0.5vw,0.5rem)]"
                 style={{ fontSize: 'clamp(20px,1.25vw,24px)', lineHeight: 'clamp(28px,1.67vw,32px)' }}>
@@ -287,130 +295,114 @@ export default function DailyMcqResultsPage() {
             </div>
 
             <div className="flex justify-center mb-[clamp(1rem,1.5vw,1.4rem)]">
-              <div className="rounded-full bg-[#17223E] flex flex-col items-center justify-center gap-1"
-                style={{ width: 'clamp(100px,6.67vw,128px)', height: 'clamp(100px,6.67vw,128px)' }}>
-                <div className="font-arimo font-bold text-white leading-none"
-                  style={{ fontSize: 'clamp(28px,2.08vw,40px)' }}>
-                  {r.correctCount}/{r.questionCount}
-                </div>
-                <div className="font-arimo font-bold text-white"
-                  style={{ fontSize: 'clamp(10px,0.625vw,12px)', lineHeight: 'clamp(14px,0.83vw,16px)' }}>
-                  Score
-                </div>
-              </div>
+              {(() => {
+                const pct = r.questionCount > 0 ? Math.round((r.correctCount / r.questionCount) * 100) : 0;
+                const size = 140;
+                const stroke = 11;
+                const radius = (size - stroke) / 2;
+                const circ = 2 * Math.PI * radius;
+                const dash = (pct / 100) * circ;
+                return (
+                  <div style={{ position: 'relative', width: size, height: size }}>
+                    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+                      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#E5E7EB" strokeWidth={stroke} />
+                      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#10B981" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${dash} ${circ}`} />
+                    </svg>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(28px,2.1vw,38px)', color: '#101828' }}>
+                        {r.correctCount}<span style={{ color: '#9CA3AF', fontSize: '0.58em' }}>/{r.questionCount}</span>
+                      </div>
+                      <div className="font-arimo font-bold" style={{ fontSize: 11, letterSpacing: '0.08em', color: '#10B981', marginTop: 6, textTransform: 'uppercase' }}>
+                        Score · {pct}%
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-[clamp(0.65rem,0.9vw,1rem)] mb-[clamp(0.85rem,1.2vw,1.15rem)]">
-              <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-[clamp(10px,0.73vw,14px)] text-center"
-                style={{ padding: 'clamp(0.5rem,0.75vw,1rem) clamp(0.5rem,0.625vw,0.75rem)' }}>
-                <div className="font-arimo text-[#4A5565] mb-[clamp(0.15rem,0.3vw,0.25rem)]"
-                  style={{ fontSize: 'clamp(11px,0.65vw,14px)' }}>Accuracy</div>
-                <div className="font-arimo font-bold text-[#101828]"
-                  style={{ fontSize: 'clamp(18px,1.15vw,24px)' }}>{Math.round(r.accuracy)}%</div>
-              </div>
-              <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-[clamp(10px,0.73vw,14px)] text-center"
-                style={{ padding: 'clamp(0.5rem,0.75vw,1rem) clamp(0.5rem,0.625vw,0.75rem)' }}>
-                <div className="font-arimo text-[#4A5565] mb-[clamp(0.15rem,0.3vw,0.25rem)]"
-                  style={{ fontSize: 'clamp(11px,0.65vw,14px)' }}>Time Taken</div>
-                <div className="font-arimo font-bold text-[#101828]"
-                  style={{ fontSize: 'clamp(18px,1.15vw,24px)' }}>{minutes}m {seconds}s</div>
-              </div>
-              <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-[clamp(10px,0.73vw,14px)] text-center"
-                style={{ padding: 'clamp(0.5rem,0.75vw,1rem) clamp(0.5rem,0.625vw,0.75rem)' }}>
-                <div className="font-arimo text-[#4A5565] mb-[clamp(0.15rem,0.3vw,0.25rem)]"
-                  style={{ fontSize: 'clamp(11px,0.65vw,14px)' }}>Speed</div>
-                <div className="font-arimo font-bold text-[#101828]"
-                  style={{ fontSize: 'clamp(14px,0.95vw,20px)' }}>{speed} min/Q</div>
-              </div>
-              <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-[clamp(10px,0.73vw,14px)] text-center"
-                style={{ padding: 'clamp(0.5rem,0.75vw,1rem) clamp(0.5rem,0.625vw,0.75rem)' }}>
-                <div className="font-arimo text-[#4A5565] mb-[clamp(0.15rem,0.3vw,0.25rem)]"
-                  style={{ fontSize: 'clamp(11px,0.65vw,14px)' }}>Rank</div>
-                <div className="font-arimo font-bold text-[#101828]"
-                  style={{ fontSize: 'clamp(16px,1.05vw,22px)' }}>{rankLabel}</div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-[clamp(0.65rem,0.9vw,1rem)] mb-[clamp(0.9rem,1.2vw,1.2rem)]">
-              <div className="bg-[#F0FDF4] rounded-[clamp(8px,0.52vw,10px)]" style={{ padding: 'clamp(0.75rem,1vw,1.25rem)' }}>
-                <div className="flex items-center gap-2 mb-[clamp(0.5rem,0.75vw,1rem)]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/strong-icon.png" alt="Strong" className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]" />
-                  <h3 className="font-arimo font-bold text-[#0D542B]" style={{ fontSize: 'clamp(13px,0.78vw,16px)' }}>You{'\''}re strong in:</h3>
+              {[
+                { label: 'Accuracy', value: `${Math.round(r.accuracy)}%`, sub: 'this attempt', valueSize: 'clamp(18px,1.15vw,24px)' },
+                { label: 'Time Taken', value: `${minutes}m ${seconds}s`, sub: 'of 10 min', valueSize: 'clamp(18px,1.15vw,24px)' },
+                { label: 'Speed', value: `${speed} min/Q`, sub: 'Avg per question', valueSize: 'clamp(14px,0.95vw,20px)' },
+                { label: 'Rank', value: rankLabel, sub: 'among aspirants today', valueSize: 'clamp(16px,1.05vw,22px)' },
+              ].map((s) => (
+                <div key={s.label} className="bg-white border border-[#E5E7EB] rounded-[clamp(10px,0.73vw,14px)]"
+                  style={{ padding: 'clamp(0.65rem,0.85vw,1rem)' }}>
+                  <div className="font-arimo font-bold"
+                    style={{ fontSize: 'clamp(10px,0.6vw,11px)', letterSpacing: '0.06em', color: '#8892A4', textTransform: 'uppercase', marginBottom: 6 }}>{s.label}</div>
+                  <div className="font-arimo font-bold text-[#101828]" style={{ fontSize: s.valueSize, lineHeight: 1.1 }}>{s.value}</div>
+                  <div className="font-arimo" style={{ fontSize: 'clamp(10px,0.62vw,12px)', color: '#9CA3AF', marginTop: 4 }}>{s.sub}</div>
                 </div>
-                <div className="space-y-[clamp(0.35rem,0.5vw,0.6rem)]">
-                  {(r.strongTopics.length > 0 ? r.strongTopics : ['No data yet']).map((topic) => (
-                    <div key={topic} className="flex items-center gap-2">
-                      <svg className="w-[clamp(14px,0.83vw,16px)] h-[clamp(14px,0.83vw,16px)] text-[#016630] flex-shrink-0" viewBox="0 0 16 16" fill="none">
-                        <path d="M13.3333 4L6 11.3333L2.66667 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span className="font-arimo text-[#016630]" style={{ fontSize: 'clamp(12px,0.68vw,14px)' }}>{topic}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="bg-[#FEF2F2] rounded-[clamp(8px,0.52vw,10px)]" style={{ padding: 'clamp(0.75rem,1vw,1.25rem)' }}>
-                <div className="flex items-center gap-2 mb-[clamp(0.5rem,0.75vw,1rem)]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/revision-icon.png" alt="Needs Revision" className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]" />
-                  <h3 className="font-arimo font-bold text-[#991B1B]" style={{ fontSize: 'clamp(13px,0.78vw,16px)' }}>Needs revision:</h3>
-                </div>
-                <div className="space-y-[clamp(0.35rem,0.5vw,0.6rem)]">
-                  {(r.weakTopics.length > 0 ? r.weakTopics : ['No data yet']).map((topic) => (
-                    <div key={topic} className="flex items-center gap-2">
-                      <span className="text-[#DC2626] font-bold flex-shrink-0" style={{ fontSize: 'clamp(13px,0.78vw,16px)' }}>!</span>
-                      <span className="font-arimo text-[#991B1B]" style={{ fontSize: 'clamp(12px,0.68vw,14px)' }}>{topic}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
 
             <div className="space-y-[clamp(0.65rem,0.85vw,0.9rem)]">
               <Link href="/dashboard/daily-mcq/review">
                 <button
                   type="button"
-                  className="w-full bg-white border border-[#E5E7EB] rounded-[clamp(8px,0.52vw,10px)] text-[#364153] font-arimo font-bold flex items-center justify-center gap-2 hover:border-[#9CA3AF] transition-colors"
-                  style={{ padding: 'clamp(9px,0.73vw,12px)', fontSize: 'clamp(12px,0.73vw,14px)' }}>
-                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M5.5 3.5H13M5.5 8H13M5.5 12.5H13M3 3.5H3.01M3 8H3.01M3 12.5H3.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  className="qw-review-btn w-full font-arimo font-bold"
+                  style={{ position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(8px,0.9vw,12px)', borderRadius: 14, padding: 'clamp(12px,1vw,16px)', fontSize: 'clamp(13px,0.8vw,15px)', cursor: 'pointer' }}>
+                  <span className="qw-shimmer" />
+                  <span className="qw-badge">{r.questionCount} Q</span>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true" style={{ position: 'relative', zIndex: 1 }}>
+                    <path d="M4 7h16M4 12h16M4 17h16" />
                   </svg>
-                  View Question-wise Review
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ transform: 'rotate(-90deg)' }}>
-                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  <span style={{ position: 'relative', zIndex: 1 }}>View Question-wise Review</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ position: 'relative', zIndex: 1 }}>
+                    <path d="M9 6l6 6-6 6" />
                   </svg>
                 </button>
               </Link>
 
+              {/* Result action buttons — colors per reference (.act-*) */}
+              <style>{`
+                .qw-review-btn{color:#0B1426;background:radial-gradient(120% 140% at 100% 0%, rgba(245,197,24,.18) 0%, rgba(245,197,24,0) 55%),linear-gradient(135deg,#FBF6E7 0%,#F4ECD8 55%,#EFE3BE 100%);box-shadow:0 10px 22px -14px rgba(107,83,32,.45), inset 0 1px 0 rgba(255,255,255,.6);border:1px solid #E4D8B5;letter-spacing:.01em;}
+                .qw-review-btn::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#F5C518,#B7860B);border-radius:12px 0 0 12px;}
+                .qw-review-btn:hover{filter:brightness(1.02);transform:translateY(-1px);box-shadow:0 16px 30px -16px rgba(107,83,32,.55);}
+                .qw-shimmer{position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-100%);animation:qwShine 4s ease-in-out infinite;pointer-events:none;}
+                @keyframes qwShine{0%{transform:translateX(-100%)}60%{transform:translateX(100%)}100%{transform:translateX(100%)}}
+                .qw-badge{position:relative;z-index:1;background:#0B1426;color:#F5C518;font-size:10.5px;font-weight:800;letter-spacing:.14em;padding:3px 8px;border-radius:999px;border:1px solid #0B1426;}
+                .mcq-act{display:flex;align-items:center;gap:clamp(8px,0.8vw,12px);padding:clamp(10px,0.85vw,14px) clamp(12px,1vw,16px);border-radius:14px;font-weight:700;font-size:clamp(12px,0.78vw,14px);border:1px solid transparent;cursor:pointer;transition:all .18s;background:#fff;width:100%;text-align:left;}
+                .mcq-act:hover{transform:translateY(-1px);box-shadow:0 10px 24px -16px rgba(11,20,38,.18);}
+                .mcq-act .ic{width:clamp(28px,2.2vw,34px);height:clamp(28px,2.2vw,34px);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+                .mcq-act-share{background:#EDF2EE;color:#34503F;border-color:#D6DFD9;}
+                .mcq-act-share .ic{background:#fff;color:#34503F;}
+                .mcq-act-download{background:#E8EDF5;color:#2E3C5C;border-color:#D2DAE8;}
+                .mcq-act-download .ic{background:#fff;color:#2E3C5C;}
+                .mcq-act-retake{background:#F4E2DD;color:#8A4A39;border-color:#E8CFC7;}
+                .mcq-act-retake .ic{background:#fff;color:#8A4A39;}
+                .mcq-act-next{background:linear-gradient(135deg,#0B1426,#1A2848);color:#fff;border-color:#0B1426;}
+                .mcq-act-next .ic{background:#F5C518;color:#0B1426;}
+                .mcq-act-dash{background:#FBFAF7;color:#3A4357;border-color:#ECE7DD;}
+                .mcq-act-dash .ic{background:#fff;color:#3A4357;}
+              `}</style>
+
               <div className="grid grid-cols-3 gap-[clamp(0.5rem,0.65vw,0.75rem)]">
-                <button
-                  type="button"
-                  onClick={handleShareScore}
-                  className="bg-white border border-[#E5E7EB] rounded-[clamp(8px,0.52vw,10px)] text-[#6B7280] font-arimo font-bold flex items-center justify-center gap-2 hover:border-[#9CA3AF] hover:text-[#101828] transition-colors"
-                  style={{ padding: 'clamp(9px,0.73vw,12px)', fontSize: 'clamp(11px,0.68vw,13px)' }}>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M6.5 5.5L10 3.5M6.5 10.5L10 12.5M6.5 8A2 2 0 1 1 2.5 8A2 2 0 0 1 6.5 8ZM13.5 3A2 2 0 1 1 9.5 3A2 2 0 0 1 13.5 3ZM13.5 13A2 2 0 1 1 9.5 13A2 2 0 0 1 13.5 13Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                <button type="button" onClick={handleShareScore} className="mcq-act mcq-act-share font-arimo">
+                  <span className="ic">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M6.5 5.5L10 3.5M6.5 10.5L10 12.5M6.5 8A2 2 0 1 1 2.5 8A2 2 0 0 1 6.5 8ZM13.5 3A2 2 0 1 1 9.5 3A2 2 0 0 1 13.5 3ZM13.5 13A2 2 0 1 1 9.5 13A2 2 0 0 1 13.5 13Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
                   Share Score
                 </button>
-                <button
-                  type="button"
-                  onClick={handleDownloadReport}
-                  className="bg-white border border-[#E5E7EB] rounded-[clamp(8px,0.52vw,10px)] text-[#6B7280] font-arimo font-bold flex items-center justify-center gap-2 hover:border-[#9CA3AF] hover:text-[#101828] transition-colors"
-                  style={{ padding: 'clamp(9px,0.73vw,12px)', fontSize: 'clamp(11px,0.68vw,13px)' }}>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M8 2V9M8 9L5 6M8 9L11 6M3 12V13.5H13V12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                <button type="button" onClick={handleDownloadReport} className="mcq-act mcq-act-download font-arimo">
+                  <span className="ic">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M8 2V9M8 9L5 6M8 9L11 6M3 12V13.5H13V12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
                   Download Report
                 </button>
-                <Link href="/dashboard/daily-mcq/challenge" className="min-w-0">
-                  <button
-                    type="button"
-                    className="w-full bg-white border border-[#E5E7EB] rounded-[clamp(8px,0.52vw,10px)] text-[#6B7280] font-arimo font-bold flex items-center justify-center gap-2 hover:border-[#9CA3AF] hover:text-[#101828] transition-colors"
-                    style={{ padding: 'clamp(9px,0.73vw,12px)', fontSize: 'clamp(11px,0.68vw,13px)' }}>
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <path d="M13 7A5 5 0 1 0 11.5 10.55M13 7V3.5M13 7H9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                <Link href="/dashboard/daily-mcq/challenge?retake=1" className="min-w-0">
+                  <button type="button" className="mcq-act mcq-act-retake font-arimo">
+                    <span className="ic">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M13 7A5 5 0 1 0 11.5 10.55M13 7V3.5M13 7H9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
                     Retake
                   </button>
                 </Link>
@@ -418,20 +410,25 @@ export default function DailyMcqResultsPage() {
 
               <div className="grid grid-cols-2 gap-[clamp(0.5rem,0.8vw,1rem)]">
                 <Link href="/dashboard/daily-mcq/next-steps" className="min-w-0">
-                  <button className="w-full bg-[#00A63E] text-white rounded-[clamp(8px,0.52vw,10px)] hover:bg-[#008C35] transition-colors font-arimo font-bold flex items-center justify-center gap-2"
-                    style={{ padding: 'clamp(11px,0.83vw,14px)', fontSize: 'clamp(12px,0.78vw,15px)' }}>
-                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <path d="M8 2.5L9.15 6.85L13.5 8L9.15 9.15L8 13.5L6.85 9.15L2.5 8L6.85 6.85L8 2.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-                    </svg>
+                  <button className="mcq-act mcq-act-next font-arimo">
+                    <span className="ic">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M8 2.5L9.15 6.85L13.5 8L9.15 9.15L8 13.5L6.85 9.15L2.5 8L6.85 6.85L8 2.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+                      </svg>
+                    </span>
                     View Smart Next Steps
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginLeft: 'auto' }}>
+                      <path d="M5 12h14" /><path d="M13 6l6 6-6 6" />
+                    </svg>
                   </button>
                 </Link>
                 <Link href="/dashboard" className="min-w-0">
-                  <button className="w-full bg-[#1A1D23] text-white rounded-[clamp(8px,0.52vw,10px)] hover:bg-[#2D3140] transition-colors font-arimo font-bold flex items-center justify-center gap-2"
-                    style={{ padding: 'clamp(11px,0.83vw,14px)', fontSize: 'clamp(12px,0.78vw,15px)' }}>
-                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <path d="M2.5 7.5L8 3L13.5 7.5V13H9.75V9.5H6.25V13H2.5V7.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-                    </svg>
+                  <button className="mcq-act mcq-act-dash font-arimo">
+                    <span className="ic">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M2.5 7.5L8 3L13.5 7.5V13H9.75V9.5H6.25V13H2.5V7.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+                      </svg>
+                    </span>
                     Back to Dashboard
                   </button>
                 </Link>
