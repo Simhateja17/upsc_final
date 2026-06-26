@@ -1322,7 +1322,11 @@ export default function StudyPlannerPage() {
                 <div className="flex-1 overflow-y-auto" style={{ maxHeight: '477px' }}>
                   <div className="space-y-3">
                     {sortedTasks.map(task => (
-                      <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
+                      <div
+                        key={task.id}
+                        style={{ borderLeftWidth: '4px', borderLeftColor: task.isCompleted ? '#22C55E' : '#E5E7EB' }}
+                        className="group flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md hover:bg-indigo-50/30"
+                      >
                         <button onClick={() => handleToggleTask(task.id, task.isCompleted)}
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${task.isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
                           {task.isCompleted && <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
@@ -1347,8 +1351,15 @@ export default function StudyPlannerPage() {
                             </p>
                           )}
                         </div>
-                        <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-500 flex-shrink-0">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                        <button
+                          onClick={() => handleDeleteTask(task.id)}
+                          title="Delete task"
+                          aria-label="Delete task"
+                          className="flex-shrink-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity duration-200"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                          </svg>
                         </button>
                       </div>
                     ))}

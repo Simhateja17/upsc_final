@@ -76,14 +76,6 @@ function toDateParam(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-const borderColors: Record<string, string> = {
-  high: '#FF6467',
-  medium: '#22C55E',
-  low: '#EAB308',
-};
-
-const borderColorsFallback = ['#FF6467', '#22C55E', '#EAB308'];
-
 const AddTaskModal = ({
   onClose,
   onTaskAdded,
@@ -936,11 +928,8 @@ const ResponsiveDashboardContent = () => {
             <>
               {displayTasks.map((task, index) => {
                 const completed = isTaskCompleted(task);
-                const leftBorderColor = completed
-                  ? '#22C55E'
-                  : task.priority
-                  ? (borderColors[task.priority] || borderColorsFallback[index % 3])
-                  : borderColorsFallback[index % 3];
+                // Green left border only for completed tasks; incomplete tasks use a normal grey border.
+                const leftBorderColor = completed ? '#22C55E' : '#E5E7EB';
                 const taskId = task._id || task.id || '';
                 const timeLabel = task.startTime && task.endTime
                   ? `${task.startTime} - ${task.endTime} ${formatDuration(task.duration)}`

@@ -195,6 +195,13 @@ const PerformanceStatsWidget = () => {
       ),
     },
   ];
+  // Show unlocked badges first (earned, then in-progress), locked ones last.
+  // Array.prototype.sort is stable, so original order is preserved within each group.
+  const badgeOrderRank = (status: AchievementBadge['status']) =>
+    status === 'earned' ? 0 : status === 'in-progress' ? 1 : 2;
+  const orderedBadges = [...achievementBadges].sort(
+    (a, b) => badgeOrderRank(a.status) - badgeOrderRank(b.status)
+  );
   const sectionTitleStyle: React.CSSProperties = {
     fontWeight: 700,
     fontSize: 'clamp(16px,1.04vw,20px)',
@@ -276,7 +283,7 @@ const PerformanceStatsWidget = () => {
                   className="flex-1 aspect-square rounded-lg flex items-center justify-center font-inter font-semibold border"
                   style={
                     weekDays[index]
-                      ? { background: 'linear-gradient(180deg,#ffd24a,#f5b400)', borderColor: '#F1D880' }
+                      ? { background: 'linear-gradient(180deg,#ffd24a,#f5b400)', borderColor: '#E5E7EB' }
                       : { background: '#EEF0F5', borderColor: '#E5E7EB' }
                   }
                 >
@@ -285,7 +292,7 @@ const PerformanceStatsWidget = () => {
                       <path d="M5 13l4 4L19 7" stroke="#1A1407" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   ) : (
-                    <span className="text-[#9AA3B2]" style={{ fontSize: 'clamp(11px,0.68vw,13px)' }}>
+                    <span className="text-[#6B7280]" style={{ fontSize: 'clamp(11px,0.68vw,13px)' }}>
                       {day}
                     </span>
                   )}
@@ -433,7 +440,7 @@ const PerformanceStatsWidget = () => {
           </Link>
         </div>
         <div className="grid grid-cols-3 gap-[clamp(8px,0.52vw,12px)]">
-          {achievementBadges.slice(0, 3).map((badge) => {
+          {orderedBadges.slice(0, 3).map((badge) => {
             const isEarned = badge.status === 'earned';
             return (
               <div
@@ -576,9 +583,9 @@ const PerformanceStatsWidget = () => {
           </h3>
         </div>
         <div className="grid grid-cols-3 gap-[clamp(12px,0.83vw,16px)]">
-          <Link href="/dashboard/library" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)] group">
+          <Link href="/dashboard/library" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)] group p-2 rounded-lg border border-transparent transition-colors hover:bg-[#F3F5FB] hover:border-[#E5E7EB]">
             <div
-              className="rounded-full flex items-center justify-center transition-colors group-hover:bg-[#E2E8F0]"
+              className="rounded-full flex items-center justify-center transition-colors"
               style={{
                 width: 'clamp(48px,2.92vw,56px)',
                 height: 'clamp(48px,2.92vw,56px)',
@@ -593,9 +600,9 @@ const PerformanceStatsWidget = () => {
             </div>
             <p className="font-arimo text-[#3F6275] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>Downloads</p>
           </Link>
-          <Link href="/dashboard/profile" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)] group">
+          <Link href="/dashboard/profile" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)] group p-2 rounded-lg border border-transparent transition-colors hover:bg-[#F3F5FB] hover:border-[#E5E7EB]">
             <div
-              className="rounded-full flex items-center justify-center transition-colors group-hover:bg-[#E2E8F0]"
+              className="rounded-full flex items-center justify-center transition-colors"
               style={{
                 width: 'clamp(48px,2.92vw,56px)',
                 height: 'clamp(48px,2.92vw,56px)',
@@ -609,9 +616,9 @@ const PerformanceStatsWidget = () => {
             </div>
             <p className="font-arimo text-[#3F6275] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>Profile</p>
           </Link>
-          <Link href="/dashboard/settings" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)] group">
+          <Link href="/dashboard/settings" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)] group p-2 rounded-lg border border-transparent transition-colors hover:bg-[#F3F5FB] hover:border-[#E5E7EB]">
             <div
-              className="rounded-full flex items-center justify-center transition-colors group-hover:bg-[#E2E8F0]"
+              className="rounded-full flex items-center justify-center transition-colors"
               style={{
                 width: 'clamp(48px,2.92vw,56px)',
                 height: 'clamp(48px,2.92vw,56px)',
