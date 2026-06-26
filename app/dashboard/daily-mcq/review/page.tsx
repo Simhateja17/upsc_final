@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { dailyMcqService, flashcardService, bookmarkService, flagService } from '@/lib/services';
+import { dailyMcqService, flashcardService, bookmarkService, spacedRepService } from '@/lib/services';
 import { getSubjectBadgeStyle } from '@/lib/subjectPalette';
 
 interface ReviewQuestion {
@@ -50,17 +50,30 @@ export default function QuestionReviewPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [bookmarked, setBookmarked] = useState<Record<string, boolean>>({});
   const [needReview, setNeedReview] = useState<Record<string, boolean>>({});
+  // Spaced-repetition item id per question, so "Need to Review" can also remove it.
+  const [needReviewItemId, setNeedReviewItemId] = useState<Record<string, string>>({});
 
   useEffect(() => {
     dailyMcqService.getReview()
       .then(res => {
         const qs: ReviewQuestion[] = res.data.questions || [];
         setQuestions(qs);
-        // Hydrate "Need to Review" (flag) state for all questions.
-        const ids = qs.map(q => q.id);
-        if (ids.length > 0) {
-          flagService.check('mcq', ids)
-            .then(r => setNeedReview(r.data?.flagged || {}))
+        // Hydrate "Need to Review" from Spaced Repetition: a question is "marked"
+        // when it already exists in the user's spaced-repetition queue.
+        if (qs.length > 0) {
+          spacedRepService.getItems()
+            .then(r => {
+              const items: Array<{ id: string; questionText: string }> = r.data?.items || r.data || [];
+              const byText = new Map(items.map(it => [it.questionText, it.id]));
+              const marked: Record<string, boolean> = {};
+              const ids: Record<string, string> = {};
+              qs.forEach(q => {
+                const itemId = byText.get(q.questionText);
+                if (itemId) { marked[q.id] = true; ids[q.id] = itemId; }
+              });
+              setNeedReview(marked);
+              setNeedReviewItemId(ids);
+            })
             .catch(() => {});
         }
       })
@@ -123,23 +136,45 @@ export default function QuestionReviewPage() {
     setActionLoading(null);
   };
 
+  // "Need to Review" adds the question to the user's Spaced Repetition queue
+  // (and removes it again when toggled off).
   const handleToggleNeedReview = async (q: ReviewQuestion) => {
     const wasMarked = !!needReview[q.id];
     setActionLoading(`review-${q.id}`);
     setNeedReview(prev => ({ ...prev, [q.id]: !wasMarked }));
     try {
-      await flagService.toggle({ questionType: 'mcq', questionId: q.id, questionText: q.questionText });
-      showToast(wasMarked ? 'Removed from review list' : 'Marked for review!');
+      if (wasMarked) {
+        const itemId = needReviewItemId[q.id];
+        if (itemId) await spacedRepService.deleteItem(itemId);
+        setNeedReviewItemId(prev => {
+          const next = { ...prev };
+          delete next[q.id];
+          return next;
+        });
+        showToast('Removed from Spaced Repetition');
+      } else {
+        const correctOpt = q.options.find((opt, idx) => getOptionKey(opt, idx) === q.correctOption);
+        const res = await spacedRepService.addItem({
+          questionText: q.questionText,
+          answer: correctOpt?.text || q.correctOption,
+          subject: q.category,
+          source: 'Daily MCQ Review',
+          sourceType: 'daily-mcq',
+        });
+        const newId = res.data?.id;
+        if (newId) setNeedReviewItemId(prev => ({ ...prev, [q.id]: newId }));
+        showToast('Added to Spaced Repetition!');
+      }
     } catch {
       setNeedReview(prev => ({ ...prev, [q.id]: wasMarked }));
-      showToast('Failed to update review list', 'error');
+      showToast(wasMarked ? 'Failed to remove from Spaced Repetition' : 'Failed to add to Spaced Repetition', 'error');
     }
     setActionLoading(null);
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#E8EDF5' }}>
+      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}>
         <main className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </main>
@@ -166,7 +201,7 @@ export default function QuestionReviewPage() {
   ];
 
   return (
-    <div className="flex flex-col overflow-y-auto relative" style={{ minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#E8EDF5' }}>
+    <div className="flex flex-col overflow-y-auto relative" style={{ minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
       <style>{`
         .review-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1px solid #E5E7EB;background:#FFFFFF;font-size:clamp(12px,0.73vw,13px);font-weight:700;cursor:pointer;transition:all .15s ease;white-space:nowrap;}
         .review-pill:hover{border-color:#CBD5E1;background:#F8FAFC;transform:translateY(-1px);box-shadow:0 4px 12px -8px rgba(15,23,42,.25);}
@@ -197,11 +232,11 @@ export default function QuestionReviewPage() {
                 </button>
               </Link>
               <div className="min-w-0">
-                <h1 className="font-arimo font-bold text-[#101828] flex items-center gap-2"
-                  style={{ fontSize: 'clamp(16px,1.04vw,20px)' }}>
+                <h1 className="font-arimo font-extrabold tracking-tight text-[#17223E] flex items-center gap-2"
+                  style={{ fontSize: 'clamp(17px,1.1vw,21px)' }}>
                   <span>✅</span> Answer Review
                 </h1>
-                <p className="font-arimo text-[#6B7280]" style={{ fontSize: 'clamp(12px,0.68vw,14px)' }}>
+                <p className="font-arimo font-medium text-[#475467]" style={{ fontSize: 'clamp(12px,0.68vw,14px)' }}>
                   Detailed explanation for each question
                 </p>
               </div>

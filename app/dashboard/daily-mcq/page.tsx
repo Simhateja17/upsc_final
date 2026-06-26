@@ -43,6 +43,15 @@ export default function DailyMcqIntroPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [streak, setStreak] = useState<number | null>(null);
+  // Retake: arriving with ?retake=1 means the user wants to start over, so we
+  // show the "Start" CTA (begin from the first screen) even if today is attempted.
+  const [isRetake, setIsRetake] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsRetake(new URLSearchParams(window.location.search).get('retake') === '1');
+    }
+  }, []);
 
   const FIXED_QUESTION_COUNT = 10;
   const FIXED_TIME_LIMIT = 10;
@@ -95,10 +104,10 @@ export default function DailyMcqIntroPage() {
         <div className="flex items-center justify-between gap-3 mb-3 px-1">
           <div className="flex items-center gap-2 font-arimo min-w-0">
             <span aria-hidden="true" className="relative flex h-2.5 w-2.5 flex-shrink-0">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22C55E] opacity-60" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#16A34A]" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#EF4444] opacity-60" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#EF4444]" />
             </span>
-            <span className="text-[14px] leading-[20px] text-[#344054] truncate">Today&apos;s Challenge is live</span>
+            <span className="font-bold text-[14px] leading-[20px] text-[#344054] truncate">Today&apos;s Challenge is live</span>
             <span className="text-[14px] leading-[20px] text-[#98A2B3] whitespace-nowrap">· {formatChallengeDate(new Date())}</span>
           </div>
           {streak !== null && streak > 0 && (
@@ -117,11 +126,11 @@ export default function DailyMcqIntroPage() {
             <img src="/target-icon.png" alt="Target Icon" className="w-[40px] h-[40px] object-contain" />
           </div>
 
-          <h1 className="font-arimo font-bold text-[#101828] text-[24px] leading-[30px] mb-1.5">
+          <h1 className="font-arimo font-extrabold tracking-tight text-[#17223E] text-[26px] leading-[32px] sm:text-[28px] sm:leading-[34px] mb-1.5">
             Daily MCQ Challenge
           </h1>
 
-          <p className="font-arimo text-[#667085] text-[14px] leading-[20px] mb-4">
+          <p className="font-arimo font-medium text-[#475467] text-[14px] leading-[20px] mb-4">
             Sharpen your knowledge with focused practice questions
           </p>
 
@@ -129,7 +138,7 @@ export default function DailyMcqIntroPage() {
             {DAILY_MCQ_SUBJECTS.map((subject) => (
               <span
                 key={subject.label}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 font-arimo text-[13px] leading-[18px] text-[#344054] whitespace-nowrap transition-colors hover:bg-[#F2F4F7] hover:border-[#D0D5DD]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 font-arimo font-semibold text-[13px] leading-[18px] text-[#344054] whitespace-nowrap transition-colors hover:bg-[#F2F4F7] hover:border-[#D0D5DD]"
               >
                 <span aria-hidden="true" className="text-[15px] leading-none">{subject.icon}</span>
                 {subject.label}
@@ -139,16 +148,16 @@ export default function DailyMcqIntroPage() {
 
           <div className="grid grid-cols-3 gap-3 w-full max-w-[360px] mx-auto mb-4">
             <div className="flex flex-col items-center rounded-[12px] bg-[#F9FAFB] border border-[#E5E7EB] py-2.5">
-              <div className="font-arimo font-bold text-[#101828] text-[26px] leading-tight max-md:text-[22px]">{FIXED_QUESTION_COUNT}</div>
-              <div className="font-arimo text-[#667085] text-[12px] mt-0.5">Questions</div>
+              <div className="font-arimo font-extrabold tracking-tight text-[#17223E] text-[26px] leading-tight max-md:text-[22px]">{FIXED_QUESTION_COUNT}</div>
+              <div className="font-arimo font-medium text-[#475467] text-[12px] mt-0.5">Questions</div>
             </div>
             <div className="flex flex-col items-center rounded-[12px] bg-[#F9FAFB] border border-[#E5E7EB] py-2.5">
-              <div className="font-arimo font-bold text-[#101828] text-[26px] leading-tight max-md:text-[22px]">{FIXED_TIME_LIMIT}</div>
-              <div className="font-arimo text-[#667085] text-[12px] mt-0.5">Minutes</div>
+              <div className="font-arimo font-extrabold tracking-tight text-[#17223E] text-[26px] leading-tight max-md:text-[22px]">{FIXED_TIME_LIMIT}</div>
+              <div className="font-arimo font-medium text-[#475467] text-[12px] mt-0.5">Minutes</div>
             </div>
             <div className="flex flex-col items-center rounded-[12px] bg-[#F9FAFB] border border-[#E5E7EB] py-2.5">
-              <div className="font-arimo font-bold text-[#101828] text-[26px] leading-tight max-md:text-[22px]">{FIXED_TOTAL_MARKS}</div>
-              <div className="font-arimo text-[#667085] text-[12px] mt-0.5">Max Marks</div>
+              <div className="font-arimo font-extrabold tracking-tight text-[#17223E] text-[26px] leading-tight max-md:text-[22px]">{FIXED_TOTAL_MARKS}</div>
+              <div className="font-arimo font-medium text-[#475467] text-[12px] mt-0.5">Max Marks</div>
             </div>
           </div>
 
@@ -166,7 +175,7 @@ export default function DailyMcqIntroPage() {
             </div>
           </div>
 
-          {mcq.attempted ? (
+          {mcq.attempted && !isRetake ? (
             <Link href="/dashboard/daily-mcq/results">
               <button className="w-[232px] h-[48px] bg-green-600 text-white rounded-[10px] hover:bg-green-700 transition-all flex items-center justify-center gap-2 mx-auto font-arimo font-bold text-[20px] leading-[24px]">
                 View Results
@@ -176,11 +185,11 @@ export default function DailyMcqIntroPage() {
             <div className="w-full max-w-[380px]">
               <button
                 type="button"
-                onClick={() => router.push('/dashboard/daily-mcq/challenge')}
+                onClick={() => router.push(`/dashboard/daily-mcq/challenge${isRetake ? '?retake=1' : ''}`)}
                 className="w-[280px] h-[48px] bg-[#101828] hover:bg-[#1A1A1A] text-white rounded-[10px] transition-all flex items-center justify-center gap-2 mx-auto font-arimo font-bold text-[18px] leading-[24px]"
-                aria-label="Start today's daily MCQ challenge"
+                aria-label={isRetake ? 'Retake today\'s daily MCQ challenge' : 'Start today\'s daily MCQ challenge'}
               >
-                Start Today&apos;s Challenge
+                {isRetake ? 'Retake Challenge' : "Start Today's Challenge"}
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M5 12h14" />
                   <path d="m12 5 7 7-7 7" />

@@ -118,8 +118,8 @@ export const dashboardService = {
 export const dailyMcqService = {
   getToday: () => api.get<any>('/daily-mcq/today', authConfig()),
   getQuestions: () => api.get<any>('/daily-mcq/today/questions', authConfig()),
-  submit: (answers: any[], timeTaken: number) =>
-    api.post<any>('/daily-mcq/today/submit', { answers, timeTaken }, authConfig()),
+  submit: (answers: any[], timeTaken: number, retake?: boolean) =>
+    api.post<any>('/daily-mcq/today/submit', { answers, timeTaken, retake }, authConfig()),
   getResults: () => api.get<any>('/daily-mcq/today/results', authConfig()),
   getReview: () => api.get<any>('/daily-mcq/today/review', authConfig()),
   getRecommendations: () => api.get<any>('/daily-mcq/today/recommendations', authConfig()),

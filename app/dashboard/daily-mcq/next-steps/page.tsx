@@ -2,54 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-
-interface NextStepCard {
-  icon: string;
-  accent: string;
-  iconBg: string;
-  iconColor: string;
-  title: string;
-  desc: string;
-  chip: string;
-  chipBg: string;
-  chipColor: string;
-  chipBorder: string;
-  cta: string;
-  href: string;
-  pulse?: boolean;
-}
-
-// Smart Next Steps cards — recreated from the reference design.
-const NEXT_STEP_CARDS: NextStepCard[] = [
-  {
-    icon: '🎯', accent: '#6366F1', iconBg: '#EEF2FF', iconColor: '#4338CA',
-    title: 'Practice More MCQs',
-    desc: '20 targeted MCQs curated based on your wrong answers today.',
-    chip: '~15 min', chipBg: '#EEF2FF', chipColor: '#4338CA', chipBorder: '#C7D2FE',
-    cta: 'Start', href: '/dashboard/mock-tests',
-  },
-  {
-    icon: '✍️', accent: '#E11D48', iconBg: '#FFF1F2', iconColor: '#BE123C',
-    title: 'Practice Answer Writing',
-    desc: "Attempt today's Mains question — builds on the concepts you missed.",
-    chip: '10 marks · 150 words', chipBg: '#FFF1F2', chipColor: '#BE123C', chipBorder: '#FECDD3',
-    cta: 'Write', href: '/dashboard/daily-answer/challenge',
-  },
-  {
-    icon: '📰', accent: '#10B981', iconBg: '#ECFDF5', iconColor: '#047857',
-    title: "Read Today's Editorial",
-    desc: 'Directly linked to questions you got wrong today. A quick 5-min read.',
-    chip: '5 min · The Hindu', chipBg: '#ECFDF5', chipColor: '#047857', chipBorder: '#A7F3D0',
-    cta: 'Read', href: '/dashboard/daily-editorial',
-  },
-  {
-    icon: '🎧', accent: '#F5C518', iconBg: '#FFFBEB', iconColor: '#B45309',
-    title: 'Enter Study Room',
-    desc: 'Join a focused, distraction-free session with the Pomodoro timer & live peers.',
-    chip: '1,284 studying now', chipBg: '#FFFBEB', chipColor: '#92400E', chipBorder: '#FDE68A',
-    cta: 'Enter', href: '/dashboard/study-groups', pulse: true,
-  },
-];
+import { NEXT_STEP_CARDS } from '@/components/SmartNextStepsModal';
 
 const ArrowRight = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -59,7 +12,7 @@ const ArrowRight = () => (
 
 export default function NextStepsPage() {
   return (
-    <div className="flex flex-col overflow-y-auto" style={{ minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#F4F5F8' }}>
+    <div className="flex flex-col overflow-y-auto" style={{ minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
       <style>{`
         .ns-card{padding:18px;border-radius:16px;border:1px solid #E6EAF2;background:#fff;transition:all .2s ease;cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;height:100%;}
         .ns-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px -16px rgba(11,20,38,.18);}
@@ -135,7 +88,7 @@ export default function NextStepsPage() {
             </Link>
             <Link href="/dashboard" className="min-w-0">
               <button type="button" className="ns-btn ns-btn-ink font-arimo">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12l9-9 9 9M5 10v10h14V10" /></svg>
+                <span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>🏠</span>
                 Back to Dashboard
               </button>
             </Link>

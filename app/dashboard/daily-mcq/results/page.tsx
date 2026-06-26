@@ -3,6 +3,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { dailyMcqService } from '@/lib/services';
+import { useAuth } from '@/contexts/AuthContext';
+import SmartNextStepsModal from '@/components/SmartNextStepsModal';
 
 interface ResultsData {
   score: number;
@@ -166,10 +168,13 @@ function ConfettiCanvas({ active }: { active: boolean }) {
 }
 
 export default function DailyMcqResultsPage() {
+  const { user } = useAuth();
   const [results, setResults] = useState<ResultsData | null>(null);
   const [reviewQuestions, setReviewQuestions] = useState<ReviewQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [showNextSteps, setShowNextSteps] = useState(false);
 
   useEffect(() => {
     Promise.allSettled([
@@ -239,7 +244,14 @@ export default function DailyMcqResultsPage() {
     }
   };
 
-  const handleDownloadReport = () => {
+  // Report metadata shown in the download popup (matches the reference: date · name · report id).
+  const reportName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Aspirant';
+  const reportInitials = (reportName.split(' ').map((w) => w[0]).join('').slice(0, 2) || 'AS').toUpperCase();
+  const reportDate = new Date();
+  const reportDateLabel = reportDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const reportId = `DMQ-${reportDate.getFullYear()}${String(reportDate.getMonth() + 1).padStart(2, '0')}${String(reportDate.getDate()).padStart(2, '0')}-${reportInitials}`;
+
+  const performDownload = () => {
     if (typeof window === 'undefined') return;
 
     const lines = [
@@ -284,12 +296,10 @@ export default function DailyMcqResultsPage() {
             </div>
 
             <div className="text-center mb-[clamp(0.9rem,1.2vw,1.25rem)]">
-              <h1 className="font-arimo font-bold text-[#101828] mb-[clamp(0.25rem,0.5vw,0.5rem)]"
-                style={{ fontSize: 'clamp(20px,1.25vw,24px)', lineHeight: 'clamp(28px,1.67vw,32px)' }}>
+              <h1 className="font-arimo font-extrabold tracking-tight text-[#17223E] text-[26px] leading-[32px] sm:text-[28px] sm:leading-[34px] mb-[clamp(0.25rem,0.5vw,0.5rem)]">
                 Daily MCQs Challenge Completed!
               </h1>
-              <p className="font-arimo text-[#4A5565]"
-                style={{ fontSize: 'clamp(13px,0.73vw,14px)', lineHeight: 'clamp(18px,1.04vw,20px)' }}>
+              <p className="font-arimo font-medium text-[#475467] text-[14px] leading-[20px]">
                 Great effort! Here{'\''}s your performance analysis
               </p>
             </div>
@@ -309,7 +319,7 @@ export default function DailyMcqResultsPage() {
                       <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#10B981" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${dash} ${circ}`} />
                     </svg>
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                      <div className="font-arimo font-bold leading-none" style={{ fontSize: 'clamp(28px,2.1vw,38px)', color: '#101828' }}>
+                      <div className="font-arimo font-extrabold tracking-tight leading-none" style={{ fontSize: 'clamp(28px,2.1vw,38px)', color: '#17223E' }}>
                         {r.correctCount}<span style={{ color: '#9CA3AF', fontSize: '0.58em' }}>/{r.questionCount}</span>
                       </div>
                       <div className="font-arimo font-bold" style={{ fontSize: 11, letterSpacing: '0.08em', color: '#10B981', marginTop: 6, textTransform: 'uppercase' }}>
@@ -332,7 +342,7 @@ export default function DailyMcqResultsPage() {
                   style={{ padding: 'clamp(0.65rem,0.85vw,1rem)' }}>
                   <div className="font-arimo font-bold"
                     style={{ fontSize: 'clamp(10px,0.6vw,11px)', letterSpacing: '0.06em', color: '#8892A4', textTransform: 'uppercase', marginBottom: 6 }}>{s.label}</div>
-                  <div className="font-arimo font-bold text-[#101828]" style={{ fontSize: s.valueSize, lineHeight: 1.1 }}>{s.value}</div>
+                  <div className="font-arimo font-extrabold tracking-tight text-[#17223E]" style={{ fontSize: s.valueSize, lineHeight: 1.1 }}>{s.value}</div>
                   <div className="font-arimo" style={{ fontSize: 'clamp(10px,0.62vw,12px)', color: '#9CA3AF', marginTop: 4 }}>{s.sub}</div>
                 </div>
               ))}
@@ -388,7 +398,7 @@ export default function DailyMcqResultsPage() {
                   </span>
                   Share Score
                 </button>
-                <button type="button" onClick={handleDownloadReport} className="mcq-act mcq-act-download font-arimo">
+                <button type="button" onClick={() => setShowDownloadModal(true)} className="mcq-act mcq-act-download font-arimo">
                   <span className="ic">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                       <path d="M8 2V9M8 9L5 6M8 9L11 6M3 12V13.5H13V12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -396,7 +406,7 @@ export default function DailyMcqResultsPage() {
                   </span>
                   Download Report
                 </button>
-                <Link href="/dashboard/daily-mcq/challenge?retake=1" className="min-w-0">
+                <Link href="/dashboard/daily-mcq?retake=1" className="min-w-0">
                   <button type="button" className="mcq-act mcq-act-retake font-arimo">
                     <span className="ic">
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -409,26 +419,20 @@ export default function DailyMcqResultsPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-[clamp(0.5rem,0.8vw,1rem)]">
-                <Link href="/dashboard/daily-mcq/next-steps" className="min-w-0">
-                  <button className="mcq-act mcq-act-next font-arimo">
-                    <span className="ic">
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path d="M8 2.5L9.15 6.85L13.5 8L9.15 9.15L8 13.5L6.85 9.15L2.5 8L6.85 6.85L8 2.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                    View Smart Next Steps
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginLeft: 'auto' }}>
-                      <path d="M5 12h14" /><path d="M13 6l6 6-6 6" />
+                <button type="button" onClick={() => setShowNextSteps(true)} className="mcq-act mcq-act-next font-arimo min-w-0" style={{ justifyContent: 'center', textAlign: 'center' }}>
+                  <span className="ic">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M8 2.5L9.15 6.85L13.5 8L9.15 9.15L8 13.5L6.85 9.15L2.5 8L6.85 6.85L8 2.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
                     </svg>
-                  </button>
-                </Link>
+                  </span>
+                  View Smart Next Steps
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M5 12h14" /><path d="M13 6l6 6-6 6" />
+                  </svg>
+                </button>
                 <Link href="/dashboard" className="min-w-0">
-                  <button className="mcq-act mcq-act-dash font-arimo">
-                    <span className="ic">
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path d="M2.5 7.5L8 3L13.5 7.5V13H9.75V9.5H6.25V13H2.5V7.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-                      </svg>
-                    </span>
+                  <button className="mcq-act mcq-act-dash font-arimo" style={{ justifyContent: 'center', textAlign: 'center' }}>
+                    <span className="ic" aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>🏠</span>
                     Back to Dashboard
                   </button>
                 </Link>
@@ -437,6 +441,100 @@ export default function DailyMcqResultsPage() {
           </div>
         </main>
       </div>
+
+      {/* Download Report modal — mirrors the reference popup */}
+      {showDownloadModal && (
+        <div
+          onClick={() => setShowDownloadModal(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="font-arimo"
+            style={{ width: '100%', maxWidth: 560, background: '#FFFFFF', borderRadius: 18, boxShadow: '0 30px 70px -25px rgba(15,23,42,0.45)', overflow: 'hidden' }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, padding: '22px 28px 16px', borderBottom: '1px solid #F0F2F6' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, letterSpacing: '0.16em', fontWeight: 700, color: '#2E3C5C' }}>📥 PERFORMANCE REPORT</div>
+                <h3 className="font-extrabold tracking-tight" style={{ fontSize: 20, marginTop: 6, color: '#17223E' }}>Your Daily MCQ Report</h3>
+                <p style={{ fontSize: 13, color: '#6B7689', marginTop: 4 }}>{reportDateLabel} · {reportName} · {reportId}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDownloadModal(false)}
+                aria-label="Close"
+                style={{ width: 36, height: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, border: '1px solid #E5E7EB', background: '#FFFFFF', color: '#4B5468', cursor: 'pointer', flexShrink: 0 }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M18 6L6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            {/* What's inside the report */}
+            <div style={{ padding: '20px 24px' }}>
+              <div style={{ borderRadius: 16, border: '1px solid #D2DAE8', background: 'linear-gradient(135deg,#FBFCFE,#E8EDF5)', padding: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 20, flexShrink: 0, background: 'linear-gradient(135deg,#2E3C5C,#1A2848)', boxShadow: '0 8px 18px -10px rgba(46,60,92,.55)' }}>📄</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 10.5, letterSpacing: '0.18em', fontWeight: 700, color: '#2E3C5C' }}>PDF · 4 PAGES · A4</div>
+                    <div className="font-extrabold" style={{ fontSize: 15.5, marginTop: 2, lineHeight: 1.25, color: '#17223E' }}>Your detailed performance dossier — ready to download</div>
+                    <p style={{ fontSize: 12.5, color: '#6B7689', marginTop: 4, lineHeight: 1.45 }}>A printable companion you can revise on the go and share with mentors.</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 16 }}>
+                  {[
+                    { icon: '📊', bg: '#ECFDF5', color: '#047857', label: 'Score & accuracy snapshot' },
+                    { icon: '🧭', bg: '#EFF6FF', color: '#0369A1', label: 'Topic-wise strengths & gaps' },
+                    { icon: '📝', bg: '#FFFBEB', color: '#B45309', label: `All ${r.questionCount} Qs with explanations` },
+                    { icon: '🎯', bg: '#FDF4FF', color: '#A21CAF', label: 'Personalised next steps' },
+                  ].map((item) => (
+                    <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 12, background: '#FFFFFF', border: '1px solid #E6EAF1', padding: '10px 12px' }}>
+                      <span style={{ width: 28, height: 28, borderRadius: 10, background: item.bg, color: item.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>{item.icon}</span>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#1F2937' }}>{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, fontSize: 11.5, color: '#6B7689' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} /> Updated just now
+                  </div>
+                  <div>~ 480 KB · {reportId}</div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 20 }}>
+                <button
+                  type="button"
+                  onClick={() => { performDownload(); setShowDownloadModal(false); }}
+                  className="mcq-act mcq-act-download font-arimo"
+                  style={{ justifyContent: 'center' }}
+                >
+                  <span className="ic">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M6 11l6 6 6-6M5 21h14" /></svg>
+                  </span>
+                  Download Report
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowDownloadModal(false); handleShareScore(); }}
+                  className="mcq-act mcq-act-share font-arimo"
+                  style={{ justifyContent: 'center' }}
+                >
+                  <span className="ic">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" /></svg>
+                  </span>
+                  Share Detailed Report
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <SmartNextStepsModal open={showNextSteps} onClose={() => setShowNextSteps(false)} />
     </>
   );
 }

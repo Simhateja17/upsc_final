@@ -177,7 +177,7 @@ export default function DailyMcqChallengePage() {
     }));
 
     try {
-      await dailyMcqService.submit(answerArray, timeTaken);
+      await dailyMcqService.submit(answerArray, timeTaken, isRetake);
       setSubmitted(true);
       router.push('/dashboard/daily-mcq/results');
     } catch (err: any) {
@@ -191,7 +191,7 @@ export default function DailyMcqChallengePage() {
         setSubmitting(false);
       }
     }
-  }, [answers, questions, submitted, submitting, timeLimit, router]);
+  }, [answers, questions, submitted, submitting, timeLimit, router, isRetake]);
 
   useEffect(() => {
     if (loading || submitted || timeLeft <= 0 || mcqInfo?.attempted) return;
@@ -236,10 +236,10 @@ export default function DailyMcqChallengePage() {
       <div className="flex flex-col min-h-full items-center justify-center" style={{ background: '#FAFBFE' }}>
         <div style={{ maxWidth: '600px', width: '100%', padding: '40px', background: '#FFFFFF', borderRadius: '16px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
-          <h1 className="font-arimo font-bold text-[#101828] mb-3" style={{ fontSize: '24px' }}>
+          <h1 className="font-arimo font-extrabold tracking-tight text-[#17223E] mb-3" style={{ fontSize: '26px' }}>
             You have already attempted today&apos;s MCQ
           </h1>
-          <p className="font-arimo text-[#4A5565] mb-8" style={{ fontSize: '15px' }}>
+          <p className="font-arimo font-medium text-[#475467] mb-8" style={{ fontSize: '15px' }}>
             Come back tomorrow for a new challenge, or review your performance below.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
@@ -273,8 +273,8 @@ export default function DailyMcqChallengePage() {
   if (!q) return (
     <div className="flex flex-col min-h-screen items-center justify-center" style={{ background: '#FAFBFE' }}>
       <div className="text-center">
-        <h2 className="font-arimo font-bold text-[#101828] mb-2" style={{ fontSize: '20px' }}>No questions available</h2>
-        <p className="font-arimo text-[#4A5565] mb-4">Please check back later or contact support.</p>
+        <h2 className="font-arimo font-extrabold tracking-tight text-[#17223E] mb-2" style={{ fontSize: '20px' }}>No questions available</h2>
+        <p className="font-arimo font-medium text-[#475467] mb-4">Please check back later or contact support.</p>
         <button onClick={() => router.push('/dashboard/daily-mcq')} className="text-blue-600 hover:underline font-arimo">Back to Daily MCQ</button>
       </div>
     </div>
@@ -313,17 +313,17 @@ export default function DailyMcqChallengePage() {
 
             let bg = '#F4F6FA';
             let color = '#475067';
-            if (isSkipped) { bg = '#DBEAFE'; color = '#2563EB'; }
+            if (isSkipped) { bg = '#FEE2E2'; color = '#9F1239'; }
             if (isBookmarked) { bg = '#FFFBEB'; color = '#D97706'; }
             if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
             if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
-            if (isCurrent) { bg = '#2563EB'; color = '#FFFFFF'; }
+            if (isCurrent) { bg = '#060C1C'; color = '#FFFFFF'; }
 
             return (
               <button
                 key={qu.id}
                 onClick={() => navigateToQuestion(idx)}
-                style={{ height: 38, borderRadius: 10, border: isCurrent ? '1px solid #2563EB' : '1px solid transparent', background: bg, color, fontWeight: 700, fontSize: 13, cursor: 'pointer', boxShadow: isCurrent ? '0 0 0 3px rgba(37,99,235,0.18)' : 'none' }}
+                style={{ height: 38, borderRadius: 10, border: isCurrent ? '1px solid #060C1C' : '1px solid transparent', background: bg, color, fontWeight: 700, fontSize: 13, cursor: 'pointer', boxShadow: isCurrent ? '0 0 0 3px rgba(6,12,28,0.18)' : 'none' }}
               >
                 {idx + 1}
               </button>
@@ -338,7 +338,7 @@ export default function DailyMcqChallengePage() {
         {[
           { label: 'Answered', color: '#22C55E', background: '#DCFCE7', value: answeredCount },
           { label: 'Not Visited', color: '#D1D5DB', background: '#F3F4F6', value: unansweredCount },
-          { label: 'Skipped', color: '#2563EB', background: '#DBEAFE', value: skippedCount },
+          { label: 'Skipped', color: '#EF4444', background: '#FEE2E2', value: skippedCount },
           { label: 'Mark for Review', color: '#F59E0B', background: '#FEF3C7', value: markedCount },
         ].map((row) => (
           <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -368,7 +368,7 @@ export default function DailyMcqChallengePage() {
   );
 
   return (
-    <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : undefined, background: '#F4F5F8', fontFamily: 'Inter, sans-serif', padding: isMobile ? '10px' : '12px 20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: isMobile ? 'auto' : 'hidden' }}>
+    <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : undefined, background: '#FAFBFE', fontFamily: 'Inter, sans-serif', padding: isMobile ? '10px' : '12px 20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: isMobile ? 'auto' : 'hidden' }}>
       <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0 }}>
 
         {submitError && (
@@ -378,11 +378,11 @@ export default function DailyMcqChallengePage() {
           </div>
         )}
 
-        <div style={{ flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16, alignItems: 'stretch' }}>
+        <div style={{ flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16, alignItems: isMobile ? 'stretch' : 'flex-start' }}>
 
           {/* LEFT: question card */}
-          <div style={{ flex: 1, minWidth: 0, width: '100%', display: isMobile ? 'block' : 'flex', minHeight: isMobile ? 'auto' : 0 }}>
-            <div style={{ flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0, background: '#FFFFFF', borderRadius: 16, border: '1px solid #ECECF1', boxShadow: '0 4px 24px rgba(0,0,0,0.05)', overflow: isMobile ? 'visible' : 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, minWidth: 0, width: '100%', display: isMobile ? 'block' : 'flex', minHeight: isMobile ? 'auto' : 0, maxHeight: isMobile ? 'none' : '100%' }}>
+            <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, maxHeight: isMobile ? 'none' : '100%', width: '100%', background: '#FFFFFF', borderRadius: 16, border: '1px solid #ECECF1', boxShadow: '0 4px 24px rgba(0,0,0,0.05)', overflow: isMobile ? 'visible' : 'hidden', display: 'flex', flexDirection: 'column' }}>
 
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 22px 11px', flexWrap: 'wrap', flexShrink: 0 }}>
@@ -396,7 +396,7 @@ export default function DailyMcqChallengePage() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 999, padding: '4px 12px' }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#DC2626' }}>Today&apos;s Challenge is LIVE</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#DC2626' }}>Today&apos;s Challenge is LIVE</span>
                 </div>
               </div>
               <div style={{ height: 1, background: '#F1F3F5' }} />
@@ -459,8 +459,8 @@ export default function DailyMcqChallengePage() {
               </div>
 
               {/* Content: question (fills) + options (2-col grid) */}
-              <div style={{ flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: 'column', padding: '12px 22px 14px', overflow: isMobile ? 'visible' : 'hidden' }}>
-                <div style={{ flex: isMobile ? 'none' : '1 1 auto', minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', whiteSpace: 'pre-line', fontSize: 14, lineHeight: '23px', color: '#1A1D23', paddingRight: 6 }}>
+              <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: 'column', padding: '12px 22px 14px', overflow: isMobile ? 'visible' : 'hidden' }}>
+                <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', whiteSpace: 'pre-line', fontSize: 14, lineHeight: '23px', color: '#1A1D23', paddingRight: 6 }}>
                   <span style={{ fontWeight: 700 }}>Question {currentQuestion + 1}: </span>
                   {normalizeQuestionText(q.questionText)}
                 </div>
@@ -506,18 +506,32 @@ export default function DailyMcqChallengePage() {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <button
-                    onClick={() => !isLast && navigateToQuestion(currentQuestion + 1)}
-                    disabled={isLast}
-                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 10, padding: '9px 20px', fontSize: 13, fontWeight: 600, color: isLast ? '#C7CDD6' : '#374151', cursor: isLast ? 'not-allowed' : 'pointer' }}
+                    onClick={() => {
+                      if (isLast) {
+                        // Last question: mark skipped if unanswered, stay in place
+                        const currentId = questions[currentQuestion]?.id;
+                        if (currentId && !answers[currentId]) {
+                          setSkipped((prev) => ({ ...prev, [currentId]: true }));
+                        }
+                      } else {
+                        navigateToQuestion(currentQuestion + 1);
+                      }
+                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 10, padding: '9px 20px', fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer' }}
                   >
                     Skip
                   </button>
                   <button
-                    onClick={() => !isLast && navigateToQuestion(currentQuestion + 1)}
-                    disabled={isLast}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isLast ? '#9CA3AF' : '#0B1426', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: isLast ? 'not-allowed' : 'pointer' }}
+                    onClick={() => {
+                      if (isLast) {
+                        setShowSubmitConfirm(true);
+                      } else {
+                        navigateToQuestion(currentQuestion + 1);
+                      }
+                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#0B1426', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: 'pointer' }}
                   >
-                    Save &amp; Next →
+                    {isLast ? 'Finish' : 'Save & Next →'}
                   </button>
                 </div>
               </div>
@@ -536,8 +550,8 @@ export default function DailyMcqChallengePage() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
           <div style={{ background: '#FFFFFF', borderRadius: 24, padding: '32px 36px', maxWidth: 460, width: '100%', textAlign: 'center', boxShadow: '0px 20px 40px -10px rgba(0,0,0,0.25)' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>📋</div>
-            <h2 className="font-arimo font-bold text-[#101828]" style={{ fontSize: 22, marginBottom: 8 }}>Submit Quiz?</h2>
-            <p className="font-arimo text-[#6B7280]" style={{ fontSize: 14, marginBottom: 20 }}>
+            <h2 className="font-arimo font-extrabold tracking-tight text-[#17223E]" style={{ fontSize: 22, marginBottom: 8 }}>Submit Quiz?</h2>
+            <p className="font-arimo font-medium text-[#475467]" style={{ fontSize: 14, marginBottom: 20 }}>
               Are you sure you want to submit your answers?
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
