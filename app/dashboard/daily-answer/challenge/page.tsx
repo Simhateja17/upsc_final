@@ -313,7 +313,6 @@ function DailyMainsChallengeInner() {
     `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
   const timerPct = data?.timeLimit ? (timeLeft / (data.timeLimit * 60)) * 100 : (timeLeft / 900) * 100;
-  const circumference = 2 * Math.PI * 44;
 
   const mainsQuota = entitlements.featureStatus('mains_evaluation');
 
@@ -891,11 +890,24 @@ function DailyMainsChallengeInner() {
           from { opacity: 0; transform: translateY(-8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        .dms-btn-primary { background:#0B1020; color:#fff; border:none; font-weight:600; cursor:pointer; transition:.2s; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+        .dms-btn-primary:hover { background:#11172A; transform:translateY(-1px); box-shadow:0 2px 6px rgba(15,23,42,.06), 0 18px 50px rgba(15,23,42,.10); }
+        .dms-btn-secondary { background:#F5F6F8; color:#0B1020; border:1px solid #E6E8EE; font-weight:600; cursor:pointer; transition:.2s; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+        .dms-btn-secondary:hover { background:#E6E8EE; }
       `}</style>
 
       {quotaModal}
 
-      <div className="flex flex-col lg:flex-row px-4 sm:px-6 py-5 w-full max-w-[1200px] mx-auto slide-up gap-5 items-start">
+      {/* Breadcrumb */}
+      <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 pt-5">
+        <div style={{ fontSize: '13px', color: '#6B7280' }}>
+          <button type="button" onClick={() => setChallengeStarted(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', fontFamily: 'inherit', fontSize: '13px' }}>Dashboard</button>
+          <span style={{ margin: '0 4px' }}>›</span>
+          <span style={{ color: '#0B1020', fontWeight: 600 }}>Attempt</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row px-4 sm:px-6 pb-5 pt-3 w-full max-w-[1200px] mx-auto slide-up gap-5 items-start">
 
         {/* ── LEFT COLUMN: Question + Answer Submission ── */}
         <div className="flex-1 min-w-0 flex flex-col gap-5">
@@ -927,22 +939,10 @@ function DailyMainsChallengeInner() {
             </div>
 
             {/* Meta */}
-            <div className="flex items-center flex-wrap gap-x-6 gap-y-2 text-[#4A5565]" style={{ fontSize: '13px' }}>
-              <div className="flex items-center gap-1.5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/Icon%20(8).png" alt="" style={{ width: '16px', height: '16px' }} />
-                <span>{data.timeLimit} min</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/Icon%20(7).png" alt="" style={{ width: '16px', height: '16px' }} />
-                <span>{data.wordLimit} words</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/Icon%20(6).png" alt="" style={{ width: '16px', height: '16px' }} />
-                <span>{data.marks} marks</span>
-              </div>
+            <div className="flex items-center flex-wrap gap-x-6 gap-y-2" style={{ fontSize: '13px', color: '#0B1020', opacity: 0.7 }}>
+              <span className="flex items-center gap-1.5">🕒 <strong>{data.timeLimit} min</strong></span>
+              <span className="flex items-center gap-1.5">✍️ <strong>{data.wordLimit} words</strong></span>
+              <span className="flex items-center gap-1.5">⭐ <strong>{data.marks} marks</strong></span>
             </div>
           </div>
 
@@ -1036,10 +1036,13 @@ function DailyMainsChallengeInner() {
                   </div>
                 ) : (
                   <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/upload-icon.png" alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', marginBottom: '12px' }} />
-                    <p className="font-bold text-[#101828] mb-1" style={{ fontSize: '15px' }}>Drop your answer script here</p>
-                    <p className="text-[#4A5565] mb-3" style={{ fontSize: '13px' }}>Upload handwritten answers for AI evaluation</p>
+                    <div className="grid place-items-center" style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#0B1020', marginBottom: '12px' }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 16V4m0 0L8 8m4-4l4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="#F5B800" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    <p className="font-bold text-[#0B1020] mb-1" style={{ fontSize: '15px' }}>Drop your answer script here</p>
+                    <p className="text-[#6B7280] mb-3" style={{ fontSize: '13px' }}>Upload handwritten answers for AI evaluation</p>
                     <div className="flex gap-2 mb-4 flex-wrap justify-center">
                       {['JPG', 'PNG', 'PDF', 'Max 10MB'].map(f => (
                         <span key={f} className="px-2.5 py-1 bg-[#E5E7EB] rounded text-[#374151]" style={{ fontSize: '12px' }}>{f}</span>
@@ -1183,48 +1186,43 @@ function DailyMainsChallengeInner() {
 
           {/* Timer Card */}
           <div
-            className="bg-white rounded-[24px] flex flex-col items-center justify-center"
-            style={{ padding: '20px', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE' }}
+            className="bg-white rounded-[24px] flex flex-col items-center"
+            style={{ padding: '24px', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE' }}
           >
-            <div className="uppercase tracking-widest text-[#6A7282] mb-3" style={{ fontSize: '11px', fontWeight: 600 }}>
+            <div className="uppercase text-[#6B7280] mb-3" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em' }}>
               Writing Timer
             </div>
 
-            <div className="relative flex items-center justify-center mb-3" style={{ width: '100px', height: '100px' }}>
-              <svg width="100" height="100" style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx="50" cy="50" r="44" fill="none" stroke="#F3F4F6" strokeWidth="6" />
-                <circle
-                  cx="50" cy="50" r="44" fill="none"
-                  stroke={isActive ? '#00BC7D' : timeLeft === 0 ? '#EF4444' : '#101828'}
-                  strokeWidth="6"
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={circumference * (1 - timerPct / 100)}
-                  style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }}
-                />
-              </svg>
-              <span className="absolute font-bold" style={{ fontSize: '22px', color: '#101828', fontFamily: 'Arimo' }}>
-                {formatTime(timeLeft)}
-              </span>
-            </div>
+            {(() => {
+              const R = 82;
+              const C = 2 * Math.PI * R;
+              return (
+                <div className="relative flex items-center justify-center mb-4" style={{ width: '180px', height: '180px' }}>
+                  <svg width="180" height="180" viewBox="0 0 180 180" style={{ transform: 'rotate(-90deg)' }}>
+                    <circle cx="90" cy="90" r={R} fill="none" stroke="#E6E8EE" strokeWidth="5" />
+                    <circle
+                      cx="90" cy="90" r={R} fill="none"
+                      stroke={timeLeft === 0 ? '#EF4444' : '#F5B800'}
+                      strokeWidth="5"
+                      strokeLinecap="round"
+                      strokeDasharray={C}
+                      strokeDashoffset={C * (1 - timerPct / 100)}
+                      style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }}
+                    />
+                  </svg>
+                  <div className="absolute flex flex-col items-center">
+                    <span className="font-bold" style={{ fontSize: '32px', color: '#0B1020', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontVariantNumeric: 'tabular-nums' }}>
+                      {formatTime(timeLeft)}
+                    </span>
+                    <span className="uppercase text-[#6B7280]" style={{ fontSize: '9px', marginTop: '2px', letterSpacing: '0.1em' }}>
+                      {readTimeLeft !== null ? `auto-start ${readTimeLeft}s` : isActive ? 'in progress' : timeLeft === 0 ? 'time up' : 'minutes left'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
 
-            <div className="uppercase tracking-widest text-[#6A7282] mb-4" style={{ fontSize: '10px', fontWeight: 600 }}>
-              {readTimeLeft !== null
-                ? `Auto-start in ${readTimeLeft}s`
-                : isActive
-                  ? 'In Progress'
-                  : timeLeft === 0
-                    ? 'Time Up'
-                    : 'Paused'}
-            </div>
-
-            {readTimeLeft !== null && (
-              <p className="text-center text-[#4A5565] mb-4" style={{ fontSize: '12px', lineHeight: '18px' }}>
-                Reading time is live. The writing timer will begin automatically so students can first read the full question.
-              </p>
-            )}
-
-            <div className="flex gap-3">
+            <div className="flex gap-2 w-full">
               <button
                 onClick={() => {
                   if (readTimeLeft !== null) {
@@ -1234,27 +1232,14 @@ function DailyMainsChallengeInner() {
                   }
                   setIsActive((active) => !active);
                 }}
-                className="flex items-center justify-center gap-1.5 text-white font-bold transition-transform hover:scale-105"
-                style={{
-                  width: '110px', height: '40px',
-                  background: readTimeLeft !== null ? '#17223E' : isActive ? '#DC2626' : '#00BC7D',
-                  borderRadius: '10px', fontSize: '14px'
-                }}
+                className="dms-btn-primary flex-1"
+                style={{ padding: '10px', fontSize: '13px', borderRadius: '12px' }}
               >
-                {readTimeLeft !== null ? (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M8 5.5v13l10-6.5-10-6.5Z" fill="currentColor" />
-                  </svg>
-                ) : isActive ? (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M8 5v14M16 5v14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                  </svg>
+                {isActive && readTimeLeft === null ? (
+                  <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 5v14M16 5v14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>Pause</>
                 ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M8 5.5v13l10-6.5-10-6.5Z" fill="currentColor" />
-                  </svg>
+                  <><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5-10-6.5Z" /></svg>{readTimeLeft !== null ? 'Start now' : timeLeft === 0 ? 'Start' : 'Resume'}</>
                 )}
-                {readTimeLeft !== null ? 'Start now' : isActive ? 'Pause' : 'Resume'}
               </button>
               <button
                 onClick={() => {
@@ -1262,11 +1247,10 @@ function DailyMainsChallengeInner() {
                   setReadTimeLeft(READING_WINDOW_SECONDS);
                   setTimeLeft(data.timeLimit * 60);
                 }}
-                className="flex items-center justify-center gap-1.5 bg-white border border-[#D1D5DB] text-[#374151] font-bold transition-transform hover:scale-105"
-                style={{ width: '80px', height: '40px', borderRadius: '10px', fontSize: '14px' }}
+                className="dms-btn-secondary flex-1"
+                style={{ padding: '10px', fontSize: '13px', borderRadius: '12px' }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/Icon%20(10).png" alt="" style={{ width: '16px', height: '16px' }} />
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 Reset
               </button>
             </div>
@@ -1274,13 +1258,14 @@ function DailyMainsChallengeInner() {
 
           {/* Quick Tips for Best Evaluation */}
           <div
-            className="bg-white rounded-[24px] overflow-hidden"
-            style={{ boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE' }}
+            className="rounded-[24px]"
+            style={{ background: '#FFF8DA', border: '1px solid rgba(245,184,0,0.15)', padding: '20px' }}
           >
-            <div className="flex items-center gap-2 px-5 py-4" style={{ background: '#FEFCE8', borderBottom: '1px solid #FEF08A' }}>
-              <span style={{ fontSize: '18px' }}>💡</span>
-              <span className="font-bold text-[#101828] tracking-wide" style={{ fontSize: '13px', letterSpacing: '0.04em' }}>QUICK TIPS FOR BEST EVALUATION</span>
+            <div className="flex items-center gap-2 mb-3">
+              <span style={{ fontSize: '14px' }}>💡</span>
+              <span className="font-bold text-[#0B1020]" style={{ fontSize: '13px', letterSpacing: '0.02em' }}>QUICK TIPS</span>
             </div>
+            <div className="flex flex-col gap-2">
             {[
               {
                 key: 'ink',
@@ -1323,13 +1308,13 @@ function DailyMainsChallengeInner() {
                 ],
               },
             ].map((tip) => (
-              <div key={tip.key} style={{ borderBottom: '1px solid #F3F4F6' }}>
+              <div key={tip.key} style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid #E6E8EE', overflow: 'hidden' }}>
                 <button
                   type="button"
                   onClick={() => setOpenTip(openTip === tip.key ? null : tip.key)}
-                  className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-[#F9FAFB] transition-colors text-left"
+                  className="w-full flex items-center justify-between px-3 py-3 hover:bg-[#FAFAFA] transition-colors text-left"
                 >
-                  <span className="flex items-center gap-2 font-semibold text-[#101828]" style={{ fontSize: '14px' }}>
+                  <span className="flex items-center gap-2 font-semibold text-[#0B1020]" style={{ fontSize: '13px' }}>
                     <span>{tip.icon}</span>
                     {tip.label}
                   </span>
@@ -1341,17 +1326,18 @@ function DailyMainsChallengeInner() {
                   </svg>
                 </button>
                 {openTip === tip.key && (
-                  <div className="px-5 pb-4" style={{ animation: 'slideDown 0.15s ease' }}>
+                  <div className="px-3 pb-3" style={{ animation: 'slideDown 0.15s ease' }}>
                     {tip.points.map((pt, i) => (
                       <div key={i} className="flex items-start gap-3 mb-2">
                         <span className="font-bold mt-0.5 flex-shrink-0" style={{ color: '#0F766E', fontSize: '14px' }}>✓</span>
-                        <span className="text-[#4A5565]" style={{ fontSize: '13px', lineHeight: '20px' }}>{pt}</span>
+                        <span className="text-[#6B7280]" style={{ fontSize: '12px', lineHeight: '18px' }}>{pt}</span>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
             ))}
+            </div>
           </div>
 
         </div>
