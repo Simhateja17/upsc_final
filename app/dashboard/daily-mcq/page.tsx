@@ -100,20 +100,20 @@ export default function DailyMcqIntroPage() {
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-4">
        <div className="w-full max-w-[605px] flex flex-col">
-        {/* Header row – live status + date + streak */}
-        <div className="flex items-center justify-between gap-3 mb-3 px-1">
-          <div className="flex items-center gap-2 font-arimo min-w-0">
-            <span aria-hidden="true" className="relative flex h-2.5 w-2.5 flex-shrink-0">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#EF4444] opacity-60" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#EF4444]" />
+        {/* Header row – live status + date + streak (matches reference: green pulse dot + amber streak chip) */}
+        <div className="flex items-center justify-between gap-3 mb-5 px-1">
+          <div className="flex items-center gap-2 font-arimo min-w-0 text-[13px] text-[#475067]">
+            <span aria-hidden="true" className="relative flex h-2 w-2 flex-shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10B981] opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#10B981]" />
             </span>
-            <span className="font-bold text-[14px] leading-[20px] text-[#344054] truncate">Today&apos;s Challenge is live</span>
-            <span className="text-[14px] leading-[20px] text-[#98A2B3] whitespace-nowrap">· {formatChallengeDate(new Date())}</span>
+            <span className="font-medium truncate">Today&apos;s Challenge is LIVE</span>
+            <span className="text-[#8892A4] whitespace-nowrap">· {formatChallengeDate(new Date())}</span>
           </div>
           {streak !== null && streak > 0 && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FCD34D] bg-[#FFFBEB] px-3 py-1.5 font-arimo font-bold text-[13px] leading-[16px] text-[#B45309] whitespace-nowrap flex-shrink-0">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 font-arimo font-semibold text-[12px] leading-[16px] text-amber-800 whitespace-nowrap flex-shrink-0">
               <span aria-hidden="true">🔥</span>
-              {streak}-day streak
+              {streak}-day Streak
             </span>
           )}
         </div>

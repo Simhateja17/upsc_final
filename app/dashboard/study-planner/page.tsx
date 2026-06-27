@@ -244,6 +244,8 @@ export default function StudyPlannerPage() {
   const [recurDays, setRecurDays] = useState<number[]>([1, 3]); // Tue & Thu by default
   const [recurEnd, setRecurEnd] = useState<RecurEnd>('exam');
   const [currentDate, setCurrentDate] = useState(new Date());
+  // Streak calendar month — navigated independently of the task planner's day.
+  const [calMonth, setCalMonth] = useState(new Date());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [streakDays, setStreakDays] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
@@ -377,13 +379,13 @@ export default function StudyPlannerPage() {
   }, [currentDate]);
 
   useEffect(() => {
-    studyPlannerService.getMonthlyActivity(currentDate.getFullYear(), currentDate.getMonth() + 1)
+    studyPlannerService.getMonthlyActivity(calMonth.getFullYear(), calMonth.getMonth() + 1)
       .then(res => {
         if (res.data?.studiedDays) setStudiedDays(res.data.studiedDays);
         else setStudiedDays([]);
       })
       .catch(() => {});
-  }, [currentDate]);
+  }, [calMonth]);
 
   const handleAddTask = async () => {
     if (!taskTitle.trim()) return;
@@ -571,21 +573,33 @@ export default function StudyPlannerPage() {
   const prevDay = () => { const d = new Date(currentDate); d.setDate(d.getDate() - 1); setCurrentDate(d); };
   const nextDay = () => { const d = new Date(currentDate); d.setDate(d.getDate() + 1); setCurrentDate(d); };
 
-  // Generate calendar days dynamically for the current month
-  const today = new Date();
-  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-  const todayNum = today.getMonth() === currentDate.getMonth() && today.getFullYear() === currentDate.getFullYear()
-    ? today.getDate() : -1;
-  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const offset = (firstDayOfMonth.getDay() + 6) % 7; // 0=Mon … 6=Sun
-  const emptySlots = Array.from({ length: offset }, (_, i) => ({ day: 0, empty: true, studied: false, today: false }));
-  const daySlots = Array.from({ length: daysInMonth }, (_, i) => ({
-    day: i + 1,
-    empty: false,
-    studied: studiedDays.includes(i + 1),
-    today: i + 1 === todayNum,
-  }));
-  const calendarDays = [...emptySlots, ...daySlots];
+  // Streak-calendar month navigation (arrows + Today button).
+  const prevCalMonth = () => { const d = new Date(calMonth); d.setDate(1); d.setMonth(d.getMonth() - 1); setCalMonth(d); };
+  const nextCalMonth = () => { const d = new Date(calMonth); d.setDate(1); d.setMonth(d.getMonth() + 1); setCalMonth(d); };
+  const goCalToday = () => setCalMonth(new Date());
+
+  // Streak calendar — day cells for calMonth, classified per the reference design:
+  // active (past+studied), missed (past, no activity), today, future.
+  type CalCell =
+    | { empty: true }
+    | { empty: false; day: number; status: 'active' | 'missed' | 'today' | 'future' };
+  const calYear = calMonth.getFullYear();
+  const calMonthIdx = calMonth.getMonth();
+  const daysInCalMonth = new Date(calYear, calMonthIdx + 1, 0).getDate();
+  const calOffset = (new Date(calYear, calMonthIdx, 1).getDay() + 6) % 7; // 0=Mon … 6=Sun
+  const calToday = new Date();
+  const calTodayTime = new Date(calToday.getFullYear(), calToday.getMonth(), calToday.getDate()).getTime();
+  const calEmptySlots: CalCell[] = Array.from({ length: calOffset }, () => ({ empty: true }));
+  const calDaySlots: CalCell[] = Array.from({ length: daysInCalMonth }, (_, i) => {
+    const day = i + 1;
+    const cellTime = new Date(calYear, calMonthIdx, day).getTime();
+    const status: 'active' | 'missed' | 'today' | 'future' =
+      cellTime === calTodayTime ? 'today'
+      : cellTime > calTodayTime ? 'future'
+      : studiedDays.includes(day) ? 'active' : 'missed';
+    return { empty: false, day, status };
+  });
+  const calendarDays: CalCell[] = [...calEmptySlots, ...calDaySlots];
 
   const studyTypes = [
     { id: 'video', label: 'Video Lectures', icon: '/study-type-video.png' },
@@ -719,15 +733,10 @@ export default function StudyPlannerPage() {
     return Math.round(secs) + 's';
   };
 
-  // Dynamic month/year display for calendar header
-  const calendarMonthYear = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-
-  // Weekly streak display
-  const weeklyStreakLabel = weeklyStudied !== null && weeklyTarget !== null
-    ? `${weeklyStudied}/${weeklyTarget} This Week`
-    : weeklyStudied !== null
-    ? `${weeklyStudied} days this week`
-    : '0/7 This Week';
+  // Streak-calendar header: full month label + the mini calendar-icon pieces.
+  const calendarMonthYear = calMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const calIcoMonth = calMonth.toLocaleString('default', { month: 'short' }).toUpperCase();
+  const calIcoNum = calToday.getDate();
 
   return (
     <>
@@ -1662,67 +1671,83 @@ export default function StudyPlannerPage() {
           {/* ═══════ Right Column (290px): Streak + Quick Add ═══════ */}
           <div className="flex-shrink-0 flex flex-col gap-5 w-full xl:w-[290px]">
 
-            {/* Study Streak Card */}
+            {/* Study Streak Card — converted from the reference study-streak/calendar design */}
             <div
+              className="streak-cal"
               style={{
                 width: '100%',
-                borderRadius: '16px',
-                border: '0.8px solid #E5E7EB',
-                background: '#FFFFFF',
-                paddingTop: '24.8px',
-                paddingRight: '24.8px',
-                paddingBottom: '0.8px',
-                paddingLeft: '24.8px',
+                background: '#ffffff',
+                borderRadius: '18px',
+                padding: '18px',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.05)',
               }}
             >
-              <p className="font-arimo" style={{ fontSize: '16px', lineHeight: '24px', fontWeight: 400, color: '#6A7282', marginBottom: '0' }}>
-                Study Streak
-              </p>
-              <h2 className="font-arimo font-bold" style={{ fontSize: '48px', lineHeight: '48px', letterSpacing: '0px', color: '#312C85', marginBottom: '8px' }}>
-                {streakDays} Days
-              </h2>
-                <div className="flex items-center" style={{ gap: '6px', marginBottom: '4px' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/fire-icon.png" alt="Fire" style={{ width: '16px', height: '20px' }} />
-                <span className="font-arimo font-bold" style={{ fontSize: '16px', lineHeight: '24px', letterSpacing: '0px', color: '#00BC7D' }}>
-                  {weeklyStreakLabel || '-'}
+              <style>{`
+                .streak-cal .sc-arrow:hover { background: #f3f4f6; }
+                .streak-cal .sc-today:hover { background: #fafafa; }
+              `}</style>
+
+              {/* Streak header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="sc-flame" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ffb547" />
+                        <stop offset="55%" stopColor="#ff7a3d" />
+                        <stop offset="100%" stopColor="#ef3d3d" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M12 2.5c.6 2.7 2.6 4 4 5.7 1.7 2 2.5 3.8 2.5 6 0 3.9-3 7-6.5 7s-6.5-3.1-6.5-7c0-2.6 1.4-4.2 2.6-5.3.2 1.1.9 1.9 1.8 1.9 1.3 0 1.8-1.4 1.6-3.1-.2-1.7.2-3.7.5-5.2z" fill="url(#sc-flame)" />
+                    <path d="M12 12.5c.6 1 1.7 1.5 1.7 3 0 1.6-1.1 2.7-2.5 2.7s-2.4-1-2.4-2.5c0-1 .5-1.6 1.1-2.1.2.5.6.8 1 .8.7 0 1-.7.9-1.4-.1-.5 0-1 .2-1.5z" fill="#ffe27a" opacity="0.95" />
+                  </svg>
                 </span>
+                <div style={{ color: '#6b7280', fontSize: '14px' }}>Study Streak</div>
               </div>
-              <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, letterSpacing: '0px', color: '#6A7282', marginBottom: '24px' }}>
-                Longest: {longestStreak} Days
-              </p>
 
-              <p className="font-arimo font-bold" style={{ fontSize: '16px', lineHeight: '24px', letterSpacing: '0px', color: '#101828', marginBottom: '12px' }}>
-                {calendarMonthYear}
-              </p>
+              <div style={{ color: '#1d2466', fontSize: '36px', fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1.05, margin: '6px 0 2px' }}>
+                {streakDays} Days
+              </div>
+              <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '6px' }}>Longest: {longestStreak} Days</div>
 
-              <div className="grid grid-cols-7" style={{ marginBottom: '10px' }}>
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-                  <span key={i} className="font-arimo text-center" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: '#6A7282' }}>
-                    {d}
+              {/* Calendar header (month + nav) */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '18px 0 10px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#0b1020', fontWeight: 800, fontSize: '18px', letterSpacing: '-0.2px' }}>
+                  <span style={{ width: '22px', height: '22px', borderRadius: '5px', overflow: 'hidden', display: 'inline-flex', flexDirection: 'column', boxShadow: '0 0 0 1px #e5e7eb inset', background: '#ffffff' }}>
+                    <span style={{ background: '#a83232', color: '#ffffff', fontSize: '7px', fontWeight: 800, textAlign: 'center', padding: '1px 0 0', lineHeight: 1 }}>{calIcoMonth}</span>
+                    <span style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0b1020', fontWeight: 800, fontSize: '11px', lineHeight: 1 }}>{calIcoNum}</span>
                   </span>
-                ))}
+                  {calendarMonthYear}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button type="button" onClick={prevCalMonth} title="Previous" className="sc-arrow" style={{ width: '24px', height: '28px', border: 'none', background: 'transparent', color: '#111827', fontSize: '18px', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>&#x2039;</button>
+                  <button type="button" onClick={goCalToday} title="Jump to today" className="sc-today" style={{ height: '30px', padding: '0 14px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#ffffff', color: '#0b1020', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 1px 1px rgba(0,0,0,0.02)' }}>Today</button>
+                  <button type="button" onClick={nextCalMonth} title="Next" className="sc-arrow" style={{ width: '24px', height: '28px', border: 'none', background: 'transparent', color: '#111827', fontSize: '18px', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>&#x203A;</button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-7" style={{ gap: '6px 0', paddingBottom: '16px' }}>
-                {calendarDays.map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-center font-arimo font-bold"
-                    style={{
-                      width: '27.5px',
-                      height: '27.5px',
-                      borderRadius: (item.studied || item.today) ? '10px' : '0',
-                      background: item.empty ? 'transparent' : item.today ? '#FF6900' : item.studied ? '#00BC7D' : 'transparent',
-                      color: item.empty ? 'transparent' : (item.studied || item.today) ? '#FFFFFF' : '#99A1AF',
-                      fontSize: '14px',
-                      lineHeight: '20px',
-                      margin: '0 auto',
-                    }}
-                  >
-                    {item.empty ? '' : item.day}
-                  </div>
+              {/* Day grid (weekday row + days share one grid, per reference) */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+                  <div key={`dow-${i}`} style={{ textAlign: 'center', color: '#9ca3af', fontSize: '11px', fontWeight: 500, padding: '2px 0' }}>{d}</div>
                 ))}
+                {calendarDays.map((item, i) => {
+                  if (item.empty) return <div key={i} />;
+                  const palette = {
+                    missed: { background: '#f1f3f5', color: '#9aa3af' },
+                    active: { background: '#dcf5e3', color: '#2e8b57' },
+                    today: { background: '#0f1626', color: '#f4b740' },
+                    future: { background: 'transparent', color: '#9ca3af' },
+                  }[item.status];
+                  return (
+                    <div
+                      key={i}
+                      style={{ aspectRatio: '1 / 1', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, ...palette }}
+                    >
+                      {item.day}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

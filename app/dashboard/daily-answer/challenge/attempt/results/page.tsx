@@ -211,56 +211,85 @@ function ResultsPageInner() {
 
   return (
     <>
-    <div className="min-h-screen font-arimo" style={{ background: '#FAFBFE' }}>
+    <div className="min-h-screen font-jakarta" style={{ background: '#F5F6F8' }}>
       <div className="flex flex-col items-center py-10 px-6 gap-6">
-        {data.question && (
-          <p className="text-[#4A5565]" style={{ width: '100%', maxWidth: '988px', fontSize: '13px', fontWeight: 500 }}>
-            Result · {new Date(`${data.question.date}T00:00:00.000Z`).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })} · {data.question.paper} · {data.question.subject}
-          </p>
-        )}
-        <div
-          className="flex flex-col items-center justify-center px-6"
-          style={{
-            width: '100%', maxWidth: '988px',
-            minHeight: '168px',
-            borderRadius: '14px',
-            background: 'linear-gradient(90deg, #101828 0%, #17223E 100%)',
-          }}
-        >
-          <p
-            style={{
-              fontWeight: 700,
-              fontSize: '14px',
-              lineHeight: '20px',
-              letterSpacing: '0.35px',
-              textTransform: 'uppercase',
-              color: '#D1D5DC',
-              marginBottom: '4px',
-            }}
-          >
-            Score
-          </p>
-          <div className="flex items-baseline gap-1">
-            <span style={{ fontWeight: 700, fontSize: '82px', lineHeight: '72px', color: '#FDC700' }}>{score}</span>
-            <span style={{ fontWeight: 700, fontSize: '35px', lineHeight: '48px', color: '#FDC70087' }}>
-              /{maxScore}
-            </span>
+        {/* Breadcrumb row */}
+        <div className="flex items-center justify-between gap-3 flex-wrap" style={{ width: '100%', maxWidth: '988px' }}>
+          <div className="flex items-center gap-2 flex-wrap text-[#6B7280]" style={{ fontSize: '13px' }}>
+            <span>Result</span>
+            {data.question && (
+              <>
+                <span style={{ margin: '0 2px' }}>·</span>
+                <span>{new Date(`${data.question.date}T00:00:00.000Z`).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 14px', borderRadius: '100px', fontSize: '12px', fontWeight: 600, background: '#EEF0FF', color: '#4338CA', marginLeft: '4px' }}>{data.question.paper}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 14px', borderRadius: '100px', fontSize: '12px', fontWeight: 600, background: '#E8F0FF', color: '#1d4ed8' }}>{data.question.subject}</span>
+              </>
+            )}
           </div>
-          <p className="mt-3 text-[#D1D5DC]" style={{ fontSize: '14px' }}>
-            Examiner score based on structure, depth, relevance, and substantiation.
-          </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap" style={{ width: '100%', maxWidth: '988px' }}>
+        {/* Score banner — dark radial gradient + gold circular ring */}
+        <div
+          style={{
+            width: '100%', maxWidth: '988px',
+            position: 'relative', overflow: 'hidden',
+            borderRadius: '24px',
+            padding: '40px 40px',
+            background: 'radial-gradient(120% 120% at 0% 0%,#1a2240 0%,#0b1020 60%)',
+            color: '#fff',
+          }}
+        >
+          <div style={{ position: 'absolute', top: '-60px', right: '-60px', width: '240px', height: '240px', borderRadius: '50%', background: 'rgba(245,184,0,0.06)', filter: 'blur(2px)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '-80px', left: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(245,184,0,0.03)', filter: 'blur(2px)', pointerEvents: 'none' }} />
+          <div className="flex items-center justify-between gap-8 flex-wrap" style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ flex: 1, minWidth: '240px' }}>
+              <div style={{ fontSize: '10px', letterSpacing: '0.18em', color: '#F5B800', fontWeight: 700, textTransform: 'uppercase', marginBottom: '16px' }}>
+                Jeet AI · Evaluation Ready
+              </div>
+              <div style={{ fontFamily: 'var(--font-dm-serif), serif', fontSize: '32px', color: '#fff', lineHeight: 1.3, marginBottom: '12px' }}>
+                Your mock has been <span style={{ color: '#F5B800', fontStyle: 'italic' }}>evaluated.</span>
+              </div>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', lineHeight: 1.6, fontWeight: 300, maxWidth: '440px', margin: 0 }}>
+                Below is your scorecard along with model answers and improvement notes for your answer.
+              </p>
+            </div>
+            {/* Circular score ring */}
+            <div style={{ position: 'relative', width: '130px', height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ position: 'absolute', width: '100px', height: '100px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,184,0,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
+              <svg width="120" height="120" viewBox="0 0 130 130" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="65" cy="65" r="50" fill="none" strokeWidth="5" stroke="rgba(255,255,255,0.08)" />
+                <circle
+                  cx="65" cy="65" r="50" fill="none" strokeWidth="5" stroke="#F5B800" strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 50}
+                  strokeDashoffset={(2 * Math.PI * 50) * (1 - scorePercent / 100)}
+                  style={{ transition: 'stroke-dashoffset 1.8s cubic-bezier(0.4,0,0.2,1)' }}
+                />
+              </svg>
+              <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontFamily: 'var(--font-dm-serif), serif', fontSize: '42px', color: '#F5B800', lineHeight: 1 }}>{score}</span>
+                <span style={{ fontFamily: 'var(--font-dm-serif), serif', fontSize: '16px', color: 'rgba(255,255,255,0.4)' }}>/ {maxScore}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab bar */}
+        <div
+          className="flex gap-1.5 flex-wrap"
+          style={{ width: '100%', maxWidth: '988px', background: '#FFFFFF', borderRadius: '16px', padding: '6px', border: '1px solid #E6E8EE', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06)' }}
+        >
           {slides.map((item) => (
             <button
               key={item.key}
               onClick={() => setSlide(item.key)}
-              className={`px-4 py-2 rounded-[8px] text-sm font-semibold transition-colors ${
-                slide === item.key
-                  ? 'bg-[#17223E] text-white'
-                  : 'bg-white text-[#4A5565] border border-[#E5E7EB] hover:bg-gray-50'
-              }`}
+              className="transition-colors"
+              style={{
+                flex: '1 1 0%', minWidth: 'max-content', padding: '10px 18px', borderRadius: '12px',
+                fontWeight: 600, fontSize: '14px', border: 'none', cursor: 'pointer',
+                background: slide === item.key ? '#0B1020' : 'transparent',
+                color: slide === item.key ? '#fff' : '#374151',
+                boxShadow: slide === item.key ? '0 6px 16px rgba(11,16,32,0.18)' : 'none',
+              }}
             >
               {item.label}
             </button>

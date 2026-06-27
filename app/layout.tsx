@@ -3,7 +3,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { AuthModalProvider } from '@/contexts/AuthModalContext'
 import AuthModal from '@/components/AuthModal'
-import { Cormorant_Garamond, DM_Sans, Sora, Playfair_Display, Inter, Merriweather } from 'next/font/google'
+import { Cormorant_Garamond, DM_Sans, Sora, Playfair_Display, Inter, Merriweather, Plus_Jakarta_Sans, DM_Serif_Display } from 'next/font/google'
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -51,6 +51,23 @@ const merriweather = Merriweather({
   display: 'swap',
 })
 
+// Plus Jakarta Sans — the reference's display font (used for share-card headlines).
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['500', '600', '700', '800'],
+  variable: '--font-jakarta',
+  display: 'swap',
+})
+
+// DM Serif Display — the Daily Mains Challenge reference's heading font.
+const dmSerif = DM_Serif_Display({
+  subsets: ['latin'],
+  weight: ['400'],
+  style: ['normal', 'italic'],
+  variable: '--font-dm-serif',
+  display: 'swap',
+})
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -79,7 +96,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${cormorant.variable} ${dmSans.variable} ${sora.variable} ${playfair.variable} ${interFont.variable} ${merriweather.variable}`}>
+      <body className={`${cormorant.variable} ${dmSans.variable} ${sora.variable} ${playfair.variable} ${interFont.variable} ${merriweather.variable} ${jakarta.variable} ${dmSerif.variable}`}>
         <AuthProvider>
           <AuthModalProvider>
             {children}
