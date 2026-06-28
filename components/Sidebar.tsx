@@ -59,7 +59,9 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
         { id: 'study-material', label: 'Study Material', icon: '/sidebar-study-material-new2.png', path: '/dashboard/library' },
         { id: 'video-lectures', label: 'Video Lectures', icon: '/sidebar-video.png', path: '/dashboard/video-lectures' },
         { id: 'current-affairs', label: 'Current Affairs', icon: '/sidebar-current-affairs.png', path: '/dashboard/daily-editorial' },
-        { id: 'test-series', label: 'Test Series', icon: '/sidebar-test-series.png', path: '/dashboard/test-series' },
+        { id: 'pyq', label: 'Previous Year Questions', icon: '/sidebar-pyq-new.png', path: '/dashboard/pyq' },
+        // Test Series is hidden for now; re-enable when it is ready.
+        // { id: 'test-series', label: 'Test Series', icon: '/sidebar-test-series.png', path: '/dashboard/test-series' },
       ],
     },
     {
@@ -69,7 +71,6 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
         { id: 'daily-answer', label: 'Daily Answer Writing', icon: '/sidebar-daily-answer-new.png', path: '/dashboard/daily-answer' },
         { id: 'mock-tests', label: 'Mock Tests', icon: '/sidebar-mock-tests-new.png', path: '/dashboard/mock-tests' },
         { id: 'mains-answer-evaluator', label: 'Mains Answer Evaluator', icon: '✍️', path: '/dashboard/mains-answer-evaluator' },
-        { id: 'pyq', label: 'Previous Year Questions', icon: '/sidebar-pyq-new.png', path: '/dashboard/pyq' },
       ],
     },
     {

@@ -9,11 +9,12 @@ const dropdownMenus = {
   prepare: [
     { label: 'Study Planner', href: '/dashboard/study-planner', icon: 'calendar' },
     { label: 'Syllabus Tracker', href: '/dashboard/syllabus-tracker', icon: 'checklist' },
+    { label: 'Previous Year Questions', href: '/dashboard/pyq', icon: 'file-text' },
   ],
   practice: [
     { label: 'Mock Tests', href: '/dashboard/mock-tests', icon: 'clock' },
-    { label: 'Previous Year Questions', href: '/dashboard/pyq', icon: 'file-text' },
-    { label: 'Test Series', href: '/dashboard/test-series', icon: 'layers' },
+    // Test Series is hidden for now; re-enable when it is ready.
+    // { label: 'Test Series', href: '/dashboard/test-series', icon: 'layers' },
     { label: 'Daily MCQs', href: '/dashboard/daily-mcq', icon: 'help-circle' },
     { label: 'Daily Mains Answer', href: '/dashboard/daily-answer', icon: 'edit' },
   ],
