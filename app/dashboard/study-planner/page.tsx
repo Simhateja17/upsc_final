@@ -70,6 +70,7 @@ interface Task {
   endTime?: string;
   isCompleted: boolean;
   recur?: string;
+  actualDuration?: number | null;
 }
 
 type RecurType = 'daily' | 'weekly' | 'weekdays' | 'custom';
@@ -315,6 +316,7 @@ export default function StudyPlannerPage() {
   }, []);
 
   useEffect(() => {
+    setActualSecondsByTask({});
     studyPlannerService.getTodayTasks(toDateParam(currentDate))
       .then(res => { if (res.data) setTasks(res.data); else setTasks([]); })
       .catch(() => setTasks([]));
@@ -509,11 +511,10 @@ export default function StudyPlannerPage() {
       setActualSecondsByTask(prev => ({ ...prev, [task.id]: focusTaskSecs }));
     }
     if (task && !task.isCompleted) {
-      const actualMinutes = focusTaskSecs > 0 ? Math.max(1, Math.round(focusTaskSecs / 60)) : undefined;
       try {
         await studyPlannerService.updateTask(task.id, {
           isCompleted: true,
-          ...(actualMinutes !== undefined ? { duration: actualMinutes } : {}),
+          ...(focusTaskSecs > 0 ? { actualDuration: focusTaskSecs } : {}),
         });
         setTasks(prev => prev.map(t => t.id === task.id ? { ...t, isCompleted: true } : t));
       } catch {}
@@ -573,12 +574,14 @@ export default function StudyPlannerPage() {
     ? today.getDate() : -1;
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   const offset = (firstDayOfMonth.getDay() + 6) % 7; // 0=Mon … 6=Sun
-  const emptySlots = Array.from({ length: offset }, (_, i) => ({ day: 0, empty: true, studied: false, today: false }));
+  const selectedDay = currentDate.getDate();
+  const emptySlots = Array.from({ length: offset }, (_, i) => ({ day: 0, empty: true, studied: false, today: false, selected: false }));
   const daySlots = Array.from({ length: daysInMonth }, (_, i) => ({
     day: i + 1,
     empty: false,
     studied: studiedDays.includes(i + 1),
     today: i + 1 === todayNum,
+    selected: i + 1 === selectedDay,
   }));
   const calendarDays = [...emptySlots, ...daySlots];
 
@@ -684,9 +687,11 @@ export default function StudyPlannerPage() {
   tasks.filter(t => t.isCompleted).forEach(t => {
     const subj = t.subject?.trim() || 'General';
     let secs = 0;
-    const actual = actualSecondsByTask[t.id];
-    if (actual != null && actual > 0) {
-      secs = actual;
+    const sessionActual = actualSecondsByTask[t.id];
+    if (sessionActual != null && sessionActual > 0) {
+      secs = sessionActual;
+    } else if (t.actualDuration != null && t.actualDuration > 0) {
+      secs = t.actualDuration;
     } else if (t.startTime && t.endTime) {
       const [sh, sm] = t.startTime.split(':').map(Number);
       const [eh, em] = t.endTime.split(':').map(Number);
@@ -1662,16 +1667,35 @@ export default function StudyPlannerPage() {
                 {calendarDays.map((item, i) => (
                   <div
                     key={i}
+                    onClick={() => {
+                      if (!item.empty) {
+                        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), item.day));
+                      }
+                    }}
                     className="flex items-center justify-center font-arimo font-bold"
                     style={{
                       width: '27.5px',
                       height: '27.5px',
-                      borderRadius: (item.studied || item.today) ? '10px' : '0',
-                      background: item.empty ? 'transparent' : item.today ? '#FF6900' : item.studied ? '#00BC7D' : 'transparent',
-                      color: item.empty ? 'transparent' : (item.studied || item.today) ? '#FFFFFF' : '#99A1AF',
+                      borderRadius: (item.selected || item.studied || item.today) ? '10px' : '0',
+                      background: item.empty
+                        ? 'transparent'
+                        : item.selected
+                          ? '#312C85'
+                          : item.today
+                            ? '#FF6900'
+                            : item.studied
+                              ? '#00BC7D'
+                              : 'transparent',
+                      color: item.empty
+                        ? 'transparent'
+                        : (item.selected || item.studied || item.today)
+                          ? '#FFFFFF'
+                          : '#99A1AF',
                       fontSize: '14px',
                       lineHeight: '20px',
                       margin: '0 auto',
+                      cursor: item.empty ? 'default' : 'pointer',
+                      transition: 'background 0.15s ease',
                     }}
                   >
                     {item.empty ? '' : item.day}

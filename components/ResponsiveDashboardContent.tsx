@@ -36,6 +36,7 @@ function getDashboardUserName(firstName?: string, email?: string) {
 
 interface DashboardData {
   daysRemaining?: number;
+  targetYear?: string;
   trio?: {
     mcq?: { status?: string; topic?: string; questionCount?: number };
     editorial?: { status?: string; topic?: string };
@@ -417,6 +418,7 @@ const ResponsiveDashboardContent = () => {
 
   const trio = dashboardData?.trio;
   const daysRemaining = dashboardData?.daysRemaining ?? null;
+  const targetYear = dashboardData?.targetYear || '2026';
 
   const mcqStatus = trio?.mcq?.status || null;
   const mcqTopic = trio?.mcq?.topic || null;
@@ -564,7 +566,7 @@ const ResponsiveDashboardContent = () => {
                 letterSpacing: '0px',
               }}
             >
-              <p>Welcome to your personalized command center for UPSC 2026 preparation.</p>
+              <p>Welcome to your personalized command center for UPSC {targetYear} preparation.</p>
               <p className="font-bold text-white">Ready to rise up? Let&apos;s make today count.</p>
             </div>
           </div>
@@ -587,7 +589,7 @@ const ResponsiveDashboardContent = () => {
                 letterSpacing: '0px',
               }}
             >
-              UPSC Prelims 2026: {daysRemaining !== null ? `${daysRemaining} days remaining` : '– days remaining'}.
+              UPSC Prelims {targetYear}: {daysRemaining !== null ? `${daysRemaining} days remaining` : '– days remaining'}.
             </p>
           </div>
         </div>

@@ -128,13 +128,28 @@ export default function SyllabusTrackerPage() {
     };
 
     const dedupeSubjects = (subjects: Subject[]): Subject[] =>
-      subjects.map(subject => ({
-        ...subject,
-        topics: subject.topics.map(topic => ({
-          ...topic,
-          subs: deduplicateSubs(topic.subs),
-        })),
-      }));
+      subjects.map(subject => {
+        const topicMap = new Map<string, { name: string; subs: string[] }>();
+        for (const topic of subject.topics) {
+          const key = dedupeBase(topic.name);
+          if (topicMap.has(key)) {
+            const existing = topicMap.get(key)!;
+            if (topic.name.length > existing.name.length) {
+              existing.name = topic.name;
+            }
+            existing.subs.push(...topic.subs);
+          } else {
+            topicMap.set(key, { name: topic.name, subs: [...topic.subs] });
+          }
+        }
+        return {
+          ...subject,
+          topics: Array.from(topicMap.values()).map(t => ({
+            ...t,
+            subs: deduplicateSubs(t.subs),
+          })),
+        };
+      });
 
     return {
       prelims: dedupeSubjects(raw.prelims?.length ? raw.prelims : PRELIMS_CSV_SUBJECTS),

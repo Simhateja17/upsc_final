@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { dailyMcqService, flashcardService, spacedRepService } from '@/lib/services';
+import { dailyMcqService, flashcardService, spacedRepService, bookmarkService } from '@/lib/services';
 
 interface ReviewQuestion {
   id: string;
@@ -52,8 +52,9 @@ export default function QuestionReviewPage() {
     setActionLoading(`flashcard-${q.id}`);
     try {
       const correctOpt = q.options.find((_, idx) => getOptionKey(_, idx) === q.correctOption);
+      const subjectId = q.category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       await flashcardService.createCard({
-        subjectId: '',
+        subjectId,
         subject: q.category,
         topic: q.category,
         question: q.questionText,
@@ -86,18 +87,21 @@ export default function QuestionReviewPage() {
     setActionLoading(null);
   };
 
-  const handleStudyNotes = (q: ReviewQuestion) => {
-    if (typeof window !== 'undefined') {
-      const notes = JSON.parse(sessionStorage.getItem('studyNotes') || '[]');
-      notes.push({
-        questionId: q.id,
-        question: q.questionText,
-        category: q.category,
-        addedAt: new Date().toISOString(),
+  const handleStudyNotes = async (q: ReviewQuestion) => {
+    setActionLoading(`notes-${q.id}`);
+    try {
+      await bookmarkService.toggle({
+        entityType: 'study-note',
+        entityId: q.id,
+        title: q.questionText,
+        source: 'Daily MCQ',
+        tag: q.category,
       });
-      sessionStorage.setItem('studyNotes', JSON.stringify(notes));
+      showToast('Saved to Bookmarks! View in Performance → Bookmarks');
+    } catch {
+      showToast('Failed to save to bookmarks', 'error');
     }
-    showToast('Saved to study notes!');
+    setActionLoading(null);
   };
 
   if (loading) {
@@ -120,13 +124,18 @@ export default function QuestionReviewPage() {
     <div className="flex flex-col overflow-hidden relative" style={{ height: '100vh', background: '#E8EDF5' }}>
       {/* Toast Notification */}
       {toast.show && (
-        <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all"
+        <div className="fixed top-4 right-4 z-50 px-5 py-4 rounded-xl shadow-2xl text-sm font-semibold transition-all animate-[slideIn_0.3s_ease-out]"
           style={{
             background: toast.type === 'success' ? '#F0FDF4' : '#FEF2F2',
-            border: toast.type === 'success' ? '1px solid #86EFAC' : '1px solid #FCA5A5',
+            border: toast.type === 'success' ? '2px solid #86EFAC' : '2px solid #FCA5A5',
             color: toast.type === 'success' ? '#166534' : '#991B1B',
+            minWidth: '280px',
+            boxShadow: '0 20px 40px -12px rgba(0,0,0,0.15)',
           }}>
-          {toast.type === 'success' ? '✓' : '✕'} {toast.message}
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '18px' }}>{toast.type === 'success' ? '✅' : '❌'}</span>
+            <span>{toast.message}</span>
+          </div>
         </div>
       )}
 
@@ -279,9 +288,10 @@ export default function QuestionReviewPage() {
                       </button>
                       <button
                         onClick={() => handleStudyNotes(q)}
-                        className="font-arimo font-bold hover:underline transition-colors"
+                        disabled={actionLoading === `notes-${q.id}`}
+                        className="font-arimo font-bold hover:underline transition-colors disabled:opacity-50"
                         style={{ fontSize: 'clamp(12px,0.73vw,13px)', color: '#2563EB' }}>
-                        Study Notes
+                        {actionLoading === `notes-${q.id}` ? 'Saving...' : 'Study Notes'}
                       </button>
                     </div>
                   </div>
@@ -354,9 +364,10 @@ export default function QuestionReviewPage() {
                             </button>
                             <button
                               onClick={() => handleStudyNotes(wq)}
-                              className="font-arimo font-bold hover:underline text-[#2563EB]"
+                              disabled={actionLoading === `notes-${wq.id}`}
+                              className="font-arimo font-bold hover:underline text-[#2563EB] disabled:opacity-50"
                               style={{ fontSize: '11px' }}>
-                              Study Notes
+                              {actionLoading === `notes-${wq.id}` ? 'Saving...' : 'Study Notes'}
                             </button>
                           </div>
                         </div>
