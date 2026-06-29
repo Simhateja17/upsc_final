@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { dashboardService } from '@/lib/services';
+import { dashboardService, testSeriesService } from '@/lib/services';
 
 interface PerformanceData {
   studyTimeToday?: string;
@@ -11,6 +11,8 @@ interface PerformanceData {
   rankPercentile?: number;
   jeetCoins?: number;
   syllabusCoverage?: number;
+  mcq?: { totalAttempts?: number };
+  mains?: { totalAttempts?: number };
 }
 
 interface StreakData {
@@ -31,20 +33,24 @@ interface AchievementBadge {
   status: BadgeState;
   icon?: string;
   iconNode?: React.ReactNode;
+  emoji?: string;
 }
 
 const PerformanceStatsWidget = () => {
   const [performance, setPerformance] = useState<PerformanceData | null>(null);
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
+  // Upcoming Test card is shown only to users who have purchased a test series.
+  const [hasPurchasedTestSeries, setHasPurchasedTestSeries] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     async function fetchData() {
       try {
-        const [perfRes, streakRes] = await Promise.allSettled([
+        const [perfRes, streakRes, enrolledRes] = await Promise.allSettled([
           dashboardService.getPerformance(),
           dashboardService.getStreak(),
+          testSeriesService.getEnrolled(),
         ]);
         if (mounted) {
           if (perfRes.status === 'fulfilled' && perfRes.value?.data) {
@@ -52,6 +58,10 @@ const PerformanceStatsWidget = () => {
           }
           if (streakRes.status === 'fulfilled' && streakRes.value?.data) {
             setStreak(streakRes.value.data);
+          }
+          if (enrolledRes.status === 'fulfilled') {
+            const enrolled = enrolledRes.value?.data;
+            setHasPurchasedTestSeries(Array.isArray(enrolled) && enrolled.length > 0);
           }
         }
       } catch {
@@ -74,6 +84,8 @@ const PerformanceStatsWidget = () => {
   const rank = performance?.rank ?? null;
   const rankPercentile = performance?.rankPercentile ?? null;
   const jeetCoins = performance?.jeetCoins ?? (loading ? null : 0);
+  const mcqsAttempted = performance?.mcq?.totalAttempts ?? (loading ? null : 0);
+  const mainsWritten = performance?.mains?.totalAttempts ?? (loading ? null : 0);
 
   const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const hasAnyProgress = Boolean((currentStreak ?? 0) > 0 || (testsTaken ?? 0) > 0 || (syllabusCoverage ?? 0) > 0);
@@ -110,6 +122,7 @@ const PerformanceStatsWidget = () => {
       key: 'streak',
       title: '30-Day Streak',
       note: `${currentStreak ?? 0} day streak`,
+      emoji: '🔥',
       icon: '/icons/dashboard/badge-streak.png',
       accent: '#F59E0B',
       tint: '#FFF7E8',
@@ -119,6 +132,7 @@ const PerformanceStatsWidget = () => {
       key: 'learner',
       title: 'Quick Learner',
       note: `${testsTaken ?? 0} tests done`,
+      emoji: '🧠',
       icon: '/icons/dashboard/badge-learner.png',
       accent: '#F59E0B',
       tint: '#FFF9EB',
@@ -128,6 +142,7 @@ const PerformanceStatsWidget = () => {
       key: 'accuracy',
       title: '95% Accuracy',
       note: rankPercentile !== null ? `Top ${rankPercentile}%` : 'Build accuracy',
+      emoji: '🎖️',
       icon: '/icons/dashboard/badge-accuracy.png',
       accent: '#4F7CFF',
       tint: '#EEF4FF',
@@ -180,11 +195,13 @@ const PerformanceStatsWidget = () => {
       ),
     },
   ];
-  const badgeTextByStatus: Record<BadgeState, string> = {
-    earned: 'Earned',
-    'in-progress': 'In Progress',
-    locked: 'Locked',
-  };
+  // Show unlocked badges first (earned, then in-progress), locked ones last.
+  // Array.prototype.sort is stable, so original order is preserved within each group.
+  const badgeOrderRank = (status: AchievementBadge['status']) =>
+    status === 'earned' ? 0 : status === 'in-progress' ? 1 : 2;
+  const orderedBadges = [...achievementBadges].sort(
+    (a, b) => badgeOrderRank(a.status) - badgeOrderRank(b.status)
+  );
   const sectionTitleStyle: React.CSSProperties = {
     fontWeight: 700,
     fontSize: 'clamp(16px,1.04vw,20px)',
@@ -258,17 +275,27 @@ const PerformanceStatsWidget = () => {
               ) : null}
             </div>
 
-            {/* Week Days */}
+            {/* Week Days — completed day shows a golden box with a dark tick; others are grey with their letter */}
             <div className="flex gap-[clamp(4px,0.31vw,6px)] mb-[clamp(16px,1.04vw,20px)]">
               {dayLabels.map((day, index) => (
                 <div
                   key={index}
-                  className={`flex-1 aspect-square rounded-lg flex items-center justify-center font-inter font-semibold ${
-                    weekDays[index] ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-500'
-                  }`}
-                  style={{ fontSize: 'clamp(11px,0.68vw,13px)' }}
+                  className="flex-1 aspect-square rounded-lg flex items-center justify-center font-inter font-semibold border"
+                  style={
+                    weekDays[index]
+                      ? { background: 'linear-gradient(180deg,#ffd24a,#f5b400)', borderColor: '#E5E7EB' }
+                      : { background: '#EEF0F5', borderColor: '#E5E7EB' }
+                  }
                 >
-                  {day}
+                  {weekDays[index] ? (
+                    <svg className="w-[55%] h-[55%]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M5 13l4 4L19 7" stroke="#1A1407" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : (
+                    <span className="text-[#6B7280]" style={{ fontSize: 'clamp(11px,0.68vw,13px)' }}>
+                      {day}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -293,55 +320,7 @@ const PerformanceStatsWidget = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-[clamp(10px,0.73vw,14px)]">
-              {/* Study Time Today */}
-              <div
-                className="rounded-[14px] flex flex-col items-center justify-center text-center"
-                style={{
-                  background: '#EEF2FF',
-                  padding: '16px 12px',
-                }}
-              >
-                <div className="font-outfit font-bold text-[#17223E] leading-none" style={{ fontSize: '20px', marginBottom: '6px' }}>
-                  {studyTimeToday ?? '--'}
-                </div>
-                <p className="font-arimo text-[#6B7280]" style={{ fontSize: '11px', lineHeight: '1.3' }}>
-                  Study Time Today
-                </p>
-              </div>
-
-              {/* Tests Taken */}
-              <div
-                className="rounded-[14px] flex flex-col items-center justify-center text-center"
-                style={{
-                  background: '#EEF2FF',
-                  padding: '16px 12px',
-                }}
-              >
-                <div className="font-outfit font-bold text-[#17223E] leading-none" style={{ fontSize: '20px', marginBottom: '6px' }}>
-                  {testsTaken ?? '--'}
-                </div>
-                <p className="font-arimo text-[#6B7280]" style={{ fontSize: '11px', lineHeight: '1.3' }}>
-                  Tests Taken
-                </p>
-              </div>
-
-              {/* Your Rank */}
-              <div
-                className="rounded-[14px] flex flex-col items-center justify-center text-center"
-                style={{
-                  background: '#EEF2FF',
-                  padding: '16px 12px',
-                }}
-              >
-                <div className="font-outfit font-bold text-[#17223E] leading-none" style={{ fontSize: '20px', marginBottom: '6px' }}>
-                  {rank !== null ? `#${rank}` : '--'}
-                </div>
-                <p className="font-arimo text-[#6B7280]" style={{ fontSize: '11px', lineHeight: '1.3' }}>
-                  Daily Rank {rankPercentile !== null ? <span className="text-green-600 font-arimo">Top {rankPercentile}%</span> : null}
-                </p>
-              </div>
-
-              {/* Jeet Coins */}
+              {/* Total Study Time */}
               <div
                 className="rounded-[14px] flex flex-col justify-center"
                 style={{
@@ -349,19 +328,63 @@ const PerformanceStatsWidget = () => {
                   padding: '16px 12px',
                 }}
               >
-                <div className="flex items-center" style={{ gap: '6px', marginBottom: '6px' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/funds-icon.png"
-                    alt="Jeet Coins"
-                    style={{ width: '28px', height: '28px', objectFit: 'contain' }}
-                  />
-                  <span className="font-outfit font-bold text-[#17223E] leading-none" style={{ fontSize: '22px' }}>
-                    {jeetCoins ?? '--'}
-                  </span>
+                <span style={{ fontSize: '22px', lineHeight: '1', marginBottom: '8px' }}>⏱️</span>
+                <div className="font-outfit font-bold text-[#17223E] leading-none" style={{ fontSize: '20px', marginBottom: '6px' }}>
+                  {studyTimeToday ?? '--'}
                 </div>
                 <p className="font-arimo text-[#6B7280]" style={{ fontSize: '11px', lineHeight: '1.3' }}>
-                  Jeet Coins
+                  Total Study Time
+                </p>
+              </div>
+
+              {/* Rank */}
+              <div
+                className="rounded-[14px] flex flex-col justify-center"
+                style={{
+                  background: '#EEF2FF',
+                  padding: '16px 12px',
+                }}
+              >
+                <span style={{ fontSize: '22px', lineHeight: '1', marginBottom: '8px' }}>🏆</span>
+                <div className="font-outfit font-bold text-[#17223E] leading-none" style={{ fontSize: '20px', marginBottom: '6px' }}>
+                  {rank !== null ? `#${rank}` : '--'}
+                </div>
+                <p className="font-arimo text-[#6B7280]" style={{ fontSize: '11px', lineHeight: '1.3' }}>
+                  Rank
+                </p>
+              </div>
+
+              {/* MCQs Attempted */}
+              <div
+                className="rounded-[14px] flex flex-col justify-center"
+                style={{
+                  background: '#EEF2FF',
+                  padding: '16px 12px',
+                }}
+              >
+                <span style={{ fontSize: '22px', lineHeight: '1', marginBottom: '8px' }}>🎯</span>
+                <div className="font-outfit font-bold text-[#17223E] leading-none" style={{ fontSize: '20px', marginBottom: '6px' }}>
+                  {mcqsAttempted ?? '--'}
+                </div>
+                <p className="font-arimo text-[#6B7280]" style={{ fontSize: '11px', lineHeight: '1.3' }}>
+                  MCQs Attempted
+                </p>
+              </div>
+
+              {/* Mains Written */}
+              <div
+                className="rounded-[14px] flex flex-col justify-center"
+                style={{
+                  background: '#EEF2FF',
+                  padding: '16px 12px',
+                }}
+              >
+                <span style={{ fontSize: '22px', lineHeight: '1', marginBottom: '8px' }}>✍️</span>
+                <div className="font-outfit font-bold text-[#17223E] leading-none" style={{ fontSize: '20px', marginBottom: '6px' }}>
+                  {mainsWritten ?? '--'}
+                </div>
+                <p className="font-arimo text-[#6B7280]" style={{ fontSize: '11px', lineHeight: '1.3' }}>
+                  Mains Written
                 </p>
               </div>
             </div>
@@ -417,42 +440,37 @@ const PerformanceStatsWidget = () => {
           </Link>
         </div>
         <div className="grid grid-cols-3 gap-[clamp(8px,0.52vw,12px)]">
-          {achievementBadges.map((badge) => {
-            const isLocked = badge.status === 'locked';
-            const isProgress = badge.status === 'in-progress';
-            const cardBorder = isLocked ? '#E5E7EB' : isProgress ? '#BFDBFE' : '#F3D27A';
-            const cardBackground = isLocked ? '#FFFFFF' : isProgress ? '#F8FBFF' : '#FFF9E8';
-            const iconColor = isLocked ? '#B8C1CC' : isProgress ? '#3B82F6' : badge.accent;
+          {orderedBadges.slice(0, 3).map((badge) => {
+            const isEarned = badge.status === 'earned';
             return (
               <div
                 key={badge.key}
-                className="rounded-[18px] border px-2 py-3 text-center"
+                className="rounded-[0.85rem] border text-center transition-all"
                 style={{
-                  borderColor: cardBorder,
-                  background: cardBackground,
+                  borderColor: isEarned ? '#F0E4B8' : '#EBEDF2',
+                  background: isEarned ? '#FFFDF5' : '#F5F6F8',
+                  padding: 'clamp(10px,0.85vw,14px) clamp(4px,0.5vw,8px)',
                 }}
               >
                 <div
-                  className="mx-auto mb-2 rounded-[14px] flex items-center justify-center overflow-hidden"
+                  className="leading-none"
                   style={{
-                    width: 'clamp(54px,3vw,64px)',
-                    height: 'clamp(54px,3vw,64px)',
-                    background: '#FFFFFF',
-                    border: `1px solid ${isLocked ? '#E5E7EB' : isProgress ? '#DBEAFE' : '#FDE7A8'}`,
-                    color: iconColor,
-                    filter: isLocked ? 'grayscale(1)' : 'none',
+                    fontSize: 'clamp(20px,1.5vw,28px)',
+                    filter: isEarned ? 'none' : 'grayscale(1)',
+                    opacity: isEarned ? 1 : 0.3,
                   }}
                 >
-                  {badge.icon ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={badge.icon} alt={badge.title} style={{ width: '68%', height: 'auto' }} />
-                  ) : (
-                    badge.iconNode
-                  )}
+                  {badge.emoji}
                 </div>
-                <p className="font-arimo font-bold text-[#4B5563] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>{badge.title}</p>
-                <p className="font-arimo text-center mt-1" style={{ fontSize: 'clamp(9px,0.52vw,10px)', lineHeight: '1.2', color: isLocked ? '#B8C1CC' : isProgress ? '#2563EB' : '#D08700' }}>
-                  {badgeTextByStatus[badge.status]}
+                <p
+                  className="font-semibold mt-1"
+                  style={{
+                    fontSize: 'clamp(10px,0.63vw,12px)',
+                    lineHeight: '1.25',
+                    color: isEarned ? '#1A1A1A' : '#B0B5C0',
+                  }}
+                >
+                  {badge.title}
                 </p>
               </div>
             );
@@ -536,15 +554,15 @@ const PerformanceStatsWidget = () => {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/newspaper-folding.svg"
-              alt="Quick Notes"
+              alt="Smart Notes"
               style={{ width: 'clamp(32px,2.08vw,40px)', height: 'auto' }}
             />
-            <p className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Quick Notes</p>
+            <p className="font-arimo font-bold text-[#101828]" style={{ fontSize: 'clamp(12px,0.73vw,14px)', lineHeight: '1.43' }}>Smart Notes</p>
           </Link>
         </div>
       </div>
 
-      {/* Quick Settings */}
+      {/* Quick Tools */}
       <div
         className="rounded-[clamp(16px,1.04vw,20px)]"
         style={{
@@ -557,109 +575,68 @@ const PerformanceStatsWidget = () => {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/icons/dashboard/settings.png"
-            alt="Quick Settings"
+            alt="Quick Tools"
             className="w-[clamp(18px,1.25vw,24px)] h-[clamp(18px,1.25vw,24px)]"
           />
           <h3 className="font-arimo text-[#101828]" style={sectionTitleStyle}>
-            Quick Settings
+            Quick Tools
           </h3>
         </div>
         <div className="grid grid-cols-3 gap-[clamp(12px,0.83vw,16px)]">
-          <Link href="/dashboard/settings" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)]">
+          <Link href="/dashboard/library" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)] group p-2 rounded-lg border border-transparent transition-colors hover:bg-[#F3F5FB] hover:border-[#E5E7EB]">
             <div
-              className="rounded-[clamp(12px,0.73vw,14px)] flex items-center justify-center"
+              className="rounded-full flex items-center justify-center transition-colors"
               style={{
                 width: 'clamp(48px,2.92vw,56px)',
                 height: 'clamp(48px,2.92vw,56px)',
-                background: '#DBEAFE',
+                background: '#F1F5F9',
               }}
             >
-              <svg className="w-[clamp(20px,1.25vw,24px)] h-[clamp(20px,1.25vw,24px)] text-[#3B82F6]" viewBox="0 0 24 24" fill="none">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/>
+              <svg className="w-[clamp(18px,1.15vw,22px)] h-[clamp(18px,1.15vw,22px)] text-[#64748B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v12"/>
+                <path d="M8 11l4 4 4-4"/>
+                <path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/>
               </svg>
             </div>
-            <p className="font-arimo text-[#364153] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>Dark Mode</p>
+            <p className="font-arimo text-[#3F6275] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>Downloads</p>
           </Link>
-          <Link href="/dashboard/settings" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)]">
+          <Link href="/dashboard/profile" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)] group p-2 rounded-lg border border-transparent transition-colors hover:bg-[#F3F5FB] hover:border-[#E5E7EB]">
             <div
-              className="rounded-[clamp(12px,0.73vw,14px)] flex items-center justify-center"
+              className="rounded-full flex items-center justify-center transition-colors"
               style={{
                 width: 'clamp(48px,2.92vw,56px)',
                 height: 'clamp(48px,2.92vw,56px)',
-                background: '#D1FAE5',
+                background: '#F1F5F9',
               }}
             >
-              <svg className="w-[clamp(20px,1.25vw,24px)] h-[clamp(20px,1.25vw,24px)] text-[#10B981]" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+              <svg className="w-[clamp(18px,1.15vw,22px)] h-[clamp(18px,1.15vw,22px)] text-[#64748B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M4 20c0-3.31 3.58-6 8-6s8 2.69 8 6"/>
               </svg>
             </div>
-            <p className="font-arimo text-[#364153] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>Notifications</p>
+            <p className="font-arimo text-[#3F6275] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>Profile</p>
           </Link>
-          <Link href="/dashboard/study-planner" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)]">
+          <Link href="/dashboard/settings" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)] group p-2 rounded-lg border border-transparent transition-colors hover:bg-[#F3F5FB] hover:border-[#E5E7EB]">
             <div
-              className="rounded-[clamp(12px,0.73vw,14px)] flex items-center justify-center"
+              className="rounded-full flex items-center justify-center transition-colors"
               style={{
                 width: 'clamp(48px,2.92vw,56px)',
                 height: 'clamp(48px,2.92vw,56px)',
-                background: '#FED7AA',
+                background: '#F1F5F9',
               }}
             >
-              <svg className="w-[clamp(20px,1.25vw,24px)] h-[clamp(20px,1.25vw,24px)] text-[#F97316]" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-                <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <svg className="w-[clamp(18px,1.15vw,22px)] h-[clamp(18px,1.15vw,22px)] text-[#64748B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
               </svg>
             </div>
-            <p className="font-arimo text-[#364153] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>Study Timer</p>
-          </Link>
-          <Link href="/dashboard/library" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)]">
-            <div
-              className="rounded-[clamp(12px,0.73vw,14px)] flex items-center justify-center"
-              style={{
-                width: 'clamp(48px,2.92vw,56px)',
-                height: 'clamp(48px,2.92vw,56px)',
-                background: '#E9D5FF',
-              }}
-            >
-              <svg className="w-[clamp(20px,1.25vw,24px)] h-[clamp(20px,1.25vw,24px)] text-[#A855F7]" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-              </svg>
-            </div>
-            <p className="font-arimo text-[#364153] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>Downloads</p>
-          </Link>
-          <Link href="/dashboard/profile" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)]">
-            <div
-              className="rounded-[clamp(12px,0.73vw,14px)] flex items-center justify-center"
-              style={{
-                width: 'clamp(48px,2.92vw,56px)',
-                height: 'clamp(48px,2.92vw,56px)',
-                background: '#FECACA',
-              }}
-            >
-              <svg className="w-[clamp(20px,1.25vw,24px)] h-[clamp(20px,1.25vw,24px)] text-[#EF4444]" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-              </svg>
-            </div>
-            <p className="font-arimo text-[#364153] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>Profile</p>
-          </Link>
-          <Link href="/dashboard/settings" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)]">
-            <div
-              className="rounded-[clamp(12px,0.73vw,14px)] flex items-center justify-center"
-              style={{
-                width: 'clamp(48px,2.92vw,56px)',
-                height: 'clamp(48px,2.92vw,56px)',
-                background: '#E9D5FF',
-              }}
-            >
-              <svg className="w-[clamp(20px,1.25vw,24px)] h-[clamp(20px,1.25vw,24px)] text-[#A855F7]" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
-              </svg>
-            </div>
-            <p className="font-arimo text-[#364153] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>All Settings</p>
+            <p className="font-arimo text-[#3F6275] text-center" style={{ fontSize: 'clamp(10px,0.63vw,12px)', lineHeight: '1.25' }}>All Settings</p>
           </Link>
         </div>
       </div>
 
-      {/* Upcoming Test */}
+      {/* Upcoming Test — only shown to users who purchased a test series */}
+      {hasPurchasedTestSeries && (
       <div
         className="rounded-[clamp(16px,1.04vw,20px)] overflow-hidden"
         style={{
@@ -714,6 +691,7 @@ const PerformanceStatsWidget = () => {
         </div>
         <p className="mt-2 text-center text-[11px] text-white/70"></p>
       </div>
+      )}
     </div>
   );
 };

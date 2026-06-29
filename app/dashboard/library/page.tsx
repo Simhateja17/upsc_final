@@ -12,6 +12,53 @@ import { useEntitlements } from '@/contexts/EntitlementsContext';
 const PdfViewer = dynamic(() => import('@/components/PdfViewer'), { ssr: false });
 
 /* ------------------------------------------------------------------ */
+/*  Study-material action button styling (Read / Get PDF / Unlock)     */
+/* ------------------------------------------------------------------ */
+
+// Glossy gold fill: a white shine layer over a vertical amber→gold gradient.
+const GOLD_GRADIENT =
+  'linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0) 100%), linear-gradient(180deg, #FBC02D 0%, #F59E0B 100%)';
+const GOLD_SHADOW = '0 4px 12px rgba(245,158,11,0.40)';
+const GOLD_SHADOW_HOVER = '0 6px 18px rgba(245,158,11,0.50)';
+
+const BookOpenIcon = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+  </svg>
+);
+
+const DownloadIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#42290A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+const SparklesIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFD96B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+    <path d="M5 3v4" />
+    <path d="M19 17v4" />
+    <path d="M3 5h4" />
+    <path d="M17 19h4" />
+  </svg>
+);
+
+// Premium "btn-pro" — dark navy brand gradient with gold text + gold glow.
+const PRO_GRADIENT = 'linear-gradient(135deg, #1A2440 0%, #0B1424 100%)';
+const PRO_SHADOW = 'inset 0 0 0 1px rgba(245,179,1,0.35), 0 8px 24px -10px rgba(245,179,1,0.35)';
+const PRO_SHADOW_HOVER = 'inset 0 0 0 1px rgba(245,179,1,0.5), 0 10px 28px -10px rgba(245,179,1,0.5)';
+
+/* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -30,6 +77,27 @@ function subjectIcon(name: string): string {
     if (lower.includes(key)) return icon;
   }
   return '\uD83D\uDCDA';
+}
+
+// Static per-subject styling for the sidebar (icon-box tint + optional status badge).
+// Badges are hardcoded because the admin cannot manage them yet.
+type SubjectBadge = { label: string; bg: string; color: string };
+const SUBJECT_META: Record<string, { box: string; badge?: SubjectBadge }> = {
+  'history': { box: '#FEF3C7' },
+  'geography': { box: '#E0F2FE' },
+  'polity': { box: '#FFE4E6', badge: { label: 'Hot', bg: '#FEF3C7', color: '#B45309' } },
+  'economy': { box: '#FEF9C3' },
+  'environment': { box: '#D1FAE5' },
+  'science': { box: '#E0E7FF' },
+  'current affairs': { box: '#FAE8FF', badge: { label: 'Live', bg: '#D1FAE5', color: '#047857' } },
+};
+
+function subjectMeta(name: string): { box: string; badge?: SubjectBadge } {
+  const lower = name.toLowerCase();
+  for (const [key, val] of Object.entries(SUBJECT_META)) {
+    if (lower.includes(key)) return val;
+  }
+  return { box: '#F1F5F9' };
 }
 
 // Tag colors sourced from upsc_subject_color_palette.html
@@ -117,15 +185,6 @@ function getTagStyles(subjectName: string, topicText: string, subSubjectText: st
   };
 }
 
-const COMING_SOON_SUBJECTS = [
-  'Advanced Polity Compendium',
-  'Geography Map Workbook',
-  'Economy Data Handbook',
-  'Environment & Ecology Digest',
-  'Science & Technology Updates',
-  'History Timeline Archive',
-];
-
 const features = [
   { emoji: '\uD83C\uDFAF', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff, only what earns marks in Prelims and Mains.' },
   { emoji: '\uD83D\uDD04', bg: '#DBEAFE', title: 'Updated Every Week', desc: 'Budget, new schemes, policy shifts, our notes are refreshed weekly so your prep stays current.' },
@@ -157,7 +216,7 @@ export default function LibraryPage() {
       { value: '50k+', label: 'Downloads', color: '#4ADE80' },
       { value: '4.9', label: 'Ratings', color: '#FFFFFF' },
     ]),
-    sidebar_header_title: 'CHOOSE A SUBJECT',
+    sidebar_header_title: 'Subject Library',
     section_label_notes: 'FOUNDATIONAL NOTES',
     section_label_pyq: 'PREVIOUS YEAR QUESTIONS',
     banner_badge: 'WHY RISE WITH JEET',
@@ -165,24 +224,24 @@ export default function LibraryPage() {
     banner_subtitle: "Every PDF is designed with one obsession, your selection. Here's what makes us different from every other resource out there.",
     banner_stat_number: '15K+',
     banner_stat_label: "Aspirants trust\nRise with Jeet",
-    cta_title: 'Ready to start your IAS journey the right way?',
-    cta_subtitle: 'Access 100+ PDFs, PYQ notes, and study roadmaps, all designed to help you crack UPSC.',
-    cta_button_primary: 'Start Studying',
+    cta_title: 'Unlock Simplified Notes, Smart Mnemonic Tricks',
+    cta_subtitle: 'Get access to 100+ PYQ-backed notes, mnemonics, simplified mindmap PDFs - everything you need to crack UPSC.',
+    cta_button_primary: 'Download PDFs',
     cta_button_secondary: 'Watch on YouTube',
   });
 
   const heroBadge = 'STUDY MATERIAL';
   const heroSubtitle = 'From PYQ-backed notes to concise summaries, everything you need, simplified.';
-  const sidebarHeaderTitle = cms?.sidebar_header_title || 'CHOOSE A SUBJECT';
+  const sidebarHeaderTitle = cms?.sidebar_header_title || 'Subject Library';
   const sectionLabelNotes = cms?.section_label_notes || 'FOUNDATIONAL NOTES';
   const sectionLabelPyq = cms?.section_label_pyq || 'PREVIOUS YEAR QUESTIONS';
   const bannerTitle = cms?.banner_title || 'Not just notes. A system built to crack UPSC.';
   const bannerSubtitle = "Every PDF is designed with one obsession, your selection. Here's what makes us different from every other resource out there.";
   const bannerStatNumber = cms?.banner_stat_number || '15K+';
   const bannerStatLabel = cms?.banner_stat_label || "Aspirants trust\nRise with Jeet";
-  const ctaTitle = cms?.cta_title || 'Ready to start your IAS journey the right way?';
-  const ctaSubtitle = 'Access 100+ PDFs, PYQ notes, and study roadmaps, all designed to help you crack UPSC.';
-  const ctaButtonPrimary = 'Start Studying';
+  const ctaTitle = cms?.cta_title || 'Unlock Simplified Notes, Smart Mnemonic Tricks';
+  const ctaSubtitle = 'Get access to 100+ PYQ-backed notes, mnemonics, simplified mindmap PDFs - everything you need to crack UPSC.';
+  const ctaButtonPrimary = 'Download PDFs';
   const ctaButtonSecondary = cms?.cta_button_secondary || 'Watch on YouTube';
   const features = [
     { emoji: '🎯', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff, only what earns marks in Prelims and Mains.' },
@@ -196,6 +255,8 @@ export default function LibraryPage() {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [activeTab, setActiveTab] = useState('Notes');
   const [examStage, setExamStage] = useState<'prelims' | 'mains' | 'optional'>('prelims');
+  const stageTabRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+  const [stageIndicator, setStageIndicator] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -211,6 +272,8 @@ export default function LibraryPage() {
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(100);
+  // Bumped on prev/next click so the viewer scrolls the requested page into view.
+  const [scrollRequest, setScrollRequest] = useState<{ page: number; n: number }>({ page: 1, n: 0 });
   const selectedApiSubject = apiSubjects.find(s => s.name === selectedSubject) ?? null;
 
   // Fetch subjects on mount
@@ -244,6 +307,19 @@ export default function LibraryPage() {
       .finally(() => setLoadingChapters(false));
   }, [selectedSubject, apiSubjects]);
 
+  // Sliding active-pill indicator for the Prelims / Mains / Optional stage tabs
+  React.useLayoutEffect(() => {
+    const measure = () => {
+      const el = stageTabRefs.current[examStage];
+      if (el) {
+        setStageIndicator({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight });
+      }
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [examStage, isMobile, selectedSubject, apiSubjects]);
+
   // Read: fetch rendered page images and open in protected in-app viewer (no raw PDF URL)
   const handleRead = async (material: any) => {
     const materialId = material._id || material.id;
@@ -262,6 +338,7 @@ export default function LibraryPage() {
         setNumPages(pages.length);
         setPageNumber(1);
         setZoomLevel(100);
+        setScrollRequest({ page: 1, n: 0 });
         setReadModal({ pages, title: data.title || material.title || material.name || 'Note' });
         entitlements.refreshEntitlements();
       } else {
@@ -275,11 +352,6 @@ export default function LibraryPage() {
 
   // Get PDF: always go to upgrade/billing
   const handleGetPdf = () => {
-    window.location.href = '/dashboard/billing/plans?source=library';
-  };
-
-  // Upgrade (locked notes)
-  const handleUpgrade = () => {
     window.location.href = '/dashboard/billing/plans?source=library';
   };
 
@@ -402,44 +474,58 @@ export default function LibraryPage() {
             }}
           >
             {/* Sidebar header */}
-            <div
-              style={{
-                background: 'linear-gradient(135deg, #0E182D 0%, #172240 100%)',
-                borderRadius: '16px 16px 0 0',
-                padding: 'clamp(16px, 1.5vw, 20px)',
-              }}
-            >
+            <div style={{ padding: 'clamp(12px, 1vw, 16px)' }}>
               <div
-                className="font-arimo font-bold"
                 style={{
-                  fontSize: 'clamp(10px, 0.9vw, 12px)',
-                  color: '#BEDBFF',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.3px',
-                  marginBottom: 'clamp(4px, 0.3vw, 6px)',
+                  background: 'linear-gradient(135deg, #0E182D 0%, #172240 100%)',
+                  borderRadius: '16px',
+                  padding: 'clamp(14px, 1.3vw, 18px)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                {sidebarHeaderTitle}
-              </div>
-              <div
-                className="font-arimo font-bold"
-                style={{
-                  fontSize: 'clamp(14px, 1.2vw, 16px)',
-                  color: '#FFFFFF',
-                }}
-              >
-                {apiSubjects.length} Active &middot; {COMING_SOON_SUBJECTS.length} Coming Soon
+                <div
+                  className="pointer-events-none"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: 0.5,
+                    backgroundImage:
+                      'radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px)',
+                    backgroundSize: '14px 14px',
+                  }}
+                />
+                <div style={{ position: 'relative' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFD96B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                      <path d="M8 3v18" /><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H8v18H6.5A2.5 2.5 0 0 1 4 18.5z" />
+                      <path d="m12 3 6 18" /><path d="M11.5 4 18 2.5l4 17-6.5 1.5z" />
+                    </svg>
+                    <div className="font-arimo font-bold" style={{ fontSize: 'clamp(16px, 1.5vw, 18px)', color: '#FFFFFF', letterSpacing: '-0.2px' }}>
+                      {sidebarHeaderTitle}
+                    </div>
+                  </div>
+                  <div className="font-arimo" style={{ fontSize: 'clamp(11px, 1vw, 12px)', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>
+                    100+ PDFs across GS papers
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Active subjects list */}
-            <div style={{ padding: 'clamp(8px, 0.8vw, 12px)' }}>
+            <div style={{ padding: '0 clamp(8px, 0.8vw, 12px) clamp(8px, 0.8vw, 12px)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {apiSubjects.length === 0 ? (
                 <div className="font-arimo" style={{ padding: '12px 16px', color: '#9CA3AF', fontSize: '13px' }}>
                   Loading subjects...
                 </div>
               ) : apiSubjects.map((subject) => {
                 const isSelected = selectedSubject === subject.name;
+                const meta = subjectMeta(subject.name);
+                const pdfCount = subject.pdfCount ?? subject.chapterCount ?? 0;
+                const pyqCount = subject.pyqCount ?? subject.pyqsCount ?? subject.pyqs ?? null;
+                const countLabel = pyqCount !== null && pyqCount !== undefined
+                  ? `${pdfCount} PDFs · ${pyqCount} PYQs`
+                  : `${pdfCount} PDFs`;
                 return (
                   <button
                     key={subject.id}
@@ -448,125 +534,82 @@ export default function LibraryPage() {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: 'clamp(10px, 1.1vw, 16px)',
-                      borderRadius: '14px',
-                      background: isSelected ? 'linear-gradient(135deg, #0F1A30 0%, #172240 100%)' : 'linear-gradient(135deg, #EEF4FF 0%, #F8FAFF 100%)',
-                      color: isSelected ? '#FFFFFF' : '#101828',
-                      border: 'none',
+                      gap: 'clamp(8px, 0.8vw, 12px)',
+                      padding: 'clamp(10px, 1vw, 12px)',
+                      borderRadius: '12px',
+                      background: isSelected ? 'linear-gradient(135deg, #0F1A30 0%, #172240 100%)' : 'transparent',
+                      border: isSelected ? '1px solid rgba(255,217,107,0.55)' : '1px solid transparent',
                       cursor: 'pointer',
-                      marginBottom: 'clamp(4px, 0.3vw, 6px)',
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.18s ease',
                       textAlign: 'left',
-                      position: 'relative',
-                      overflow: 'hidden',
                     }}
+                    onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = '#F8FAFC'; }}
+                    onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                   >
+                    {/* Icon box */}
                     <div
-                      className="pointer-events-none"
                       style={{
-                        position: 'absolute',
-                        inset: 0,
-                        opacity: isSelected ? 0.08 : 0.12,
-                        backgroundImage:
-                          'linear-gradient(rgba(59,130,246,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.35) 1px, transparent 1px)',
-                        backgroundSize: '18px 18px',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '10px',
+                        background: isSelected ? 'rgba(251,191,36,0.15)' : meta.box,
+                        display: 'grid',
+                        placeItems: 'center',
+                        fontSize: '20px',
+                        flexShrink: 0,
                       }}
-                    />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 0.8vw, 12px)', minWidth: 0 }}>
-                      <span style={{ fontSize: 'clamp(18px, 1.6vw, 22px)', flexShrink: 0 }}>{subjectIcon(subject.name)}</span>
-                      <div style={{ minWidth: 0 }}>
-                        <div
-                          className="font-arimo font-bold"
-                          style={{
-                            fontSize: 'clamp(12px, 1.05vw, 14px)',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {subject.name}
-                        </div>
-                        <div
-                          className="font-arimo"
-                          style={{
-                            fontSize: 'clamp(10px, 0.82vw, 12px)',
-                            color: isSelected ? '#94A3B8' : '#6A7282',
-                          }}
-                        >
-                          {subject.pdfCount ?? subject.chapterCount ?? 0} PDFs
-                        </div>
+                    >
+                      {subjectIcon(subject.name)}
+                    </div>
+
+                    {/* Title + counts */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        className="font-arimo font-bold"
+                        style={{
+                          fontSize: 'clamp(12px, 1.05vw, 13.5px)',
+                          color: isSelected ? '#FFFFFF' : '#1E293B',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {subject.name}
+                      </div>
+                      <div
+                        className="font-arimo"
+                        style={{
+                          fontSize: 'clamp(10px, 0.82vw, 11px)',
+                          color: isSelected ? 'rgba(255,255,255,0.6)' : '#64748B',
+                        }}
+                      >
+                        {countLabel}
                       </div>
                     </div>
+
+                    {/* Right: badge or chevron */}
+                    {meta.badge ? (
+                      <span
+                        className="font-arimo font-bold"
+                        style={{
+                          flexShrink: 0,
+                          fontSize: '10px',
+                          padding: '2px 8px',
+                          borderRadius: '999px',
+                          background: meta.badge.bg,
+                          color: meta.badge.color,
+                        }}
+                      >
+                        {meta.badge.label}
+                      </span>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isSelected ? '#FFD96B' : '#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                        <path d="m9 18 6-6-6-6" />
+                      </svg>
+                    )}
                   </button>
                 );
               })}
-            </div>
-
-            {/* Divider */}
-            <div style={{ height: '1px', background: '#E5E7EB', margin: '0 clamp(8px, 0.8vw, 12px)' }} />
-
-            {/* Coming Soon section */}
-            <div style={{ padding: 'clamp(8px, 0.8vw, 12px)' }}>
-              <div
-                className="font-arimo font-bold"
-                style={{
-                  fontSize: 'clamp(10px, 0.82vw, 12px)',
-                  color: '#9CA3AF',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.3px',
-                  padding: 'clamp(8px, 0.8vw, 12px) clamp(10px, 1.1vw, 16px)',
-                  marginBottom: 'clamp(2px, 0.2vw, 4px)',
-                }}
-              >
-                COMING SOON
-              </div>
-              {COMING_SOON_SUBJECTS.map((item) => (
-                <div
-                  key={item}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'clamp(8px, 0.8vw, 12px)',
-                    padding: 'clamp(8px, 0.8vw, 12px) clamp(10px, 1.1vw, 16px)',
-                    color: '#9CA3AF',
-                    background: 'linear-gradient(135deg, #EEF4FF 0%, #F8FAFF 100%)',
-                    borderRadius: '12px',
-                    marginBottom: '6px',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    className="pointer-events-none"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      opacity: 0.08,
-                      backgroundImage:
-                        'linear-gradient(rgba(59,130,246,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.35) 1px, transparent 1px)',
-                      backgroundSize: '18px 18px',
-                    }}
-                  />
-                  <span style={{ fontSize: 'clamp(16px, 1.4vw, 20px)', opacity: 0.5 }}>{'\uD83D\uDCC4'}</span>
-                  <div style={{ minWidth: 0 }}>
-                    <div
-                      className="font-arimo"
-                      style={{
-                        fontSize: 'clamp(12px, 1.05vw, 14px)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {item}
-                    </div>
-                    <div className="font-arimo" style={{ fontSize: 'clamp(9px, 0.75vw, 11px)' }}>
-                      SOON
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 
@@ -604,7 +647,7 @@ export default function LibraryPage() {
             {/* Subject header */}
             <div
               style={{
-                padding: 'clamp(24px, 2.5vw, 32px)',
+                padding: 'clamp(20px, 2vw, 28px) clamp(24px, 2.5vw, 32px) clamp(12px, 1.2vw, 16px)',
                 position: 'relative',
               }}
             >
@@ -632,7 +675,7 @@ export default function LibraryPage() {
                         whiteSpace: 'pre-line',
                       }}
                     >
-                      {selectedApiSubject?.description ?? ''}
+                      {selectedApiSubject?.description || 'Notes, PYQs and Mnemonics - everything you need to master this subject.'}
                     </p>
                   </div>
 
@@ -676,6 +719,7 @@ export default function LibraryPage() {
                     <div
                       className="flex items-center"
                       style={{
+                        position: 'relative',
                         gap: '6px',
                         padding: '6px',
                         background: 'linear-gradient(180deg, #FFFFFF 0%, #F6F8FC 100%)',
@@ -688,14 +732,35 @@ export default function LibraryPage() {
                         scrollbarWidth: 'none',
                       }}
                     >
+                      {/* Sliding indicator */}
+                      {stageIndicator && (
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            position: 'absolute',
+                            left: stageIndicator.left,
+                            top: stageIndicator.top,
+                            width: stageIndicator.width,
+                            height: stageIndicator.height,
+                            background: '#0F172B',
+                            borderRadius: '999px',
+                            boxShadow: '0 8px 20px rgba(15, 23, 43, 0.24)',
+                            transition: 'left 300ms cubic-bezier(.4,0,.2,1), width 300ms cubic-bezier(.4,0,.2,1), top 300ms cubic-bezier(.4,0,.2,1), height 300ms cubic-bezier(.4,0,.2,1)',
+                            zIndex: 0,
+                          }}
+                        />
+                      )}
                       {stages.map(({ key, label, icon }) => {
                         const active = examStage === key;
                         return (
                           <button
                             key={key}
+                            ref={(el) => { stageTabRefs.current[key] = el; }}
                             onClick={() => { setExamStage(key); setActiveTab('Notes'); setSearchQuery(''); setShowSearch(false); }}
-                            className="font-arimo font-bold flex items-center transition-all"
+                            className="font-arimo font-bold flex items-center"
                             style={{
+                              position: 'relative',
+                              zIndex: 1,
                               gap: '6px',
                               padding: isMobile ? '10px 16px' : '12px 22px',
                               flexShrink: 0,
@@ -703,12 +768,11 @@ export default function LibraryPage() {
                               fontSize: '13px',
                               border: 'none',
                               cursor: 'pointer',
-                              background: active ? '#0F172B' : 'transparent',
+                              background: 'transparent',
                               color: active ? '#FFFFFF' : '#17223E',
-                              boxShadow: active ? '0 8px 20px rgba(15, 23, 43, 0.24)' : 'none',
                               lineHeight: '20px',
                               whiteSpace: 'nowrap',
-                              transition: 'background 200ms ease, color 200ms ease, box-shadow 200ms ease',
+                              transition: 'color 200ms ease',
                             }}
                           >
                             <span style={{ fontSize: '14px' }}>{icon}</span>
@@ -971,7 +1035,6 @@ export default function LibraryPage() {
                         gap: '6px',
                       }}
                     >
-                      <span>{'\uD83D\uDCC4'}</span>
                       {(() => {
                         const tagStyles = getTagStyles(selectedSubject, material.topicTitle || '', material.subSubjectTitle || '');
                         return (
@@ -1022,105 +1085,108 @@ export default function LibraryPage() {
                   {/* Action buttons */}
                   <div className="flex items-center" style={{ gap: '10px', flexShrink: 0, flexBasis: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'flex-end' : undefined }}>
                     {material.isLocked ? (
-                      <>
-                        {/* Unlock & Get PDF */}
-                        <button
-                          className="font-arimo font-bold"
-                          onClick={handleUpgrade}
-                          style={{
-                            fontSize: '13px',
-                            background: 'linear-gradient(135deg, #E6A817, #F4A97A)',
-                            color: '#FFFFFF',
-                            borderRadius: '20px',
-                            height: '38px',
-                            padding: '0 18px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            boxShadow: '0 2px 8px rgba(230,168,23,0.3)',
-                            transition: 'all 0.15s ease',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-1px)';
-                            e.currentTarget.style.boxShadow = '0 4px 14px rgba(230,168,23,0.4)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(230,168,23,0.3)';
-                          }}
-                        >
-                          <span style={{ fontSize: '15px', lineHeight: 1 }}>🔒</span>
-                          Unlock & Get PDF
-                        </button>
-                      </>
+                      /* Unlock & Get PDF — glossy gold, dark text + lock icon */
+                      <button
+                        className="font-arimo font-bold"
+                        onClick={handleGetPdf}
+                        style={{
+                          fontSize: '14px',
+                          background: GOLD_GRADIENT,
+                          color: '#42290A',
+                          borderRadius: '12px',
+                          height: '44px',
+                          padding: '0 20px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          boxShadow: GOLD_SHADOW,
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = GOLD_SHADOW_HOVER;
+                          e.currentTarget.style.filter = 'brightness(1.04)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = GOLD_SHADOW;
+                          e.currentTarget.style.filter = 'none';
+                        }}
+                      >
+                        <LockIcon />
+                        Unlock &amp; Get PDF
+                      </button>
                     ) : (
                       <>
-                        {/* Read — opens protected in-app viewer */}
+                        {/* Read — white, bordered, dark text + open-book icon */}
                         <button
                           className="font-arimo font-bold"
                           onClick={() => materialId && handleRead(material)}
                           disabled={loadingRead === materialId}
                           style={{
-                            fontSize: '13px',
-                            background: '#E8F0E9',
-                            color: '#3A7A4F',
-                            borderRadius: '20px',
-                            height: '38px',
-                            padding: '0 18px',
-                            border: '1.5px solid rgba(109,191,138,0.3)',
+                            fontSize: '14px',
+                            background: '#FFFFFF',
+                            color: '#1E293B',
+                            borderRadius: '12px',
+                            height: '44px',
+                            padding: '0 20px',
+                            border: '1px solid #E2E8F0',
                             cursor: 'pointer',
                             whiteSpace: 'nowrap',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px',
+                            gap: '8px',
+                            boxShadow: '0 1px 2px rgba(16,24,40,0.05)',
                             opacity: loadingRead === materialId ? 0.6 : 1,
                             transition: 'all 0.15s ease',
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#D0F0DC';
-                            e.currentTarget.style.borderColor = '#6DBF8A';
+                            e.currentTarget.style.background = '#F8FAFC';
+                            e.currentTarget.style.borderColor = '#CBD5E1';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.background = '#E8F0E9';
-                            e.currentTarget.style.borderColor = 'rgba(109,191,138,0.3)';
+                            e.currentTarget.style.background = '#FFFFFF';
+                            e.currentTarget.style.borderColor = '#E2E8F0';
                           }}
                         >
-                          <span style={{ fontSize: '15px', lineHeight: 1 }}>📖</span>
+                          <BookOpenIcon />
                           {loadingRead === materialId ? 'Opening…' : 'Read'}
                         </button>
-                        {/* Get PDF — always goes to upgrade */}
+                        {/* Get PDF — glossy gold, white text + download icon */}
                         <button
                           className="font-arimo font-bold"
                           onClick={handleGetPdf}
                           style={{
-                            fontSize: '13px',
-                            background: 'linear-gradient(135deg, #E6A817, #F4A97A)',
+                            fontSize: '14px',
+                            background: GOLD_GRADIENT,
                             color: '#FFFFFF',
-                            borderRadius: '20px',
-                            height: '38px',
-                            padding: '0 18px',
+                            borderRadius: '12px',
+                            height: '44px',
+                            padding: '0 20px',
                             border: 'none',
                             cursor: 'pointer',
                             whiteSpace: 'nowrap',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px',
-                            boxShadow: '0 2px 8px rgba(230,168,23,0.3)',
+                            gap: '8px',
+                            boxShadow: GOLD_SHADOW,
                             transition: 'all 0.15s ease',
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.transform = 'translateY(-1px)';
-                            e.currentTarget.style.boxShadow = '0 4px 14px rgba(230,168,23,0.4)';
+                            e.currentTarget.style.boxShadow = GOLD_SHADOW_HOVER;
+                            e.currentTarget.style.filter = 'brightness(1.04)';
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(230,168,23,0.3)';
+                            e.currentTarget.style.boxShadow = GOLD_SHADOW;
+                            e.currentTarget.style.filter = 'none';
                           }}
                         >
-                          <span style={{ fontSize: '15px', lineHeight: 1 }}>⬇</span>
+                          <DownloadIcon />
                           Get PDF
                         </button>
                       </>
@@ -1232,8 +1298,52 @@ export default function LibraryPage() {
         </div>
 
         {/* ============================================================ */}
-        {/*  SECTION 4: FEATURE CARDS (3x2 grid)                          */}
+        {/*  SECTION 4: FEATURE CARDS (heading + 5-up grid)               */}
         {/* ============================================================ */}
+        {/* Section heading — eyebrow + title + link (structure per reference) */}
+        <div
+          className="flex flex-wrap items-end justify-between"
+          style={{ gap: 'clamp(8px, 1vw, 16px)', marginBottom: 'clamp(18px, 1.8vw, 24px)' }}
+        >
+          <div style={{ minWidth: 'min(280px, 100%)' }}>
+            <div
+              className="font-arimo font-bold"
+              style={{
+                fontSize: 'clamp(10px, 0.82vw, 12px)',
+                color: '#D97706',
+                textTransform: 'uppercase',
+                letterSpacing: '0.22em',
+                marginBottom: 'clamp(6px, 0.6vw, 8px)',
+              }}
+            >
+              WHY ASPIRANTS PICK US
+            </div>
+            <h3
+              className="font-arimo font-bold"
+              style={{
+                fontSize: 'clamp(24px, 2.4vw, 32px)',
+                lineHeight: 1.15,
+                color: '#101828',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Built the way <span style={{ fontStyle: 'italic' }}>UPSC</span> tests you
+            </h3>
+          </div>
+          <a
+            href="/our-story"
+            className="font-arimo font-bold inline-flex items-center"
+            style={{ fontSize: 'clamp(12px, 1.05vw, 14px)', color: '#334155', gap: '4px', textDecoration: 'none' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#0F172A'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#334155'; }}
+          >
+            See methodology
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M7 17 17 7" />
+              <path d="M7 7h10v10" />
+            </svg>
+          </a>
+        </div>
         <div
           style={{
             display: 'grid',
@@ -1353,6 +1463,7 @@ export default function LibraryPage() {
               </button>
               <button
                 className="font-arimo font-bold"
+                onClick={() => window.open('https://www.youtube.com/@RisewithJeet', '_blank', 'noopener,noreferrer')}
                 style={{
                   background: '#FFFFFF',
                   color: '#101828',
@@ -1411,6 +1522,16 @@ export default function LibraryPage() {
             0%   { background-position: -500px 0; }
             100% { background-position: 500px 0; }
           }
+          .rwj-shine { position: relative; overflow: hidden; }
+          .rwj-shine::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 1.2s ease;
+          }
+          .rwj-shine:hover::after { transform: translateX(100%); }
         `}</style>
 
         <div
@@ -1471,6 +1592,8 @@ export default function LibraryPage() {
                 >
                   <button
                     onClick={() => setZoomLevel((z) => Math.max(50, z - 10))}
+                    title="Zoom out"
+                    aria-label="Zoom out"
                     style={{
                       width: '24px', height: '24px', borderRadius: '6px',
                       background: '#F3F4F6', border: 'none', color: '#374151',
@@ -1478,13 +1601,15 @@ export default function LibraryPage() {
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >
-                    -
+                    −
                   </button>
                   <span style={{ fontSize: '12px', color: '#374151', minWidth: '40px', textAlign: 'center' }}>
                     {zoomLevel}%
                   </span>
                   <button
                     onClick={() => setZoomLevel((z) => Math.min(200, z + 10))}
+                    title="Zoom in"
+                    aria-label="Zoom in"
                     style={{
                       width: '24px', height: '24px', borderRadius: '6px',
                       background: '#F3F4F6', border: 'none', color: '#374151',
@@ -1507,31 +1632,33 @@ export default function LibraryPage() {
                 onClick={handleGetPdf}
                 className="font-arimo font-bold flex items-center"
                 style={{
-                  fontSize: '13px',
-                  background: 'linear-gradient(135deg, #E6A817, #F4A97A)',
+                  fontSize: '14px',
+                  background: GOLD_GRADIENT,
                   color: '#FFFFFF',
-                  borderRadius: '20px',
-                  height: '34px',
-                  padding: '0 16px',
+                  borderRadius: '12px',
+                  height: '44px',
+                  padding: '0 20px',
                   border: 'none',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 8px rgba(230,168,23,0.3)',
+                  gap: '8px',
+                  boxShadow: GOLD_SHADOW,
                   transition: 'all 0.15s ease',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(230,168,23,0.4)';
+                  e.currentTarget.style.boxShadow = GOLD_SHADOW_HOVER;
+                  e.currentTarget.style.filter = 'brightness(1.04)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(230,168,23,0.3)';
+                  e.currentTarget.style.boxShadow = GOLD_SHADOW;
+                  e.currentTarget.style.filter = 'none';
                 }}
               >
-                <span style={{ fontSize: '15px', lineHeight: 1 }}>⬇</span>
+                <DownloadIcon />
                 Get PDF
               </button>
               <button
@@ -1581,12 +1708,13 @@ export default function LibraryPage() {
               </div>
             )}
 
-            {/* Self-hosted PDF renderer — no pop-out, no download UI */}
-            <div className="absolute inset-0 overflow-auto flex justify-center" style={{ padding: '24px' }}>
+            {/* Self-hosted PDF renderer — continuous scroll, no pop-out, no download UI */}
+            <div className="absolute inset-0">
               <PdfViewer
                 pages={readModal.pages}
-                pageNumber={pageNumber}
                 zoomLevel={zoomLevel}
+                scrollRequest={scrollRequest}
+                onPageChange={(p) => setPageNumber(p)}
                 onLoadSuccess={(numPages) => { setNumPages(numPages); setDocLoaded(true); }}
                 onLoadError={() => setDocError(true)}
               />
@@ -1611,8 +1739,9 @@ export default function LibraryPage() {
                 }}
               >
                 <button
-                  onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+                  onClick={() => setScrollRequest((r) => ({ page: Math.max(1, pageNumber - 1), n: r.n + 1 }))}
                   disabled={pageNumber <= 1}
+                  title="Previous page"
                   style={{
                     width: '24px', height: '24px', borderRadius: '6px',
                     background: '#F3F4F6', border: 'none', color: '#374151',
@@ -1627,8 +1756,9 @@ export default function LibraryPage() {
                   Page {pageNumber} of {numPages}
                 </span>
                 <button
-                  onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
+                  onClick={() => setScrollRequest((r) => ({ page: Math.min(numPages, pageNumber + 1), n: r.n + 1 }))}
                   disabled={pageNumber >= numPages}
+                  title="Next page"
                   style={{
                     width: '24px', height: '24px', borderRadius: '6px',
                     background: '#F3F4F6', border: 'none', color: '#374151',
@@ -1663,28 +1793,43 @@ export default function LibraryPage() {
 
           {/* ── Footer ── */}
           <div
-            className="flex items-center justify-between flex-shrink-0"
+            className="flex items-center justify-end flex-shrink-0"
             style={{
-              background: '#FAFAFA',
+              background: 'linear-gradient(90deg, rgba(255,251,235,0.6), #FFFFFF)',
               borderTop: '1px solid #E5E7EB',
-              padding: '9px 18px',
+              padding: '10px 18px',
             }}
           >
-            <p className="font-arimo" style={{ fontSize: '11px', color: '#9CA3AF' }}>
-              🛡️ Protected · watermarked · right-click & selection disabled
-            </p>
             <button
               onClick={handleGetPdf}
-              className="font-arimo font-bold active:translate-y-[1px] flex items-center gap-2"
+              className="font-arimo font-bold rwj-shine flex items-center"
               style={{
-                fontSize: '12px', background: '#17223E', color: '#FFD272',
-                borderRadius: '9px', height: '34px', padding: '0 16px',
-                border: 'none', cursor: 'pointer',
-                boxShadow: '0 3px 0 0 #0A1220',
-                transition: 'transform 0.08s ease',
+                fontSize: '13px',
+                background: PRO_GRADIENT,
+                color: '#FFD96B',
+                borderRadius: '12px',
+                height: '40px',
+                padding: '0 18px',
+                border: 'none',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                gap: '8px',
+                boxShadow: PRO_SHADOW,
+                transition: 'all 0.15s ease',
               }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = PRO_SHADOW_HOVER;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = PRO_SHADOW;
+              }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(1px)'; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
             >
-              ✦ Upgrade to Download
+              <SparklesIcon />
+              Upgrade to Download
             </button>
           </div>
         </div>

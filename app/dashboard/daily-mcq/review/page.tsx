@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { dailyMcqService, flashcardService, bookmarkService } from '@/lib/services';
+import { dailyMcqService, flashcardService, bookmarkService, spacedRepService } from '@/lib/services';
+import { getSubjectBadgeStyle } from '@/lib/subjectPalette';
 
 interface ReviewQuestion {
   id: string;
@@ -48,10 +49,34 @@ export default function QuestionReviewPage() {
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [bookmarked, setBookmarked] = useState<Record<string, boolean>>({});
+  const [needReview, setNeedReview] = useState<Record<string, boolean>>({});
+  // Spaced-repetition item id per question, so "Need to Review" can also remove it.
+  const [needReviewItemId, setNeedReviewItemId] = useState<Record<string, string>>({});
 
   useEffect(() => {
     dailyMcqService.getReview()
-      .then(res => setQuestions(res.data.questions || []))
+      .then(res => {
+        const qs: ReviewQuestion[] = res.data.questions || [];
+        setQuestions(qs);
+        // Hydrate "Need to Review" from Spaced Repetition: a question is "marked"
+        // when it already exists in the user's spaced-repetition queue.
+        if (qs.length > 0) {
+          spacedRepService.getItems()
+            .then(r => {
+              const items: Array<{ id: string; questionText: string }> = r.data?.items || r.data || [];
+              const byText = new Map(items.map(it => [it.questionText, it.id]));
+              const marked: Record<string, boolean> = {};
+              const ids: Record<string, string> = {};
+              qs.forEach(q => {
+                const itemId = byText.get(q.questionText);
+                if (itemId) { marked[q.id] = true; ids[q.id] = itemId; }
+              });
+              setNeedReview(marked);
+              setNeedReviewItemId(ids);
+            })
+            .catch(() => {});
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -111,9 +136,45 @@ export default function QuestionReviewPage() {
     setActionLoading(null);
   };
 
+  // "Need to Review" adds the question to the user's Spaced Repetition queue
+  // (and removes it again when toggled off).
+  const handleToggleNeedReview = async (q: ReviewQuestion) => {
+    const wasMarked = !!needReview[q.id];
+    setActionLoading(`review-${q.id}`);
+    setNeedReview(prev => ({ ...prev, [q.id]: !wasMarked }));
+    try {
+      if (wasMarked) {
+        const itemId = needReviewItemId[q.id];
+        if (itemId) await spacedRepService.deleteItem(itemId);
+        setNeedReviewItemId(prev => {
+          const next = { ...prev };
+          delete next[q.id];
+          return next;
+        });
+        showToast('Removed from Spaced Repetition');
+      } else {
+        const correctOpt = q.options.find((opt, idx) => getOptionKey(opt, idx) === q.correctOption);
+        const res = await spacedRepService.addItem({
+          questionText: q.questionText,
+          answer: correctOpt?.text || q.correctOption,
+          subject: q.category,
+          source: 'Daily MCQ Review',
+          sourceType: 'daily-mcq',
+        });
+        const newId = res.data?.id;
+        if (newId) setNeedReviewItemId(prev => ({ ...prev, [q.id]: newId }));
+        showToast('Added to Spaced Repetition!');
+      }
+    } catch {
+      setNeedReview(prev => ({ ...prev, [q.id]: wasMarked }));
+      showToast(wasMarked ? 'Failed to remove from Spaced Repetition' : 'Failed to add to Spaced Repetition', 'error');
+    }
+    setActionLoading(null);
+  };
+
   if (loading) {
     return (
-      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#E8EDF5' }}>
+      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}>
         <main className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </main>
@@ -140,7 +201,12 @@ export default function QuestionReviewPage() {
   ];
 
   return (
-    <div className="flex flex-col overflow-y-auto relative" style={{ minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#E8EDF5' }}>
+    <div className="flex flex-col overflow-y-auto relative" style={{ minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))', background: '#FAFBFE' }}>
+      <style>{`
+        .review-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1px solid #E5E7EB;background:#FFFFFF;font-size:clamp(12px,0.73vw,13px);font-weight:700;cursor:pointer;transition:all .15s ease;white-space:nowrap;}
+        .review-pill:hover{border-color:#CBD5E1;background:#F8FAFC;transform:translateY(-1px);box-shadow:0 4px 12px -8px rgba(15,23,42,.25);}
+        .review-pill:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none;}
+      `}</style>
       {/* Toast Notification */}
       {toast.show && (
         <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all"
@@ -166,11 +232,11 @@ export default function QuestionReviewPage() {
                 </button>
               </Link>
               <div className="min-w-0">
-                <h1 className="font-arimo font-bold text-[#101828] flex items-center gap-2"
-                  style={{ fontSize: 'clamp(16px,1.04vw,20px)' }}>
+                <h1 className="font-arimo font-extrabold tracking-tight text-[#17223E] flex items-center gap-2"
+                  style={{ fontSize: 'clamp(17px,1.1vw,21px)' }}>
                   <span>✅</span> Answer Review
                 </h1>
-                <p className="font-arimo text-[#6B7280]" style={{ fontSize: 'clamp(12px,0.68vw,14px)' }}>
+                <p className="font-arimo font-medium text-[#475467]" style={{ fontSize: 'clamp(12px,0.68vw,14px)' }}>
                   Detailed explanation for each question
                 </p>
               </div>
@@ -230,10 +296,15 @@ export default function QuestionReviewPage() {
                         {question.questionText}
                       </span>
                       <span className="mt-1.5 flex flex-wrap items-center gap-2">
-                        <span className="rounded-full px-2 py-0.5 font-arimo text-xs"
-                          style={{ background: '#EFF6FF', color: '#17223E' }}>
-                          {question.category || 'Daily MCQ'}
-                        </span>
+                        {(() => {
+                          const subjectStyle = getSubjectBadgeStyle(question.category);
+                          return (
+                            <span className="rounded-full px-2 py-0.5 font-arimo text-xs font-bold"
+                              style={{ background: subjectStyle.bg, color: subjectStyle.color }}>
+                              {question.category || 'Daily MCQ'}
+                            </span>
+                          );
+                        })()}
                         {question.difficulty && (
                           <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 font-arimo text-xs text-[#6B7280]">
                             {question.difficulty}
@@ -305,26 +376,48 @@ export default function QuestionReviewPage() {
                         </p>
                       </div>
 
-                      {!question.isCorrect && (
-                        <div className="pt-1 border-t border-[#E5E7EB]">
-                          <div className="flex items-center gap-4 flex-wrap pt-3">
-                            <button
-                              onClick={() => handleAddToFlashcards(question)}
-                              disabled={actionLoading === `flashcard-${question.id}`}
-                              className="font-arimo font-bold hover:underline transition-colors disabled:opacity-50"
-                              style={{ fontSize: 'clamp(12px,0.73vw,13px)', color: '#7C3AED' }}>
-                              {actionLoading === `flashcard-${question.id}` ? 'Adding...' : 'Add to Flashcards'}
-                            </button>
-                            <button
-                              onClick={() => handleToggleBookmark(question)}
-                              disabled={actionLoading === `bookmark-${question.id}`}
-                              className="font-arimo font-bold hover:underline transition-colors disabled:opacity-50"
-                              style={{ fontSize: 'clamp(12px,0.73vw,13px)', color: '#2563EB' }}>
-                              {actionLoading === `bookmark-${question.id}` ? 'Saving...' : bookmarked[question.id] ? 'Bookmarked' : 'Bookmark'}
-                            </button>
-                          </div>
+                      <div className="pt-1 border-t border-[#E5E7EB]">
+                        <div className="flex items-center gap-3 flex-wrap pt-3">
+                          {/* Add to Flashcard */}
+                          <button
+                            onClick={() => handleAddToFlashcards(question)}
+                            disabled={actionLoading === `flashcard-${question.id}`}
+                            className="review-pill font-arimo"
+                            style={{ color: '#475467' }}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+                            </svg>
+                            {actionLoading === `flashcard-${question.id}` ? 'Adding…' : 'Add to Flashcard'}
+                          </button>
+                          {/* Need to Review */}
+                          <button
+                            onClick={() => handleToggleNeedReview(question)}
+                            disabled={actionLoading === `review-${question.id}`}
+                            className="review-pill font-arimo"
+                            style={needReview[question.id]
+                              ? { color: '#B45309', background: '#FFFBEB', borderColor: '#FCD34D' }
+                              : { color: '#475467' }}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M3 2v6h6" />
+                              <path d="M3.51 15a9 9 0 1 0 .49-9.36L3 8" />
+                            </svg>
+                            {actionLoading === `review-${question.id}` ? 'Saving…' : needReview[question.id] ? 'Marked for Review' : 'Need to Review'}
+                          </button>
+                          {/* Bookmark */}
+                          <button
+                            onClick={() => handleToggleBookmark(question)}
+                            disabled={actionLoading === `bookmark-${question.id}`}
+                            className="review-pill font-arimo"
+                            style={bookmarked[question.id]
+                              ? { color: '#1D4ED8', background: '#EFF6FF', borderColor: '#BFDBFE' }
+                              : { color: '#475467' }}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill={bookmarked[question.id] ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                            </svg>
+                            {actionLoading === `bookmark-${question.id}` ? 'Saving…' : bookmarked[question.id] ? 'Bookmarked' : 'Bookmark'}
+                          </button>
                         </div>
-                      )}
+                      </div>
                     </div>
                   )}
                 </div>
