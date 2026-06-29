@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { dailyMcqService, bookmarkService, flagService } from '@/lib/services';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { getDistinctChipStyles } from '@/lib/subjectPalette';
+import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
 
 interface Question {
   id: string;
@@ -460,9 +461,33 @@ export default function DailyMcqChallengePage() {
 
               {/* Content: question (fills) + options (2-col grid) */}
               <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: 'column', padding: '12px 22px 14px', overflow: isMobile ? 'visible' : 'hidden' }}>
-                <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', whiteSpace: 'pre-line', fontSize: 14, lineHeight: '23px', color: '#1A1D23', paddingRight: 6 }}>
+                <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
+                  <button
+                    onClick={() => handleToggleFlag(q)}
+                    title={flagged[q.id] ? 'Unflag question' : 'Flag question as incorrect'}
+                    style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid #D1D5DB', background: flagged[q.id] ? '#FEF3C7' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill={flagged[q.id] ? '#D97706' : 'none'} stroke={flagged[q.id] ? '#D97706' : '#6B7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                      <line x1="4" y1="22" x2="4" y2="15" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleToggleBookmark(q)}
+                    title={bookmarked[q.id] ? 'Remove bookmark' : 'Bookmark question'}
+                    style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid #D1D5DB', background: bookmarked[q.id] ? '#EFF6FF' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarked[q.id] ? '#1E3A8A' : 'none'} stroke={bookmarked[q.id] ? '#1E3A8A' : '#6B7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </button>
+                </div>
+                <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', fontSize: 14, lineHeight: '23px', color: '#1A1D23', paddingRight: 6 }}>
                   <span style={{ fontWeight: 700 }}>Question {currentQuestion + 1}: </span>
-                  {normalizeQuestionText(q.questionText)}
+                  <StructuredQuestionRenderer
+                    questionText={q.questionText}
+                    textStyle={{ fontSize: 14, lineHeight: '23px', color: '#1A1D23' }}
+                  />
                 </div>
                 <div style={{ flexShrink: 0, marginTop: 12, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
                   {q.options.map((option) => {

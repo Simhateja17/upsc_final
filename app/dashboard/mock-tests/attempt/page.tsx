@@ -7,6 +7,7 @@ import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import ExamInstructions from '@/components/ExamInstructions';
+import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
 import FilePreviewThumb from '@/components/FilePreviewThumb';
 
 interface Question {
@@ -1705,9 +1706,12 @@ function MockTestAttemptInner() {
 
             {/* Question text */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14, flexShrink: 0 }}>
-              <div className="font-arimo font-bold text-[#101828]" style={{ whiteSpace: 'pre-line', flex: 1, fontSize: 13, lineHeight: '20px' }}>
+              <div className="font-arimo font-bold text-[#101828]" style={{ flex: 1, fontSize: 13, lineHeight: '20px' }}>
                 <span style={{ fontWeight: 700 }}>Question {currentIdx + 1} of {totalQuestions}:</span>{' '}
-                <span>{normalizeQuestionText(currentQ.text)}</span>
+                <StructuredQuestionRenderer
+                  questionText={currentQ.text}
+                  textStyle={{ fontSize: 13, lineHeight: '20px', color: '#101828' }}
+                />
               </div>
               {/* Bookmark button */}
               <button
