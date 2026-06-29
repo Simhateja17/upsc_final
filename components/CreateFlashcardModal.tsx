@@ -63,11 +63,18 @@ type Props = {
   onCreated?: () => void;
 };
 
+const DIFFICULTY_OPTIONS = [
+  { value: 'easy', label: 'Easy', emoji: '😊' },
+  { value: 'medium', label: 'Medium', emoji: '🤔' },
+  { value: 'hard', label: 'Hard', emoji: '😣' },
+] as const;
+
 export default function CreateFlashcardModal({ open, onClose, initialSubject, initialDeck, onCreated }: Props) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [subject, setSubject] = useState(initialSubject || '');
   const [deck, setDeck] = useState(initialDeck || '');
+  const [difficulty, setDifficulty] = useState<string>('medium');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -75,6 +82,7 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
     if (open) {
       setSubject(initialSubject ?? '');
       setDeck(initialDeck ?? '');
+      setDifficulty('medium');
       setError('');
     }
   }, [open, initialSubject, initialDeck]);
@@ -104,6 +112,7 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
         subject: subjectName,
         question: question.trim(),
         answer: answer.trim(),
+        difficulty,
       });
       if (res.status === 'success') {
         onCreated?.();
@@ -124,14 +133,24 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
     if (ok) onClose();
   };
 
-  const handleSaveAndAddAnother = async () => {
-    const ok = await doSave();
-    if (ok) {
-      setQuestion('');
-      setAnswer('');
-      setDeck('');
-      setSubject(initialSubject ?? '');
-    }
+  const labelStyle: React.CSSProperties = {
+    fontFamily: 'Inter',
+    fontWeight: 600,
+    fontSize: 12,
+    lineHeight: '16px',
+    color: '#4A5565',
+  };
+
+  const fieldStyle: React.CSSProperties = {
+    fontFamily: 'Inter',
+    fontWeight: 400,
+    fontSize: 14,
+    lineHeight: '20px',
+    letterSpacing: 0,
+    background: '#FFFFFF',
+    border: '0.8px solid #E5E7EB',
+    boxShadow: inputShadow,
+    color: '#101828',
   };
 
   return (
@@ -141,213 +160,204 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
       onClick={onClose}
     >
       <div
-        className="rounded-[16px] bg-white w-full max-w-[753px] overflow-hidden shadow-xl"
-        style={{ padding: '32px' }}
+        className="rounded-[16px] bg-white w-full max-w-[513px] overflow-hidden shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h2
-            style={{
-              fontFamily: 'Inter',
-              fontWeight: 700,
-              fontSize: 24,
-              lineHeight: '32px',
-              letterSpacing: 0,
-              color: '#101828',
-            }}
-          >
-            🗂️ Create Flashcard
-          </h2>
+        <div
+          className="flex items-center justify-between"
+          style={{ background: '#0B1220', padding: '20px 24px' }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="flex items-center justify-center rounded-[10px]"
+              style={{
+                width: 40,
+                height: 40,
+                background: 'linear-gradient(135deg, #F3A301 0%, #FD7201 100%)',
+                fontSize: 20,
+              }}
+            >
+              📝
+            </div>
+            <div>
+              <h2
+                style={{
+                  fontFamily: 'Georgia, serif',
+                  fontWeight: 700,
+                  fontSize: 20,
+                  lineHeight: '26px',
+                  color: '#FFFFFF',
+                }}
+              >
+                Create Flashcard
+              </h2>
+              <p
+                style={{
+                  fontFamily: 'Inter',
+                  fontWeight: 400,
+                  fontSize: 13,
+                  lineHeight: '18px',
+                  color: '#98A2B3',
+                }}
+              >
+                Question on the front, answer on the back.
+              </p>
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-6 h-6 rounded-lg flex items-center justify-center text-xl font-bold"
-            style={{ background: '#F3F4F6', color: '#364153' }}
+            className="flex items-center justify-center rounded-full text-lg"
+            style={{ width: 32, height: 32, background: '#1F2A3C', color: '#98A2B3' }}
             aria-label="Close"
           >
             ×
           </button>
         </div>
 
-        {/* Question / Front */}
-        <div className="space-y-3 mb-6">
-          <label
-            className="block uppercase tracking-[0.3px]"
-            style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#4A5565' }}
-          >
-            Question / Front
-          </label>
-          <input
-            type="text"
-            placeholder="e.g. What is the Sarkaria Commission? What were its key recommendations?"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            className="w-full rounded-[10px] px-4 py-3 border outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent placeholder:text-[#4A5565]"
-            style={{
-              fontFamily: 'Inter',
-              fontWeight: 400,
-              fontSize: 14,
-              lineHeight: '20px',
-              letterSpacing: 0,
-              background: '#FFFFFF',
-              border: '0.8px solid #E5E7EB',
-              boxShadow: inputShadow,
-              color: '#101828',
-            }}
-          />
-        </div>
-
-        {/* Answer / Back */}
-        <div className="space-y-3 mb-6">
-          <label
-            className="block uppercase tracking-[0.3px]"
-            style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#4A5565' }}
-          >
-            Answer / Back
-          </label>
-          <textarea
-            placeholder="Write the answer, key points, or mnemonics..."
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            rows={4}
-            className="w-full rounded-[10px] px-4 py-3 border outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent resize-y placeholder:text-[#0A0A0A]/50"
-            style={{
-              fontFamily: 'Inter',
-              fontWeight: 400,
-              fontSize: 14,
-              lineHeight: '20px',
-              letterSpacing: 0,
-              background: '#FFFFFF',
-              border: '0.8px solid #E5E7EB',
-              boxShadow: inputShadow,
-              color: '#101828',
-            }}
-          />
-        </div>
-
-        {/* Subject & Deck side by side */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-          <div className="space-y-3">
-            <label
-              className="block uppercase tracking-[0.3px]"
-              style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#4A5565' }}
-            >
-              Subject
+        <div style={{ padding: '24px' }}>
+          {/* Question / Front */}
+          <div className="space-y-2 mb-5">
+            <label className="block uppercase tracking-[0.3px]" style={labelStyle}>
+              Question / Front
             </label>
-            <select
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="w-full rounded-[10px] px-4 py-2.5 border outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent"
+            <textarea
+              placeholder="e.g. What is the significance of the 42nd Amendment Act (1976)?"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              rows={3}
+              className="w-full rounded-[10px] px-4 py-3 border outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent resize-y placeholder:text-[#9CA3AF]"
+              style={fieldStyle}
+            />
+          </div>
+
+          {/* Answer / Back */}
+          <div className="space-y-2 mb-5">
+            <label className="block uppercase tracking-[0.3px]" style={labelStyle}>
+              Answer / Back
+            </label>
+            <textarea
+              placeholder="Write the answer, key points, or mnemonics..."
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              rows={4}
+              className="w-full rounded-[10px] px-4 py-3 border outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent resize-y placeholder:text-[#9CA3AF]"
+              style={fieldStyle}
+            />
+          </div>
+
+          {/* Subject & Topic/Deck side by side */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+            <div className="space-y-2">
+              <label className="block uppercase tracking-[0.3px]" style={labelStyle}>
+                Subject
+              </label>
+              <select
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="w-full rounded-[10px] px-4 py-2.5 border outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent"
+                style={fieldStyle}
+              >
+                <option value="">Select subject</option>
+                {FLASHCARD_SUBJECT_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="block uppercase tracking-[0.3px]" style={labelStyle}>
+                Topic / Deck
+              </label>
+              <select
+                value={deck}
+                onChange={(e) => setDeck(e.target.value)}
+                className="w-full rounded-[10px] px-4 py-2.5 border outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent"
+                style={fieldStyle}
+              >
+                <option value="">Select topic</option>
+                {FLASHCARD_SUBJECT_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Difficulty */}
+          <div className="space-y-2 mb-6">
+            <label className="block uppercase tracking-[0.3px]" style={labelStyle}>
+              Difficulty
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {DIFFICULTY_OPTIONS.map((opt) => {
+                const selected = difficulty === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setDifficulty(opt.value)}
+                    className="flex items-center justify-center gap-2 rounded-[10px] px-4 py-2.5"
+                    style={{
+                      fontFamily: 'Inter',
+                      fontWeight: 600,
+                      fontSize: 14,
+                      lineHeight: '20px',
+                      color: selected ? '#FFFFFF' : '#364153',
+                      background: selected
+                        ? 'linear-gradient(90deg, #F3A301 0%, #FD7201 100%)'
+                        : '#FFFFFF',
+                      border: selected ? 'none' : '0.8px solid #E5E7EB',
+                      boxShadow: selected ? 'none' : inputShadow,
+                    }}
+                  >
+                    <span>{opt.emoji}</span>
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+          )}
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="rounded-[10px] px-5 py-2.5 disabled:opacity-50"
               style={{
                 fontFamily: 'Inter',
-                fontWeight: 400,
+                fontWeight: 500,
                 fontSize: 14,
                 lineHeight: '20px',
-                background: '#FFFFFF',
-                border: '0.8px solid #E5E7EB',
-                boxShadow: inputShadow,
-                color: '#101828',
+                color: '#364153',
+                background: 'transparent',
               }}
             >
-              <option value="">Select subject</option>
-              {FLASHCARD_SUBJECT_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-3">
-            <label
-              className="block uppercase tracking-[0.3px]"
-              style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#4A5565' }}
-            >
-              Topic
-            </label>
-            <select
-              value={deck}
-              onChange={(e) => setDeck(e.target.value)}
-              className="w-full rounded-[10px] px-4 py-2.5 border outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent"
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveCard}
+              disabled={saving}
+              className="rounded-[10px] px-5 py-2.5 disabled:opacity-50"
               style={{
                 fontFamily: 'Inter',
-                fontWeight: 400,
+                fontWeight: 600,
                 fontSize: 14,
                 lineHeight: '20px',
-                background: '#FFFFFF',
-                border: '0.8px solid #E5E7EB',
-                boxShadow: inputShadow,
-                color: '#101828',
+                color: '#FFFFFF',
+                background: '#101828',
               }}
             >
-              <option value="">Select topic</option>
-              {FLASHCARD_SUBJECT_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
+              {saving ? 'Saving...' : 'Save Card'}
+            </button>
           </div>
-        </div>
-
-        {/* Error */}
-        {error && (
-          <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
-        )}
-
-        {/* Actions */}
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="rounded-[10px] px-5 py-2.5 border disabled:opacity-50"
-            style={{
-              fontFamily: 'Inter',
-              fontWeight: 500,
-              fontSize: 14,
-              lineHeight: '20px',
-              letterSpacing: 0,
-              textAlign: 'center',
-              color: '#364153',
-              background: '#FFFFFF',
-              border: '0.8px solid #D1D5DC',
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSaveCard}
-            disabled={saving}
-            className="rounded-[10px] px-5 py-2.5 disabled:opacity-50"
-            style={{
-              fontFamily: 'Inter',
-              fontWeight: 600,
-              fontSize: 14,
-              lineHeight: '20px',
-              letterSpacing: 0,
-              textAlign: 'center',
-              color: '#FFFFFF',
-              background: '#101828',
-            }}
-          >
-            {saving ? 'Saving...' : 'Save Card'}
-          </button>
-          <button
-            type="button"
-            onClick={handleSaveAndAddAnother}
-            disabled={saving}
-            className="rounded-[10px] px-5 py-2.5 disabled:opacity-50"
-            style={{
-              fontFamily: 'Inter',
-              fontWeight: 600,
-              fontSize: 14,
-              lineHeight: '20px',
-              letterSpacing: 0,
-              textAlign: 'center',
-              color: '#101828',
-              background: 'linear-gradient(90deg, #F3A301 0%, #FD7201 100%)',
-            }}
-          >
-            {saving ? 'Saving...' : 'Save & Add Another'}
-          </button>
         </div>
       </div>
     </div>
