@@ -196,7 +196,7 @@ export default function FlashcardReviewPage() {
               Subject
               <span style={{ fontSize: 10, marginLeft: 2 }}>×</span>
             </Link>
-            <span style={{ color: '#E5E7EB', fontSize: 10 }}>›</span>
+            <span style={{ color: '#6B7280', fontSize: 10 }}>›</span>
             <Link
               href={`/dashboard/flashcards/${subjectId}`}
               className="flex items-center gap-1"
@@ -205,7 +205,7 @@ export default function FlashcardReviewPage() {
               Topic
               <span style={{ fontSize: 10, marginLeft: 2 }}>×</span>
             </Link>
-            <span style={{ color: '#E5E7EB', fontSize: 10 }}>›</span>
+            <span style={{ color: '#6B7280', fontSize: 10 }}>›</span>
             <span
               className="flex items-center gap-1.5"
               style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 13, color: '#101828' }}
@@ -394,7 +394,7 @@ export default function FlashcardReviewPage() {
               className="rounded-[10px] px-5 py-2.5"
               style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#FFFFFF', background: '#101828', minWidth: 100 }}
             >
-              Next ›
+              {isLast ? 'Done' : 'Next ›'}
             </button>
           </div>
 
@@ -402,60 +402,95 @@ export default function FlashcardReviewPage() {
       </div>
 
       {/* ── Session complete modal ── */}
-      {showSessionComplete && (
+      {showSessionComplete && (() => {
+        const mastery = totalCards > 0 ? Math.round((masteredCount / totalCards) * 100) : 0;
+        return (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.5)' }}
           onClick={() => setShowSessionComplete(false)}
         >
           <div
-            className="rounded-[24px] bg-white w-full max-w-md overflow-hidden shadow-xl text-center"
-            style={{ padding: '40px 32px' }}
+            className="rounded-[24px] bg-white w-full max-w-[400px] overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-4xl mb-4" aria-hidden>🎉</div>
-            <h2 className="mb-2" style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 24, color: '#101828' }}>
-              Session Complete!
-            </h2>
-            <p className="mb-8 mx-auto max-w-[320px]" style={{ fontFamily: 'Inter', fontSize: 14, color: '#6A7282' }}>
-              Great work! Cards updated in your spaced repetition schedule.
-            </p>
-            <div className="flex justify-center gap-8 mb-8">
-              <div>
-                <p style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 28, color: '#7C3AED' }}>{totalCards}</p>
-                <p className="uppercase tracking-wide" style={{ fontFamily: 'Inter', fontSize: 10, color: '#6A7282' }}>Reviewed</p>
-              </div>
-              <div>
-                <p style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 28, color: '#16A34A' }}>100%</p>
-                <p className="uppercase tracking-wide" style={{ fontFamily: 'Inter', fontSize: 10, color: '#6A7282' }}>Completed</p>
-              </div>
-              <div>
-                <p style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 28, color: '#F59E0B' }}>
-                  {totalCards > 0 ? Math.round((masteredCount / totalCards) * 100) : 0}%
-                </p>
-                <p className="uppercase tracking-wide" style={{ fontFamily: 'Inter', fontSize: 10, color: '#6A7282' }}>Mastery</p>
-              </div>
+            {/* Dark header */}
+            <div className="text-center" style={{ background: '#0F1629', padding: '32px 32px 28px' }}>
+              <div className="text-4xl mb-3" aria-hidden>📚</div>
+              <h2 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 24, lineHeight: '30px', color: '#FFFFFF' }}>
+                Session Complete!
+              </h2>
+              <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#98A2B3', marginTop: 6 }}>
+                {pretty(topicId)}
+              </p>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => { setShowSessionComplete(false); setCurrentIndex(0); setRevealed(false); }}
-                className="rounded-[10px] px-5 py-2.5 border"
-                style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, color: '#364153', background: '#FFFFFF', border: '0.8px solid #D1D5DC' }}
-              >
-                Review Again
-              </button>
-              <Link
-                href="/dashboard/flashcards"
-                className="inline-flex items-center gap-2 rounded-[10px] px-5 py-2.5"
-                style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#FFFFFF', background: '#101828' }}
-              >
-                🏠 Back to Decks
-              </Link>
+
+            {/* Body */}
+            <div style={{ padding: '28px 32px 32px' }}>
+              {/* Mastery ring */}
+              <div className="flex justify-center mb-7">
+                <div
+                  className="flex items-center justify-center rounded-full"
+                  style={{
+                    width: 140,
+                    height: 140,
+                    background: `conic-gradient(#F59E0B ${mastery * 3.6}deg, #E5E7EB 0deg)`,
+                  }}
+                >
+                  <div
+                    className="flex flex-col items-center justify-center rounded-full bg-white"
+                    style={{ width: 112, height: 112 }}
+                  >
+                    <span style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 30, color: '#101828' }}>
+                      {mastery}%
+                    </span>
+                    <span className="uppercase tracking-wide" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
+                      Mastery
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stat boxes */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="rounded-[12px] text-center" style={{ background: '#EFF4FF', border: '1px solid #DBE6FF', padding: '16px 12px' }}>
+                  <p style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, color: '#2563EB' }}>100%</p>
+                  <p className="uppercase tracking-wide" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 11, color: '#2563EB', marginTop: 2 }}>Reviewed</p>
+                </div>
+                <div className="rounded-[12px] text-center" style={{ background: '#E9F9EF', border: '1px solid #CDEFD9', padding: '16px 12px' }}>
+                  <p style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, color: '#16A34A' }}>{mastery}%</p>
+                  <p className="uppercase tracking-wide" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 11, color: '#16A34A', marginTop: 2 }}>Completed</p>
+                </div>
+              </div>
+
+              {/* Message */}
+              <p className="text-center mb-6 mx-auto max-w-[320px]" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>
+                Keep practicing! Spaced repetition will help you master these cards over time.
+              </p>
+
+              {/* Actions */}
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowSessionComplete(false); setCurrentIndex(0); setRevealed(false); }}
+                  className="w-full flex items-center justify-center gap-2 rounded-[12px] py-3"
+                  style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 15, color: '#101828', background: 'linear-gradient(90deg, #F3A301 0%, #FD7201 100%)' }}
+                >
+                  <span aria-hidden>↻</span> Review Again
+                </button>
+                <Link
+                  href="/dashboard/flashcards"
+                  className="w-full flex items-center justify-center gap-2 rounded-[12px] py-3"
+                  style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 15, color: '#101828', background: '#FFFFFF', border: '1px solid #E5E7EB' }}
+                >
+                  🏠 Back to Decks
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

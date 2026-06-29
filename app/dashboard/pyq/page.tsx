@@ -838,21 +838,24 @@ export default function PyqPage() {
                       textClassName="text-[18px] font-[500] leading-[1.5] text-[#111827]"
                     />
 
-                    {/* Options — inline interactive */}
+                    {/* Options — inline interactive (matches Daily MCQ Challenge design) */}
                     {opts.length > 0 && (
-                      <div className="space-y-3 mb-4">
+                      <div className="mb-4" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                         {opts.map((opt) => {
                           const isSelected = qState.selected === opt.label;
                           const isCorrect = opt.label === q.correctOption;
-                          let bg = '#F9FAFB', border = '1.6px solid #E5E7EB', labelBg = '#D1D5DC', labelColor = '#364153';
+                          const showCorrect = qState.submitted && isCorrect;
+                          const showWrong = qState.submitted && isSelected && !isCorrect;
+                          // Default (unselected) state
+                          let bg = '#FFFFFF', border = '1px solid #E5E7EB', pipBg = '#F1F4F9', pipColor = '#475067', textColor = '#1E293B', textWeight = 400;
                           if (!qState.submitted && isSelected) {
-                            bg = '#EFF6FF'; border = '1.6px solid #3B82F6'; labelBg = '#3B82F6'; labelColor = '#fff';
+                            bg = '#0B1426'; border = '1.5px solid #0B1426'; pipBg = '#F5C518'; pipColor = '#0B1426'; textColor = '#FFFFFF'; textWeight = 600;
                           }
-                          if (qState.submitted && isCorrect) {
-                            bg = '#F0FDF4'; border = '1.6px solid #00C950'; labelBg = '#00A63E'; labelColor = '#fff';
+                          if (showCorrect) {
+                            bg = '#ECFDF5'; border = '1.5px solid #10B981'; pipBg = '#10B981'; pipColor = '#FFFFFF'; textColor = '#065F46'; textWeight = 600;
                           }
-                          if (qState.submitted && isSelected && !isCorrect) {
-                            bg = '#FEF2F2'; border = '1.6px solid #FB2C36'; labelBg = '#E7000B'; labelColor = '#fff';
+                          if (showWrong) {
+                            bg = '#FEF2F2'; border = '1.5px solid #F43F5E'; pipBg = '#F43F5E'; pipColor = '#FFFFFF'; textColor = '#9F1239'; textWeight = 600;
                           }
                           return (
                             <button
@@ -860,16 +863,23 @@ export default function PyqPage() {
                               type="button"
                               disabled={qState.submitted}
                               onClick={() => setSelected(opt.label)}
-                              className="w-full flex items-center gap-4 rounded-[14px] px-5 py-3.5 text-left transition-colors"
-                              style={{ background: bg, border }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderRadius: 12, minHeight: 50,
+                                border, background: bg,
+                                cursor: qState.submitted ? 'default' : 'pointer', textAlign: 'left', transition: 'all 0.15s ease', width: '100%',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                              }}
                             >
-                              <div
-                                className="w-10 h-10 rounded-full flex items-center justify-center text-[16px] font-bold flex-shrink-0"
-                                style={{ background: labelBg, color: labelColor }}
+                              <span
+                                style={{
+                                  width: 30, height: 30, borderRadius: 8, border: 'none',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontWeight: 700, fontSize: 13, color: pipColor, background: pipBg, flexShrink: 0,
+                                }}
                               >
                                 {opt.label}
-                              </div>
-                              <span className="text-[16px]" style={{ color: '#1A202C', fontWeight: qState.submitted && (isCorrect || isSelected) ? 500 : 400, whiteSpace: 'pre-wrap', lineHeight: '24px' }}>
+                              </span>
+                              <span style={{ fontSize: 13.5, color: textColor, fontWeight: textWeight, whiteSpace: 'pre-wrap', lineHeight: '20px' }}>
                                 {opt.text}
                               </span>
                             </button>
@@ -2555,16 +2565,18 @@ export default function PyqPage() {
               {(selectedQuestion?.options ?? []).map((opt: any) => {
                 const isSelected = selectedAnswer === opt.label;
                 const isCorrect  = opt.label === selectedQuestion?.correctOption;
-
-                let bg = '#F9FAFB', border = '0.8px solid #E5E7EB', labelBg = '#D1D5DC', labelColor = '#364153';
+                const showCorrect = hasSubmitted && isCorrect;
+                const showWrong = hasSubmitted && isSelected && !isCorrect;
+                // Default (unselected) state — matches Daily MCQ Challenge design
+                let bg = '#FFFFFF', border = '1px solid #E5E7EB', pipBg = '#F1F4F9', pipColor = '#475067', textColor = '#1E293B', textWeight = 400;
                 if (!hasSubmitted && isSelected) {
-                  bg = '#EFF6FF'; border = '1.6px solid #3B82F6'; labelBg = '#3B82F6'; labelColor = '#fff';
+                  bg = '#0B1426'; border = '1.5px solid #0B1426'; pipBg = '#F5C518'; pipColor = '#0B1426'; textColor = '#FFFFFF'; textWeight = 600;
                 }
-                if (hasSubmitted && isCorrect) {
-                  bg = '#F0FDF4'; border = '1.6px solid #00C950'; labelBg = '#00A63E'; labelColor = '#fff';
+                if (showCorrect) {
+                  bg = '#ECFDF5'; border = '1.5px solid #10B981'; pipBg = '#10B981'; pipColor = '#FFFFFF'; textColor = '#065F46'; textWeight = 600;
                 }
-                if (hasSubmitted && isSelected && !isCorrect) {
-                  bg = '#FEF2F2'; border = '1.6px solid #FB2C36'; labelBg = '#E7000B'; labelColor = '#fff';
+                if (showWrong) {
+                  bg = '#FEF2F2'; border = '1.5px solid #F43F5E'; pipBg = '#F43F5E'; pipColor = '#FFFFFF'; textColor = '#9F1239'; textWeight = 600;
                 }
 
                 return (
@@ -2572,14 +2584,23 @@ export default function PyqPage() {
                     key={opt.label}
                     disabled={hasSubmitted}
                     onClick={() => setSelectedAnswer(opt.label)}
-                    className="w-full flex items-center gap-3 rounded-[14px] pl-4 py-3 text-left transition-colors"
-                    style={{ minHeight: 65, background: bg, border }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderRadius: 12, minHeight: 50,
+                      border, background: bg,
+                      cursor: hasSubmitted ? 'default' : 'pointer', textAlign: 'left', transition: 'all 0.15s ease', width: '100%',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                    }}
                   >
-                    <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[16px] font-bold"
-                         style={{ background: labelBg, color: labelColor }}>
+                    <span
+                      style={{
+                        width: 30, height: 30, borderRadius: 8, border: 'none',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: 13, color: pipColor, background: pipBg, flexShrink: 0,
+                      }}
+                    >
                       {opt.label}
-                    </div>
-                    <span style={{ fontWeight: (hasSubmitted && (isCorrect || isSelected)) ? 500 : 400, fontSize: '16px', color: '#1E2939', whiteSpace: 'pre-wrap', lineHeight: '24px' }}>
+                    </span>
+                    <span style={{ fontWeight: textWeight, fontSize: 13.5, color: textColor, whiteSpace: 'pre-wrap', lineHeight: '20px' }}>
                       {opt.text}
                     </span>
                   </button>

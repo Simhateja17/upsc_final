@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import CreateFlashcardModal from '@/components/CreateFlashcardModal';
+import AddSubjectModal, { NewSubject } from '@/components/AddSubjectModal';
 import { flashcardService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { UpgradePrompt } from '@/components/entitlements';
@@ -46,6 +47,8 @@ function displaySubjectName(subject: string) {
 export default function FlashcardsPage() {
   const entitlements = useEntitlements();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
+  const [customSubjects, setCustomSubjects] = useState<SubjectCatalogItem[]>([]);
   const [prefillSubject, setPrefillSubject] = useState('');
   const [decks, setDecks] = useState<Deck[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +78,8 @@ export default function FlashcardsPage() {
   ];
 
   const deckMap = new Map(decks.map((deck) => [deck.id, deck]));
-  const subjectCards = SUBJECT_CATALOG.map((item) => {
+  const catalogIds = new Set(SUBJECT_CATALOG.map((item) => item.id));
+  const withDeck = (item: SubjectCatalogItem) => {
     const deck = deckMap.get(item.id);
     return {
       ...item,
@@ -85,10 +89,50 @@ export default function FlashcardsPage() {
       mastery: deck?.mastery ?? 0,
       masteredCards: deck?.masteredCards ?? 0,
     };
-  });
+  };
+
+  const subjectCards = SUBJECT_CATALOG.map(withDeck);
+
+  // Custom subjects: persisted decks that aren't part of the curated catalog,
+  // plus subjects added this session that don't have a deck yet.
+  const customCatalogItems = new Map<string, SubjectCatalogItem>();
+  customSubjects.forEach((item) => customCatalogItems.set(item.id, item));
+  decks
+    .filter((deck) => !catalogIds.has(deck.id))
+    .forEach((deck) => {
+      const existing = customCatalogItems.get(deck.id);
+      customCatalogItems.set(deck.id, {
+        id: deck.id,
+        subject: deck.subject,
+        icon: existing?.icon ?? deck.icon ?? '📚',
+        viewsLabel: '',
+        card: existing?.card ?? { bg: '#F8FAFC', border: '#E5E7EB', bar: '#16A34A' },
+      });
+    });
+  const customSubjectCards = Array.from(customCatalogItems.values()).map(withDeck);
+
   const hasFullAccess = entitlements.canAccess('flashcards', ['full']);
   const previewCount = entitlements.preview.flashcard_subjects ?? subjectCards.length;
-  const visibleSubjectCards = hasFullAccess ? subjectCards : subjectCards.slice(0, previewCount || 0);
+  const visibleSubjectCards = hasFullAccess
+    ? [...subjectCards, ...customSubjectCards]
+    : subjectCards.slice(0, previewCount || 0);
+
+  function slugifySubject(name: string) {
+    return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  }
+
+  function handleCreateSubject({ name, icon, tint }: NewSubject) {
+    const id = slugifySubject(name);
+    if (!id) return;
+    setCustomSubjects((prev) => {
+      if (prev.some((s) => s.id === id) || catalogIds.has(id)) return prev;
+      return [
+        ...prev,
+        { id, subject: name, icon, viewsLabel: '', isNew: true, card: { bg: tint, border: 'rgba(0,0,0,0.08)', bar: '#16A34A' } },
+      ];
+    });
+    setShowAddSubjectModal(false);
+  }
 
   async function handleDeleteSubject() {
     if (!deleteTarget) return;
@@ -137,26 +181,49 @@ export default function FlashcardsPage() {
               </h2>
             </div>
 
-            <button
-              type="button"
-              onClick={() => hasFullAccess ? setShowAddModal(true) : undefined}
-              disabled={!hasFullAccess}
-              className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
-              style={{
-                background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
-                border: 'none',
-                boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
-                opacity: hasFullAccess ? 1 : 0.55,
-                fontFamily: 'Inter',
-                fontWeight: 700,
-                fontSize: 14,
-                lineHeight: '20px',
-                letterSpacing: 0,
-                color: '#17223E',
-              }}
-            >
-              <span>+</span> New Flashcard
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => hasFullAccess ? setShowAddModal(true) : undefined}
+                disabled={!hasFullAccess}
+                className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
+                  opacity: hasFullAccess ? 1 : 0.55,
+                  fontFamily: 'Inter',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  lineHeight: '20px',
+                  letterSpacing: 0,
+                  color: '#17223E',
+                }}
+              >
+                <span className="text-lg leading-none">+</span> New Flashcard
+              </button>
+
+              <button
+                type="button"
+                onClick={() => hasFullAccess ? setShowAddSubjectModal(true) : undefined}
+                disabled={!hasFullAccess}
+                className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
+                style={{
+                  background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
+                  border: 'none',
+                  boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
+                  opacity: hasFullAccess ? 1 : 0.55,
+                  fontFamily: 'Inter',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  lineHeight: '20px',
+                  letterSpacing: 0,
+                  color: '#17223E',
+                }}
+              >
+                <span className="text-lg leading-none">+</span> Add Subject
+              </button>
+            </div>
           </div>
 
           <p
@@ -296,10 +363,39 @@ export default function FlashcardsPage() {
                   </button>
                 );
               })}
+
+              {hasFullAccess && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddSubjectModal(true)}
+                  className="rounded-[16px] border-2 border-dashed p-5 flex flex-col items-center justify-center text-center transition-all hover:bg-white hover:-translate-y-0.5 hover:shadow-md"
+                  style={{ borderColor: '#E9EAEE', background: 'transparent', height: 190 }}
+                  aria-label="Add new subject"
+                >
+                  <span
+                    className="grid place-items-center rounded-2xl border-2 border-dashed"
+                    style={{ width: 48, height: 48, borderColor: '#D8E0EA', fontSize: 24, lineHeight: 1, color: '#6A7282' }}
+                  >
+                    +
+                  </span>
+                  <span
+                    className="mt-3"
+                    style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}
+                  >
+                    Add New Subject
+                  </span>
+                </button>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      <AddSubjectModal
+        open={showAddSubjectModal}
+        onClose={() => setShowAddSubjectModal(false)}
+        onCreate={handleCreateSubject}
+      />
 
       <CreateFlashcardModal
         open={showAddModal}
