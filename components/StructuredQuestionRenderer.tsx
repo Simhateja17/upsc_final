@@ -97,7 +97,7 @@ export default function StructuredQuestionRenderer({
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: '#090E1C',
+                background: '#070E1EFA',
                 color: '#FFFFFF',
                 fontWeight: 700,
                 fontSize: 12,
