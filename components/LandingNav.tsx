@@ -14,13 +14,14 @@ const NAV_DROPDOWNS = {
     { label: 'Current Affairs', href: '/dashboard/current-affairs' },
     { label: 'Study Planner', href: '/dashboard/study-planner' },
     { label: 'Syllabus Tracker', href: '/dashboard/syllabus-tracker' },
+    { label: 'Previous Year Questions', href: '/dashboard/pyq' },
   ],
   practice: [
     { label: 'Daily MCQs', href: '/dashboard/daily-mcq' },
     { label: 'Daily Mains Answer', href: '/dashboard/daily-answer' },
     { label: 'Mock Tests', href: '/dashboard/mock-tests' },
-    { label: 'Previous Year Questions', href: '/dashboard/pyq' },
-    { label: 'Test Series', href: '/dashboard/test-series' },
+    // Test Series is hidden for now; re-enable when it is ready.
+    // { label: 'Test Series', href: '/dashboard/test-series' },
   ],
   revision: [
     { label: 'Flashcards', href: '/dashboard/flashcards' },

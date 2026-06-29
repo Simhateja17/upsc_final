@@ -5,6 +5,7 @@ import Link from 'next/link';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { pyqService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
+import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
 import prelimsSyllabus from '@/data/syllabus/prelimsSyllabus.json';
 import { handleEntitlementError, formatPeriod } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
@@ -612,17 +613,15 @@ export default function PyqPage() {
         badgeText="PREVIOUS YEAR QUESTIONS"
         title={
           <>
-            The Complete <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>PYQ Bank</em>
-            <br />
-            for UPSC Success
+            Decode <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>UPSC</em>
           </>
         }
-        subtitle="Every UPSC question ever asked Prelims, Mains with instant evaluation, subject filters, and detailed explanations."
+        subtitle="Explore 6,500+ UPSC Previous Year Questions, organized by subject, topic, and year, with in-depth solutions and detailed explanations."
         stats={[
           { value: '6500+', label: 'PYQs', color: '#E8B84B' },
           { value: '30+', label: 'Years', color: '#F87171' },
           { value: '15+', label: 'Subjects', color: '#4ADE80' },
-          { value: '∞', label: 'Always Free', color: '#FFFFFF' },
+          { value: '∞', label: 'Unlimited Access', color: '#FFFFFF' },
         ]}
       />
 
@@ -834,8 +833,9 @@ export default function PyqPage() {
                     </div>
 
                     {/* Question text */}
-                    <QuestionTextRenderer
-                      text={q.questionText}
+                    <StructuredQuestionRenderer
+                      questionStructure={(q as any).questionStructure}
+                      questionText={q.questionText}
                       className="mb-5 text-[18px] font-[500] leading-[1.5] text-[#111827]"
                       textClassName="text-[18px] font-[500] leading-[1.5] text-[#111827]"
                     />

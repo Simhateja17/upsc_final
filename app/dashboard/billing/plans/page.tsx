@@ -65,6 +65,13 @@ type RazorpaySuccessResponse = {
   razorpay_signature: string;
 };
 
+const RAZORPAY_BRAND = {
+  name: 'RiseWithJeet',
+  primaryColor: '#0B1525',
+  backdropColor: 'rgba(8, 15, 35, 0.74)',
+  logoPath: '/logo.png',
+};
+
 declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => {
@@ -630,11 +637,16 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
     badge: 'Aspire Plan',
     description: 'Daily structured prep with AI evaluation and core tools.',
     features: [
-      '5 Mains AI Evaluations / day',
-      '5 Mock Test attempts / day',
-      'Jeet AI Mentor – 5 messages / day',
+      '5 Mains Answer Evaluation / day',
+      'Daily MCQ & Mains Challenge',
+      'Daily News Analysis – The Hindu & IE',
+      '10,000+ Previous Year Questions',
+      'Simplified Video Lectures',
+      'Jeet AI Mentor – 5 Messages / day',
       'Study Planner & Time Tracker',
+      'Daily Leaderboard',
       'Discussion Forum – Limited access',
+      'Mock Tests – Limited access',
       'Revision Suite – Limited access',
       'Performance Analytics – Limited view',
     ],
@@ -649,11 +661,12 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
     badge: 'Rise Plan',
     description: 'The complete ecosystem for focused, daily UPSC preparation.',
     features: [
-      '25 Mains AI Evaluations / day',
-      '25 Mock Test attempts / day',
+      '25 Mains Answer Evaluation / day',
+      '50 Prelims Mock Test attempts / day',
+      'Jeet AI Mentor – 100 Messages / day',
       'Full Performance Analytics Dashboard',
-      'Full Revision Suite – Flashcards, Mindmaps, Spaced Rep.',
-      'Jeet AI Mentor – 50 conversations / day',
+      'Comprehensive Test Analytics',
+      'Full Revision Suite – Flashcards, Mindmaps, Spaced Repetition, Smart Notes',
       'Smart Syllabus Tracker',
       'Live Study Room 24×7',
     ],
@@ -668,11 +681,13 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
     badge: 'Ascent Plan',
     description: 'Unlimited tools, personalised mentorship. For aspirants who leave nothing to chance.',
     features: [
-      'Unlimited Mains Evaluations & Mock Tests',
-      'Jeet AI Mentor – Unlimited conversations',
-      'Weekly 1-on-1 Mentorship Sessions',
+      'Unlimited Mains Answer Evaluations',
+      'Unlimited Prelims Mock Test practice',
+      'Jeet AI Mentor – Unlimited messages',
+      'Bi-Weekly 1-on-1 Mentorship Sessions',
+      'Interview (Personality Test) prep module',
       'Personalised Study Roadmap',
-      'Dedicated Q&A – Quick Responses',
+      'Dedicated Support with Quick Responses',
       'Monthly Performance Review Call',
       'Early Access to New Features',
     ],
@@ -758,7 +773,8 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
       const checkout = new window.Razorpay({
         key: order.key,
         subscription_id: order.razorpaySubscriptionId,
-        name: 'RiseWithJeet',
+        name: RAZORPAY_BRAND.name,
+        image: `${window.location.origin}${RAZORPAY_BRAND.logoPath}`,
         description: `${plan.name} Plan - ${active.label}`,
         prefill: {
           name: user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : '',
@@ -822,7 +838,10 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
             setIsPaying(false);
           },
         },
-        theme: { color: '#E8B84B' },
+        theme: {
+          color: RAZORPAY_BRAND.primaryColor,
+          backdrop_color: RAZORPAY_BRAND.backdropColor,
+        },
       });
 
       checkout.on('payment.failed', async (response: any) => {
@@ -1083,10 +1102,6 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
               <span style={{ fontSize: 12, color: '#64748B' }}>Duration</span>
               <span style={{ fontSize: 12, fontWeight: 700, color: '#0F172B' }}>{active.duration}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#16A34A', fontSize: 11, fontWeight: 600 }}>
-              <span aria-hidden="true">🛡️</span>
-              <span>3-Day Money-Back Guarantee</span>
-            </div>
           </div>
 
           {/* Pricing breakdown */}
@@ -1219,6 +1234,7 @@ export default function ExplorePlansPage() {
   const [checkoutPlan, setCheckoutPlan] = useState<PlanKey | null>(null);
   const [manageBusy, setManageBusy] = useState<string | null>(null);
   const [manageMessage, setManageMessage] = useState('');
+  const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
 
   const handleUpgrade = () => router.push('/dashboard');
   const currentTier = entitlements.tier;
@@ -1267,7 +1283,7 @@ export default function ExplorePlansPage() {
   }, [checkoutPlan]);
 
   return (
-    <div className="min-h-screen" style={{ background: '#E9EAEE', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="min-h-screen" style={{ background: '#FAFBFE', fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
       <BillingHero />
 
@@ -1311,7 +1327,7 @@ export default function ExplorePlansPage() {
         )}
 
         {/* Billing cycle toggle */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: 16 }}>
+        <div id="upgrade-plans" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: 16, scrollMarginTop: 128 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', background: '#fff', border: '1px solid rgba(11,22,40,0.09)', borderRadius: 999, padding: 4, boxShadow: '0 2px 8px rgba(11,22,40,0.07)' }}>
             {(['monthly', 'quarterly', 'yearly'] as const).map((c) => (
               <button key={c} type="button" onClick={() => setCycle(c)} style={{
@@ -1335,7 +1351,10 @@ export default function ExplorePlansPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 16, alignItems: 'stretch' }}>
 
           {/* Aspire */}
-          <article style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: canShowPlan('aspire') ? 'flex' : 'none', flexDirection: 'column' }}>
+          <article
+            onMouseEnter={() => setHoveredPlan('aspire')}
+            onMouseLeave={() => setHoveredPlan(null)}
+            style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: canShowPlan('aspire') ? 'flex' : 'none', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'aspire' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'aspire' ? '0 16px 40px rgba(11,22,40,0.12)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
             <div style={{ padding: '28px 24px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
               <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}>Foundation</p>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Aspire</h3>
@@ -1343,10 +1362,10 @@ export default function ExplorePlansPage() {
                 Daily structured prep with AI evaluation &amp; core tools.
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹299' : cycle === 'quarterly' ? '₹249/month' : '₹299/month'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '55%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
+                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹299' : cycle === 'quarterly' ? '₹249/month' : '₹299/month'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '50%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
                   <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>₹{cycle === 'monthly' ? '199' : cycle === 'quarterly' ? '159' : '119'}</span>
-                  <span style={{ fontSize: 13, color: '#9AA3B8', paddingBottom: 6, fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
+                  <span style={{ fontSize: 13, color: '#9AA3B8', fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
                 </div>
               </div>
               <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9AA3B8', fontFamily: 'Inter, system-ui, sans-serif' }}>{cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? '₹479 billed every 3 months – Save 20%' : '₹1,439 billed yearly – Save 40%'}</p>
@@ -1380,7 +1399,10 @@ export default function ExplorePlansPage() {
           </article>
 
           {/* Rise (Most Popular) */}
-          <article style={{ borderRadius: 20, border: '2px solid #E8B84B', background: '#0B1525', overflow: 'hidden', position: 'relative', display: canShowPlan('rise') ? 'flex' : 'none', flexDirection: 'column' }}>
+          <article
+            onMouseEnter={() => setHoveredPlan('rise')}
+            onMouseLeave={() => setHoveredPlan(null)}
+            style={{ borderRadius: 20, border: '2px solid #E8B84B', background: '#0B1525', overflow: 'hidden', position: 'relative', display: canShowPlan('rise') ? 'flex' : 'none', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'rise' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'rise' ? '0 16px 40px rgba(232,184,75,0.25)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
             <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', background: '#E8B84B', color: '#090E1C', padding: '5px 20px', borderRadius: '0 0 12px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
               Most Popular
             </div>
@@ -1391,12 +1413,12 @@ export default function ExplorePlansPage() {
                 Everything in Aspire, plus:
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: 'rgba(255,255,255,0.4)' }}>{cycle === 'monthly' ? '₹699' : cycle === 'quarterly' ? '₹599/month' : '₹699/month'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '55%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
+                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: 'rgba(255,255,255,0.4)' }}>{cycle === 'monthly' ? '₹699' : cycle === 'quarterly' ? '₹599/month' : '₹699/month'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '50%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
                   <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>
                     ₹{cycle === 'monthly' ? '499' : cycle === 'quarterly' ? '399' : '299'}
                   </span>
-                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', paddingBottom: 6, fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
                 </div>
               </div>
               <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -1425,10 +1447,7 @@ export default function ExplorePlansPage() {
               <button type="button" onClick={handleOpenRiseCheckout} style={{ marginTop: 'auto', width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#E8B84B', color: '#090E1C', fontFamily: '"DM Sans", Inter, system-ui, sans-serif' }}>
                 Get Rise →
               </button>
-              <p style={{ margin: '10px 0 0', fontSize: 11, color: '#22C55E', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                ↩️ 7-Day Money-Back Guarantee
-              </p>
-              <p style={{ margin: '4px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
+              <p style={{ margin: '10px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
                 Not sure?{' '}
                 <button type="button" onClick={handleUpgrade} style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.7)', textDecoration: 'underline', cursor: 'pointer', fontSize: 11, fontFamily: 'Inter, system-ui, sans-serif' }}>Start free plan</button>
               </p>
@@ -1436,7 +1455,10 @@ export default function ExplorePlansPage() {
           </article>
 
           {/* Ascent */}
-          <article style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: canShowPlan('ascent') ? 'flex' : 'none', flexDirection: 'column' }}>
+          <article
+            onMouseEnter={() => setHoveredPlan('ascent')}
+            onMouseLeave={() => setHoveredPlan(null)}
+            style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: canShowPlan('ascent') ? 'flex' : 'none', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'ascent' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'ascent' ? '0 16px 40px rgba(11,22,40,0.12)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
             <div style={{ padding: '28px 24px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
               <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}>Maximum Edge</p>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Ascent</h3>
@@ -1444,12 +1466,12 @@ export default function ExplorePlansPage() {
                 Everything in Rise, plus:
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹2,499' : cycle === 'quarterly' ? '₹2,249/month' : '₹2,499/month'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '55%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
+                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹2,499' : cycle === 'quarterly' ? '₹2,249/month' : '₹2,499/month'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '50%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
                   <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>
                     ₹{cycle === 'monthly' ? '1,999' : cycle === 'quarterly' ? '1,599' : '1,199'}
                   </span>
-                  <span style={{ fontSize: 13, color: '#9AA3B8', paddingBottom: 6, fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
+                  <span style={{ fontSize: 13, color: '#9AA3B8', fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
                 </div>
               </div>
               <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9AA3B8', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -1477,26 +1499,9 @@ export default function ExplorePlansPage() {
               <button type="button" onClick={handleOpenAscentCheckout} style={{ marginTop: 'auto', width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#090E1C', color: '#fff', fontFamily: '"DM Sans", Inter, system-ui, sans-serif' }}>
                 Join Ascent →
               </button>
-              <p style={{ margin: '10px 0 0', fontSize: 11, color: '#22C55E', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                ↩️ 7-Day Money-Back Guarantee
-              </p>
             </div>
           </article>
 
-        </div>
-
-        {/* Trust bar */}
-        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12, paddingBottom: 8 }}>
-          {[
-            { icon: '🔒', text: 'Secure Payments' },
-            { icon: '✕', text: 'Cancel Anytime' },
-            { icon: '👥', text: '15,000+ UPSC aspirants' },
-          ].map((item) => (
-            <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 7, borderRadius: 999, border: '1px solid #E5E7EB', background: '#fff', padding: '8px 16px', fontSize: 12, fontWeight: 500, color: '#374151', fontFamily: 'Inter, system-ui, sans-serif', boxShadow: '0 1px 4px rgba(11,22,40,0.06)' }}>
-              <span style={{ fontSize: 14 }}>{item.icon}</span>
-              <span>{item.text}</span>
-            </div>
-          ))}
         </div>
 
         {/* ── Feature Breakdown ── */}
@@ -1782,14 +1787,14 @@ export default function ExplorePlansPage() {
           {/* 2-column FAQ grid */}
           {(() => {
             const faqs = [
-              { q: 'Is there a free plan?', a: 'Yes. Every signed-in user starts with limited free access. Aspire, Rise, and Ascent are paid plans that unlock higher limits and more preparation tools.' },
-              { q: "What's the difference between Rise and Ascent?", a: 'Rise gives you unlimited AI evaluations, full analytics, and the complete revision suite. Ascent adds weekly 1-on-1 mentorship, a personalised roadmap, priority Q&A support, and monthly performance review calls.' },
-              { q: 'Is there a money-back guarantee?', a: 'Yes. All paid plans come with a 3-day money-back guarantee, no questions asked. Just reach out to our support team within 3 days of purchase.' },
-              { q: 'How much do I save on quarterly & yearly plans?', a: 'Quarterly plans save you ~10% compared to monthly billing. Yearly plans give you up to 40% off – the best value for committed aspirants.' },
-              { q: 'Can I upgrade or cancel anytime?', a: 'Absolutely. You can upgrade, downgrade, or cancel your subscription at any time from your billing page. No lock-ins, no penalties.' },
-              { q: 'How does AI Mains Evaluation work?', a: 'Our AI evaluates your mains answers using UPSC-style marking schemes – checking structure, content, presentation, and relevance – and gives you detailed feedback within seconds.' },
-              { q: 'What is the refund policy?', a: 'We offer a 3-day full refund on all paid plans. After 3 days, refunds are handled case-by-case. Contact our billing team for assistance.' },
-              { q: 'Is this suitable for first-attempt aspirants?', a: 'Absolutely. Aspire is designed for beginners building their foundation. As you progress, Rise and Ascent provide deeper tools for serious, exam-ready preparation.' },
+              { q: 'Is free plan really free forever?', a: 'Yes, absolutely. Our Free plan gives you lifetime free access to daily MCQ, daily news analysis, 10,000+ PYQs, study planner, leaderboard, plus 3 mains evaluations (lifetime), 1 Prelims test (lifetime) and 1 Jeet AI chat session. No card, no expiry, no hidden upgrades.' },
+              { q: 'Are the current prices a promotional offer?', a: 'Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, so lock in these rates while you can. Once you subscribe, your price remains locked for as long as you stay subscribed, even if prices increase for new users later.' },
+              { q: 'Can I upgrade or cancel my subscription anytime?', a: 'Absolutely. You can upgrade from Aspire to Rise or Ascent instantly (pro-rated). Cancellation is self-serve from your dashboard - you keep full access until the end of your billing cycle. No cancellation fees, no hassle.' },
+              { q: 'What is the refund policy?', a: 'We offer a 3-day, no-questions-asked refund on all paid subscriptions. Just reach out to support within 3 days of your purchase and we will process the refund within 24 hours. After 3 days, refunds are not applicable but you can cancel future billing.' },
+              { q: "What's the difference between Aspire, Rise and Ascent?", a: 'Aspire: 5 mains evaluations/day, 5 Prelims tests/day, 5 Jeet AI messages/day, limited analytics & revision suite. Rise: 25 mains evals/day, 50 Prelims tests/day, 100 AI messages, full analytics dashboard, full revision suite (flashcards, mindmaps, spaced repetition), smart syllabus tracker, live study room. Ascent: Everything in Rise, plus unlimited evaluations & tests, unlimited AI messages, bi-weekly 1-on-1 mentorship, interview prep module, personalised roadmap, priority support, monthly review call and early access.' },
+              { q: 'How much do I save on quarterly & yearly plans?', a: "As we are running promotional offers currently, Quarterly plans save you 20% compared to monthly billing. Yearly plans save you 40% - that's almost 5 months free. For example, Rise monthly is ₹499, but yearly brings it down to ₹299/month. Discounts are automatically applied at checkout." },
+              { q: 'How does AI Mains Evaluation work?', a: 'You can upload a photo of your handwritten answer. Jeet AI evaluates it against UPSC marking schemes - structure, content, keyword density, presentation, relevance etc. You get detailed feedback in under 60 seconds, including a score and actionable suggestions to improve.' },
+              { q: 'Is this suitable for first-attempt aspirants?', a: "Absolutely. Our study planner, syllabus tracker, daily MCQs, mains answer evaluation and simplified video lectures are designed to guide you from day one - whether it's your first attempt or your third. Start with the Aspire to build momentum, then upgrade as you get more serious as you master consistency." },
             ];
             const left = faqs.filter((_, i) => i % 2 === 0);
             const right = faqs.filter((_, i) => i % 2 === 1);

@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 const tocItems = [
   { id: 'our-approach', num: '01', label: 'Our Approach' },
   { id: 'cancellations', num: '02', label: 'Cancellations' },
-  { id: 'within-7-days', num: '03', label: 'Within 7 Days' },
-  { id: 'after-7-days', num: '04', label: 'After 7 Days' },
+  { id: 'within-3-days', num: '03', label: 'Within 3 Days' },
+  { id: 'after-3-days', num: '04', label: 'After 3 Days' },
   { id: 'how-to-request', num: '05', label: 'How to Request' },
   { id: 'contact-us', num: '06', label: 'Contact Us' },
 ];
@@ -108,9 +108,9 @@ export default function RefundPolicyPage() {
                 <div className="flex gap-4">
                   <div className="text-2xl">🛡️</div>
                   <div>
-                    <div className="mb-2 text-lg font-bold text-[#0c1424]">7-Day Money-Back Guarantee</div>
+                    <div className="mb-2 text-lg font-bold text-[#0c1424]">3-Day Money-Back Guarantee</div>
                     <p className="mb-3 text-sm leading-relaxed text-[#374560]">
-                      We offer a full, no-questions-asked refund within 7 days of your initial subscription payment. This applies to all paid plans: Rise Plan and Ascent Plan.
+                      We offer a full, no-questions-asked refund within 3 days of your initial subscription payment. This applies to all paid plans: Rise Plan and Ascent Plan.
                     </p>
                     <div className="flex flex-wrap items-center gap-1.5 text-sm text-[#374560]">
                       <span>To request:</span>
@@ -155,13 +155,13 @@ export default function RefundPolicyPage() {
               </div>
             </section>
 
-            {/* Section 3: Within the 7-Day Window */}
-            <section id="within-7-days" className="mb-14 scroll-mt-24">
+            {/* Section 3: Within the 3-Day Window */}
+            <section id="within-3-days" className="mb-14 scroll-mt-24">
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '0.8rem', fontWeight: 700, color: '#e8b84b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '7px' }}>03</div>
-              <h2 className="mb-6" style={policyHeadingStyle}>Within the 7-Day Window</h2>
+              <h2 className="mb-6" style={policyHeadingStyle}>Within the 3-Day Window</h2>
 
               <p className="mb-4" style={{ fontSize: '15px', color: '#374560', lineHeight: 1.85, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-                If you request a refund within 7 days of your initial subscription payment, we will process it in full with no questions asked. This applies to both the Rise and Ascent plans.
+                If you request a refund within 3 days of your initial subscription payment, we will process it in full with no questions asked. This applies to both the Rise and Ascent plans.
               </p>
 
               <ul className="mb-6 list-none space-y-3 pl-0">
@@ -183,18 +183,18 @@ export default function RefundPolicyPage() {
               <div className="flex gap-3 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5">
                 <div className="text-xl">📌</div>
                 <div className="text-sm leading-relaxed text-[#374560]">
-                  The 7-day window starts from the date of your initial payment, not from when you first log in or activate features.
+                  The 3-day window starts from the date of your initial payment, not from when you first log in or activate features.
                 </div>
               </div>
             </section>
 
-            {/* Section 4: After the 7-Day Window */}
-            <section id="after-7-days" className="mb-14 scroll-mt-24">
+            {/* Section 4: After the 3-Day Window */}
+            <section id="after-3-days" className="mb-14 scroll-mt-24">
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '0.8rem', fontWeight: 700, color: '#e8b84b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '7px' }}>04</div>
-              <h2 className="mb-6" style={policyHeadingStyle}>After the 7-Day Window</h2>
+              <h2 className="mb-6" style={policyHeadingStyle}>After the 3-Day Window</h2>
 
               <p className="mb-6" style={{ fontSize: '15px', color: '#374560', lineHeight: 1.85, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-                After the initial 7 days, we do not offer pro-rated refunds for unused subscription time. However, we review every situation with common sense. We will evaluate refund requests case by case for the following:
+                After the initial 3 days, we do not offer pro-rated refunds for unused subscription time. However, we review every situation with common sense. We will evaluate refund requests case by case for the following:
               </p>
 
               <div className="mb-6 grid gap-4 sm:grid-cols-2">
@@ -212,7 +212,7 @@ export default function RefundPolicyPage() {
                 {/* Not eligible */}
                 <div className="rounded-xl border border-red-200 bg-red-50 p-5">
                   <div className="mb-3 flex items-center gap-2 font-semibold text-[#0c1424]">
-                    <span>❌</span> Not eligible after 7 days
+                    <span>❌</span> Not eligible after 3 days
                   </div>
                   <div className="space-y-3 text-sm leading-relaxed text-[#374560]">
                     <p>Change of mind or a decision to pause preparation</p>

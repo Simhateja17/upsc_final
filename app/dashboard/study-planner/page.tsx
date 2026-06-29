@@ -226,6 +226,7 @@ const quickAddIconBoxStyle: React.CSSProperties = {
   width: '24px',
   height: '24px',
   minWidth: '24px',
+  flexShrink: 0,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -243,6 +244,8 @@ export default function StudyPlannerPage() {
   const [recurDays, setRecurDays] = useState<number[]>([1, 3]); // Tue & Thu by default
   const [recurEnd, setRecurEnd] = useState<RecurEnd>('exam');
   const [currentDate, setCurrentDate] = useState(new Date());
+  // Streak calendar month — navigated independently of the task planner's day.
+  const [calMonth, setCalMonth] = useState(new Date());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [streakDays, setStreakDays] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
@@ -254,10 +257,6 @@ export default function StudyPlannerPage() {
   const [adding, setAdding] = useState(false);
   const [studiedDays, setStudiedDays] = useState<number[]>([]);
   const [showSaveToast, setShowSaveToast] = useState(false);
-  const [calendarSyncEnabled, setCalendarSyncEnabled] = useState(false);
-  const [calendarSyncConnected, setCalendarSyncConnected] = useState(false);
-  const [calendarSyncLoading, setCalendarSyncLoading] = useState(false);
-  const [calendarSyncError, setCalendarSyncError] = useState('');
   const saveToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Focus session state
@@ -380,23 +379,13 @@ export default function StudyPlannerPage() {
   }, [currentDate]);
 
   useEffect(() => {
-    studyPlannerService.getCalendarSyncStatus()
-      .then(res => {
-        setCalendarSyncEnabled(!!res.data?.enabled);
-        setCalendarSyncConnected(!!res.data?.connected);
-        setCalendarSyncError(res.data?.lastSyncError || '');
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    studyPlannerService.getMonthlyActivity(currentDate.getFullYear(), currentDate.getMonth() + 1)
+    studyPlannerService.getMonthlyActivity(calMonth.getFullYear(), calMonth.getMonth() + 1)
       .then(res => {
         if (res.data?.studiedDays) setStudiedDays(res.data.studiedDays);
         else setStudiedDays([]);
       })
       .catch(() => {});
-  }, [currentDate]);
+  }, [calMonth]);
 
   const handleAddTask = async () => {
     if (!taskTitle.trim()) return;
@@ -473,43 +462,6 @@ export default function StudyPlannerPage() {
 
   const handleDeleteGoal = (i: number) => {
     persistGoals(weeklyGoals.filter((_, idx) => idx !== i));
-  };
-
-  const handleGoogleCalendarToggle = async () => {
-    if (calendarSyncLoading) return;
-    setCalendarSyncLoading(true);
-    setCalendarSyncError('');
-
-    try {
-      if (calendarSyncEnabled) {
-        const res = await studyPlannerService.updateCalendarSync(false);
-        setCalendarSyncEnabled(!!res.data?.enabled);
-        setCalendarSyncConnected(!!res.data?.connected);
-        setCalendarSyncError(res.data?.lastSyncError || '');
-        return;
-      }
-
-      if (!calendarSyncConnected) {
-        const res = await studyPlannerService.getGoogleCalendarAuthUrl();
-        if (res.data?.url) {
-          window.location.href = res.data.url;
-          return;
-        }
-      }
-
-      const res = await studyPlannerService.updateCalendarSync(true);
-      if (res.data?.needsAuth && res.data?.authUrl) {
-        window.location.href = res.data.authUrl;
-        return;
-      }
-      setCalendarSyncEnabled(!!res.data?.enabled);
-      setCalendarSyncConnected(!!res.data?.connected);
-      setCalendarSyncError(res.data?.lastSyncError || '');
-    } catch (error) {
-      setCalendarSyncError(error instanceof Error ? error.message : 'Google Calendar sync failed');
-    } finally {
-      setCalendarSyncLoading(false);
-    }
   };
 
   const showSaveAcknowledgement = () => {
@@ -621,21 +573,33 @@ export default function StudyPlannerPage() {
   const prevDay = () => { const d = new Date(currentDate); d.setDate(d.getDate() - 1); setCurrentDate(d); };
   const nextDay = () => { const d = new Date(currentDate); d.setDate(d.getDate() + 1); setCurrentDate(d); };
 
-  // Generate calendar days dynamically for the current month
-  const today = new Date();
-  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-  const todayNum = today.getMonth() === currentDate.getMonth() && today.getFullYear() === currentDate.getFullYear()
-    ? today.getDate() : -1;
-  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const offset = (firstDayOfMonth.getDay() + 6) % 7; // 0=Mon … 6=Sun
-  const emptySlots = Array.from({ length: offset }, (_, i) => ({ day: 0, empty: true, studied: false, today: false }));
-  const daySlots = Array.from({ length: daysInMonth }, (_, i) => ({
-    day: i + 1,
-    empty: false,
-    studied: studiedDays.includes(i + 1),
-    today: i + 1 === todayNum,
-  }));
-  const calendarDays = [...emptySlots, ...daySlots];
+  // Streak-calendar month navigation (arrows + Today button).
+  const prevCalMonth = () => { const d = new Date(calMonth); d.setDate(1); d.setMonth(d.getMonth() - 1); setCalMonth(d); };
+  const nextCalMonth = () => { const d = new Date(calMonth); d.setDate(1); d.setMonth(d.getMonth() + 1); setCalMonth(d); };
+  const goCalToday = () => setCalMonth(new Date());
+
+  // Streak calendar — day cells for calMonth, classified per the reference design:
+  // active (past+studied), missed (past, no activity), today, future.
+  type CalCell =
+    | { empty: true }
+    | { empty: false; day: number; status: 'active' | 'missed' | 'today' | 'future' };
+  const calYear = calMonth.getFullYear();
+  const calMonthIdx = calMonth.getMonth();
+  const daysInCalMonth = new Date(calYear, calMonthIdx + 1, 0).getDate();
+  const calOffset = (new Date(calYear, calMonthIdx, 1).getDay() + 6) % 7; // 0=Mon … 6=Sun
+  const calToday = new Date();
+  const calTodayTime = new Date(calToday.getFullYear(), calToday.getMonth(), calToday.getDate()).getTime();
+  const calEmptySlots: CalCell[] = Array.from({ length: calOffset }, () => ({ empty: true }));
+  const calDaySlots: CalCell[] = Array.from({ length: daysInCalMonth }, (_, i) => {
+    const day = i + 1;
+    const cellTime = new Date(calYear, calMonthIdx, day).getTime();
+    const status: 'active' | 'missed' | 'today' | 'future' =
+      cellTime === calTodayTime ? 'today'
+      : cellTime > calTodayTime ? 'future'
+      : studiedDays.includes(day) ? 'active' : 'missed';
+    return { empty: false, day, status };
+  });
+  const calendarDays: CalCell[] = [...calEmptySlots, ...calDaySlots];
 
   const studyTypes = [
     { id: 'video', label: 'Video Lectures', icon: '/study-type-video.png' },
@@ -769,15 +733,10 @@ export default function StudyPlannerPage() {
     return Math.round(secs) + 's';
   };
 
-  // Dynamic month/year display for calendar header
-  const calendarMonthYear = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-
-  // Weekly streak display
-  const weeklyStreakLabel = weeklyStudied !== null && weeklyTarget !== null
-    ? `${weeklyStudied}/${weeklyTarget} This Week`
-    : weeklyStudied !== null
-    ? `${weeklyStudied} days this week`
-    : '0/7 This Week';
+  // Streak-calendar header: full month label + the mini calendar-icon pieces.
+  const calendarMonthYear = calMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const calIcoMonth = calMonth.toLocaleString('default', { month: 'short' }).toUpperCase();
+  const calIcoNum = calToday.getDate();
 
   return (
     <>
@@ -1082,20 +1041,31 @@ export default function StudyPlannerPage() {
                       Study Type
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: '10px' }}>
-                      {studyTypes.map((type) => (
+                      {studyTypes.map((type) => {
+                        const selected = studyType === type.id;
+                        return (
                         <button
                           key={type.id}
                           onClick={() => setStudyType(type.id)}
-                          className="flex flex-col items-center justify-center font-arimo transition-colors"
+                          className="flex flex-col items-center justify-center font-arimo transition-all duration-150"
                           style={{
                             width: '100%',
                             height: '80px',
-                            borderRadius: '20px',
-                            border: studyType === type.id ? '2px solid #17223E' : '1px solid #E5E7EB',
+                            borderRadius: '12px',
+                            border: selected ? '2px solid #17223E' : '1px solid #E5E7EB',
                             background: '#FFFFFF',
-                            boxShadow: '0px 4px 4px 0px #00000040',
                             padding: '8px 6px',
                             gap: '4px',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (selected) return;
+                            e.currentTarget.style.borderColor = '#17223E';
+                            e.currentTarget.style.background = '#F9FAFB';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (selected) return;
+                            e.currentTarget.style.borderColor = '#E5E7EB';
+                            e.currentTarget.style.background = '#FFFFFF';
                           }}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1112,7 +1082,8 @@ export default function StudyPlannerPage() {
                             {type.label}
                           </span>
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -1360,7 +1331,11 @@ export default function StudyPlannerPage() {
                 <div className="flex-1 overflow-y-auto" style={{ maxHeight: '477px' }}>
                   <div className="space-y-3">
                     {sortedTasks.map(task => (
-                      <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
+                      <div
+                        key={task.id}
+                        style={{ borderLeftWidth: '4px', borderLeftColor: task.isCompleted ? '#22C55E' : '#E5E7EB' }}
+                        className="group flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md hover:bg-indigo-50/30"
+                      >
                         <button onClick={() => handleToggleTask(task.id, task.isCompleted)}
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${task.isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
                           {task.isCompleted && <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
@@ -1385,8 +1360,15 @@ export default function StudyPlannerPage() {
                             </p>
                           )}
                         </div>
-                        <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-500 flex-shrink-0">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                        <button
+                          onClick={() => handleDeleteTask(task.id)}
+                          title="Delete task"
+                          aria-label="Delete task"
+                          className="flex-shrink-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity duration-200"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                          </svg>
                         </button>
                       </div>
                     ))}
@@ -1435,7 +1417,7 @@ export default function StudyPlannerPage() {
             </div>
             </div>
 
-            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals + Planner Sync ── */}
+            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals + Time Distribution ── */}
             <div className="grid grid-cols-1 gap-4 mt-4 xl:grid-cols-[1fr_1fr_360px]">
 
               {/* Card 0: Syllabus Coverage */}
@@ -1507,32 +1489,6 @@ export default function StudyPlannerPage() {
               <div
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
               >
-                {/* Inline add-goal row */}
-                <div className="flex items-center gap-2 mb-5">
-                  <input
-                    type="text"
-                    value={newGoal}
-                    onChange={(e) => setNewGoal(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddGoal(); }}
-                    placeholder="Add a weekly goal..."
-                    className="flex-1 min-w-0 font-arimo outline-none transition-colors"
-                    style={{ height: '40px', borderRadius: '10px', border: '0.8px solid #E5E7EB', padding: '0 14px', fontSize: '14px', color: '#101828', background: '#FFFFFF' }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = '#4F78F6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(79, 120, 246, 0.15)'; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }}
-                  />
-                  <button
-                    onClick={handleAddGoal}
-                    disabled={!newGoal.trim()}
-                    className="flex items-center gap-1.5 font-arimo font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-40 flex-shrink-0"
-                    style={{ height: '40px', padding: '0 16px', borderRadius: '10px', background: '#17223E', fontSize: '13px' }}
-                  >
-                    <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none">
-                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                    </svg>
-                    Add
-                  </button>
-                </div>
-
                 {/* Header */}
                 <div className="flex items-center gap-2 mb-4">
                   {/* Target Icon */}
@@ -1562,7 +1518,7 @@ export default function StudyPlannerPage() {
                 })()}
 
                 {/* Goals list */}
-                <div className="space-y-3">
+                <div className="space-y-3 mb-5">
                   {weeklyGoals.length > 0 ? (
                     weeklyGoals.map((goal, i) => (
                       <div key={i} className="flex items-start gap-3 group">
@@ -1590,79 +1546,123 @@ export default function StudyPlannerPage() {
                     ))
                   ) : (
                     <p className="font-arimo text-[#6B7280] text-center" style={{ fontSize: '13px', paddingTop: '8px' }}>
-                      No goals yet — add one above to get started.
+                      No goals yet — add one below to get started.
                     </p>
                   )}
                 </div>
+
+                {/* Inline add-goal row — sits at the bottom, below the goals list */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newGoal}
+                    onChange={(e) => setNewGoal(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddGoal(); }}
+                    placeholder="Add weekly goal..."
+                    className="flex-1 min-w-0 font-arimo outline-none transition-colors"
+                    style={{ height: '40px', borderRadius: '10px', border: '0.8px solid #E5E7EB', padding: '0 14px', fontSize: '14px', color: '#101828', background: '#FFFFFF' }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = '#4F78F6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(79, 120, 246, 0.15)'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }}
+                  />
+                  <button
+                    onClick={handleAddGoal}
+                    disabled={!newGoal.trim()}
+                    className="flex items-center gap-1.5 font-arimo font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-40 flex-shrink-0"
+                    style={{ height: '40px', padding: '0 16px', borderRadius: '10px', background: '#17223E', fontSize: '13px' }}
+                  >
+                    <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none">
+                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
+                    Add
+                  </button>
+                </div>
               </div>
 
-              {/* Card 2: Planner Sync – fixed width matches "Your Plan is Empty" above */}
+              {/* Card 2: Time Distribution – dimensions match surrounding row cards */}
               <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] flex flex-col justify-between"
-                style={{ width: '100%', padding: '24px' }}
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] flex flex-col"
               >
-                <div>
-                    <div className="flex items-center gap-2 mb-4">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/image-removebg-preview%20(64)%201.png" alt="Sync" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
-                      <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '16px', lineHeight: '24px' }}>
-                        Planner Sync
-                      </h3>
-                    </div>
-
-                    <div className="space-y-3">
-                      {/* Google Calendar */}
-                      <div className="flex items-center justify-between pb-3 border-b border-[#F3F4F6]">
-                        <div className="flex items-center gap-3">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src="/Container%20(3).png" alt="GCal" style={{ width: '20px', height: '20px', objectFit: 'contain', flexShrink: 0 }} />
-                          <div>
-                            <span className="font-arimo text-[#101828]" style={{ fontSize: '14px' }}>Google Calendar</span>
-                            {calendarSyncError && (
-                              <p className="font-arimo text-[#DC2626] mt-1 max-w-[180px]" style={{ fontSize: '11px', lineHeight: '14px' }}>
-                                {calendarSyncError}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleGoogleCalendarToggle}
-                          disabled={calendarSyncLoading}
-                          aria-pressed={calendarSyncEnabled}
-                          aria-label={`${calendarSyncEnabled ? 'Disable' : 'Enable'} Google Calendar sync`}
-                          className={`w-10 h-6 rounded-full relative cursor-pointer transition-colors disabled:cursor-wait disabled:opacity-60 ${calendarSyncEnabled ? 'bg-[#101828]' : 'bg-[#D1D5DB]'}`}
-                        >
-                          <span
-                            className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${calendarSyncEnabled ? 'translate-x-4' : 'translate-x-0'}`}
-                          />
-                        </button>
-                      </div>
-
-                      {/* Smart Notifications */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src="/Container%20(4).png" alt="Notifications" style={{ width: '20px', height: '20px', objectFit: 'contain', flexShrink: 0 }} />
-                          <span className="font-arimo text-[#101828]" style={{ fontSize: '14px' }}>Smart Notifications</span>
-                        </div>
-                        {/* Toggle ON */}
-                         <div className="w-10 h-6 bg-[#101828] rounded-full relative cursor-pointer">
-                          <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-transform"></div>
-                        </div>
-                      </div>
-                    </div>
+                <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
+                  <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>
+                    <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
+                  </div>
+                  <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
+                    Time Distribution
+                  </span>
                 </div>
-                
-                {/* Button */}
-                <button
-                    onClick={startFocusSession}
-                    disabled={pendingTaskCount === 0}
-                    className="w-full bg-[#101828] text-white font-arimo font-bold rounded-[8px] hover:opacity-90 transition-opacity disabled:opacity-40"
-                    style={{ height: '40px', fontSize: '14px' }}
-                >
-                    Start Today&apos;s Session
-                </button>
+
+                {/* SVG Pie Chart */}
+                <div className="flex items-center justify-center" style={{ marginBottom: '12px' }}>
+                  {!hasCompletedTimeDistribution ? (
+                    <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
+                      Complete at least one task to see distribution
+                    </div>
+                  ) : (
+                    <svg viewBox="0 0 160 160" width="160" height="160">
+                      {(() => {
+                        const cx = 80, cy = 80, r = 60, strokeWidth = 20;
+                        const gap = timeByType.length > 1 ? 0.06 : 0; // small gap between segments
+                        let angle = -Math.PI / 2;
+                        return timeByType.map((slice) => {
+                          const sliceAngle = (slice.seconds / totalTypeSecs) * 2 * Math.PI;
+                          // Single full-ring segment: draw a plain circle (arc can't close 360°).
+                          if (timeByType.length === 1) {
+                            return (
+                              <circle
+                                key={slice.id}
+                                cx={cx}
+                                cy={cy}
+                                r={r}
+                                fill="none"
+                                stroke={slice.color}
+                                strokeWidth={strokeWidth}
+                              />
+                            );
+                          }
+                          const start = angle + gap / 2;
+                          const end = angle + sliceAngle - gap / 2;
+                          const path = donutArcPath(cx, cy, r, start, end);
+                          angle += sliceAngle;
+                          return (
+                            <path
+                              key={slice.id}
+                              d={path}
+                              fill="none"
+                              stroke={slice.color}
+                              strokeWidth={strokeWidth}
+                              strokeLinecap="round"
+                            />
+                          );
+                        });
+                      })()}
+                      <text x="80" y="74" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="26" fontFamily="Arimo, sans-serif">
+                        {fmtDuration(totalTypeSecs)}
+                      </text>
+                      <text x="80" y="96" textAnchor="middle" dominantBaseline="middle" fill="#9CA3AF" fontSize="12" fontFamily="Arimo, sans-serif">
+                        today
+                      </text>
+                    </svg>
+                  )}
+                </div>
+
+                {/* Legend */}
+                <div className="space-y-2">
+                  {!hasCompletedTimeDistribution ? (
+                    <div className="font-arimo text-[#9CA3AF] text-center" style={{ fontSize: '13px', paddingTop: '4px' }}>
+                      Complete tasks to see subject-wise distribution
+                    </div>
+                  ) : (
+                    timeByType.map(slice => (
+                      <div key={slice.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: slice.color }}></span>
+                          <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{slice.label}</span>
+                        </div>
+                        <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtDuration(slice.seconds)}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
 
             </div>
@@ -1671,67 +1671,83 @@ export default function StudyPlannerPage() {
           {/* ═══════ Right Column (290px): Streak + Quick Add ═══════ */}
           <div className="flex-shrink-0 flex flex-col gap-5 w-full xl:w-[290px]">
 
-            {/* Study Streak Card */}
+            {/* Study Streak Card — converted from the reference study-streak/calendar design */}
             <div
+              className="streak-cal"
               style={{
                 width: '100%',
-                borderRadius: '16px',
-                border: '0.8px solid #E5E7EB',
-                background: '#FFFFFF',
-                paddingTop: '24.8px',
-                paddingRight: '24.8px',
-                paddingBottom: '0.8px',
-                paddingLeft: '24.8px',
+                background: '#ffffff',
+                borderRadius: '18px',
+                padding: '18px',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.05)',
               }}
             >
-              <p className="font-arimo" style={{ fontSize: '16px', lineHeight: '24px', fontWeight: 400, color: '#6A7282', marginBottom: '0' }}>
-                Study Streak
-              </p>
-              <h2 className="font-arimo font-bold" style={{ fontSize: '48px', lineHeight: '48px', letterSpacing: '0px', color: '#312C85', marginBottom: '8px' }}>
-                {streakDays} Days
-              </h2>
-                <div className="flex items-center" style={{ gap: '6px', marginBottom: '4px' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/fire-icon.png" alt="Fire" style={{ width: '16px', height: '20px' }} />
-                <span className="font-arimo font-bold" style={{ fontSize: '16px', lineHeight: '24px', letterSpacing: '0px', color: '#00BC7D' }}>
-                  {weeklyStreakLabel || '-'}
+              <style>{`
+                .streak-cal .sc-arrow:hover { background: #f3f4f6; }
+                .streak-cal .sc-today:hover { background: #fafafa; }
+              `}</style>
+
+              {/* Streak header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="sc-flame" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ffb547" />
+                        <stop offset="55%" stopColor="#ff7a3d" />
+                        <stop offset="100%" stopColor="#ef3d3d" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M12 2.5c.6 2.7 2.6 4 4 5.7 1.7 2 2.5 3.8 2.5 6 0 3.9-3 7-6.5 7s-6.5-3.1-6.5-7c0-2.6 1.4-4.2 2.6-5.3.2 1.1.9 1.9 1.8 1.9 1.3 0 1.8-1.4 1.6-3.1-.2-1.7.2-3.7.5-5.2z" fill="url(#sc-flame)" />
+                    <path d="M12 12.5c.6 1 1.7 1.5 1.7 3 0 1.6-1.1 2.7-2.5 2.7s-2.4-1-2.4-2.5c0-1 .5-1.6 1.1-2.1.2.5.6.8 1 .8.7 0 1-.7.9-1.4-.1-.5 0-1 .2-1.5z" fill="#ffe27a" opacity="0.95" />
+                  </svg>
                 </span>
+                <div style={{ color: '#6b7280', fontSize: '14px' }}>Study Streak</div>
               </div>
-              <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, letterSpacing: '0px', color: '#6A7282', marginBottom: '24px' }}>
-                Longest: {longestStreak} Days
-              </p>
 
-              <p className="font-arimo font-bold" style={{ fontSize: '16px', lineHeight: '24px', letterSpacing: '0px', color: '#101828', marginBottom: '12px' }}>
-                {calendarMonthYear}
-              </p>
+              <div style={{ color: '#1d2466', fontSize: '36px', fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1.05, margin: '6px 0 2px' }}>
+                {streakDays} Days
+              </div>
+              <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '6px' }}>Longest: {longestStreak} Days</div>
 
-              <div className="grid grid-cols-7" style={{ marginBottom: '10px' }}>
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-                  <span key={i} className="font-arimo text-center" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: '#6A7282' }}>
-                    {d}
+              {/* Calendar header (month + nav) */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '18px 0 10px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#0b1020', fontWeight: 800, fontSize: '18px', letterSpacing: '-0.2px' }}>
+                  <span style={{ width: '22px', height: '22px', borderRadius: '5px', overflow: 'hidden', display: 'inline-flex', flexDirection: 'column', boxShadow: '0 0 0 1px #e5e7eb inset', background: '#ffffff' }}>
+                    <span style={{ background: '#a83232', color: '#ffffff', fontSize: '7px', fontWeight: 800, textAlign: 'center', padding: '1px 0 0', lineHeight: 1 }}>{calIcoMonth}</span>
+                    <span style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0b1020', fontWeight: 800, fontSize: '11px', lineHeight: 1 }}>{calIcoNum}</span>
                   </span>
-                ))}
+                  {calendarMonthYear}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button type="button" onClick={prevCalMonth} title="Previous" className="sc-arrow" style={{ width: '24px', height: '28px', border: 'none', background: 'transparent', color: '#111827', fontSize: '18px', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>&#x2039;</button>
+                  <button type="button" onClick={goCalToday} title="Jump to today" className="sc-today" style={{ height: '30px', padding: '0 14px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#ffffff', color: '#0b1020', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 1px 1px rgba(0,0,0,0.02)' }}>Today</button>
+                  <button type="button" onClick={nextCalMonth} title="Next" className="sc-arrow" style={{ width: '24px', height: '28px', border: 'none', background: 'transparent', color: '#111827', fontSize: '18px', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>&#x203A;</button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-7" style={{ gap: '6px 0', paddingBottom: '16px' }}>
-                {calendarDays.map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-center font-arimo font-bold"
-                    style={{
-                      width: '27.5px',
-                      height: '27.5px',
-                      borderRadius: (item.studied || item.today) ? '10px' : '0',
-                      background: item.empty ? 'transparent' : item.today ? '#FF6900' : item.studied ? '#00BC7D' : 'transparent',
-                      color: item.empty ? 'transparent' : (item.studied || item.today) ? '#FFFFFF' : '#99A1AF',
-                      fontSize: '14px',
-                      lineHeight: '20px',
-                      margin: '0 auto',
-                    }}
-                  >
-                    {item.empty ? '' : item.day}
-                  </div>
+              {/* Day grid (weekday row + days share one grid, per reference) */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+                  <div key={`dow-${i}`} style={{ textAlign: 'center', color: '#9ca3af', fontSize: '11px', fontWeight: 500, padding: '2px 0' }}>{d}</div>
                 ))}
+                {calendarDays.map((item, i) => {
+                  if (item.empty) return <div key={i} />;
+                  const palette = {
+                    missed: { background: '#f1f3f5', color: '#9aa3af' },
+                    active: { background: '#dcf5e3', color: '#2e8b57' },
+                    today: { background: '#0f1626', color: '#f4b740' },
+                    future: { background: 'transparent', color: '#9ca3af' },
+                  }[item.status];
+                  return (
+                    <div
+                      key={i}
+                      style={{ aspectRatio: '1 / 1', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, ...palette }}
+                    >
+                      {item.day}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -1771,6 +1787,8 @@ export default function StudyPlannerPage() {
                       color: '#374151',
                       padding: '8px 10px',
                       flex: '1 1 120px',
+                      minWidth: 0,
+                      overflow: 'hidden',
                       textAlign: 'left',
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -1779,13 +1797,14 @@ export default function StudyPlannerPage() {
                     }}
                   >
                     {SUBJECT_ICON_MAP[item] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={SUBJECT_ICON_MAP[item]}
-                        alt=""
-                        aria-hidden="true"
-                        style={{ ...quickAddIconBoxStyle, objectFit: 'contain' }}
-                      />
+                      <span aria-hidden="true" style={quickAddIconBoxStyle}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={SUBJECT_ICON_MAP[item]}
+                          alt=""
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }}
+                        />
+                      </span>
                     ) : (
                       <span
                         aria-hidden="true"
@@ -1794,102 +1813,11 @@ export default function StudyPlannerPage() {
                         {getSubjectEmoji(item)}
                       </span>
                     )}
-                    {item}
+                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item}
+                    </span>
                   </button>
                 ))}
-              </div>
-            </div>
-
-            {/* Time Distribution */}
-            <div
-              style={{
-                width: '100%',
-                borderRadius: '16px',
-                border: '0.8px solid #E5E7EB',
-                background: '#FFFFFF',
-                padding: '20px 16px',
-              }}
-            >
-              <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
-                <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>
-                  <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
-                </div>
-                <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
-                  Time Distribution
-                </span>
-              </div>
-
-              {/* SVG Pie Chart */}
-              <div className="flex items-center justify-center" style={{ marginBottom: '12px' }}>
-                {!hasCompletedTimeDistribution ? (
-                  <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
-                    Complete at least one task to see distribution
-                  </div>
-                ) : (
-                  <svg viewBox="0 0 160 160" width="160" height="160">
-                    {(() => {
-                      const cx = 80, cy = 80, r = 60, strokeWidth = 20;
-                      const gap = timeByType.length > 1 ? 0.06 : 0; // small gap between segments
-                      let angle = -Math.PI / 2;
-                      return timeByType.map((slice) => {
-                        const sliceAngle = (slice.seconds / totalTypeSecs) * 2 * Math.PI;
-                        // Single full-ring segment: draw a plain circle (arc can't close 360°).
-                        if (timeByType.length === 1) {
-                          return (
-                            <circle
-                              key={slice.id}
-                              cx={cx}
-                              cy={cy}
-                              r={r}
-                              fill="none"
-                              stroke={slice.color}
-                              strokeWidth={strokeWidth}
-                            />
-                          );
-                        }
-                        const start = angle + gap / 2;
-                        const end = angle + sliceAngle - gap / 2;
-                        const path = donutArcPath(cx, cy, r, start, end);
-                        angle += sliceAngle;
-                        return (
-                          <path
-                            key={slice.id}
-                            d={path}
-                            fill="none"
-                            stroke={slice.color}
-                            strokeWidth={strokeWidth}
-                            strokeLinecap="round"
-                          />
-                        );
-                      });
-                    })()}
-                    <text x="80" y="74" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="26" fontFamily="Arimo, sans-serif">
-                      {fmtDuration(totalTypeSecs)}
-                    </text>
-                    <text x="80" y="96" textAnchor="middle" dominantBaseline="middle" fill="#9CA3AF" fontSize="12" fontFamily="Arimo, sans-serif">
-                      today
-                    </text>
-                  </svg>
-                )}
-              </div>
-
-              {/* Legend */}
-              <div className="space-y-2">
-                {!hasCompletedTimeDistribution ? (
-                  <div className="font-arimo text-[#9CA3AF] text-center" style={{ fontSize: '13px', paddingTop: '4px' }}>
-                    Complete tasks to see subject-wise distribution
-                  </div>
-                ) : (
-                  timeByType.map(slice => (
-                    <div key={slice.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: slice.color }}></span>
-                        <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{slice.label}</span>
-                      </div>
-                      <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtDuration(slice.seconds)}</span>
-                    </div>
-                  ))
-                )}
               </div>
             </div>
 

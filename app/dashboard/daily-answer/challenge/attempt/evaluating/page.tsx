@@ -9,7 +9,7 @@ const STEPS = [
     id: 1,
     icon: '/eval-upload.png',
     emoji: '🔍',
-    bg: '#E0F2FE',
+    bg: '#E3F2FD',
     title: 'Uploading Answer Script',
     subtitle: 'Scanning and processing your handwritten answer',
     key: 'upload',
@@ -18,7 +18,7 @@ const STEPS = [
     id: 2,
     icon: '/eval-structural.png',
     emoji: '📝',
-    bg: '#FEF3C7',
+    bg: '#FFF9C4',
     title: 'Structural Analysis',
     subtitle: 'Checking introduction-body-conclusion flow',
     key: 'structural',
@@ -27,7 +27,7 @@ const STEPS = [
     id: 3,
     icon: '/eval-content.png',
     emoji: '📚',
-    bg: '#DBEAFE',
+    bg: '#C8E6C9',
     title: 'Content Depth Assessment',
     subtitle: 'Evaluating conceptual clarity and dimensions',
     key: 'content',
@@ -36,7 +36,7 @@ const STEPS = [
     id: 4,
     icon: '/eval-balance.png',
     emoji: '⚖️',
-    bg: '#FCE7F3',
+    bg: '#F8BBD0',
     title: 'Balance & Perspective Check',
     subtitle: 'Ensuring multi-dimensional viewpoint',
     key: 'balance',
@@ -45,7 +45,7 @@ const STEPS = [
     id: 5,
     icon: '/eval-fact.png',
     emoji: '📊',
-    bg: '#DCFCE7',
+    bg: '#B2DFDB',
     title: 'Fact & Example Validation',
     subtitle: 'Cross-referencing with latest data',
     key: 'fact',
@@ -54,7 +54,7 @@ const STEPS = [
     id: 6,
     icon: '/eval-pillar.png',
     emoji: '🎯',
-    bg: '#EDE9FE',
+    bg: '#E1BEE7',
     title: '6-Pillar Rubric Scoring',
     subtitle: 'Direct   Demand   Structure   Substantiation',
     key: 'scoring',
@@ -63,7 +63,7 @@ const STEPS = [
     id: 7,
     icon: '/eval-feedback.png',
     emoji: '💡',
-    bg: '#FEF9C3',
+    bg: '#FFECB3',
     title: 'Preparing Personalised Feedback',
     subtitle: 'Crafting actionable insights tailored to your answer',
     key: 'feedback',
@@ -303,35 +303,47 @@ export default function EvaluatingPage() {
 
   return (
     <div
-      className="h-full overflow-hidden flex items-center justify-center font-arimo"
-      style={{ background: '#FAFBFE' }}
+      className="h-full overflow-hidden flex items-center justify-center font-jakarta"
+      style={{ background: '#F5F6F8' }}
     >
+      <style>{`
+        @keyframes da-brainBreathe {
+          0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(244,143,177,0.30); }
+          50%      { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(244,143,177,0); }
+        }
+        .da-thinking-brain { width:64px; height:64px; margin:0 auto; display:grid; place-items:center; border-radius:50%;
+          background:radial-gradient(circle, rgba(244,143,177,0.15) 0%, transparent 70%); animation:da-brainBreathe 3s ease-in-out infinite; }
+      `}</style>
       <div
-        className="relative flex flex-col px-6 py-4 sm:px-8"
+        className="relative flex flex-col px-6 py-5 sm:px-7"
         style={{
           width: '100%',
-          maxWidth: '620px',
+          maxWidth: '680px',
           maxHeight: 'calc(100vh - 80px)',
-          borderRadius: '16px',
+          borderRadius: '24px',
           background: '#FFFFFF',
-          boxShadow: '0px 8px 10px -6px #0000001A, 0px 20px 25px -5px #0000001A',
+          boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE',
         }}
       >
         {/* Header */}
         <div className="flex flex-col items-center" style={{ marginBottom: 8 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/eval-header.png" alt="Evaluating" style={{ width: '36px', height: '36px', objectFit: 'contain', marginBottom: '4px' }} />
-          <h1 style={{ fontFamily: 'Arimo', fontWeight: 700, fontSize: '20px', lineHeight: '26px', color: '#1E2939', textAlign: 'center', marginBottom: '2px' }}>
+          <div className="da-thinking-brain" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+              <path d="M9.5 2C7.567 2 6 3.567 6 5.5c0 .536.12 1.044.334 1.5H6c-1.657 0-3 1.343-3 3 0 1.135.63 2.122 1.556 2.625C4.207 13.285 4 14.118 4 15c0 2.21 1.79 4 4 4h1v1a2 2 0 002 2h2a2 2 0 002-2v-1h1c2.21 0 4-1.79 4-4 0-.882-.207-1.715-.556-2.375C20.37 13.122 21 12.135 21 11c0-1.657-1.343-3-3-3h-.334A3.5 3.5 0 0018 5.5C18 3.567 16.433 2 14.5 2c-1.12 0-2.117.527-2.75 1.35C11.117 2.527 10.12 2 9.5 2z" fill="#F48FB1" opacity="0.9" />
+              <path d="M12 4v16M9 8h6M10 12h4M9 16h6" stroke="#fff" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
+            </svg>
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-dm-serif), serif', fontSize: '22px', letterSpacing: '-0.01em', lineHeight: '28px', color: '#0B1020', textAlign: 'center', marginTop: '8px', marginBottom: '3px' }}>
             Evaluating Your Answer
           </h1>
-          <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: '12px', lineHeight: '16px', color: '#4A5565', textAlign: 'center', margin: 0 }}>
+          <p style={{ fontWeight: 400, fontSize: '12.5px', lineHeight: '16px', color: '#6B7280', textAlign: 'center', margin: 0 }}>
             Analyzing with UPSC examiner&apos;s lens · Usually takes 30-60 seconds
           </p>
         </div>
 
         {/* Error Banner */}
         {error && (
-          <div className="mb-2 px-4 py-2 bg-red-50 border border-red-200 rounded-[10px] text-red-700 text-center" style={{ fontSize: '13px' }}>
+          <div className="mt-2 mb-1 px-4 py-2 bg-red-50 border border-red-200 rounded-[10px] text-red-700 text-center" style={{ fontSize: '13px' }}>
             {error}
             <div className="mt-2">
               <button
@@ -345,61 +357,52 @@ export default function EvaluatingPage() {
         )}
 
         {/* Steps */}
-        <div className="flex flex-col gap-0" style={{ marginBottom: 8 }}>
+        <div className="flex flex-col gap-0" style={{ marginTop: 8, marginBottom: 8 }}>
           {STEPS.map((step, idx) => {
             const done = isStepDone(step);
             const active = isStepActive(step, idx);
             return (
               <div key={step.id}>
-                <div className="flex items-center justify-between" style={{ padding: '6px 0' }}>
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between" style={{ padding: '7px 0', opacity: done || active ? 1 : 0.6, transition: 'opacity 0.4s' }}>
+                  <div className="flex items-center gap-2.5">
                     <span
                       aria-hidden="true"
                       style={{
-                        width: '28px', height: '28px', borderRadius: '8px', background: step.bg,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px',
-                        opacity: done || active ? 1 : 0.4, transition: 'opacity 0.4s', flexShrink: 0,
+                        width: '32px', height: '32px', borderRadius: '10px', background: step.bg,
+                        display: 'grid', placeItems: 'center', fontSize: '15px', flexShrink: 0,
                       }}
                     >
                       <span className={step.key === 'feedback' && active ? 'bulb-grow' : undefined}>{step.emoji}</span>
                     </span>
-                    <div>
-                      <p style={{ fontFamily: 'Arimo', fontWeight: 700, fontSize: '13px', lineHeight: '17px', color: '#17223E', margin: 0 }}>{step.title}</p>
-                      <p style={{ fontFamily: 'Arimo', fontWeight: 400, fontSize: '11px', lineHeight: '14px', color: '#6A7282', margin: 0 }}>{step.subtitle}</p>
-                    </div>
+                    <p style={{ fontWeight: 600, fontSize: '13px', lineHeight: '17px', color: '#0B1020', margin: 0 }}>{step.title}</p>
                   </div>
                   <div className="flex items-center">
                     {done ? <CheckIcon /> : active ? <SpinnerIcon /> : (
-                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: '2px solid #D1D5DB' }} />
+                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: '2px solid #E6E8EE' }} />
                     )}
                   </div>
                 </div>
-                {idx < STEPS.length - 1 && <div style={{ width: '100%', height: '1px', background: '#E5E7EB' }} />}
+                {idx < STEPS.length - 1 && <div style={{ width: '100%', height: '1px', background: '#E6E8EE' }} />}
               </div>
             );
           })}
         </div>
 
         {/* Bottom yellow card */}
-        <div style={{ borderRadius: '10px', borderLeft: '4px solid #FDC700', background: '#FEFCE8', padding: '10px 16px' }}>
-          <div className="flex items-center justify-center gap-2" style={{ marginBottom: 4 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/eval-timer.png" alt="Timer" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
-            <span style={{ fontFamily: 'DM Sans', fontWeight: 700, fontSize: '12px', lineHeight: '16px', color: '#101828' }}>
-              {secondsRemaining > 0 ? `${secondsRemaining} Seconds Remaining` : 'Almost done...'}
+        <div style={{ borderRadius: '12px', borderLeft: '4px solid #F5B800', background: '#FEFCE8', padding: '12px 16px', textAlign: 'center' }}>
+          <div className="flex items-center justify-center gap-2.5" style={{ marginBottom: 8 }}>
+            <span style={{ fontSize: '15px' }} aria-hidden="true">⏳</span>
+            <span style={{ fontWeight: 700, fontSize: '14px', lineHeight: '16px', color: '#0B1020' }}>
+              {secondsRemaining > 0 ? `${secondsRemaining} seconds remaining` : 'Almost done...'}
             </span>
           </div>
 
-          <div className="mx-auto" style={{ width: '100%', maxWidth: '362px', height: '4px', borderRadius: '10px', background: '#D9D9D9', overflow: 'hidden', marginBottom: 6 }}>
-            <div style={{ height: '100%', width: `${progressPercent}%`, borderRadius: '10px', background: '#101828', transition: 'width 1s linear' }} />
+          <div style={{ height: '5px', borderRadius: '99px', background: '#E5E7EB', overflow: 'hidden', marginBottom: 10 }}>
+            <div style={{ height: '100%', width: `${progressPercent}%`, borderRadius: '99px', background: 'linear-gradient(90deg,#0B1020,#F5B800)', transition: 'width 0.5s ease' }} />
           </div>
 
-          <p className="text-center" style={{ fontFamily: 'Arimo', fontSize: '11px', lineHeight: '16px', color: '#364153', margin: '0 0 2px' }}>
+          <p style={{ fontSize: '12px', lineHeight: '1.5', color: '#0B1020', margin: 0 }}>
             <strong>While you wait:</strong> In the actual exam, this is the time you&apos;d spend reviewing your answer.
-          </p>
-
-          <p className="text-center" style={{ fontFamily: 'Arimo', fontWeight: 400, fontStyle: 'italic', fontSize: '10px', lineHeight: '14px', color: '#6A7282', margin: 0 }}>
-            &quot;Consistency matters more than perfection. You&apos;re building a skill that compounds.&quot;
           </p>
         </div>
       </div>
