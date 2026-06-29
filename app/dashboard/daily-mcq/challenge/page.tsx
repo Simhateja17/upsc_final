@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { dailyMcqService, bookmarkService, flagService } from '@/lib/services';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { getDistinctChipStyles } from '@/lib/subjectPalette';
+import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
 
 interface Question {
   id: string;
@@ -453,9 +454,12 @@ export default function DailyMcqChallengePage() {
                     </svg>
                   </button>
                 </div>
-                <div style={{ flex: isMobile ? 'none' : '1 1 auto', minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', whiteSpace: 'pre-line', fontSize: 14, lineHeight: '23px', color: '#1A1D23', paddingRight: 6 }}>
+                <div style={{ flex: isMobile ? 'none' : '1 1 auto', minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', fontSize: 14, lineHeight: '23px', color: '#1A1D23', paddingRight: 6 }}>
                   <span style={{ fontWeight: 700 }}>Question {currentQuestion + 1}: </span>
-                  {normalizeQuestionText(q.questionText)}
+                  <StructuredQuestionRenderer
+                    questionText={q.questionText}
+                    textStyle={{ fontSize: 14, lineHeight: '23px', color: '#1A1D23' }}
+                  />
                 </div>
                 <div style={{ flexShrink: 0, marginTop: 12, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
                   {q.options.map((option) => {

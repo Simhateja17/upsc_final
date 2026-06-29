@@ -5,6 +5,7 @@ import Link from 'next/link';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { pyqService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
+import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
 import prelimsSyllabus from '@/data/syllabus/prelimsSyllabus.json';
 import { handleEntitlementError, formatPeriod } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
@@ -834,8 +835,9 @@ export default function PyqPage() {
                     </div>
 
                     {/* Question text */}
-                    <QuestionTextRenderer
-                      text={q.questionText}
+                    <StructuredQuestionRenderer
+                      questionStructure={(q as any).questionStructure}
+                      questionText={q.questionText}
                       className="mb-5 text-[18px] font-[500] leading-[1.5] text-[#111827]"
                       textClassName="text-[18px] font-[500] leading-[1.5] text-[#111827]"
                     />
