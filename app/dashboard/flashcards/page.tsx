@@ -6,6 +6,7 @@ import CreateFlashcardModal from '@/components/CreateFlashcardModal';
 import AddSubjectModal, { NewSubject } from '@/components/AddSubjectModal';
 import { flashcardService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import FlashcardScienceSections from '@/components/FlashcardScienceSections';
 import { UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 
@@ -254,7 +255,13 @@ export default function FlashcardsPage() {
                 const cardContent = (
                   <>
                     <div className="flex items-start justify-between gap-3">
-                      <span aria-hidden style={{ fontSize: 24, lineHeight: '24px' }}>{item.icon}</span>
+                      <span
+                        aria-hidden
+                        className="flex items-center justify-center flex-shrink-0"
+                        style={{ width: 44, height: 44, borderRadius: 12, background: `${item.card.bar}1A`, fontSize: 24, lineHeight: 1 }}
+                      >
+                        {item.icon}
+                      </span>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         {item.isNew && (
                           <span
@@ -389,6 +396,8 @@ export default function FlashcardsPage() {
             </div>
           )}
         </div>
+
+        <FlashcardScienceSections />
       </div>
 
       <AddSubjectModal
