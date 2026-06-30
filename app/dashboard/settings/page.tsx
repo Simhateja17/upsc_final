@@ -7,10 +7,9 @@ import { userService } from '@/lib/services';
 import { authService } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
 
-type TabId = 'profile' | 'security' | 'notifications' | 'preferences' | 'privacy' | 'delete';
+type TabId = 'security' | 'notifications' | 'preferences' | 'privacy' | 'delete';
 
 const TABS: { id: Exclude<TabId, 'delete'>; label: string; icon: string }[] = [
-  { id: 'profile',       label: 'Profile',       icon: '🗂️' },
   { id: 'security',      label: 'Security',      icon: '🔒' },
   { id: 'notifications', label: 'Notifications', icon: '🔔' },
   { id: 'preferences',   label: 'Preferences',   icon: '🐾' },
@@ -46,7 +45,7 @@ export default function SettingsPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
 
-  const [tab, setTab] = useState<TabId>('profile');
+  const [tab, setTab] = useState<TabId>('security');
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
@@ -757,7 +756,6 @@ export default function SettingsPage() {
 
           {/* Content */}
           <main className="min-w-0">
-            {tab === 'profile'       && profileView}
             {tab === 'security'      && securityView}
             {tab === 'notifications' && notificationsView}
             {tab === 'preferences'   && preferencesView}
