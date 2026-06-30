@@ -565,24 +565,6 @@ export const spacedRepService = {
   deleteItem: (id: string) => api.delete<any>(`/spaced-repetition/${id}`, authConfig()),
 };
 
-// ==================== Bookmarks ====================
-
-export const bookmarkService = {
-  getAll: (page = 1, limit = 20) =>
-    api.get<any>(`/bookmarks?page=${page}&limit=${limit}`, authConfig()),
-  toggle: (data: {
-    entityType: string;
-    entityId: string;
-    title: string;
-    source: string;
-    sourceUrl?: string;
-    tag?: string;
-  }) => api.post<any>('/bookmarks/toggle', data, authConfig()),
-  remove: (id: string) => api.delete<any>(`/bookmarks/${id}`, authConfig()),
-  check: (type: string, id: string) =>
-    api.get<any>(`/bookmarks/check?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`, authConfig()),
-};
-
 // ==================== Mindmap ====================
 
 export const mindmapService = {
