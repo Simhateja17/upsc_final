@@ -3,7 +3,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { AuthModalProvider } from '@/contexts/AuthModalContext'
 import AuthModal from '@/components/AuthModal'
-import { Cormorant_Garamond, DM_Sans, Sora, Playfair_Display, Inter, Merriweather, Plus_Jakarta_Sans, DM_Serif_Display } from 'next/font/google'
+import { Cormorant_Garamond, DM_Sans, Sora, Playfair_Display, Inter, Merriweather, Plus_Jakarta_Sans, DM_Serif_Display, Fraunces } from 'next/font/google'
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -68,6 +68,15 @@ const dmSerif = DM_Serif_Display({
   display: 'swap',
 })
 
+// Fraunces — the Study Material reference's serif display font ("Built the way UPSC tests you").
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-fraunces',
+  display: 'swap',
+})
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -96,7 +105,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${cormorant.variable} ${dmSans.variable} ${sora.variable} ${playfair.variable} ${interFont.variable} ${merriweather.variable} ${jakarta.variable} ${dmSerif.variable}`}>
+      <body className={`${cormorant.variable} ${dmSans.variable} ${sora.variable} ${playfair.variable} ${interFont.variable} ${merriweather.variable} ${jakarta.variable} ${dmSerif.variable} ${fraunces.variable}`}>
         <AuthProvider>
           <AuthModalProvider>
             {children}

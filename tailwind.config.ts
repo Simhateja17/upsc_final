@@ -20,6 +20,7 @@ const config: Config = {
         'roboto': ['var(--font-roboto)', 'sans-serif'],
         'poppins': ['var(--font-poppins)', 'sans-serif'],
         'arimo': ['var(--font-arimo)', 'sans-serif'],
+        'fraunces': ['var(--font-fraunces)', 'ui-serif', 'Georgia', 'serif'],
         'tinos': ['var(--font-tinos)', 'serif'],
         'fahkwang': ['var(--font-fahkwang)', 'sans-serif'],
       },

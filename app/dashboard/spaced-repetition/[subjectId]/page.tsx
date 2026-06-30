@@ -4,33 +4,40 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { flashcardService, spacedRepService, userService } from '@/lib/services';
+import SpacedRepStyles from '../referenceStyles';
+import AddQuestionModal, { type AddQuestionPayload } from '../AddQuestionModal';
 import {
   FREE_QUESTION_LIMIT,
-  MODAL_SUBJECTS,
-  MODAL_TYPE_OPTIONS,
-  MODAL_SCHEDULE_OPTIONS,
   normalizeScheduleDays,
   reviewInfo,
   scheduleOptions,
-  scheduleToDays,
-  sourceColor,
   sourceTypeToLabel,
-  subjectBg,
   subjectHealthById,
   subjectLabelToId,
   subjectOptions,
-  type ModalScheduleId,
   type SpacedRepItem,
 } from '../shared';
 
 const FILTERS = ['All', 'mcq', 'mains', 'pyq', 'custom', 'Overdue', 'Due Today'] as const;
 type FilterKey = (typeof FILTERS)[number];
 
-function filterLabel(f: FilterKey): string {
-  if (f === 'All') return 'All';
-  if (f === 'Overdue') return 'Overdue';
-  if (f === 'Due Today') return 'Due Today';
-  return f.toUpperCase();
+const FILTER_META: Record<FilterKey, { label: string; showCount: boolean }> = {
+  All: { label: 'All', showCount: true },
+  mcq: { label: '📝 MCQ', showCount: true },
+  mains: { label: '✍️ Mains', showCount: true },
+  pyq: { label: '📊 PYQ', showCount: true },
+  custom: { label: '📄 Custom', showCount: true },
+  Overdue: { label: '⏰ Overdue', showCount: false },
+  'Due Today': { label: '⚡ Due Today', showCount: false },
+};
+
+function sourceMeta(sourceType: string): { icon: string; label: string } {
+  switch (sourceType) {
+    case 'mcq': return { icon: '📝', label: 'MCQ' };
+    case 'mains': return { icon: '✍️', label: 'Mains' };
+    case 'pyq': return { icon: '📊', label: 'PYQ' };
+    default: return { icon: '✏️', label: 'Custom' };
+  }
 }
 
 export default function SpacedRepetitionSubjectPage() {
@@ -40,29 +47,14 @@ export default function SpacedRepetitionSubjectPage() {
   const option = subjectOptions.find((o) => o.id === subjectId);
   const subjectLabel = health?.label ?? option?.label ?? subjectId;
   const subjectIcon = health?.icon ?? option?.icon ?? '📚';
-  const accentBar = health?.bar ?? '#7C3AED';
 
   const [items, setItems] = useState<SpacedRepItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKey>('All');
   const [flashcardToast, setFlashcardToast] = useState<{ subjectId: string; subject: string } | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [arrowImgFailed, setArrowImgFailed] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<SpacedRepItem | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [reviewTarget, setReviewTarget] = useState<SpacedRepItem | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
-
-  // Modal state
-  const [modalDeck, setModalDeck] = useState(subjectId || 'polity');
-  const [modalSourceType, setModalSourceType] = useState('custom');
-  const [modalQuestion, setModalQuestion] = useState('');
-  const [modalAnswer, setModalAnswer] = useState('');
-  const [modalSchedule, setModalSchedule] = useState<ModalScheduleId>('3days');
-  const [modalCustomDays, setModalCustomDays] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [addError, setAddError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -85,7 +77,7 @@ export default function SpacedRepetitionSubjectPage() {
         topicId: 'spaced-rep',
         topic: 'From Spaced Repetition',
         question: q.questionText,
-        answer: 'Review this question.',
+        answer: q.answer?.trim() || 'Review this question.',
       });
       spacedRepService.updateItem(q.id, { addedToFlashcard: true }).catch(() => {});
       setFlashcardToast({ subjectId: deckId, subject: q.subject });
@@ -166,49 +158,34 @@ export default function SpacedRepetitionSubjectPage() {
       });
   };
 
-  const handleAddItem = () => {
-    if (!modalQuestion.trim()) return;
-    setSaving(true);
-    setAddError(null);
-    const subjectName = subjectOptions.find((d) => d.id === modalDeck)?.label ?? modalDeck;
-    spacedRepService.addItem({
-      questionText: modalQuestion,
-      answer: modalAnswer || undefined,
+  const handleAddItem = async (payload: AddQuestionPayload): Promise<boolean> => {
+    const subjectName = subjectOptions.find((d) => d.id === payload.subjectId)?.label
+      ?? subjectHealthById(payload.subjectId)?.label
+      ?? payload.subjectId;
+    const res = await spacedRepService.addItem({
+      questionText: payload.questionText,
+      answer: payload.answer || undefined,
       subject: subjectName,
-      source: sourceTypeToLabel(modalSourceType),
-      sourceType: modalSourceType,
-      scheduleDays: scheduleToDays(modalSchedule, modalCustomDays),
-    })
-      .then((res) => {
-        if (res.status === 'success') {
-          setItems((prev) => [res.data, ...prev]);
-          setModalQuestion('');
-          setModalAnswer('');
-          setModalSourceType('custom');
-          setModalSchedule('3days');
-          setModalCustomDays('');
-          setShowAddModal(false);
-        }
-      })
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : 'Failed to add question. Please try again.';
-        setAddError(msg);
-      })
-      .finally(() => setSaving(false));
+      source: sourceTypeToLabel(payload.sourceType),
+      sourceType: payload.sourceType,
+      scheduleDays: [payload.firstReviewDays],
+    });
+    if (res.status === 'success') {
+      setItems((prev) => [res.data, ...prev]);
+      return true;
+    }
+    return false;
   };
 
-  const handleDeleteItem = async () => {
-    if (!deleteTarget) return;
-    setDeleting(true);
-    try {
-      await spacedRepService.deleteItem(deleteTarget.id);
-      setItems((prev) => prev.filter((i) => i.id !== deleteTarget.id));
-      setDeleteTarget(null);
-    } catch {}
-    setDeleting(false);
+  const deleteItem = (q: SpacedRepItem) => {
+    setItems((prev) => prev.filter((i) => i.id !== q.id));
+    spacedRepService.deleteItem(q.id).catch(() => {
+      // Re-add on failure so the user doesn't silently lose the row.
+      setItems((prev) => [q, ...prev]);
+    });
   };
 
-  // All items for this subject (regardless of source filter) — drives counts + the Pro meter.
+  // All items for this subject — drives counts + the free-slot meter.
   const subjectItems = items.filter((item) => item.subject === subjectLabel);
 
   const counts: Record<FilterKey, number> = {
@@ -232,7 +209,9 @@ export default function SpacedRepetitionSubjectPage() {
   const freeRemaining = Math.max(0, FREE_QUESTION_LIMIT - usedSlots);
 
   return (
-    <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: '100%' }}>
+    <div className="flex overflow-hidden" style={{ background: '#f8f9fb', height: '100%' }}>
+      <SpacedRepStyles />
+
       {/* Flashcard success toast */}
       {flashcardToast && (
         <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, background: '#101828', color: '#fff', borderRadius: 14, padding: '14px 18px', boxShadow: '0 8px 32px rgba(0,0,0,0.22)', display: 'flex', alignItems: 'center', gap: 12, maxWidth: 340 }}>
@@ -249,637 +228,179 @@ export default function SpacedRepetitionSubjectPage() {
       )}
 
       <div className="flex-1 overflow-y-auto">
-        <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          {/* Back to Subjects */}
-          <Link
-            href="/dashboard/spaced-repetition"
-            className="inline-flex items-center gap-2 mb-4"
-            style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#4A5565' }}
-          >
-            {!arrowImgFailed && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src="/ArrowLeft.png" alt="" className="w-5 h-5 object-contain flex-shrink-0 mr-1" onError={() => setArrowImgFailed(true)} />
-            )}
-            {arrowImgFailed && <span aria-hidden className="mr-1">←</span>}
-            Back to Subjects
-          </Link>
-
-          {/* Subject summary card */}
-          <div
-            className="w-full rounded-[10px] px-6 py-5 flex items-center gap-4 mb-6"
-            style={{ border: '0.8px solid #E5E7EB', background: '#FFFFFF', borderLeft: `4px solid ${accentBar}`, minHeight: 101 }}
-          >
-            <span className="text-4xl flex-shrink-0" aria-hidden>{subjectIcon}</span>
-            <div>
-              <h1 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, lineHeight: '32px', color: '#101828' }}>{subjectLabel}</h1>
-              <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>
-                {counts.All} question{counts.All === 1 ? '' : 's'} to revisit · {counts.Overdue} overdue · {counts['Due Today']} due today
-              </p>
-            </div>
-          </div>
-
-          {/* Step indicator */}
-          <div className="flex flex-wrap items-center gap-3 mb-2">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: '#101828', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}
-              >
-                2
-              </div>
-              <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, lineHeight: '28px', color: '#101828' }}>Questions to Revisit</span>
-            </div>
-          </div>
-          <p className="mb-6" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>
-            Revise these questions to close the gaps in {subjectLabel}
-          </p>
-
-          {/* Questions header */}
-          <div
-            className="flex flex-wrap items-center justify-between gap-4 py-4 px-6 rounded-[16px] mb-3"
-            style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}
-          >
-            <div className="flex flex-wrap items-center gap-3">
-              <span aria-hidden>⚠️</span>
-              <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '24px', color: '#101828' }}>Questions to Revisit</span>
-              <span className="rounded px-2.5 py-1" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', background: '#FEF2F2', color: '#E7000B' }}>
-                {counts.All} total
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                {FILTERS.map((f) => {
-                  const active = filter === f;
-                  return (
-                    <button
-                      key={f}
-                      type="button"
-                      onClick={() => setFilter(f)}
-                      className="rounded-[10px] px-3 py-2"
-                      style={{
-                        fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px',
-                        background: active ? '#101828' : '#F3F4F6',
-                        color: active ? '#FFFFFF' : '#4A5565',
-                      }}
-                    >
-                      {filterLabel(f)} ({counts[f]})
-                    </button>
-                  );
-                })}
+        <div className="sr-scope question-view">
+          {/* Header */}
+          <div className="qv-header">
+            <div className="qv-left">
+              <Link href="/dashboard/spaced-repetition" className="qv-back" aria-label="Back to subjects">
+                <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+              </Link>
+              <div className="qv-title">
+                <h2>
+                  <span>{subjectIcon}</span> {subjectLabel}
+                  {counts.All > 0 && <span className="qv-count">{counts.All}</span>}
+                </h2>
+                <p>Revise these questions to close the gaps in {subjectLabel}</p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 rounded-[10px] px-4 py-2"
-              style={{
-                background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
-                boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
-                fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF',
-              }}
-            >
-              <span>+</span> Add Question
-            </button>
           </div>
 
-          {/* Table column labels */}
-          <div
-            className="hidden md:grid px-6 pb-2"
-            style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 11, lineHeight: '16px', letterSpacing: '0.6px', color: '#9CA3AF', textTransform: 'uppercase', gridTemplateColumns: '1fr 140px 120px 150px 80px 40px', gap: 16 }}
-          >
-            <span>Question</span>
-            <span>Subject</span>
-            <span>Next Review</span>
-            <span>Schedule</span>
-            <span>Remind</span>
-            <span></span>
-          </div>
-
-          {/* Question cards */}
-          <div className="flex flex-col gap-3">
-            {loading ? (
-              [...Array(5)].map((_, i) => (
-                <div key={i} className="rounded-[16px] border border-[#E5E7EB] bg-white px-6 py-4 animate-pulse" style={{ minHeight: 83 }}>
-                  <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-gray-100 rounded w-1/4" />
+          {/* Filters */}
+          <div className="qv-filters">
+            {FILTERS.map((f) => {
+              const meta = FILTER_META[f];
+              return (
+                <div
+                  key={f}
+                  className={`qv-filter${filter === f ? ' active' : ''}`}
+                  onClick={() => setFilter(f)}
+                >
+                  {meta.label}
+                  {meta.showCount && <span className="f-count">({counts[f]})</span>}
                 </div>
-              ))
-            ) : visibleItems.length === 0 ? (
-              <div className="rounded-[16px] border border-[#E5E7EB] bg-white px-6 py-12 text-center text-gray-400">
-                No questions {filter === 'All' ? '' : 'match this filter'} for {subjectLabel} yet. Add your first question above.
-              </div>
-            ) : (
-              visibleItems.map((q) => {
-                const rev = reviewInfo(q.nextReviewAt);
-                const activeDays = normalizeScheduleDays(q);
-                return (
-                  <div
-                    key={q.id}
-                    className="grid grid-cols-1 md:grid-cols-[1fr_140px_120px_150px_80px_40px] gap-4 items-center bg-white px-6 py-4"
-                    style={{
-                      minHeight: 83,
-                      borderRadius: 16,
-                      border: '1px solid #E5E7EB',
-                      borderLeft: `4px solid ${rev.accent}`,
-                    }}
-                    onMouseEnter={() => setHoveredRow(q.id)}
-                    onMouseLeave={() => setHoveredRow(null)}
-                  >
-                    <div>
-                      <p
-                        onClick={() => { setReviewTarget(q); setShowAnswer(false); }}
-                        style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '22.75px', color: '#101828', marginBottom: 6, cursor: 'pointer' }}
-                        className="hover:text-[#E8B84B] transition-colors"
-                      >{q.questionText}</p>
-                      <div className="flex flex-wrap items-center gap-2 text-[12px]">
-                        <span
-                          className="inline-flex items-center gap-1 rounded-full px-2.5 py-1"
-                          style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 11, lineHeight: '14px', background: rev.chipBg, color: rev.chipColor }}
-                        >
-                          <span aria-hidden>{rev.icon}</span> {rev.chipText}
-                        </span>
-                        <span style={{ fontFamily: 'Inter', fontWeight: 600, color: sourceColor(q.sourceType) }}>{q.source}</span>
-                        {q.addedToFlashcard ? (
-                          <span style={{ fontFamily: 'Inter', fontWeight: 600, color: '#009966' }}>✓ Added to Flashcards</span>
-                        ) : (
+              );
+            })}
+          </div>
+
+          {/* Table */}
+          <div className="qv-table-wrap">
+            <div className="qv-col-headers">
+              <span className="qh-question">QUESTION</span>
+              <span className="qh-subject">SUBJECT</span>
+              <span className="qh-review">NEXT REVIEW</span>
+              <span className="qh-schedule">SCHEDULE</span>
+              <span className="qh-remind">REMIND</span>
+            </div>
+            <div className="qv-list">
+              {loading ? (
+                <div className="qv-empty">Loading questions…</div>
+              ) : visibleItems.length === 0 ? (
+                <div className="qv-empty">
+                  No questions {filter === 'All' ? '' : 'match this filter'} for {subjectLabel} yet. Add your first question below.
+                </div>
+              ) : (
+                visibleItems.map((q) => {
+                  const rev = reviewInfo(q.nextReviewAt);
+                  const activeDays = normalizeScheduleDays(q);
+                  const src = sourceMeta(q.sourceType);
+                  return (
+                    <div className="qv-question" key={q.id} onClick={() => { setReviewTarget(q); setShowAnswer(false); }}>
+                      <div className="qv-q-content">
+                        <div className="qv-q-text">{q.questionText}</div>
+                        <div className="qv-q-tags">
+                          <span className={`qv-tag ${rev.tone}`}>{rev.icon} {rev.chipText}</span>
+                          <span className="qv-tag custom">{src.icon} {src.label}</span>
+                          {q.addedToFlashcard ? (
+                            <span className="qv-tag flashcard">✓ In Flashcards</span>
+                          ) : (
+                            <button
+                              className="qv-flashcard-btn"
+                              onClick={(e) => { e.stopPropagation(); addToFlashcards(q); }}
+                            >
+                              + Add to Flashcards
+                            </button>
+                          )}
                           <button
-                            type="button"
-                            className="font-semibold"
-                            style={{ fontFamily: 'Inter', color: '#155DFC' }}
-                            onClick={() => addToFlashcards(q)}
+                            className="qv-delete-btn"
+                            onClick={(e) => { e.stopPropagation(); deleteItem(q); }}
+                            title="Delete question"
                           >
-                            + Add to Flashcards
+                            🗑️ Delete
                           </button>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <span
-                        className="inline-block rounded-full px-3 py-1"
-                        style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', background: subjectBg(q.subject), color: '#0A0A0A' }}
-                      >
-                        {q.subject}
-                      </span>
-                    </div>
-                    <div className="flex items-center">
-                      <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 13, lineHeight: '18px', color: rev.nextColor, textTransform: rev.tone === 'overdue' ? 'uppercase' : 'none' }}>
-                        {rev.nextLabel}
-                      </span>
-                    </div>
-                    <div className="flex gap-1.5 flex-wrap items-center">
-                      {scheduleOptions.map((day) => {
-                        const isActive = activeDays.includes(day);
-                        return (
+                      <div className="qv-subject-col">
+                        <div className="qv-subject-pill"><div className="sp-dot">{subjectIcon}</div>{subjectLabel}</div>
+                      </div>
+                      <div className="qv-review-col">
+                        <span className={`qv-review-status ${rev.tone}`}>{rev.nextLabel.toUpperCase()}</span>
+                      </div>
+                      <div className="qv-schedule">
+                        {scheduleOptions.map((day) => (
                           <button
                             key={day}
-                            type="button"
-                            onClick={() => toggleSchedule(q.id, day)}
-                            className="rounded px-2 py-1 text-[12px] font-bold transition-colors"
-                            style={{
-                              fontFamily: 'Inter', lineHeight: '16px',
-                              background: isActive ? '#101828' : '#E5E7EB',
-                              color: isActive ? '#FFFFFF' : '#4A5565',
-                            }}
+                            className={`qv-schedule-btn${activeDays.includes(day) ? ' active' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); toggleSchedule(q.id, day); }}
                           >
                             {day}d
                           </button>
-                        );
-                      })}
-                    </div>
-                    <div className="flex items-center">
+                        ))}
+                      </div>
                       <button
-                        type="button"
+                        className={`qv-remind-toggle${q.remindEnabled ? ' on' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); toggleRemind(q.id, q.remindEnabled); }}
                         role="switch"
                         aria-checked={q.remindEnabled}
-                        onClick={() => toggleRemind(q.id, q.remindEnabled)}
-                        className="relative w-11 h-6 rounded-full transition-colors flex items-center"
-                        style={{ background: q.remindEnabled ? '#00BC7D' : '#D1D5DC', paddingLeft: 4, paddingRight: 4 }}
-                      >
-                        <span
-                          className="block w-4 h-4 rounded-full bg-white shadow transition-transform"
-                          style={{ transform: q.remindEnabled ? 'translateX(20px)' : 'translateX(0)' }}
-                        />
-                      </button>
+                        aria-label="Toggle reminder"
+                      />
                     </div>
-                    <div className="flex items-center">
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(q)}
-                        aria-label="Delete question"
-                        style={{
-                          opacity: hoveredRow === q.id ? 1 : 0,
-                          transition: 'opacity 0.15s, color 0.15s',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: 4,
-                          color: '#9CA3AF',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = '#EF4444')}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = '#9CA3AF')}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                          <path d="M10 11v6" />
-                          <path d="M14 11v6" />
-                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+                  );
+                })
+              )}
+            </div>
           </div>
 
-          {/* Add Custom Question/Topic */}
-          <div
-            className="flex flex-wrap items-center justify-between gap-4 p-6 rounded-[16px] border border-[#E5E7EB] mt-3"
-            style={{ background: '#FFFFFF', minHeight: 96 }}
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-[12px] flex items-center justify-center text-xl" style={{ background: '#EEF2FF', color: '#6366F1' }}>+</div>
-              <div>
-                <p className="font-bold" style={{ fontFamily: 'Inter', fontSize: 16, lineHeight: '24px', color: '#101828' }}>Add Custom Question / Topic</p>
-                <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, lineHeight: '18px', color: '#6A7282' }}>
-                  Create your own question for review · {freeRemaining} free slot{freeRemaining === 1 ? '' : 's'} remaining
-                </p>
-              </div>
+          {/* Add custom question row */}
+          <div className="qv-add-custom" onClick={() => setShowAddModal(true)}>
+            <div className="qv-add-icon">+</div>
+            <div className="qv-add-text">
+              <h4>Add Custom Question / Topic</h4>
+              <p>Create your own question for review · {freeRemaining} free slot{freeRemaining === 1 ? '' : 's'} remaining</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
-              style={{ background: '#EEF2FF', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#4338CA' }}
-            >
-              + Add
-            </button>
+            <button className="qv-add-btn" onClick={(e) => { e.stopPropagation(); setShowAddModal(true); }}>+ Add</button>
           </div>
 
-          {/* Pro upsell banner */}
-          <div
-            className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-[12px] mt-6"
-            style={{ background: 'linear-gradient(90deg, #101828 0%, #1E293B 100%)' }}
-          >
-            <div className="flex items-center gap-3">
-              <span aria-hidden style={{ fontSize: 20 }}>⚡</span>
-              <div>
-                <p className="font-bold" style={{ fontFamily: 'Inter', fontSize: 16, lineHeight: '24px', color: '#FFFFFF' }}>Unlock unlimited questions with Pro</p>
-                <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, lineHeight: '18px', color: 'rgba(255,255,255,0.65)' }}>
-                  {usedSlots} of {FREE_QUESTION_LIMIT} free slots used
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/dashboard/billing/plans"
-              className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
-              style={{
-                background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
-                fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF',
-              }}
-            >
-              Upgrade →
-            </Link>
+          <div className="qv-upgrade-prompt-bottom">
+            🔓 <strong>Unlock unlimited questions with Pro</strong> | {usedSlots} of {FREE_QUESTION_LIMIT} free slots used
           </div>
         </div>
       </div>
 
-      {/* Question review modal */}
+      {/* Add Question modal */}
+      <AddQuestionModal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        defaultSubjectId={subjectId}
+        onSubmit={handleAddItem}
+      />
+
+      {/* Review modal */}
       {reviewTarget && (() => {
         const rev = reviewInfo(reviewTarget.nextReviewAt);
+        const src = sourceMeta(reviewTarget.sourceType);
         const hasAnswer = !!reviewTarget.answer?.trim();
+        const close = () => { setReviewTarget(null); setShowAnswer(false); };
         return (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{ background: 'rgba(16,24,40,0.45)' }}
-            onClick={() => { setReviewTarget(null); setShowAnswer(false); }}
-          >
-            <div
-              className="bg-white w-full max-w-[600px] shadow-2xl flex flex-col"
-              style={{ borderRadius: 24, overflow: 'hidden' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Top accent bar */}
-              <div style={{ height: 4, background: `linear-gradient(90deg, ${rev.accent}, ${rev.accent}88)` }} />
-
-              <div className="px-8 pt-7 pb-8">
-                {/* Chips */}
-                <div className="flex flex-wrap items-center gap-2 mb-5">
-                  <span
-                    className="rounded-full px-3 py-1"
-                    style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, background: rev.chipBg, color: rev.chipColor }}
-                  >
-                    {rev.icon} {rev.chipText}
-                  </span>
-                  <span
-                    className="rounded-full px-3 py-1"
-                    style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, background: subjectBg(reviewTarget.subject), color: '#101828' }}
-                  >
-                    {reviewTarget.subject}
-                  </span>
-                  <span
-                    className="rounded-full px-3 py-1"
-                    style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, background: '#F3F4F6', color: sourceColor(reviewTarget.sourceType) }}
-                  >
-                    {reviewTarget.source}
-                  </span>
+          <div className="sr-modal-overlay" onClick={close}>
+            <div className="sr-modal-box" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Question Review</h3>
+                <button className="modal-close" onClick={close} aria-label="Close">✕</button>
+              </div>
+              <div className="modal-body">
+                <div className="review-tags">
+                  <span className="review-tag" style={{ background: rev.chipBg, color: rev.chipColor }}>{rev.icon} {rev.chipText}</span>
+                  <span className="review-tag" style={{ background: 'rgba(245,158,11,.12)', color: 'var(--orange)' }}>{subjectIcon} {reviewTarget.subject}</span>
+                  <span className="review-tag" style={{ background: 'var(--blue-dim)', color: 'var(--blue)' }}>{src.icon} {src.label}</span>
                 </div>
-
-                {/* Question */}
-                <p style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, lineHeight: '32px', color: '#101828', marginBottom: 28 }}>
-                  {reviewTarget.questionText}
-                </p>
-
-                {/* Show Answer / Answer box */}
+                <div className="review-question">{reviewTarget.questionText}</div>
                 {!showAnswer ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAnswer(true)}
-                    className="w-full rounded-[14px] py-4 flex items-center justify-center gap-2"
-                    style={{
-                      background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
-                      fontFamily: 'Inter', fontWeight: 700, fontSize: 16, color: '#17223E',
-                      boxShadow: '0 2px 8px rgba(240,174,0,0.25)',
-                    }}
-                  >
-                    💡 Show Answer
-                  </button>
+                  <button className="show-answer-btn" onClick={() => setShowAnswer(true)}>💡 Show Answer</button>
                 ) : (
-                  <div
-                    className="rounded-[14px] p-5"
-                    style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}
-                  >
-                    <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 10, letterSpacing: '0.8px', color: '#D97706', textTransform: 'uppercase', marginBottom: 10 }}>
-                      ANSWER &amp; KEY POINTS
-                    </p>
+                  <div className="answer-reveal">
                     {hasAnswer ? (
-                      <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '22px', color: '#374151', whiteSpace: 'pre-wrap' }}>
-                        {reviewTarget.answer}
-                      </p>
+                      <><strong>Answer:</strong> {reviewTarget.answer}</>
                     ) : (
-                      <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#9CA3AF', fontStyle: 'italic' }}>
-                        No answer saved. Edit this question to add key points.
-                      </p>
+                      <em>No answer saved yet. Edit this question to add key points.</em>
                     )}
                   </div>
                 )}
-
-                {/* Close */}
-                <button
-                  type="button"
-                  onClick={() => { setReviewTarget(null); setShowAnswer(false); }}
-                  className="mt-5 w-full rounded-[12px] py-2.5 border"
-                  style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#6A7282', borderColor: '#E5E7EB', background: '#FFFFFF' }}
-                >
-                  Close
-                </button>
+                <button className="review-close-btn" onClick={close}>Close</button>
               </div>
             </div>
           </div>
         );
       })()}
-
-      {/* Delete confirmation modal */}
-      {deleteTarget && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.4)' }}
-          onClick={() => setDeleteTarget(null)}
-        >
-          <div
-            className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-xl"
-            style={{ minWidth: 320, maxWidth: 420 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <span style={{ fontSize: 40 }}>🗑️</span>
-            <h2 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 20, color: '#22304D', textAlign: 'center' }}>
-              Delete this question?
-            </h2>
-            <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#6B7280', textAlign: 'center' }}>
-              &ldquo;{deleteTarget.questionText.length > 100 ? deleteTarget.questionText.slice(0, 100) + '…' : deleteTarget.questionText}&rdquo;
-            </p>
-            <div className="flex gap-3 w-full mt-2">
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(null)}
-                className="flex-1 rounded-full border py-3 text-sm font-semibold"
-                style={{ borderColor: '#E5E7EB', color: '#374151', fontFamily: 'Inter' }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteItem}
-                disabled={deleting}
-                className="flex-1 rounded-full py-3 text-sm font-semibold text-white"
-                style={{ background: '#EF4444', fontFamily: 'Inter', opacity: deleting ? 0.6 : 1 }}
-              >
-                {deleting ? 'Deleting…' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Question modal */}
-      {showAddModal && (
-        <div
-          className="fixed inset-0 z-50 overflow-y-auto"
-          style={{ background: 'rgba(0,0,0,0.55)' }}
-          onClick={() => { setShowAddModal(false); setAddError(null); }}
-        >
-          <div className="flex min-h-full items-start justify-center p-4 py-8">
-          <div
-            className="bg-white flex flex-col w-full max-w-[560px] shadow-2xl"
-            style={{ borderRadius: 24 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-7 pt-6 pb-4">
-              <div className="flex items-center gap-3">
-                <span aria-hidden style={{ fontSize: 22 }}>📝</span>
-                <span style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 20, color: '#101828' }}>
-                  Add Question to Review
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setShowAddModal(false); setAddError(null); }}
-                className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: '#F3F4F6', color: '#6A7282', fontSize: 18, fontWeight: 700, lineHeight: 1 }}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="px-7 pb-5 space-y-4">
-
-              {/* Question */}
-              <div className="space-y-1.5">
-                <label style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, letterSpacing: '0.7px', color: '#99A1AF', textTransform: 'uppercase', display: 'block' }}>
-                  YOUR QUESTION / TOPIC
-                </label>
-                <textarea
-                  placeholder="e.g. Why does the Coriolis force deflect objects to the right in the Northern Hemisphere?"
-                  value={modalQuestion}
-                  onChange={(e) => setModalQuestion(e.target.value)}
-                  rows={2}
-                  className="w-full rounded-[12px] px-4 py-2.5 outline-none resize-none"
-                  style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '21px', background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#101828' }}
-                />
-              </div>
-
-              {/* Answer (optional) */}
-              <div className="space-y-1.5">
-                <label style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, letterSpacing: '0.7px', color: '#99A1AF', textTransform: 'uppercase', display: 'block' }}>
-                  YOUR ANSWER / KEY POINTS <span style={{ color: '#C4C9D4', fontWeight: 500 }}>(OPTIONAL)</span>
-                </label>
-                <textarea
-                  placeholder="Add what you want to remember..."
-                  value={modalAnswer}
-                  onChange={(e) => setModalAnswer(e.target.value)}
-                  rows={2}
-                  className="w-full rounded-[12px] px-4 py-2.5 outline-none resize-none"
-                  style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '21px', background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#101828' }}
-                />
-              </div>
-
-              {/* Type */}
-              <div className="space-y-1.5">
-                <label style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, letterSpacing: '0.7px', color: '#99A1AF', textTransform: 'uppercase', display: 'block' }}>
-                  TYPE
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {MODAL_TYPE_OPTIONS.map((t) => {
-                    const active = modalSourceType === t.id;
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setModalSourceType(t.id)}
-                        className="flex items-center gap-1.5 rounded-[10px] px-4 py-2 transition-colors"
-                        style={{
-                          fontFamily: 'Inter', fontWeight: 600, fontSize: 14,
-                          background: active ? '#101828' : '#FFFFFF',
-                          border: active ? '1px solid #101828' : '1px solid #E5E7EB',
-                          color: active ? '#FFFFFF' : '#364153',
-                        }}
-                      >
-                        <span aria-hidden>{t.icon}</span> {t.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Subject */}
-              <div className="space-y-1.5">
-                <label style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, letterSpacing: '0.7px', color: '#99A1AF', textTransform: 'uppercase', display: 'block' }}>
-                  SUBJECT
-                </label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {MODAL_SUBJECTS.map((s) => {
-                    const active = modalDeck === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => setModalDeck(s.id)}
-                        className="flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-left transition-colors"
-                        style={{
-                          fontFamily: 'Inter', fontWeight: 500, fontSize: 13,
-                          background: active ? '#101828' : '#FFFFFF',
-                          border: active ? '1px solid #101828' : '1px solid #E5E7EB',
-                          color: active ? '#FFFFFF' : '#364153',
-                        }}
-                      >
-                        <span aria-hidden style={{ flexShrink: 0 }}>{s.icon}</span>
-                        <span className="truncate">{s.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Review Schedule */}
-              <div className="space-y-1.5">
-                <label style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, letterSpacing: '0.7px', color: '#99A1AF', textTransform: 'uppercase', display: 'block' }}>
-                  REVIEW SCHEDULE
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {MODAL_SCHEDULE_OPTIONS.map((s) => {
-                    const active = modalSchedule === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => setModalSchedule(s.id as ModalScheduleId)}
-                        className="flex items-center gap-1.5 rounded-full px-4 py-2 transition-colors"
-                        style={{
-                          fontFamily: 'Inter', fontWeight: 600, fontSize: 13,
-                          background: active ? '#FFFBEB' : '#FFFFFF',
-                          border: active ? '1.5px solid #E8B84B' : '1px solid #E5E7EB',
-                          color: active ? '#D97706' : '#364153',
-                        }}
-                      >
-                        <span aria-hidden>{s.icon}</span> {s.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                {modalSchedule === 'custom' && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <input
-                      type="number"
-                      min={1}
-                      max={365}
-                      placeholder="Days"
-                      value={modalCustomDays}
-                      onChange={(e) => setModalCustomDays(e.target.value)}
-                      className="rounded-[10px] px-3 py-2 outline-none w-24"
-                      style={{ fontFamily: 'Inter', fontSize: 14, background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#101828' }}
-                    />
-                    <span style={{ fontFamily: 'Inter', fontSize: 13, color: '#6A7282' }}>days from today</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center gap-3 px-7 py-4" style={{ borderTop: '1px solid #F3F4F6' }}>
-              {addError && (
-                <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#E7000B', flex: 1 }}>
-                  {addError}
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => { setShowAddModal(false); setAddError(null); }}
-                className="rounded-[12px] py-3 border transition-colors"
-                style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 15, borderColor: '#E5E7EB', color: '#374151', flex: 1, background: '#FFFFFF' }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleAddItem}
-                disabled={saving || !modalQuestion.trim()}
-                className="rounded-[12px] py-3 disabled:opacity-50 transition-opacity"
-                style={{
-                  flex: 2,
-                  background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
-                  fontFamily: 'Inter', fontWeight: 700, fontSize: 15, color: '#17223E',
-                  boxShadow: '0px 1px 3px rgba(0,0,0,0.12)',
-                }}
-              >
-                ✓ {saving ? 'Saving...' : 'Add to Review Queue'}
-              </button>
-            </div>
-          </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
