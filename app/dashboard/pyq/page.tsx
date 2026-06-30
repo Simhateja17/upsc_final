@@ -656,9 +656,9 @@ export default function PyqPage() {
       transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 430, damping: 38 }}
       className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_4px_6px_-4px_rgba(0,0,0,0.1),0_10px_15px_-3px_rgba(0,0,0,0.1)]"
       style={{
-        width: compact ? 218 : 300,
+        width: 300,
         maxWidth: '100%',
-        height: compact ? 48 : 64,
+        height: 64,
         borderRadius: 26843500,
         padding: compact ? 4 : 0,
         gap: 0,
@@ -675,10 +675,10 @@ export default function PyqPage() {
             className="flex flex-1 items-center justify-center"
             style={{
               alignSelf: 'stretch',
-              paddingLeft: compact ? 14 : 24,
-              paddingRight: compact ? 14 : 24,
+              paddingLeft: 24,
+              paddingRight: 24,
               background: active ? '#0F172B' : 'transparent',
-              gap: compact ? 8 : 10,
+              gap: 10,
               borderRadius: active ? 9999 : 0,
             }}
             onClick={() => setMode(nextMode)}
@@ -688,14 +688,14 @@ export default function PyqPage() {
               src={icon}
               alt=""
               aria-hidden
-              style={{ width: compact ? 18 : 21, height: compact ? 18 : 21, objectFit: 'contain', flexShrink: 0 }}
+              style={{ width: 21, height: 21, objectFit: 'contain', flexShrink: 0 }}
             />
             <span
               style={{
                 fontFamily: 'Inter, sans-serif',
                 fontWeight: 700,
-                fontSize: compact ? 14 : 16,
-                lineHeight: compact ? '20px' : '24px',
+                fontSize: 16,
+                lineHeight: '24px',
                 letterSpacing: 0,
                 textAlign: 'center',
                 color: active ? '#FFFFFF' : '#4A5565',
@@ -852,7 +852,7 @@ export default function PyqPage() {
     <div className="sticky top-3 z-40 mb-8">
       <div className="relative">
         <div
-          className="flex max-w-full items-center gap-1.5 overflow-visible rounded-[16px] border bg-white px-3 py-3 shadow-[0_2px_8px_rgba(15,17,26,0.05),0_12px_36px_rgba(15,17,26,0.07)]"
+          className="flex max-w-full items-center gap-1.5 overflow-visible rounded-[16px] border bg-white px-8 py-3 shadow-[0_2px_8px_rgba(15,17,26,0.05),0_12px_36px_rgba(15,17,26,0.07)]"
           style={{ borderColor: '#F3E9C8', scrollbarWidth: 'none' }}
         >
           <div className="relative">
@@ -1054,9 +1054,6 @@ export default function PyqPage() {
           )}
 
           <div className="ml-auto flex flex-shrink-0 items-center gap-1.5">
-            <div className="rounded-[12px] bg-[#F4F5F7] px-3 py-2 text-[14px] font-bold text-[#9AA3B2]">
-              <span className="text-[#101828]">{loading ? '...' : visibleQuestions.length}</span> questions
-            </div>
             <button
               type="button"
               onClick={resetAllFilters}
@@ -1280,7 +1277,7 @@ export default function PyqPage() {
                               >
                                 {opt.label}
                               </span>
-                              <span style={{ fontSize: 13.5, color: textColor, fontWeight: textWeight, whiteSpace: 'pre-wrap', lineHeight: '20px' }}>
+                              <span style={{ fontSize: 18, color: textColor, fontWeight: textWeight, whiteSpace: 'pre-wrap', lineHeight: '29.25px' }}>
                                 {opt.text}
                               </span>
                             </button>
@@ -2592,7 +2589,7 @@ export default function PyqPage() {
                     >
                       {opt.label}
                     </span>
-                    <span style={{ fontWeight: textWeight, fontSize: 13.5, color: textColor, whiteSpace: 'pre-wrap', lineHeight: '20px' }}>
+                    <span style={{ fontWeight: textWeight, fontSize: 18, color: textColor, whiteSpace: 'pre-wrap', lineHeight: '29.25px' }}>
                       {opt.text}
                     </span>
                   </button>
