@@ -2,10 +2,14 @@
 
 import React, { useState, useEffect, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { pyqService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
+import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
 import prelimsSyllabus from '@/data/syllabus/prelimsSyllabus.json';
+import { handleEntitlementError, formatPeriod } from '@/components/entitlements';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 const AI_EVAL_STEPS = [
   'Reading your answer',
@@ -23,6 +27,13 @@ const YEAR_OPTIONS = Array.from(
   { length: LATEST_EXAM_YEAR - EARLIEST_EXAM_YEAR + 1 },
   (_, index) => LATEST_EXAM_YEAR - index
 );
+
+function formatResetAt(resetAt?: string | null) {
+  if (!resetAt) return null;
+  const date = new Date(resetAt);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
 
 type SubjectTreeNode = {
   label: string;
@@ -45,7 +56,6 @@ const EMPTY_COUNTS: PYQCountData = {
 };
 
 const SUBJECT_ICONS: Record<string, string> = {
-  'Ancient History and Art & Culture': '🏺',
   History: '🏛️',
   Geography: '🌍',
   Polity: '⚖️',
@@ -181,10 +191,6 @@ function ExplanationRenderer({ question }: { question: any }) {
 }
 
 const PRELIMS_SUBJECT_TREE: SubjectTreeNode[] = [
-  {
-    label: 'Ancient History and Art & Culture',
-    icon: SUBJECT_ICONS['Ancient History and Art & Culture'],
-  },
   ...(prelimsSyllabus as Array<{ subject: string; subSubjects: Array<{ label: string; topics: string[] }> }>).map((node) => ({
     label: node.subject,
     icon: SUBJECT_ICONS[node.subject] || '📘',
@@ -289,6 +295,8 @@ const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
 };
 
 export default function PyqPage() {
+  const entitlements = useEntitlements();
+  const mainsQuota = entitlements.featureStatus('mains_evaluation');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
   const [questionStates, setQuestionStates] = useState<Record<string, { selected: string | null; submitted: boolean }>>({});
@@ -338,6 +346,9 @@ export default function PyqPage() {
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
   const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
   const [questionCounts, setQuestionCounts] = useState<PYQCountData>(EMPTY_COUNTS);
+  const [openFilter, setOpenFilter] = useState<'paper' | 'subject' | 'subSubject' | 'topic' | 'year' | 'difficulty' | null>(null);
+  const [filterDocked, setFilterDocked] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   const fetchQuestions = useCallback(async () => {
     const requestSeq = ++questionsRequestSeqRef.current;
@@ -541,6 +552,25 @@ export default function PyqPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const scroller = document.querySelector('main');
+    const getScrollTop = () => scroller?.scrollTop ?? window.scrollY ?? 0;
+    const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
+    const updateDocked = () => {
+      setFilterDocked(isDesktop() && getScrollTop() > 220);
+    };
+
+    updateDocked();
+    scroller?.addEventListener('scroll', updateDocked, { passive: true });
+    window.addEventListener('scroll', updateDocked, { passive: true });
+    window.addEventListener('resize', updateDocked);
+    return () => {
+      scroller?.removeEventListener('scroll', updateDocked);
+      window.removeEventListener('scroll', updateDocked);
+      window.removeEventListener('resize', updateDocked);
+    };
+  }, []);
+
   // When AI eval modal opens: poll backend for real evaluation status
   useEffect(() => {
     if (!showAiEvalModal || !mainsAttemptId || !selectedQuestion) {
@@ -589,7 +619,457 @@ export default function PyqPage() {
     };
   }, [showAiEvalModal, mainsAttemptId, selectedQuestion]);
 
+  const resetAllFilters = () => {
+    setYearMode('all');
+    setSelectedYears([]);
+    setYearSearch('');
+    setSelectedSubject('All Papers');
+    setSelectedSubtopic(null);
+    setSelectedTopics([]);
+    setExpandedSubject(null);
+    setExpandedSubtopic(null);
+    setOpenFilter(null);
+  };
+
+  const hasActiveFilters =
+    yearMode === 'custom' ||
+    selectedSubject !== 'All Papers' ||
+    Boolean(selectedSubtopic) ||
+    selectedTopics.length > 0;
+
+  const currentSubjectNode = subjectTree.find((node) => node.label === selectedSubject);
+  const currentSubTopicNode = currentSubjectNode?.children?.find((child) => child.label === selectedSubtopic);
+
+  const filterButtonBase =
+    'inline-flex h-10 flex-shrink-0 items-center gap-2 rounded-[12px] px-2.5 text-[14px] font-bold text-[#101828] transition-colors hover:bg-[#F4F5F7]';
+
+  const tinyIconStyle: React.CSSProperties = {
+    width: 18,
+    height: 18,
+    color: '#8B919B',
+    flexShrink: 0,
+  };
+
+  const ExamModeToggle = ({ compact = false }: { compact?: boolean }) => (
+    <motion.div
+      layoutId="pyq-exam-mode-toggle"
+      transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 430, damping: 38 }}
+      className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_4px_6px_-4px_rgba(0,0,0,0.1),0_10px_15px_-3px_rgba(0,0,0,0.1)]"
+      style={{
+        width: 300,
+        maxWidth: '100%',
+        height: 64,
+        borderRadius: 26843500,
+        padding: compact ? 4 : 0,
+        gap: 0,
+      }}
+    >
+      {(['prelims', 'mains'] as const).map((nextMode) => {
+        const active = mode === nextMode;
+        const label = nextMode === 'prelims' ? 'Prelims' : 'Mains';
+        const icon = nextMode === 'prelims' ? '/9k.png' : '/8k.png';
+        return (
+          <button
+            key={nextMode}
+            type="button"
+            className="flex flex-1 items-center justify-center"
+            style={{
+              alignSelf: 'stretch',
+              paddingLeft: 24,
+              paddingRight: 24,
+              background: active ? '#0F172B' : 'transparent',
+              gap: 10,
+              borderRadius: active ? 9999 : 0,
+            }}
+            onClick={() => setMode(nextMode)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={icon}
+              alt=""
+              aria-hidden
+              style={{ width: 21, height: 21, objectFit: 'contain', flexShrink: 0 }}
+            />
+            <span
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 700,
+                fontSize: 16,
+                lineHeight: '24px',
+                letterSpacing: 0,
+                textAlign: 'center',
+                color: active ? '#FFFFFF' : '#4A5565',
+              }}
+            >
+              {label}
+            </span>
+          </button>
+        );
+      })}
+    </motion.div>
+  );
+
+  const FilterTrigger = ({
+    id,
+    label,
+    value,
+    icon,
+  }: {
+    id: typeof openFilter;
+    label: string;
+    value?: string;
+    icon: React.ReactNode;
+  }) => (
+    <button
+      type="button"
+      onClick={() => setOpenFilter(openFilter === id ? null : id)}
+      className={filterButtonBase}
+      style={{ background: openFilter === id ? '#F4F5F7' : 'transparent' }}
+      aria-expanded={openFilter === id}
+    >
+      {icon}
+      <span className="whitespace-nowrap">{value || label}</span>
+      <span className="text-[#9AA3B2]">⌄</span>
+    </button>
+  );
+
+  const FilterPopover = ({ id, children, width = 420 }: { id: typeof openFilter; children: React.ReactNode; width?: number }) => (
+    openFilter === id ? (
+      <div
+        className="absolute left-0 top-[calc(100%+10px)] z-50 max-h-[460px] overflow-hidden rounded-[18px] border border-[#E5E7EB] bg-[#F4F5F7] shadow-[0_18px_52px_rgba(15,17,26,0.14)]"
+        style={{ width: `min(${width}px, calc(100vw - 48px))` }}
+      >
+        {children}
+      </div>
+    ) : null
+  );
+
+  const SubjectTreePopover = () => (
+    <FilterPopover id="subject" width={520}>
+      <div className="max-h-[440px] overflow-y-auto p-5">
+        <div className="mb-4 flex items-center justify-between border-b border-[#E5E7EB] pb-3">
+          <div className="text-[15px] font-bold text-[#101828]">Subject Filter</div>
+          <button type="button" onClick={() => setOpenFilter(null)} className="h-8 w-8 rounded-[10px] bg-white text-[#6A7282]">×</button>
+        </div>
+        <div className="grid gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedSubject('All Papers');
+              setSelectedSubtopic(null);
+              setSelectedTopics([]);
+              setExpandedSubject(null);
+              setExpandedSubtopic(null);
+            }}
+            className="flex min-h-[50px] items-center justify-between rounded-[12px] px-3 text-left"
+            style={{ background: selectedSubject === 'All Papers' ? '#0F1A30' : '#FFFFFF', color: selectedSubject === 'All Papers' ? '#FFFFFF' : '#101828' }}
+          >
+            <span className="font-semibold">📘 All Papers</span>
+            <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-bold">{questionCounts.total || total}</span>
+          </button>
+          {mode === 'mains' && (
+            <select
+              value={MAINS_OPTIONAL_ALL.includes(selectedSubject) ? selectedSubject : ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedSubject(val || 'All Papers');
+                setSelectedSubtopic(null);
+                setSelectedTopics([]);
+                setExpandedSubject(null);
+                setExpandedSubtopic(null);
+              }}
+              className="h-11 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[13px] font-semibold text-[#374151] outline-none"
+            >
+              <option value="">Select Optional Subject</option>
+              <optgroup label="Science & Engineering">
+                {MAINS_OPTIONAL_SUBJECTS.science.map((s) => <option key={s} value={s}>{s}</option>)}
+              </optgroup>
+              <optgroup label="Social Sciences & Humanities">
+                {MAINS_OPTIONAL_SUBJECTS.social.map((s) => <option key={s} value={s}>{s}</option>)}
+              </optgroup>
+              <optgroup label="Literature">
+                {MAINS_OPTIONAL_SUBJECTS.literature.map((s) => <option key={s} value={s}>{s}</option>)}
+              </optgroup>
+            </select>
+          )}
+          {subjectTree.map(({ label, icon, children }) => {
+            const selected = selectedSubject === label;
+            const expanded = expandedSubject === label;
+            const subjectCount = subjectQuestionCounts.get(countKey(label)) || 0;
+            return (
+              <div key={label} className="overflow-hidden rounded-[12px] bg-white">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSubject(label);
+                    setSelectedSubtopic(null);
+                    setSelectedTopics([]);
+                    setExpandedSubtopic(null);
+                    setExpandedSubject(expanded ? null : label);
+                  }}
+                  className="flex min-h-[50px] w-full items-center justify-between px-3 text-left"
+                  style={{ background: selected ? '#0F1A30' : '#FFFFFF', color: selected ? '#FFFFFF' : '#101828' }}
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span aria-hidden>{icon}</span>
+                    <span className="truncate text-[14px] font-semibold">{label}</span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="rounded-full bg-[#F0F1F3] px-2 py-0.5 text-[10px] font-bold text-[#6A7282]">{subjectCount}</span>
+                    {children?.length ? <span style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>⌄</span> : null}
+                  </span>
+                </button>
+                {expanded && children?.length ? (
+                  <div className="border-t border-[#E5E7EB]">
+                    {children.map((child) => (
+                      <button
+                        key={child.label}
+                        type="button"
+                        onClick={() => {
+                          setSelectedSubtopic(child.label);
+                          setSelectedTopics([]);
+                          setExpandedSubtopic(expandedSubtopic === child.label ? null : child.label);
+                        }}
+                        className="flex w-full items-center justify-between border-b border-[#EEF0F4] px-4 py-2.5 text-left last:border-b-0 hover:bg-[#F9FAFB]"
+                      >
+                        <span className="truncate text-[12px] font-semibold text-[#5A6478]">{child.label}</span>
+                        <span className="rounded-full bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-bold text-[#9AA3B2]">
+                          {subSubjectQuestionCounts.get(countKey(label, child.label)) || 0}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </FilterPopover>
+  );
+
+  const FilterToolbar = () => (
+    <div className="sticky top-3 z-40 mb-8">
+      <div className="relative">
+        <div
+          className="flex max-w-full items-center gap-1.5 overflow-visible rounded-[16px] border bg-white px-8 py-3 shadow-[0_2px_8px_rgba(15,17,26,0.05),0_12px_36px_rgba(15,17,26,0.07)]"
+          style={{ borderColor: '#F3E9C8', scrollbarWidth: 'none' }}
+        >
+          <div className="relative">
+            <FilterTrigger
+              id="paper"
+              label="Paper"
+              value={mode === 'prelims' ? 'Paper' : 'Paper'}
+              icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="M7 3h8l4 4v14H7V3Z" stroke="currentColor" strokeWidth="2"/><path d="M15 3v5h5" stroke="currentColor" strokeWidth="2"/></svg>}
+            />
+            <FilterPopover id="paper" width={280}>
+              <div className="p-4">
+                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Paper</div>
+                <div className="grid gap-2">
+                  {(['prelims', 'mains'] as const).map((nextMode) => (
+                    <button
+                      key={nextMode}
+                      type="button"
+                      onClick={() => {
+                        setMode(nextMode);
+                        setOpenFilter(null);
+                      }}
+                      className="rounded-[12px] px-4 py-3 text-left text-[14px] font-bold"
+                      style={{ background: mode === nextMode ? '#0F172B' : '#FFFFFF', color: mode === nextMode ? '#FFFFFF' : '#101828' }}
+                    >
+                      {nextMode === 'prelims' ? '◎ Prelims' : '✎ Mains'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </FilterPopover>
+          </div>
+
+          <div className="relative">
+            <FilterTrigger
+              id="subject"
+              label="Subject"
+              value={selectedSubject !== 'All Papers' ? selectedSubject : 'Subject'}
+              icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a3 3 0 0 1-3-3V5a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="2"/><path d="M8 17h11" stroke="currentColor" strokeWidth="2"/></svg>}
+            />
+            <SubjectTreePopover />
+          </div>
+
+          <div className="relative">
+            <FilterTrigger
+              id="subSubject"
+              label="Sub-Subject"
+              value={selectedSubtopic || 'Sub-Subject'}
+              icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21M12 3c-2.5 2.6-3.8 5.6-3.8 9s1.3 6.4 3.8 9" stroke="currentColor" strokeWidth="1.6"/></svg>}
+            />
+            <FilterPopover id="subSubject" width={360}>
+              <div className="max-h-[360px] overflow-y-auto p-4">
+                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Sub-Subject</div>
+                {!currentSubjectNode?.children?.length ? (
+                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a subject first.</div>
+                ) : (
+                  <div className="grid gap-2">
+                    {currentSubjectNode.children.map((child) => (
+                      <button
+                        key={child.label}
+                        type="button"
+                        onClick={() => {
+                          setSelectedSubtopic(child.label);
+                          setSelectedTopics([]);
+                          setOpenFilter(null);
+                        }}
+                        className="rounded-[12px] px-4 py-3 text-left text-[13px] font-bold"
+                        style={{ background: selectedSubtopic === child.label ? '#0F172B' : '#FFFFFF', color: selectedSubtopic === child.label ? '#FFFFFF' : '#101828' }}
+                      >
+                        {child.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </FilterPopover>
+          </div>
+
+          <div className="relative">
+            <FilterTrigger
+              id="topic"
+              label="Topic"
+              value={selectedTopics.length ? `${selectedTopics.length} topics` : 'Topic'}
+              icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2"/><path d="m15 9-4.5 1.5L9 15l4.5-1.5L15 9Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>}
+            />
+            <FilterPopover id="topic" width={420}>
+              <div className="max-h-[360px] overflow-y-auto p-4">
+                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Topic</div>
+                {!currentSubTopicNode?.microTopics?.length ? (
+                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a sub-subject with topics first.</div>
+                ) : (
+                  <div className="grid gap-1">
+                    {currentSubTopicNode.microTopics.map((topic) => {
+                      const active = selectedTopics.includes(topic);
+                      return (
+                        <button
+                          key={topic}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTopics((prev) => active ? prev.filter((t) => t !== topic) : [...prev, topic]);
+                          }}
+                          className="flex items-center justify-between rounded-[10px] px-3 py-2.5 text-left text-[12px] font-bold hover:bg-white"
+                          style={{ background: active ? '#FFF3CC' : 'transparent', color: active ? '#B45309' : '#5A6478' }}
+                        >
+                          <span>{topic}</span>
+                          <span className="ml-3 rounded-full bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] text-[#9AA3B2]">
+                            {getTopicQuestionCount(selectedSubject, selectedSubtopic, topic)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </FilterPopover>
+          </div>
+
+          <div className="h-6 w-px flex-shrink-0 bg-[#E5E7EB]" />
+
+          <div className="relative">
+            <FilterTrigger
+              id="year"
+              label="Year"
+              value={yearMode === 'custom' && selectedYears.length ? `${selectedYears.length} years` : 'Year'}
+              icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="M7 3v4M17 3v4M4 9h16M5 5h14v15H5V5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>}
+            />
+            <FilterPopover id="year" width={420}>
+              <div className="p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Exam Year</div>
+                  <span className="text-[12px] font-semibold text-[#6A7282]">{yearMode === 'custom' ? `${selectedYears.length} selected` : 'All years'}</span>
+                </div>
+                <div className="mb-3 flex rounded-[10px] bg-[#EDEFF3] p-1">
+                  {(['all', 'custom'] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => {
+                        setYearMode(m);
+                        if (m === 'all') { setSelectedYears([]); setYearSearch(''); }
+                      }}
+                      className="flex-1 rounded-[8px] py-2 text-[13px] font-bold"
+                      style={{ background: yearMode === m ? '#0F172B' : 'transparent', color: yearMode === m ? '#FFFFFF' : '#4A5565' }}
+                    >
+                      {m === 'all' ? 'All' : 'Custom'}
+                    </button>
+                  ))}
+                </div>
+                {yearMode === 'custom' && (
+                  <div className="grid gap-3">
+                    <input
+                      type="text"
+                      placeholder="Search year..."
+                      value={yearSearch}
+                      onChange={(e) => setYearSearch(e.target.value)}
+                      className="h-10 rounded-[10px] border border-[#E5E7EB] bg-white px-3 text-[13px] font-semibold outline-none"
+                    />
+                    <div className="grid grid-cols-5 gap-2">
+                      {YEAR_OPTIONS.filter((y) => !yearSearch || String(y).includes(yearSearch)).map((y) => {
+                        const active = selectedYears.includes(y);
+                        return (
+                          <button
+                            key={y}
+                            type="button"
+                            onClick={() => setSelectedYears((prev) => active ? prev.filter((v) => v !== y) : [...prev, y])}
+                            className="rounded-[8px] py-2 text-[12px] font-bold"
+                            style={{ background: active ? '#0F172B' : '#FFFFFF', color: active ? '#FFFFFF' : '#374151', border: active ? '1px solid #0F172B' : '1px solid #E5E7EB' }}
+                          >
+                            {y}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </FilterPopover>
+          </div>
+
+          <div className="relative">
+            <FilterTrigger
+              id="difficulty"
+              label="Difficulty"
+              icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2 7.5 14 3 9.6l6.2-.9L12 3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>}
+            />
+            <FilterPopover id="difficulty" width={280}>
+              <div className="p-4">
+                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Difficulty</div>
+                <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">
+                  Difficulty is shown on each question. The live PYQ API does not expose a difficulty filter yet.
+                </div>
+              </div>
+            </FilterPopover>
+          </div>
+
+          {filterDocked && (
+            <div className="hidden flex-shrink-0 px-1 lg:block">
+              <ExamModeToggle compact />
+            </div>
+          )}
+
+          <div className="ml-auto flex flex-shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              onClick={resetAllFilters}
+              disabled={!hasActiveFilters}
+              className="rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-[14px] font-semibold text-[#9AA3B2] transition-colors hover:text-[#C10007] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              × Clear all
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
+    <LayoutGroup>
     <div
       ref={pageRootRef}
       className="flex min-h-full flex-col items-stretch font-arimo"
@@ -601,101 +1081,27 @@ export default function PyqPage() {
         badgeText="PREVIOUS YEAR QUESTIONS"
         title={
           <>
-            The Complete <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>PYQ Bank</em>
-            <br />
-            for UPSC Success
+            Decode <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>UPSC</em>
           </>
         }
-        subtitle="Every UPSC question ever asked Prelims, Mains with instant evaluation, subject filters, and detailed explanations."
+        subtitle="Explore 6,500+ UPSC Previous Year Questions, organized by subject, topic, and year, with in-depth solutions and detailed explanations."
         stats={[
           { value: '6500+', label: 'PYQs', color: '#E8B84B' },
           { value: '30+', label: 'Years', color: '#F87171' },
           { value: '15+', label: 'Subjects', color: '#4ADE80' },
-          { value: '∞', label: 'Always Free', color: '#FFFFFF' },
+          { value: '∞', label: 'Unlimited Access', color: '#FFFFFF' },
         ]}
       />
 
       <div className="w-full max-w-[1400px] mx-auto px-6 pt-3 pb-4">
         <div className="mb-4 flex w-full justify-center">
-          <div
-            className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_4px_6px_-4px_rgba(0,0,0,0.1),0_10px_15px_-3px_rgba(0,0,0,0.1)]"
-            style={{
-              width: '347.3px',
-              height: '79.9875px',
-              padding: 0,
-              borderRadius: '26843500px',
-              gap: 0,
-            }}
-          >
-            <button
-              className="flex flex-1 items-center justify-center"
-              style={{
-                alignSelf: 'stretch',
-                paddingLeft: '32px',
-                paddingRight: '32px',
-                background: mode === 'prelims' ? '#0F172B' : 'transparent',
-                gap: '12px',
-                borderRadius: mode === 'prelims' ? '9999px' : '0',
-              }}
-              onClick={() => setMode('prelims')}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/9k.png"
-                alt="Prelims"
-                style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }}
-              />
-              <span
-                style={{
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 700,
-                  fontSize: '18px',
-                  lineHeight: '28px',
-                  letterSpacing: 0,
-                  textAlign: 'center',
-                  color: mode === 'prelims' ? '#FFFFFF' : '#4A5565',
-                }}
-              >
-                Prelims
-              </span>
-            </button>
-            <button
-              className="flex flex-1 items-center justify-center"
-              style={{
-                alignSelf: 'stretch',
-                paddingLeft: '32px',
-                paddingRight: '32px',
-                background: mode === 'mains' ? '#0F172B' : 'transparent',
-                gap: '12px',
-                borderRadius: mode === 'mains' ? '9999px' : '0',
-              }}
-              onClick={() => setMode('mains')}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/8k.png"
-                alt="Mains"
-                style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }}
-              />
-              <span
-                style={{
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 700,
-                  fontSize: '18px',
-                  lineHeight: '28px',
-                  letterSpacing: 0,
-                  textAlign: 'center',
-                  color: mode === 'mains' ? '#FFFFFF' : '#4A5565',
-                }}
-              >
-                Mains
-              </span>
-            </button>
-          </div>
+          {!filterDocked && <ExamModeToggle />}
         </div>
 
-        {/* Content area: filters (left on desktop) + questions */}
-        <div className="flex flex-col lg:flex-row-reverse gap-8">
+        <FilterToolbar />
+
+        {/* Content area */}
+        <div className="flex flex-col gap-8">
           {/* Questions list */}
           <section className="flex-1 min-w-0">
             {mode === 'prelims' ? (
@@ -823,27 +1229,31 @@ export default function PyqPage() {
                     </div>
 
                     {/* Question text */}
-                    <QuestionTextRenderer
-                      text={q.questionText}
+                    <StructuredQuestionRenderer
+                      questionStructure={(q as any).questionStructure}
+                      questionText={q.questionText}
                       className="mb-5 text-[18px] font-[500] leading-[1.5] text-[#111827]"
                       textClassName="text-[18px] font-[500] leading-[1.5] text-[#111827]"
                     />
 
-                    {/* Options — inline interactive */}
+                    {/* Options — inline interactive (matches Daily MCQ Challenge design) */}
                     {opts.length > 0 && (
-                      <div className="space-y-3 mb-4">
+                      <div className="mb-4" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                         {opts.map((opt) => {
                           const isSelected = qState.selected === opt.label;
                           const isCorrect = opt.label === q.correctOption;
-                          let bg = '#F9FAFB', border = '1.6px solid #E5E7EB', labelBg = '#D1D5DC', labelColor = '#364153';
+                          const showCorrect = qState.submitted && isCorrect;
+                          const showWrong = qState.submitted && isSelected && !isCorrect;
+                          // Default (unselected) state
+                          let bg = '#FFFFFF', border = '1px solid #E5E7EB', pipBg = '#F1F4F9', pipColor = '#475067', textColor = '#1E293B', textWeight = 400;
                           if (!qState.submitted && isSelected) {
-                            bg = '#EFF6FF'; border = '1.6px solid #3B82F6'; labelBg = '#3B82F6'; labelColor = '#fff';
+                            bg = '#0B1426'; border = '1.5px solid #0B1426'; pipBg = '#F5C518'; pipColor = '#0B1426'; textColor = '#FFFFFF'; textWeight = 600;
                           }
-                          if (qState.submitted && isCorrect) {
-                            bg = '#F0FDF4'; border = '1.6px solid #00C950'; labelBg = '#00A63E'; labelColor = '#fff';
+                          if (showCorrect) {
+                            bg = '#ECFDF5'; border = '1.5px solid #10B981'; pipBg = '#10B981'; pipColor = '#FFFFFF'; textColor = '#065F46'; textWeight = 600;
                           }
-                          if (qState.submitted && isSelected && !isCorrect) {
-                            bg = '#FEF2F2'; border = '1.6px solid #FB2C36'; labelBg = '#E7000B'; labelColor = '#fff';
+                          if (showWrong) {
+                            bg = '#FEF2F2'; border = '1.5px solid #F43F5E'; pipBg = '#F43F5E'; pipColor = '#FFFFFF'; textColor = '#9F1239'; textWeight = 600;
                           }
                           return (
                             <button
@@ -851,16 +1261,23 @@ export default function PyqPage() {
                               type="button"
                               disabled={qState.submitted}
                               onClick={() => setSelected(opt.label)}
-                              className="w-full flex items-center gap-4 rounded-[14px] px-5 py-3.5 text-left transition-colors"
-                              style={{ background: bg, border }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderRadius: 12, minHeight: 50,
+                                border, background: bg,
+                                cursor: qState.submitted ? 'default' : 'pointer', textAlign: 'left', transition: 'all 0.15s ease', width: '100%',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                              }}
                             >
-                              <div
-                                className="w-10 h-10 rounded-full flex items-center justify-center text-[16px] font-bold flex-shrink-0"
-                                style={{ background: labelBg, color: labelColor }}
+                              <span
+                                style={{
+                                  width: 30, height: 30, borderRadius: 8, border: 'none',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontWeight: 700, fontSize: 13, color: pipColor, background: pipBg, flexShrink: 0,
+                                }}
                               >
                                 {opt.label}
-                              </div>
-                              <span className="text-[16px]" style={{ color: '#1A202C', fontWeight: qState.submitted && (isCorrect || isSelected) ? 500 : 400, whiteSpace: 'pre-wrap', lineHeight: '24px' }}>
+                              </span>
+                              <span style={{ fontSize: 18, color: textColor, fontWeight: textWeight, whiteSpace: 'pre-wrap', lineHeight: '29.25px' }}>
                                 {opt.text}
                               </span>
                             </button>
@@ -1273,415 +1690,6 @@ export default function PyqPage() {
             )}
           </section>
 
-          {/* Right: filters */}
-          <aside
-            className="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 space-y-4 lg:self-start"
-          >
-            {/* Exam year card */}
-            <div
-              className="rounded-[16px] bg-white flex flex-col"
-              style={{
-                width: '100%',
-                boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
-              }}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between pt-5 pl-5 pr-5 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-full bg-[#0F172B] flex items-center justify-center text-[12px] font-bold text-white flex-shrink-0">
-                    1
-                  </div>
-                  <div className="text-[12px] font-bold tracking-[0.06em] uppercase text-[#4A5565]">
-                    EXAM YEAR
-                  </div>
-                </div>
-                <span className="text-[12px] font-medium text-[#6A7282]">
-                  {yearMode === 'custom' ? `${selectedYears.length} selected` : '0 selected'}
-                </span>
-              </div>
-
-              {/* All / Custom toggle */}
-              <div className="px-5 pb-4">
-                <div className="flex rounded-[10px] p-1" style={{ background: '#F3F4F6' }}>
-                  {(['all', 'custom'] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => {
-                        setYearMode(m);
-                        if (m === 'all') { setSelectedYears([]); setYearSearch(''); }
-                      }}
-                      className="flex-1 rounded-[8px] py-2 text-[13px] font-semibold transition-all"
-                      style={{
-                        background: yearMode === m ? '#0F172B' : 'transparent',
-                        color: yearMode === m ? '#fff' : '#4A5565',
-                      }}
-                    >
-                      {m === 'all' ? 'All' : 'Custom'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom panel */}
-              {yearMode === 'custom' && (
-                <div className="px-5 pb-5 flex flex-col gap-3">
-                  {/* Search */}
-                  <div
-                    className="flex items-center gap-2 rounded-[10px] px-3"
-                    style={{ height: '40px', background: '#F3F4F6', border: '1.5px solid #E5E7EB' }}
-                  >
-                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                      <circle cx="6.5" cy="6.5" r="5" stroke="#6A7282" strokeWidth="1.4"/>
-                      <path d="M10.5 10.5L13 13" stroke="#6A7282" strokeWidth="1.4" strokeLinecap="round"/>
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder="Search year..."
-                      value={yearSearch}
-                      onChange={(e) => setYearSearch(e.target.value)}
-                      className="flex-1 bg-transparent outline-none text-[13px] text-[#101828] placeholder:text-[#9CA3AF]"
-                      style={{ fontFamily: 'Inter, sans-serif' }}
-                    />
-                  </div>
-
-                  {/* All / Clear row */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedYears(YEAR_OPTIONS)}
-                        className="rounded-full px-3 py-1 text-[12px] font-semibold"
-                        style={{ background: '#EEF2FF', color: '#4338CA' }}
-                      >
-                        All
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedYears([])}
-                        className="rounded-full px-3 py-1 text-[12px] font-semibold"
-                        style={{ background: '#F3F4F6', color: '#4A5565' }}
-                      >
-                        Clear
-                      </button>
-                    </div>
-                    <span className="text-[12px] font-medium text-[#9CA3AF]">
-                      {selectedYears.length} selected
-                    </span>
-                  </div>
-
-                  {/* Year grid */}
-                  <div className="grid grid-cols-3 gap-2">
-                    {YEAR_OPTIONS
-                      .filter((y) => !yearSearch || String(y).includes(yearSearch))
-                      .map((y) => {
-                        const active = selectedYears.includes(y);
-                        return (
-                          <button
-                            key={y}
-                            type="button"
-                            onClick={() =>
-                              setSelectedYears((prev) =>
-                                active ? prev.filter((v) => v !== y) : [...prev, y]
-                              )
-                            }
-                            className="rounded-[8px] py-2 text-[13px] font-semibold transition-all"
-                            style={{
-                              background: active ? '#0F172B' : '#F3F4F6',
-                              color: active ? '#fff' : '#374151',
-                              border: active ? '1.5px solid #0F172B' : '1.5px solid #E5E7EB',
-                            }}
-                          >
-                            {y}
-                          </button>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Subject Filter panel */}
-            <div
-              className="rounded-[16px] bg-white flex flex-col lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto"
-              style={{
-                width: '100%',
-                borderTop: '0.8px solid #E5E7EB',
-                boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
-                scrollbarWidth: 'thin',
-                scrollbarColor: '#D1D5DB transparent',
-              }}
-            >
-              <div className="flex items-center gap-3 pt-6 pb-4 px-5">
-                <div
-                  className="rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ width: 24, height: 24, background: '#1E293B', color: '#FFFFFF', fontSize: 12, fontWeight: 700 }}
-                >
-                  2
-                </div>
-                <span
-                  style={{
-                    fontFamily: 'Inter, sans-serif',
-                    fontWeight: 700,
-                    fontSize: '12px',
-                    lineHeight: '16px',
-                    letterSpacing: '0.6px',
-                    textTransform: 'uppercase',
-                    color: '#364153',
-                  }}
-                >
-                  Subject Filter
-                </span>
-              </div>
-
-              {/* Subject list — independent scroll, always accessible regardless of page scroll */}
-              <div className="flex flex-col gap-2 px-5 pb-5">
-                <button
-                  onClick={() => {
-                    setSelectedSubject('All Papers');
-                    setSelectedSubtopic(null);
-                    setSelectedTopics([]);
-                    setExpandedSubject(null);
-                    setExpandedSubtopic(null);
-                  }}
-                  className="w-full flex items-center justify-between rounded-[14px] px-4 py-3 text-left transition-colors"
-                  style={{ minHeight: '59.99px', background: selectedSubject === 'All Papers' ? '#0F1A30' : '#F9FAFB' }}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-[18px] leading-none flex-shrink-0" aria-hidden>📘</span>
-                    <span style={{ fontFamily: selectedSubject === 'All Papers' ? 'Arimo, sans-serif' : 'Inter, sans-serif', fontWeight: selectedSubject === 'All Papers' ? 700 : 500, fontSize: '14px', lineHeight: '20px', color: selectedSubject === 'All Papers' ? '#FFFFFF' : '#101828' }}>
-                      All Papers
-                    </span>
-                  </div>
-                </button>
-                {mode === 'mains' && (
-                  <div style={{ paddingBottom: 4 }}>
-                    <div style={{
-                      fontFamily: 'Inter, sans-serif',
-                      fontWeight: 600,
-                      fontSize: 11,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase' as const,
-                      color: '#9AA3B2',
-                      marginBottom: 6,
-                      paddingLeft: 4,
-                    }}>
-                      Optional Subject
-                    </div>
-                    <div style={{ position: 'relative' }}>
-                      <select
-                        value={MAINS_OPTIONAL_ALL.includes(selectedSubject) ? selectedSubject : ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setSelectedSubject(val || 'All Papers');
-                          setSelectedSubtopic(null);
-                          setSelectedTopics([]);
-                          setExpandedSubject(null);
-                          setExpandedSubtopic(null);
-                        }}
-                        style={{
-                          width: '100%',
-                          padding: '10px 32px 10px 12px',
-                          border: MAINS_OPTIONAL_ALL.includes(selectedSubject) ? '1.5px solid #0F1A30' : '1.5px solid #E5E7EB',
-                          borderRadius: 12,
-                          background: MAINS_OPTIONAL_ALL.includes(selectedSubject) ? '#0F1A30' : '#F9FAFB',
-                          color: MAINS_OPTIONAL_ALL.includes(selectedSubject) ? '#FFFFFF' : '#374151',
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: 13,
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          outline: 'none',
-                          appearance: 'none' as any,
-                          WebkitAppearance: 'none' as any,
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <option value="">— Select Optional Subject —</option>
-                        <optgroup label="Science & Engineering">
-                          {MAINS_OPTIONAL_SUBJECTS.science.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </optgroup>
-                        <optgroup label="Social Sciences & Humanities">
-                          {MAINS_OPTIONAL_SUBJECTS.social.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </optgroup>
-                        <optgroup label="Literature">
-                          {MAINS_OPTIONAL_SUBJECTS.literature.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </optgroup>
-                      </select>
-                      <span style={{
-                        position: 'absolute',
-                        right: 10,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        color: MAINS_OPTIONAL_ALL.includes(selectedSubject) ? '#FFFFFF' : '#9AA3B2',
-                        fontSize: 12,
-                        pointerEvents: 'none' as const,
-                      }}>▾</span>
-                    </div>
-                  </div>
-                )}
-                {subjectTree.map(({ label, icon, children }) => {
-                  const selected = selectedSubject === label;
-                  const expanded = expandedSubject === label;
-                  const subjectCount = subjectQuestionCounts.get(countKey(label)) || 0;
-                  return (
-                    <div
-                      key={`tree-${label}`}
-                      className="overflow-hidden rounded-[14px] border transition-colors"
-                      style={{
-                        borderColor: expanded ? '#E5E7EB' : 'transparent',
-                        background: expanded ? '#F9FAFB' : 'transparent',
-                      }}
-                    >
-                      <button
-                        onClick={() => {
-                          setSelectedSubject(label);
-                          setSelectedSubtopic(null);
-                          setSelectedTopics([]);
-                          setExpandedSubtopic(null);
-                          setExpandedSubject(expanded ? null : label);
-                        }}
-                        className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors"
-                        style={{
-                          minHeight: '59.99px',
-                          background: selected ? '#0F1A30' : expanded ? '#EEF1F6' : '#F9FAFB',
-                          borderRadius: expanded ? '14px 14px 0 0' : '14px',
-                        }}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="text-[18px] leading-none flex-shrink-0" aria-hidden>{icon}</span>
-                          <span style={{ fontFamily: selected ? 'Arimo, sans-serif' : 'Inter, sans-serif', fontWeight: selected ? 700 : 500, fontSize: '14px', lineHeight: '20px', color: selected ? '#FFFFFF' : '#101828' }}>
-                            {label}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-full border border-[#E5E7EB] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
-                            {subjectCount}
-                          </span>
-                          {children?.length ? (
-                            <span
-                              className="inline-block transition-transform"
-                              style={{
-                                color: selected ? '#FFFFFF' : '#9AA3B2',
-                                fontSize: '12px',
-                                transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                              }}
-                            >
-                              ▾
-                            </span>
-                          ) : null}
-                        </div>
-                      </button>
-                      {expanded && children?.length ? (
-                        <div className="border-t border-[#E5E7EB] bg-transparent">
-                          {children.map((child) => {
-                            const childSelected = selectedSubtopic === child.label;
-                            const childExpanded = expandedSubtopic === child.label;
-                            const topicCount = child.microTopics?.length || 0;
-                            const childQuestionCount = subSubjectQuestionCounts.get(countKey(label, child.label)) || 0;
-                            const isActiveLeaf = childSelected && !topicCount;
-                            return (
-                              <div key={child.label} className="border-b border-[#E8ECF2] last:border-b-0">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const nextExpanded = childExpanded ? null : child.label;
-                                    setExpandedSubtopic(nextExpanded);
-                                    setSelectedSubtopic(childSelected && !topicCount ? null : child.label);
-                                    setSelectedTopics([]);
-                                  }}
-                                  className="flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors"
-                                  style={{ background: isActiveLeaf ? '#0F1A30' : '#FAFBFE' }}
-                                >
-                                  <div className="flex min-w-0 items-center gap-2">
-                                    <span
-                                      className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
-                                      style={{ background: isActiveLeaf ? '#FFFFFF' : '#9AA3B2' }}
-                                    />
-                                    <span
-                                      className="truncate"
-                                      style={{
-                                        color: isActiveLeaf ? '#FFFFFF' : (childSelected || childExpanded ? '#2563EB' : '#5A6478'),
-                                        fontFamily: 'Inter, sans-serif',
-                                        fontSize: '12px',
-                                        fontWeight: childSelected || childExpanded ? 700 : 500,
-                                      }}
-                                    >
-                                      {child.label}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="rounded-full border border-[#E5E7EB] bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
-                                      {childQuestionCount}
-                                    </span>
-                                    {topicCount ? (
-                                      <span
-                                        className="inline-block text-[10px] text-[#9AA3B2] transition-transform"
-                                        style={{ transform: childExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                                      >
-                                        ▾
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                </button>
-                                {childExpanded && child.microTopics?.length ? (
-                                  <div className="border-t border-[#E8ECF2] bg-white">
-                                    {child.microTopics.map((topic) => (
-                                      <button
-                                        key={topic}
-                                        type="button"
-                                        onClick={() => {
-                                          setSelectedSubtopic(child.label);
-                                          setSelectedTopics((prev) =>
-                                            prev.includes(topic)
-                                              ? prev.filter((t) => t !== topic)
-                                              : [...prev, topic]
-                                          );
-                                        }}
-                                        className="flex w-full items-center justify-between border-b border-[#E8ECF2] px-4 py-2 pl-[52px] text-left transition-colors last:border-b-0 hover:bg-[#FFF8E6]"
-                                        style={{
-                                          background: selectedTopics.includes(topic) ? '#FFF3CC' : 'transparent',
-                                        }}
-                                      >
-                                        <span className="flex min-w-0 items-center gap-2">
-                                          <span
-                                            className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-[3px] border text-[9px]"
-                                            style={{
-                                              background: selectedTopics.includes(topic) ? '#FDBA26' : 'transparent',
-                                              borderColor: selectedTopics.includes(topic) ? '#FDBA26' : '#E5E7EB',
-                                              color: '#101828',
-                                            }}
-                                          >
-                                            {selectedTopics.includes(topic) ? '✓' : ''}
-                                          </span>
-                                          <span
-                                            className="break-words"
-                                            style={{
-                                              color: selectedTopics.includes(topic) ? '#B45309' : '#5A6478',
-                                              fontSize: '12px',
-                                              fontWeight: selectedTopics.includes(topic) ? 700 : 500,
-                                            }}
-                                          >
-                                            {topic}
-                                          </span>
-                                        </span>
-                                        <span className="ml-3 rounded-full border border-[#E5E7EB] bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-semibold text-[#9AA3B2]">
-                                          {getTopicQuestionCount(label, child.label, topic)}
-                                        </span>
-                                      </button>
-                                    ))}
-                                  </div>
-                                ) : null}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </aside>
         </div>
       </div>
 
@@ -2086,6 +2094,17 @@ export default function PyqPage() {
                 }
               </div>
 
+              {mainsQuota && (
+                <div className="mt-3 flex items-center justify-between gap-3 text-sm" style={{ width: 832, maxWidth: '100%', fontFamily: 'Inter', color: '#4B5563' }}>
+                  <span>Mains evaluations</span>
+                  <span>
+                    {mainsQuota.limit === null || mainsQuota.period === 'unlimited'
+                      ? 'Unlimited'
+                      : `${mainsQuota.remaining ?? 0} left ${formatPeriod(mainsQuota.period)}`}
+                  </span>
+                </div>
+              )}
+
               {/* Submit for AI Evaluation */}
               <button
                 id="pyq-mains-submit-btn"
@@ -2103,9 +2122,15 @@ export default function PyqPage() {
                       setMainsAttemptId(res.data.attemptId);
                       setShowMainsWriteModal(false);
                       setShowAiEvalModal(true);
+                      void entitlements.refreshEntitlements();
                     }
                   } catch (err: any) {
-                    setMainsSubmitError(err.message || 'Failed to submit. Please try again.');
+                    const entitlementError = handleEntitlementError(err);
+                    const resetAt = formatResetAt(entitlementError.resetAt);
+                    const message = resetAt
+                      ? `${entitlementError.message} Try again after ${resetAt}.`
+                      : entitlementError.message;
+                    setMainsSubmitError(message || err.message || 'Failed to submit. Please try again.');
                   } finally {
                     setMainsSubmitting(false);
                   }
@@ -2529,16 +2554,18 @@ export default function PyqPage() {
               {(selectedQuestion?.options ?? []).map((opt: any) => {
                 const isSelected = selectedAnswer === opt.label;
                 const isCorrect  = opt.label === selectedQuestion?.correctOption;
-
-                let bg = '#F9FAFB', border = '0.8px solid #E5E7EB', labelBg = '#D1D5DC', labelColor = '#364153';
+                const showCorrect = hasSubmitted && isCorrect;
+                const showWrong = hasSubmitted && isSelected && !isCorrect;
+                // Default (unselected) state — matches Daily MCQ Challenge design
+                let bg = '#FFFFFF', border = '1px solid #E5E7EB', pipBg = '#F1F4F9', pipColor = '#475067', textColor = '#1E293B', textWeight = 400;
                 if (!hasSubmitted && isSelected) {
-                  bg = '#EFF6FF'; border = '1.6px solid #3B82F6'; labelBg = '#3B82F6'; labelColor = '#fff';
+                  bg = '#0B1426'; border = '1.5px solid #0B1426'; pipBg = '#F5C518'; pipColor = '#0B1426'; textColor = '#FFFFFF'; textWeight = 600;
                 }
-                if (hasSubmitted && isCorrect) {
-                  bg = '#F0FDF4'; border = '1.6px solid #00C950'; labelBg = '#00A63E'; labelColor = '#fff';
+                if (showCorrect) {
+                  bg = '#ECFDF5'; border = '1.5px solid #10B981'; pipBg = '#10B981'; pipColor = '#FFFFFF'; textColor = '#065F46'; textWeight = 600;
                 }
-                if (hasSubmitted && isSelected && !isCorrect) {
-                  bg = '#FEF2F2'; border = '1.6px solid #FB2C36'; labelBg = '#E7000B'; labelColor = '#fff';
+                if (showWrong) {
+                  bg = '#FEF2F2'; border = '1.5px solid #F43F5E'; pipBg = '#F43F5E'; pipColor = '#FFFFFF'; textColor = '#9F1239'; textWeight = 600;
                 }
 
                 return (
@@ -2546,14 +2573,23 @@ export default function PyqPage() {
                     key={opt.label}
                     disabled={hasSubmitted}
                     onClick={() => setSelectedAnswer(opt.label)}
-                    className="w-full flex items-center gap-3 rounded-[14px] pl-4 py-3 text-left transition-colors"
-                    style={{ minHeight: 65, background: bg, border }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderRadius: 12, minHeight: 50,
+                      border, background: bg,
+                      cursor: hasSubmitted ? 'default' : 'pointer', textAlign: 'left', transition: 'all 0.15s ease', width: '100%',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                    }}
                   >
-                    <div className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[16px] font-bold"
-                         style={{ background: labelBg, color: labelColor }}>
+                    <span
+                      style={{
+                        width: 30, height: 30, borderRadius: 8, border: 'none',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: 13, color: pipColor, background: pipBg, flexShrink: 0,
+                      }}
+                    >
                       {opt.label}
-                    </div>
-                    <span style={{ fontWeight: (hasSubmitted && (isCorrect || isSelected)) ? 500 : 400, fontSize: '16px', color: '#1E2939', whiteSpace: 'pre-wrap', lineHeight: '24px' }}>
+                    </span>
+                    <span style={{ fontWeight: textWeight, fontSize: 18, color: textColor, whiteSpace: 'pre-wrap', lineHeight: '29.25px' }}>
                       {opt.text}
                     </span>
                   </button>
@@ -2629,5 +2665,6 @@ export default function PyqPage() {
         </div>
       )}
     </div>
+    </LayoutGroup>
   );
 }

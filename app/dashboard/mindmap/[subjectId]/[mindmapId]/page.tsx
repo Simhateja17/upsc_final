@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { mindmapService, userService, pricingService } from '@/lib/services';
-import { MindmapRenderer, MindmapListView, NodeDetailPanel, findTreeNodeById } from '@/lib/mindmap';
-import type { MindmapTree, TreeNode, MindmapNodeData } from '@/lib/mindmap';
+import { MindmapRenderer, MindmapListView } from '@/lib/mindmap';
+import type { MindmapTree, TreeNode } from '@/lib/mindmap';
 
 const CheckmarkIcon = () => (
   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -102,14 +102,6 @@ export default function MindmapViewPage() {
   const [showProModal, setShowProModal] = useState(false);
   const [viewMode, setViewMode] = useState<'mindmap' | 'list'>('mindmap');
 
-  // Detail panel state
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedNodeData, setSelectedNodeData] = useState<MindmapNodeData | null>(null);
-  const [selectedTreeNode, setSelectedTreeNode] = useState<TreeNode | null>(null);
-
-  // Tracks which top-level branches (by branchIndex) the user has opened
-  const [exploredBranches, setExploredBranches] = useState<Set<number>>(new Set());
-
   // Pricing
   const [proPricing, setProPricing] = useState({
     monthly: 299,
@@ -151,7 +143,7 @@ export default function MindmapViewPage() {
         localStorage.setItem('userPlan', 'trial');
       }
       setShowProModal(false);
-      router.push('/dashboard/billing?trial=started');
+      router.push('/dashboard/billing/plans?trial=started');
     } catch (err: any) {
       alert(err?.message || 'Could not start trial. Please try again.');
     }
@@ -181,37 +173,6 @@ export default function MindmapViewPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [subjectId, mindmapId]);
-
-  const handleNodeClick = useCallback(
-    (nodeId: string, nodeData: MindmapNodeData) => {
-      if (!data) return;
-      const treeNode = findTreeNodeById(data.root, nodeId);
-      setSelectedNodeId(nodeId);
-      setSelectedNodeData(nodeData);
-      setSelectedTreeNode(treeNode);
-
-      // Mark top-level branches as explored and recompute mastery from progress.
-      if (nodeData.depth === 1 && !exploredBranches.has(nodeData.branchIndex)) {
-        const next = new Set(exploredBranches);
-        next.add(nodeData.branchIndex);
-        setExploredBranches(next);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(`rwj_mindmap_explored_${data.id}`, JSON.stringify([...next]));
-        }
-        const topBranches = data.root.children?.length ?? 0;
-        const newMastery = topBranches > 0 ? Math.round((next.size / topBranches) * 100) : 0;
-        setData((prev) => (prev ? { ...prev, mastery: newMastery } : prev));
-        mindmapService.updateProgress(data.id, newMastery, true).catch(() => {});
-      }
-    },
-    [data, exploredBranches]
-  );
-
-  const handleClosePanel = useCallback(() => {
-    setSelectedNodeId(null);
-    setSelectedNodeData(null);
-    setSelectedTreeNode(null);
-  }, []);
 
   // Count total nodes for progress
   function countNodes(node: TreeNode): number {
@@ -383,30 +344,17 @@ export default function MindmapViewPage() {
         </div>
 
         {/* Main content */}
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
+        <div className="flex flex-col gap-6 items-stretch">
           {/* Mindmap / List view */}
           <div className="flex-1 min-w-0">
             {viewMode === 'mindmap' ? (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" style={{ height: 520 }}>
-                <MindmapRenderer
-                  tree={tree}
-                  onNodeClick={handleNodeClick}
-                />
+                <MindmapRenderer tree={tree} />
               </div>
             ) : (
               <MindmapListView root={data.root} />
             )}
           </div>
-
-          {/* Detail panel (only in mindmap mode) */}
-          {viewMode === 'mindmap' && (
-            <NodeDetailPanel
-              nodeId={selectedNodeId}
-              nodeData={selectedNodeData}
-              treeNode={selectedTreeNode}
-              onClose={handleClosePanel}
-            />
-          )}
         </div>
       </div>
     </div>

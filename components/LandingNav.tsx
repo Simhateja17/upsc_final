@@ -14,13 +14,14 @@ const NAV_DROPDOWNS = {
     { label: 'Current Affairs', href: '/dashboard/current-affairs' },
     { label: 'Study Planner', href: '/dashboard/study-planner' },
     { label: 'Syllabus Tracker', href: '/dashboard/syllabus-tracker' },
+    { label: 'Previous Year Questions', href: '/dashboard/pyq' },
   ],
   practice: [
     { label: 'Daily MCQs', href: '/dashboard/daily-mcq' },
     { label: 'Daily Mains Answer', href: '/dashboard/daily-answer' },
     { label: 'Mock Tests', href: '/dashboard/mock-tests' },
-    { label: 'Previous Year Questions', href: '/dashboard/pyq' },
-    { label: 'Test Series', href: '/dashboard/test-series' },
+    // Test Series is hidden for now; re-enable when it is ready.
+    // { label: 'Test Series', href: '/dashboard/test-series' },
   ],
   revision: [
     { label: 'Flashcards', href: '/dashboard/flashcards' },
@@ -77,7 +78,7 @@ export default function LandingNav() {
 
         {/* Desktop nav links */}
         <div className="hidden md:flex items-center" style={{ gap: 28 }}>
-          <Link href="/dashboard/jeet-gpt" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Jeet AI</Link>
+          <Link href="/dashboard/jeet-gpt" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Jeet AI Mentor</Link>
           <Link href="/dashboard/daily-answer/challenge" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Daily Mains Challenge</Link>
 
           {(['prepare', 'practice', 'revision'] as const).map((key) => {
@@ -138,7 +139,7 @@ export default function LandingNav() {
 
       {/* Mobile nav */}
       <div className={`mobile-nav${mobileNavOpen ? ' open' : ''}`}>
-        <a href="/dashboard/jeet-gpt" onClick={closeMobileNav}>Jeet AI</a>
+        <a href="/dashboard/jeet-gpt" onClick={closeMobileNav}>Jeet AI Mentor</a>
         <a href="/dashboard/daily-answer/challenge" onClick={closeMobileNav}>Daily Mains Challenge</a>
         <div style={{ padding: '10px 0 4px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Prepare</div>

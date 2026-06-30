@@ -8,7 +8,7 @@
   - Analytics: `/user/performance`, `/user/test-analytics`.
   - Billing: `/pricing/plans`, `/billing/subscription`, `/billing/order`, `/billing/payment/initiate`, `/billing/payment/verify`.
   - Search: authenticated `POST /search` with `{ query, sources, matchCount, subject }`.
-- Replaced local/fake Jeet AI replies with backend chat state in `JeetAIScreen`.
+- Replaced local/fake Jeet AI Mentor replies with backend chat state in `JeetAIScreen`.
 - Replaced static analytics and leaderboard surfaces with backend-backed performance/test analytics state.
 - Added a dedicated backend semantic `SearchScreen` and wired it from the home header.
 - Wired premium plans to real pricing and mock checkout flow without adding native payment SDKs.

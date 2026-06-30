@@ -14,6 +14,9 @@ import { EntitlementsProvider } from '@/contexts/EntitlementsContext';
 
 const HIDE_SIDEBAR_ROUTES = ['/dashboard/profile', '/dashboard/settings', '/dashboard/billing', '/dashboard/feedback'];
 const PUBLIC_DASHBOARD_ROUTES = ['/dashboard/pyq'];
+// Routes that auto-collapse the left navigation sidebar on entry (focus modes).
+const AUTO_COLLAPSE_ROUTES = ['/dashboard/jeet-gpt', '/dashboard/daily-mcq'];
+const isAutoCollapseRoute = (path: string) => AUTO_COLLAPSE_ROUTES.some((r) => path === r || path.startsWith(`${r}/`));
 const STREAK_MILESTONES = [3, 7, 10, 14, 21, 30] as const;
 
 function getNextEligibleStreakMilestone(currentStreak: number, lastShownMilestone: number | null) {
@@ -42,6 +45,8 @@ export default function DashboardLayout({
   const isPublicRoute = PUBLIC_DASHBOARD_ROUTES.some((r) => pathname.startsWith(r));
   const userId = user?.id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(isAutoCollapseRoute(pathname));
+  const previousPathnameRef = useRef<string | null>(null);
   const [showMilestone, setShowMilestone] = useState(false);
   const [milestoneValue, setMilestoneValue] = useState<number | null>(null);
   const [milestoneTitle, setMilestoneTitle] = useState<string | undefined>(undefined);
@@ -95,6 +100,39 @@ export default function DashboardLayout({
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
+
+  // Auto-collapse sidebar when entering a focus-mode route (Jeet AI Mentor, Daily MCQ
+  // Challenge) and restore the saved preference when leaving. On initial load, read the
+  // saved preference unless we're already on an auto-collapse route.
+  useEffect(() => {
+    const prev = previousPathnameRef.current;
+    const current = pathname;
+    const currentAutoCollapse = isAutoCollapseRoute(current);
+    const prevAutoCollapse = prev !== null && isAutoCollapseRoute(prev);
+
+    if (currentAutoCollapse && !prevAutoCollapse) {
+      setSidebarCollapsed(true);
+    } else if (!currentAutoCollapse && (prevAutoCollapse || prev === null)) {
+      try {
+        const saved = localStorage.getItem('rwj_sidebar_collapsed') === 'true';
+        setSidebarCollapsed(saved);
+      } catch {
+        // ignore
+      }
+    }
+
+    previousPathnameRef.current = current;
+  }, [pathname]);
+
+  const handleSidebarToggle = () => {
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    try {
+      localStorage.setItem('rwj_sidebar_collapsed', String(next));
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     if (isLoading || isAuthenticated || isPublicRoute) return;
@@ -150,7 +188,7 @@ export default function DashboardLayout({
       <div className="flex flex-col" style={{ height: '100dvh' }}>
         <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} mobileOnly={hideSidebar} />
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} mobileOnly={hideSidebar} collapsed={sidebarCollapsed} onToggle={handleSidebarToggle} />
           <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0" style={{ background: '#FAFBFE' }}>
             {children}
           </main>

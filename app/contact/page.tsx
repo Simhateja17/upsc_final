@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import DashboardHeader from '@/components/DashboardHeader';
 import Footer from '@/components/Footer';
+import { useAuth } from '@/contexts/AuthContext';
 import { contactService } from '@/lib/services';
 
 const subjectOptions = [
@@ -52,6 +53,7 @@ const reachCards = [
 ];
 
 export default function ContactPage() {
+  const { user, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -61,11 +63,30 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const userFullName = useMemo(() => {
+    if (!user) return '';
+    return [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+  }, [user]);
+
+  const contactName = userFullName || user?.email?.split('@')[0] || '';
+  const contactEmail = user?.email || '';
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    setFormData(p => ({
+      ...p,
+      fullName: contactName,
+      email: contactEmail,
+      subject: p.subject || 'General inquiry',
+    }));
+  }, [contactEmail, contactName, isAuthenticated, user]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
-    const fullName = formData.fullName.trim();
+    const fullName = (isAuthenticated ? contactName : formData.fullName).trim();
     const nameParts = fullName.split(/\s+/).filter(Boolean);
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || firstName;
@@ -74,13 +95,18 @@ export default function ContactPage() {
       await contactService.submit({
         firstName,
         lastName,
-        email: formData.email,
-        subject: formData.subject,
-        message: formData.message,
+        email: isAuthenticated ? contactEmail : formData.email.trim(),
+        subject: formData.subject || 'General inquiry',
+        message: formData.message.trim(),
       });
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 4000);
-      setFormData({ fullName: '', email: '', subject: '', message: '' });
+      setFormData({
+        fullName: isAuthenticated ? contactName : '',
+        email: isAuthenticated ? contactEmail : '',
+        subject: isAuthenticated ? 'General inquiry' : '',
+        message: '',
+      });
     } catch {
       // silently handle
     }
@@ -178,63 +204,79 @@ export default function ContactPage() {
             )}
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-[12px] font-semibold tracking-[0.24px] text-[#374560]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                    Full name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Rahul Sharma"
-                    required
-                    value={formData.fullName}
-                    onChange={e => setFormData(p => ({ ...p, fullName: e.target.value }))}
-                    className="h-[42px] w-full rounded-[9px] border border-[rgba(11,22,40,0.17)] bg-[#FAF8F4] px-[14px] text-[14px] text-[#0C1424] placeholder-[#9AA3B8] outline-none"
-                    style={{ fontFamily: 'var(--font-dm-sans)' }}
-                  />
+              {isAuthenticated ? (
+                <div className="rounded-[12px] border border-[rgba(11,22,40,0.09)] bg-[#FAF8F4] px-4 py-3">
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.8px] text-[#9AA3B8]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                    Sending as
+                  </p>
+                  <p className="mt-1 text-[14px] font-bold text-[#0C1424]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                    {contactName}
+                  </p>
+                  <p className="text-[13px] text-[#6B7A99]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                    {contactEmail}
+                  </p>
                 </div>
-                <div>
-                  <label className="mb-1.5 block text-[12px] font-semibold tracking-[0.24px] text-[#374560]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                    Email address
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    required
-                    value={formData.email}
-                    onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
-                    className="h-[42px] w-full rounded-[9px] border border-[rgba(11,22,40,0.17)] bg-[#FAF8F4] px-[14px] text-[14px] text-[#0C1424] placeholder-[#9AA3B8] outline-none"
-                    style={{ fontFamily: 'var(--font-dm-sans)' }}
-                  />
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-[12px] font-semibold tracking-[0.24px] text-[#374560]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                        Full name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Rahul Sharma"
+                        required
+                        value={formData.fullName}
+                        onChange={e => setFormData(p => ({ ...p, fullName: e.target.value }))}
+                        className="h-[42px] w-full rounded-[9px] border border-[rgba(11,22,40,0.17)] bg-[#FAF8F4] px-[14px] text-[14px] text-[#0C1424] placeholder-[#9AA3B8] outline-none"
+                        style={{ fontFamily: 'var(--font-dm-sans)' }}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-[12px] font-semibold tracking-[0.24px] text-[#374560]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                        Email address
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="you@example.com"
+                        required
+                        value={formData.email}
+                        onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
+                        className="h-[42px] w-full rounded-[9px] border border-[rgba(11,22,40,0.17)] bg-[#FAF8F4] px-[14px] text-[14px] text-[#0C1424] placeholder-[#9AA3B8] outline-none"
+                        style={{ fontFamily: 'var(--font-dm-sans)' }}
+                      />
+                    </div>
+                  </div>
 
-              <div>
-                <label className="mb-1.5 block text-[12px] font-semibold tracking-[0.24px] text-[#374560]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                  What&apos;s this about?
-                </label>
-                <div className="relative">
-                  <select
-                    required
-                    value={formData.subject}
-                    onChange={e => setFormData(p => ({ ...p, subject: e.target.value }))}
-                    className="h-[42px] w-full appearance-none rounded-[9px] border border-[rgba(11,22,40,0.17)] bg-[#FAF8F4] px-[14px] pr-10 text-[14px] text-[#0C1424] outline-none"
-                    style={{ fontFamily: 'var(--font-dm-sans)' }}
-                  >
-                    <option value="" disabled>
-                      Select a topic
-                    </option>
-                    {subjectOptions.map(opt => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                  <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7A99]" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-              </div>
+                  <div>
+                    <label className="mb-1.5 block text-[12px] font-semibold tracking-[0.24px] text-[#374560]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                      What&apos;s this about?
+                    </label>
+                    <div className="relative">
+                      <select
+                        required
+                        value={formData.subject}
+                        onChange={e => setFormData(p => ({ ...p, subject: e.target.value }))}
+                        className="h-[42px] w-full appearance-none rounded-[9px] border border-[rgba(11,22,40,0.17)] bg-[#FAF8F4] px-[14px] pr-10 text-[14px] text-[#0C1424] outline-none"
+                        style={{ fontFamily: 'var(--font-dm-sans)' }}
+                      >
+                        <option value="" disabled>
+                          Select a topic
+                        </option>
+                        {subjectOptions.map(opt => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                      <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7A99]" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="mb-1.5 block text-[12px] font-semibold tracking-[0.24px] text-[#374560]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
@@ -312,4 +354,3 @@ export default function ContactPage() {
     </main>
   );
 }
-

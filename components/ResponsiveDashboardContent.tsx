@@ -80,14 +80,6 @@ function toDateParam(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-const borderColors: Record<string, string> = {
-  high: '#FF6467',
-  medium: '#22C55E',
-  low: '#EAB308',
-};
-
-const borderColorsFallback = ['#FF6467', '#22C55E', '#EAB308'];
-
 const AddTaskModal = ({
   onClose,
   onTaskAdded,
@@ -161,176 +153,168 @@ const AddTaskModal = ({
       const created: StudyTask = res?.data ?? { title: title.trim(), subject: subjectValue, startTime, endTime, duration };
       onTaskAdded(created);
       onClose();
-    } catch {
-      setError('Failed to save task. Please try again.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
+      setError(message ? `Failed to save task: ${message}` : 'Failed to save task. Please try again.');
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl p-8 w-full max-w-[520px] mx-4 relative"
-        style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="font-inter font-bold text-[22px] text-[#17223E]">Add Custom Study Task</h2>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-500 font-medium text-[16px]"
-          >
-            ✕
+        {/* Modal Header */}
+        <div className="bg-gradient-to-r from-[#0e1430] to-[#1a2550] px-6 py-4 flex items-center justify-between">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f5b400" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Custom Study Task
+          </h3>
+          <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
 
-        {error && (
-          <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
-        )}
+        {/* Modal Body */}
+        <div className="p-6 space-y-4">
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+          )}
 
-        {/* Task Title */}
-        <div className="mb-5">
-          <label className="block font-inter font-medium text-[14px] text-[#6366F1] mb-2">Task Title</label>
-          <input
-            type="text"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder="e.g., Complete Polity Chapter 5"
-            className="w-full border-2 border-[#6366F1] rounded-xl px-4 py-3 font-inter text-[14px] text-gray-500 outline-none focus:border-[#4F46E5] transition-colors"
-          />
-        </div>
+          {/* Task Title */}
+          <div>
+            <label className="block text-sm font-semibold text-[#0e1430] mb-2">Task Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="e.g., Complete Polity Chapter 5"
+              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#f5b400] focus:outline-none transition-colors text-sm"
+            />
+          </div>
 
-        {/* Subject */}
-        <div className="mb-5">
-          <label className="block font-inter font-medium text-[14px] text-[#6366F1] mb-2">Subject</label>
-          <select
-            value={subject}
-            onChange={e => setSubject(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-500 outline-none focus:border-[#6366F1] bg-white transition-colors appearance-auto"
-          >
-            <option value="">Select Subject</option>
-            <option value="history">History</option>
-            <option value="geography">Geography</option>
-            <option value="polity">Polity</option>
-            <option value="economy">Economy</option>
-            <option value="environment">Environment & Ecology</option>
-            <option value="science-tech">Science & Technology</option>
-          </select>
-          <input
-            type="text"
-            value={customSubject}
-            onChange={e => setCustomSubject(e.target.value)}
-            placeholder="Or type your own subject"
-            className="mt-3 w-full border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] transition-colors"
-          />
-        </div>
+          {/* Subject */}
+          <div>
+            <label className="block text-sm font-semibold text-[#0e1430] mb-2">Subject</label>
+            <select
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#f5b400] focus:outline-none transition-colors text-sm bg-white"
+            >
+              <option value="">Select Subject</option>
+              <option value="history">History</option>
+              <option value="geography">Geography</option>
+              <option value="polity">Polity</option>
+              <option value="economy">Economy</option>
+              <option value="environment">Environment & Ecology</option>
+              <option value="science-tech">Science & Technology</option>
+            </select>
+            <input
+              type="text"
+              value={customSubject}
+              onChange={e => setCustomSubject(e.target.value)}
+              placeholder="Or type your own subject"
+              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#f5b400] focus:outline-none transition-colors text-sm mt-2"
+            />
+          </div>
 
-        {/* Task Type */}
-        <div className="mb-5">
-          <label className="block font-inter font-medium text-[14px] text-[#6366F1] mb-2">Task Type</label>
-          <select
-            value={taskType}
-            onChange={e => setTaskType(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] bg-white transition-colors appearance-auto"
-          >
-            <option value="reading">Reading</option>
-            <option value="practice">Practice</option>
-            <option value="revision">Revision</option>
-            <option value="test">Test</option>
-            <option value="notes">Note Making</option>
-            <option value="answer">Answer Writing</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
+          {/* Task Type */}
+          <div>
+            <label className="block text-sm font-semibold text-[#0e1430] mb-2">Task Type</label>
+            <select
+              value={taskType}
+              onChange={e => setTaskType(e.target.value)}
+              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#f5b400] focus:outline-none transition-colors text-sm bg-white"
+            >
+              <option value="reading">📖 Reading</option>
+              <option value="practice">✏️ Practice</option>
+              <option value="revision">🔄 Revision</option>
+              <option value="notes">📝 Notes Making</option>
+              <option value="test">🎯 Test</option>
+              <option value="answer">✍️ Answer Writing</option>
+              <option value="other">📌 Other</option>
+            </select>
+          </div>
 
-        {/* Time */}
-        <div className="mb-7">
-          <label className="block font-inter font-medium text-[14px] text-[#6366F1] mb-3">Time</label>
-          <div className="flex items-center gap-3">
-            {/* Start time */}
-            <div className="flex-1">
-              <p className="font-inter text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Start</p>
-              <div className="relative">
+          {/* Time — keep existing slot dropdowns + auto-fill logic */}
+          <div>
+            <label className="block text-sm font-semibold text-[#0e1430] mb-2">Time</label>
+            <div className="flex items-center gap-3">
+              {/* Start */}
+              <div className="flex-1">
+                <div className="text-xs text-gray-500 mb-1">START</div>
                 <select
                   value={startTime}
                   onChange={e => handleStartChange(e.target.value)}
-                  className="w-full appearance-none border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/10 transition-colors bg-white cursor-pointer pr-10"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-[#f5b400] focus:outline-none transition-colors text-sm bg-white cursor-pointer"
                 >
                   {TIME_SLOTS.map(t => (
                     <option key={t} value={t}>{fmtSlot(t)}</option>
                   ))}
                 </select>
-                <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
               </div>
-            </div>
 
-            {/* Arrow divider */}
-            <div className="mt-5 text-gray-300">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
+              {/* Chevron divider */}
+              <div className="text-gray-400 mt-5">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
 
-            {/* End time */}
-            <div className="flex-1">
-              <p className="font-inter text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">End</p>
-              <div className="relative">
+              {/* End */}
+              <div className="flex-1">
+                <div className="text-xs text-gray-500 mb-1">END</div>
                 <select
                   value={endTime}
                   onChange={e => setEndTime(e.target.value)}
-                  className="w-full appearance-none border border-gray-200 rounded-xl px-4 py-3 font-inter text-[14px] text-gray-700 outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/10 transition-colors bg-white cursor-pointer pr-10"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-[#f5b400] focus:outline-none transition-colors text-sm bg-white cursor-pointer"
                 >
                   {TIME_SLOTS.map(t => (
                     <option key={t} value={t}>{fmtSlot(t)}</option>
                   ))}
                 </select>
-                <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
               </div>
             </div>
-          </div>
 
-          {/* Duration pill */}
-          {(() => {
-            const [sh, sm] = startTime.split(':').map(Number);
-            const [eh, em] = endTime.split(':').map(Number);
-            const diff = (eh * 60 + em) - (sh * 60 + sm);
-            if (diff <= 0) return null;
-            const hrs = Math.floor(diff / 60);
-            const mins = diff % 60;
-            const label = hrs > 0 ? (mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`) : `${mins}m`;
-            return (
-              <div className="mt-2.5 flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#6366F1]/10 px-3 py-1 font-inter text-[12px] font-semibold text-[#6366F1]">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            {/* Duration pill */}
+            {(() => {
+              const [sh, sm] = startTime.split(':').map(Number);
+              const [eh, em] = endTime.split(':').map(Number);
+              const diff = (eh * 60 + em) - (sh * 60 + sm);
+              if (diff <= 0) return null;
+              const hrs = Math.floor(diff / 60);
+              const mins = diff % 60;
+              const label = hrs > 0 ? (mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`) : `${mins}m`;
+              return (
+                <div className="mt-2 inline-flex items-center gap-1.5 bg-[#eef1ff] text-[#0e1430] text-xs font-semibold px-3 py-1.5 rounded-full">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   {label} session
-                </span>
-              </div>
-            );
-          })()}
+                </div>
+              );
+            })()}
+          </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-3">
+        {/* Modal Footer */}
+        <div className="px-6 py-4 bg-gray-50 flex items-center justify-end gap-3">
           <button
             onClick={onClose}
             disabled={saving}
-            className="flex-1 border-2 border-gray-200 rounded-xl py-3 font-inter font-medium text-[15px] text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            className="px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 disabled:opacity-50"
           >
-            <span>✕</span> Cancel
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 rounded-xl py-3 font-inter font-medium text-[15px] text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-60"
-            style={{ background: 'linear-gradient(135deg, #6366F1, #8B5CF6)' }}
+            className="px-6 py-2.5 text-sm flex items-center gap-2 bg-gradient-to-b from-[#ffd24a] to-[#f5b400] text-[#1a1407] rounded-[0.7rem] font-bold hover:shadow-lg transition-shadow disabled:opacity-60"
           >
             {saving ? (
-              <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+              <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1a1407]" />
             ) : (
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             )}
             {saving ? 'Saving...' : 'Add Task'}
           </button>
@@ -576,7 +560,7 @@ const ResponsiveDashboardContent = () => {
             className="px-[clamp(1rem,1.04vw,1.25rem)] py-[clamp(0.75rem,0.83vw,1rem)] rounded-[4px] flex items-center gap-3"
             style={{
               background: 'rgba(255, 255, 255, 0.1)',
-              borderLeft: '4px solid #FF8904',
+              borderLeft: '4px solid #FDC700',
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -614,7 +598,7 @@ const ResponsiveDashboardContent = () => {
             </svg>
             <input
               type="text"
-              placeholder="Ask Jeet AI: 'Explain current affairs'"
+              placeholder="Ask Jeet AI Mentor: 'Fundamental Rights vs DPSP'"
               value={searchInput}
               onFocus={() => router.push('/dashboard/jeet-gpt')}
               onChange={e => setSearchInput(e.target.value)}
@@ -726,7 +710,7 @@ const ResponsiveDashboardContent = () => {
               <Link
                 href="/dashboard/daily-mcq"
                 aria-label="Open Daily MCQ"
-                className="block bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] relative cursor-pointer h-full flex flex-col transition-colors"
+                className="block bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] relative cursor-pointer h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg"
                 style={{ borderColor: isMcqCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #22C55E' }}
               >
                 {isMcqCompleted && (
@@ -758,19 +742,25 @@ const ResponsiveDashboardContent = () => {
                   {mcqCount} Questions{mcqTopic ? ` - ${mcqTopic}` : ''}
                 </p>
 
-                <div className="w-full flex justify-center" role="button">
-                  <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2">
+                {isMcqCompleted ? (
+                  <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/mcq-completed-icon.png" alt="" className="w-[22px] h-[16px] object-contain flex-shrink-0" />
                     <span>Completed</span>
                   </div>
-                </div>
+                ) : (
+                  <div className="w-full bg-[#17223E] text-white rounded-[8px] py-2 px-4 font-inter font-medium text-[clamp(13px,0.78vw,14px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2" role="button">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/TrioCard (1).png" alt="Attempt" className="w-5 h-5" />
+                    Attempt Now
+                  </div>
+                )}
               </Link>
 
               {/* Mains Question Card */}
               <Link href="/dashboard/daily-answer" className="block h-full">
               <div
-                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-colors cursor-pointer relative"
+                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg cursor-pointer relative"
                 style={{ borderColor: isMainsCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #94A3B8' }}
               >
                 {isMainsCompleted && (
@@ -815,7 +805,7 @@ const ResponsiveDashboardContent = () => {
               {/* Daily Editorial Card */}
               <Link href="/dashboard/daily-editorial" className="block h-full">
               <div
-                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-colors cursor-pointer relative"
+                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg cursor-pointer relative"
                 style={{ borderColor: isEditorialCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #F59E0B' }}
               >
                 {isEditorialCompleted && (
@@ -876,7 +866,15 @@ const ResponsiveDashboardContent = () => {
               <h2 className="font-inter font-bold text-[clamp(18px,1.2vw,20px)] text-[#1A1A1A]">
                 Today{'\''}s Study Tasks
               </h2>
-              <Link href="/dashboard/study-planner" className="text-[12px] text-[#4F46E5] font-medium hover:underline">
+              <Link
+                href="/dashboard/study-planner"
+                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#3B5BDB] px-3 py-1 rounded-full transition-all hover:bg-[#EEF1FF]"
+                style={{ background: '#F0F4FF' }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3B5BDB" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
                 Open Study Planner
               </Link>
             </div>
@@ -934,10 +932,9 @@ const ResponsiveDashboardContent = () => {
           ) : (
             <>
               {displayTasks.map((task, index) => {
-                const leftBorderColor = task.priority
-                  ? (borderColors[task.priority] || borderColorsFallback[index % 3])
-                  : borderColorsFallback[index % 3];
                 const completed = isTaskCompleted(task);
+                // Green left border only for completed tasks; incomplete tasks use a normal grey border.
+                const leftBorderColor = completed ? '#22C55E' : '#E5E7EB';
                 const taskId = task._id || task.id || '';
                 const timeLabel = task.startTime && task.endTime
                   ? `${task.startTime} - ${task.endTime} ${formatDuration(task.duration)}`
@@ -959,20 +956,29 @@ const ResponsiveDashboardContent = () => {
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-blue-600" style={{ background: '#DBEAFE' }}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src="/b.png" alt="Type" className="w-3.5 h-3.5" />
-                          {task.type || 'Reading'}
+                          {(() => { const t = task.type || 'Reading'; return t.charAt(0).toUpperCase() + t.slice(1); })()}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-purple-700" style={{ background: '#F3E8FF' }}>
+                          {task.subject ? `${getSubjectEmoji(task.subject)} ${task.subject}` : '📚 General'}
                         </span>
                         {timeLabel && (
                           <span className="inline-flex items-center gap-1 text-gray-600 text-[clamp(12px,0.68vw,13px)]">
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-                              <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                              {/* bells */}
+                              <ellipse cx="5" cy="5" rx="2.6" ry="2" transform="rotate(-40 5 5)" fill="#dc2626" />
+                              <ellipse cx="19" cy="5" rx="2.6" ry="2" transform="rotate(40 19 5)" fill="#dc2626" />
+                              {/* feet */}
+                              <path d="M6 19l-1.6 2.2M18 19l1.6 2.2" stroke="#b91c1c" strokeWidth="2" strokeLinecap="round" />
+                              {/* body */}
+                              <circle cx="12" cy="13" r="8" fill="#ef4444" />
+                              <circle cx="12" cy="13" r="5.6" fill="#fff" />
+                              {/* hands + center */}
+                              <path d="M12 13V9.2M12 13l2.4 1.4" stroke="#dc2626" strokeWidth="1.5" strokeLinecap="round" />
+                              <circle cx="12" cy="13" r="0.9" fill="#dc2626" />
                             </svg>
                             {timeLabel}
                           </span>
                         )}
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-purple-700" style={{ background: '#F3E8FF' }}>
-                          {task.subject ? `${getSubjectEmoji(task.subject)} ${task.subject}` : '📚 General'}
-                        </span>
                       </div>
                     </div>
                     <button
@@ -995,23 +1001,29 @@ const ResponsiveDashboardContent = () => {
           )}
 
           {/* Add Custom Task */}
-          <div className="rounded-lg border border-[#D1D5DC] p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-center justify-between">
+          <div
+            onClick={() => setShowAddTaskModal(true)}
+            className="group rounded-xl border-2 border-dashed border-[#f5b400]/40 bg-gradient-to-br from-[#fffdf5] to-[#fff9e6] p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-center justify-between cursor-pointer transition-all duration-200 ease-out hover:border-[#f5b400]/70 hover:shadow-md hover:-translate-y-0.5"
+          >
             <div className="flex items-center gap-3">
-              <div className="w-[clamp(40px,2.6vw,48px)] h-[clamp(40px,2.6vw,48px)] bg-[#17223E] rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-[clamp(40px,2.6vw,48px)] h-[clamp(40px,2.6vw,48px)] bg-gradient-to-br from-[#f5b400] to-[#ffcb3a] rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform">
                 <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
                   <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
                 </svg>
               </div>
               <div>
-                <h3 className="font-inter font-semibold text-[clamp(14px,0.94vw,16px)] text-[#1A1A1A]">
+                <h3 className="font-inter font-bold text-[clamp(14px,0.94vw,16px)] text-[#0e1430]">
                   Add Custom Task
                 </h3>
-                <p className="font-inter text-[clamp(12px,0.68vw,13px)] text-gray-500">
+                <p className="font-inter text-[clamp(12px,0.68vw,13px)] text-gray-600">
                   Create your own study task for today
                 </p>
               </div>
             </div>
-            <button onClick={() => setShowAddTaskModal(true)} className="px-[clamp(1rem,1.25vw,1.5rem)] py-[clamp(0.4rem,0.52vw,0.6rem)] bg-[#17223E] text-white rounded-lg font-inter font-medium text-[clamp(12px,0.68vw,13px)] hover:bg-[#1E2875] transition-colors flex items-center gap-1.5 flex-shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowAddTaskModal(true); }}
+              className="px-[clamp(1rem,1.25vw,1.5rem)] py-[clamp(0.4rem,0.52vw,0.6rem)] bg-gradient-to-b from-[#ffd24a] to-[#f5b400] text-[#1a1407] rounded-[0.7rem] font-inter font-bold text-[clamp(12px,0.68vw,13px)] group-hover:shadow-lg transition-shadow flex items-center gap-1.5 flex-shrink-0"
+            >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
                 <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
               </svg>
@@ -1022,12 +1034,9 @@ const ResponsiveDashboardContent = () => {
           {/* Start Focus Session Button */}
           <button
             onClick={() => router.push('/dashboard/study-groups?tab=solo&autostart=1')}
-            className="w-full bg-[#17223E] text-white rounded-lg py-[clamp(0.75rem,1vw,1rem)] font-inter font-semibold text-[clamp(14px,0.94vw,16px)] hover:bg-[#1E2875] transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-[#0e1430] text-white rounded-[0.6rem] py-[clamp(0.75rem,1vw,1rem)] font-inter font-semibold text-[clamp(14px,0.94vw,16px)] hover:bg-[#1a2150] transition-colors flex items-center justify-center gap-2"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="12" r="10" fill="white"/>
-              <path d="M10 8l6 4-6 4V8z" fill="#17223E"/>
-            </svg>
+            <span aria-hidden="true">▶️</span>
             Start Focus Session
           </button>
         </div>

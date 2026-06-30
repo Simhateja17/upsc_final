@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { userService, syllabusService } from '@/lib/services';
 import { useCmsContent } from '@/hooks/useCmsContent';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,11 +13,40 @@ import TopicList from './components/TopicList';
 import SubTopicsList from './components/SubTopicsList';
 import RightPanel from './components/RightPanel';
 import StatusModal from './components/StatusModal';
-import { UpgradePrompt, UsageMeter } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 export type Mode = 'prelims' | 'mains' | 'optional';
 export type Status = 'none' | 'done' | 'in-progress' | 'needs-revision' | 'weak';
+
+// UPSC optional subjects — kept in sync with the Profile settings selector.
+const OPTIONAL_SUBJECTS = [
+  'Agriculture',
+  'Animal Husbandry and Veterinary Science',
+  'Anthropology',
+  'Botany',
+  'Chemistry',
+  'Civil Engineering',
+  'Commerce and Accountancy',
+  'Economics',
+  'Electrical Engineering',
+  'Geography',
+  'Geology',
+  'History',
+  'Law',
+  'Management',
+  'Mathematics',
+  'Mechanical Engineering',
+  'Medical Science',
+  'Philosophy',
+  'Physics',
+  'Political Science and International Relations',
+  'Psychology',
+  'Public Administration',
+  'Sociology',
+  'Statistics',
+  'Zoology',
+  'Literature',
+];
 
 export interface Subject {
   id: string;
@@ -60,7 +89,7 @@ export default function SyllabusTrackerPage() {
     right_panel_title: 'Subject Progress',
     right_panel_view_all: 'View all →',
     cta_title: "Plan Today's Study",
-    cta_subtitle: 'Set daily goals with Jeet AI and stay on track for UPSC 2026.',
+    cta_subtitle: 'Set daily goals with Jeet AI Mentor and stay on track for UPSC 2026.',
     cta_button: '+ Add in Study Planner',
     modal_title: 'Syllabus Progress Overview',
     subtopic_placeholder_title: 'Sub-Topics',
@@ -71,6 +100,9 @@ export default function SyllabusTrackerPage() {
   });
 
   const [mode, setMode] = useState<Mode>('prelims');
+  const [optionalSubject, setOptionalSubject] = useState<string>('');
+  const [optionalDraft, setOptionalDraft] = useState<string>('');
+  const [savingOptional, setSavingOptional] = useState(false);
   const [activeSubject, setActiveSubject] = useState<string | null>(null);
   const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
   const [selectedTopic, setSelectedTopic] = useState<{ subjectId: string; topicIndex: number } | null>(null);
@@ -215,6 +247,32 @@ export default function SyllabusTrackerPage() {
       });
   }, []);
 
+  // Load the user's chosen optional subject from their profile
+  useEffect(() => {
+    const fromUser = (user as any)?.profile?.optionalSubject;
+    if (fromUser) { setOptionalSubject(fromUser); setOptionalDraft(fromUser); }
+    userService.getProfile()
+      .then((res) => {
+        if (res?.data?.optionalSubject) { setOptionalSubject(res.data.optionalSubject); setOptionalDraft(res.data.optionalSubject); }
+      })
+      .catch(() => {});
+  }, [user]);
+
+  // Save the optional subject chosen inline (no need to visit Profile settings).
+  const handleSetOptional = async () => {
+    const choice = optionalDraft.trim();
+    if (!choice || choice === optionalSubject) return;
+    setSavingOptional(true);
+    try {
+      await userService.updateProfile({ optionalSubject: choice });
+      setOptionalSubject(choice);
+    } catch {
+      // leave the draft as-is so the user can retry
+    } finally {
+      setSavingOptional(false);
+    }
+  };
+
   // Debounced save to API + localStorage whenever state changes
   const debouncedSave = useCallback((newStates: TrackerState, currentMode: string) => {
     localStorage.setItem('syllabusTrackerState', JSON.stringify(newStates));
@@ -328,6 +386,45 @@ export default function SyllabusTrackerPage() {
     updateSubTopicState(key, { important: !current });
   };
 
+  // Match the user's chosen optional (a subject-name string) to one syllabus subject.
+  // Names may carry an "(Opt.)" suffix, so compare on a normalized form.
+  const matchedOptional = useMemo(() => {
+    if (!syllabusData || !optionalSubject) return null;
+    const norm = (s: string) =>
+      (s || '')
+        .toLowerCase()
+        .replace(/\(\s*opt\.?\s*\)/g, '')
+        .replace(/optional/g, '')
+        .replace(/[^a-z0-9]/g, '');
+    const target = norm(optionalSubject);
+    if (!target) return null;
+    return (
+      syllabusData.optional.find((s) => {
+        const n = norm(s.name);
+        const sh = norm(s.short);
+        return n === target || sh === target || (!!n && (n.includes(target) || target.includes(n)));
+      }) || null
+    );
+  }, [syllabusData, optionalSubject]);
+
+  // In Optional mode, auto-select the user's chosen subject so its sub-subjects show.
+  useEffect(() => {
+    if (mode === 'optional' && matchedOptional) {
+      setActiveSubject((prev) => (prev === matchedOptional.id ? prev : matchedOptional.id));
+    }
+  }, [mode, matchedOptional]);
+
+  // Open a sub-subject (topic) from the right panel and select it in the middle columns.
+  const handleSelectSubTopic = (subjectId: string, topicIndex: number) => {
+    setActiveSubject(subjectId);
+    setOpenTopics((prev) => {
+      const next = new Set(prev);
+      next.add(`${subjectId}__${topicIndex}`);
+      return next;
+    });
+    setSelectedTopic({ subjectId, topicIndex });
+  };
+
   if (syllabusLoading || !syllabusData) {
     return (
       <div className="flex items-center justify-center h-full bg-[#f3f6fb]">
@@ -339,7 +436,14 @@ export default function SyllabusTrackerPage() {
     );
   }
 
-  const currentSubjects = syllabusData[mode];
+  // Optional tab shows only the user's chosen optional subject (if any).
+  const currentSubjects =
+    mode === 'optional'
+      ? matchedOptional
+        ? [matchedOptional]
+        : []
+      : syllabusData[mode];
+  const optionalNoSelection = mode === 'optional' && !matchedOptional;
   const currentSubject = activeSubject
     ? currentSubjects.find(s => s.id === activeSubject)
     : null;
@@ -358,18 +462,6 @@ export default function SyllabusTrackerPage() {
           />
         </div>
 
-        {entitlements.isLimited('syllabus_tracker') && (
-          <div className="px-[12px] pt-[12px]">
-            <UpgradePrompt
-              title="Syllabus Tracker preview"
-              currentTier={entitlements.tier}
-              requiredTier="rise"
-              message="Free and Aspire plans can track up to 5 syllabus items. Upgrade to Rise for unlimited tracking across Prelims, Mains, and Optional."
-              status={entitlements.featureStatus('syllabus_tracker_items')}
-            />
-          </div>
-        )}
-
         {/* Stage Tabs */}
         <div className="px-[12px] pt-[12px] pb-0 overflow-x-auto">
           <StageTabs
@@ -380,6 +472,43 @@ export default function SyllabusTrackerPage() {
             cms={cms}
           />
         </div>
+
+        {/* Optional Subject picker — choose/change your optional right here,
+            no need to visit Profile settings. */}
+        {mode === 'optional' && (
+          <div className="px-[12px] pt-[12px]">
+            <div className="rounded-[14px] border border-[#E5E7EB] bg-white p-[16px] flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-arimo font-bold text-[#101828] text-[15px] mb-1">Pick your Optional Subject</h3>
+                <p className="font-arimo text-[#6B7280] text-[12px] mb-2">
+                  {optionalSubject
+                    ? <>Current: <span className="font-semibold text-[#374151]">{optionalSubject}</span>. Change it below anytime.</>
+                    : 'Select your optional to start tracking its syllabus.'}
+                </p>
+                <select
+                  value={optionalDraft}
+                  onChange={(e) => setOptionalDraft(e.target.value)}
+                  className="w-full sm:max-w-[360px] font-arimo outline-none transition-colors bg-white"
+                  style={{ height: '42px', borderRadius: '10px', border: '0.8px solid #E5E7EB', padding: '0 14px', fontSize: '14px', color: '#101828' }}
+                >
+                  <option value="">Select Optional</option>
+                  {OPTIONAL_SUBJECTS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={handleSetOptional}
+                disabled={savingOptional || !optionalDraft.trim() || optionalDraft.trim() === optionalSubject}
+                className="font-arimo font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40 flex-shrink-0"
+                style={{ height: '42px', padding: '0 20px', borderRadius: '10px', background: '#17223E', fontSize: '13px' }}
+              >
+                {savingOptional ? 'Saving…' : 'Set Optional Subject'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Tracker Area – stacks on mobile, four side-by-side columns on xl+ */}
         <div className="flex flex-col xl:flex-row items-stretch gap-[14px] px-[12px] pb-[18px] pt-[10px] xl:min-w-[1180px]">
@@ -393,6 +522,7 @@ export default function SyllabusTrackerPage() {
               onSearchChange={setSearchQuery}
               states={states}
               mode={mode}
+              optionalNoSelection={optionalNoSelection}
             />
           </div>
 
@@ -430,6 +560,8 @@ export default function SyllabusTrackerPage() {
             states={states}
             syllabusData={syllabusData}
             cms={cms}
+            optionalSubject={currentSubject || currentSubjects[0] || null}
+            onSelectSubTopic={handleSelectSubTopic}
           />
         </div>
       </div>

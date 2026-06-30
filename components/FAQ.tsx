@@ -5,34 +5,44 @@ import Link from 'next/link';
 
 const FEATURED_FAQS = [
   {
-    question: 'What is RiseWithJeet and who is it for?',
+    question: 'Is free plan really free forever?',
     answer:
-      'RiseWithJeet is an AI-powered UPSC preparation platform built for aspirants at every stage. It was started by Abhijeet Soni, an IIT Kharagpur alumnus and AI professional, to make high-quality UPSC prep accessible to every aspirant in India.',
+      'Yes, absolutely. Our Free plan gives you lifetime free access to daily MCQ, daily news analysis, 10,000+ PYQs, study planner, leaderboard, plus 3 mains evaluations (lifetime), 1 Prelims test (lifetime) and 1 Jeet AI chat session. No card, no expiry, no hidden upgrades.',
   },
   {
-    question: 'Is there a free plan?',
+    question: 'Are the current prices a promotional offer?',
     answer:
-      'Yes. The Starter plan is completely free and includes daily MCQ practice, current affairs access, and the live study room. Paid plans unlock AI evaluation, mock tests, mentorship, and the complete revision suite.',
+      'Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, so lock in these rates while you can. Once you subscribe, your price remains locked for as long as you stay subscribed, even if prices increase for new users later.',
   },
   {
-    question: 'How does the AI answer evaluation work?',
+    question: 'Can I upgrade or cancel my subscription anytime?',
     answer:
-      'You submit a typed or handwritten answer (via photo upload). The AI evaluates it across 8 parameters – content accuracy, structure, introduction, conclusion, depth of analysis, examples, language clarity, and question relevance – and returns a score out of 10 with actionable feedback in under 60 seconds.',
+      'Absolutely. You can upgrade from Aspire to Rise or Ascent instantly (pro-rated). Cancellation is self-serve from your dashboard - you keep full access until the end of your billing cycle. No cancellation fees, no hassle.',
   },
   {
-    question: 'How does the AI Study Planner work?',
+    question: 'What is the refund policy?',
     answer:
-      'The Study Planner generates a personalised daily schedule based on your target exam date, available study hours, Syllabus Tracker progress, and weak areas from MCQ and test performance. It adapts every week as your data changes.',
+      "We offer a 3-day, no-questions-asked refund on all paid subscriptions. Just reach out to support within 3 days of your purchase and we'll process the refund within 24 hours. After 3 days, refunds are not applicable but you can cancel future billing.",
   },
   {
-    question: 'What is Jeet AI?',
+    question: "What's the difference between Aspire, Rise and Ascent?",
     answer:
-      'Jeet AI is your personal UPSC AI assistant, available 24/7. Ask it to explain any GS concept, help structure a Mains answer, summarise current affairs, or review your strategy. It is trained on UPSC-specific content, not generic AI.',
+      'Aspire: 5 mains evaluations/day, 5 Prelims tests/day, 5 Jeet AI messages/day, limited analytics & revision suite. Rise: 25 mains evals/day, 50 Prelims tests/day, 100 AI messages, full analytics dashboard, full revision suite, smart syllabus tracker, live study room. Ascent: Everything in Rise, plus unlimited evaluations & tests, unlimited AI messages, bi-weekly 1-on-1 mentorship, interview prep module, personalised roadmap, priority support, monthly review call and early access.',
   },
   {
-    question: 'How many PYQs are available on the platform?',
+    question: 'How much do I save on quarterly & yearly plans?',
     answer:
-      'The PYQ bank covers over 3,200 questions from UPSC Prelims across the last 30 years, plus Mains questions tagged by paper and year – each with detailed explanations and syllabus tags.',
+      "As we are running promotional offers currently, Quarterly plans save you 20% compared to monthly billing. Yearly plans save you 40% - that's almost 5 months free. For example, Rise monthly is ₹499, but yearly brings it down to ₹299/month. Discounts are automatically applied at checkout.",
+  },
+  {
+    question: 'How does AI Mains Evaluation work?',
+    answer:
+      'You can upload a photo of your handwritten answer. Jeet AI evaluates it against UPSC marking schemes - structure, content, keyword density, presentation, relevance etc. You get detailed feedback in under 60 seconds, including a score and actionable suggestions to improve.',
+  },
+  {
+    question: 'Is this suitable for first-attempt aspirants?',
+    answer:
+      "Absolutely. Our study planner, syllabus tracker, daily MCQs, mains answer evaluation and simplified video lectures are designed to guide you from day one - whether it's your first attempt or your third. Start with the Aspire to build momentum, then upgrade as you get more serious as you master consistency.",
   },
 ];
 

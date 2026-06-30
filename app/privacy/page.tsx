@@ -228,7 +228,7 @@ export default function PrivacyPolicyPage() {
                     <tr className="border-t border-[rgba(11,22,40,0.06)] bg-[#f5f3ef]">
                       <td className="px-5 py-3 font-medium text-[#0c1424]">Uploaded content</td>
                       <td className="px-5 py-3">Handwritten or typed answer images uploaded for AI evaluation</td>
-                      <td className="px-5 py-3">To run the Jeet AI Mains Evaluator and return your score</td>
+                      <td className="px-5 py-3">To run the Jeet AI Mentor Mains Evaluator and return your score</td>
                     </tr>
                   </tbody>
                 </table>

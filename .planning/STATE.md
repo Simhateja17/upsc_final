@@ -1,11 +1,28 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+current_phase: 01-app-backend-integration
+status: planning
+last_updated: "2026-06-15T06:20:43.898Z"
+progress:
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 6
+  completed_plans: 5
+  percent: 83
+---
+
 # State
 
 ## Project
+
 - **Name:** UPSC Platform — Jeet App Backend Integration
 - **Current Phase:** 01-app-backend-integration
 - **Status:** planning
 
 ## Decisions
+
 - D-01: Use Ktor client for HTTP (Kotlin Multiplatform compatible)
 - D-02: Use manual service locator for DI (minimize dependencies)
 - D-03: Use kotlinx.serialization for JSON (native KMP, no Moshi/Gson)
@@ -15,15 +32,18 @@
 - D-07: Use StateFlow + ViewModel pattern for UI state management
 
 ## Context
+
 - Backend already integrated with web frontend
 - App has screens but only sample/hardcoded data
 - Backend uses Bearer JWT auth via Supabase
 - API response envelope: `{ status, data, message }`
 
 ## Blockers
+
 None
 
 ## Notes
+
 - Backend API base URL: `NEXT_PUBLIC_API_URL` from env (e.g., `http://localhost:5001/api`)
 - All routes except auth require Bearer token
 - Supabase config: URL + anon key available in `.env.local`

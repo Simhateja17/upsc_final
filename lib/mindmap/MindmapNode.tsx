@@ -13,13 +13,24 @@ const MindmapNode = memo(function MindmapNode({ data, id }: Props) {
     label,
     depth,
     branchColor,
-    childCount,
     isExpanded,
     isRoot,
     isLeaf,
+    width,
+    height,
   } = data;
 
   const nodeColor = isRoot ? '#1C2E45' : getDepthColor(branchColor, depth);
+  const hiddenHandleStyle = {
+    width: 0,
+    height: 0,
+    minWidth: 0,
+    minHeight: 0,
+    opacity: 0,
+    border: 0,
+    background: 'transparent',
+    pointerEvents: 'none' as const,
+  };
 
   if (isRoot) {
     return (
@@ -30,17 +41,23 @@ const MindmapNode = memo(function MindmapNode({ data, id }: Props) {
         className="relative"
       >
         <div
-          className="px-6 py-3.5 rounded-2xl font-bold text-[15px] text-white text-center shadow-lg select-none"
+          className="flex items-center justify-center px-7 py-4 rounded-xl font-bold text-[15px] leading-snug text-white text-center shadow-lg select-none"
           style={{
             background: 'linear-gradient(135deg, #1C2E45 0%, #10182D 100%)',
-            minWidth: 180,
+            width,
+            minHeight: height,
             boxShadow: '0 4px 20px rgba(16,24,45,0.25), 0 1px 3px rgba(0,0,0,0.1)',
           }}
         >
           {label}
         </div>
-        <Handle type="source" position={Position.Right} className="!bg-transparent !border-0 !w-0 !h-0" />
-        <Handle type="source" position={Position.Left} className="!bg-transparent !border-0 !w-0 !h-0" id="left" />
+        <Handle
+          id="right-source"
+          type="source"
+          position={Position.Right}
+          style={hiddenHandleStyle}
+          isConnectable={false}
+        />
       </motion.div>
     );
   }
@@ -61,39 +78,51 @@ const MindmapNode = memo(function MindmapNode({ data, id }: Props) {
       className="relative group"
     >
       <div
-        className="px-4 py-2.5 rounded-xl text-[13px] font-semibold text-center cursor-pointer select-none transition-shadow duration-300 hover:shadow-md"
+        className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-[13px] font-semibold leading-snug cursor-pointer select-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
         style={{
           background: '#FFFFFF',
-          color: nodeColor,
-          borderWidth: 1.5,
+          color: '#172033',
+          borderWidth: 1,
           borderStyle: 'solid',
-          borderColor: nodeColor,
-          minWidth: 120,
-          maxWidth: 200,
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 3px 10px rgba(0,0,0,0.06)',
+          borderColor: `${nodeColor}66`,
+          borderLeftWidth: 5,
+          borderLeftColor: nodeColor,
+          width,
+          minHeight: height,
+          boxShadow: '0 8px 20px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.06)',
         }}
       >
-        <div className="flex items-center justify-center gap-2">
-          <span className="truncate">{label}</span>
-          {!isLeaf && (
-            <span
-              className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white transition-transform duration-200"
-              style={{
-                background: nodeColor,
-                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-              }}
-            >
-              {isExpanded ? '−' : '+'}
-            </span>
-          )}
-        </div>
+        <span className="block min-w-0 whitespace-normal break-words text-left">{label}</span>
+        {!isLeaf && (
+          <span
+            className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white transition-transform duration-200"
+            style={{
+              background: nodeColor,
+              transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            }}
+            aria-hidden="true"
+          >
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 3.25L8.25 6.5L5 9.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+        )}
       </div>
 
-      {/* Handles — both sides for balanced layout */}
-      <Handle type="target" position={Position.Right} className="!bg-transparent !border-0 !w-0 !h-0" />
-      <Handle type="target" position={Position.Left} className="!bg-transparent !border-0 !w-0 !h-0" id="left-target" />
-      <Handle type="source" position={Position.Right} className="!bg-transparent !border-0 !w-0 !h-0" id="right-source" />
-      <Handle type="source" position={Position.Left} className="!bg-transparent !border-0 !w-0 !h-0" id="left-source" />
+      <Handle
+        id="left-target"
+        type="target"
+        position={Position.Left}
+        style={hiddenHandleStyle}
+        isConnectable={false}
+      />
+      <Handle
+        id="right-source"
+        type="source"
+        position={Position.Right}
+        style={hiddenHandleStyle}
+        isConnectable={false}
+      />
     </motion.div>
   );
 });

@@ -1,0 +1,176 @@
+'use client';
+
+import React, { useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+interface NextStepCard {
+  icon: string;
+  accent: string;
+  iconBg: string;
+  iconColor: string;
+  title: string;
+  desc: string;
+  chip: string;
+  chipBg: string;
+  chipColor: string;
+  chipBorder: string;
+  cta: string;
+  href: string;
+  pulse?: boolean;
+}
+
+// Smart Next Steps cards — recreated from the reference design.
+export const NEXT_STEP_CARDS: NextStepCard[] = [
+  {
+    icon: '🎯', accent: '#6366F1', iconBg: '#EEF2FF', iconColor: '#4338CA',
+    title: 'Practice More MCQs',
+    desc: '20 targeted MCQs curated based on your wrong answers today.',
+    chip: '~15 min', chipBg: '#EEF2FF', chipColor: '#4338CA', chipBorder: '#C7D2FE',
+    cta: 'Start', href: '/dashboard/mock-tests',
+  },
+  {
+    icon: '✍️', accent: '#E11D48', iconBg: '#FFF1F2', iconColor: '#BE123C',
+    title: 'Practice Answer Writing',
+    desc: "Attempt today's Mains question — builds on the concepts you missed.",
+    chip: '10 marks · 150 words', chipBg: '#FFF1F2', chipColor: '#BE123C', chipBorder: '#FECDD3',
+    cta: 'Write', href: '/dashboard/daily-answer/challenge',
+  },
+  {
+    icon: '📰', accent: '#10B981', iconBg: '#ECFDF5', iconColor: '#047857',
+    title: "Read Today's Editorial",
+    desc: 'Directly linked to questions you got wrong today. A quick 5-min read.',
+    chip: '5 min · The Hindu', chipBg: '#ECFDF5', chipColor: '#047857', chipBorder: '#A7F3D0',
+    cta: 'Read', href: '/dashboard/daily-editorial',
+  },
+  {
+    icon: '🎧', accent: '#F5C518', iconBg: '#FFFBEB', iconColor: '#B45309',
+    title: 'Enter Study Room',
+    desc: 'Join a focused, distraction-free session with the Pomodoro timer & live peers.',
+    chip: '1,284 studying now', chipBg: '#FFFBEB', chipColor: '#92400E', chipBorder: '#FDE68A',
+    cta: 'Enter', href: '/dashboard/study-groups', pulse: true,
+  },
+];
+
+const ArrowRight = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
+
+interface SmartNextStepsModalProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function SmartNextStepsModal({ open, onClose }: SmartNextStepsModalProps) {
+  const router = useRouter();
+
+  // Close on Escape and lock background scroll while open.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      onClick={onClose}
+      className="sns-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Smart Next Steps"
+    >
+      <style>{`
+        .sns-backdrop{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);animation:snsFade .2s ease;}
+        .sns-card-wrap{width:100%;max-width:720px;max-height:calc(100vh - 32px);overflow-y:auto;border-radius:20px;background:#fff;border:1px solid #EEF1F6;box-shadow:0 1px 0 rgba(11,20,38,.04),0 2px 6px rgba(11,20,38,.04),0 30px 60px -28px rgba(11,20,38,.30);animation:snsPop .26s cubic-bezier(.2,.8,.25,1);}
+        @keyframes snsFade{from{opacity:0}to{opacity:1}}
+        @keyframes snsPop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+        .ns-card{padding:18px;border-radius:16px;border:1px solid #E6EAF2;background:#fff;transition:all .2s ease;cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;height:100%;}
+        .ns-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px -16px rgba(11,20,38,.18);}
+        .ns-card .ns-glow{position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;opacity:.12;pointer-events:none;}
+        .ns-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:700;border:1px solid transparent;}
+        .ns-pulse{width:7px;height:7px;border-radius:50%;background:currentColor;animation:nsPulse 1.6s infinite;}
+        @keyframes nsPulse{0%{box-shadow:0 0 0 0 rgba(245,197,24,.55)}70%{box-shadow:0 0 0 6px rgba(245,197,24,0)}100%{box-shadow:0 0 0 0 rgba(245,197,24,0)}}
+        .ns-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .18s ease;width:100%;}
+        .ns-btn-ghost{background:#fff;color:#0B1426;border:1px solid #E2E6EF;}
+        .ns-btn-ghost:hover{background:#F7F9FC;}
+        .ns-btn-ink{background:#0B1426;color:#fff;border:1px solid #0B1426;}
+        .ns-btn-ink:hover{background:#13203A;}
+      `}</style>
+
+      {/* Stop backdrop click from closing when interacting with the card */}
+      <div className="sns-card-wrap" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-start justify-between" style={{ padding: '24px 28px 20px', borderBottom: '1px solid #F0F2F6' }}>
+          <div>
+            <div className="font-arimo font-bold" style={{ fontSize: 11.5, letterSpacing: '0.16em', color: '#B7860B' }}>
+              ✨ SMART NEXT STEPS
+            </div>
+            <h1 className="font-arimo font-extrabold tracking-tight" style={{ fontSize: 'clamp(19px,1.3vw,22px)', color: '#17223E', marginTop: 6 }}>
+              Personalized for your weak areas
+            </h1>
+            <p className="font-arimo font-medium" style={{ fontSize: 13, color: '#475467', marginTop: 4 }}>
+              Curated for you based on today&apos;s performance.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex-shrink-0 inline-flex items-center justify-center"
+            style={{ width: 36, height: 36, borderRadius: 11, background: '#fff', border: '1px solid rgba(15,26,53,.10)', color: '#0B1226', cursor: 'pointer' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        {/* Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 12, padding: 24 }}>
+          {NEXT_STEP_CARDS.map((card) => (
+            <Link key={card.title} href={card.href} className="min-w-0">
+              <div className="ns-card font-arimo">
+                <div className="ns-glow" style={{ background: card.accent }} />
+                <div className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 12, background: card.iconBg, color: card.iconColor, fontSize: 18 }}>
+                  {card.icon}
+                </div>
+                <div className="font-bold" style={{ fontSize: 15.5, lineHeight: 1.25, color: '#0B1426', marginTop: 12 }}>
+                  {card.title}
+                </div>
+                <div style={{ fontSize: 12.5, lineHeight: '20px', color: '#6B7689', marginTop: 4, flex: 1 }}>
+                  {card.desc}
+                </div>
+                <div className="flex items-center justify-between" style={{ marginTop: 12 }}>
+                  <span className="ns-chip" style={{ background: card.chipBg, color: card.chipColor, borderColor: card.chipBorder }}>
+                    {card.pulse && <span className="ns-pulse" />}
+                    {card.chip}
+                  </span>
+                  <span className="font-bold inline-flex items-center gap-1" style={{ fontSize: 12.5, color: card.iconColor }}>
+                    {card.cta} <ArrowRight />
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="grid grid-cols-2" style={{ gap: 12, padding: '0 24px 24px' }}>
+          <button type="button" onClick={onClose} className="ns-btn ns-btn-ghost font-arimo">Maybe Later</button>
+          <button type="button" onClick={() => router.push('/dashboard')} className="ns-btn ns-btn-ink font-arimo">
+            <span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>🏠</span>
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { forumService } from '@/lib/services';
 
@@ -96,7 +97,21 @@ function subjectStyle(subject: string) {
   );
 }
 
+const FORUM_SUBJECTS = [
+  { label: 'Indian Polity', icon: '⚖️' },
+  { label: 'History', icon: '🏛️' },
+  { label: 'Economy', icon: '💰' },
+  { label: 'Geography', icon: '🌍' },
+  { label: 'Ethics & GS4', icon: '📜' },
+  { label: 'Current Affairs', icon: '🗞️' },
+  { label: 'Science & Tech', icon: '🔬' },
+  { label: 'Mains Strategy', icon: '✏️' },
+  { label: 'Environment & Ecology', icon: '🌿' },
+  { label: 'Art & Culture', icon: '🏺' },
+];
+
 export default function QAForumPage() {
+  const router = useRouter();
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -232,15 +247,20 @@ export default function QAForumPage() {
         buttons={
           <>
             <button
+              type="button"
+              onClick={() => setAskOpen(true)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '8px',
+                minWidth: '180px',
+                height: '46px',
                 background: '#E8B84B',
                 color: '#0C1424',
                 border: 'none',
                 borderRadius: '8px',
-                padding: '10px 20px',
+                padding: '0 22px',
                 fontSize: '14px',
                 fontWeight: 700,
                 fontFamily: 'var(--font-arimo), Arimo, sans-serif',
@@ -255,15 +275,20 @@ export default function QAForumPage() {
               Ask a Question
             </button>
             <button
+              type="button"
+              onClick={() => router.push('/dashboard/study-groups')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '8px',
+                minWidth: '190px',
+                height: '46px',
                 background: 'transparent',
                 color: '#FFFFFF',
                 border: '1.5px solid rgba(255,255,255,0.3)',
                 borderRadius: '8px',
-                padding: '10px 20px',
+                padding: '0 22px',
                 fontSize: '14px',
                 fontWeight: 700,
                 fontFamily: 'var(--font-arimo), Arimo, sans-serif',
@@ -287,11 +312,11 @@ export default function QAForumPage() {
           { value: '∞', label: 'Always Free', color: '#FFFFFF' },
         ]}
         heroHeight="400px"
-        contentShiftY={-20}
+        contentShiftY={0}
         enforceUniformLayout={false}
       />
 
-      <main className="mx-auto mt-2 grid max-w-[1180px] grid-cols-1 gap-6 px-4 pb-14 lg:grid-cols-[220px_1fr]">
+      <main className="mx-auto mt-2 grid max-w-[1400px] grid-cols-1 gap-6 px-4 pb-14 lg:grid-cols-[220px_1fr_240px]">
         <aside className="h-fit rounded-[14px] bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-[10px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">Browse</h2>
           {browseItems.map((item, index) => {
@@ -321,26 +346,33 @@ export default function QAForumPage() {
             className={`flex items-center justify-between rounded-[8px] px-3 py-2 text-[12px] cursor-pointer transition-colors ${activeSubject === null ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99] hover:bg-[#F8FAFC]'}`}
           >
             <span className="flex items-center gap-2.5">
-              <span className="h-2 w-2 rounded-full bg-gray-400" />
+              <span className="text-[15px]">📚</span>
               All Subjects
             </span>
             <span className="rounded-full bg-[#EEF2F7] px-2 text-[10px] text-[#6B7A99]">
               {subjects.reduce((sum, s) => sum + s.count, 0)}
             </span>
           </div>
-          {subjects.map((item) => (
-            <div
-              key={item.label}
-              onClick={() => setActiveSubject(item.label)}
-              className={`flex items-center justify-between rounded-[8px] px-3 py-2 text-[12px] cursor-pointer transition-colors ${activeSubject === item.label ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99] hover:bg-[#F8FAFC]'}`}
-            >
-              <span className="flex items-center gap-2.5">
-                <span className="h-2 w-2 rounded-full" style={{ background: subjectStyle(item.label).stripe }} />
-                {item.label}
-              </span>
-              <span className="rounded-full bg-[#EEF2F7] px-2 text-[10px] text-[#6B7A99]">{item.count}</span>
-            </div>
-          ))}
+          {FORUM_SUBJECTS.map((item) => {
+            const apiEntry = subjects.find((s) => s.label.toLowerCase() === item.label.toLowerCase());
+            const count = apiEntry?.count ?? 0;
+            const active = activeSubject === item.label;
+            return (
+              <div
+                key={item.label}
+                onClick={() => setActiveSubject(item.label)}
+                className={`flex items-center justify-between rounded-[8px] px-3 py-2 text-[12px] cursor-pointer transition-colors ${active ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99] hover:bg-[#F8FAFC]'}`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <span className="text-[15px]">{item.icon}</span>
+                  {item.label}
+                </span>
+                {count > 0 && (
+                  <span className="rounded-full bg-[#EEF2F7] px-2 text-[10px] text-[#6B7A99]">{count}</span>
+                )}
+              </div>
+            );
+          })}
         </aside>
 
         <section>
@@ -422,19 +454,19 @@ export default function QAForumPage() {
                         <span>· {timeAgo(post.createdAt)}</span>
                       </div>
                       <div className="ml-auto flex items-center gap-4">
-                        <span className="flex items-center gap-1">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                        <span className="flex items-center gap-1.5">
+                          <span aria-hidden>💬</span>
                           {post.answerCount ?? 0} replies
                         </span>
-                        <span className="flex items-center gap-1">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span className="flex items-center gap-1.5">
+                          <span aria-hidden>👁</span>
                           {post.views} views
                         </span>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleBookmark(post.id, post.isBookmarked); }}
-                          className={`flex items-center gap-1 transition-colors ${post.isBookmarked ? 'text-[#E8B84B]' : 'text-[#C99730] hover:text-[#E8B84B]'}`}
+                          className={`flex items-center gap-1.5 transition-colors ${post.isBookmarked ? 'text-[#E8B84B]' : 'text-[#C99730] hover:text-[#E8B84B]'}`}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill={post.isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                          <span aria-hidden>🔖</span>
                           {post.isBookmarked ? 'Saved' : 'Save'}
                         </button>
                       </div>
@@ -445,6 +477,94 @@ export default function QAForumPage() {
             })}
           </div>
         </section>
+
+        {/* ── Right Sidebar ── */}
+        <aside className="hidden lg:flex flex-col gap-4 h-fit sticky top-4">
+
+          {/* Live Study Rooms */}
+          <div className="rounded-[14px] border border-[#E1E6EF] bg-white p-4 shadow-sm">
+            <h3 className="mb-3 text-[10px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">
+              🏛️ Live Study Rooms
+            </h3>
+            <div className="flex flex-col gap-2">
+              {[
+                { name: 'Polity Warriors', count: 18, icon: '🏛️', color: '#EFF6FF', iconColor: '#2563EB' },
+                { name: 'History Explorers', count: 12, icon: '🏛️', color: '#F5F3FF', iconColor: '#7C3AED' },
+                { name: 'Geography Navigators', count: 8, icon: '🌍', color: '#ECFDF5', iconColor: '#16A34A' },
+              ].map((room) => (
+                <div key={room.name} className="flex items-center gap-3 rounded-[10px] p-2 hover:bg-[#F8FAFC] transition-colors">
+                  <div
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] text-[16px]"
+                    style={{ background: room.color }}
+                  >
+                    {room.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold text-[#0C1424] truncate">{room.name}</p>
+                    <p className="text-[11px] text-[#6B7A99]">{room.count} active now</p>
+                  </div>
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-[#22C55E]" />
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => window.location.href = '/dashboard/study-groups'}
+              className="mt-3 w-full rounded-[8px] border border-[#E8B84B] py-2 text-[12px] font-bold text-[#C99730] hover:bg-[#FFF8E7] transition-colors"
+            >
+              View All Rooms →
+            </button>
+          </div>
+
+          {/* Top Contributors */}
+          <div className="rounded-[14px] border border-[#E8B84B]/40 bg-white shadow-sm overflow-hidden">
+            <div className="px-4 py-3" style={{ background: '#FFF8E7' }}>
+              <h3 className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#C99730]">
+                ⭐ Top Contributors
+              </h3>
+            </div>
+            <div className="flex flex-col gap-0 p-3">
+              {[
+                { rank: 1, initials: 'SK', name: 'Sneha K.', answers: 234, color: '#EC4899' },
+                { rank: 2, initials: 'VR', name: 'Vikram R.', answers: 189, color: '#F97316' },
+                { rank: 3, initials: 'AP', name: 'Arjun P.', answers: 156, color: '#8B5CF6' },
+              ].map((c) => (
+                <div key={c.rank} className="flex items-center gap-3 rounded-[8px] px-2 py-2.5 hover:bg-[#F8FAFC] transition-colors">
+                  <span className="w-4 text-[11px] font-bold text-[#9AA3B8]">{c.rank}.</span>
+                  <div
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                    style={{ background: c.color }}
+                  >
+                    {c.initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold text-[#0C1424]">{c.name}</p>
+                    <p className="text-[11px] text-[#6B7A99]">{c.answers} answers</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Community Guidelines */}
+          <div
+            className="rounded-[14px] p-4"
+            style={{ background: '#FFF5F5', border: '1px solid #FECACA' }}
+          >
+            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-[#EF4444]">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <line x1="12" y1="9" x2="12" y2="13" stroke="#EF4444" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="12" y1="17" x2="12.01" y2="17" stroke="#EF4444" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Community Guidelines
+            </p>
+            <p className="text-[11px] leading-[1.6] text-[#374151]">
+              Be respectful &amp; constructive. Violations may lead to{' '}
+              <strong className="text-[#EF4444]">permanent deactivation</strong> from Rise With Jeet.
+            </p>
+          </div>
+
+        </aside>
       </main>
 
       {askOpen && <AskModal onClose={() => setAskOpen(false)} onCreated={fetchPosts} />}
@@ -489,51 +609,54 @@ const TAG_SHORTCUTS: Record<string, string> = {
   g: 'GS',
 };
 
+const QUERY_TYPES = [
+  { value: 'General', icon: '🌐' },
+  { value: 'Prep Related', icon: '🗒️' },
+  { value: 'Subject Related', icon: '📖' },
+  { value: 'Specific Subject', icon: '🎯' },
+];
+
+const SUBJECT_TAGS = [
+  { label: 'Indian Polity', emoji: '🏛️', bg: '#FFF8E7', border: '#E8B84B', text: '#C99730' },
+  { label: 'History', emoji: '📜', bg: '#FDF4F0', border: '#E8C4A0', text: '#A0522D' },
+  { label: 'Economy', emoji: '📊', bg: '#F0FDF4', border: '#86EFAC', text: '#16A34A' },
+  { label: 'Geography', emoji: '🌍', bg: '#EFF6FF', border: '#93C5FD', text: '#2563EB' },
+  { label: 'Ethics & GS4', emoji: '🎯', bg: '#FFF0F6', border: '#F9A8D4', text: '#DB2777' },
+  { label: 'Current Affairs', emoji: '📰', bg: '#F5F3FF', border: '#C4B5FD', text: '#7C3AED' },
+  { label: 'Science & Tech', emoji: '🔬', bg: '#F0FDFA', border: '#99F6E4', text: '#0F766E' },
+  { label: 'Mains Strategy', emoji: '✏️', bg: '#FEFCE8', border: '#FDE047', text: '#A16207' },
+  { label: 'Prelims', emoji: '🎯', bg: '#FFF1F2', border: '#FECDD3', text: '#E11D48' },
+  { label: 'GS1', emoji: '📚', bg: '#F0FDF4', border: '#86EFAC', text: '#16A34A' },
+  { label: 'GS2', emoji: '⚖️', bg: '#F0FDFA', border: '#99F6E4', text: '#0F766E' },
+  { label: 'GS3', emoji: '🌿', bg: '#F0FDF4', border: '#86EFAC', text: '#15803D' },
+  { label: 'GS4', emoji: '🧠', bg: '#F5F3FF', border: '#C4B5FD', text: '#7C3AED' },
+];
+
 function AskModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [title, setTitle] = useState('');
-  const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [tagInput, setTagInput] = useState('');
-  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [queryType, setQueryType] = useState('General');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [anonymous, setAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const tagInputRef = useRef<HTMLInputElement>(null);
 
-  const getActiveTagFragment = (val: string) => {
-    const parts = val.split(',');
-    return parts[parts.length - 1].trim();
-  };
-
-  const handleTagChange = (val: string) => {
-    setTagInput(val);
-    const fragment = getActiveTagFragment(val).toLowerCase();
-    if (!fragment) { setTagSuggestions([]); return; }
-    const shortcut = TAG_SHORTCUTS[fragment];
-    const matched = TAG_SUGGESTIONS.filter((t) =>
-      t.toLowerCase().startsWith(fragment)
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
-    const list = shortcut && !matched.includes(shortcut) ? [shortcut, ...matched] : matched;
-    setTagSuggestions(list.slice(0, 5));
-  };
-
-  const applyTagSuggestion = (suggestion: string) => {
-    const parts = tagInput.split(',');
-    parts[parts.length - 1] = ' ' + suggestion;
-    const next = parts.join(',').replace(/^,\s*/, '') + ', ';
-    setTagInput(next);
-    setTagSuggestions([]);
-    tagInputRef.current?.focus();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !body.trim() || !subject) return;
+    if (!title.trim() || !body.trim()) return;
+    const subjectFromTag = selectedTags[0] ?? queryType;
     setSubmitting(true);
     try {
       await forumService.createPost({
         title: title.trim(),
         body: body.trim(),
-        subject: subject.trim(),
-        tags: tagInput.split(',').map((t) => t.trim()).filter(Boolean),
+        subject: subjectFromTag,
+        tags: [...selectedTags, queryType].filter(Boolean),
       });
       onClose();
       onCreated();
@@ -544,86 +667,155 @@ function AskModal({ onClose, onCreated }: { onClose: () => void; onCreated: () =
     }
   };
 
+  const canSubmit = title.trim().length > 0 && body.trim().length > 0;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-[14px] bg-white p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-[18px] font-bold text-[#0C1424]">Ask a Question</h3>
-          <button onClick={onClose} className="text-[#9AA3B8] hover:text-[#0C1424]">✕</button>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-[520px] max-h-[92vh] overflow-y-auto rounded-[20px] bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-start justify-between rounded-t-[20px] bg-white px-6 pt-6 pb-4 border-b border-[#F1F3F8]">
           <div>
-            <label className="mb-1 block text-[12px] font-semibold text-[#6B7A99]">Title</label>
+            <h3 className="text-[22px] font-bold text-[#0C1424]">✏️ Ask a Question</h3>
+            <p className="mt-1 text-[13px] text-[#6B7A99]">Be specific. Good questions get great answers from the community.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#E1E6EF] text-[#9AA3B8] hover:bg-[#F8FAFC] hover:text-[#0C1424] transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+          {/* Query Type */}
+          <div>
+            <label className="mb-3 block text-[11px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">Query Type</label>
+            <div className="grid grid-cols-2 gap-2">
+              {QUERY_TYPES.map((q) => {
+                const active = queryType === q.value;
+                return (
+                  <button
+                    key={q.value}
+                    type="button"
+                    onClick={() => setQueryType(q.value)}
+                    className="flex items-center gap-2.5 rounded-[12px] border px-4 py-3 text-[13px] font-semibold transition-all"
+                    style={{
+                      borderColor: active ? '#E8B84B' : '#E1E6EF',
+                      background: active ? '#FFFBEF' : '#FAFBFE',
+                      color: active ? '#C99730' : '#374151',
+                    }}
+                  >
+                    <span className="text-[15px]">{q.icon}</span>
+                    {q.value}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Question Title */}
+          <div>
+            <label className="mb-2 block text-[11px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">Question Title</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-[10px] border border-[#E1E6EF] px-4 py-2 text-[13px] outline-none focus:border-[#E8B84B]"
-              placeholder="e.g. What is the difference between..."
+              className="w-full rounded-[12px] border border-[#E1E6EF] bg-[#FAFBFE] px-4 py-3 text-[13px] text-[#0C1424] outline-none placeholder:text-[#9AA3B8] focus:border-[#E8B84B] transition-colors"
+              placeholder="e.g., What is the difference between Article 356 and 352?"
               required
             />
           </div>
+
+          {/* Describe Your Doubt */}
           <div>
-            <label className="mb-1 block text-[12px] font-semibold text-[#6B7A99]">Subject</label>
-            <select
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="w-full rounded-[10px] border border-[#E1E6EF] px-4 py-2 text-[13px] outline-none focus:border-[#E8B84B] bg-white text-[#0C1424]"
-              required
-            >
-              <option value="" disabled>Select a subject...</option>
-              {UPSC_SUBJECTS.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-          <div className="relative">
-            <label className="mb-1 block text-[12px] font-semibold text-[#6B7A99]">
-              Tags <span className="font-normal text-[#9AA3B8]">(comma separated · type P, M, C for quick tags)</span>
-            </label>
-            <input
-              ref={tagInputRef}
-              value={tagInput}
-              onChange={(e) => handleTagChange(e.target.value)}
-              onBlur={() => setTimeout(() => setTagSuggestions([]), 150)}
-              className="w-full rounded-[10px] border border-[#E1E6EF] px-4 py-2 text-[13px] outline-none focus:border-[#E8B84B]"
-              placeholder="Prelims, Mains, Current Affairs"
-              autoComplete="off"
-            />
-            {tagSuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-[10px] border border-[#E1E6EF] bg-white shadow-lg">
-                {tagSuggestions.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onMouseDown={() => applyTagSuggestion(s)}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-[13px] text-[#0C1424] hover:bg-[#FFF8E7]"
-                  >
-                    <span className="inline-block rounded-[4px] bg-[#FEF3C7] px-1.5 py-0.5 text-[10px] font-bold text-[#E8B84B]">TAG</span>
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="mb-1 block text-[12px] font-semibold text-[#6B7A99]">Details</label>
+            <label className="mb-2 block text-[11px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">Describe Your Doubt</label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              rows={5}
-              className="w-full rounded-[10px] border border-[#E1E6EF] px-4 py-2 text-[13px] outline-none focus:border-[#E8B84B]"
-              placeholder="Describe your doubt in detail..."
+              rows={4}
+              className="w-full resize-none rounded-[12px] border border-[#E1E6EF] bg-[#FAFBFE] px-4 py-3 text-[13px] text-[#0C1424] outline-none placeholder:text-[#9AA3B8] focus:border-[#E8B84B] transition-colors"
+              placeholder="Add more context — what have you already tried? What specifically is confusing you? The more detail, the better answers you'll get."
               required
             />
           </div>
-          <div className="flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="rounded-[10px] border border-[#E1E6EF] px-4 py-2 text-[13px] font-semibold text-[#6B7A99]">Cancel</button>
+
+          {/* Subject Tags */}
+          <div>
+            <label className="mb-3 block text-[11px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">Subject Tags</label>
+            <div className="flex flex-wrap gap-2">
+              {SUBJECT_TAGS.map((tag) => {
+                const active = selectedTags.includes(tag.label);
+                return (
+                  <button
+                    key={tag.label}
+                    type="button"
+                    onClick={() => toggleTag(tag.label)}
+                    className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all"
+                    style={{
+                      background: active ? tag.bg : '#FAFBFE',
+                      borderColor: active ? tag.border : '#E1E6EF',
+                      color: active ? tag.text : '#6B7A99',
+                    }}
+                  >
+                    <span>{tag.emoji}</span>
+                    {tag.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Post Anonymously */}
+          <div className="flex items-center justify-between rounded-[12px] border border-[#E1E6EF] bg-[#FAFBFE] px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span className="text-[22px]">🎭</span>
+              <div>
+                <p className="text-[13px] font-semibold text-[#0C1424]">Post Anonymously</p>
+                <p className="text-[11px] text-[#9AA3B8]">Your name won&apos;t be shown</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAnonymous((a) => !a)}
+              className="relative h-6 w-11 rounded-full transition-colors duration-200"
+              style={{ background: anonymous ? '#E8B84B' : '#E1E6EF' }}
+            >
+              <span
+                className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200"
+                style={{ transform: anonymous ? 'translateX(20px)' : 'translateX(2px)' }}
+              />
+            </button>
+          </div>
+
+          {/* Community Guidelines banner */}
+          <div className="rounded-[10px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-[12px] text-[#374151]">
+            <span className="font-bold text-[#D08700]">⚠️ Community Guidelines: </span>
+            Be respectful and constructive. Posting offensive or misleading content may result in{' '}
+            <strong className="text-[#DC2626]">permanent deactivation</strong> from the Rise With Jeet platform.
+          </div>
+
+          {/* Buttons */}
+          <div className="flex gap-3 pb-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-[12px] border border-[#E1E6EF] bg-white py-3 text-[14px] font-semibold text-[#374151] hover:bg-[#F8FAFC] transition-colors"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
-              disabled={submitting}
-              className="rounded-[10px] bg-[#090E1C] px-5 py-2 text-[13px] font-bold text-white disabled:opacity-60"
+              disabled={submitting || !canSubmit}
+              className="flex-[2] rounded-[12px] py-3 text-[14px] font-bold transition-colors disabled:opacity-50"
+              style={{
+                background: canSubmit ? '#090E1C' : '#6B7A99',
+                color: canSubmit ? '#E8B84B' : '#FFFFFF',
+              }}
             >
-              {submitting ? 'Posting...' : 'Post Question'}
+              {submitting ? 'Posting...' : 'Post Question →'}
             </button>
           </div>
         </form>

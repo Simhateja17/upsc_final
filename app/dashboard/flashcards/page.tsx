@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import CreateFlashcardModal from '@/components/CreateFlashcardModal';
+import AddSubjectModal, { NewSubject } from '@/components/AddSubjectModal';
 import { flashcardService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import FlashcardScienceSections from '@/components/FlashcardScienceSections';
 import { UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 
@@ -46,9 +48,15 @@ function displaySubjectName(subject: string) {
 export default function FlashcardsPage() {
   const entitlements = useEntitlements();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
+  const [customSubjects, setCustomSubjects] = useState<SubjectCatalogItem[]>([]);
   const [prefillSubject, setPrefillSubject] = useState('');
   const [decks, setDecks] = useState<Deck[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [hoveredBin, setHoveredBin] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; subject: string; totalCards: number } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     flashcardService.getSubjects()
@@ -68,11 +76,11 @@ export default function FlashcardsPage() {
     { label: 'TOTAL CARDS', value: String(totalCards), valueColor: '#F5A623' },
     { label: 'MASTERED', value: String(totalMastered), valueColor: '#FF7070' },
     { label: 'COVERAGE', value: `${coverage}%`, valueColor: '#FFFFFF' },
-    { label: 'NEED REVIEW', value: String(needReview), valueColor: '#0E8A56' },
   ];
 
   const deckMap = new Map(decks.map((deck) => [deck.id, deck]));
-  const subjectCards = SUBJECT_CATALOG.map((item) => {
+  const catalogIds = new Set(SUBJECT_CATALOG.map((item) => item.id));
+  const withDeck = (item: SubjectCatalogItem) => {
     const deck = deckMap.get(item.id);
     return {
       ...item,
@@ -82,10 +90,61 @@ export default function FlashcardsPage() {
       mastery: deck?.mastery ?? 0,
       masteredCards: deck?.masteredCards ?? 0,
     };
-  });
+  };
+
+  const subjectCards = SUBJECT_CATALOG.map(withDeck);
+
+  // Custom subjects: persisted decks that aren't part of the curated catalog,
+  // plus subjects added this session that don't have a deck yet.
+  const customCatalogItems = new Map<string, SubjectCatalogItem>();
+  customSubjects.forEach((item) => customCatalogItems.set(item.id, item));
+  decks
+    .filter((deck) => !catalogIds.has(deck.id))
+    .forEach((deck) => {
+      const existing = customCatalogItems.get(deck.id);
+      customCatalogItems.set(deck.id, {
+        id: deck.id,
+        subject: deck.subject,
+        icon: existing?.icon ?? deck.icon ?? '📚',
+        viewsLabel: '',
+        card: existing?.card ?? { bg: '#F8FAFC', border: '#E5E7EB', bar: '#16A34A' },
+      });
+    });
+  const customSubjectCards = Array.from(customCatalogItems.values()).map(withDeck);
+
   const hasFullAccess = entitlements.canAccess('flashcards', ['full']);
   const previewCount = entitlements.preview.flashcard_subjects ?? subjectCards.length;
-  const visibleSubjectCards = hasFullAccess ? subjectCards : subjectCards.slice(0, previewCount || 0);
+  const visibleSubjectCards = hasFullAccess
+    ? [...subjectCards, ...customSubjectCards]
+    : subjectCards.slice(0, previewCount || 0);
+
+  function slugifySubject(name: string) {
+    return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  }
+
+  function handleCreateSubject({ name, icon, tint }: NewSubject) {
+    const id = slugifySubject(name);
+    if (!id) return;
+    setCustomSubjects((prev) => {
+      if (prev.some((s) => s.id === id) || catalogIds.has(id)) return prev;
+      return [
+        ...prev,
+        { id, subject: name, icon, viewsLabel: '', isNew: true, card: { bg: tint, border: 'rgba(0,0,0,0.08)', bar: '#16A34A' } },
+      ];
+    });
+    setShowAddSubjectModal(false);
+  }
+
+  async function handleDeleteSubject() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await flashcardService.deleteSubject(deleteTarget.id);
+      setDecks((prev) => prev.filter((d) => d.id !== deleteTarget.id));
+    } catch {}
+    setDeleting(false);
+    setDeleteTarget(null);
+  }
 
   return (
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: '100%' }}>
@@ -123,25 +182,49 @@ export default function FlashcardsPage() {
               </h2>
             </div>
 
-            <button
-              type="button"
-              onClick={() => hasFullAccess ? setShowAddModal(true) : undefined}
-              disabled={!hasFullAccess}
-              className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
-              style={{
-                background: '#FFFFFF',
-                border: '1.5px solid #2563EB',
-                boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.06)',
-                opacity: hasFullAccess ? 1 : 0.55,
-                fontFamily: 'Inter',
-                fontWeight: 700,
-                fontSize: 14,
-                lineHeight: '20px',
-                color: '#2563EB',
-              }}
-            >
-              <span>+</span> New Flashcard
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => hasFullAccess ? setShowAddModal(true) : undefined}
+                disabled={!hasFullAccess}
+                className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
+                  opacity: hasFullAccess ? 1 : 0.55,
+                  fontFamily: 'Inter',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  lineHeight: '20px',
+                  letterSpacing: 0,
+                  color: '#17223E',
+                }}
+              >
+                <span className="text-lg leading-none">+</span> New Flashcard
+              </button>
+
+              <button
+                type="button"
+                onClick={() => hasFullAccess ? setShowAddSubjectModal(true) : undefined}
+                disabled={!hasFullAccess}
+                className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
+                style={{
+                  background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
+                  border: 'none',
+                  boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
+                  opacity: hasFullAccess ? 1 : 0.55,
+                  fontFamily: 'Inter',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  lineHeight: '20px',
+                  letterSpacing: 0,
+                  color: '#17223E',
+                }}
+              >
+                <span className="text-lg leading-none">+</span> Add Subject
+              </button>
+            </div>
           </div>
 
           <p
@@ -172,22 +255,54 @@ export default function FlashcardsPage() {
                 const cardContent = (
                   <>
                     <div className="flex items-start justify-between gap-3">
-                      <span aria-hidden style={{ fontSize: 24, lineHeight: '24px' }}>{item.icon}</span>
-                      {hasDeck && due > 0 ? (
-                        <span
-                          className="inline-flex items-center rounded-full px-2 py-0.5 flex-shrink-0"
-                          style={{ background: '#EF4444', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
-                        >
-                          {due} due
-                        </span>
-                      ) : item.isNew ? (
-                        <span
-                          className="inline-flex items-center rounded-full px-2 py-0.5"
-                          style={{ background: '#FDB022', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '12px', color: '#FFFFFF' }}
-                        >
-                          NEW
-                        </span>
-                      ) : null}
+                      <span
+                        aria-hidden
+                        className="flex items-center justify-center flex-shrink-0"
+                        style={{ width: 44, height: 44, borderRadius: 12, background: `${item.card.bar}1A`, fontSize: 24, lineHeight: 1 }}
+                      >
+                        {item.icon}
+                      </span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {item.isNew && (
+                          <span
+                            className="inline-flex items-center rounded-full px-2 py-0.5"
+                            style={{ background: '#FDB022', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '12px', color: '#FFFFFF' }}
+                          >
+                            NEW
+                          </span>
+                        )}
+                        {hasDeck && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDeleteTarget({ id: item.id, subject: item.subject, totalCards: item.totalCards });
+                            }}
+                            onMouseEnter={() => setHoveredBin(item.id)}
+                            onMouseLeave={() => setHoveredBin(null)}
+                            style={{
+                              opacity: hoveredCard === item.id ? 1 : 0,
+                              transition: 'opacity 0.15s, color 0.15s',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: 4,
+                              lineHeight: 1,
+                              color: hoveredBin === item.id ? '#EF4444' : '#9CA3AF',
+                            }}
+                            aria-label={`Delete ${item.subject}`}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                              <path d="M10 11v6" />
+                              <path d="M14 11v6" />
+                              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <h3
@@ -215,7 +330,7 @@ export default function FlashcardsPage() {
                       <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#16A34A' }}>
                         {hasDeck ? `✓ ${item.masteredCards} mastered` : 'Create first card'}
                       </span>
-                      <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '18px', color: hasDeck && due === 0 ? '#16A34A' : '#EF4444' }}>
+                      <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', color: hasDeck && due === 0 ? '#16A34A' : '#EF4444' }}>
                         {hasDeck ? (due === 0 ? '✓ All done' : `${due} to go`) : 'New deck'}
                       </span>
                     </div>
@@ -229,6 +344,8 @@ export default function FlashcardsPage() {
                       href={`/dashboard/flashcards/${item.id}`}
                       className="block rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md flex flex-col"
                       style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, height: 190 }}
+                      onMouseEnter={() => setHoveredCard(item.id)}
+                      onMouseLeave={() => setHoveredCard(null)}
                     >
                       {cardContent}
                     </Link>
@@ -246,15 +363,48 @@ export default function FlashcardsPage() {
                     }}
                     className="rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md flex flex-col"
                     style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, height: 190 }}
+                    onMouseEnter={() => setHoveredCard(item.id)}
+                    onMouseLeave={() => setHoveredCard(null)}
                   >
                     {cardContent}
                   </button>
                 );
               })}
+
+              {hasFullAccess && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddSubjectModal(true)}
+                  className="rounded-[16px] border-2 border-dashed p-5 flex flex-col items-center justify-center text-center transition-all hover:bg-white hover:-translate-y-0.5 hover:shadow-md"
+                  style={{ borderColor: '#E9EAEE', background: 'transparent', height: 190 }}
+                  aria-label="Add new subject"
+                >
+                  <span
+                    className="grid place-items-center rounded-2xl border-2 border-dashed"
+                    style={{ width: 48, height: 48, borderColor: '#D8E0EA', fontSize: 24, lineHeight: 1, color: '#6A7282' }}
+                  >
+                    +
+                  </span>
+                  <span
+                    className="mt-3"
+                    style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}
+                  >
+                    Add New Subject
+                  </span>
+                </button>
+              )}
             </div>
           )}
         </div>
+
+        <FlashcardScienceSections />
       </div>
+
+      <AddSubjectModal
+        open={showAddSubjectModal}
+        onClose={() => setShowAddSubjectModal(false)}
+        onCreate={handleCreateSubject}
+      />
 
       <CreateFlashcardModal
         open={showAddModal}
@@ -265,6 +415,47 @@ export default function FlashcardsPage() {
         initialSubject={prefillSubject}
         initialDeck={prefillSubject}
       />
+
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.4)' }}
+          onClick={() => setDeleteTarget(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-xl"
+            style={{ minWidth: 320, maxWidth: 420 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span style={{ fontSize: 40 }}>🗑️</span>
+            <h2 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 20, color: '#22304D', textAlign: 'center' }}>
+              Are you sure?
+            </h2>
+            <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#6B7280', textAlign: 'center' }}>
+              Delete subject &ldquo;{deleteTarget.subject}&rdquo; and all its {deleteTarget.totalCards} flashcard(s)?
+            </p>
+            <div className="flex gap-3 w-full mt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 rounded-full border py-3 text-sm font-semibold"
+                style={{ borderColor: '#E5E7EB', color: '#374151', fontFamily: 'Inter' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteSubject}
+                disabled={deleting}
+                className="flex-1 rounded-full py-3 text-sm font-semibold text-white"
+                style={{ background: '#EF4444', fontFamily: 'Inter', opacity: deleting ? 0.6 : 1 }}
+              >
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -33,7 +33,7 @@ const NAV_DROPDOWNS = {
 
 const AI_SLIDES = [
   { title: 'Mains Evaluator', iconSrc: '/sidebar-daily-answer-new.png', iconBg: 'rgba(232,184,75,0.14)', desc: 'Upload your handwritten or typed answers and receive structured feedback, marks, and personalized improvement tips. Our UPSC-examiner style analysis is delivered in under 60 seconds.' },
-  { title: 'Jeet AI Assistant', iconSrc: '/sidebar-jeet-gpt.png', iconBg: 'rgba(6,182,212,0.14)', desc: 'Get instant, precise answers for all your UPSC queries, covering everything from syllabus details and current affairs context to answer structuring and general doubt resolution.' },
+  { title: 'Jeet AI Mentor Assistant', iconSrc: '/sidebar-jeet-gpt.png', iconBg: 'rgba(6,182,212,0.14)', desc: 'Get instant, precise answers for all your UPSC queries, covering everything from syllabus details and current affairs context to answer structuring and general doubt resolution.' },
   { title: 'Adaptapic Mock Test Platform', iconSrc: '/sidebar-mock-tests-new.png', iconBg: 'rgba(139,92,246,0.14)', desc: 'Personalised mock tests targeting your weakest areas, ensuring every session moves the needle towards your goal.' },
   { title: 'Current Affairs Digest', iconSrc: '/sidebar-current-affairs.png', iconBg: 'rgba(16,185,129,0.14)', desc: 'Our platform instantly connects daily news articles with the relevant UPSC syllabus. For each article, we provide a detailed summary, related practice MCQs and Mains examination questions.' },
 ];
@@ -213,7 +213,7 @@ export default function LandingPage() {
 
         {/* Desktop nav links */}
         <div className="hidden md:flex items-center" style={{ gap: 28 }}>
-          <Link href="/dashboard/jeet-gpt" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Jeet AI</Link>
+          <Link href="/dashboard/jeet-gpt" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Jeet AI Mentor</Link>
           <Link href="/dashboard/daily-answer/challenge" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Daily Mains Challenge</Link>
 
           {(['prepare', 'practice', 'revision'] as const).map((key) => {
@@ -270,7 +270,7 @@ export default function LandingPage() {
 
       {/* ── MOBILE NAV ── */}
       <div className={`mobile-nav${mobileNavOpen ? ' open' : ''}`}>
-        <a href="/dashboard/jeet-gpt" onClick={closeMobileNav}>Jeet AI</a>
+        <a href="/dashboard/jeet-gpt" onClick={closeMobileNav}>Jeet AI Mentor</a>
         <a href="/dashboard/daily-answer/challenge" onClick={closeMobileNav}>Daily Mains Challenge</a>
         <div style={{ padding: '10px 0 4px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Prepare</div>
@@ -374,7 +374,7 @@ export default function LandingPage() {
       <section className="ai-section" id="ai">
         <div className="ai-inner">
           <div className="ai-left reveal">
-            <div className="section-eyebrow eyebrow-light">Jeet AI</div>
+            <div className="section-eyebrow eyebrow-light">Jeet AI Mentor</div>
             <h2 className="section-h2-light">
               Experience the Power<br />of <span style={{ color: '#E8B84B' }}>AI-First Learning</span>
             </h2>

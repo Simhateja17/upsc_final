@@ -20,6 +20,46 @@ interface FAQSection {
 
 const faqData: FAQSection[] = [
   {
+    id: 'cat-pricing',
+    title: 'Pricing & Plans',
+    icon: '/funds-icon.png',
+    iconBg: 'rgba(232,184,75,0.12)',
+    items: [
+      {
+        question: 'Is free plan really free forever?',
+        answer: '<p>Yes, absolutely. Our Free plan gives you lifetime free access to daily MCQ, daily news analysis, 10,000+ PYQs, study planner, leaderboard, plus 3 mains evaluations (lifetime), 1 Prelims test (lifetime) and 1 Jeet AI chat session. No card, no expiry, no hidden upgrades.</p>',
+      },
+      {
+        question: 'Are the current prices a promotional offer?',
+        answer: '<p>Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, so lock in these rates while you can. Once you subscribe, your price remains locked for as long as you stay subscribed, even if prices increase for new users later.</p>',
+      },
+      {
+        question: 'Can I upgrade or cancel my subscription anytime?',
+        answer: '<p>Absolutely. You can upgrade from Aspire to Rise or Ascent instantly (pro-rated). Cancellation is self-serve from your dashboard - you keep full access until the end of your billing cycle. No cancellation fees, no hassle.</p>',
+      },
+      {
+        question: 'What is the refund policy?',
+        answer: '<p>We offer a 3-day, no-questions-asked refund on all paid subscriptions. Just reach out to support within 3 days of your purchase and we will process the refund within 24 hours. After 3 days, refunds are not applicable but you can cancel future billing.</p>',
+      },
+      {
+        question: 'What\'s the difference between Aspire, Rise and Ascent?',
+        answer: '<p><strong>Aspire:</strong> 5 mains evaluations/day, 5 Prelims tests/day, 5 Jeet AI messages/day, limited analytics & revision suite.</p><p><strong>Rise:</strong> 25 mains evals/day, 50 Prelims tests/day, 100 AI messages, full analytics dashboard, full revision suite (flashcards, mindmaps, spaced repetition), smart syllabus tracker, live study room.</p><p><strong>Ascent:</strong> Everything in Rise, plus unlimited evaluations & tests, unlimited AI messages, bi-weekly 1-on-1 mentorship, interview prep module, personalised roadmap, priority support, monthly review call and early access.</p>',
+      },
+      {
+        question: 'How much do I save on quarterly & yearly plans?',
+        answer: '<p>As we are running promotional offers currently, Quarterly plans save you 20% compared to monthly billing. Yearly plans save you 40% - that\'s almost 5 months free. For example, Rise monthly is ₹499, but yearly brings it down to ₹299/month. Discounts are automatically applied at checkout.</p>',
+      },
+      {
+        question: 'How does AI Mains Evaluation work?',
+        answer: '<p>You can upload a photo of your handwritten answer. Jeet AI evaluates it against UPSC marking schemes - structure, content, keyword density, presentation, relevance etc. You get detailed feedback in under 60 seconds, including a score and actionable suggestions to improve.</p>',
+      },
+      {
+        question: 'Is this suitable for first-attempt aspirants?',
+        answer: '<p>Absolutely. Our study planner, syllabus tracker, daily MCQs, mains answer evaluation and simplified video lectures are designed to guide you from day one - whether it\'s your first attempt or your third. Start with the Aspire to build momentum, then upgrade as you get more serious as you master consistency.</p>',
+      },
+    ],
+  },
+  {
     id: 'cat-general',
     title: 'General',
     icon: '/sidebar-overview.png',
@@ -31,7 +71,7 @@ const faqData: FAQSection[] = [
       },
       {
         question: 'Is there a free plan?',
-        answer: '<p>Yes. The <strong>Aspire plan is completely free</strong> and includes Daily MCQ practice, Daily Answer Writing, Daily Current affairs, Jeet AI conversations. You can use these features for as long as you like at no cost. Paid plans unlock the full platform including AI evaluation, mock tests, mentorship, and the complete revision suite.</p>',
+        answer: '<p>Yes. The <strong>Aspire plan is completely free</strong> and includes Daily MCQ practice, Daily Answer Writing, Daily Current affairs, Jeet AI Mentor conversations. You can use these features for as long as you like at no cost. Paid plans unlock the full platform including AI evaluation, mock tests, mentorship, and the complete revision suite.</p>',
       },
       {
         question: 'Is there a mobile app?',
@@ -69,25 +109,25 @@ const faqData: FAQSection[] = [
   },
   {
     id: 'cat-jeetai',
-    title: 'Jeet AI',
+    title: 'Jeet AI Mentor',
     icon: '/sidebar-jeet-gpt.png',
     iconBg: 'rgba(8,145,178,0.1)',
     items: [
       {
-        question: 'What is Jeet AI and what can I use it for?',
-        answer: '<p>Jeet AI is your personal UPSC AI assistant. You can ask it anything related to your preparation:</p><ul><li>Explain a concept from any GS paper</li><li>Help structure a Mains answer step by step</li><li>Summarise a current affairs topic and tag it to the syllabus</li><li>Suggest relevant examples or case studies for a theme</li><li>Review your preparation strategy and flag gaps</li></ul><p>It responds instantly and is trained on UPSC-specific content, not generic AI.</p>',
+        question: 'What is Jeet AI Mentor and what can I use it for?',
+        answer: '<p>Jeet AI Mentor is your personal UPSC AI assistant. You can ask it anything related to your preparation:</p><ul><li>Explain a concept from any GS paper</li><li>Help structure a Mains answer step by step</li><li>Summarise a current affairs topic and tag it to the syllabus</li><li>Suggest relevant examples or case studies for a theme</li><li>Review your preparation strategy and flag gaps</li></ul><p>It responds instantly and is trained on UPSC-specific content, not generic AI.</p>',
       },
       {
-        question: 'Is Jeet AI available 24 hours a day?',
-        answer: '<p>Yes. Jeet AI is available at any time of the day. There is no waiting, no scheduling, and no dependency on a human being available. Ask it at midnight before an exam if you need to.</p>',
+        question: 'Is Jeet AI Mentor available 24 hours a day?',
+        answer: '<p>Yes. Jeet AI Mentor is available at any time of the day. There is no waiting, no scheduling, and no dependency on a human being available. Ask it at midnight before an exam if you need to.</p>',
       },
       {
-        question: 'Can Jeet AI evaluate my answers?',
-        answer: '<p>Jeet AI can give you quick feedback and structure suggestions in a conversational way. For detailed, scored evaluation across 8 parameters with examiner-level feedback, use the dedicated <strong>Daily Answer Writing</strong> module, which is specifically designed and trained for that purpose.</p>',
+        question: 'Can Jeet AI Mentor evaluate my answers?',
+        answer: '<p>Jeet AI Mentor can give you quick feedback and structure suggestions in a conversational way. For detailed, scored evaluation across 8 parameters with examiner-level feedback, use the dedicated <strong>Daily Answer Writing</strong> module, which is specifically designed and trained for that purpose.</p>',
       },
       {
-        question: 'Is Jeet AI accurate for UPSC content?',
-        answer: '<p>Jeet AI is trained on UPSC-specific material including the full syllabus, PYQs, standard reference texts, and current affairs. That said, like all AI, it can occasionally be incomplete or imperfect on very specific factual queries. Always cross-check critical facts with source material before writing them in an exam answer.</p>',
+        question: 'Is Jeet AI Mentor accurate for UPSC content?',
+        answer: '<p>Jeet AI Mentor is trained on UPSC-specific material including the full syllabus, PYQs, standard reference texts, and current affairs. That said, like all AI, it can occasionally be incomplete or imperfect on very specific factual queries. Always cross-check critical facts with source material before writing them in an exam answer.</p>',
       },
     ],
   },
@@ -162,8 +202,8 @@ const faqData: FAQSection[] = [
         answer: '<p>The ideal approach: Read \u2192 Understand \u2192 Connect \u2192 Revise</p><ul><li>Read the news summary</li><li>Understand the issue and background</li><li>See its UPSC syllabus relevance</li><li>Practice MCQs or potential Mains questions</li><li>Save important notes for revision</li></ul><p>The goal is not just reading news - it is learning how UPSC sees the news.</p>',
       },
       {
-        question: 'What is "Jeet AI Summary" and how should I use it?',
-        answer: '<p>Jeet AI Summary breaks complex editorials into UPSC-ready understanding. It provides Key arguments, UPSC relevance, Important concepts, Potential exam questions based on PYQ & trend analysis and Critical analysis. Think of it as editorial decoding for aspirants.</p>',
+        question: 'What is "Jeet AI Mentor Summary" and how should I use it?',
+        answer: '<p>Jeet AI Mentor Summary breaks complex editorials into UPSC-ready understanding. It provides Key arguments, UPSC relevance, Important concepts, Potential exam questions based on PYQ & trend analysis and Critical analysis. Think of it as editorial decoding for aspirants.</p>',
       },
     ],
   },
@@ -215,7 +255,7 @@ const faqData: FAQSection[] = [
       },
       {
         question: 'What does the AI evaluation check?',
-        answer: '<p>Jeet AI evaluates answers through an examiner-style lens, including:</p><ul><li>Structure (Intro\u2013Body\u2013Conclusion)</li><li>Demand fulfillment</li><li>Content depth</li><li>Multi-dimensional perspective</li><li>Facts/examples</li><li>Balance & analysis</li><li>Relevance to question</li></ul><p>The aim is actionable feedback, not just a score.</p>',
+        answer: '<p>Jeet AI Mentor evaluates answers through an examiner-style lens, including:</p><ul><li>Structure (Intro\u2013Body\u2013Conclusion)</li><li>Demand fulfillment</li><li>Content depth</li><li>Multi-dimensional perspective</li><li>Facts/examples</li><li>Balance & analysis</li><li>Relevance to question</li></ul><p>The aim is actionable feedback, not just a score.</p>',
       },
     ],
   },
@@ -310,39 +350,64 @@ const faqData: FAQSection[] = [
 ];
 
 export default function FAQContent() {
-  const [activeSection, setActiveSection] = useState('cat-general');
+  const [activeSection, setActiveSection] = useState('cat-pricing');
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const contentScrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    // Track which sections currently overlap the detection band, then always
-    // highlight the topmost one in document order. Setting active to whichever
-    // entry fired last (the old behaviour) picked the wrong neighbour because
-    // IntersectionObserver entries are not delivered in document order.
-    const visibility: Record<string, boolean> = {};
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          visibility[entry.target.id] = entry.isIntersecting;
-        });
-        const firstVisible = faqData.find((section) => visibility[section.id]);
-        if (firstVisible) setActiveSection(firstVisible.id);
-      },
-      { rootMargin: '-12% 0px -83% 0px', threshold: 0 }
-    );
+    let frame = 0;
+    const scrollContainer = contentScrollRef.current;
+    if (!scrollContainer) return;
 
-    Object.values(sectionRefs.current).forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
+    const syncActiveSection = () => {
+      frame = 0;
+      const containerTop = scrollContainer.getBoundingClientRect().top;
+      const detectionLine = containerTop + Math.min(150, scrollContainer.clientHeight * 0.22);
+      const visibleSections = faqData
+        .map((section) => ({ id: section.id, element: sectionRefs.current[section.id] }))
+        .filter((section): section is { id: string; element: HTMLDivElement } => Boolean(section.element));
 
-    return () => observer.disconnect();
-  }, []);
+      if (visibleSections.length === 0) return;
+
+      if (scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 4) {
+        const lastSection = visibleSections[visibleSections.length - 1];
+        setActiveSection((previous) => previous === lastSection.id ? previous : lastSection.id);
+        return;
+      }
+
+      const passedSections = visibleSections.filter(
+        ({ element }) => element.getBoundingClientRect().top <= detectionLine,
+      );
+      const current = passedSections[passedSections.length - 1] ?? visibleSections[0];
+      setActiveSection((previous) => previous === current.id ? previous : current.id);
+    };
+
+    const requestSync = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(syncActiveSection);
+    };
+
+    syncActiveSection();
+    scrollContainer.addEventListener('scroll', requestSync, { passive: true });
+    window.addEventListener('resize', requestSync);
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', requestSync);
+      window.removeEventListener('resize', requestSync);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [searchQuery]);
 
   const jumpTo = (id: string) => {
     setActiveSection(id);
     const el = sectionRefs.current[id];
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const scrollContainer = contentScrollRef.current;
+    if (el && scrollContainer) {
+      const targetTop = scrollContainer.scrollTop + el.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top - 8;
+      scrollContainer.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+    }
   };
 
   const toggleFAQ = (sectionId: string, index: number) => {
@@ -386,19 +451,24 @@ export default function FAQContent() {
         .faq-search-input::placeholder { color: rgba(255,255,255,.3); }
         .faq-search-input:focus { border-color: rgba(232,184,75,.35); background: rgba(255,255,255,.08); }
         .faq-search-ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; pointer-events: none; }
-        .faq-body-section { background: #faf8f4; padding: 72px 0; }
-        .faq-inner { max-width: 1060px; margin: 0 auto; padding: 0 48px; display: grid; grid-template-columns: 220px 1fr; gap: 56px; align-items: start; }
-        .faq-toc { position: sticky; top: 96px; align-self: start; max-height: calc(100vh - 112px); overflow: hidden; }
+        .faq-body-section { background: #faf8f4; padding: 32px 0; height: calc(100vh - 66px); min-height: 620px; overflow: hidden; }
+        .faq-inner { max-width: 1060px; height: 100%; margin: 0 auto; padding: 0 48px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 56px; align-items: stretch; overflow: hidden; }
+        .faq-toc { height: 100%; align-self: stretch; overflow: hidden; padding: 2px 0; }
+        .faq-main-scroll { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth; padding: 2px 14px 32px 0; scrollbar-width: thin; scrollbar-color: rgba(107,122,153,.35) transparent; }
+        .faq-main-scroll::-webkit-scrollbar { width: 6px; }
+        .faq-main-scroll::-webkit-scrollbar-track { background: transparent; }
+        .faq-main-scroll::-webkit-scrollbar-thumb { background: rgba(107,122,153,.30); border-radius: 20px; }
         .faq-toc-label { font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--t3); margin-bottom: 12px; }
-        .faq-toc-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 7px; font-size: 13px; color: var(--t3); cursor: pointer; transition: all .15s; margin-bottom: 2px; border-left: 2px solid transparent; }
+        .faq-toc-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 7px; font-size: 13px; color: var(--t3); cursor: pointer; transition: color .22s ease, background-color .22s ease, border-color .22s ease, transform .22s ease, box-shadow .22s ease; margin-bottom: 2px; border-left: 2px solid transparent; transform: translateX(0); }
         .faq-toc-item:hover { color: var(--t1); background: #fff; border-left-color: var(--b2); }
-        .faq-toc-item.active { color: var(--navy-5); background: #fff; border-left-color: var(--gold); font-weight: 600; }
-        .faq-toc-ico { width: 18px; height: 18px; flex-shrink: 0; object-fit: contain; }
+        .faq-toc-item.active { color: var(--navy-5); background: #fff; border-left-color: var(--gold); font-weight: 600; transform: translateX(5px); box-shadow: 0 5px 18px rgba(12,20,36,.07); }
+        .faq-toc-ico { width: 18px; height: 18px; flex-shrink: 0; object-fit: contain; transition: transform .22s ease; }
+        .faq-toc-item.active .faq-toc-ico { transform: scale(1.12); }
         .faq-toc-sep { height: 1px; background: var(--b1); margin: 12px 0; }
         .faq-toc-box { background: #fff; border: 1.5px solid var(--b1); border-radius: 10px; padding: 14px; margin-top: 12px; }
         .faq-toc-box-lbl { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
         .faq-toc-box-val { font-size: 13px; color: var(--navy-5); font-weight: 500; }
-        .faq-section-block { margin-bottom: 52px; }
+        .faq-section-block { margin-bottom: 52px; scroll-margin-top: 8px; }
         .faq-section-block:last-child { margin-bottom: 0; }
         .faq-section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid var(--b1); }
         .faq-sec-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -437,8 +507,10 @@ export default function FAQContent() {
         .faq-btn-outline { min-width: 189px; height: 52px; background: rgba(255,255,255,.06); color: #fff; padding: 0 24px; border-radius: 12px; font-size: 15.5px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,.20); font-family: 'Outfit', var(--sans); transition: all .2s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .faq-btn-outline:hover { border-color: rgba(255,255,255,.32); background: rgba(255,255,255,.09); color: #fff; }
         @media(max-width: 860px) {
-          .faq-inner { grid-template-columns: 1fr; padding: 0 22px; }
+          .faq-body-section { height: auto; min-height: 0; overflow: visible; padding: 48px 0; }
+          .faq-inner { height: auto; grid-template-columns: 1fr; padding: 0 22px; overflow: visible; }
           .faq-toc { display: none; }
+          .faq-main-scroll { height: auto; overflow: visible; padding: 0; }
           .faq-hero-inner { padding: 32px 22px 28px; }
           .faq-cta-box { min-height: auto; padding: 52px 24px; }
           .faq-cta-box h2 { font-size: 38px; line-height: 42px; letter-spacing: -0.6px; }
@@ -499,7 +571,7 @@ export default function FAQContent() {
             </aside>
 
             {/* FAQ Main */}
-            <div>
+            <div className="faq-main-scroll" ref={contentScrollRef}>
               {noResults && (
                 <div className="faq-no-results">
                   <div className="icon">🔍</div>

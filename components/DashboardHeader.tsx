@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { userService } from '@/lib/services';
+import { useAuthModal } from '@/contexts/AuthModalContext';
 
 interface DashboardHeaderProps {
   onMenuClick?: () => void;
@@ -50,7 +50,8 @@ function formatRelativeTime(dateStr: string): string {
 
 const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const pathname = usePathname();
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -95,10 +96,13 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Get display name
-  const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email?.split('@')[0] || 'User';
-
-  const initials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
+  const isLoggedIn = Boolean(user);
+  const displayName = isLoggedIn
+    ? `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email?.split('@')[0] || 'User'
+    : '';
+  const initials = isLoggedIn
+    ? `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || user?.email?.[0]?.toUpperCase() || ''
+    : '';
 
   const handleMarkAllRead = async () => {
     try {
@@ -147,66 +151,68 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
 
       {/* Right Section - Upgrade + Bell + User Avatar */}
       <div className="flex items-center gap-3 md:gap-[clamp(1rem,1.5vw,2rem)]">
-        {/* Upgrade Button */}
-        <Link href="/dashboard/billing/plans" className="hidden sm:block">
-          <button
-            className="inline-flex items-center gap-1.5 group"
-            style={{
-              padding: 'clamp(8px,0.7vw,12px) clamp(16px,1.2vw,24px)',
-              borderRadius: '12px',
-              border: isUpgradeActive ? '1.5px solid #FFD170' : '1.5px solid rgba(255,209,112,0.25)',
-              background: 'transparent',
-              color: '#FFD170',
-              fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, sans-serif',
-              fontSize: 'clamp(13px, 1.1vw, 18px)',
-              fontWeight: 600,
-              lineHeight: '110%',
-              letterSpacing: '-0.2px',
-              whiteSpace: 'nowrap',
-              boxShadow: isUpgradeActive ? '0 0 12px rgba(255,209,112,0.18)' : 'none',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = '#FFD170';
-              (e.currentTarget as HTMLElement).style.boxShadow = '0 0 12px rgba(255,209,112,0.18)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = isUpgradeActive ? '#FFD170' : 'rgba(255,209,112,0.25)';
-              (e.currentTarget as HTMLElement).style.boxShadow = isUpgradeActive ? '0 0 12px rgba(255,209,112,0.18)' : 'none';
-            }}
-          >
-            Upgrade
-            <span style={{ fontSize: 'clamp(14px, 1.2vw, 20px)' }}>✨</span>
-          </button>
-        </Link>
+        {isLoggedIn ? (
+          <>
+            {/* Upgrade Button */}
+            <Link href="/dashboard/billing/plans#upgrade-plans" className="hidden sm:block">
+              <button
+                className="inline-flex items-center gap-1.5 group"
+                style={{
+                  padding: 'clamp(8px,0.7vw,12px) clamp(16px,1.2vw,24px)',
+                  borderRadius: '12px',
+                  border: isUpgradeActive ? '1.5px solid #FFD170' : '1.5px solid rgba(255,209,112,0.25)',
+                  background: 'transparent',
+                  color: '#FFD170',
+                  fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, sans-serif',
+                  fontSize: 'clamp(13px, 1.1vw, 18px)',
+                  fontWeight: 600,
+                  lineHeight: '110%',
+                  letterSpacing: '-0.2px',
+                  whiteSpace: 'nowrap',
+                  boxShadow: isUpgradeActive ? '0 0 12px rgba(255,209,112,0.18)' : 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = '#FFD170';
+                  (e.currentTarget as HTMLElement).style.boxShadow = '0 0 12px rgba(255,209,112,0.18)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = isUpgradeActive ? '#FFD170' : 'rgba(255,209,112,0.25)';
+                  (e.currentTarget as HTMLElement).style.boxShadow = isUpgradeActive ? '0 0 12px rgba(255,209,112,0.18)' : 'none';
+                }}
+              >
+                Upgrade
+                <span style={{ fontSize: 'clamp(14px, 1.2vw, 20px)' }}>✨</span>
+              </button>
+            </Link>
 
-        {/* Notification Bell */}
-        <button
-          onClick={() => setShowNotifications((prev) => !prev)}
-          className="relative flex items-center justify-center w-[clamp(38px,2.8vw,48px)] h-[clamp(38px,2.8vw,48px)] rounded-xl bg-[#1a2540] text-white hover:bg-[#243050] transition-colors flex-shrink-0"
-          style={{ border: '1px solid rgba(255,255,255,0.16)' }}
-          aria-label="Notifications"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" fill="currentColor"/>
-            <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" fill="currentColor"/>
-          </svg>
-          {/* Notification dot */}
-          {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>}
-        </button>
+            {/* Notification Bell */}
+            <button
+              onClick={() => setShowNotifications((prev) => !prev)}
+              className="relative flex items-center justify-center w-[clamp(38px,2.8vw,48px)] h-[clamp(38px,2.8vw,48px)] rounded-xl bg-[#1a2540] text-white hover:bg-[#243050] transition-colors flex-shrink-0"
+              style={{ border: '1px solid rgba(255,255,255,0.16)' }}
+              aria-label="Notifications"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" fill="currentColor"/>
+                <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" fill="currentColor"/>
+              </svg>
+              {/* Notification dot */}
+              {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>}
+            </button>
 
-        {/* User Avatar - Simple gold circle with initials */}
-        <div className="relative flex-shrink-0" ref={dropdownRef}>
-          <div
-            onClick={() => setShowDropdown(!showDropdown)}
-            className="w-[clamp(38px,2.8vw,48px)] h-[clamp(38px,2.8vw,48px)] rounded-full flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity font-serif font-bold text-[#0E182D]"
-            style={{
-              background: 'linear-gradient(135deg, #FFD170 0%, #D4A843 100%)',
-              fontSize: 'clamp(14px, 1.1vw, 18px)',
-            }}
-          >
-            {initials}
-          </div>
+            {/* User Avatar - Simple gold circle with initials */}
+            <div className="relative flex-shrink-0" ref={dropdownRef}>
+              <div
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="w-[clamp(38px,2.8vw,48px)] h-[clamp(38px,2.8vw,48px)] rounded-full flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity font-serif font-bold text-[#0E182D]"
+                style={{
+                  background: 'linear-gradient(135deg, #FFD170 0%, #D4A843 100%)',
+                  fontSize: 'clamp(14px, 1.1vw, 18px)',
+                }}
+              >
+                {initials}
+              </div>
 
           {/* Dropdown Menu */}
           {showDropdown && (
@@ -246,7 +252,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 </Link>
 
                 <Link
-                  href="/dashboard/billing"
+                  href="/dashboard/billing/plans"
                   className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
@@ -322,10 +328,32 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
 
             </div>
           )}
-        </div>
+            </div>
+          </>
+        ) : isLoading ? (
+          <div className="h-[clamp(38px,2.8vw,48px)] w-20 rounded-xl bg-white/10" aria-hidden="true" />
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => openAuthModal('login')}
+              className="h-[clamp(38px,2.8vw,48px)] rounded-xl border border-white/25 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-white/10"
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              onClick={() => openAuthModal('signup')}
+              className="hidden h-[clamp(38px,2.8vw,48px)] rounded-xl px-4 text-[13px] font-semibold text-[#0E182D] transition-opacity hover:opacity-90 sm:block"
+              style={{ background: 'linear-gradient(135deg, #FFD170 0%, #D4A843 100%)' }}
+            >
+              Start Free
+            </button>
+          </div>
+        )}
       </div>
 
-      {showNotifications && mounted && createPortal(
+      {isLoggedIn && showNotifications && mounted && createPortal(
         <div className="fixed inset-0 z-[90] bg-black/35 backdrop-blur-[1px] flex items-center justify-center p-4">
           <div
             ref={notificationModalRef}

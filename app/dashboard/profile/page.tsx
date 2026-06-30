@@ -20,6 +20,18 @@ const INDIAN_STATES = [
   'Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry',
 ];
 
+type ProfileSnapshot = {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  state: string;
+  targetYear: string;
+  optionalSubject: string;
+  gender: string;
+  dateOfBirth: string;
+  avatarUrl: string;
+};
+
 function formatDisplayDate(iso: string) {
   if (!iso) return '';
   const [y, m, d] = iso.split('-').map(Number);
@@ -27,7 +39,7 @@ function formatDisplayDate(iso: string) {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -36,6 +48,11 @@ export default function ProfilePage() {
   const [optionalSubject, setOptionalSubject] = useState('');
   const [gender, setGender] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [initialProfile, setInitialProfile] = useState<ProfileSnapshot | null>(null);
   const [saving, setSaving] = useState(false);
   const [perfStats, setPerfStats] = useState<any>(null);
   const [dashStats, setDashStats] = useState<any>(null);
@@ -46,6 +63,31 @@ export default function ProfilePage() {
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [calYear, setCalYear] = useState(new Date().getFullYear() - 22);
   const calRef = useRef<HTMLDivElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const applyProfile = (profile: ProfileSnapshot) => {
+    setFirstName(profile.firstName);
+    setLastName(profile.lastName);
+    setPhone(profile.phone);
+    setState(profile.state);
+    setTargetYear(profile.targetYear);
+    setOptionalSubject(profile.optionalSubject);
+    setGender(profile.gender);
+    setDateOfBirth(profile.dateOfBirth);
+    setAvatarUrl(profile.avatarUrl);
+  };
+
+  const currentProfile = (): ProfileSnapshot => ({
+    firstName,
+    lastName,
+    phone,
+    state,
+    targetYear,
+    optionalSubject,
+    gender,
+    dateOfBirth,
+    avatarUrl,
+  });
 
   useEffect(() => {
     function onOutsideClick(e: MouseEvent) {
@@ -59,15 +101,25 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      setFirstName(user.firstName || '');
-      setLastName(user.lastName || '');
-      setPhone((user as any).phone || '');
+      const profile = {
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        phone: (user as any).phone || '',
+        avatarUrl: user.avatarUrl || '',
+        state: ((user as any).profile || {}).state || '',
+        targetYear: ((user as any).profile || {}).targetYear || '',
+        optionalSubject: ((user as any).profile || {}).optionalSubject || '',
+        gender: ((user as any).profile || {}).gender || '',
+        dateOfBirth: ((user as any).profile || {}).dateOfBirth || '',
+      };
+      applyProfile(profile);
+      setInitialProfile(profile);
       const extra = (user as any).profile || {};
-      setState(extra.state || '');
-      setTargetYear(extra.targetYear || '');
-      setOptionalSubject(extra.optionalSubject || '');
-      setGender(extra.gender || '');
-      setDateOfBirth(extra.dateOfBirth || '');
+      if (extra.dateOfBirth) {
+        const [y, m] = extra.dateOfBirth.split('-').map(Number);
+        setCalYear(y);
+        setCalMonth(m - 1);
+      }
     }
   }, [user]);
 
@@ -75,14 +127,19 @@ export default function ProfilePage() {
     userService.getProfile().then((res) => {
       const d = res.data;
       if (d) {
-        setFirstName(d.firstName || '');
-        setLastName(d.lastName || '');
-        setPhone(d.phone || '');
-        setState(d.state || '');
-        setTargetYear(d.targetYear || '');
-        setOptionalSubject(d.optionalSubject || '');
-        setGender(d.gender || '');
-        setDateOfBirth(d.dateOfBirth || '');
+        const profile = {
+          firstName: d.firstName || '',
+          lastName: d.lastName || '',
+          phone: d.phone || '',
+          state: d.state || '',
+          targetYear: d.targetYear || '',
+          optionalSubject: d.optionalSubject || '',
+          gender: d.gender || '',
+          dateOfBirth: d.dateOfBirth || '',
+          avatarUrl: d.avatarUrl || '',
+        };
+        applyProfile(profile);
+        setInitialProfile(profile);
         if (d.dateOfBirth) {
           const [y, m] = d.dateOfBirth.split('-').map(Number);
           setCalYear(y);
@@ -103,27 +160,38 @@ export default function ProfilePage() {
 
   const initials = `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
   const displayName = `${firstName} ${lastName}`.trim() || user?.email?.split('@')[0] || 'User';
+  const visibleAvatarUrl = avatarPreviewUrl || avatarUrl || user?.avatarUrl || '';
+  const hasChanges = Boolean(
+    avatarFile ||
+    (initialProfile && JSON.stringify(currentProfile()) !== JSON.stringify(initialProfile))
+  );
+  const fieldClass = (enabled = isEditing) =>
+    `w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] font-normal text-[16px] leading-[24px] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent ${
+      enabled
+        ? 'bg-white text-[#0a0a0a]'
+        : 'bg-[#f8fafc] text-[#314158] cursor-not-allowed'
+    }`;
+  const selectClass = (enabled = isEditing) => `${fieldClass(enabled)} appearance-auto`;
 
   const handleDiscard = () => {
-    userService.getProfile().then((res) => {
-      const d = res.data;
-      if (d) {
-        setFirstName(d.firstName || '');
-        setLastName(d.lastName || '');
-        setPhone(d.phone || '');
-        setState(d.state || '');
-        setTargetYear(d.targetYear || '');
-        setOptionalSubject(d.optionalSubject || '');
-        setGender(d.gender || '');
-        setDateOfBirth(d.dateOfBirth || '');
-      }
-    }).catch(() => {});
+    if (initialProfile) applyProfile(initialProfile);
+    setAvatarFile(null);
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    setAvatarPreviewUrl('');
+    setShowCalendar(false);
+    setIsEditing(false);
   };
 
   const handleSave = async () => {
+    if (!hasChanges) return;
     setSaving(true);
     setToast(null);
     try {
+      let savedAvatarUrl = avatarUrl;
+      if (avatarFile) {
+        const upload = await userService.uploadAvatar(avatarFile);
+        savedAvatarUrl = upload.data?.avatarUrl || savedAvatarUrl;
+      }
       await userService.updateProfile({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -133,7 +201,16 @@ export default function ProfilePage() {
         optionalSubject: optionalSubject.trim(),
         gender: gender.trim(),
         dateOfBirth: dateOfBirth.trim(),
+        avatarUrl: savedAvatarUrl,
       });
+      const savedProfile = { ...currentProfile(), avatarUrl: savedAvatarUrl };
+      setAvatarUrl(savedAvatarUrl);
+      setInitialProfile(savedProfile);
+      setAvatarFile(null);
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+      setAvatarPreviewUrl('');
+      setIsEditing(false);
+      refreshUser().catch(() => {});
       setToast({ kind: 'success', msg: 'Profile updated successfully!' });
     } catch (err: any) {
       console.error('Failed to save profile:', err);
@@ -147,6 +224,21 @@ export default function ProfilePage() {
   const handlePhoneChange = (raw: string) => {
     const cleaned = raw.replace(/\D/g, '').replace(/^91/, '').slice(0, 10);
     setPhone(cleaned);
+  };
+
+  const handleAvatarSelect = (file: File | undefined) => {
+    if (!file) return;
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      setToast({ kind: 'error', msg: 'Please upload a JPG or PNG image.' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ kind: 'error', msg: 'Photo must be 5MB or smaller.' });
+      return;
+    }
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    setAvatarFile(file);
+    setAvatarPreviewUrl(URL.createObjectURL(file));
   };
 
   // Calendar helpers
@@ -221,26 +313,81 @@ export default function ProfilePage() {
             style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
           >
             {/* Avatar + Name Header */}
-            <div className="flex items-start gap-4 min-w-0">
-              <div className="relative w-16 h-16 flex-shrink-0">
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center text-white font-semibold text-[24px] leading-[32px]"
-                  style={{ background: user?.avatarUrl ? `url(${user.avatarUrl}) center/cover` : '#d08700' }}
-                >
-                  {!user?.avatarUrl && initials}
+            <div className="flex flex-col gap-6 border-b border-[#e2e8f0] pb-8 md:flex-row md:items-start md:justify-between">
+              <div className="flex flex-col gap-5 md:flex-row md:items-start">
+                <div className="flex w-[132px] flex-shrink-0 flex-col items-center gap-3">
+                  <div className="relative h-28 w-28">
+                    <div
+                      className="h-28 w-28 rounded-full flex items-center justify-center text-white font-semibold text-[38px] leading-[44px]"
+                      style={{ background: visibleAvatarUrl ? `url(${visibleAvatarUrl}) center/cover` : '#c98a0c' }}
+                    >
+                      {!visibleAvatarUrl && initials}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!isEditing || saving}
+                      onClick={() => avatarInputRef.current?.click()}
+                      aria-label="Upload profile photo"
+                      className={`absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border-[3px] border-white bg-white shadow-sm transition-colors ${
+                        isEditing ? 'hover:bg-[#f8fafc]' : 'cursor-not-allowed opacity-80'
+                      }`}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#62748e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                        <circle cx="12" cy="13" r="3" />
+                      </svg>
+                    </button>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      className="hidden"
+                      onChange={(e) => handleAvatarSelect(e.target.files?.[0])}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!isEditing || saving}
+                    onClick={() => avatarInputRef.current?.click()}
+                    className={`flex h-11 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-[8px] border border-[#cad5e2] bg-white px-2 text-[13px] font-semibold text-[#314158] transition-colors ${
+                      isEditing ? 'hover:bg-[#f8fafc]' : 'cursor-not-allowed opacity-70'
+                    }`}
+                  >
+                    <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#62748e" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    Upload Photo
+                  </button>
+                  <p className="text-center text-[13px] leading-[18px] text-[#62748e]">JPG, PNG up to 5MB</p>
                 </div>
-                <div className="absolute left-[48px] top-[48px] w-4 h-4 bg-[#90a1b9] border-[1.6px] border-solid border-white rounded-full" />
+
+                <div className="flex min-w-0 flex-col pt-2">
+                  <h2 className="font-semibold text-[26px] leading-[34px] text-[#0f172b] break-words">{displayName}</h2>
+                  <p className="font-normal text-[16px] leading-[24px] text-[#62748e] truncate">{user?.email}</p>
+                  <span
+                    className="mt-3 inline-flex w-fit min-w-[92px] justify-center rounded-[6px] px-4 py-2 font-medium text-[14px] leading-[20px] text-[#8a5a00]"
+                    style={{ background: '#fef9c2' }}
+                  >
+                    {user?.role === 'admin' ? 'Admin' : 'Pro Aspirant'}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col min-w-0">
-                <h2 className="font-semibold text-[20px] leading-[28px] text-[#0f172b] break-words">{displayName}</h2>
-                <p className="font-normal text-[14px] leading-[20px] text-[#62748e] truncate">{user?.email}</p>
-                <span
-                  className="inline-block mt-1 px-3 py-1 rounded-[4px] font-medium text-[12px] leading-[16px] text-[#a65f00]"
-                  style={{ background: '#fef9c2' }}
+
+              {!isEditing && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="flex h-12 w-fit items-center justify-center gap-2 rounded-[10px] border border-[#cad5e2] bg-white px-5 font-semibold text-[15px] text-[#314158] transition-colors hover:bg-[#f8fafc]"
                 >
-                  {user?.role === 'admin' ? 'Admin' : 'Pro Aspirant'}
-                </span>
-              </div>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#62748e" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
+                  Edit
+                </button>
+              )}
             </div>
 
             {/* Form Fields */}
@@ -252,8 +399,9 @@ export default function ProfilePage() {
                   <input
                     type="text"
                     value={firstName}
+                    disabled={!isEditing}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
+                    className={fieldClass()}
                   />
                 </div>
                 <div className="flex-1 flex flex-col gap-2">
@@ -261,8 +409,9 @@ export default function ProfilePage() {
                   <input
                     type="text"
                     value={lastName}
+                    disabled={!isEditing}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
+                    className={fieldClass()}
                   />
                 </div>
               </div>
@@ -290,8 +439,9 @@ export default function ProfilePage() {
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Gender</label>
                   <select
                     value={gender}
+                    disabled={!isEditing}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                    className={selectClass()}
                   >
                     <option value="">Select Gender</option>
                     <option value="Male">Male</option>
@@ -307,8 +457,11 @@ export default function ProfilePage() {
                   <div className="relative" ref={calRef}>
                     <button
                       type="button"
+                      disabled={!isEditing}
                       onClick={() => setShowCalendar(v => !v)}
-                      className="w-full h-[40px] px-4 rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-left focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent flex items-center justify-between gap-2 transition-colors hover:border-[#d08700]"
+                      className={`w-full h-[45.6px] px-4 rounded-[10px] border-[0.8px] border-[#e2e8f0] font-normal text-[16px] leading-[24px] text-left focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent flex items-center justify-between gap-2 transition-colors ${
+                        isEditing ? 'bg-white hover:border-[#d08700]' : 'bg-[#f8fafc] cursor-not-allowed'
+                      }`}
                     >
                       <span className={dateOfBirth ? 'text-[#0a0a0a]' : 'text-[#90a1b9]'}>
                         {dateOfBirth ? formatDisplayDate(dateOfBirth) : 'Select date'}
@@ -430,11 +583,12 @@ export default function ProfilePage() {
                     pattern="[0-9]{10}"
                     maxLength={10}
                     value={phone}
+                    disabled={!isEditing}
                     onChange={(e) => handlePhoneChange(e.target.value)}
                     placeholder="9876543210"
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent"
+                    className={fieldClass()}
                   />
-                  {phone && phone.length !== 10 && (
+                  {isEditing && phone && phone.length !== 10 && (
                     <span className="text-[12px] text-[#DC2626]">Enter exactly 10 digits</span>
                   )}
                 </div>
@@ -442,8 +596,9 @@ export default function ProfilePage() {
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">State</label>
                   <select
                     value={state}
+                    disabled={!isEditing}
                     onChange={(e) => setState(e.target.value)}
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                    className={selectClass()}
                   >
                     <option value="">Select State</option>
                     {INDIAN_STATES.map((s) => (
@@ -459,8 +614,9 @@ export default function ProfilePage() {
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Target year</label>
                   <select
                     value={targetYear}
+                    disabled={!isEditing}
                     onChange={(e) => setTargetYear(e.target.value)}
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                    className={selectClass()}
                   >
                     <option value="">Select year</option>
                     <option value="2026">2026</option>
@@ -473,8 +629,9 @@ export default function ProfilePage() {
                   <label className="font-medium text-[14px] leading-[20px] text-[#314158]">Optional subject</label>
                   <select
                     value={optionalSubject}
+                    disabled={!isEditing}
                     onChange={(e) => setOptionalSubject(e.target.value)}
-                    className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-white font-normal text-[16px] leading-[24px] text-[#0a0a0a] focus:outline-none focus:ring-2 focus:ring-[#d08700] focus:border-transparent appearance-auto"
+                    className={selectClass()}
                   >
                     <option value="">Select Subject</option>
                     <option value="Agriculture">Agriculture</option>
@@ -508,22 +665,27 @@ export default function ProfilePage() {
               </div>
 
               {/* Buttons */}
-              <div className="flex items-center justify-end gap-3">
-                <button
-                  onClick={handleDiscard}
-                  className="h-[40px] px-6 rounded-[10px] border-[0.8px] border-[#cad5e2] bg-white font-medium text-[16px] leading-[24px] text-[#314158] hover:bg-[#f8fafc] transition-colors"
-                >
-                  Discard
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="h-[44px] px-6 rounded-[10px] font-semibold text-[16px] leading-[24px] text-[#0f172b] transition-colors hover:opacity-90"
-                  style={{ background: '#f0b100' }}
-                >
-                  {saving ? 'Saving...' : 'Save changes'}
-                </button>
-              </div>
+              {isEditing && (
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    onClick={handleDiscard}
+                    disabled={saving}
+                    className="h-[45.6px] px-6 rounded-[10px] border-[0.8px] border-[#cad5e2] bg-white font-medium text-[16px] leading-[24px] text-[#314158] hover:bg-[#f8fafc] transition-colors disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    Discard
+                  </button>
+                  {hasChanges && (
+                    <button
+                      onClick={handleSave}
+                      disabled={saving || (phone.length > 0 && phone.length !== 10)}
+                      className="h-[44px] px-6 rounded-[10px] font-semibold text-[16px] leading-[24px] text-[#0f172b] transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{ background: '#f0b100' }}
+                    >
+                      {saving ? 'Saving...' : 'Save changes'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

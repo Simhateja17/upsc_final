@@ -10,6 +10,8 @@ interface RightPanelProps {
   states: TrackerState;
   syllabusData: SyllabusData;
   cms?: Record<string, any>;
+  optionalSubject?: Subject | null;
+  onSelectSubTopic?: (subjectId: string, topicIndex: number) => void;
 }
 
 interface SubjectProgress extends Subject {
@@ -18,11 +20,11 @@ interface SubjectProgress extends Subject {
   pct: number;
 }
 
-export default function RightPanel({ mode, subjects, states, syllabusData, cms }: RightPanelProps) {
+export default function RightPanel({ mode, subjects, states, syllabusData, cms, optionalSubject, onSelectSubTopic }: RightPanelProps) {
   const rightPanelTitle = cms?.right_panel_title || 'Subject Progress';
   const viewAllText = cms?.right_panel_view_all || 'View all →';
   const ctaTitle = cms?.cta_title || "Plan Today's Study";
-  const ctaSubtitle = cms?.cta_subtitle || 'Set daily goals with Jeet AI and stay on track for UPSC 2026.';
+  const ctaSubtitle = cms?.cta_subtitle || 'Set daily goals with Jeet AI Mentor and stay on track for UPSC 2026.';
   const ctaButton = cms?.cta_button || '+ Add in Study Planner';
   const modalTitle = cms?.modal_title || 'Syllabus Progress Overview';
   const router = useRouter();
@@ -106,7 +108,45 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms }
           </div>
 
           <div>
-            {subjects.map((subject) => {
+            {mode === 'optional' ? (
+              optionalSubject ? (
+                optionalSubject.topics.map((topic, ti) => {
+                  const total = topic.subs.length;
+                  let done = 0;
+                  topic.subs.forEach((_, si) => {
+                    if (states[`${optionalSubject.id}__${ti}__${si}`]?.status === 'done') done++;
+                  });
+                  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                  const progressColor = pct === 100 ? '#16a34a' : optionalSubject.color;
+
+                  return (
+                    <button
+                      type="button"
+                      key={`${optionalSubject.id}__${ti}`}
+                      onClick={() => onSelectSubTopic?.(optionalSubject.id, ti)}
+                      className="w-full flex items-center gap-[5px] mb-[8px] last:mb-0 bg-transparent border-none p-0 cursor-pointer text-left transition-opacity duration-150 hover:opacity-80"
+                    >
+                      <div className="text-[9.5px] font-semibold text-[#0f1f3d] flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis" title={topic.name}>
+                        {topic.name}
+                      </div>
+                      <div className="w-[70px] flex-shrink-0">
+                        <div className="h-[4px] bg-[#d8e4f5] rounded-[4px] overflow-hidden">
+                          <div className="h-full rounded-[4px] transition-all duration-900" style={{ width: `${pct}%`, background: progressColor }} />
+                        </div>
+                      </div>
+                      <div className="text-[9px] font-bold flex-shrink-0 w-[24px] text-right" style={{ color: progressColor }}>
+                        {pct}%
+                      </div>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="text-[10.5px] text-[#8795ae] leading-relaxed py-[6px]">
+                  Select your optional subject to see sub-subject progress.
+                </div>
+              )
+            ) : (
+              subjects.map((subject) => {
               const stats = getSubjectStats(subject);
               const progressColor = stats.pct === 100 ? '#16a34a' : subject.color;
 
@@ -137,7 +177,8 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms }
                   </div>
                 </div>
               );
-            })}
+              })
+            )}
           </div>
         </div>
 

@@ -214,7 +214,7 @@ Mounted under `/api` on the backend server (default `localhost:5001/api`):
 | `/api/test-series` | Test series (Express mirror) |
 | `/api/search` | Semantic search |
 | `/api/billing` | Subscriptions, payments, orders |
-| `/api/ai` | Jeet AI chat |
+| `/api/ai` | Jeet AI Mentor chat |
 | `/api/contact` | Contact form (public) |
 | `/api/syllabus` | Syllabus data (public) |
 | `/api/cms/:slug` | Public CMS page content |

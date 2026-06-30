@@ -26,7 +26,7 @@ const FEATURES = [
   'Flashcards',
   'Spaced Repetition',
   'Mindmaps',
-  'Jeet AI',
+  'Jeet AI Mentor',
   'Billing & Plans',
 ];
 

@@ -592,7 +592,7 @@ export default function TestResultsPage() {
               <div className="ai-logo" style={{ fontSize: '2rem' }}>🤖</div>
               <div>
                 <div className="ai-name" style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--ink)' }}>
-                  Jeet AI – Post-Test Intelligence Report
+                  Jeet AI Mentor – Post-Test Intelligence Report
                 </div>
                 <div className="ai-sub" style={{ fontSize: '0.7rem', color: 'var(--ink4)' }}>
                   Analysed {totalQuestions} answers · time patterns · compared against your last 6 tests
