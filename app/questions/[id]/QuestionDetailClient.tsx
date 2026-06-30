@@ -278,7 +278,7 @@ function PublicHeader() {
   );
 }
 
-function AuthQuestionHeader({ userName }: { userName?: string }) {
+function AuthQuestionHeader({ userName, initials }: { userName?: string; initials?: string }) {
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[rgba(7,14,30,0.98)] backdrop-blur-[24px]">
       <div className="mx-auto flex h-[66px] max-w-[1280px] items-center justify-between px-5 sm:px-8">
@@ -297,7 +297,28 @@ function AuthQuestionHeader({ userName }: { userName?: string }) {
           <Link href="/dashboard/saved-notes?tab=pyq" className="text-white/60 transition hover:text-[#E8B84B]">Saved PYQs</Link>
         </nav>
         <div className="flex items-center gap-3">
-          <span className="hidden text-[12px] font-bold uppercase tracking-[0.08em] text-white/70 sm:inline">{userName || 'Your account'}</span>
+          <button
+            type="button"
+            className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A2540] text-white transition hover:bg-[#243050]"
+            style={{ border: '1px solid rgba(255,255,255,0.16)' }}
+            aria-label="Notifications"
+            title="Notifications"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9Z" />
+              <path d="M13.73 21a2 2 0 01-3.46 0" />
+            </svg>
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#EF4444]" />
+          </button>
+          <Link
+            href="/dashboard/profile"
+            className="flex h-12 w-12 items-center justify-center rounded-full text-[18px] font-bold text-[#0E182D] transition hover:opacity-90"
+            style={{ background: 'linear-gradient(135deg, #FFD170 0%, #D4A843 100%)', fontFamily: 'Georgia, serif' }}
+            title={userName || 'Profile'}
+            aria-label="Profile"
+          >
+            {initials || 'U'}
+          </Link>
           <Link href="/dashboard/pyq" className="rounded-[8px] bg-gradient-to-br from-[#E8B84B] to-[#C8960A] px-4 py-2 text-[13.5px] font-bold text-[#061125] shadow-[0_4px_16px_rgba(232,184,75,0.3)] transition hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(232,184,75,0.45)]">
             Back to PYQ
           </Link>
@@ -468,6 +489,8 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
   const difficulty = cleanText(question.difficulty) || 'Medium';
   const paper = cleanText(question.paper) || (isPrelims ? 'Prelims' : 'Mains');
   const isLoggedIn = isAuthenticated && !isLoading;
+  const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email?.split('@')[0] || '';
+  const userInitials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || user?.email?.slice(0, 2).toUpperCase() || 'U';
   const nextHref = relatedQuestions[0]
     ? `/questions/${relatedQuestions[0].id}${mode === 'mains' ? '?mode=mains' : ''}`
     : undefined;
@@ -559,7 +582,7 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
         }
       `}</style>
 
-      {isLoggedIn ? <AuthQuestionHeader userName={user?.firstName || user?.email} /> : <PublicHeader />}
+      {isLoggedIn ? <AuthQuestionHeader userName={displayName} initials={userInitials} /> : <PublicHeader />}
 
       <nav className="mx-auto max-w-[1280px] px-5 pb-4 pt-6 text-[14px] font-medium text-[#8B95A8] sm:px-8">
         <ol className="flex flex-wrap items-center gap-2">

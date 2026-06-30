@@ -505,6 +505,7 @@ export default function PyqPage() {
   // Data state
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [navigatingQuestionHref, setNavigatingQuestionHref] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [page, setPage] = useState(1);
@@ -522,6 +523,20 @@ export default function PyqPage() {
   const [openFilter, setOpenFilter] = useState<'paper' | 'subject' | 'subSubject' | 'topic' | 'year' | 'difficulty' | null>(null);
   const [filterDocked, setFilterDocked] = useState(false);
   const prefersReducedMotion = useReducedMotion();
+
+  const handleQuestionNavigation = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (
+      event.defaultPrevented ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.button !== 0
+    ) {
+      return;
+    }
+    setNavigatingQuestionHref(href);
+  };
 
   const fetchQuestions = useCallback(async () => {
     const requestSeq = ++questionsRequestSeqRef.current;
@@ -1341,6 +1356,16 @@ export default function PyqPage() {
       className="flex min-h-full flex-col items-stretch font-arimo"
       style={{ background: '#F9FAFB' }}
     >
+      {navigatingQuestionHref ? (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#F8F9FB]/85 backdrop-blur-sm">
+          <div className="rounded-[18px] border border-[#E5E7EB] bg-white px-8 py-7 text-center shadow-[0_16px_50px_rgba(15,23,42,0.16)]">
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#E5E7EB] border-t-[#D4AF37]" />
+            <p className="text-[16px] font-bold text-[#111827]">Opening question...</p>
+            <p className="mt-1 text-[13px] text-[#6B7280]">Preparing the full PYQ page</p>
+          </div>
+        </div>
+      ) : null}
+
       <DashboardPageHero
         // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/badge-pyq.png" alt="pyq" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
@@ -1498,6 +1523,7 @@ export default function PyqPage() {
                     {/* Question text */}
                     <Link
                       href={publicQuestionHref}
+                      onClick={(event) => handleQuestionNavigation(event, publicQuestionHref)}
                       className="group block rounded-[12px] outline-none transition hover:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-[#D4AF37]/60"
                       title="Open public question page"
                     >
@@ -1899,6 +1925,7 @@ export default function PyqPage() {
                     {/* Question text */}
                     <Link
                       href={publicQuestionHref}
+                      onClick={(event) => handleQuestionNavigation(event, publicQuestionHref)}
                       className="group block rounded-[12px] outline-none transition hover:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-[#D4AF37]/60"
                       title="Open public question page"
                     >
