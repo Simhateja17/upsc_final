@@ -55,7 +55,6 @@ const EMPTY_COUNTS: PYQCountData = {
 };
 
 const SUBJECT_ICONS: Record<string, string> = {
-  'Ancient History and Art & Culture': '🏺',
   History: '🏛️',
   Geography: '🌍',
   Polity: '⚖️',
@@ -191,10 +190,6 @@ function ExplanationRenderer({ question }: { question: any }) {
 }
 
 const PRELIMS_SUBJECT_TREE: SubjectTreeNode[] = [
-  {
-    label: 'Ancient History and Art & Culture',
-    icon: SUBJECT_ICONS['Ancient History and Art & Culture'],
-  },
   ...(prelimsSyllabus as Array<{ subject: string; subSubjects: Array<{ label: string; topics: string[] }> }>).map((node) => ({
     label: node.subject,
     icon: SUBJECT_ICONS[node.subject] || '📘',
