@@ -24,6 +24,8 @@ export type MindmapNodeData = {
   isExpanded: boolean;
   isRoot: boolean;
   isLeaf: boolean;
+  width: number;
+  height: number;
 };
 
 // ---------- Color palette ----------
@@ -69,6 +71,16 @@ type FlatResult = {
   edges: Edge[];
 };
 
+function estimateNodeSize(label: string, isRoot: boolean): { width: number; height: number } {
+  const chars = Math.max(label.length, isRoot ? 18 : 10);
+  const maxLineChars = isRoot ? 34 : 32;
+  const lines = Math.max(1, Math.ceil(chars / maxLineChars));
+  const width = Math.min(isRoot ? 420 : 360, Math.max(isRoot ? 220 : 170, chars * 8.5 + (isRoot ? 72 : 88)));
+  const height = Math.max(isRoot ? 58 : 52, 26 + lines * 22);
+
+  return { width: Math.round(width), height: Math.round(height) };
+}
+
 function flattenTree(
   tree: TreeNode,
   parentId: string | null,
@@ -85,6 +97,7 @@ function flattenTree(
   const isExpanded = expandedIds.has(id);
   const isRoot = depth === 0;
   const isLeaf = children.length === 0;
+  const size = estimateNodeSize(tree.label, isRoot);
 
   result.nodes.push({
     id,
@@ -99,6 +112,8 @@ function flattenTree(
       isExpanded,
       isRoot,
       isLeaf,
+      width: size.width,
+      height: size.height,
     },
   });
 
@@ -107,6 +122,8 @@ function flattenTree(
       id: `e-${parentId}-${id}`,
       source: parentId,
       target: id,
+      sourceHandle: 'right-source',
+      targetHandle: 'left-target',
       type: 'animatedEdge',
       data: { color: branchColor },
     });
@@ -135,11 +152,6 @@ function flattenTree(
 
 // ---------- Dagre layout ----------
 
-const NODE_WIDTH = 180;
-const NODE_HEIGHT = 48;
-const ROOT_NODE_WIDTH = 200;
-const ROOT_NODE_HEIGHT = 56;
-
 function applyDagreLayout(
   nodes: Node<MindmapNodeData>[],
   edges: Edge[],
@@ -148,17 +160,16 @@ function applyDagreLayout(
   const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
   g.setGraph({
     rankdir: direction,
-    nodesep: 24,
-    ranksep: 80,
+    nodesep: 28,
+    ranksep: 110,
     marginx: 40,
     marginy: 40,
   });
 
   nodes.forEach((node) => {
-    const isRoot = node.data.isRoot;
     g.setNode(node.id, {
-      width: isRoot ? ROOT_NODE_WIDTH : NODE_WIDTH,
-      height: isRoot ? ROOT_NODE_HEIGHT : NODE_HEIGHT,
+      width: node.data.width,
+      height: node.data.height,
     });
   });
 
@@ -170,23 +181,20 @@ function applyDagreLayout(
 
   return nodes.map((node) => {
     const pos = g.node(node.id);
-    const w = node.data.isRoot ? ROOT_NODE_WIDTH : NODE_WIDTH;
-    const h = node.data.isRoot ? ROOT_NODE_HEIGHT : NODE_HEIGHT;
     return {
       ...node,
       position: {
-        x: pos.x - w / 2,
-        y: pos.y - h / 2,
+        x: pos.x - node.data.width / 2,
+        y: pos.y - node.data.height / 2,
       },
     };
   });
 }
 
-// ---------- Balanced horizontal layout ----------
+// ---------- One-sided horizontal layout ----------
 
 /**
- * Splits the root's children into left and right halves,
- * lays out each side with Dagre, then merges them centered on root.
+ * Lays the whole tree out left-to-right so every branch opens on one side.
  */
 export function buildMindmapFlow(
   tree: MindmapTree,
@@ -212,6 +220,8 @@ export function buildMindmapFlow(
             isExpanded: true,
             isRoot: true,
             isLeaf: true,
+            width: estimateNodeSize(root.label, true).width,
+            height: estimateNodeSize(root.label, true).height,
           },
         },
       ],
@@ -223,112 +233,11 @@ export function buildMindmapFlow(
   const expIds = new Set(expandedIds);
   expIds.add('root');
 
-  // Split children into left and right halves
-  const mid = Math.ceil(children.length / 2);
-  const leftChildren = children.slice(0, mid);
-  const rightChildren = children.slice(mid);
+  const result: FlatResult = { nodes: [], edges: [] };
+  flattenTree(root, null, 0, 0, '#1C2E45', expIds, 'root', result, { val: 0 });
 
-  // Build left subtree
-  const leftResult: FlatResult = { nodes: [], edges: [] };
-  const leftRoot: TreeNode = { label: root.label, children: leftChildren };
-  const counter = { val: 0 };
-  flattenTree(leftRoot, null, 0, 0, '#1C2E45', expIds, 'root', leftResult, counter);
-
-  // Build right subtree (separate, root excluded)
-  const rightResult: FlatResult = { nodes: [], edges: [] };
-  rightChildren.forEach((child, i) => {
-    const globalIdx = mid + i;
-    const branchColor = getBranchColor(globalIdx);
-    counter.val++;
-    flattenTree(
-      child,
-      'root',
-      1,
-      globalIdx,
-      branchColor,
-      expIds,
-      `root-${globalIdx}`,
-      rightResult,
-      counter
-    );
-  });
-
-  // Fix left tree: reassign branch colors for left children
-  leftResult.nodes.forEach((n) => {
-    if (n.data.isRoot) return;
-    // Left children use indices 0..mid-1
-    n.data.branchColor = getBranchColor(n.data.branchIndex);
-  });
-
-  // Layout left side (right-to-left so root is on right edge)
-  const leftNodes = applyDagreLayout(leftResult.nodes, leftResult.edges, 'RL');
-
-  // Layout right side (left-to-right so root is on left edge)
-  // Add a temporary root node for right side to anchor edges
-  const rightNodesWithRoot: Node<MindmapNodeData>[] = [
-    {
-      id: 'root-right-anchor',
-      type: 'mindmapNode',
-      position: { x: 0, y: 0 },
-      data: {
-        label: root.label,
-        depth: 0,
-        branchIndex: 0,
-        branchColor: '#1C2E45',
-        childCount: rightChildren.length,
-        isExpanded: true,
-        isRoot: true,
-        isLeaf: false,
-      },
-    },
-    ...rightResult.nodes,
-  ];
-  const rightEdgesWithRoot: Edge[] = rightResult.edges.map((e) =>
-    e.source === 'root' ? { ...e, source: 'root-right-anchor' } : e
-  );
-
-  const rightNodesLayouted = applyDagreLayout(rightNodesWithRoot, rightEdgesWithRoot, 'LR');
-
-  // Find root positions in each layout
-  const leftRootNode = leftNodes.find((n) => n.id === 'root')!;
-  const rightAnchorNode = rightNodesLayouted.find((n) => n.id === 'root-right-anchor')!;
-
-  // Merge: center root at (0,0), offset everything else
-  const leftOffsetX = -leftRootNode.position.x;
-  const leftOffsetY = -leftRootNode.position.y;
-  const rightOffsetX = -rightAnchorNode.position.x;
-  const rightOffsetY = -rightAnchorNode.position.y;
-
-  const mergedNodes: Node<MindmapNodeData>[] = [];
-  const mergedEdges: Edge[] = [...leftResult.edges];
-
-  // Add left nodes (root included)
-  leftNodes.forEach((n) => {
-    mergedNodes.push({
-      ...n,
-      position: {
-        x: n.position.x + leftOffsetX,
-        y: n.position.y + leftOffsetY,
-      },
-    });
-  });
-
-  // Add right nodes (skip the temporary anchor)
-  rightNodesLayouted.forEach((n) => {
-    if (n.id === 'root-right-anchor') return;
-    mergedNodes.push({
-      ...n,
-      position: {
-        x: n.position.x + rightOffsetX,
-        y: n.position.y + rightOffsetY,
-      },
-    });
-  });
-
-  // Add right edges (remap anchor back to root)
-  rightResult.edges.forEach((e) => {
-    mergedEdges.push(e);
-  });
-
-  return { nodes: mergedNodes, edges: mergedEdges };
+  return {
+    nodes: applyDagreLayout(result.nodes, result.edges, 'LR'),
+    edges: result.edges,
+  };
 }

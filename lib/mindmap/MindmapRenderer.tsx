@@ -4,7 +4,6 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   ReactFlow,
   Controls,
-  MiniMap,
   Background,
   BackgroundVariant,
   useReactFlow,
@@ -29,11 +28,8 @@ type Props = {
 function MindmapFlowInner({ tree, onNodeClick, className }: Props) {
   const { fitView } = useReactFlow();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
-    // Auto-expand root and first level
-    const ids = new Set<string>(['root']);
-    const children = tree.root.children ?? [];
-    children.forEach((_, i) => ids.add(`root-${i}`));
-    return ids;
+    // Root is expanded by the layout builder; child branches stay collapsed initially.
+    return new Set<string>(['root']);
   });
 
   const { nodes, edges } = useMemo(
@@ -53,8 +49,8 @@ function MindmapFlowInner({ tree, onNodeClick, className }: Props) {
     (_: React.MouseEvent, node: Node) => {
       const data = node.data as MindmapNodeData;
 
-      // Toggle expand/collapse for non-leaf nodes
-      if (data.childCount > 0 && !data.isRoot) {
+      // Toggle expand/collapse for non-leaf nodes.
+      if (data.childCount > 0) {
         setExpandedIds((prev) => {
           const next = new Set(prev);
           if (next.has(node.id)) {
@@ -93,6 +89,7 @@ function MindmapFlowInner({ tree, onNodeClick, className }: Props) {
         nodesConnectable={false}
         elementsSelectable={false}
         panOnScroll
+        onlyRenderVisibleElements
         zoomOnDoubleClick={false}
         className="!bg-[#F8FAFC]"
       >
@@ -100,16 +97,6 @@ function MindmapFlowInner({ tree, onNodeClick, className }: Props) {
         <Controls
           showInteractive={false}
           className="!bg-white !border !border-gray-200 !rounded-xl !shadow-sm"
-        />
-        <MiniMap
-          nodeColor={(node) => {
-            const data = node.data as MindmapNodeData;
-            return data.isRoot ? '#1C2E45' : data.branchColor;
-          }}
-          maskColor="rgba(248,250,252,0.85)"
-          className="!bg-white !border !border-gray-200 !rounded-xl !shadow-sm"
-          pannable
-          zoomable
         />
       </ReactFlow>
     </div>

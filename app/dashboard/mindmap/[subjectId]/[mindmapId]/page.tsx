@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { mindmapService, userService, pricingService } from '@/lib/services';
-import { MindmapRenderer, MindmapListView, NodeDetailPanel, findTreeNodeById } from '@/lib/mindmap';
-import type { MindmapTree, TreeNode, MindmapNodeData } from '@/lib/mindmap';
+import { MindmapRenderer, MindmapListView } from '@/lib/mindmap';
+import type { MindmapTree, TreeNode } from '@/lib/mindmap';
 
 const CheckmarkIcon = () => (
   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -102,11 +102,6 @@ export default function MindmapViewPage() {
   const [showProModal, setShowProModal] = useState(false);
   const [viewMode, setViewMode] = useState<'mindmap' | 'list'>('mindmap');
 
-  // Detail panel state
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedNodeData, setSelectedNodeData] = useState<MindmapNodeData | null>(null);
-  const [selectedTreeNode, setSelectedTreeNode] = useState<TreeNode | null>(null);
-
   // Pricing
   const [proPricing, setProPricing] = useState({
     monthly: 299,
@@ -170,23 +165,6 @@ export default function MindmapViewPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [subjectId, mindmapId]);
-
-  const handleNodeClick = useCallback(
-    (nodeId: string, nodeData: MindmapNodeData) => {
-      if (!data) return;
-      const treeNode = findTreeNodeById(data.root, nodeId);
-      setSelectedNodeId(nodeId);
-      setSelectedNodeData(nodeData);
-      setSelectedTreeNode(treeNode);
-    },
-    [data]
-  );
-
-  const handleClosePanel = useCallback(() => {
-    setSelectedNodeId(null);
-    setSelectedNodeData(null);
-    setSelectedTreeNode(null);
-  }, []);
 
   // Count total nodes for progress
   function countNodes(node: TreeNode): number {
@@ -351,30 +329,17 @@ export default function MindmapViewPage() {
         </div>
 
         {/* Main content */}
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
+        <div className="flex flex-col gap-6 items-stretch">
           {/* Mindmap / List view */}
           <div className="flex-1 min-w-0">
             {viewMode === 'mindmap' ? (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" style={{ height: 520 }}>
-                <MindmapRenderer
-                  tree={tree}
-                  onNodeClick={handleNodeClick}
-                />
+                <MindmapRenderer tree={tree} />
               </div>
             ) : (
               <MindmapListView root={data.root} />
             )}
           </div>
-
-          {/* Detail panel (only in mindmap mode) */}
-          {viewMode === 'mindmap' && (
-            <NodeDetailPanel
-              nodeId={selectedNodeId}
-              nodeData={selectedNodeData}
-              treeNode={selectedTreeNode}
-              onClose={handleClosePanel}
-            />
-          )}
         </div>
       </div>
     </div>
