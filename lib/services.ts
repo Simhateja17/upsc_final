@@ -455,6 +455,12 @@ export const pyqService = {
     const qs = query.toString();
     return api.get<any>(`/pyq/questions${qs ? `?${qs}` : ''}`);
   },
+  getQuestion: (questionId: string, params?: { mode?: 'prelims' | 'mains' }) => {
+    const query = new URLSearchParams();
+    if (params?.mode) query.set('mode', params.mode);
+    const qs = query.toString();
+    return api.get<any>(`/pyq/questions/${encodeURIComponent(questionId)}${qs ? `?${qs}` : ''}`);
+  },
   getCounts: (params?: {
     mode?: 'prelims' | 'mains';
     year?: number;
