@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { videoService } from '@/lib/services';
+import { videoService, libraryService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import StudyMaterialReaderModal from '@/components/StudyMaterialReaderModal';
 
 /* ─── Types ─── */
 interface VideoItem {
@@ -313,9 +314,24 @@ function getSubjectHeroLabel(name: string) {
   return name.replace(/^Indian\s+/i, '').trim();
 }
 
-/* Topic subtitle shown under "<Subject> Simplified" in the playlist header. */
+/* Topic subtitle shown under "<Subject> Simplified" in the playlist header.
+   Ordered so the most specific matcher wins first (e.g. "internal security"
+   before generic checks). Every core subject has an entry so the subtitle line
+   appears consistently across the catalogue. */
 const SUBJECT_TOPIC_SUBTITLES: Array<{ match: (n: string) => boolean; topics: string }> = [
   { match: (n) => n.includes('econom'), topics: 'Planning, Budgets, Banking, Trade, Infrastructure, Agriculture' },
+  { match: (n) => n.includes('polity'), topics: 'Constitution, Parliament, Judiciary, Federalism, Local Self-Government' },
+  { match: (n) => n.includes('history'), topics: 'Ancient, Medieval, Modern India, Freedom Struggle, World History' },
+  { match: (n) => n.includes('geography'), topics: 'Physical, Indian, World Geography, Climate, Resources, Mapping' },
+  { match: (n) => n.includes('environment'), topics: 'Ecology, Biodiversity, Climate Change, Conservation, Conventions' },
+  { match: (n) => n.includes('ethics'), topics: 'Integrity, Aptitude, Thinkers, Case Studies, Governance' },
+  { match: (n) => n.includes('essay'), topics: 'Structure, Idea Generation, Examples, Flow, Effective Writing' },
+  { match: (n) => n.includes('internal security') || n.includes('security'), topics: 'Challenges, Organisations, Cyber, Borders, Terrorism' },
+  { match: (n) => n.includes('international') || n.includes("int'l") || n.includes('relations'), topics: 'India & the World, Diplomacy, Groupings, Neighbourhood' },
+  { match: (n) => n.includes('science'), topics: 'Physics, Biology, Space, Defence, Emerging Technology' },
+  { match: (n) => n.includes('art'), topics: 'Architecture, Painting, Dance, Music, Literature, Heritage' },
+  { match: (n) => n.includes('current'), topics: 'Daily News, Government Schemes, Reports, Events, Analysis' },
+  { match: (n) => n.includes('csat'), topics: 'Aptitude, Reasoning, Comprehension, Data Interpretation' },
 ];
 
 function getSubjectTopics(name: string) {
@@ -460,6 +476,9 @@ export default function VideoLecturesPage() {
   const [shareModalVideo, setShareModalVideo] = useState<VideoItem | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [videoSearch, setVideoSearch] = useState('');
+  // Study-material reader: reuses the same in-app PDF viewer as the Library module.
+  const [readModal, setReadModal] = useState<{ pages: string[]; title: string; subject: string } | null>(null);
+  const [loadingRead, setLoadingRead] = useState<string | null>(null);
   const selectedVideosRef = useRef<HTMLDivElement | null>(null);
   const selectedVideoGridRef = useRef<HTMLDivElement | null>(null);
   const lastAutoScrolledSubjectRef = useRef<string | null>(null);
@@ -540,6 +559,67 @@ export default function VideoLecturesPage() {
   const openVideoActionModal = (_type: 'pdf' | 'read', video: VideoItem) => {
     setModalVideo(video);
     setShowLoginModal(true);
+  };
+
+  /*
+   * "Read" opens the SAME in-app PDF viewer used by the Study Material module
+   * (StudyMaterialReaderModal). Videos aren't yet mapped to their study
+   * materials in the Admin Panel, so as a sample integration we open the first
+   * available study-material note. Once the admin mapping exists, resolve the
+   * material linked to `video` instead of walking the library tree here.
+   */
+  const handleRead = async (video: VideoItem) => {
+    const key = String(video.id);
+    if (loadingRead) return;
+    setLoadingRead(key);
+    try {
+      const subjRes: any = await libraryService.getSubjects();
+      const subjects: any[] = subjRes.data?.subjects || subjRes.data || [];
+
+      let material: any = null;
+      let subjectName = '';
+      for (const subj of subjects) {
+        if (!subj?.id) continue;
+        const chRes: any = await libraryService.getChapters(subj.id);
+        const chapters: any[] = chRes.data?.chapters || chRes.data || [];
+        for (const subSubject of chapters) {
+          for (const topic of (subSubject.topics || [])) {
+            const found = (topic.materials || []).find((m: any) => m?._id || m?.id);
+            if (found) { material = found; subjectName = subj.name; break; }
+          }
+          if (material) break;
+        }
+        if (material) break;
+      }
+
+      if (!material) {
+        alert('No study material is available to read yet.');
+        return;
+      }
+
+      const materialId = material._id || material.id;
+      const viewRes: any = await libraryService.getMaterialViewPages(materialId, 50);
+      const data = viewRes.data?.data || viewRes.data || {};
+      const pages: string[] = Array.isArray(data.pages)
+        ? data.pages
+            .map((page: any) => page?.url)
+            .filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
+        : [];
+
+      if (pages.length > 0) {
+        setReadModal({
+          pages,
+          title: data.title || material.title || material.name || video.title,
+          subject: subjectName || video.subject || '',
+        });
+      } else {
+        alert('Could not load this note. Please try again.');
+      }
+    } catch {
+      alert('Could not open the study material. Please try again.');
+    } finally {
+      setLoadingRead(null);
+    }
   };
 
   const getVideoShareUrl = (video: VideoItem | null) => {
@@ -926,9 +1006,9 @@ export default function VideoLecturesPage() {
                     >
                       {getSubjectHeroLabel(selectedSubject)} Simplified
                     </h2>
-                    {getSubjectTopics(selectedSubject) && (
+                    {(getSubjectTopics(selectedSubject) || matchedSelectedSubject?.description) && (
                       <p className="font-arimo" style={{ fontSize: '13px', lineHeight: '18px', color: '#64748B', marginTop: '2px' }}>
-                        {getSubjectTopics(selectedSubject)}
+                        {getSubjectTopics(selectedSubject) || matchedSelectedSubject?.description}
                       </p>
                     )}
                     <p className="font-arimo" style={{ fontSize: '14px', lineHeight: '20px', color: '#94A3B8', marginTop: '2px' }}>
@@ -976,11 +1056,8 @@ export default function VideoLecturesPage() {
                 </div>
               </div>
               <div style={{ padding: 'clamp(18px, 2vw, 26px)', background: '#FFFFFF' }}>
-                {matchedSelectedSubject?.description ? (
-                  <p className="font-arimo" style={{ fontSize: 'clamp(13px, 1.12vw, 15px)', color: '#94A3B8', lineHeight: 1.5, marginBottom: '18px' }}>
-                    {matchedSelectedSubject.description}
-                  </p>
-                ) : null}
+                {/* The topic/description line is shown in the header (under "<Subject>
+                    Simplified"), matching the Economy layout, so it is not repeated here. */}
 
             {subjectVideosLoading ? (
               <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
@@ -1020,18 +1097,17 @@ export default function VideoLecturesPage() {
                   .vl-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#B88A1D;}
                   .vl-title{font-weight:700;font-size:14.5px;line-height:1.35;margin-top:6px;color:#101828;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:42px;}
                   .vl-actions{display:flex;align-items:center;gap:8px;padding-top:16px;margin-top:12px;border-top:1px solid #E6EAF2;}
-                  .vl-btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:13px;border-radius:12px;transition:all .2s ease;white-space:nowrap;cursor:pointer;}
-                  .vl-btn-watch{flex:1;justify-content:center;background:linear-gradient(135deg,#FF3B3B,#C61212);color:#fff;padding:10px 14px;box-shadow:0 8px 20px -10px rgba(198,18,18,.55),inset 0 1px 0 rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.08);position:relative;overflow:hidden;}
-                  .vl-btn-watch:hover{transform:translateY(-1px);box-shadow:0 12px 26px -10px rgba(198,18,18,.65),inset 0 1px 0 rgba(255,255,255,.22);}
-                  .vl-watch-icon{width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,.18);display:inline-flex;align-items:center;justify-content:center;}
-                  .vl-btn-read{background:#fff;color:#0F1A35;padding:10px 14px;border:1px solid rgba(15,26,53,.10);box-shadow:0 4px 10px -6px rgba(11,18,38,.18),inset 0 1px 0 #fff;}
-                  .vl-btn-read:hover{background:#0B1226;color:#fff;border-color:#0B1226;transform:translateY(-1px);}
-                  .vl-btn-getpdf{position:relative;overflow:hidden;background:linear-gradient(180deg,#FCD564 0%,#E9B949 55%,#CAA036 100%);color:#1A1206;padding:10px 16px;font-weight:700;border:1px solid rgba(184,138,29,.55);box-shadow:0 8px 18px -8px rgba(202,160,54,.55),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(133,98,16,.18);}
-                  .vl-btn-getpdf:hover{transform:translateY(-1px);box-shadow:0 12px 24px -8px rgba(202,160,54,.7),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -2px 0 rgba(133,98,16,.22);}
-                  .vl-getpdf-shine{position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(110deg,transparent 0%,rgba(255,255,255,0) 30%,rgba(255,255,255,.85) 50%,rgba(255,255,255,0) 70%,transparent 100%);transform:skewX(-20deg);animation:vl-shine 3.2s ease-in-out infinite;pointer-events:none;mix-blend-mode:overlay;}
-                  @keyframes vl-shine{0%{left:-60%}50%{left:120%}100%{left:120%}}
-                  .vl-icon-btn{width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid rgba(15,26,53,.10);display:inline-flex;align-items:center;justify-content:center;color:#0B1226;transition:all .2s ease;cursor:pointer;flex-shrink:0;}
-                  .vl-icon-btn:hover{background:#0B1226;color:#E9B949;border-color:#0B1226;transform:translateY(-1px);}
+                  .vl-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:13px;border-radius:10px;padding:9px 14px;transition:all .2s ease;white-space:nowrap;cursor:pointer;border:none;}
+                  .vl-btn-watch{flex:1;background:#FF2D2D;color:#fff;box-shadow:0 6px 16px -8px rgba(255,45,45,.6);}
+                  .vl-btn-watch:hover{background:#E62020;transform:translateY(-1px);box-shadow:0 10px 22px -8px rgba(255,45,45,.7);}
+                  .vl-btn-read{flex:1;background:#F3F6FC;color:#0B1226;box-shadow:inset 0 0 0 1px #E3E9F4;}
+                  .vl-btn-read:hover{background:#EAF0FA;}
+                  .vl-btn-getpdf{flex:1;position:relative;overflow:hidden;background:linear-gradient(180deg,#FFD96B,#F5B301);color:#3A2700;box-shadow:0 8px 22px -10px rgba(245,179,1,.7),inset 0 1px 0 rgba(255,255,255,.6);}
+                  .vl-btn-getpdf:hover{filter:brightness(1.03);}
+                  .vl-btn-getpdf::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);transform:translateX(-100%);transition:transform 1.2s ease;pointer-events:none;}
+                  .vl-btn-getpdf:hover::after{transform:translateX(100%);}
+                  .vl-icon-btn{flex-shrink:0;background:#F3F6FC;color:#0B1226;box-shadow:inset 0 0 0 1px #E3E9F4;border-radius:10px;padding:9px;display:inline-flex;align-items:center;justify-content:center;transition:all .2s ease;cursor:pointer;border:none;}
+                  .vl-icon-btn:hover{background:#EAF0FA;}
                 `}</style>
                 <div
                   ref={selectedVideoGridRef}
@@ -1109,28 +1185,30 @@ export default function VideoLecturesPage() {
                             className="vl-btn vl-btn-watch"
                             onClick={() => { markVideoWatched(selectedSubject ?? video.subject, video.id); openVideoInNewTab(video); }}
                           >
-                            <span className="vl-watch-icon">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
-                            </span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
                             {isWatched ? 'Resume' : 'Watch'}
                           </button>
-                          <button className="vl-btn vl-btn-read" title="Read in Study Material" onClick={() => router.push('/dashboard/library')}>
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <button
+                            className="vl-btn vl-btn-read"
+                            title="Read in Study Material"
+                            onClick={() => handleRead(video)}
+                            disabled={loadingRead === String(video.id)}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
                               <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
                             </svg>
-                            Read
+                            {loadingRead === String(video.id) ? 'Opening…' : 'Read'}
                           </button>
                           <button className="vl-btn vl-btn-getpdf" title="Get PDF" onClick={() => openVideoActionModal('pdf', video)}>
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                               <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                             </svg>
                             Get PDF
-                            <span className="vl-getpdf-shine" />
                           </button>
                           <button className="vl-icon-btn" title="Share" aria-label="Share" onClick={() => setShareModalVideo(video)}>
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
                               <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                             </svg>
@@ -1153,6 +1231,15 @@ export default function VideoLecturesPage() {
         )}
       </div>
 
+      {/* Study-material reader – reuses the shared Study Material PDF viewer */}
+      {readModal && (
+        <StudyMaterialReaderModal
+          pages={readModal.pages}
+          title={readModal.title}
+          subjectLabel={readModal.subject}
+          onClose={() => setReadModal(null)}
+        />
+      )}
 
       {/* Watch Video + Quiz Modal */}
       {watchVideo && (
@@ -1343,63 +1430,55 @@ export default function VideoLecturesPage() {
 
       {/* Shared modal styles (Get PDF + Share popups) */}
       <style>{`
-        .vlm-backdrop{position:fixed;inset:0;z-index:120;background:rgba(8,12,28,.55);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;}
-        .vlm-modal{width:100%;max-width:460px;background:#fff;border-radius:22px;box-shadow:0 40px 80px -30px rgba(0,0,0,.5),0 0 0 1px rgba(15,26,53,.06);overflow:hidden;position:relative;animation:vlm-pop .3s cubic-bezier(.2,.9,.3,1.2);}
-        @keyframes vlm-pop{from{transform:translateY(14px) scale(.98);opacity:.4}to{transform:none;opacity:1}}
-        .vlm-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:all .2s ease;cursor:pointer;border:none;}
-        .vlm-head{position:relative;padding:26px 26px 18px;background:radial-gradient(600px 200px at 50% -20%,rgba(233,185,73,.18),transparent 70%),#0B1226;color:#fff;}
-        .vlm-head::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:18px;background:linear-gradient(180deg,transparent,#fff);}
-        .vlm-icon{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
-        .vlm-title{font-size:24px;font-weight:700;line-height:1.2;}
-        .vlm-sub{color:rgba(255,255,255,.65);font-size:13px;margin-top:4px;}
-        .vlm-body{padding:8px 26px 26px;}
-        .vlm-actions{display:flex;gap:10px;margin-top:18px;}
-        .vlm-btn-primary{flex:1;background:linear-gradient(135deg,#E9B949,#B88A1D);color:#1A1206;padding:12px;border-radius:12px;font-weight:700;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 10px 22px -10px rgba(184,138,29,.55),inset 0 1px 0 rgba(255,255,255,.5);transition:all .2s ease;cursor:pointer;border:none;}
-        .vlm-btn-primary:hover{transform:translateY(-1px);box-shadow:0 14px 28px -10px rgba(184,138,29,.7),inset 0 1px 0 rgba(255,255,255,.6);}
-        .vlm-btn-secondary{background:#fff;color:#0B1226;padding:12px 16px;border-radius:12px;font-weight:600;font-size:14px;border:1px solid rgba(15,26,53,.14);transition:all .2s ease;cursor:pointer;}
-        .vlm-btn-secondary:hover{background:#0B1226;color:#fff;border-color:#0B1226;}
-        .vlm-share-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
-        .vlm-share-tile{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px;border-radius:14px;background:#F7F5EF;border:1px solid #E6EAF2;cursor:pointer;transition:all .2s ease;text-decoration:none;}
-        .vlm-share-tile:hover{transform:translateY(-2px);border-color:rgba(11,18,38,.2);box-shadow:0 10px 22px -14px rgba(11,18,38,.3);background:#fff;}
-        .vlm-share-ic{width:40px;height:40px;border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px -8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.2);}
-        .vlm-share-label{font-size:11px;font-weight:600;color:#0B1226;}
-        .vlm-copy{margin-top:16px;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 14px;background:#F7F5EF;border:1px dashed rgba(15,26,53,.18);border-radius:12px;}
-        .vlm-copy input{flex:1;background:transparent;border:0;outline:0;font-size:12.5px;color:#3A4358;}
-        .vlm-copy button{background:#0B1226;color:#fff;padding:7px 12px;border-radius:9px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .2s ease;cursor:pointer;border:none;white-space:nowrap;}
-        .vlm-copy button:hover{background:#E9B949;color:#1A1206;}
-        .vlm-copy button.copied{background:#16A34A;color:#fff;}
+        /* Modals — ported 1:1 from VIDEO_LECT_SURI_FINAL reference */
+        .vlm-backdrop{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;}
+        .vlm-modal{width:100%;max-width:420px;background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;position:relative;animation:vlm-pop .3s ease;}
+        @keyframes vlm-pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+        .vlm-display{font-family:var(--font-playfair),'Playfair Display',Georgia,serif;letter-spacing:-.01em;}
+        .vlm-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:#f0f0f0;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:#666;transition:all .2s;}
+        .vlm-close:hover{background:#e0e0e0;color:#333;}
+        /* PDF modal */
+        .vlm-pdf-icon{width:64px;height:64px;background:linear-gradient(135deg,#ff4d4d,#e53935);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:#fff;font-weight:700;font-size:14px;letter-spacing:.5px;}
+        .vlm-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:13px;border-radius:10px;padding:10px 14px;transition:all .2s ease;white-space:nowrap;cursor:pointer;border:none;text-decoration:none;}
+        .vlm-btn-ghost{background:#f3f6fc;color:#0b1226;box-shadow:inset 0 0 0 1px #e3e9f4;}
+        .vlm-btn-ghost:hover{background:#eaf0fa;}
+        .vlm-btn-gold{position:relative;overflow:hidden;background:linear-gradient(180deg,#ffd96b,#f5b301);color:#3a2700;box-shadow:0 8px 22px -10px rgba(245,179,1,.7),inset 0 1px 0 rgba(255,255,255,.6);}
+        .vlm-btn-gold:hover{filter:brightness(1.03);}
+        .vlm-btn-gold::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);transform:translateX(-100%);transition:transform 1.2s ease;pointer-events:none;}
+        .vlm-btn-gold:hover::after{transform:translateX(100%);}
+        /* Share modal */
+        .vlm-share-header{background:linear-gradient(135deg,#1a1a1a,#0b1226);padding:32px 32px 24px;text-align:center;position:relative;}
+        .vlm-share-header-icon{width:56px;height:56px;background:#e53935;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+        .vlm-share-body{padding:24px;}
+        .vlm-share-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0;}
+        .vlm-share-tile{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 8px;border-radius:12px;background:#f8f8f8;cursor:pointer;transition:all .2s;text-decoration:none;border:none;}
+        .vlm-share-tile:hover{background:#f0f0f0;transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1);}
+        .vlm-share-ic{width:48px;height:48px;border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;}
+        .vlm-share-label{font-size:11px;font-weight:600;color:#333;}
+        .vlm-url-box{display:flex;align-items:center;gap:12px;padding:12px 16px;border:2px dashed #e0e0e0;border-radius:12px;margin-top:16px;}
+        .vlm-url-text{flex:1;font-size:12px;color:#666;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:transparent;border:0;outline:0;}
+        .vlm-copy-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#0b1226;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+        .vlm-copy-btn:hover{background:#1a2a4a;}
+        .vlm-copy-btn.copied{background:#16a34a;}
       `}</style>
 
       {/* ============ GET PDF POPUP (redirect to Study Material) ============ */}
       {showLoginModal && (
         <div className="vlm-backdrop font-arimo" onClick={() => setShowLoginModal(false)}>
-          <div className="vlm-modal" style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
-            <button className="vlm-close" style={{ background: 'rgba(15,26,53,.06)', color: '#0B1226' }} onClick={() => setShowLoginModal(false)} aria-label="Close">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-            </button>
-            <div style={{ padding: '28px', textAlign: 'center' }}>
-              {/* PDF icon with gold lock badge */}
-              <div style={{ margin: '0 auto 20px', position: 'relative', width: '64px', height: '74px' }}>
-                <div style={{ width: '64px', height: '74px', borderRadius: '10px', background: 'linear-gradient(180deg,#FF5252,#C61212)', boxShadow: '0 14px 30px -10px rgba(198,18,18,.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '8px', color: '#fff', fontSize: '11px', fontWeight: 800, letterSpacing: '.08em', position: 'relative' }}>
-                  PDF
-                  <span style={{ position: 'absolute', top: 0, right: 0, width: '18px', height: '18px', background: 'linear-gradient(225deg,#fff 50%,transparent 50%)', borderTopRightRadius: '10px' }} />
-                </div>
-                <span style={{ position: 'absolute', bottom: '-6px', right: '-8px', width: '26px', height: '26px', borderRadius: '999px', background: 'linear-gradient(135deg,#E9B949,#A87F1F)', color: '#1A1206', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #fff', boxShadow: '0 6px 12px -4px rgba(184,138,29,.6)' }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-                </span>
-              </div>
-              <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#0B1226' }}>Download PDF</h3>
-              <p style={{ fontSize: '14px', color: '#6B7280', marginTop: '8px', lineHeight: 1.6 }}>
-                Please navigate to <b style={{ color: '#0B1226' }}>Study Material</b> to download the PDF
-                {modalVideo ? <> for<br />&ldquo;<span style={{ color: '#0B1226', fontWeight: 500 }}>{modalVideo.title}</span>&rdquo;.</> : '.'}
-              </p>
-              <div className="vlm-actions">
-                <button className="vlm-btn-secondary" style={{ flex: 1 }} onClick={() => setShowLoginModal(false)}>Got it</button>
-                <button className="vlm-btn-primary" onClick={() => { setShowLoginModal(false); router.push('/dashboard/library'); }}>
-                  Go to Study Material
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
-                </button>
-              </div>
+          <div className="vlm-modal" onClick={(e) => e.stopPropagation()} style={{ padding: '32px' }}>
+            <button className="vlm-close" onClick={() => setShowLoginModal(false)} aria-label="Close">×</button>
+            <div className="vlm-pdf-icon">PDF</div>
+            <h3 className="vlm-display" style={{ fontSize: '24px', textAlign: 'center', marginBottom: '12px', color: '#0B1226' }}>Download PDF</h3>
+            <p style={{ textAlign: 'center', fontSize: '14px', color: '#4B5563', marginBottom: '24px', lineHeight: 1.6 }}>
+              Please navigate to <strong style={{ color: '#0B1226' }}>Study Material</strong> to download the PDF
+              {modalVideo ? <> for &lsquo;<em style={{ color: '#0B1226', fontStyle: 'italic' }}>{modalVideo.title}</em>&rsquo;.</> : '.'}
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="vlm-btn vlm-btn-ghost" style={{ flex: 1 }} onClick={() => setShowLoginModal(false)}>Got it</button>
+              <button className="vlm-btn vlm-btn-gold" style={{ flex: 1 }} onClick={() => { setShowLoginModal(false); router.push('/dashboard/library'); }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+                Go to Study Material
+              </button>
             </div>
           </div>
         </div>
@@ -1411,36 +1490,35 @@ export default function VideoLecturesPage() {
         const shareText = shareModalVideo.title;
         const u = encodeURIComponent(shareUrl);
         const t = encodeURIComponent(shareText);
-        const tiles: Array<{ label: string; bg: string; icon: React.ReactNode; href?: string; copy?: boolean }> = [
-          { label: 'WhatsApp', bg: '#25D366', href: `https://wa.me/?text=${t}%20${u}`, icon: <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /> },
-          { label: 'Telegram', bg: '#0088CC', href: `https://t.me/share/url?url=${u}&text=${t}`, icon: <line x1="22" y1="2" x2="11" y2="13" /> },
-          { label: 'X / Twitter', bg: '#1D9BF0', href: `https://twitter.com/intent/tweet?url=${u}&text=${t}`, icon: <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z" /> },
-          { label: 'LinkedIn', bg: '#0A66C2', href: `https://www.linkedin.com/sharing/share-offsite/?url=${u}`, icon: <><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z" /><rect x="2" y="9" width="4" height="12" /><circle cx="4" cy="4" r="2" /></> },
-          { label: 'Facebook', bg: '#1877F2', href: `https://www.facebook.com/sharer/sharer.php?u=${u}`, icon: <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /> },
-          { label: 'Email', bg: '#EA4335', href: `mailto:?subject=${t}&body=${u}`, icon: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 5L2 7" /></> },
-          { label: 'Instagram', bg: 'linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)', copy: true, icon: <><rect x="2" y="2" width="20" height="20" rx="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></> },
-          { label: 'Copy Link', bg: '#0B1226', copy: true, icon: <><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></> },
+        // Official brand glyphs (filled), matching the reference share modal.
+        const tiles: Array<{ label: string; bg: string; path: string; href?: string; copy?: boolean }> = [
+          { label: 'WhatsApp', bg: '#25D366', href: `https://wa.me/?text=${t}%20${u}`, path: 'M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z' },
+          { label: 'Telegram', bg: '#0088cc', href: `https://t.me/share/url?url=${u}&text=${t}`, path: 'M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z' },
+          { label: 'X / Twitter', bg: '#1DA1F2', href: `https://twitter.com/intent/tweet?url=${u}&text=${t}`, path: 'M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z' },
+          { label: 'LinkedIn', bg: '#0077B5', href: `https://www.linkedin.com/sharing/share-offsite/?url=${u}`, path: 'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z' },
+          { label: 'Facebook', bg: '#1877F2', href: `https://www.facebook.com/sharer/sharer.php?u=${u}`, path: 'M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z' },
+          { label: 'Email', bg: '#FF5252', href: `mailto:?subject=${t}&body=${u}`, path: 'M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z' },
+          { label: 'Instagram', bg: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)', copy: true, path: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z' },
+          { label: 'QR Code', bg: '#000', copy: true, path: 'M3 3h8v8H3zm0 10h8v8H3zm10-10h8v8h-8zm0 10h8v8h-8z' },
         ];
         return (
           <div className="vlm-backdrop font-arimo" onClick={() => setShareModalVideo(null)}>
-            <div className="vlm-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="vlm-head">
-                <button className="vlm-close" style={{ background: 'rgba(255,255,255,.08)', color: '#fff' }} onClick={() => setShareModalVideo(null)} aria-label="Close">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-                </button>
-                <div className="vlm-icon" style={{ background: 'linear-gradient(135deg,#FF5252,#C61212)', color: '#fff', boxShadow: '0 12px 24px -10px rgba(198,18,18,.5), inset 0 1px 0 rgba(255,255,255,.3)' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
+            <div className="vlm-modal" onClick={(e) => e.stopPropagation()} style={{ padding: 0 }}>
+              <div className="vlm-share-header">
+                <button className="vlm-close" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }} onClick={() => setShareModalVideo(null)} aria-label="Close">×</button>
+                <div className="vlm-share-header-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
                 </div>
-                <div className="vlm-title">Share this Lecture</div>
-                <div className="vlm-sub">Help a fellow aspirant — share knowledge that compounds.</div>
+                <h3 className="vlm-display" style={{ fontSize: '24px', color: '#fff', marginBottom: '8px' }}>Share this Lecture</h3>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>{shareText}</p>
               </div>
-              <div className="vlm-body">
+              <div className="vlm-share-body">
                 <div className="vlm-share-grid">
                   {tiles.map((tile) => {
                     const inner = (
                       <>
                         <span className="vlm-share-ic" style={{ background: tile.bg }}>
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{tile.icon}</svg>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d={tile.path} /></svg>
                         </span>
                         <span className="vlm-share-label">{tile.label}</span>
                       </>
@@ -1452,11 +1530,15 @@ export default function VideoLecturesPage() {
                     );
                   })}
                 </div>
-                <div className="vlm-copy">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2" /><path d="M15 7h2a5 5 0 0 1 0 10h-2" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
-                  <input value={shareUrl} readOnly />
-                  <button className={shareCopied ? 'copied' : ''} onClick={() => copyShareUrl(shareUrl)}>
-                    {shareCopied ? 'Copied' : 'Copy'}
+                <div className="vlm-url-box">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+                  <span className="vlm-url-text">{shareUrl}</span>
+                  <button className={`vlm-copy-btn${shareCopied ? ' copied' : ''}`} onClick={() => copyShareUrl(shareUrl)}>
+                    {shareCopied ? (
+                      <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg> Copied!</>
+                    ) : (
+                      <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg> Copy</>
+                    )}
                   </button>
                 </div>
               </div>

@@ -210,7 +210,7 @@ function McqCard(props: Props) {
   const [revealed, setRevealed] = useState(false);
 
   return (
-    <article className="rounded-2xl border border-[#E8EDF5] bg-white p-4" style={{ borderLeft: `3px solid ${accentColor(props.index)}` }}>
+    <article className="rounded-2xl border-y border-r border-[#E8EDF5] bg-white p-4" style={{ boxShadow: `inset 3px 0 0 0 ${accentColor(props.index)}` }}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         {c.difficulty && <DifficultyBadge difficulty={c.difficulty} />}
         {c.category && <CategoryBadge category={c.category} />}
@@ -276,7 +276,7 @@ function EditorialCard(props: Props) {
   const tags: string[] = (c.tags?.length ? c.tags : [item.tag]).filter(Boolean);
 
   return (
-    <article className="rounded-2xl border border-[#E8EDF5] bg-white p-4" style={{ borderLeft: '3px solid #63BF7A' }}>
+    <article className="rounded-2xl border-y border-r border-[#E8EDF5] bg-white p-4" style={{ boxShadow: 'inset 3px 0 0 0 #63BF7A' }}>
       <div className="mb-3 flex items-center justify-between text-[11px] text-[#8A97AE]">
         <div className="flex items-center gap-1.5">
           <span className="rounded-full bg-[#EEF3FF] px-2 py-0.5 text-[#4F46E5]">GS</span>
@@ -304,7 +304,7 @@ function AnswerWritingCard(props: Props) {
   const tags: string[] = c.tags || [];
 
   return (
-    <article className="rounded-2xl border border-[#E8EDF5] bg-white p-4" style={{ borderLeft: `3px solid ${accentColor(props.index)}` }}>
+    <article className="rounded-2xl border-y border-r border-[#E8EDF5] bg-white p-4" style={{ boxShadow: `inset 3px 0 0 0 ${accentColor(props.index)}` }}>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
         <div className="flex flex-wrap items-center gap-1.5">
           {c.gsPaper && <span className="rounded-full bg-[#EEF3FF] px-2 py-0.5 font-semibold text-[#4F46E5]">{c.gsPaper}</span>}
@@ -343,7 +343,7 @@ function PyqCard(props: Props) {
   const keyPoints: string[] = c.keyPoints || [];
 
   return (
-    <article className="rounded-2xl border border-[#E8EDF5] bg-white p-4" style={{ borderLeft: `3px solid ${accentColor(props.index)}` }}>
+    <article className="rounded-2xl border-y border-r border-[#E8EDF5] bg-white p-4" style={{ boxShadow: `inset 3px 0 0 0 ${accentColor(props.index)}` }}>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
         <div className="flex flex-wrap items-center gap-1.5">
           {c.year && <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[#4B5563]">{c.year}</span>}
@@ -388,7 +388,7 @@ function FlashcardCard(props: Props) {
   const c = item.content || {};
 
   return (
-    <article className="rounded-2xl border border-[#E8EDF5] bg-white p-4" style={{ borderLeft: `3px solid ${accentColor(props.index)}` }}>
+    <article className="rounded-2xl border-y border-r border-[#E8EDF5] bg-white p-4" style={{ boxShadow: `inset 3px 0 0 0 ${accentColor(props.index)}` }}>
       <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[11px]">
         {c.deck && <span className="rounded-full bg-[#EEF3FF] px-2 py-0.5 font-semibold text-[#4F46E5]">{c.deck}</span>}
         <StatusBadge status={c.mastery} />
@@ -414,7 +414,7 @@ function VideoCard(props: Props) {
   const progress = typeof c.progress === 'number' ? Math.max(0, Math.min(100, c.progress)) : null;
 
   return (
-    <article className="rounded-2xl border border-[#E8EDF5] bg-white p-4" style={{ borderLeft: `3px solid ${accentColor(props.index)}` }}>
+    <article className="rounded-2xl border-y border-r border-[#E8EDF5] bg-white p-4" style={{ boxShadow: `inset 3px 0 0 0 ${accentColor(props.index)}` }}>
       <div className="mb-3 flex h-28 items-center justify-center rounded-xl bg-[#F3F4F6] text-3xl text-[#C7CDD6]">▶</div>
       <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[11px]">
         {c.duration && <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[#4B5563]">{c.duration}</span>}

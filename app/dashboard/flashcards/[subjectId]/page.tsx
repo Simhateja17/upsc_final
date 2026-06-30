@@ -173,7 +173,13 @@ export default function FlashcardsSubjectPage() {
               className="w-full rounded-[12px] px-6 py-4 flex items-center gap-5 mb-6"
               style={{ border: '0.8px solid #E2E5ED', background: '#FFFFFF', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}
             >
-              <span className="text-4xl flex-shrink-0" aria-hidden>{meta.icon}</span>
+              <span
+                className="flex items-center justify-center flex-shrink-0"
+                aria-hidden
+                style={{ width: 56, height: 56, borderRadius: 16, background: '#EFF6FF', fontSize: 30, lineHeight: 1 }}
+              >
+                {meta.icon}
+              </span>
               <div className="flex-1 min-w-0">
                 <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828' }}>
                   {displaySubjectName(meta.subject)}
@@ -269,7 +275,7 @@ export default function FlashcardsSubjectPage() {
                     <div className="flex-shrink-0 self-stretch w-[4px]" style={{ background: accentColor }} />
 
                     {/* Icon */}
-                    <div className="flex-shrink-0 flex items-center justify-center mx-4" style={{ width: 36, fontSize: 20 }}>
+                    <div className="flex-shrink-0 flex items-center justify-center mx-4" style={{ width: 40, height: 40, borderRadius: 12, background: '#EFF6FF', fontSize: 20 }}>
                       {topicIcon}
                     </div>
 
