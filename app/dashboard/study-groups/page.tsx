@@ -20,6 +20,7 @@ interface Group {
   isMember: boolean;
   createdById: string;
   creator?: { firstName?: string; lastName?: string; avatarUrl?: string };
+  members?: { firstName?: string; lastName?: string; avatarUrl?: string }[];
   createdAt: string;
 }
 
@@ -775,11 +776,18 @@ export default function StudyGroupsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-[12px] text-[#6B7A99]">
                       <span className="flex -space-x-1">
-                        {['A', 'R', 'P'].map((x) => (
-                          <span key={x} className="flex size-5 items-center justify-center rounded-full bg-[#172444] text-[9px] text-white">
-                            {x}
-                          </span>
-                        ))}
+                        {(group.members ?? []).slice(0, 5).map((m, i) => {
+                          const initials = ((m.firstName?.[0] ?? '') + (m.lastName?.[0] ?? '')).toUpperCase() || '?';
+                          const colors = ['#172444', '#1e3a5f', '#3b1f6e', '#1a4731', '#5c2d0a'];
+                          return (
+                            <span key={i} style={{ background: colors[i % colors.length] }} className="flex size-5 items-center justify-center rounded-full text-[9px] font-bold text-white ring-1 ring-white">
+                              {initials}
+                            </span>
+                          );
+                        })}
+                        {(group.members?.length ?? 0) === 0 && (
+                          <span className="flex size-5 items-center justify-center rounded-full bg-[#172444] text-[9px] text-white">–</span>
+                        )}
                       </span>
                       <span>{group.memberCount} studying</span>
                     </div>

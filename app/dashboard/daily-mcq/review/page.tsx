@@ -38,7 +38,11 @@ export default function QuestionReviewPage() {
 
   useEffect(() => {
     dailyMcqService.getReview()
-      .then(res => setQuestions(res.data.questions || []))
+      .then(res => {
+        const qs = res.data.questions || [];
+        setQuestions(qs);
+        if (qs.some((q: ReviewQuestion) => !q.isCorrect)) setShowWeakAreas(true);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -51,7 +55,11 @@ export default function QuestionReviewPage() {
   const handleAddToFlashcards = async (q: ReviewQuestion) => {
     setActionLoading(`flashcard-${q.id}`);
     try {
-      const correctOpt = q.options.find((_, idx) => getOptionKey(_, idx) === q.correctOption);
+      const letters = ['A', 'B', 'C', 'D'];
+      const correctIdx = letters.indexOf(q.correctOption);
+      const correctOpt = correctIdx >= 0
+        ? q.options[correctIdx]
+        : q.options.find(o => o.id === q.correctOption);
       const subjectId = q.category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       await flashcardService.createCard({
         subjectId,
@@ -291,7 +299,7 @@ export default function QuestionReviewPage() {
                         disabled={actionLoading === `notes-${q.id}`}
                         className="font-arimo font-bold hover:underline transition-colors disabled:opacity-50"
                         style={{ fontSize: 'clamp(12px,0.73vw,13px)', color: '#2563EB' }}>
-                        {actionLoading === `notes-${q.id}` ? 'Saving...' : 'Study Notes'}
+                        {actionLoading === `notes-${q.id}` ? 'Saving...' : 'Bookmark'}
                       </button>
                     </div>
                   </div>
@@ -367,7 +375,7 @@ export default function QuestionReviewPage() {
                               disabled={actionLoading === `notes-${wq.id}`}
                               className="font-arimo font-bold hover:underline text-[#2563EB] disabled:opacity-50"
                               style={{ fontSize: '11px' }}>
-                              {actionLoading === `notes-${wq.id}` ? 'Saving...' : 'Study Notes'}
+                              {actionLoading === `notes-${wq.id}` ? 'Saving...' : 'Bookmark'}
                             </button>
                           </div>
                         </div>
