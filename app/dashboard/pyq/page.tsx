@@ -641,7 +641,7 @@ export default function PyqPage() {
   const currentSubTopicNode = currentSubjectNode?.children?.find((child) => child.label === selectedSubtopic);
 
   const filterButtonBase =
-    'inline-flex h-10 flex-shrink-0 items-center gap-2 rounded-[12px] px-3 text-[14px] font-bold text-[#101828] transition-colors hover:bg-[#F4F5F7]';
+    'inline-flex h-10 flex-shrink-0 items-center gap-2 rounded-[12px] px-2.5 text-[14px] font-bold text-[#101828] transition-colors hover:bg-[#F4F5F7]';
 
   const tinyIconStyle: React.CSSProperties = {
     width: 18,
@@ -656,9 +656,9 @@ export default function PyqPage() {
       transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 430, damping: 38 }}
       className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_4px_6px_-4px_rgba(0,0,0,0.1),0_10px_15px_-3px_rgba(0,0,0,0.1)]"
       style={{
-        width: compact ? 250 : 347.3,
+        width: compact ? 218 : 300,
         maxWidth: '100%',
-        height: compact ? 54 : 79.9875,
+        height: compact ? 48 : 64,
         borderRadius: 26843500,
         padding: compact ? 4 : 0,
         gap: 0,
@@ -675,10 +675,10 @@ export default function PyqPage() {
             className="flex flex-1 items-center justify-center"
             style={{
               alignSelf: 'stretch',
-              paddingLeft: compact ? 18 : 32,
-              paddingRight: compact ? 18 : 32,
+              paddingLeft: compact ? 14 : 24,
+              paddingRight: compact ? 14 : 24,
               background: active ? '#0F172B' : 'transparent',
-              gap: compact ? 8 : 12,
+              gap: compact ? 8 : 10,
               borderRadius: active ? 9999 : 0,
             }}
             onClick={() => setMode(nextMode)}
@@ -688,14 +688,14 @@ export default function PyqPage() {
               src={icon}
               alt=""
               aria-hidden
-              style={{ width: compact ? 18 : 24, height: compact ? 18 : 24, objectFit: 'contain', flexShrink: 0 }}
+              style={{ width: compact ? 18 : 21, height: compact ? 18 : 21, objectFit: 'contain', flexShrink: 0 }}
             />
             <span
               style={{
                 fontFamily: 'Inter, sans-serif',
                 fontWeight: 700,
-                fontSize: compact ? 14 : 18,
-                lineHeight: compact ? '20px' : '28px',
+                fontSize: compact ? 14 : 16,
+                lineHeight: compact ? '20px' : '24px',
                 letterSpacing: 0,
                 textAlign: 'center',
                 color: active ? '#FFFFFF' : '#4A5565',
@@ -728,7 +728,7 @@ export default function PyqPage() {
       aria-expanded={openFilter === id}
     >
       {icon}
-      <span>{value || label}</span>
+      <span className="whitespace-nowrap">{value || label}</span>
       <span className="text-[#9AA3B2]">⌄</span>
     </button>
   );
@@ -852,7 +852,7 @@ export default function PyqPage() {
     <div className="sticky top-3 z-40 mb-8">
       <div className="relative">
         <div
-          className="flex items-center gap-2 overflow-visible rounded-[16px] border bg-white px-4 py-3 shadow-[0_2px_8px_rgba(15,17,26,0.05),0_12px_36px_rgba(15,17,26,0.07)]"
+          className="flex max-w-full items-center gap-1.5 overflow-visible rounded-[16px] border bg-white px-3 py-3 shadow-[0_2px_8px_rgba(15,17,26,0.05),0_12px_36px_rgba(15,17,26,0.07)]"
           style={{ borderColor: '#F3E9C8', scrollbarWidth: 'none' }}
         >
           <div className="relative">
@@ -1048,20 +1048,20 @@ export default function PyqPage() {
           </div>
 
           {filterDocked && (
-            <div className="hidden flex-shrink-0 px-2 lg:block">
+            <div className="hidden flex-shrink-0 px-1 lg:block">
               <ExamModeToggle compact />
             </div>
           )}
 
-          <div className="ml-auto flex flex-shrink-0 items-center gap-2">
-            <div className="rounded-[12px] bg-[#F4F5F7] px-4 py-2 text-[14px] font-bold text-[#9AA3B2]">
+          <div className="ml-auto flex flex-shrink-0 items-center gap-1.5">
+            <div className="rounded-[12px] bg-[#F4F5F7] px-3 py-2 text-[14px] font-bold text-[#9AA3B2]">
               <span className="text-[#101828]">{loading ? '...' : visibleQuestions.length}</span> questions
             </div>
             <button
               type="button"
               onClick={resetAllFilters}
               disabled={!hasActiveFilters}
-              className="rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-2 text-[14px] font-semibold text-[#9AA3B2] transition-colors hover:text-[#C10007] disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-[14px] font-semibold text-[#9AA3B2] transition-colors hover:text-[#C10007] disabled:cursor-not-allowed disabled:opacity-60"
             >
               × Clear all
             </button>
