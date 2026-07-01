@@ -12,4 +12,48 @@
    - Environments: .env
 
  ✓ Starting...
- ✓ Ready in 4.9s
+ ✓ Ready in 13s
+ ○ Compiling /dashboard/flashcards/[subjectId] ...
+Request timed out after 3000ms
+
+Retrying 1/3...
+Request timed out after 3000ms
+
+Retrying 1/3...
+Request timed out after 3000ms
+
+Retrying 1/3...
+Request timed out after 3000ms
+
+Retrying 1/3...
+Request timed out after 3000ms
+
+Retrying 1/3...
+Request timed out after 3000ms
+
+Retrying 1/3...
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled /dashboard/flashcards/[subjectId] in 27s (885 modules)
+ ✓ Compiled in 992ms (339 modules)
+ GET /dashboard/flashcards/polity 200 in 30258ms
+ ○ Compiling /dashboard/flashcards/[subjectId]/[topicId] ...
+ ✓ Compiled /dashboard/flashcards/[subjectId]/[topicId] in 2.1s (797 modules)
+ GET /dashboard/flashcards/polity/constitutional-amendments 200 in 4185ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1789ms (796 modules)
+ GET / 200 in 2700ms
+ ✓ Compiled /dashboard/flashcards/[subjectId]/[topicId] in 226ms (469 modules)
+ GET /dashboard/flashcards/polity/constitutional-amendments 200 in 871ms
+ ⨯ Failed to generate static paths for /dashboard/flashcards/[subjectId]/[topicId]:
+[Error: Jest worker encountered 2 child process exceptions, exceeding retry limit] {
+  type: 'WorkerError'
+}
+ ✓ Compiled in 513ms (345 modules)
+ ✓ Compiled in 427ms (345 modules)
+ ✓ Compiled in 424ms (345 modules)
+ ✓ Compiled in 504ms (345 modules)
+ ○ Compiling /dashboard/syllabus-tracker ...
+ ✓ Compiled /dashboard/syllabus-tracker in 3.1s (836 modules)
+ GET /dashboard/syllabus-tracker 200 in 3718ms

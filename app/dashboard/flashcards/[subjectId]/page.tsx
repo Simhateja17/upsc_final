@@ -202,6 +202,20 @@ export default function FlashcardsSubjectPage() {
             </div>
           )}
 
+          {/* Completion progress bar (mirrors the reference) */}
+          {!loading && meta && (
+            <div className="mb-6">
+              <div style={{ height: 8, borderRadius: 999, background: '#ECEEF2', overflow: 'hidden' }}>
+                <div style={{ width: `${coverage}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, #F0B429, #E8B84B)', transition: 'width .6s ease' }} />
+              </div>
+              <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
+                <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF' }}>0%</span>
+                <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, color: '#CA8A04' }}>{coverage}% complete</span>
+                <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF' }}>100%</span>
+              </div>
+            </div>
+          )}
+
           {/* Step heading — just "2. Choose a Topic", no green tick */}
           <div className="flex items-center justify-between gap-3 mb-5">
             <div className="flex items-center gap-3">
@@ -212,7 +226,7 @@ export default function FlashcardsSubjectPage() {
                 2
               </div>
               <h2 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828' }}>
-                Choose a Topic
+                Choose a <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Topic</span>
               </h2>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -269,11 +283,8 @@ export default function FlashcardsSubjectPage() {
                     onMouseEnter={() => setHoveredCard(topic.id)}
                     onMouseLeave={() => { setHoveredCard(null); setHoveredBin(null); }}
                     className="flex items-center rounded-[28px] overflow-hidden transition-all hover:shadow-md hover:-translate-y-px cursor-pointer"
-                    style={{ border: '0.8px solid #E2E5ED', background: '#FFFFFF', minHeight: 68 }}
+                    style={{ borderTop: '0.8px solid #E2E5ED', borderRight: '0.8px solid #E2E5ED', borderBottom: '0.8px solid #E2E5ED', borderLeft: `4px solid ${accentColor}`, background: '#FFFFFF', minHeight: 68 }}
                   >
-                    {/* Left color accent strip */}
-                    <div className="flex-shrink-0 self-stretch w-[4px]" style={{ background: accentColor }} />
-
                     {/* Icon */}
                     <div className="flex-shrink-0 flex items-center justify-center mx-4" style={{ width: 40, height: 40, borderRadius: 12, background: '#EFF6FF', fontSize: 20 }}>
                       {topicIcon}
@@ -313,7 +324,7 @@ export default function FlashcardsSubjectPage() {
                           </svg>
                         </button>
                       )}
-                      <span style={{ color: '#6B7280', fontSize: 16 }} aria-hidden>›</span>
+                      <span style={{ color: '#000000', fontSize: 17, fontWeight: 800 }} aria-hidden>›</span>
                     </div>
                   </div>
                 );

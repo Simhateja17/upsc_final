@@ -311,6 +311,7 @@ export default function FlashcardScienceSections() {
         .how-header h2 {
           font-family: 'Playfair Display', serif;
           font-size: 34px;
+          font-weight: 700;
           color: #1e293b;
           margin-bottom: 10px;
         }
@@ -431,6 +432,7 @@ export default function FlashcardScienceSections() {
         .science-card h3 {
           font-family: 'Playfair Display', serif;
           font-size: 20px;
+          font-weight: 700;
           color: #1e293b;
           margin-bottom: 12px;
         }
@@ -463,6 +465,7 @@ export default function FlashcardScienceSections() {
         .curve-viz h3 {
           font-family: 'Playfair Display', serif;
           font-size: 20px;
+          font-weight: 700;
           text-align: center;
           margin-bottom: 6px;
         }
