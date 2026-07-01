@@ -258,7 +258,7 @@ export default function FlashcardsPage() {
                       <span
                         aria-hidden
                         className="flex items-center justify-center flex-shrink-0"
-                        style={{ width: 44, height: 44, borderRadius: 12, background: `${item.card.bar}1A`, fontSize: 24, lineHeight: 1 }}
+                        style={{ width: 44, height: 44, borderRadius: 12, background: `${item.card.bar}33`, fontSize: 24, lineHeight: 1 }}
                       >
                         {item.icon}
                       </span>

@@ -15,7 +15,9 @@ import { EntitlementsProvider } from '@/contexts/EntitlementsContext';
 const HIDE_SIDEBAR_ROUTES = ['/dashboard/profile', '/dashboard/settings', '/dashboard/billing', '/dashboard/feedback'];
 const PUBLIC_DASHBOARD_ROUTES = ['/dashboard/pyq'];
 // Routes that auto-collapse the left navigation sidebar on entry (focus modes).
-const AUTO_COLLAPSE_ROUTES = ['/dashboard/jeet-gpt', '/dashboard/daily-mcq'];
+// `/dashboard/daily-answer` covers both the Daily Mains landing page and its
+// challenge/results sub-pages (matched via startsWith in isAutoCollapseRoute).
+const AUTO_COLLAPSE_ROUTES = ['/dashboard/jeet-gpt', '/dashboard/daily-mcq', '/dashboard/daily-answer'];
 const isAutoCollapseRoute = (path: string) => AUTO_COLLAPSE_ROUTES.some((r) => path === r || path.startsWith(`${r}/`));
 const STREAK_MILESTONES = [3, 7, 10, 14, 21, 30] as const;
 

@@ -5,7 +5,7 @@ import { libraryService } from '@/lib/services';
 import { useCmsContent } from '@/hooks/useCmsContent';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { handleEntitlementError, UsageMeter } from '@/components/entitlements';
+import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import StudyMaterialReaderModal from '@/components/StudyMaterialReaderModal';
 
@@ -201,7 +201,7 @@ function getTagStyles(subjectName: string, topicText: string, subSubjectText: st
 const features = [
   { emoji: '\uD83C\uDFAF', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff, only what earns marks in Prelims and Mains.' },
   { emoji: '\uD83D\uDD04', bg: '#DBEAFE', title: 'Updated Every Week', desc: 'Budget, new schemes, policy shifts, our notes are refreshed weekly so your prep stays current.' },
-  { emoji: '\uD83D\uDC9C', bg: '#EDE9FE', title: 'YouTube + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s YouTube lessons. Watch, then revise, the most powerful UPSC loop.' },
+  { emoji: '\uD83D\uDC9C', bg: '#EDE9FE', title: 'Video + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s lessons. Watch, then revise \u2014 the most powerful UPSC loop.' },
   { emoji: '\uD83D\uDCCA', bg: '#DCFCE7', title: 'PYQ-Backed Content', desc: 'All notes are reviewed and weighted from 10 years of PYQs, calibrated to what UPSC asks every year.' },
   { emoji: '\uD83C\uDFC6', bg: '#FFEDD5', title: 'Toppers Trust It', desc: 'Used by 15,000+ aspirants building stronger Prelims, Mains, and interview preparation.' },
 ];
@@ -261,7 +261,7 @@ export default function LibraryPage() {
   const features = [
     { Icon: TargetIcon, iconBg: '#FFE4E6', iconColor: '#E11D48', tint: 'rgba(255,241,242,0.4)', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff, only what earns marks in Prelims and Mains.' },
     { Icon: RefreshIcon, iconBg: '#E0F2FE', iconColor: '#0284C7', tint: 'rgba(240,249,255,0.4)', title: 'Updated Every Week', desc: 'Budget, new schemes, policy shifts, our notes are refreshed weekly so your prep stays current.' },
-    { Icon: HeartIcon, iconBg: '#EDE9FE', iconColor: '#7C3AED', tint: 'rgba(245,243,255,0.4)', title: 'YouTube + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s YouTube lessons. Watch, then revise, the most powerful UPSC loop.' },
+    { Icon: HeartIcon, iconBg: '#EDE9FE', iconColor: '#7C3AED', tint: 'rgba(245,243,255,0.4)', title: 'Video + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s lessons. Watch, then revise \u2014 the most powerful UPSC loop.' },
     { Icon: BarChartIcon, iconBg: '#E0E7FF', iconColor: '#4F46E5', tint: 'rgba(238,242,255,0.4)', title: 'PYQ-Backed Content', desc: 'All notes are reviewed and weighted from 10 years of PYQs, calibrated to what UPSC asks every year.' },
     { Icon: TrophyIcon, iconBg: '#FEF3C7', iconColor: '#D97706', tint: 'rgba(255,251,235,0.4)', title: 'Toppers Trust It', desc: 'Used by 15,000+ aspirants building stronger Prelims, Mains, and interview preparation.' },
   ];
@@ -444,12 +444,6 @@ export default function LibraryPage() {
           padding: '0 clamp(16px, 2vw, 30px)',
         }}
       >
-        <UsageMeter
-          status={entitlements.featureStatus('study_material_download')}
-          label="Study material download quota"
-          className="mb-5"
-        />
-
         {/* ============================================================ */}
         {/*  SECTION 2: SUBJECT SIDEBAR + CONTENT PANEL                   */}
         {/* ============================================================ */}
@@ -1219,7 +1213,7 @@ export default function LibraryPage() {
             marginBottom: 'clamp(40px, 4vw, 60px)',
           }}
         >
-          {/* Header — eyebrow + serif title (left), See methodology link (right) */}
+          {/* Header — eyebrow + serif title */}
           <div className="flex flex-wrap items-end justify-between" style={{ gap: 'clamp(8px, 1vw, 16px)' }}>
             <div style={{ minWidth: 'min(280px, 100%)' }}>
               <div
@@ -1247,19 +1241,6 @@ export default function LibraryPage() {
                 Built the way <span style={{ fontStyle: 'italic' }}>UPSC</span> tests you
               </h3>
             </div>
-            <a
-              href="/our-story"
-              className="font-arimo font-bold inline-flex items-center"
-              style={{ fontSize: '13px', color: '#334155', gap: '4px', textDecoration: 'none' }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = '#0F172A'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = '#334155'; }}
-            >
-              See methodology
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M7 17 17 7" />
-                <path d="M7 7h10v10" />
-              </svg>
-            </a>
           </div>
 
           {/* 5-up card grid */}
