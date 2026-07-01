@@ -18,11 +18,11 @@ const prelimsPaperTypes = [
 ];
 
 const fallbackQuestionSources = [
-  { id: 'daily-mcq', icon: '/target-icon.png', label: 'Daily MCQ', description: 'Fresh from 10 curated daily picks' },
-  { id: 'practice-pyq', icon: '/script.png', label: 'Practice PYQ', description: 'UPSC papers 2010 – 2024' },
-  { id: 'subject-wise', icon: '/booksss.png', label: 'Subject-wise', description: 'Deep-dive any one subject' },
-  { id: 'mixed-bag', icon: '/shinee.png', label: 'Mixed Bag', description: 'Random cross-subject mix' },
-  { id: 'full-length', icon: '/cuppp.png', label: 'Full Length Test', description: 'Complete 100-Q simulation' },
+  { id: 'daily_mcq', icon: '/target-icon.png', label: 'Daily MCQ', description: 'Fresh from 10 curated daily picks' },
+  { id: 'pyq', icon: '/script.png', label: 'Practice PYQ', description: 'UPSC papers 2010 – 2024' },
+  { id: 'subject_wise', icon: '/booksss.png', label: 'Subject-wise', description: 'Deep-dive any one subject' },
+  { id: 'mixed', icon: '/shinee.png', label: 'Mixed Bag', description: 'Random cross-subject mix' },
+  { id: 'full_length', icon: '/cuppp.png', label: 'Full Length Test', description: 'Complete 100-Q simulation' },
 ];
 
 const mainsQuestionSources = [
@@ -285,7 +285,7 @@ function MockTestsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const entitlements = useEntitlements();
-  const [selectedSource, setSelectedSource] = useState('daily-mcq');
+  const [selectedSource, setSelectedSource] = useState('daily_mcq');
   const [focusSubjectOpen, setFocusSubjectOpen] = useState(false);
   const [markingPatternOpen, setMarkingPatternOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
@@ -398,7 +398,16 @@ function MockTestsPageInner() {
         }
         if (configRes.data) {
           const cfg = configRes.data;
-          if (cfg.questionSources) setQuestionSources(cfg.questionSources);
+          if (cfg.sources || cfg.questionSources) {
+            const apiSources = cfg.sources || cfg.questionSources;
+            setQuestionSources(apiSources.map((src: any) => ({
+              id: String(src.id || '').replace(/-/g, '_'),
+              icon: src.icon || fallbackQuestionSources.find((fallback) => fallback.id === String(src.id || '').replace(/-/g, '_'))?.icon || '/script.png',
+              label: src.label || src.name || src.title,
+              description: src.description || '',
+              isPro: src.isPro,
+            })));
+          }
           if (cfg.examModes) setExamModes(cfg.examModes);
           // mainsPaperTypes are fixed UPSC papers — always use the static fallback
           if (cfg.optionalSubjects) setOptionalSubjects(cfg.optionalSubjects);
@@ -461,6 +470,17 @@ function MockTestsPageInner() {
     }
   }, [availableSubjects, selectedSubject]);
 
+  useEffect(() => {
+    if (selectedSource === 'subject_wise') {
+      setFocusSubjectOpen(true);
+    }
+    if (selectedSource === 'full_length' && selectedExamMode === 'prelims') {
+      setQuestionCount(100);
+      setSelectedDifficulty('mixed');
+      setSelectedPaperType('gs1');
+    }
+  }, [selectedSource, selectedExamMode]);
+
   /* ─── Generate Test Handler ─── */
   const handleGenerateTest = async () => {
     const featureKey = selectedExamMode === 'mains' ? 'mains_evaluation' : 'prelims_mock_attempt';
@@ -482,6 +502,13 @@ function MockTestsPageInner() {
         questionCount,
         difficulty: selectedDifficulty,
       };
+      if (selectedExamMode === 'prelims' && selectedPaperType === 'csat') {
+        throw new Error('CSAT question bank is coming soon. Currently available: GS Paper I.');
+      }
+      if (selectedExamMode === 'prelims' && selectedSource === 'subject_wise' && selectedSubject === 'All Subjects') {
+        setFocusSubjectOpen(true);
+        throw new Error('Please select a focus subject for Subject-wise mock test.');
+      }
       const res = await mockTestService.generate(config);
       const testId = res.data?.testId || res.data?.id;
       if (!testId) {
@@ -672,16 +699,21 @@ function MockTestsPageInner() {
             }}>
               {(selectedExamMode === 'mains' ? mainsPaperTypes : prelimsPaperTypes).map(paper => {
                 const isSelected = selectedPaperType === paper.id;
+                const isComingSoon = selectedExamMode === 'prelims' && paper.id === 'csat';
                 return (
                   <button
                     key={paper.id}
-                    onClick={() => setSelectedPaperType(paper.id)}
+                    onClick={() => {
+                      if (!isComingSoon) setSelectedPaperType(paper.id);
+                    }}
+                    disabled={isComingSoon}
                     style={{
                       background: isSelected ? '#EFF6FF' : '#FAFAFA',
                       border: isSelected ? '1.8px solid #17223E' : '1.6px solid #E5E7EB',
                       borderRadius: '12px',
                       padding: '14px 12px',
-                      cursor: 'pointer',
+                      cursor: isComingSoon ? 'not-allowed' : 'pointer',
+                      opacity: isComingSoon ? 0.58 : 1,
                       textAlign: 'left',
                       display: 'flex',
                       alignItems: 'center',
@@ -699,7 +731,7 @@ function MockTestsPageInner() {
                         {paper.label}
                       </div>
                       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6B7280', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
-                        {paper.description}
+                        {isComingSoon ? 'Coming soon after CSAT bank import' : paper.description}
                       </div>
                     </div>
                     <div style={{
@@ -824,7 +856,15 @@ function MockTestsPageInner() {
                 return (
                   <button
                     key={src.id}
-                    onClick={() => setSelectedSource(src.id)}
+                    onClick={() => {
+                      setSelectedSource(src.id);
+                      if (src.id === 'subject_wise') setFocusSubjectOpen(true);
+                      if (src.id === 'full_length' && selectedExamMode === 'prelims') {
+                        setQuestionCount(100);
+                        setSelectedDifficulty('mixed');
+                        setSelectedPaperType('gs1');
+                      }
+                    }}
                     style={{
                       flex: '1 1 0',
                       minWidth: '110px',
