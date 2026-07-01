@@ -7,7 +7,6 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import { pyqService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
 import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
-import prelimsSyllabus from '@/data/syllabus/prelimsSyllabus.json';
 import { handleEntitlementError, formatPeriod } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 
@@ -95,13 +94,33 @@ const EMPTY_COUNTS: PYQCountData = {
 };
 
 const SUBJECT_ICONS: Record<string, string> = {
+  'Ancient History': '🏺',
+  'Art & Culture': '🎭',
   History: '🏛️',
+  'Medieval India': '🏰',
+  'Modern History': '🇮🇳',
   Geography: '🌍',
   Polity: '⚖️',
   Economy: '💰',
   'Environment & Ecology': '🌿',
   'Science & Technology': '🔬',
+  'International Relation': '🌐',
+  'International Relations': '🌐',
   'Current Affairs': '📰',
+};
+
+const iconForSubject = (subject: string) => {
+  if (SUBJECT_ICONS[subject]) return SUBJECT_ICONS[subject];
+  const normalized = subject.toLowerCase();
+  if (normalized.includes('history')) return '🏛️';
+  if (normalized.includes('culture')) return '🎭';
+  if (normalized.includes('geography')) return '🌍';
+  if (normalized.includes('polity')) return '⚖️';
+  if (normalized.includes('econom')) return '💰';
+  if (normalized.includes('environment')) return '🌿';
+  if (normalized.includes('science')) return '🔬';
+  if (normalized.includes('international')) return '🌐';
+  return '📘';
 };
 
 
@@ -117,7 +136,7 @@ const asTextList = (value: any): string[] => {
         if (item && typeof item === 'object') {
           if (typeof item.demand === 'string') {
             const status = typeof item.status === 'string' ? humanizeKey(item.status) : '';
-            return status ? `${item.demand} — ${status}` : item.demand;
+            return status ? `${item.demand} -> ${status}` : item.demand;
           }
           return item.text || item.feedback || item.comment || item.point || JSON.stringify(item);
         }
@@ -132,6 +151,25 @@ const asTextList = (value: any): string[] => {
       .filter(Boolean);
   }
   return [String(value)];
+};
+
+const asDemandCoverageList = (value: any): Array<{ demand: string; status?: string }> => {
+  if (!value) return [];
+  if (!Array.isArray(value)) {
+    return asTextList(value).map((demand) => ({ demand }));
+  }
+  return value
+    .map((item) => {
+      if (typeof item === 'string') return { demand: item };
+      if (item && typeof item === 'object' && typeof item.demand === 'string') {
+        return {
+          demand: item.demand,
+          status: typeof item.status === 'string' ? humanizeKey(item.status) : undefined,
+        };
+      }
+      return { demand: asTextList(item).join(' ') };
+    })
+    .filter((item) => item.demand.trim().length > 0);
 };
 
 const humanizeKey = (key: string) =>
@@ -366,27 +404,6 @@ function PyqEvaluationProgressModal({
   );
 }
 
-const PRELIMS_SUBJECT_TREE: SubjectTreeNode[] = [
-  ...(prelimsSyllabus as Array<{ subject: string; subSubjects: Array<{ label: string; topics: string[] }> }>).map((node) => ({
-    label: node.subject,
-    icon: SUBJECT_ICONS[node.subject] || '📘',
-    children: node.subSubjects.map((sub) => ({
-      label: sub.label,
-      microTopics: sub.topics,
-    })),
-  })),
-  {
-    label: 'Current Affairs',
-    icon: '📰',
-    children: [
-      {
-        label: 'Current Affairs and Miscellaneous',
-        microTopics: ['Current Affairs and Miscellaneous'],
-      },
-    ],
-  },
-];
-
 const MAINS_OPTIONAL_SUBJECTS = {
   science: [
     'Agriculture',
@@ -450,7 +467,7 @@ const MAINS_OPTIONAL_ALL = [
 ];
 
 const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
-  prelims: PRELIMS_SUBJECT_TREE,
+  prelims: [],
   mains: [
     { label: 'History', icon: '🏛️', children: [{ label: 'Ancient India' }, { label: 'Medieval India' }, { label: 'Modern India' }, { label: 'Post-Independence' }, { label: 'Art & Culture' }] },
     { label: 'Geography', icon: '🌍', children: [{ label: 'Physical Geography' }, { label: 'Indian Geography' }, { label: 'World Geography' }] },
@@ -694,10 +711,8 @@ export default function PyqPage() {
   );
 
   const subjectTree = useMemo(() => {
-    const baseTree = PYQ_SUBJECT_TREE[mode];
-    const existingSubjects = new Set(baseTree.map((node) => countKey(node.label)));
     const dynamicSubjects = questionCounts.bySubject
-      .filter((row) => row.subject && !existingSubjects.has(countKey(row.subject)))
+      .filter((row) => row.subject)
       .map((row) => {
         const label = row.subject as string;
         const children = questionCounts.bySubSubject
@@ -717,12 +732,16 @@ export default function PyqPage() {
 
         return {
           label,
-          icon: SUBJECT_ICONS[label] || '📘',
+          icon: iconForSubject(label),
           children: children.length ? children : undefined,
         };
       });
 
-    return [...baseTree, ...dynamicSubjects];
+    if (mode === 'prelims') return dynamicSubjects;
+
+    const existingSubjects = new Set(dynamicSubjects.map((node) => countKey(node.label)));
+    const staticMainsSubjects = PYQ_SUBJECT_TREE.mains.filter((node) => !existingSubjects.has(countKey(node.label)));
+    return [...dynamicSubjects, ...staticMainsSubjects];
   }, [mode, questionCounts.bySubject, questionCounts.bySubSubject, questionCounts.byTopic]);
 
   const visibleQuestions = useMemo(() => {
@@ -1431,7 +1450,7 @@ export default function PyqPage() {
                       className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
                       style={{ background: !selectedSubtopic ? '#0F1A30' : '#DBEAFE', color: !selectedSubtopic ? '#FFFFFF' : '#1D4ED8' }}
                     >
-                      {SUBJECT_ICONS[selectedSubject] ?? '📘'} {selectedSubject}
+                      {iconForSubject(selectedSubject)} {selectedSubject}
                     </button>
                   </>
                 )}
@@ -1837,7 +1856,7 @@ export default function PyqPage() {
                         className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
                         style={{ background: !selectedSubtopic ? '#0F1A30' : '#DBEAFE', color: !selectedSubtopic ? '#FFFFFF' : '#1D4ED8' }}
                       >
-                        {SUBJECT_ICONS[selectedSubject] ?? '📘'} {selectedSubject}
+                        {iconForSubject(selectedSubject)} {selectedSubject}
                       </button>
                     </>
                   )}
@@ -2607,12 +2626,20 @@ export default function PyqPage() {
                 );
               })()}
 
-              {asTextList(mainsEvalResults.demandCoverage).length > 0 && (
+              {asDemandCoverageList(mainsEvalResults.demandCoverage).length > 0 && (
                 <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
                   <p className="mb-4" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 22, color: '#111827' }}>Demand of the question</p>
                   <ul className="space-y-3 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 16, lineHeight: 1.55, color: '#111827' }}>
-                    {asTextList(mainsEvalResults.demandCoverage).map((item, i) => (
-                      <li key={i}>{item}</li>
+                    {asDemandCoverageList(mainsEvalResults.demandCoverage).map((item, i) => (
+                      <li key={i}>
+                        {item.demand}
+                        {item.status ? (
+                          <>
+                            {' -> '}
+                            <strong>{item.status}</strong>
+                          </>
+                        ) : null}
+                      </li>
                     ))}
                   </ul>
                 </div>
