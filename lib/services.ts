@@ -200,6 +200,50 @@ export const dailyAnswerService = {
   },
 };
 
+// ==================== Standalone Mains Answer Evaluator ====================
+
+export const mainsEvaluatorService = {
+  submit: async (opts: {
+    questionText: string;
+    paper: string;
+    subject?: string;
+    marks: number;
+    answerText?: string;
+    files?: File[];
+  }): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
+    const fd = new FormData();
+    fd.append('questionText', opts.questionText);
+    fd.append('paper', opts.paper);
+    fd.append('subject', opts.subject || 'General Studies');
+    fd.append('marks', String(opts.marks));
+    if (opts.answerText) fd.append('answerText', opts.answerText);
+    opts.files?.forEach((file) => fd.append('files', file));
+
+    const token = getToken();
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/mains-evaluator/submit`,
+      {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      }
+    );
+    const json = await res.json();
+    if (!res.ok) throw new ApiRequestError(json.message || 'Submit failed', res.status, json);
+    return json;
+  },
+  getEvaluationStatus: (attemptId: string) =>
+    api.get<any>(
+      `/mains-evaluator/evaluation-status?attemptId=${encodeURIComponent(attemptId)}`,
+      authConfig()
+    ),
+  getResults: (attemptId: string) =>
+    api.get<any>(
+      `/mains-evaluator/results?attemptId=${encodeURIComponent(attemptId)}`,
+      authConfig()
+    ),
+};
+
 // ==================== Editorials ====================
 
 export const editorialService = {

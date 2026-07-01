@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { dailyAnswerService } from '@/lib/services';
+import { dailyAnswerService, mainsEvaluatorService } from '@/lib/services';
 
 interface ParameterScore {
   parameter: string;
@@ -356,6 +356,7 @@ function ResultsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
+  const isCustom = searchParams.get('source') === 'custom';
   const [data, setData] = useState<ResultsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -376,22 +377,31 @@ function ResultsPageInner() {
   useEffect(() => {
     if (dateParam) return;
     if (typeof window !== 'undefined') {
-      const storedAttemptId = sessionStorage.getItem('dailyAnswerAttemptId');
+      const storedAttemptId = isCustom
+        ? sessionStorage.getItem('mainsEvaluatorAttemptId')
+        : sessionStorage.getItem('dailyAnswerAttemptId');
       if (storedAttemptId) setAttemptId(storedAttemptId);
     }
-  }, [dateParam]);
+  }, [dateParam, isCustom]);
 
   useEffect(() => {
     let cancelled = false;
+    if (isCustom && !attemptId) return () => { cancelled = true; };
     setLoading(true);
     setError(null);
 
-    dailyAnswerService.getResults(dateParam ? undefined : attemptId || undefined, dateParam || undefined)
+    const request = isCustom
+      ? attemptId
+        ? mainsEvaluatorService.getResults(attemptId)
+        : Promise.reject(new Error('No standalone Mains evaluation session found. Please submit again.'))
+      : dailyAnswerService.getResults(dateParam ? undefined : attemptId || undefined, dateParam || undefined);
+
+    request
       .then((res) => {
         if (cancelled) return;
         setData(res.data);
         if (!dateParam && typeof window !== 'undefined') {
-          sessionStorage.removeItem('dailyAnswerAttemptId');
+          sessionStorage.removeItem(isCustom ? 'mainsEvaluatorAttemptId' : 'dailyAnswerAttemptId');
         }
       })
       .catch((err) => {
@@ -403,7 +413,7 @@ function ResultsPageInner() {
       });
 
     return () => { cancelled = true; };
-  }, [attemptId, dateParam]);
+  }, [attemptId, dateParam, isCustom]);
 
   // Escape exits fullscreen markup
   useEffect(() => {

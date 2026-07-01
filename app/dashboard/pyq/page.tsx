@@ -86,6 +86,8 @@ type PYQCountData = {
   byTopic: Array<{ subject: string | null; subSubject: string | null; topic: string | null; count: number }>;
 };
 
+type FilterId = 'paper' | 'subject' | 'subSubject' | 'topic' | 'year' | 'difficulty';
+
 const EMPTY_COUNTS: PYQCountData = {
   total: 0,
   bySubject: [],
@@ -522,6 +524,7 @@ export default function PyqPage() {
   const [textAnswerExpanded, setTextAnswerExpanded] = useState(false);
   const mainsAutoSubmitRef = useRef(false);
   const questionsRequestSeqRef = useRef(0);
+  const filterScrollPositionsRef = useRef<Partial<Record<FilterId, number>>>({});
 
   // Data state
   const [questions, setQuestions] = useState<any[]>([]);
@@ -541,7 +544,7 @@ export default function PyqPage() {
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
   const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
   const [questionCounts, setQuestionCounts] = useState<PYQCountData>(EMPTY_COUNTS);
-  const [openFilter, setOpenFilter] = useState<'paper' | 'subject' | 'subSubject' | 'topic' | 'year' | 'difficulty' | null>(null);
+  const [openFilter, setOpenFilter] = useState<FilterId | null>(null);
   const [filterDocked, setFilterDocked] = useState(false);
   const prefersReducedMotion = useReducedMotion();
 
@@ -852,8 +855,11 @@ export default function PyqPage() {
     Boolean(selectedSubtopic) ||
     selectedTopics.length > 0;
 
-  const currentSubjectNode = subjectTree.find((node) => node.label === selectedSubject);
-  const currentSubTopicNode = currentSubjectNode?.children?.find((child) => child.label === selectedSubtopic);
+  const currentSubjectNode = subjectTree.find((node) => countKey(node.label) === countKey(selectedSubject));
+  const currentSubTopicNode = currentSubjectNode?.children?.find(
+    (child) => countKey(child.label) === countKey(selectedSubtopic)
+  );
+  const currentTopicOptions = currentSubTopicNode?.microTopics || [];
   const paperCounts = useMemo(() => {
     const counts = new Map<string, number>();
     (questionCounts.byPaper || []).forEach((row) => {
@@ -986,9 +992,18 @@ export default function PyqPage() {
     ) : null
   );
 
+  const scrollableFilterProps = (id: FilterId) => ({
+    ref: (node: HTMLDivElement | null) => {
+      if (node) node.scrollTop = filterScrollPositionsRef.current[id] || 0;
+    },
+    onScroll: (event: React.UIEvent<HTMLDivElement>) => {
+      filterScrollPositionsRef.current[id] = event.currentTarget.scrollTop;
+    },
+  });
+
   const SubjectTreePopover = () => (
     <FilterPopover id="subject" width={520}>
-      <div className="max-h-[440px] overflow-y-auto p-5">
+      <div {...scrollableFilterProps('subject')} className="max-h-[440px] overflow-y-auto p-5">
         <div className="mb-4 flex items-center justify-between border-b border-[#E5E7EB] pb-3">
           <div className="text-[15px] font-bold text-[#101828]">Subject Filter</div>
           <button type="button" onClick={() => setOpenFilter(null)} className="h-8 w-8 rounded-[10px] bg-white text-[#6A7282]">×</button>
@@ -1207,7 +1222,7 @@ export default function PyqPage() {
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21M12 3c-2.5 2.6-3.8 5.6-3.8 9s1.3 6.4 3.8 9" stroke="currentColor" strokeWidth="1.6"/></svg>}
             />
             <FilterPopover id="subSubject" width={360}>
-              <div className="max-h-[360px] overflow-y-auto p-4">
+              <div {...scrollableFilterProps('subSubject')} className="max-h-[360px] overflow-y-auto p-4">
                 <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Sub-Subject</div>
                 {!currentSubjectNode?.children?.length ? (
                   <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a subject first.</div>
@@ -1242,13 +1257,15 @@ export default function PyqPage() {
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2"/><path d="m15 9-4.5 1.5L9 15l4.5-1.5L15 9Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>}
             />
             <FilterPopover id="topic" width={420}>
-              <div className="max-h-[360px] overflow-y-auto p-4">
+              <div {...scrollableFilterProps('topic')} className="max-h-[360px] overflow-y-auto p-4">
                 <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Topic</div>
-                {!currentSubTopicNode?.microTopics?.length ? (
-                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a sub-subject with topics first.</div>
+                {!selectedSubtopic ? (
+                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a sub-subject first.</div>
+                ) : !currentTopicOptions.length ? (
+                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">No topics are assigned to this sub-subject.</div>
                 ) : (
                   <div className="grid gap-1">
-                    {currentSubTopicNode.microTopics.map((topic) => {
+                    {currentTopicOptions.map((topic) => {
                       const active = selectedTopics.includes(topic);
                       return (
                         <button
