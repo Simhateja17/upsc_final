@@ -380,19 +380,35 @@ export default function DailyMcqResultsPage() {
               })()}
             </div>
 
+            <style>{`
+              .dmscore-card{position:relative;border-radius:16px;padding:clamp(12px,1vw,18px);overflow:hidden;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;border:1px solid #E5E7EB;box-shadow:0 1px 2px rgba(16,24,40,.04),0 6px 18px -10px rgba(16,24,40,.08);}
+              .dmscore-card:hover{transform:translateY(-2px);border-color:#D1D5DB;box-shadow:0 1px 2px rgba(16,24,40,.05),0 14px 28px -14px rgba(16,24,40,.15);}
+              .dmscore-card::after{content:"";position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.55),rgba(255,255,255,0));pointer-events:none;}
+              .dmscore-accuracy{border-color:#DCE8E1;background:linear-gradient(160deg,#FBFDFC 0%,#F1F7F4 100%);}
+              .dmscore-time{border-color:#DCE2EC;background:linear-gradient(160deg,#FBFCFE 0%,#F1F4F9 100%);}
+              .dmscore-speed{border-color:#E8DFCE;background:linear-gradient(160deg,#FDFCFA 0%,#F8F4EE 100%);}
+              .dmscore-rank{border-color:#E2DAEC;background:linear-gradient(160deg,#FCFBFD 0%,#F4F1F8 100%);}
+              .dmscore-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;}
+              .dmscore-icon-accuracy{background:#ECF5F0;color:#3F8C6E;}
+              .dmscore-icon-time{background:#EEF2F8;color:#4A6B96;}
+              .dmscore-icon-speed{background:#F6F0E6;color:#9C7A3F;}
+              .dmscore-icon-rank{background:#F1EDF6;color:#7A6699;}
+              .dmscore-bar{height:5px;border-radius:999px;background:rgba(255,255,255,.6);overflow:hidden;position:relative;z-index:1;}
+              .dmscore-bar>span{display:block;height:100%;border-radius:999px;transition:width .4s ease;}
+            `}</style>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-[clamp(0.65rem,0.9vw,1rem)] mb-[clamp(0.85rem,1.2vw,1.15rem)]">
               {[
-                { label: 'Accuracy', value: `${Math.round(r.accuracy)}%`, sub: 'this attempt', valueSize: 'clamp(18px,1.15vw,24px)' },
-                { label: 'Time Taken', value: `${minutes}m ${seconds}s`, sub: 'of 10 min', valueSize: 'clamp(18px,1.15vw,24px)' },
-                { label: 'Speed', value: `${speed} min/Q`, sub: 'Avg per question', valueSize: 'clamp(14px,0.95vw,20px)' },
-                { label: 'Rank', value: rankLabel, sub: 'among aspirants today', valueSize: 'clamp(16px,1.05vw,22px)' },
+                { label: 'Accuracy', value: `${Math.round(r.accuracy)}%`, sub: 'this attempt', valueSize: 'clamp(18px,1.35vw,26px)', cls: 'dmscore-accuracy', iconCls: 'dmscore-icon-accuracy', barColor: '#7FB29A', barPct: Math.max(0, Math.min(100, Math.round(r.accuracy))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>) },
+                { label: 'Time Taken', value: `${minutes}m ${seconds}s`, sub: 'of 10 min', valueSize: 'clamp(18px,1.35vw,26px)', cls: 'dmscore-time', iconCls: 'dmscore-icon-time', barColor: '#8AA3C4', barPct: Math.max(0, Math.min(100, Math.round((effectiveTimeSeconds / 600) * 100))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg>) },
+                { label: 'Speed', value: `${speed} min/Q`, sub: 'Avg per question', valueSize: 'clamp(14px,1.1vw,22px)', cls: 'dmscore-speed', iconCls: 'dmscore-icon-speed', barColor: '#C9A876', barPct: Math.max(0, Math.min(100, Math.round(parseFloat(speed) * 100))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="currentColor" stroke="none"/></svg>) },
+                { label: 'Rank', value: rankLabel, sub: 'among aspirants today', valueSize: 'clamp(15px,1.15vw,22px)', cls: 'dmscore-rank', iconCls: 'dmscore-icon-rank', barColor: '#A99BC4', barPct: Math.max(0, Math.min(100, displayPercentile)), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4H3v2a3 3 0 0 0 3 3"/><path d="M19 4h2v2a3 3 0 0 1-3 3"/><path d="M12 13v4"/><path d="M8 21h8"/><path d="M9 17h6l1 4H8z" fill="currentColor" stroke="none"/></svg>) },
               ].map((s) => (
-                <div key={s.label} className="bg-white border border-[#E5E7EB] rounded-[clamp(10px,0.73vw,14px)]"
-                  style={{ padding: 'clamp(0.65rem,0.85vw,1rem)' }}>
-                  <div className="font-arimo font-bold"
-                    style={{ fontSize: 'clamp(10px,0.6vw,11px)', letterSpacing: '0.06em', color: '#8892A4', textTransform: 'uppercase', marginBottom: 6 }}>{s.label}</div>
-                  <div className="font-arimo font-extrabold tracking-tight text-[#17223E]" style={{ fontSize: s.valueSize, lineHeight: 1.1 }}>{s.value}</div>
-                  <div className="font-arimo" style={{ fontSize: 'clamp(10px,0.62vw,12px)', color: '#9CA3AF', marginTop: 4 }}>{s.sub}</div>
+                <div key={s.label} className={`dmscore-card ${s.cls}`}>
+                  <div className={`dmscore-icon ${s.iconCls}`}>{s.icon}</div>
+                  <div className="font-arimo font-bold" style={{ fontSize: 'clamp(10px,0.62vw,11px)', letterSpacing: '0.08em', color: '#64748B', textTransform: 'uppercase', marginTop: 10, position: 'relative', zIndex: 1 }}>{s.label}</div>
+                  <div className="font-arimo font-extrabold tracking-tight" style={{ color: '#0F172A', fontSize: s.valueSize, lineHeight: 1.1, marginTop: 4, position: 'relative', zIndex: 1 }}>{s.value}</div>
+                  <div className="dmscore-bar" style={{ marginTop: 8 }}><span style={{ width: `${s.barPct}%`, background: s.barColor }} /></div>
+                  <div className="font-arimo" style={{ fontSize: 'clamp(10px,0.66vw,12px)', color: '#64748B', marginTop: 8, position: 'relative', zIndex: 1 }}>{s.sub}</div>
                 </div>
               ))}
             </div>
@@ -415,6 +431,25 @@ export default function DailyMcqResultsPage() {
                 </button>
               </Link>
 
+              {/* Review Weak Areas — jumps straight to the questions you got wrong,
+                  where each can be saved to the Spaced Repetition / Weakness Tracker. */}
+              <Link href="/dashboard/daily-mcq/review?filter=wrong">
+                <button
+                  type="button"
+                  className="weak-review-btn w-full font-arimo font-bold"
+                  style={{ position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(8px,0.9vw,12px)', borderRadius: 14, padding: 'clamp(12px,1vw,16px)', fontSize: 'clamp(13px,0.8vw,15px)', cursor: 'pointer' }}>
+                  <span className="weak-badge">⚠ {r.questionCount - r.correctCount} weak</span>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 2v6h6" />
+                    <path d="M3.51 15a9 9 0 1 0 .49-9.36L3 8" />
+                  </svg>
+                  <span>Review Weak Areas</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M9 6l6 6-6 6" />
+                  </svg>
+                </button>
+              </Link>
+
               {/* Result action buttons — colors per reference (.act-*) */}
               <style>{`
                 .qw-review-btn{color:#0B1426;background:radial-gradient(120% 140% at 100% 0%, rgba(245,197,24,.18) 0%, rgba(245,197,24,0) 55%),linear-gradient(135deg,#FBF6E7 0%,#F4ECD8 55%,#EFE3BE 100%);box-shadow:0 10px 22px -14px rgba(107,83,32,.45), inset 0 1px 0 rgba(255,255,255,.6);border:1px solid #E4D8B5;letter-spacing:.01em;}
@@ -423,6 +458,10 @@ export default function DailyMcqResultsPage() {
                 .qw-shimmer{position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-100%);animation:qwShine 4s ease-in-out infinite;pointer-events:none;}
                 @keyframes qwShine{0%{transform:translateX(-100%)}60%{transform:translateX(100%)}100%{transform:translateX(100%)}}
                 .qw-badge{position:relative;z-index:1;background:#0B1426;color:#F5C518;font-size:10.5px;font-weight:800;letter-spacing:.14em;padding:3px 8px;border-radius:999px;border:1px solid #0B1426;}
+                .weak-review-btn{color:#8A4A39;background:linear-gradient(135deg,#FEF3F2 0%,#FDE7E3 55%,#FAD9D2 100%);box-shadow:0 10px 22px -14px rgba(138,74,57,.45), inset 0 1px 0 rgba(255,255,255,.6);border:1px solid #F2CFC7;letter-spacing:.01em;}
+                .weak-review-btn::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#F97362,#B23A28);border-radius:12px 0 0 12px;}
+                .weak-review-btn:hover{filter:brightness(1.02);transform:translateY(-1px);box-shadow:0 16px 30px -16px rgba(138,74,57,.55);}
+                .weak-badge{position:relative;z-index:1;background:#8A4A39;color:#FDE7E3;font-size:10.5px;font-weight:800;letter-spacing:.1em;padding:3px 8px;border-radius:999px;border:1px solid #8A4A39;}
                 .mcq-act{display:flex;align-items:center;gap:clamp(8px,0.8vw,12px);padding:clamp(10px,0.85vw,14px) clamp(12px,1vw,16px);border-radius:14px;font-weight:700;font-size:clamp(12px,0.78vw,14px);border:1px solid transparent;cursor:pointer;transition:all .18s;background:#fff;width:100%;text-align:left;}
                 .mcq-act:hover{transform:translateY(-1px);box-shadow:0 10px 24px -16px rgba(11,20,38,.18);}
                 .mcq-act .ic{width:clamp(28px,2.2vw,34px);height:clamp(28px,2.2vw,34px);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}

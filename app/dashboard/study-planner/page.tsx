@@ -1685,6 +1685,9 @@ export default function StudyPlannerPage() {
               <style>{`
                 .streak-cal .sc-arrow:hover { background: #f3f4f6; }
                 .streak-cal .sc-today:hover { background: #fafafa; }
+                .streak-cal .sc-day { transition: box-shadow .15s ease, background .15s ease; }
+                .streak-cal .sc-day:hover { box-shadow: inset 0 0 0 1.5px #c7d2fe; }
+                .streak-cal .sc-day:focus-visible { outline: none; box-shadow: inset 0 0 0 2px #2563eb; }
               `}</style>
 
               {/* Streak header */}
@@ -1739,13 +1742,28 @@ export default function StudyPlannerPage() {
                     today: { background: '#0f1626', color: '#f4b740' },
                     future: { background: 'transparent', color: '#9ca3af' },
                   }[item.status];
+                  const isSelected =
+                    currentDate.getFullYear() === calYear &&
+                    currentDate.getMonth() === calMonthIdx &&
+                    currentDate.getDate() === item.day;
+                  // Selected day takes the blue-ring highlight (per reference),
+                  // overriding the status palette so it reads clearly.
+                  const selectedStyle = isSelected
+                    ? { background: '#e8f0ff', color: '#2563eb', boxShadow: 'inset 0 0 0 2px #2563eb' }
+                    : null;
                   return (
-                    <div
+                    <button
                       key={i}
-                      style={{ aspectRatio: '1 / 1', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, ...palette }}
+                      type="button"
+                      className="sc-day"
+                      onClick={() => setCurrentDate(new Date(calYear, calMonthIdx, item.day))}
+                      aria-pressed={isSelected}
+                      aria-label={`Open study plan for ${calendarMonthYear} ${item.day}`}
+                      title={`View plan for ${item.day} ${calendarMonthYear}`}
+                      style={{ aspectRatio: '1 / 1', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', border: 'none', padding: 0, cursor: 'pointer', ...palette, ...(selectedStyle || {}) }}
                     >
                       {item.day}
-                    </div>
+                    </button>
                   );
                 })}
               </div>

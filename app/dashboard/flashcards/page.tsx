@@ -169,17 +169,28 @@ export default function FlashcardsPage() {
             </div>
           )}
 
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+          <style>{`
+            .subjhx-card{position:relative;overflow:hidden;border:1px solid var(--subjhx-border);transition:transform .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1),border-color .3s cubic-bezier(.4,0,.2,1);}
+            .subjhx-card:hover{transform:translateY(-3px);box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);border-color:transparent;}
+            .subjhx-accent{position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:opacity .3s;z-index:2;}
+            .subjhx-card:hover .subjhx-accent{opacity:1;}
+          `}</style>
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
               <div
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+                className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
                 style={{ background: '#101828', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}
               >
                 1
               </div>
-              <h2 style={{ fontFamily: 'Georgia', fontWeight: 700, fontSize: 36, lineHeight: '40px', color: '#101828' }}>
-                Choose a <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Subject</span>
-              </h2>
+              <div>
+                <h2 style={{ fontFamily: 'Georgia', fontWeight: 700, fontSize: 36, lineHeight: '40px', color: '#101828' }}>
+                  Choose a <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Subject</span>
+                </h2>
+                <p style={{ fontFamily: 'Georgia, serif', fontWeight: 400, fontSize: 15, lineHeight: '22px', color: '#6A7282', marginTop: 4 }}>
+                  Pick the subject you want to revise today
+                </p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
@@ -227,13 +238,6 @@ export default function FlashcardsPage() {
             </div>
           </div>
 
-          <p
-            className="mb-6"
-            style={{ fontFamily: 'Georgia, serif', fontWeight: 400, fontSize: 15, lineHeight: '22px', color: '#6A7282' }}
-          >
-            Pick the subject you want to revise today
-          </p>
-
           {loading ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
               {[...Array(10)].map((_, index) => (
@@ -254,11 +258,12 @@ export default function FlashcardsPage() {
 
                 const cardContent = (
                   <>
+                    <div className="subjhx-accent" style={{ background: item.card.bar }} />
                     <div className="flex items-start justify-between gap-3">
                       <span
                         aria-hidden
                         className="flex items-center justify-center flex-shrink-0"
-                        style={{ width: 44, height: 44, borderRadius: 12, background: `${item.card.bar}1A`, fontSize: 24, lineHeight: 1 }}
+                        style={{ width: 44, height: 44, borderRadius: 12, background: `${item.card.bar}33`, fontSize: 24, lineHeight: 1 }}
                       >
                         {item.icon}
                       </span>
@@ -342,8 +347,8 @@ export default function FlashcardsPage() {
                     <Link
                       key={item.id}
                       href={`/dashboard/flashcards/${item.id}`}
-                      className="block rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md flex flex-col"
-                      style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, height: 190 }}
+                      className="subjhx-card block rounded-[16px] p-5 text-left flex flex-col"
+                      style={{ ['--subjhx-border']: item.card.border, background: item.card.bg, height: 190 } as React.CSSProperties}
                       onMouseEnter={() => setHoveredCard(item.id)}
                       onMouseLeave={() => setHoveredCard(null)}
                     >
@@ -361,8 +366,8 @@ export default function FlashcardsPage() {
                       setPrefillSubject(item.subject);
                       setShowAddModal(true);
                     }}
-                    className="rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md flex flex-col"
-                    style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, height: 190 }}
+                    className="subjhx-card rounded-[16px] p-5 text-left flex flex-col"
+                    style={{ ['--subjhx-border']: item.card.border, background: item.card.bg, height: 190 } as React.CSSProperties}
                     onMouseEnter={() => setHoveredCard(item.id)}
                     onMouseLeave={() => setHoveredCard(null)}
                   >

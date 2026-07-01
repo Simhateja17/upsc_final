@@ -575,7 +575,7 @@ function DailyMainsChallengeInner() {
             <div className="flex flex-wrap items-center justify-between gap-4" style={{ marginTop: '24px' }}>
               <div className="flex flex-wrap items-center gap-3">
                 <button onClick={handleBeginChallenge} className="dms-btn-primary" style={{ padding: '14px 28px' }}>🚀 Begin Challenge</button>
-                <button type="button" className="dms-btn-secondary" style={{ padding: '14px 28px' }}>📱 Attempt on App</button>
+                <button type="button" className="dms-btn-secondary" style={{ padding: '14px 28px', background: '#FFFFFF' }}>📱 Attempt on App</button>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex">

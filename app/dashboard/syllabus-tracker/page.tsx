@@ -422,9 +422,10 @@ export default function SyllabusTrackerPage() {
           />
         </div>
 
-        {/* Optional Subject picker — choose/change your optional right here,
-            no need to visit Profile settings. */}
-        {mode === 'optional' && (
+        {/* Optional Subject picker — shown once an optional is already chosen so it
+            can be changed here. When none is set, the picker lives inside the
+            Subjects panel (SubjectList empty state). */}
+        {mode === 'optional' && optionalSubject && (
           <div className="px-[12px] pt-[12px]">
             <div className="rounded-[14px] border border-[#E5E7EB] bg-white p-[16px] flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
               <div className="flex-1 min-w-0">
@@ -472,6 +473,11 @@ export default function SyllabusTrackerPage() {
               states={states}
               mode={mode}
               optionalNoSelection={optionalNoSelection}
+              optionalSubjects={OPTIONAL_SUBJECTS}
+              optionalDraft={optionalDraft}
+              onOptionalDraftChange={setOptionalDraft}
+              onSetOptional={handleSetOptional}
+              savingOptional={savingOptional}
             />
           </div>
 

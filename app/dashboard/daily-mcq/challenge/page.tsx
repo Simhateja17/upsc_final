@@ -417,26 +417,53 @@ export default function DailyMcqChallengePage() {
                         <div style={{ display: 'inline-flex', alignItems: 'center', background: difficultyStyle.bg, border: `1px solid ${difficultyStyle.color}33`, borderRadius: 999, padding: '5px 12px' }}>
                           <span style={{ fontSize: 12, fontWeight: 600, color: difficultyStyle.color }}>{q.difficulty}</span>
                         </div>
-                        {/* Mark for Review — toggles the marked state (reference .mfr-chip) */}
                         <button
                           type="button"
                           onClick={() => handleToggleFlag(q)}
                           disabled={submitted}
-                          title={flagged[q.id] ? 'Marked for review' : 'Mark for review'}
+                          title={flagged[q.id] ? 'Unflag question' : 'Flag question'}
+                          aria-label={flagged[q.id] ? 'Unflag question' : 'Flag question'}
                           style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 6,
-                            background: flagged[q.id] ? '#FEF3C7' : '#FFFFFF',
+                            width: 32,
+                            height: 32,
+                            borderRadius: 9,
                             border: `1px solid ${flagged[q.id] ? '#F5C518' : '#E5E7EB'}`,
-                            borderRadius: 999, padding: '5px 12px',
+                            background: flagged[q.id] ? '#FEF3C7' : '#FFFFFF',
+                            color: flagged[q.id] ? '#D97706' : '#6B7280',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             cursor: submitted ? 'default' : 'pointer',
-                            color: flagged[q.id] ? '#7A5400' : '#475067',
-                            transition: 'all 0.15s ease',
+                            flexShrink: 0,
                           }}
-                          onMouseEnter={(e) => { if (!flagged[q.id] && !submitted) { e.currentTarget.style.background = '#FFF9E8'; e.currentTarget.style.borderColor = '#FCE3A5'; e.currentTarget.style.color = '#8A6306'; } }}
-                          onMouseLeave={(e) => { if (!flagged[q.id]) { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#475067'; } }}
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill={flagged[q.id] ? '#F5C518' : 'none'} stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 21V4h13l-2 4 2 4H4" /></svg>
-                          <span style={{ fontSize: 12, fontWeight: 600 }}>Mark for Review</span>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill={flagged[q.id] ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                            <line x1="4" y1="22" x2="4" y2="15" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleBookmark(q)}
+                          title={bookmarked[q.id] ? 'Remove bookmark' : 'Bookmark question'}
+                          aria-label={bookmarked[q.id] ? 'Remove bookmark' : 'Bookmark question'}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 9,
+                            border: `1px solid ${bookmarked[q.id] ? '#BFDBFE' : '#E5E7EB'}`,
+                            background: bookmarked[q.id] ? '#EFF6FF' : '#FFFFFF',
+                            color: bookmarked[q.id] ? '#1E3A8A' : '#6B7280',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill={bookmarked[q.id] ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                          </svg>
                         </button>
                         {q.pyqYear && (
                           <div style={{ display: 'inline-flex', alignItems: 'center', background: pyqStyle.bg, border: `1px solid ${pyqStyle.color}33`, borderRadius: 999, padding: '5px 12px' }}>
@@ -461,27 +488,6 @@ export default function DailyMcqChallengePage() {
 
               {/* Content: question (fills) + options (2-col grid) */}
               <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: 'column', padding: '12px 22px 14px', overflow: isMobile ? 'visible' : 'hidden' }}>
-                <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
-                  <button
-                    onClick={() => handleToggleFlag(q)}
-                    title={flagged[q.id] ? 'Unflag question' : 'Flag question as incorrect'}
-                    style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid #D1D5DB', background: flagged[q.id] ? '#FEF3C7' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill={flagged[q.id] ? '#D97706' : 'none'} stroke={flagged[q.id] ? '#D97706' : '#6B7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                      <line x1="4" y1="22" x2="4" y2="15" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleToggleBookmark(q)}
-                    title={bookmarked[q.id] ? 'Remove bookmark' : 'Bookmark question'}
-                    style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid #D1D5DB', background: bookmarked[q.id] ? '#EFF6FF' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarked[q.id] ? '#1E3A8A' : 'none'} stroke={bookmarked[q.id] ? '#1E3A8A' : '#6B7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                    </svg>
-                  </button>
-                </div>
                 <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', fontSize: 14, lineHeight: '23px', color: '#1A1D23', paddingRight: 6 }}>
                   <span style={{ fontWeight: 700 }}>Question {currentQuestion + 1}: </span>
                   <StructuredQuestionRenderer

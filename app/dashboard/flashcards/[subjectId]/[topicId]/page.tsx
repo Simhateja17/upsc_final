@@ -249,8 +249,9 @@ export default function FlashcardReviewPage() {
                 tabIndex={0}
                 onClick={handleFlip}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFlip(); } }}
-                className="relative cursor-pointer outline-none"
+                className="cursor-pointer outline-none"
                 style={{
+                  display: 'grid',
                   minHeight: 280,
                   transformStyle: 'preserve-3d',
                   transition: 'transform 600ms cubic-bezier(0.4, 0.2, 0.2, 1)',
@@ -259,8 +260,9 @@ export default function FlashcardReviewPage() {
               >
                 {/* Front */}
                 <div
-                  className="absolute inset-0 rounded-[24px] flex flex-col"
+                  className="rounded-[24px] flex flex-col"
                   style={{
+                    gridArea: '1 / 1',
                     backfaceVisibility: 'hidden',
                     background: 'linear-gradient(180deg, #0F1419 0%, #1A2332 50%, #0D1218 100%)',
                     border: '0.8px solid rgba(30,41,57,0.5)',
@@ -302,8 +304,9 @@ export default function FlashcardReviewPage() {
 
                 {/* Back */}
                 <div
-                  className="absolute inset-0 rounded-[16px] flex flex-col"
+                  className="rounded-[16px] flex flex-col"
                   style={{
+                    gridArea: '1 / 1',
                     backfaceVisibility: 'hidden',
                     transform: 'rotateY(180deg)',
                     background: '#FFFFFF',

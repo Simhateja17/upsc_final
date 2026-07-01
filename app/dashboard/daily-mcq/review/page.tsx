@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { dailyMcqService, flashcardService, bookmarkService, spacedRepService } from '@/lib/services';
 import { getSubjectBadgeStyle } from '@/lib/subjectPalette';
 
@@ -41,10 +42,20 @@ function getStatus(q: ReviewQuestion) {
   return { label: 'Wrong', color: '#DC2626', background: '#FEF2F2', border: '#FECACA' };
 }
 
-export default function QuestionReviewPage() {
+const VALID_FILTERS: FilterType[] = ['all', 'correct', 'wrong', 'skipped'];
+
+function QuestionReviewInner() {
+  const searchParams = useSearchParams();
+  // Allow deep-linking straight to the weak (wrong) questions, e.g. from the
+  // "Review Weak Areas" button on the results page: /review?filter=wrong
+  const requestedFilter = searchParams.get('filter') as FilterType | null;
+  const initialFilter: FilterType =
+    requestedFilter && VALID_FILTERS.includes(requestedFilter) ? requestedFilter : 'all';
+
   const [questions, setQuestions] = useState<ReviewQuestion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [filter, setFilter] = useState<FilterType>(initialFilter);
+  const [savingAllWeak, setSavingAllWeak] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -172,6 +183,46 @@ export default function QuestionReviewPage() {
     setActionLoading(null);
   };
 
+  // Bulk-save every weak (wrong) question that isn't already in the Spaced
+  // Repetition queue — one click to stash the whole weak-areas list for revision.
+  const handleSaveAllWeak = async (weakQuestions: ReviewQuestion[]) => {
+    const pending = weakQuestions.filter(q => !needReview[q.id]);
+    if (pending.length === 0) {
+      showToast('All weak questions are already saved');
+      return;
+    }
+    setSavingAllWeak(true);
+    let savedCount = 0;
+    const newMarked: Record<string, boolean> = {};
+    const newIds: Record<string, string> = {};
+    for (const q of pending) {
+      try {
+        const correctOpt = q.options.find((opt, idx) => getOptionKey(opt, idx) === q.correctOption);
+        const res = await spacedRepService.addItem({
+          questionText: q.questionText,
+          answer: correctOpt?.text || q.correctOption,
+          subject: q.category,
+          source: 'Daily MCQ Review',
+          sourceType: 'daily-mcq',
+        });
+        newMarked[q.id] = true;
+        if (res.data?.id) newIds[q.id] = res.data.id;
+        savedCount += 1;
+      } catch {
+        /* skip this one, keep going */
+      }
+    }
+    setNeedReview(prev => ({ ...prev, ...newMarked }));
+    setNeedReviewItemId(prev => ({ ...prev, ...newIds }));
+    setSavingAllWeak(false);
+    showToast(
+      savedCount > 0
+        ? `Saved ${savedCount} weak ${savedCount === 1 ? 'question' : 'questions'} to Spaced Repetition!`
+        : 'Could not save weak questions',
+      savedCount > 0 ? 'success' : 'error',
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}>
@@ -254,21 +305,44 @@ export default function QuestionReviewPage() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center gap-2 mb-[clamp(1rem,1.25vw,1.5rem)] flex-wrap">
-            {filters.map(f => (
-              <button key={f.key}
-                onClick={() => setFilter(f.key)}
-                className="font-arimo font-bold rounded-full transition-colors"
+          <div className="flex items-center justify-between gap-2 mb-[clamp(1rem,1.25vw,1.5rem)] flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              {filters.map(f => (
+                <button key={f.key}
+                  onClick={() => setFilter(f.key)}
+                  className="font-arimo font-bold rounded-full transition-colors"
+                  style={{
+                    padding: 'clamp(8px,0.6vw,10px) clamp(16px,1.1vw,20px)',
+                    fontSize: 'clamp(12px,0.73vw,14px)',
+                    background: filter === f.key ? '#17223E' : '#FFFFFF',
+                    color: filter === f.key ? '#FFFFFF' : '#4B5563',
+                    border: filter === f.key ? '1px solid #17223E' : '1px solid #E5E7EB',
+                  }}>
+                  {f.label} ({f.count})
+                </button>
+              ))}
+            </div>
+            {/* Save the whole weak-areas list to Spaced Repetition in one click */}
+            {wrongCount > 0 && (
+              <button
+                onClick={() => handleSaveAllWeak(questions.filter(q => q.selectedOption !== null && !q.isCorrect))}
+                disabled={savingAllWeak}
+                className="font-arimo font-bold rounded-full transition-colors inline-flex items-center gap-2"
                 style={{
                   padding: 'clamp(8px,0.6vw,10px) clamp(16px,1.1vw,20px)',
                   fontSize: 'clamp(12px,0.73vw,14px)',
-                  background: filter === f.key ? '#17223E' : '#FFFFFF',
-                  color: filter === f.key ? '#FFFFFF' : '#4B5563',
-                  border: filter === f.key ? '1px solid #17223E' : '1px solid #E5E7EB',
+                  background: savingAllWeak ? '#FCD34D' : '#FFFBEB',
+                  color: '#B45309',
+                  border: '1px solid #FCD34D',
+                  cursor: savingAllWeak ? 'default' : 'pointer',
                 }}>
-                {f.label} ({f.count})
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 2v6h6" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-9.36L3 8" />
+                </svg>
+                {savingAllWeak ? 'Saving…' : `Save ${wrongCount} weak to Spaced Repetition`}
               </button>
-            ))}
+            )}
           </div>
 
           {/* Question List */}
@@ -431,23 +505,52 @@ export default function QuestionReviewPage() {
           </div>
 
           {/* Footer Actions */}
+          <style>{`
+            .mcq-act{display:flex;align-items:center;justify-content:center;gap:clamp(8px,0.8vw,12px);padding:clamp(11px,0.9vw,15px) clamp(28px,2.6vw,44px);border-radius:14px;font-weight:700;font-size:clamp(13px,0.82vw,15px);border:1px solid transparent;cursor:pointer;transition:all .18s;background:#fff;white-space:nowrap;}
+            .mcq-act:hover{transform:translateY(-1px);box-shadow:0 10px 24px -16px rgba(11,20,38,.18);}
+            .mcq-act .ic{width:clamp(28px,2.2vw,34px);height:clamp(28px,2.2vw,34px);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+            .mcq-act-next{background:linear-gradient(135deg,#0B1426,#1A2848);color:#fff;border-color:#0B1426;}
+            .mcq-act-next .ic{background:#F5C518;color:#0B1426;}
+            .mcq-act-dash{background:#FBFAF7;color:#3A4357;border-color:#ECE7DD;}
+            .mcq-act-dash .ic{background:#fff;color:#3A4357;}
+          `}</style>
           <div className="flex items-center justify-center gap-[clamp(1rem,1.25vw,1.5rem)] pb-[clamp(1.25rem,1.5vw,2rem)]">
             <Link href="/dashboard/daily-mcq/results">
-              <button className="flex items-center justify-center gap-2 bg-white hover:opacity-70 transition-opacity font-arimo"
-                style={{ height: '51.2px', borderRadius: '10px', border: '1.6px solid #2B7FFF', fontSize: '16px', fontWeight: 400, color: '#155DFC', padding: '0 32px', whiteSpace: 'nowrap' }}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke="#155DFC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <button className="mcq-act mcq-act-dash font-arimo">
+                <span className="ic" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
                 Back to Results
               </button>
             </Link>
             <Link href="/dashboard/daily-mcq/next-steps">
-              <button className="bg-[#17223E] text-white hover:bg-[#1E2875] transition-colors font-arimo"
-                style={{ height: '51.2px', borderRadius: '10px', fontSize: '16px', fontWeight: 400, padding: '0 32px', whiteSpace: 'nowrap' }}>
+              <button className="mcq-act mcq-act-next font-arimo">
+                <span className="ic" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2.5L9.15 6.85L13.5 8L9.15 9.15L8 13.5L6.85 9.15L2.5 8L6.85 6.85L8 2.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /></svg>
+                </span>
                 View Smart Next Steps
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M5 12h14" /><path d="M13 6l6 6-6 6" />
+                </svg>
               </button>
             </Link>
           </div>
         </div>
       </main>
     </div>
+  );
+}
+
+export default function QuestionReviewPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFBFE' }}>
+        <main className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        </main>
+      </div>
+    }>
+      <QuestionReviewInner />
+    </Suspense>
   );
 }

@@ -13,6 +13,11 @@ interface SubjectListProps {
   states: TrackerState;
   mode: Mode;
   optionalNoSelection?: boolean;
+  optionalSubjects?: string[];
+  optionalDraft?: string;
+  onOptionalDraftChange?: (value: string) => void;
+  onSetOptional?: () => void;
+  savingOptional?: boolean;
 }
 
 export default function SubjectList({
@@ -23,6 +28,11 @@ export default function SubjectList({
   onSearchChange,
   states,
   optionalNoSelection = false,
+  optionalSubjects = [],
+  optionalDraft = '',
+  onOptionalDraftChange,
+  onSetOptional,
+  savingOptional = false,
 }: SubjectListProps) {
   const getSubjectStats = (subject: Subject) => {
     let total = 0;
@@ -79,19 +89,38 @@ export default function SubjectList({
 
       <div className="flex-1 overflow-y-auto p-[10px]">
         {optionalNoSelection ? (
-          <div className="flex flex-col items-center justify-center text-center px-[14px] py-[28px] gap-[8px]">
-            <div className="text-[26px]">🎯</div>
-            <div className="text-[13px] font-bold text-[#0f1f3d]">Pick your optional subject</div>
-            <div className="text-[11px] text-[#8795ae] leading-relaxed">
-              Set your UPSC optional in your profile to track its sub-subjects here.
+          <div className="flex flex-col items-center text-center px-[14px] py-[24px]">
+            <div className="text-[40px] mb-[8px]" aria-hidden="true">📘</div>
+            <div className="text-[17px] font-bold text-[#0f1f3d] mb-[6px] leading-tight">
+              Pick your Optional Subject
             </div>
+            <div className="text-[12px] text-[#8795ae] leading-relaxed mb-[16px] max-w-[240px]">
+              Choose your UPSC optional right here to start tracking Paper-wise themes and topics.
+            </div>
+            <select
+              value={optionalDraft}
+              onChange={(e) => onOptionalDraftChange?.(e.target.value)}
+              className="w-full bg-white outline-none transition-colors focus:border-[rgba(201,146,26,.30)]"
+              style={{ height: '40px', borderRadius: '9px', border: '1.5px solid #e0e8f4', padding: '0 12px', fontSize: '12.5px', color: '#0f1f3d' }}
+            >
+              <option value="">-- Select Optional --</option>
+              {optionalSubjects.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => onSetOptional?.()}
+              disabled={savingOptional || !optionalDraft.trim()}
+              className="w-full mt-[12px] font-extrabold text-[#5b4a12] transition-opacity hover:opacity-90 disabled:opacity-40"
+              style={{ height: '42px', borderRadius: '9px', fontSize: '12.5px', background: 'linear-gradient(135deg, #e6ce8c, #d9bd63)', boxShadow: '0 2px 8px rgba(201,146,26,.22)' }}
+            >
+              {savingOptional ? 'Saving…' : 'Set Optional Subject'}
+            </button>
+            <div className="text-[11px] text-[#8795ae] my-[10px]">or</div>
             <Link
               href="/dashboard/profile"
-              className="mt-[4px] inline-flex items-center gap-[5px] px-[16px] py-[8px] rounded-[9px] text-[11.5px] font-extrabold text-[#0f1f3d] no-underline transition-all duration-200"
-              style={{
-                background: 'linear-gradient(135deg, #e8a820, #c9921a)',
-                boxShadow: '0 2px 8px rgba(201,146,26,.28)',
-              }}
+              className="text-[12.5px] font-bold text-[#c9921a] no-underline hover:opacity-80 transition-opacity"
             >
               Choose in Profile →
             </Link>

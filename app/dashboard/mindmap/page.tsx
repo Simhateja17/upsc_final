@@ -116,6 +116,12 @@ export default function MindmapPage() {
           </h2>
         </div>
         <p className="text-[#6A7282] text-[14px] mb-6 ml-11">Select the subject whose mindmaps you want to study today</p>
+        <style>{`
+          .subjhx-card{position:relative;overflow:hidden;border:1px solid var(--subjhx-border);transition:transform .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1),border-color .3s cubic-bezier(.4,0,.2,1);}
+          .subjhx-card:hover{transform:translateY(-3px);box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);border-color:transparent;}
+          .subjhx-accent{position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:opacity .3s;z-index:2;}
+          .subjhx-card:hover .subjhx-accent{opacity:1;}
+        `}</style>
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
@@ -139,9 +145,10 @@ export default function MindmapPage() {
                 <Link
                   key={subject.slug}
                   href={`/dashboard/mindmap/${subject.slug}`}
-                  className="block h-[190px] rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
-                  style={{ border: `1px solid ${cardStyle.border}`, background: cardStyle.bg }}
+                  className="subjhx-card block h-[190px] rounded-[16px] p-5 text-left"
+                  style={{ ['--subjhx-border']: cardStyle.border, background: cardStyle.bg } as React.CSSProperties}
                 >
+                  <div className="subjhx-accent" style={{ background: cardStyle.bar }} />
                   <div className="flex items-start justify-between gap-3">
                     <span aria-hidden style={{ fontSize: 24, lineHeight: '24px' }}>{subject.icon}</span>
                     {toGo > 0 && (

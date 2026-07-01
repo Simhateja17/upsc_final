@@ -191,7 +191,7 @@ export default function StudyMaterialReaderModal({
             )}
             <div className="font-arimo font-bold flex items-center" style={{
               height: '36px',
-              fontSize: '11px', padding: '0 12px', borderRadius: '10px',
+              fontSize: '12px', padding: '0 12px', borderRadius: '10px',
               background: '#FEF3C7', color: '#D97706', letterSpacing: '0.4px',
               whiteSpace: 'nowrap',
             }}>
@@ -200,7 +200,7 @@ export default function StudyMaterialReaderModal({
             <button
               onClick={handleGetPdf}
               className="font-arimo font-bold sm-btn sm-btn-gold sm-shine"
-              style={{ height: '36px', padding: '0 16px' }}
+              style={{ height: '36px', padding: '0 16px', borderRadius: '10px', fontSize: '12px' }}
             >
               <DownloadIcon />
               Get PDF
