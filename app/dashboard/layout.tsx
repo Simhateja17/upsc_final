@@ -13,7 +13,7 @@ import PhoneLinkPrompt from '@/components/PhoneLinkPrompt';
 import { EntitlementsProvider } from '@/contexts/EntitlementsContext';
 
 const HIDE_SIDEBAR_ROUTES = ['/dashboard/profile', '/dashboard/settings', '/dashboard/billing', '/dashboard/feedback'];
-const PUBLIC_DASHBOARD_ROUTES = ['/dashboard/pyq'];
+const PUBLIC_DASHBOARD_ROUTES: string[] = [];
 // Routes that auto-collapse the left navigation sidebar on entry (focus modes).
 // `/dashboard/daily-answer` covers both the Daily Mains landing page and its
 // challenge/results sub-pages (matched via startsWith in isAutoCollapseRoute).
