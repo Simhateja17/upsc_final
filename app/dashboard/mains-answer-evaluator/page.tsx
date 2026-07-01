@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import FilePreviewThumb from '@/components/FilePreviewThumb';
-import { dailyAnswerService } from '@/lib/services';
+import { mainsEvaluatorService } from '@/lib/services';
 
 /* ─── Static config ─── */
 
@@ -213,7 +213,7 @@ export default function MainsAnswerEvaluatorPage() {
   const questionDone = question.trim().length > 0; // optional
   const answerDone = files.length > 0 || answerText.trim().length > 0;
   const marksDone = selectedMarks !== null;
-  const canEvaluate = paperDone && answerDone && marksDone;
+  const canEvaluate = paperDone && questionDone && answerDone && marksDone;
 
   const nodes = [
     { label: 'Select Paper', done: paperDone },
@@ -258,20 +258,22 @@ export default function MainsAnswerEvaluatorPage() {
     setError(null);
     setSubmitting(true);
     try {
-      // Reuse the existing Daily Mains Challenge evaluation pipeline:
-      // submit the answer, stash the attemptId, then hand off to the shared
-      // AI evaluation engine → results screens.
-      const res = files.length > 0
-        ? await dailyAnswerService.uploadFiles(files)
-        : await dailyAnswerService.submitText(answerText);
+      const res = await mainsEvaluatorService.submit({
+        questionText: question.trim(),
+        paper: paperLabel,
+        subject: focusSubject || PAPERS.find(p => p.id === selectedPaper)?.description.split(' · ')[0] || 'General Studies',
+        marks: selectedMarks || 15,
+        answerText: answerText.trim() || undefined,
+        files,
+      });
       const attemptId =
         (res as any)?.attemptId ||
         (res as any)?.data?.attemptId ||
         (res as any)?.data?.data?.attemptId;
       if (attemptId && typeof window !== 'undefined') {
-        sessionStorage.setItem('dailyAnswerAttemptId', attemptId);
+        sessionStorage.setItem('mainsEvaluatorAttemptId', attemptId);
       }
-      router.push('/dashboard/daily-answer/challenge/attempt/evaluating');
+      router.push('/dashboard/daily-answer/challenge/attempt/evaluating?source=custom');
     } catch (err: any) {
       setError(err?.message || 'Failed to submit answer. Please try again.');
       setSubmitting(false);
@@ -461,9 +463,14 @@ export default function MainsAnswerEvaluatorPage() {
                 {/* ── Step 3: Question (Optional) ── */}
                 <div style={cardStyle}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                    <StepHeader step={3} title="Question" badge="Optional" subtitle="Type Your Question or let AI auto-detect from your answer sheet" state={stepState(2)} />
+                    <StepHeader step={3} title="Question" subtitle="Type the exact question to evaluate against" state={stepState(2)} />
                     <button
-                      onClick={() => setQuestion(SAMPLE_QUESTION)}
+                      onClick={() => {
+                        setQuestion(SAMPLE_QUESTION);
+                        setSelectedPaper('gs3');
+                        setFocusSubject('Agriculture');
+                        setSelectedMarks(15);
+                      }}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -487,7 +494,7 @@ export default function MainsAnswerEvaluatorPage() {
                   <textarea
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
-                    placeholder="Type or paste your question here (or leave blank to auto-detect from your answer)…"
+                    placeholder="Type or paste your question here..."
                     rows={4}
                     style={{
                       width: '100%',
