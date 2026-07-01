@@ -2,11 +2,12 @@
 
 import React, { Suspense, useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { dailyAnswerService, leaderboardService } from '@/lib/services';
+import { dailyAnswerService, leaderboardService, bookmarkService } from '@/lib/services';
 import Link from 'next/link';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { useAuth } from '@/contexts/AuthContext';
+import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
 
 interface QuestionData {
   id: string;
@@ -200,6 +201,14 @@ function DailyMainsChallengeInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Streaks / progress / achievements come from the user's real leaderboard stats
+  // (leaderboardService.getMyRank) — not hardcoded. `myMainsRank` carries the live
+  // daily-mains streak, average score (/10), total attempt count and rank.
+  const mainsStreak = Number(myMainsRank?.streak) || 0;
+  const mainsAvgScore = Number(myMainsRank?.mainsAvg) || 0;
+  const mainsAttemptCount = Number(myMainsRank?.attemptCount) || 0;
+  const mainsRankNum: number | null = typeof myMainsRank?.mainsRank === 'number' ? myMainsRank.mainsRank : null;
+
   const [challengeStarted, setChallengeStarted] = useState(false);
   const [textExpanded, setTextExpanded] = useState(false);
   const [openTip, setOpenTip] = useState<string | null>(null);
@@ -213,11 +222,14 @@ function DailyMainsChallengeInner() {
   const [answerText, setAnswerText] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [uploadHover, setUploadHover] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+
+  // Bookmark ("Save Question") state → stored in the Bookmarks Vault under Answer Writing
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarkSaving, setBookmarkSaving] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -235,6 +247,25 @@ function DailyMainsChallengeInner() {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, [selectedDate, isToday, router]);
+
+  // Hydrate bookmark state for the current question
+  useEffect(() => {
+    if (!data?.id) {
+      setIsBookmarked(false);
+      return;
+    }
+    let cancelled = false;
+    bookmarkService.list('answer-writing')
+      .then(res => {
+        if (cancelled) return;
+        const items: { entityId: string }[] = res.data?.bookmarks || [];
+        setIsBookmarked(items.some(item => item.entityId === data.id));
+      })
+      .catch(() => {
+        if (!cancelled) setIsBookmarked(false);
+      });
+    return () => { cancelled = true; };
+  }, [data?.id]);
 
   useEffect(() => {
     dailyAnswerService.getCalendar({ to: addDaysStr(todayStr, -1), limit: 3 })
@@ -376,6 +407,35 @@ function DailyMainsChallengeInner() {
     setReadTimeLeft(READING_WINDOW_SECONDS);
   };
 
+  const handleToggleBookmark = async () => {
+    if (!data || bookmarkSaving) return;
+    const wasBookmarked = isBookmarked;
+    setIsBookmarked(!wasBookmarked); // optimistic
+    setBookmarkSaving(true);
+    try {
+      await bookmarkService.toggle({
+        entityType: 'answer-writing',
+        entityId: data.id,
+        title: data.questionText.slice(0, 140),
+        source: 'Daily Answer Writing',
+        tag: data.subject,
+        content: {
+          questionText: data.questionText,
+          gsPaper: data.paper,
+          marks: data.marks,
+          wordLimit: data.wordLimit,
+          date: selectedDate,
+          tags: [data.subject].filter(Boolean),
+          status: data.attempted ? 'Submitted' : 'Not Attempted',
+        },
+      });
+    } catch {
+      setIsBookmarked(wasBookmarked); // revert on failure
+    } finally {
+      setBookmarkSaving(false);
+    }
+  };
+
   const VALID_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
   const addFiles = (incoming: File[]) => {
@@ -409,21 +469,6 @@ function DailyMainsChallengeInner() {
 
   const removeFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleFileDragStart = (index: number) => setDraggingIndex(index);
-  const handleFileDragEnter = (index: number) => setDragOverIndex(index);
-  const handleFileDragEnd = () => {
-    if (draggingIndex !== null && dragOverIndex !== null && draggingIndex !== dragOverIndex) {
-      setSelectedFiles(prev => {
-        const next = [...prev];
-        const [moved] = next.splice(draggingIndex, 1);
-        next.splice(dragOverIndex, 0, moved);
-        return next;
-      });
-    }
-    setDraggingIndex(null);
-    setDragOverIndex(null);
   };
 
   const handleSubmit = async () => {
@@ -484,7 +529,7 @@ function DailyMainsChallengeInner() {
     return (
       <div className="flex flex-col bg-[#F5F6F8] font-jakarta" style={{ minHeight: '100%', overflowY: 'auto' }}>
         {quotaModal}
-        <div className="flex-1 flex flex-col items-center px-4 sm:px-6 py-8 w-full max-w-[1200px] mx-auto">
+        <div className="flex-1 flex flex-col items-center px-4 sm:px-6 py-8 w-full max-w-[1240px] mx-auto">
 
           <style>{`
             @keyframes dms-livePulse {
@@ -494,21 +539,26 @@ function DailyMainsChallengeInner() {
             }
             .dms-livedot { width:8px; height:8px; border-radius:50%; background:#DC2626; display:inline-block; animation:dms-livePulse 1.6s ease infinite; }
             .dms-av { width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; border:2px solid #fff; }
-            .dms-chip { display:inline-flex; align-items:center; gap:5px; padding:5px 14px; border-radius:100px; font-size:12px; font-weight:600; letter-spacing:0.02em; }
+            .dms-chip { display:inline-flex; align-items:center; gap:5px; padding:5px 14px; border-radius:100px; font-size:12px; font-weight:600; letter-spacing:0.02em; white-space:nowrap; flex-shrink:0; }
+            .dms-live-copy { min-width:max-content; white-space:nowrap; }
+            .dms-main-width { max-width:1240px; }
             .dms-btn-primary { background:#0B1020; color:#fff; border:none; border-radius:16px; font-weight:600; font-size:14px; cursor:pointer; transition:.2s; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
             .dms-btn-primary:hover { background:#11172A; transform:translateY(-1px); box-shadow:0 2px 6px rgba(15,23,42,.06), 0 18px 50px rgba(15,23,42,.10); }
-            .dms-btn-secondary { background:#F5F6F8; color:#0B1020; border:1px solid #E6E8EE; border-radius:16px; font-weight:600; font-size:14px; cursor:pointer; transition:.2s; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
-            .dms-btn-secondary:hover { background:#E6E8EE; }
+            .dms-btn-secondary { background:#FFFFFF; color:#0B1020; border:1px solid #E6E8EE; border-radius:16px; font-weight:600; font-size:14px; cursor:pointer; transition:.2s; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+            .dms-btn-secondary:hover { background:#F5F6F8; }
             .dms-bookmark { width:36px; height:36px; border-radius:8px; border:none; background:transparent; cursor:pointer; font-size:18px; transition:.2s; }
             .dms-bookmark:hover { background:#F5F6F8; }
             /* Achievement badge lift */
             .dms-tilt { transition: transform .25s, box-shadow .25s; }
             .dms-tilt:hover { transform: translateY(-2px); box-shadow: 0 2px 6px rgba(15,23,42,.06), 0 18px 50px rgba(15,23,42,.10); }
             /* Past-challenge accent card */
-            .dms-pc-card { position:relative; border:1px solid #E6E8EE; border-radius:16px; background:var(--pc-bg); box-shadow: inset 4px 0 0 0 var(--pc-accent); transition: transform .28s cubic-bezier(.4,0,.2,1), box-shadow .28s, border-color .28s; }
+            .dms-pc-card { position:relative; border:1px solid #E6E8EE; border-radius:10px 16px 16px 10px; background:var(--pc-bg); box-shadow: inset 4px 0 0 0 var(--pc-accent); transition: transform .28s cubic-bezier(.4,0,.2,1), box-shadow .28s, border-color .28s; }
             .dms-pc-card:hover { transform: translateY(-3px) translateX(2px); box-shadow: inset 5px 0 0 0 var(--pc-accent), 0 12px 32px rgba(15,23,42,0.09), 0 3px 12px rgba(15,23,42,0.05); }
             .dms-pc-arrow { opacity:0; transform:translateX(-6px); transition: opacity .25s, transform .25s; }
             .dms-pc-card:hover .dms-pc-arrow { opacity:1; transform:translateX(0); }
+            @media (max-width: 640px) {
+              .dms-live-copy { min-width:0; white-space:normal; }
+            }
           `}</style>
 
           {/* Hero pill */}
@@ -542,7 +592,7 @@ function DailyMainsChallengeInner() {
           {/* Live Challenge Card */}
           <div
             className="relative w-full"
-            style={{ maxWidth: '1100px', borderRadius: '24px', background: '#FFFFFF', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE', padding: '28px' }}
+            style={{ maxWidth: '1240px', borderRadius: '24px', background: '#FFFFFF', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE', padding: '28px' }}
           >
             {/* Tags row */}
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -552,14 +602,25 @@ function DailyMainsChallengeInner() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="dms-chip" style={{ background: '#FFE9E9', color: '#DC2626' }}><span className="dms-livedot" /> LIVE NOW</span>
-                <button type="button" className="dms-bookmark" title="Bookmark" aria-label="Bookmark">🔖</button>
+                <button
+                  type="button"
+                  onClick={handleToggleBookmark}
+                  disabled={bookmarkSaving}
+                  className="dms-bookmark"
+                  title={isBookmarked ? 'Saved to Bookmarks Vault' : 'Save Question'}
+                  aria-label={isBookmarked ? 'Remove bookmark' : 'Save Question'}
+                  aria-pressed={isBookmarked}
+                  style={{ background: isBookmarked ? '#FFF3D6' : 'transparent', opacity: bookmarkSaving ? 0.6 : 1 }}
+                >
+                  🔖
+                </button>
               </div>
             </div>
 
             {/* Question */}
             <blockquote
               className="italic"
-              style={{ borderLeft: '4px solid #F5B800', padding: '16px 20px', background: '#F5F6F8', borderRadius: '0 16px 16px 0', fontSize: '15px', lineHeight: '1.7', color: '#0B1020', marginTop: '20px', fontFamily: 'var(--font-merriweather), Inter, sans-serif', fontWeight: 400 }}
+              style={{ borderLeft: '4px solid #F5B800', padding: '16px 20px', background: '#F5F6F8', borderRadius: '10px 16px 16px 10px', fontSize: '15px', lineHeight: '1.7', color: '#0B1020', marginTop: '20px', fontFamily: 'var(--font-merriweather), Inter, sans-serif', fontWeight: 400 }}
             >
               &quot;{data.questionText}&quot;
             </blockquote>
@@ -584,13 +645,13 @@ function DailyMainsChallengeInner() {
                   <span className="dms-av" style={{ background: '#8B5CF6', marginLeft: '-8px', zIndex: 2 }}>K</span>
                   <span className="dms-av" style={{ background: '#F59E0B', marginLeft: '-8px', zIndex: 1 }}>+</span>
                 </div>
-                <div style={{ fontSize: '14px', color: '#6B7280' }}><strong style={{ color: '#0B1020' }}>{data.attemptCount.toLocaleString('en-US')}</strong> aspirants already attempted</div>
+                <div className="dms-live-copy" style={{ fontSize: '14px', color: '#6B7280' }}><strong style={{ color: '#0B1020' }}>{data.attemptCount.toLocaleString('en-US')}</strong> aspirants already attempted</div>
               </div>
             </div>
           </div>
 
           {/* ── Past Challenges ── */}
-          <div className="w-full mt-10" style={{ maxWidth: '1100px' }}>
+          <div className="w-full mt-10" style={{ maxWidth: '1240px' }}>
             <div
               className="rounded-[24px] bg-white"
               style={{ boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE', padding: '22px 26px' }}
@@ -666,10 +727,12 @@ function DailyMainsChallengeInner() {
           </div>
 
           {/* ── Two-column: Calendar(+Progress) | Mains League — equal width & height ── */}
-          <div className="mt-5 grid w-full grid-cols-1 items-stretch gap-5 lg:grid-cols-2" style={{ maxWidth: '1100px' }}>
+          <div className="mt-5 grid w-full grid-cols-1 items-stretch gap-5 lg:grid-cols-2" style={{ maxWidth: '1240px' }}>
 
-            {/* LEFT COLUMN: Calendar + Your Progress in one card */}
-            <div className="bg-white rounded-[24px] flex flex-col" style={{ padding: '24px', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE' }}>
+            {/* LEFT COLUMN: Calendar and Your Progress as two separate cards */}
+            <div className="flex flex-col gap-5">
+              {/* Calendar card */}
+              <div className="bg-white rounded-[24px]" style={{ padding: '24px', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE' }}>
               {/* Calendar header */}
               <div className="flex items-center justify-between gap-2 mb-4">
                 <div className="flex items-center gap-2">
@@ -757,25 +820,28 @@ function DailyMainsChallengeInner() {
                   return <div key={`d-${i}`}>{cellNode}</div>;
                 })}
               </div>
+              </div>
 
-              {/* Your Progress (inside calendar card, pinned to the bottom) */}
-              <div className="flex items-center gap-2" style={{ marginTop: 'auto', paddingTop: '20px', marginBottom: '12px' }}>
+              {/* Your Progress card */}
+              <div className="bg-white rounded-[24px]" style={{ padding: '24px', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE' }}>
+              <div className="flex items-center gap-2" style={{ marginBottom: '12px' }}>
                 <span style={{ fontSize: '18px' }}>📊</span>
                 <div className="font-bold text-[#0B1020]" style={{ fontSize: '16px' }}>Your Progress</div>
                 <div className="ml-auto inline-flex items-center gap-1.5" style={{ padding: '4px 12px', borderRadius: '100px', background: 'linear-gradient(135deg,#FFF3D6,#FFE6B0)', border: '1px solid rgba(245,184,0,0.3)' }}>
                   <span style={{ fontSize: '11px' }}>🔥</span>
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#92400E' }}>47 Day Streak</span>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#92400E' }}>{mainsStreak} Day Streak</span>
                 </div>
               </div>
               <div className="grid grid-cols-2" style={{ gap: '12px' }}>
                 <div className="text-center rounded-[12px]" style={{ background: '#F5F6F8', padding: '16px' }}>
-                  <div className="font-extrabold text-[#0B1020]" style={{ fontSize: '24px', lineHeight: 1 }}>89</div>
+                  <div className="font-extrabold text-[#0B1020]" style={{ fontSize: '24px', lineHeight: 1 }}>{mainsAttemptCount}</div>
                   <div className="text-[#6B7280] mt-1" style={{ fontSize: '11px' }}>Questions Attempted</div>
                 </div>
                 <div className="text-center rounded-[12px]" style={{ background: '#F5F6F8', padding: '16px' }}>
-                  <div className="font-extrabold text-[#0B1020]" style={{ fontSize: '24px', lineHeight: 1 }}>7.2</div>
+                  <div className="font-extrabold text-[#0B1020]" style={{ fontSize: '24px', lineHeight: 1 }}>{mainsAvgScore.toFixed(1)}</div>
                   <div className="text-[#6B7280] mt-1" style={{ fontSize: '11px' }}>Avg. Score / 10</div>
                 </div>
+              </div>
               </div>
             </div>
 
@@ -840,7 +906,7 @@ function DailyMainsChallengeInner() {
           </div>
 
           {/* ── Achievements (full width) ── */}
-          <div className="w-full mt-5" style={{ maxWidth: '1100px' }}>
+          <div className="w-full mt-5" style={{ maxWidth: '1240px' }}>
             <div className="bg-white rounded-[24px]" style={{ padding: '24px', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE' }}>
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div className="flex items-center gap-2">
@@ -851,11 +917,11 @@ function DailyMainsChallengeInner() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" style={{ gap: '12px' }}>
                 {[
-                  { emoji: '🔥', name: 'Streak Master', stat: '47 days', dim: false },
-                  { emoji: '✍️', name: 'Sharp Pen', stat: '89 attempted', dim: false },
-                  { emoji: '🥇', name: 'Top 50', stat: 'Rank #14', dim: false },
-                  { emoji: '🧠', name: 'Polymath', stat: '4 / 4 GS', dim: false },
-                  { emoji: '💯', name: 'Centurion', stat: '89 / 100', dim: true },
+                  { emoji: '🔥', name: 'Streak Master', stat: `${mainsStreak} days`, dim: mainsStreak < 1 },
+                  { emoji: '✍️', name: 'Sharp Pen', stat: `${mainsAttemptCount} attempted`, dim: mainsAttemptCount < 1 },
+                  { emoji: '🥇', name: 'Top 50', stat: mainsRankNum ? `Rank #${mainsRankNum}` : 'Unranked', dim: !mainsRankNum || mainsRankNum > 50 },
+                  { emoji: '🧠', name: 'Polymath', stat: '—', dim: true },
+                  { emoji: '💯', name: 'Centurion', stat: `${mainsAttemptCount} / 100`, dim: mainsAttemptCount < 100 },
                 ].map((b) => (
                   <Link
                     key={b.name}
@@ -892,8 +958,8 @@ function DailyMainsChallengeInner() {
         }
         .dms-btn-primary { background:#0B1020; color:#fff; border:none; font-weight:600; cursor:pointer; transition:.2s; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
         .dms-btn-primary:hover { background:#11172A; transform:translateY(-1px); box-shadow:0 2px 6px rgba(15,23,42,.06), 0 18px 50px rgba(15,23,42,.10); }
-        .dms-btn-secondary { background:#F5F6F8; color:#0B1020; border:1px solid #E6E8EE; font-weight:600; cursor:pointer; transition:.2s; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
-        .dms-btn-secondary:hover { background:#E6E8EE; }
+        .dms-btn-secondary { background:#FFFFFF; color:#0B1020; border:1px solid #E6E8EE; font-weight:600; cursor:pointer; transition:.2s; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+        .dms-btn-secondary:hover { background:#F5F6F8; }
       `}</style>
 
       {quotaModal}
@@ -951,6 +1017,21 @@ function DailyMainsChallengeInner() {
             className="bg-white rounded-[24px] p-5 sm:p-7 lg:px-9"
             style={{ boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE' }}
           >
+          {/* ── Free evaluation badge ── */}
+          {!entitlements.loading && mainsQuota?.allowed !== false && (
+            <div className="flex items-center gap-2 mb-4">
+              <span
+                className="flex items-center justify-center flex-shrink-0"
+                style={{ width: '18px', height: '18px', borderRadius: '5px', background: '#16A34A' }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 13l4 4L19 7" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#15803D' }}>Free evaluation available</span>
+            </div>
+          )}
+
           {/* ── Upload zone: hidden when text mode is active ── */}
           {!textExpanded && (
             <>
@@ -958,13 +1039,20 @@ function DailyMainsChallengeInner() {
                 className="rounded-[14px] flex flex-col items-center mb-4 cursor-pointer"
                 style={{
                   width: '100%',
-                  border: isDragging ? '2px dashed #3B82F6' : '1px dashed #CBD5E1',
-                  backgroundColor: isDragging ? '#EFF6FF' : '#F9FAFB',
+                  // Single source of truth: light border by default, dark only while
+                  // dragging or hovering. Driven entirely by React state to avoid a
+                  // shorthand/longhand style conflict that left the dark border stuck on.
+                  border: isDragging
+                    ? '2px dashed #3B82F6'
+                    : `1px dashed ${uploadHover ? '#17223E' : '#CBD5E1'}`,
+                  backgroundColor: isDragging
+                    ? '#EFF6FF'
+                    : uploadHover ? 'rgba(23, 34, 62, 0.06)' : '#F9FAFB',
                   padding: '28px 20px 20px',
                   transition: 'border-color 0.15s, background-color 0.15s',
                 }}
-                onMouseEnter={(e) => { if (!isDragging) { e.currentTarget.style.borderColor = '#17223E'; e.currentTarget.style.backgroundColor = 'rgba(23, 34, 62, 0.06)'; } }}
-                onMouseLeave={(e) => { if (!isDragging) { e.currentTarget.style.borderColor = '#CBD5E1'; e.currentTarget.style.backgroundColor = '#F9FAFB'; } }}
+                onMouseEnter={() => setUploadHover(true)}
+                onMouseLeave={() => setUploadHover(false)}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -974,58 +1062,11 @@ function DailyMainsChallengeInner() {
 
                 {selectedFiles.length > 0 ? (
                   <div className="w-full" onClick={e => e.stopPropagation()}>
-                    {/* File list with drag-to-reorder */}
-                    <div className="flex flex-col gap-2 mb-3">
-                      {selectedFiles.map((file, index) => (
-                        <div
-                          key={`${file.name}-${index}`}
-                          draggable
-                          onDragStart={() => handleFileDragStart(index)}
-                          onDragEnter={() => handleFileDragEnter(index)}
-                          onDragEnd={handleFileDragEnd}
-                          onDragOver={e => e.preventDefault()}
-                          className="flex items-center gap-3 bg-white rounded-[8px] px-3 py-2.5 select-none"
-                          style={{
-                            border: dragOverIndex === index && draggingIndex !== index ? '1.5px solid #17223E' : '1px solid #E5E7EB',
-                            opacity: draggingIndex === index ? 0.4 : 1,
-                            cursor: 'grab',
-                            transition: 'opacity 0.15s, border-color 0.1s',
-                          }}
-                        >
-                          {/* Drag handle */}
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: '#9CA3AF' }}>
-                            <circle cx="5" cy="4" r="1.2" fill="currentColor"/>
-                            <circle cx="11" cy="4" r="1.2" fill="currentColor"/>
-                            <circle cx="5" cy="8" r="1.2" fill="currentColor"/>
-                            <circle cx="11" cy="8" r="1.2" fill="currentColor"/>
-                            <circle cx="5" cy="12" r="1.2" fill="currentColor"/>
-                            <circle cx="11" cy="12" r="1.2" fill="currentColor"/>
-                          </svg>
-                          {/* Page number badge */}
-                          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#17223E] text-white flex items-center justify-center" style={{ fontSize: '10px', fontWeight: 700 }}>
-                            {index + 1}
-                          </span>
-                          {/* File icon */}
-                          <span style={{ fontSize: '16px', flexShrink: 0 }}>
-                            {file.type.startsWith('image/') ? '🖼️' : '📄'}
-                          </span>
-                          {/* Name + size */}
-                          <span className="flex-1 text-[#101828] font-medium truncate" style={{ fontSize: '13px' }}>{file.name}</span>
-                          <span className="text-[#9CA3AF] flex-shrink-0" style={{ fontSize: '11px' }}>{(file.size / 1024 / 1024).toFixed(1)}MB</span>
-                          {/* Remove */}
-                          <button
-                            onClick={() => removeFile(index)}
-                            className="flex-shrink-0 text-[#9CA3AF] hover:text-red-500 transition-colors"
-                            style={{ lineHeight: 1 }}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
+                    {/* Uploaded files — reuses the Mains Answer Evaluation upload UI
+                        (visible thumbnails + preview + remove). */}
+                    <div className="mb-3">
+                      <UploadedAnswerFiles files={selectedFiles} onRemove={removeFile} />
                     </div>
-                    <p className="text-center text-[#9CA3AF] mb-2" style={{ fontSize: '11px' }}>Drag rows to reorder pages</p>
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       className="w-full bg-white border border-[#D1D5DB] text-[#111827] font-bold rounded-[8px] hover:bg-gray-50 transition-colors"
