@@ -228,22 +228,28 @@ export default function DailyEditorialPage() {
     try {
       const res = await editorialService.summarize(card.id);
       clearInterval(interval);
-      const summary = res.data?.summary || null;
-      // Cache in local state so re-opening is instant
+      const rawSummary = res.data?.summary || "";
+      const summary = rawSummary.trim().length > 50 ? rawSummary.trim() : null;
+
+      if (!summary) {
+        setEditorials(prev => prev.filter(e => e.id !== card.id));
+        setSummaryModal(prev => ({ ...prev, open: false }));
+        return;
+      }
+
+      const testSections = parseSections(summary);
+      if (testSections.length === 0) {
+        setEditorials(prev => prev.filter(e => e.id !== card.id));
+        setSummaryModal(prev => ({ ...prev, open: false }));
+        return;
+      }
+
       setEditorials(prev => prev.map(e => e.id === card.id ? { ...e, aiSummary: summary } : e));
       setSummaryModal(prev => ({ ...prev, loading: false, summary, loadStep: 4 }));
     } catch (err) {
       clearInterval(interval);
-      if (err instanceof ApiRequestError && err.payload?.code === 'NO_CONTENT') {
-        setSummaryModal(prev => ({
-          ...prev,
-          loading: false,
-          summary: null,
-          error: "Full article text isn't available for this item yet — please try again after the next content refresh.",
-        }));
-      } else {
-        setSummaryModal(prev => ({ ...prev, open: false }));
-      }
+      setEditorials(prev => prev.filter(e => e.id !== card.id));
+      setSummaryModal(prev => ({ ...prev, open: false }));
     }
     setSummarizing(null);
   };
@@ -1087,11 +1093,29 @@ export default function DailyEditorialPage() {
           const sections: { title: string; body: string }[] = [];
           const lines = md.split('\n');
           let cur: { title: string; lines: string[] } | null = null;
+          let hasHeading = false;
+
+          const isSectionHeading = (line: string): string | null => {
+            const trimmed = line.trim();
+            const h3Match = trimmed.match(/^#{3}\s*((?:\d+[.)]\s*)?.+?)(?:\s*[-–—]\s*.+)?$/);
+            if (h3Match) return h3Match[1].trim();
+            const h12Match = trimmed.match(/^#{1,2}\s*((?:\d+[.)]\s*)?.+)$/);
+            if (h12Match) return h12Match[1].trim();
+            const numMatch = trimmed.match(/^(\d+[.)]\s+)([A-Z].+)$/);
+            if (numMatch && sections.length < 6) return numMatch[0].trim();
+            return null;
+          };
+
           for (const line of lines) {
-            if (/^#{1,2} /.test(line)) {
+            const heading = isSectionHeading(line);
+            if (heading) {
+              hasHeading = true;
               if (cur) sections.push({ title: cur.title, body: cur.lines.join('\n').trim() });
-              cur = { title: line.replace(/^#{1,2} /, '').trim(), lines: [] };
+              cur = { title: heading, lines: [] };
             } else {
+              if (!cur && !hasHeading) {
+                cur = { title: "Summary", lines: [] };
+              }
               cur?.lines.push(line);
             }
           }
@@ -1104,7 +1128,7 @@ export default function DailyEditorialPage() {
           const tl = title.toLowerCase();
 
           if (tl.includes('key arguments')) {
-            const blocks = body.split(/\n(?=\*\*|###)/).filter(Boolean);
+            const blocks = body.split(/\n(?=\*\*|###\s*\d|[A-Z][a-z]{2,}:)/).filter(Boolean);
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {blocks.map((block, i) => {
@@ -1123,30 +1147,30 @@ export default function DailyEditorialPage() {
           }
 
           if (tl.includes('upsc relevance')) {
-            const blocks = body.split(/\n(?=\*\*|###|-\s)/).filter(Boolean);
+            const blocks = body
+              .split(/\n+(?=\s*(?:\*\*|###\s*\d|-\s*[A-Z]|GS Paper))/)
+              .map(b => b.trim().replace(/\n+/g, ' ').replace(/\*\*/g, '').replace(/^-\s*/, '').trim())
+              .filter(Boolean);
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {blocks.map((block, i) => {
-                  const lines = block.trim().split('\n');
-                  const label = lines[0].replace(/\*\*/g, '').replace(/^-\s*/, '').replace(/:$/, '').trim();
-                  const text = lines.slice(1).join(' ').replace(/^-\s*/, '').trim() || label;
-                  const isLabelOnly = lines.length === 1;
-                  return (
-                    <div key={i} style={{ padding: '10px 12px', background: '#f0f4fa', borderRadius: 9, border: '1px solid #dce3ef' }}>
-                      {!isLabelOnly && <div style={{ fontSize: 12, fontWeight: 700, color: '#2563c7', marginBottom: 3 }}>{label}</div>}
-                      <div style={{ fontSize: 13, color: '#4a5a72', lineHeight: 1.6 }}>{isLabelOnly ? label : text}</div>
-                    </div>
-                  );
-                })}
+                {blocks.map((text, i) => (
+                  <div key={i} style={{ padding: '10px 12px', background: '#f0f4fa', borderRadius: 9, border: '1px solid #dce3ef' }}>
+                    <div style={{ fontSize: 13, color: '#4a5a72', lineHeight: 1.6 }}>{text}</div>
+                  </div>
+                ))}
               </div>
             );
           }
 
           if (tl.includes('key term')) {
-            const terms = body.split('\n')
-              .map(t => t.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').trim())
-              .filter(Boolean)
-              .map(t => t.charAt(0).toUpperCase() + t.slice(1));
+            let content = body.replace(/^#{1,3}\s*(?:\d+[.)]\s*)?Key Terms[^-]*/i, '').trim();
+            const terms: string[] = [];
+            const candidates = content.split(/\s*[-–—]\s*|\n/).map(t => t.trim()).filter(Boolean);
+            for (const candidate of candidates) {
+              const cleaned = candidate.replace(/\*\*/g, '').replace(/[#_~`]/g, '').trim();
+              if (!cleaned || cleaned.length < 3) continue;
+              terms.push(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
+            }
             return (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {terms.map((term, i) => (
@@ -1248,15 +1272,24 @@ export default function DailyEditorialPage() {
               {/* ── BODY sections ── */}
               {!summaryModal.loading && summaryModal.summary && (
                 <div style={{ overflowY: 'auto', flex: 1, scrollBehavior: 'smooth' }}>
-                  {sections.map((sec, idx) => (
-                    <div key={idx} style={{ padding: '18px 22px', borderBottom: '1px solid #dce3ef', background: idx % 2 === 0 ? '#fff' : '#f7f9fd' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#2563c7', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 7, letterSpacing: '.01em' }}>
-                        <div style={{ width: 22, height: 22, background: '#e8f0fd', border: '1px solid #c0d4f7', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#2563c7', flexShrink: 0 }}>{idx + 1}</div>
-                        {sec.title.replace(/^\s*\d+[.)]\s*/, '')}
+                  {(() => {
+                    const desiredOrder = ['key arguments', 'critical analysis', 'upsc relevance', 'key term', 'exam question', 'potential'];
+                    const ordered = [...sections].sort((a, b) => {
+                      const aIdx = desiredOrder.findIndex(o => a.title.toLowerCase().includes(o));
+                      const bIdx = desiredOrder.findIndex(o => b.title.toLowerCase().includes(o));
+                      return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
+                    });
+                    const filtered = ordered.filter(s => !s.title.toLowerCase().includes('takeaway'));
+                    return filtered.map((sec, idx) => (
+                      <div key={idx} style={{ padding: '18px 22px', borderBottom: '1px solid #dce3ef', background: idx % 2 === 0 ? '#fff' : '#f7f9fd' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#2563c7', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 7, letterSpacing: '.01em' }}>
+                          <div style={{ width: 22, height: 22, background: '#e8f0fd', border: '1px solid #c0d4f7', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#2563c7', flexShrink: 0 }}>{idx + 1}</div>
+                          {sec.title.replace(/^#{1,3}\s*/, '').replace(/^\d+[.)]\s*/, '').replace(/\s*[-–—]\s*.*$/, '').trim()}
+                        </div>
+                        {renderSectionBody(sec.title, sec.body)}
                       </div>
-                      {renderSectionBody(sec.title, sec.body)}
-                    </div>
-                  ))}
+                    ));
+                  })()}
                 </div>
               )}
 
@@ -1269,7 +1302,7 @@ export default function DailyEditorialPage() {
               )}
 
               {/* ── FOOTER ACTIONS ── */}
-              {!summaryModal.loading && (summaryModal.summary || summaryModal.error) && (
+              {!summaryModal.loading && summaryModal.summary && (
                 <>
                   <div style={{ background: '#f0f4fa', borderTop: '1px solid #dce3ef', padding: '14px 16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(120px, 100%), 1fr))', gap: 8, flexShrink: 0 }}>
                     {[
