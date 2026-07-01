@@ -457,9 +457,9 @@ export default function PerformancePage() {
                   <span className="text-[24px]" aria-hidden>⚠</span>
                   Weak Areas
                 </h2>
-                <a href="/dashboard/syllabus" className="text-[16px] font-medium text-[#155DFC]">
+                <Link href="/dashboard/syllabus" className="text-[16px] font-medium text-[#155DFC]">
                   View Tracker +
-                </a>
+                </Link>
               </div>
               <SubjectList rows={weakAreas} weak />
             </AnalyticsCard>
