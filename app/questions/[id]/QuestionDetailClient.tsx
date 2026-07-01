@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
@@ -47,6 +47,8 @@ type PyqNavigation = {
   }>;
   years: Array<{ year: number; count: number }>;
 };
+
+type DashboardLinkGuard = (event: MouseEvent<HTMLAnchorElement>) => void;
 
 const chipStyles = {
   year: 'bg-[#DBEAFE] text-[#1447E6]',
@@ -153,10 +155,12 @@ function YearWisePyqSection({
   activeYear,
   mode,
   navigation,
+  onDashboardLinkClick,
 }: {
   activeYear?: number;
   mode: 'prelims' | 'mains';
   navigation: PyqNavigation;
+  onDashboardLinkClick?: DashboardLinkGuard;
 }) {
   const fallbackMode = {
     key: mode,
@@ -183,6 +187,7 @@ function YearWisePyqSection({
           <Link
             key={item.key}
             href={modeHref(item.key)}
+            onClick={onDashboardLinkClick}
             className={`rounded-full px-5 py-2 text-[14px] font-bold transition ${mode === item.key ? 'bg-[#0B1229] text-white' : 'bg-[#F1F3F7] text-[#6B7280] hover:bg-[#E5E7EB]'}`}
           >
             {item.label}
@@ -194,6 +199,7 @@ function YearWisePyqSection({
           <Link
             key={item.year}
             href={modeHref(activeMode.key, item.year)}
+            onClick={onDashboardLinkClick}
             title={`${item.count} question${item.count === 1 ? '' : 's'}`}
             className={`rounded-[10px] border px-4 py-3 text-center text-[16px] font-semibold transition ${activeYear === item.year ? 'border-[#D4AF37] bg-[#FFFDF5] text-[#B8941E]' : 'border-[#E2E6EE] bg-white text-[#364153] hover:border-[#D4AF37] hover:bg-[#FFFDF5] hover:text-[#B8941E]'}`}
           >
@@ -297,6 +303,9 @@ function AuthQuestionHeader({ userName, initials }: { userName?: string; initial
           <Link href="/dashboard/saved-notes?tab=pyq" className="text-white/60 transition hover:text-[#E8B84B]">Saved PYQs</Link>
         </nav>
         <div className="flex items-center gap-3">
+          <Link href="/dashboard/pyq" className="rounded-[8px] bg-gradient-to-br from-[#E8B84B] to-[#C8960A] px-4 py-2 text-[13.5px] font-bold text-[#061125] shadow-[0_4px_16px_rgba(232,184,75,0.3)] transition hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(232,184,75,0.45)]">
+            Back to PYQ
+          </Link>
           <button
             type="button"
             className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A2540] text-white transition hover:bg-[#243050]"
@@ -319,16 +328,19 @@ function AuthQuestionHeader({ userName, initials }: { userName?: string; initial
           >
             {initials || 'U'}
           </Link>
-          <Link href="/dashboard/pyq" className="rounded-[8px] bg-gradient-to-br from-[#E8B84B] to-[#C8960A] px-4 py-2 text-[13.5px] font-bold text-[#061125] shadow-[0_4px_16px_rgba(232,184,75,0.3)] transition hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(232,184,75,0.45)]">
-            Back to PYQ
-          </Link>
         </div>
       </div>
     </header>
   );
 }
 
-function PublicSidebar() {
+function PublicSidebar({
+  onDashboardLinkClick,
+  onSignupClick,
+}: {
+  onDashboardLinkClick: DashboardLinkGuard;
+  onSignupClick: () => void;
+}) {
   return (
     <>
       <div className="rounded-[18px] border border-[#D1FAE5] bg-white p-6 shadow-[0_1px_3px_rgba(15,23,42,0.06),0_8px_28px_rgba(15,23,42,0.06)]">
@@ -343,16 +355,16 @@ function PublicSidebar() {
           <li>✓ AI-powered performance analytics</li>
           <li>✓ Track weak areas and repeated themes</li>
         </ul>
-        <Link href="/?auth=signup" className="block rounded-[12px] bg-gradient-to-r from-[#F5D06E] to-[#D4AF37] px-5 py-3 text-center text-[15px] font-bold text-[#0B1229] shadow-[0_6px_18px_rgba(212,175,55,0.28)]">
+        <button type="button" onClick={onSignupClick} className="block w-full rounded-[12px] bg-gradient-to-r from-[#F5D06E] to-[#D4AF37] px-5 py-3 text-center text-[15px] font-bold text-[#0B1229] shadow-[0_6px_18px_rgba(212,175,55,0.28)]">
           Start Practicing Free →
-        </Link>
+        </button>
       </div>
 
       <div className="rounded-[18px] border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
         <h4 className="mb-4 text-[12px] font-bold uppercase tracking-[0.18em] text-[#8B95A8]">Explore Our Platform</h4>
         <div className="space-y-2.5">
           {PLATFORM_ITEMS.map((item) => (
-            <Link key={item.href} href={item.href} className="group flex items-center gap-3 rounded-[12px] p-3 transition hover:bg-[#F8F9FB]">
+            <Link key={item.href} href={item.href} onClick={onDashboardLinkClick} className="group flex items-center gap-3 rounded-[12px] p-3 transition hover:bg-[#F8F9FB]">
               <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br ${item.bg}`}>
                 <PlatformIcon icon={item.icon} />
               </span>
@@ -495,6 +507,12 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
     ? `/questions/${relatedQuestions[0].id}${mode === 'mains' ? '?mode=mains' : ''}`
     : undefined;
 
+  const guardPublicDashboardLink = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (isLoggedIn) return;
+    event.preventDefault();
+    openAuthModal('signup');
+  };
+
   useEffect(() => {
     setSelectedOption(null);
     setRevealed(false);
@@ -569,9 +587,6 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
           top: 0;
           z-index: 50;
         }
-        .question-public-nav + nav {
-          margin-top: 72px;
-        }
         .question-card-hover {
           transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
@@ -588,7 +603,7 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
         <ol className="flex flex-wrap items-center gap-2">
           <li><Link href="/" className="hover:text-[#D4AF37]">Home</Link></li>
           <li>›</li>
-          <li><Link href="/dashboard/pyq" className="hover:text-[#D4AF37]">Previous Year Questions</Link></li>
+          <li><Link href="/dashboard/pyq" onClick={guardPublicDashboardLink} className="hover:text-[#D4AF37]">Previous Year Questions</Link></li>
           <li>›</li>
           <li className="capitalize">{mode}</li>
           {year ? <><li>›</li><li>{year}</li></> : null}
@@ -715,7 +730,7 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
             </section>
           ) : null}
 
-          <YearWisePyqSection activeYear={year} mode={mode} navigation={pyqNavigation} />
+          <YearWisePyqSection activeYear={year} mode={mode} navigation={pyqNavigation} onDashboardLinkClick={isLoggedIn ? undefined : guardPublicDashboardLink} />
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-[96px] lg:self-start">
@@ -735,7 +750,7 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
               question={question}
             />
           ) : (
-            <PublicSidebar />
+            <PublicSidebar onDashboardLinkClick={guardPublicDashboardLink} onSignupClick={() => openAuthModal('signup')} />
           )}
         </aside>
       </main>
@@ -749,7 +764,7 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
             Smart preparation, structured planning, and AI-powered insights for serious aspirants.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/?auth=signup" className="rounded-[12px] bg-[#D4AF37] px-6 py-3 text-[15px] font-bold text-[#0B1229]">Start Free Trial →</Link>
+            <button type="button" onClick={() => openAuthModal('signup')} className="rounded-[12px] bg-[#D4AF37] px-6 py-3 text-[15px] font-bold text-[#0B1229]">Start Free Trial →</button>
             <Link href="/contact" className="rounded-[12px] border border-white/20 px-6 py-3 text-[15px] font-semibold text-white">Contact Us</Link>
           </div>
         </div>

@@ -115,6 +115,10 @@ const asTextList = (value: any): string[] => {
       .map((item) => {
         if (typeof item === 'string') return item;
         if (item && typeof item === 'object') {
+          if (typeof item.demand === 'string') {
+            const status = typeof item.status === 'string' ? humanizeKey(item.status) : '';
+            return status ? `${item.demand} — ${status}` : item.demand;
+          }
           return item.text || item.feedback || item.comment || item.point || JSON.stringify(item);
         }
         return String(item);

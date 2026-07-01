@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import type { MouseEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import '@/styles/landing.css';
 import { useAuthModal } from '@/contexts/AuthModalContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const NAV_DROPDOWNS = {
   prepare: [
@@ -33,6 +35,7 @@ const NAV_DROPDOWNS = {
 export default function LandingNav() {
   const router = useRouter();
   const { openAuthModal } = useAuthModal();
+  const { isAuthenticated } = useAuth();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
@@ -45,6 +48,13 @@ export default function LandingNav() {
   const closeMobileNav = () => {
     setMobileNavOpen(false);
     document.body.style.overflow = '';
+  };
+
+  const guardDashboardLink = (event: MouseEvent<HTMLElement>, href: string) => {
+    if (!href.startsWith('/dashboard') || isAuthenticated) return;
+    event.preventDefault();
+    closeMobileNav();
+    openAuthModal('signup');
   };
 
   // Scroll tint effect
@@ -78,8 +88,8 @@ export default function LandingNav() {
 
         {/* Desktop nav links */}
         <div className="hidden md:flex items-center" style={{ gap: 28 }}>
-          <Link href="/dashboard/jeet-gpt" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Jeet AI Mentor</Link>
-          <Link href="/dashboard/daily-answer/challenge" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Daily Mains Challenge</Link>
+          <Link href="/dashboard/jeet-gpt" onClick={(event) => guardDashboardLink(event, '/dashboard/jeet-gpt')} style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Jeet AI Mentor</Link>
+          <Link href="/dashboard/daily-answer/challenge" onClick={(event) => guardDashboardLink(event, '/dashboard/daily-answer/challenge')} style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Daily Mains Challenge</Link>
 
           {(['prepare', 'practice', 'revision'] as const).map((key) => {
             const labels: Record<string, string> = { prepare: 'Prepare', practice: 'Practice', revision: 'Revision Tools' };
@@ -102,6 +112,7 @@ export default function LandingNav() {
                         <Link
                           key={item.href}
                           href={item.href}
+                          onClick={(event) => guardDashboardLink(event, item.href)}
                           style={{ display: 'block', padding: '10px 16px', fontSize: 13.5, color: 'rgba(255,255,255,0.70)', textDecoration: 'none', fontFamily: "'Outfit',sans-serif", transition: 'color 0.15s, background 0.15s' }}
                           className="hover:!text-[#E8B84B] hover:!bg-white/5"
                         >
@@ -115,8 +126,8 @@ export default function LandingNav() {
             );
           })}
 
-          <Link href="/dashboard/study-groups" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Community</Link>
-          <Link href="/dashboard/billing/plans" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Pricing</Link>
+          <Link href="/dashboard/study-groups" onClick={(event) => guardDashboardLink(event, '/dashboard/study-groups')} style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Community</Link>
+          <Link href="/dashboard/billing/plans" onClick={(event) => guardDashboardLink(event, '/dashboard/billing/plans')} style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Pricing</Link>
         </div>
 
         <div className="nav-btns hidden md:flex">
@@ -139,22 +150,22 @@ export default function LandingNav() {
 
       {/* Mobile nav */}
       <div className={`mobile-nav${mobileNavOpen ? ' open' : ''}`}>
-        <a href="/dashboard/jeet-gpt" onClick={closeMobileNav}>Jeet AI Mentor</a>
-        <a href="/dashboard/daily-answer/challenge" onClick={closeMobileNav}>Daily Mains Challenge</a>
+        <a href="/dashboard/jeet-gpt" onClick={(event) => guardDashboardLink(event, '/dashboard/jeet-gpt')}>Jeet AI Mentor</a>
+        <a href="/dashboard/daily-answer/challenge" onClick={(event) => guardDashboardLink(event, '/dashboard/daily-answer/challenge')}>Daily Mains Challenge</a>
         <div style={{ padding: '10px 0 4px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Prepare</div>
-          {NAV_DROPDOWNS.prepare.map(i => <a key={i.href} href={i.href} onClick={closeMobileNav} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
+          {NAV_DROPDOWNS.prepare.map(i => <a key={i.href} href={i.href} onClick={(event) => guardDashboardLink(event, i.href)} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
         </div>
         <div style={{ padding: '10px 0 4px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Practice</div>
-          {NAV_DROPDOWNS.practice.map(i => <a key={i.href} href={i.href} onClick={closeMobileNav} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
+          {NAV_DROPDOWNS.practice.map(i => <a key={i.href} href={i.href} onClick={(event) => guardDashboardLink(event, i.href)} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
         </div>
         <div style={{ padding: '10px 0 4px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Revision Tools</div>
-          {NAV_DROPDOWNS.revision.map(i => <a key={i.href} href={i.href} onClick={closeMobileNav} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
+          {NAV_DROPDOWNS.revision.map(i => <a key={i.href} href={i.href} onClick={(event) => guardDashboardLink(event, i.href)} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
         </div>
-        <a href="/dashboard/study-groups" onClick={closeMobileNav}>Community</a>
-        <a href="/dashboard/billing/plans" onClick={closeMobileNav}>Pricing</a>
+        <a href="/dashboard/study-groups" onClick={(event) => guardDashboardLink(event, '/dashboard/study-groups')}>Community</a>
+        <a href="/dashboard/billing/plans" onClick={(event) => guardDashboardLink(event, '/dashboard/billing/plans')}>Pricing</a>
         <div className="mobile-nav-btns">
           <button className="btn-nav-ghost" onClick={() => { closeMobileNav(); openAuthModal('login'); }}>Login</button>
           <button className="btn-nav-gold" onClick={() => { closeMobileNav(); openAuthModal('signup'); }}>Start Free →</button>
