@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { dailyAnswerService } from '@/lib/services';
+import { dailyAnswerService, mainsEvaluatorService } from '@/lib/services';
 
 const STEPS = [
   {
@@ -109,6 +109,7 @@ export default function EvaluatingPage() {
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [source, setSource] = useState<'daily' | 'custom'>('daily');
   const navigatedRef = useRef(false);
   const resultsReadyRef = useRef(false);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
@@ -125,13 +126,16 @@ export default function EvaluatingPage() {
     navigatedRef.current = true;
     if (pollRef.current) clearInterval(pollRef.current);
     sessionStorage.removeItem(evalStartKey);
-    router.push('/dashboard/daily-answer/challenge/attempt/results');
-  }, [router]);
+    const suffix = source === 'custom' ? '?source=custom' : '';
+    router.push(`/dashboard/daily-answer/challenge/attempt/results${suffix}`);
+  }, [router, source]);
 
   const checkResultsReady = useCallback(async () => {
     if (!attemptId || navigatedRef.current) return false;
     try {
-      const resultsRes = await dailyAnswerService.getResults(attemptId);
+      const resultsRes = source === 'custom'
+        ? await mainsEvaluatorService.getResults(attemptId)
+        : await dailyAnswerService.getResults(attemptId);
       const resultsData = resultsRes?.data;
       const hasUsableResults =
         resultsData &&
@@ -155,14 +159,23 @@ export default function EvaluatingPage() {
       console.log('Results not ready yet, staying on evaluating screen');
     }
     return false;
-  }, [attemptId, navigateToResults]);
+  }, [attemptId, navigateToResults, source]);
 
   // Get attemptId from sessionStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const storedCustomAttemptId = sessionStorage.getItem('mainsEvaluatorAttemptId');
+      if (storedCustomAttemptId) {
+        console.log('Retrieved custom mains evaluator attemptId from sessionStorage:', storedCustomAttemptId);
+        setSource('custom');
+        setAttemptId(storedCustomAttemptId);
+        return;
+      }
+
       const storedAttemptId = sessionStorage.getItem('dailyAnswerAttemptId');
       console.log('Retrieved attemptId from sessionStorage:', storedAttemptId);
       if (storedAttemptId) {
+        setSource('daily');
         setAttemptId(storedAttemptId);
       }
     }
@@ -178,7 +191,9 @@ export default function EvaluatingPage() {
     console.log('Polling with attemptId:', attemptId);
     
     try {
-      const res = await dailyAnswerService.getEvaluationStatus(attemptId);
+      const res = source === 'custom'
+        ? await mainsEvaluatorService.getEvaluationStatus(attemptId)
+        : await dailyAnswerService.getEvaluationStatus(attemptId);
       console.log('Poll response:', res);
       const data = res.data;
 
@@ -212,7 +227,7 @@ export default function EvaluatingPage() {
       console.error('Poll error:', err);
       // Don't set error immediately, let it retry
     }
-  }, [attemptId, checkResultsReady]);
+  }, [attemptId, checkResultsReady, source]);
 
   // Start polling when attemptId is available
   useEffect(() => {

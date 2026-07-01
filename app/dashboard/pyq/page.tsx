@@ -7,7 +7,6 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import { pyqService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
 import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
-import prelimsSyllabus from '@/data/syllabus/prelimsSyllabus.json';
 import { handleEntitlementError, formatPeriod } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 
@@ -87,6 +86,8 @@ type PYQCountData = {
   byTopic: Array<{ subject: string | null; subSubject: string | null; topic: string | null; count: number }>;
 };
 
+type FilterId = 'paper' | 'subject' | 'subSubject' | 'topic' | 'year' | 'difficulty';
+
 const EMPTY_COUNTS: PYQCountData = {
   total: 0,
   bySubject: [],
@@ -95,13 +96,33 @@ const EMPTY_COUNTS: PYQCountData = {
 };
 
 const SUBJECT_ICONS: Record<string, string> = {
+  'Ancient History': '🏺',
+  'Art & Culture': '🎭',
   History: '🏛️',
+  'Medieval India': '🏰',
+  'Modern History': '🇮🇳',
   Geography: '🌍',
   Polity: '⚖️',
   Economy: '💰',
   'Environment & Ecology': '🌿',
   'Science & Technology': '🔬',
+  'International Relation': '🌐',
+  'International Relations': '🌐',
   'Current Affairs': '📰',
+};
+
+const iconForSubject = (subject: string) => {
+  if (SUBJECT_ICONS[subject]) return SUBJECT_ICONS[subject];
+  const normalized = subject.toLowerCase();
+  if (normalized.includes('history')) return '🏛️';
+  if (normalized.includes('culture')) return '🎭';
+  if (normalized.includes('geography')) return '🌍';
+  if (normalized.includes('polity')) return '⚖️';
+  if (normalized.includes('econom')) return '💰';
+  if (normalized.includes('environment')) return '🌿';
+  if (normalized.includes('science')) return '🔬';
+  if (normalized.includes('international')) return '🌐';
+  return '📘';
 };
 
 
@@ -115,6 +136,10 @@ const asTextList = (value: any): string[] => {
       .map((item) => {
         if (typeof item === 'string') return item;
         if (item && typeof item === 'object') {
+          if (typeof item.demand === 'string') {
+            const status = typeof item.status === 'string' ? humanizeKey(item.status) : '';
+            return status ? `${item.demand} -> ${status}` : item.demand;
+          }
           return item.text || item.feedback || item.comment || item.point || JSON.stringify(item);
         }
         return String(item);
@@ -128,6 +153,25 @@ const asTextList = (value: any): string[] => {
       .filter(Boolean);
   }
   return [String(value)];
+};
+
+const asDemandCoverageList = (value: any): Array<{ demand: string; status?: string }> => {
+  if (!value) return [];
+  if (!Array.isArray(value)) {
+    return asTextList(value).map((demand) => ({ demand }));
+  }
+  return value
+    .map((item) => {
+      if (typeof item === 'string') return { demand: item };
+      if (item && typeof item === 'object' && typeof item.demand === 'string') {
+        return {
+          demand: item.demand,
+          status: typeof item.status === 'string' ? humanizeKey(item.status) : undefined,
+        };
+      }
+      return { demand: asTextList(item).join(' ') };
+    })
+    .filter((item) => item.demand.trim().length > 0);
 };
 
 const humanizeKey = (key: string) =>
@@ -362,27 +406,6 @@ function PyqEvaluationProgressModal({
   );
 }
 
-const PRELIMS_SUBJECT_TREE: SubjectTreeNode[] = [
-  ...(prelimsSyllabus as Array<{ subject: string; subSubjects: Array<{ label: string; topics: string[] }> }>).map((node) => ({
-    label: node.subject,
-    icon: SUBJECT_ICONS[node.subject] || '📘',
-    children: node.subSubjects.map((sub) => ({
-      label: sub.label,
-      microTopics: sub.topics,
-    })),
-  })),
-  {
-    label: 'Current Affairs',
-    icon: '📰',
-    children: [
-      {
-        label: 'Current Affairs and Miscellaneous',
-        microTopics: ['Current Affairs and Miscellaneous'],
-      },
-    ],
-  },
-];
-
 const MAINS_OPTIONAL_SUBJECTS = {
   science: [
     'Agriculture',
@@ -446,7 +469,7 @@ const MAINS_OPTIONAL_ALL = [
 ];
 
 const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
-  prelims: PRELIMS_SUBJECT_TREE,
+  prelims: [],
   mains: [
     { label: 'History', icon: '🏛️', children: [{ label: 'Ancient India' }, { label: 'Medieval India' }, { label: 'Modern India' }, { label: 'Post-Independence' }, { label: 'Art & Culture' }] },
     { label: 'Geography', icon: '🌍', children: [{ label: 'Physical Geography' }, { label: 'Indian Geography' }, { label: 'World Geography' }] },
@@ -501,6 +524,7 @@ export default function PyqPage() {
   const [textAnswerExpanded, setTextAnswerExpanded] = useState(false);
   const mainsAutoSubmitRef = useRef(false);
   const questionsRequestSeqRef = useRef(0);
+  const filterScrollPositionsRef = useRef<Partial<Record<FilterId, number>>>({});
 
   // Data state
   const [questions, setQuestions] = useState<any[]>([]);
@@ -520,7 +544,7 @@ export default function PyqPage() {
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
   const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
   const [questionCounts, setQuestionCounts] = useState<PYQCountData>(EMPTY_COUNTS);
-  const [openFilter, setOpenFilter] = useState<'paper' | 'subject' | 'subSubject' | 'topic' | 'year' | 'difficulty' | null>(null);
+  const [openFilter, setOpenFilter] = useState<FilterId | null>(null);
   const [filterDocked, setFilterDocked] = useState(false);
   const prefersReducedMotion = useReducedMotion();
 
@@ -690,10 +714,8 @@ export default function PyqPage() {
   );
 
   const subjectTree = useMemo(() => {
-    const baseTree = PYQ_SUBJECT_TREE[mode];
-    const existingSubjects = new Set(baseTree.map((node) => countKey(node.label)));
     const dynamicSubjects = questionCounts.bySubject
-      .filter((row) => row.subject && !existingSubjects.has(countKey(row.subject)))
+      .filter((row) => row.subject)
       .map((row) => {
         const label = row.subject as string;
         const children = questionCounts.bySubSubject
@@ -713,12 +735,16 @@ export default function PyqPage() {
 
         return {
           label,
-          icon: SUBJECT_ICONS[label] || '📘',
+          icon: iconForSubject(label),
           children: children.length ? children : undefined,
         };
       });
 
-    return [...baseTree, ...dynamicSubjects];
+    if (mode === 'prelims') return dynamicSubjects;
+
+    const existingSubjects = new Set(dynamicSubjects.map((node) => countKey(node.label)));
+    const staticMainsSubjects = PYQ_SUBJECT_TREE.mains.filter((node) => !existingSubjects.has(countKey(node.label)));
+    return [...dynamicSubjects, ...staticMainsSubjects];
   }, [mode, questionCounts.bySubject, questionCounts.bySubSubject, questionCounts.byTopic]);
 
   const visibleQuestions = useMemo(() => {
@@ -829,8 +855,11 @@ export default function PyqPage() {
     Boolean(selectedSubtopic) ||
     selectedTopics.length > 0;
 
-  const currentSubjectNode = subjectTree.find((node) => node.label === selectedSubject);
-  const currentSubTopicNode = currentSubjectNode?.children?.find((child) => child.label === selectedSubtopic);
+  const currentSubjectNode = subjectTree.find((node) => countKey(node.label) === countKey(selectedSubject));
+  const currentSubTopicNode = currentSubjectNode?.children?.find(
+    (child) => countKey(child.label) === countKey(selectedSubtopic)
+  );
+  const currentTopicOptions = currentSubTopicNode?.microTopics || [];
   const paperCounts = useMemo(() => {
     const counts = new Map<string, number>();
     (questionCounts.byPaper || []).forEach((row) => {
@@ -963,9 +992,18 @@ export default function PyqPage() {
     ) : null
   );
 
+  const scrollableFilterProps = (id: FilterId) => ({
+    ref: (node: HTMLDivElement | null) => {
+      if (node) node.scrollTop = filterScrollPositionsRef.current[id] || 0;
+    },
+    onScroll: (event: React.UIEvent<HTMLDivElement>) => {
+      filterScrollPositionsRef.current[id] = event.currentTarget.scrollTop;
+    },
+  });
+
   const SubjectTreePopover = () => (
     <FilterPopover id="subject" width={520}>
-      <div className="max-h-[440px] overflow-y-auto p-5">
+      <div {...scrollableFilterProps('subject')} className="max-h-[440px] overflow-y-auto p-5">
         <div className="mb-4 flex items-center justify-between border-b border-[#E5E7EB] pb-3">
           <div className="text-[15px] font-bold text-[#101828]">Subject Filter</div>
           <button type="button" onClick={() => setOpenFilter(null)} className="h-8 w-8 rounded-[10px] bg-white text-[#6A7282]">×</button>
@@ -1184,7 +1222,7 @@ export default function PyqPage() {
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21M12 3c-2.5 2.6-3.8 5.6-3.8 9s1.3 6.4 3.8 9" stroke="currentColor" strokeWidth="1.6"/></svg>}
             />
             <FilterPopover id="subSubject" width={360}>
-              <div className="max-h-[360px] overflow-y-auto p-4">
+              <div {...scrollableFilterProps('subSubject')} className="max-h-[360px] overflow-y-auto p-4">
                 <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Sub-Subject</div>
                 {!currentSubjectNode?.children?.length ? (
                   <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a subject first.</div>
@@ -1219,13 +1257,15 @@ export default function PyqPage() {
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2"/><path d="m15 9-4.5 1.5L9 15l4.5-1.5L15 9Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>}
             />
             <FilterPopover id="topic" width={420}>
-              <div className="max-h-[360px] overflow-y-auto p-4">
+              <div {...scrollableFilterProps('topic')} className="max-h-[360px] overflow-y-auto p-4">
                 <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Topic</div>
-                {!currentSubTopicNode?.microTopics?.length ? (
-                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a sub-subject with topics first.</div>
+                {!selectedSubtopic ? (
+                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a sub-subject first.</div>
+                ) : !currentTopicOptions.length ? (
+                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">No topics are assigned to this sub-subject.</div>
                 ) : (
                   <div className="grid gap-1">
-                    {currentSubTopicNode.microTopics.map((topic) => {
+                    {currentTopicOptions.map((topic) => {
                       const active = selectedTopics.includes(topic);
                       return (
                         <button
@@ -1427,7 +1467,7 @@ export default function PyqPage() {
                       className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
                       style={{ background: !selectedSubtopic ? '#0F1A30' : '#DBEAFE', color: !selectedSubtopic ? '#FFFFFF' : '#1D4ED8' }}
                     >
-                      {SUBJECT_ICONS[selectedSubject] ?? '📘'} {selectedSubject}
+                      {iconForSubject(selectedSubject)} {selectedSubject}
                     </button>
                   </>
                 )}
@@ -1833,7 +1873,7 @@ export default function PyqPage() {
                         className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
                         style={{ background: !selectedSubtopic ? '#0F1A30' : '#DBEAFE', color: !selectedSubtopic ? '#FFFFFF' : '#1D4ED8' }}
                       >
-                        {SUBJECT_ICONS[selectedSubject] ?? '📘'} {selectedSubject}
+                        {iconForSubject(selectedSubject)} {selectedSubject}
                       </button>
                     </>
                   )}
@@ -2603,12 +2643,20 @@ export default function PyqPage() {
                 );
               })()}
 
-              {asTextList(mainsEvalResults.demandCoverage).length > 0 && (
+              {asDemandCoverageList(mainsEvalResults.demandCoverage).length > 0 && (
                 <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
                   <p className="mb-4" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 22, color: '#111827' }}>Demand of the question</p>
                   <ul className="space-y-3 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 16, lineHeight: 1.55, color: '#111827' }}>
-                    {asTextList(mainsEvalResults.demandCoverage).map((item, i) => (
-                      <li key={i}>{item}</li>
+                    {asDemandCoverageList(mainsEvalResults.demandCoverage).map((item, i) => (
+                      <li key={i}>
+                        {item.demand}
+                        {item.status ? (
+                          <>
+                            {' -> '}
+                            <strong>{item.status}</strong>
+                          </>
+                        ) : null}
+                      </li>
                     ))}
                   </ul>
                 </div>
