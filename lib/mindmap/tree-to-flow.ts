@@ -1,4 +1,3 @@
-import Dagre from '@dagrejs/dagre';
 import type { Node, Edge } from '@xyflow/react';
 
 // ---------- Types ----------
@@ -102,7 +101,7 @@ function flattenTree(
   result.nodes.push({
     id,
     type: 'mindmapNode',
-    position: { x: 0, y: 0 }, // Dagre will compute
+    position: { x: 0, y: 0 },
     data: {
       label: tree.label,
       depth,
@@ -150,43 +149,84 @@ function flattenTree(
   }
 }
 
-// ---------- Dagre layout ----------
+// ---------- Deterministic tree layout ----------
 
-function applyDagreLayout(
+const RANK_GAP = 110;
+const SIBLING_GAP = 36;
+const CANVAS_MARGIN = 40;
+
+function getDepth(id: string): number {
+  return id === 'root' ? 0 : id.split('-').length - 1;
+}
+
+function applyOrderedTreeLayout(
   nodes: Node<MindmapNodeData>[],
-  edges: Edge[],
-  direction: 'LR' | 'RL' = 'LR'
+  edges: Edge[]
 ): Node<MindmapNodeData>[] {
-  const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-  g.setGraph({
-    rankdir: direction,
-    nodesep: 28,
-    ranksep: 110,
-    marginx: 40,
-    marginy: 40,
-  });
-
-  nodes.forEach((node) => {
-    g.setNode(node.id, {
-      width: node.data.width,
-      height: node.data.height,
-    });
-  });
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const childrenByParent = new Map<string, string[]>();
 
   edges.forEach((edge) => {
-    g.setEdge(edge.source, edge.target);
+    const children = childrenByParent.get(edge.source) ?? [];
+    children.push(edge.target);
+    childrenByParent.set(edge.source, children);
   });
 
-  Dagre.layout(g);
+  const maxWidthByDepth = new Map<number, number>();
+  nodes.forEach((node) => {
+    const depth = getDepth(node.id);
+    maxWidthByDepth.set(depth, Math.max(maxWidthByDepth.get(depth) ?? 0, node.data.width));
+  });
+
+  const xByDepth = new Map<number, number>();
+  let nextX = CANVAS_MARGIN;
+  Array.from(maxWidthByDepth.keys())
+    .sort((a, b) => a - b)
+    .forEach((depth) => {
+      const width = maxWidthByDepth.get(depth) ?? 0;
+      xByDepth.set(depth, nextX + width / 2);
+      nextX += width + RANK_GAP;
+    });
+
+  const centerYById = new Map<string, number>();
+
+  function measureAndPlace(id: string, top: number): number {
+    const node = nodeById.get(id);
+    if (!node) return 0;
+
+    const children = childrenByParent.get(id) ?? [];
+    if (children.length === 0) {
+      const height = node.data.height;
+      centerYById.set(id, top + height / 2);
+      return height;
+    }
+
+    let childTop = top;
+    const childCenters: number[] = [];
+    children.forEach((childId, index) => {
+      if (index > 0) childTop += SIBLING_GAP;
+      const childHeight = measureAndPlace(childId, childTop);
+      childCenters.push(centerYById.get(childId) ?? childTop + childHeight / 2);
+      childTop += childHeight;
+    });
+
+    const childrenHeight = childTop - top;
+    const height = Math.max(node.data.height, childrenHeight);
+    const firstCenter = childCenters[0] ?? top + height / 2;
+    const lastCenter = childCenters[childCenters.length - 1] ?? firstCenter;
+    centerYById.set(id, (firstCenter + lastCenter) / 2);
+    return height;
+  }
+
+  measureAndPlace('root', CANVAS_MARGIN);
 
   return nodes.map((node) => {
-    const pos = g.node(node.id);
+    const depth = getDepth(node.id);
+    const x = (xByDepth.get(depth) ?? CANVAS_MARGIN) - node.data.width / 2;
+    const y = (centerYById.get(node.id) ?? CANVAS_MARGIN) - node.data.height / 2;
     return {
       ...node,
-      position: {
-        x: pos.x - node.data.width / 2,
-        y: pos.y - node.data.height / 2,
-      },
+      position: { x, y },
     };
   });
 }
@@ -237,7 +277,7 @@ export function buildMindmapFlow(
   flattenTree(root, null, 0, 0, '#1C2E45', expIds, 'root', result, { val: 0 });
 
   return {
-    nodes: applyDagreLayout(result.nodes, result.edges, 'LR'),
+    nodes: applyOrderedTreeLayout(result.nodes, result.edges),
     edges: result.edges,
   };
 }

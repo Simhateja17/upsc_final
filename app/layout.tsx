@@ -3,6 +3,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { AuthModalProvider } from '@/contexts/AuthModalContext'
 import AuthModal from '@/components/AuthModal'
+import { Analytics } from '@vercel/analytics/next'
 import { Cormorant_Garamond, DM_Sans, Sora, Playfair_Display, Inter, Merriweather, Plus_Jakarta_Sans, DM_Serif_Display, Fraunces } from 'next/font/google'
 
 const cormorant = Cormorant_Garamond({
@@ -112,6 +113,7 @@ export default function RootLayout({
             <AuthModal />
           </AuthModalProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   )
