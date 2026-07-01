@@ -105,6 +105,7 @@ function calloutBodyLines(body: string): string[] {
 
 function normalizeJeetMarkup(content: string): string {
   return content
+    .replace(/[ \t]*•[ \t]*/g, '\n- ')
     .replace(/>?\s*\[!ALERT[^\]]*\]\s*([\s\S]*?)\s*\[\/ALERT\]/g, (_match, body: string) => {
       const lines = calloutBodyLines(body);
       return '\n\n' + ['> **Important:**', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
@@ -154,8 +155,7 @@ function normalizeJeetMarkup(content: string): string {
       return '\n\n' + ['> ** MAINS FOCUS**', '>', ...lines.map((line) => `> ${line}`)].join('\n') + '\n\n';
     })
     .replace(/==[a-z]+{([^{}]+)}==/gi, '**$1**')
-    .replace(/^---\s*BADGES:\s*(.*?)\s*---$/gim, '**Tags:** $1')
-    .replace(/[ \t]*•[ \t]*/g, '\n- ');
+    .replace(/^---\s*BADGES:\s*(.*?)\s*---$/gim, '**Tags:** $1');
 }
 
 /** Recursively extract plain text from React children (for marker/tag detection). */
@@ -169,6 +169,20 @@ function extractPlainText(node: React.ReactNode): string {
   }
   return '';
 }
+
+const CALLOUT_TYPES: { type: string; label: string; icon: string }[] = [
+  { type: 'priority', label: 'UPSC HIGH-PRIORITY ALERT', icon: '🔥' },
+  { type: 'tip', label: "EXAMINER'S TIP", icon: '💡' },
+  { type: 'pyq', label: 'RELEVANT PYQ / EXAM QUESTION', icon: '📝' },
+  { type: 'exam', label: 'EXAM RELEVANCE', icon: '🎯' },
+  { type: 'dimension', label: 'KEY DIMENSIONS TO COVER', icon: '📐' },
+  { type: 'note', label: 'IMPORTANT NOTE', icon: '📌' },
+  { type: 'ncert', label: 'NCERT REFERENCE', icon: '📚' },
+  { type: 'current', label: 'CURRENT AFFAIRS LINK', icon: '📰' },
+  { type: 'ethics', label: 'ETHICS ANGLE', icon: '⚖️' },
+  { type: 'prelims', label: 'PRELIMS FOCUS', icon: '🔴' },
+  { type: 'mains', label: 'MAINS FOCUS', icon: '✍️' },
+];
 
 const DIMENSION_COLORS = ['#4F46E5', '#0D9488', '#E11D48', '#7C3AED', '#D97706'];
 const BADGE_COLORS = [
@@ -308,101 +322,13 @@ function MarkdownRenderer({ content }: { content: string }) {
         blockquote: ({ children }) => {
           const childArray = React.Children.toArray(children);
           const firstText = extractPlainText(childArray[0]).trim();
+          const coreLabel = firstText.replace(/^[^A-Za-z]+/, '').toUpperCase();
+          const matched = CALLOUT_TYPES.find((c) => c.label.toUpperCase() === coreLabel);
 
-          if (firstText === ' UPSC HIGH-PRIORITY ALERT') {
+          if (matched) {
             return (
-              <div className="jai-callout jai-callout-priority">
-                <div className="jai-callout-title priority"><span>🔥</span> UPSC HIGH-PRIORITY ALERT</div>
-                <div className="jai-callout-body">{childArray.slice(1)}</div>
-              </div>
-            );
-          }
-
-          if (firstText === "💡 EXAMINER'S TIP") {
-            return (
-              <div className="jai-callout jai-callout-tip">
-                <div className="jai-callout-title tip"><span>💡</span> EXAMINER&apos;S TIP</div>
-                <div className="jai-callout-body">{childArray.slice(1)}</div>
-              </div>
-            );
-          }
-
-          if (firstText === '📝 RELEVANT PYQ / EXAM QUESTION') {
-            return (
-              <div className="jai-callout jai-callout-pyq">
-                <div className="jai-callout-title pyq"><span>📝</span> RELEVANT PYQ / EXAM QUESTION</div>
-                <div className="jai-callout-body">{childArray.slice(1)}</div>
-              </div>
-            );
-          }
-
-          if (firstText === '🎯 EXAM RELEVANCE') {
-            return (
-              <div className="jai-callout jai-callout-exam">
-                <div className="jai-callout-title exam"><span></span> EXAM RELEVANCE</div>
-                <div className="jai-callout-body">{childArray.slice(1)}</div>
-              </div>
-            );
-          }
-
-          if (firstText === '📐 KEY DIMENSIONS TO COVER') {
-            return (
-              <div className="jai-callout jai-callout-dimension">
-                <div className="jai-callout-title dimension"><span></span> KEY DIMENSIONS TO COVER</div>
-                <div className="jai-callout-body">{childArray.slice(1)}</div>
-              </div>
-            );
-          }
-
-          if (firstText === ' IMPORTANT NOTE') {
-            return (
-              <div className="jai-callout jai-callout-note">
-                <div className="jai-callout-title note"><span></span> IMPORTANT NOTE</div>
-                <div className="jai-callout-body">{childArray.slice(1)}</div>
-              </div>
-            );
-          }
-
-          if (firstText === '📚 NCERT REFERENCE') {
-            return (
-              <div className="jai-callout jai-callout-ncert">
-                <div className="jai-callout-title ncert"><span></span> NCERT REFERENCE</div>
-                <div className="jai-callout-body">{childArray.slice(1)}</div>
-              </div>
-            );
-          }
-
-          if (firstText === '📰 CURRENT AFFAIRS LINK') {
-            return (
-              <div className="jai-callout jai-callout-current">
-                <div className="jai-callout-title current"><span>📰</span> CURRENT AFFAIRS LINK</div>
-                <div className="jai-callout-body">{childArray.slice(1)}</div>
-              </div>
-            );
-          }
-
-          if (firstText === '️ ETHICS ANGLE') {
-            return (
-              <div className="jai-callout jai-callout-ethics">
-                <div className="jai-callout-title ethics"><span>️</span> ETHICS ANGLE</div>
-                <div className="jai-callout-body">{childArray.slice(1)}</div>
-              </div>
-            );
-          }
-
-          if (firstText === ' PRELIMS FOCUS') {
-            return (
-              <div className="jai-callout jai-callout-prelims">
-                <div className="jai-callout-title prelims"><span>🔴</span> PRELIMS FOCUS</div>
-                <div className="jai-callout-body">{childArray.slice(1)}</div>
-              </div>
-            );
-          }
-
-          if (firstText === ' MAINS FOCUS') {
-            return (
-              <div className="jai-callout jai-callout-mains">
-                <div className="jai-callout-title mains"><span></span> MAINS FOCUS</div>
+              <div className={`jai-callout jai-callout-${matched.type}`}>
+                <div className={`jai-callout-title ${matched.type}`}><span>{matched.icon}</span> {matched.label}</div>
                 <div className="jai-callout-body">{childArray.slice(1)}</div>
               </div>
             );
@@ -1037,27 +963,27 @@ export default function JeetGPTPage() {
         .jai-callout-title{font-size:11px;font-weight:700;letter-spacing:0.3px;margin-bottom:4px;display:flex;align-items:center;gap:6px;font-family:var(--font-sora),sans-serif;text-transform:uppercase;}
         .jai-callout-body p{margin:0 0 4px;font-size:13px;line-height:1.6;color:#374151;}
         .jai-callout-body p:last-child{margin-bottom:0;}
-        .jai-callout-priority{background:#FFF7ED;border:1px solid #FDBA74;}
+        .jai-callout-priority{background:#FFF7ED;border:1px solid #FDBA74;border-left:4px solid #D97706;}
         .jai-callout-title.priority{color:#D97706;}
-        .jai-callout-tip{background:#EFF6FF;border:1px solid #BFDBFE;}
+        .jai-callout-tip{background:#EFF6FF;border:1px solid #BFDBFE;border-left:4px solid #1D4ED8;}
         .jai-callout-title.tip{color:#1D4ED8;}
-        .jai-callout-pyq{background:#F0FDF4;border:1px solid #86EFAC;}
+        .jai-callout-pyq{background:#F0FDF4;border:1px solid #86EFAC;border-left:4px solid #16A34A;}
         .jai-callout-title.pyq{color:#16A34A;}
-        .jai-callout-exam{background:#EFF6FF;border:1px solid #93C5FD;}
+        .jai-callout-exam{background:#EFF6FF;border:1px solid #93C5FD;border-left:4px solid #2563EB;}
         .jai-callout-title.exam{color:#2563EB;}
-        .jai-callout-dimension{background:#F5F3FF;border:1px solid #C4B5FD;}
+        .jai-callout-dimension{background:#F5F3FF;border:1px solid #C4B5FD;border-left:4px solid #7C3AED;}
         .jai-callout-title.dimension{color:#7C3AED;}
-        .jai-callout-note{background:#FFFBEB;border:1px solid #FDE68A;}
+        .jai-callout-note{background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid #D97706;}
         .jai-callout-title.note{color:#D97706;}
-        .jai-callout-ncert{background:#ECFDF5;border:1px solid #6EE7B7;}
+        .jai-callout-ncert{background:#ECFDF5;border:1px solid #6EE7B7;border-left:4px solid #059669;}
         .jai-callout-title.ncert{color:#059669;}
-        .jai-callout-current{background:#FEF3C7;border:1px solid #FCD34D;}
+        .jai-callout-current{background:#FEF3C7;border:1px solid #FCD34D;border-left:4px solid #D97706;}
         .jai-callout-title.current{color:#D97706;}
-        .jai-callout-ethics{background:#FDF2F8;border:1px solid #F9A8D4;}
+        .jai-callout-ethics{background:#FDF2F8;border:1px solid #F9A8D4;border-left:4px solid #DB2777;}
         .jai-callout-title.ethics{color:#DB2777;}
-        .jai-callout-prelims{background:#FEE2E2;border:1px solid #FCA5A5;}
+        .jai-callout-prelims{background:#FEE2E2;border:1px solid #FCA5A5;border-left:4px solid #DC2626;}
         .jai-callout-title.prelims{color:#DC2626;}
-        .jai-callout-mains{background:#F3E8FF;border:1px solid #D8B4FE;}
+        .jai-callout-mains{background:#F3E8FF;border:1px solid #D8B4FE;border-left:4px solid #9333EA;}
         .jai-callout-title.mains{color:#9333EA;}
         .jai-tagrow{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;}
         .jai-tagpill{display:inline-flex;align-items:center;font-size:10px;padding:3px 10px;border-radius:10px;font-weight:500;white-space:nowrap;border:0.5px solid;}
