@@ -1195,7 +1195,29 @@ export default function DailyEditorialPage() {
             );
           }
 
-          /* default / critical analysis */
+          if (tl.includes('critical analysis')) {
+            const blocks = body
+              .split(/(?:^|\s)-\s+(?=\*\*)/)
+              .map(b => b.trim())
+              .filter(Boolean);
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {blocks.map((block, i) => {
+                  const match = block.match(/^\*\*(.*?)\*\*:?\s*([\s\S]*)$/);
+                  const heading = match ? match[1].replace(/:$/, '').trim() : '';
+                  const text = (match ? match[2] : block).replace(/\*\*/g, '').trim();
+                  return (
+                    <div key={i} style={{ paddingLeft: 12, borderLeft: '2.5px solid #dce3ef' }}>
+                      {heading && <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2233', marginBottom: 4 }}>{heading}</div>}
+                      <div style={{ fontSize: 13, color: '#4a5a72', lineHeight: 1.65 }}>{text}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          }
+
+          /* default */
           const html = body
             .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#1a2233;font-weight:700">$1</strong>')
             .replace(/\n\n/g, '<br/><br/>');
