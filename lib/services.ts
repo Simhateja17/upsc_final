@@ -96,6 +96,7 @@ export const dashboardService = {
   getActivity: (limit = 10) => api.get<any>(`/user/activity?limit=${limit}`, authConfig()),
   getPerformance: () => api.get<any>('/user/performance', authConfig()),
   getPracticeStats: () => api.get<any>('/user/practice-stats', authConfig()),
+  getBadges: () => api.get<any>('/user/badges', authConfig()),
   getTestAnalytics: async () => {
     const config = { ...(await freshAuthConfig()), timeout: 5000 };
 
