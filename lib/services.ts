@@ -96,6 +96,7 @@ export const dashboardService = {
   getActivity: (limit = 10) => api.get<any>(`/user/activity?limit=${limit}`, authConfig()),
   getPerformance: () => api.get<any>('/user/performance', authConfig()),
   getPracticeStats: () => api.get<any>('/user/practice-stats', authConfig()),
+  getBadges: () => api.get<any>('/user/badges', authConfig()),
   getTestAnalytics: async () => {
     const config = { ...(await freshAuthConfig()), timeout: 5000 };
 
@@ -648,6 +649,14 @@ export const studyGroupService = {
   postMessage: (id: string, content: string) =>
     api.post<any>(`/study-groups/${id}/messages`, { content }, authConfig()),
   getMyGroups: () => api.get<any[]>('/study-groups/my-groups', authConfig()),
+  getGoals: (id: string) => api.get<any>(`/study-groups/${id}/goals`, authConfig()),
+  addGoal: (id: string, title: string) =>
+    api.post<any>(`/study-groups/${id}/goals`, { title }, authConfig()),
+  toggleGoal: (id: string, goalId: string) =>
+    api.post<any>(`/study-groups/${id}/goals/${goalId}/toggle`, {}, authConfig()),
+  getMemberTimes: (id: string) => api.get<any>(`/study-groups/${id}/member-times`, authConfig()),
+  postFocusTime: (id: string, seconds: number) =>
+    api.post<any>(`/study-groups/${id}/focus-time`, { seconds }, authConfig()),
 };
 
 // ==================== User Profile & Settings ====================
@@ -699,8 +708,8 @@ export const leaderboardService = {
 // ==================== Contact ====================
 
 export const contactService = {
-  submit: (data: { firstName: string; lastName: string; email: string; subject: string; message: string }) =>
-    api.post<any>('/contact', data),
+  submit: (data: { firstName: string; lastName: string; email: string; subject: string; message: string }, authed = false) =>
+    api.post<any>('/contact', data, authed ? authConfig() : undefined),
 };
 
 // ==================== Admin ====================
@@ -829,6 +838,14 @@ export const adminService = {
   },
   extendSubscription: (id: string, days: number) =>
     api.post<any>(`/billing/admin/subscriptions/${id}/extend`, { days }, authConfig()),
+
+  // Contact Submissions
+  getContactSubmissions: () => api.get<any>('/admin/contact-submissions', authConfig()),
+  updateContactSubmissionStatus: (id: string, status: string) =>
+    api.patch<any>(`/admin/contact-submissions/${id}/status`, { status }, authConfig()),
+
+  // User Feedback
+  getFeedback: () => api.get<any>('/admin/feedback', authConfig()),
 
   // FAQ Management
   getFaqs: () => api.get<any>('/admin/faqs', authConfig()),

@@ -99,6 +99,7 @@ export default function MindmapViewPage() {
 
   const [data, setData] = useState<NewFormatData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exploredBranches, setExploredBranches] = useState<Set<string>>(new Set());
   const [showProModal, setShowProModal] = useState(false);
   const [viewMode, setViewMode] = useState<'mindmap' | 'list'>('mindmap');
 
@@ -159,6 +160,14 @@ export default function MindmapViewPage() {
           setData(parsed);
           if (!raw.viewed) {
             mindmapService.updateProgress(raw.id, raw.mastery, true).catch(() => {});
+          }
+          if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem(`rwj_mindmap_explored_${raw.id}`);
+            if (saved) {
+              try {
+                setExploredBranches(new Set(JSON.parse(saved)));
+              } catch {}
+            }
           }
         }
       })
@@ -311,6 +320,13 @@ export default function MindmapViewPage() {
                 <CheckmarkIcon />
               </div>
               <span className="text-[12px] text-[#047857] font-medium">{data.mastery}% mastered</span>
+            </div>
+
+            {/* Branches explored */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-gray-200 shadow-sm">
+              <span className="text-[12px] text-[#6B7280] font-medium">
+                Branches explored: {exploredBranches.size}/{topBranches}
+              </span>
             </div>
 
             {/* Quiz PRO button */}

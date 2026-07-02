@@ -32,7 +32,7 @@ const SUBJECT_META: Record<string, Omit<Subject, 'id' | 'name' | 'short' | 'topi
     color: '#E6A817',
     bg: 'rgba(230,168,23,.12)',
   },
-  'environment-ecology': {
+  environment: {
     icon: '🌿',
     color: '#6DBF8A',
     bg: 'rgba(109,191,138,.12)',
@@ -42,6 +42,11 @@ const SUBJECT_META: Record<string, Omit<Subject, 'id' | 'name' | 'short' | 'topi
     color: '#8B6FC4',
     bg: 'rgba(139,111,196,.12)',
   },
+  'international-relations': {
+    icon: '🌐',
+    color: '#2563eb',
+    bg: 'rgba(37,99,235,.12)',
+  },
 };
 
 const SHORT_LABELS: Record<string, string> = {
@@ -49,8 +54,9 @@ const SHORT_LABELS: Record<string, string> = {
   geography: 'Geog.',
   polity: 'Polity',
   economy: 'Economy',
-  'environment-ecology': 'Env.',
+  environment: 'Env.',
   'science-technology': 'S&T',
+  'international-relations': 'IR',
 };
 
 function subjectId(subject: string) {

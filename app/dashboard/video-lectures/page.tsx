@@ -49,12 +49,20 @@ type SubjectCardTheme = {
   showNew?: boolean;
 };
 
+function getDailyViewGrowth(hash: number): number {
+  const anchorMs = new Date('2026-06-14').getTime();
+  const daysDelta = Math.max(0, Math.floor((Date.now() - anchorMs) / 86_400_000));
+  const dailyRate = 50 + (hash % 150); // 50–200 views / day, stable per seed
+  return dailyRate * daysDelta;
+}
+
 function getFallbackViewCount(seed: string): number {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = (hash * 31 + seed.charCodeAt(i)) % 100000;
   }
-  return 20000 + (hash % 10001);
+  const base = 25500 + (hash % 50001); // 25.5 K – 75.5 K on anchor date
+  return base + getDailyViewGrowth(hash);
 }
 
 /* Deterministic per-subject view count (50k–320k), so cards never show 0 */
@@ -1114,7 +1122,7 @@ export default function VideoLecturesPage() {
                   style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))',
-                    gap: 'clamp(16px, 1.8vw, 24px)',
+                    gap: 'clamp(24px, 2.5vw, 36px)',
                   }}
                 >
                   {filteredSubjectVideos.map((video) => {
