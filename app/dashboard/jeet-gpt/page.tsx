@@ -275,7 +275,7 @@ function MarkdownRenderer({ content }: { content: string }) {
             return arr;
           };
 
-          let styled = childArray;
+          let styled: React.ReactNode[] = childArray;
           const [firstChild, ...restChildren] = childArray;
           if (React.isValidElement(firstChild) && firstChild.type === ParagraphComponent) {
             const pProps = firstChild.props as { children?: React.ReactNode };

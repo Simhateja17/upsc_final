@@ -69,7 +69,6 @@ interface Task {
   startTime?: string;
   endTime?: string;
   duration?: number;
-  actualDuration?: number;
   isCompleted: boolean;
   recur?: string;
   actualDuration?: number | null;

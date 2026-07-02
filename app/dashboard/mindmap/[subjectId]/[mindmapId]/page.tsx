@@ -99,6 +99,7 @@ export default function MindmapViewPage() {
 
   const [data, setData] = useState<NewFormatData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exploredBranches, setExploredBranches] = useState<Set<string>>(new Set());
   const [showProModal, setShowProModal] = useState(false);
   const [viewMode, setViewMode] = useState<'mindmap' | 'list'>('mindmap');
 

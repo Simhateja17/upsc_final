@@ -23,6 +23,43 @@ interface EditorialCard {
   isSaved: boolean;
 }
 
+/* ── parse markdown into named sections (mirrors the inline parser used
+   when rendering the summary modal, exposed here so handleSummarize can
+   validate a fetched summary actually has parseable sections) ── */
+function parseSections(md: string): { title: string; body: string }[] {
+  const sections: { title: string; body: string }[] = [];
+  const lines = md.split('\n');
+  let cur: { title: string; lines: string[] } | null = null;
+  let hasHeading = false;
+
+  const isSectionHeading = (line: string): string | null => {
+    const trimmed = line.trim();
+    const h3Match = trimmed.match(/^#{3}\s*((?:\d+[.)]\s*)?.+?)(?:\s*[-–—]\s*.+)?$/);
+    if (h3Match) return h3Match[1].trim();
+    const h12Match = trimmed.match(/^#{1,2}\s*((?:\d+[.)]\s*)?.+)$/);
+    if (h12Match) return h12Match[1].trim();
+    const numMatch = trimmed.match(/^(\d+[.)]\s+)([A-Z].+)$/);
+    if (numMatch && sections.length < 6) return numMatch[0].trim();
+    return null;
+  };
+
+  for (const line of lines) {
+    const heading = isSectionHeading(line);
+    if (heading) {
+      hasHeading = true;
+      if (cur) sections.push({ title: cur.title, body: cur.lines.join('\n').trim() });
+      cur = { title: heading, lines: [] };
+    } else {
+      if (!cur && !hasHeading) {
+        cur = { title: "Summary", lines: [] };
+      }
+      cur?.lines.push(line);
+    }
+  }
+  if (cur) sections.push({ title: cur.title, body: cur.lines.join('\n').trim() });
+  return sections;
+}
+
 const categoryColors: Record<string, { color: string; bg: string }> = {
   'History': { color: '#B45309', bg: '#FEF3C7' },
   'Geography': { color: '#1D4ED8', bg: '#DBEAFE' },
