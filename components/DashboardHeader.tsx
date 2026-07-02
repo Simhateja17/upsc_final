@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
+import { userService } from '@/lib/services';
 
 interface DashboardHeaderProps {
   onMenuClick?: () => void;
@@ -26,8 +27,11 @@ function getNotificationIcon(type: string): string {
     case 'answer_evaluated': return '✅';
     case 'digest': return '\u{1F4F0}';
     case 'streak_alert': return '\u{1F525}';
+    case 'streak_daily': return '\u{1F525}';
     case 'weekly_progress': return '\u{1F4CA}';
     case 'spaced_rep': return '\u{1F504}';
+    case 'mock_test_available': return '\u{1F4CC}';
+    case 'daily_trio_reminder': return '\u{1F4DA}';
     default: return '\u{1F514}';
   }
 }

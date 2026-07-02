@@ -69,6 +69,8 @@ export default function SettingsPage() {
   const [nDigest, setNDigest] = useState(true);
   const [nStreak, setNStreak] = useState(true);
   const [nPromo,  setNPromo]  = useState(true);
+  const [nMockTest, setNMockTest] = useState(true);
+  const [nTrio, setNTrio] = useState(true);
 
   // Preferences
   const [dailyTarget,     setDailyTarget]     = useState('');
@@ -105,6 +107,8 @@ export default function SettingsPage() {
         setNDigest(notifs.digest ?? true);
         setNStreak(notifs.streak ?? true);
         setNPromo(notifs.promo   ?? true);
+        setNMockTest(notifs.mockTest ?? true);
+        setNTrio(notifs.trio ?? true);
 
         setDailyTarget(prefs.dailyTarget    || '');
         setAnswerReminder(prefs.answerReminder || '');
@@ -133,7 +137,7 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await userService.updateSettings({
-        notifications: { mcq: nMcq, answer: nAnswer, digest: nDigest, streak: nStreak, promo: nPromo },
+        notifications: { mcq: nMcq, answer: nAnswer, digest: nDigest, streak: nStreak, promo: nPromo, mockTest: nMockTest, trio: nTrio },
       });
       notify('Notification preferences saved.');
     } catch (e: any) {
@@ -377,9 +381,11 @@ export default function SettingsPage() {
       <div className="flex flex-col">
         {[
           { label: 'Daily MCQ reminder',            desc: 'Remind to complete daily practice', on: nMcq,    toggle: () => setNMcq(v    => !v) },
+          { label: 'Daily Trio reminder',            desc: "Remind to complete today's MCQ, Mains & Editorial", on: nTrio, toggle: () => setNTrio(v => !v) },
           { label: 'Answer evaluation complete',     desc: 'When AI finishes evaluating',       on: nAnswer, toggle: () => setNAnswer(v => !v) },
-          { label: 'Current affairs morning digest', desc: 'Daily at 8 AM',                    on: nDigest, toggle: () => setNDigest(v => !v) },
+          { label: 'Current affairs morning digest', desc: 'Daily at 9 AM',                    on: nDigest, toggle: () => setNDigest(v => !v) },
           { label: 'Streak at risk',                 desc: 'Alert before streak breaks',        on: nStreak, toggle: () => setNStreak(v => !v) },
+          { label: 'New mock test available',        desc: 'When a new mock test is added',     on: nMockTest, toggle: () => setNMockTest(v => !v) },
           { label: 'Promotional emails',             desc: 'Updates and offers',                on: nPromo,  toggle: () => setNPromo(v  => !v) },
         ].map((item) => (
           <div
