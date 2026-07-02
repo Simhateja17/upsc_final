@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import { studyGroupService, dashboardService } from '@/lib/services';
+import { studyGroupService, dashboardService, studyPlannerService } from '@/lib/services';
 import { EntitlementGate } from '@/components/entitlements';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -54,6 +54,18 @@ export default function StudyGroupsPage() {
   const [roomFocusMode, setRoomFocusMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Room Goals – shared goal list for the current room, per-member completion
+  interface RoomGoal { id: string; title: string; createdById: string; createdByName: string; createdAt: string; }
+  interface RoomMemberTime { userId: string; name: string; avatarUrl: string | null; focusSeconds: number; }
+  const [roomGoals, setRoomGoals] = useState<RoomGoal[]>([]);
+  const [myCompletedGoalIds, setMyCompletedGoalIds] = useState<Set<string>>(new Set());
+  const [newGoalInput, setNewGoalInput] = useState('');
+  const [addingGoal, setAddingGoal] = useState(false);
+  const [togglingGoalIds, setTogglingGoalIds] = useState<Set<string>>(new Set());
+  const [memberTimes, setMemberTimes] = useState<RoomMemberTime[]>([]);
+  const [teamTotalSeconds, setTeamTotalSeconds] = useState(0);
+  const roomPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Pomodoro timer state – Solo Session
   const BREAK_SECONDS = 5 * 60;
@@ -135,9 +147,15 @@ export default function StudyGroupsPage() {
         if (prev <= 1) {
           setPomoRunning(false);
           if (pomoMode === 'focus') {
+            // Every tick while running already added +1 (see below), so the
+            // cycle-completion tick only needs to account for its own final
+            // second — adding focusSecs again here would double-count the
+            // whole session.
             setTodaySeconds((t) => {
-              const next = t + focusSecs;
+              const next = t + 1;
               persistTodaySeconds(next);
+              flushSoloSession(next);
+              flushRoomFocusTime(next);
               return next;
             });
             setCompletedSessions((s) => {
@@ -165,7 +183,7 @@ export default function StudyGroupsPage() {
         if (pomoMode === 'focus') {
           setTodaySeconds((t) => {
             const next = t + 1;
-            if (next % 30 === 0) persistTodaySeconds(next);
+            if (next % 30 === 0) { persistTodaySeconds(next); flushSoloSession(next); flushRoomFocusTime(next); }
             return next;
           });
         }
@@ -176,7 +194,12 @@ export default function StudyGroupsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pomoRunning, pomoMode]);
 
-  const handlePomoStart = () => setPomoRunning((r) => !r);
+  const handlePomoStart = () => {
+    setPomoRunning((r) => {
+      if (r && pomoMode === 'focus') { flushSoloSession(todaySeconds); flushRoomFocusTime(todaySeconds); }
+      return !r;
+    });
+  };
   const handlePomoReset = () => {
     setPomoRunning(false);
     setPomoSecondsLeft(pomoMode === 'focus' ? focusMinutesRef.current * 60 : BREAK_SECONDS);
@@ -209,44 +232,114 @@ export default function StudyGroupsPage() {
   const pomoTotalForMode = pomoMode === 'focus' ? focusMinutes * 60 : BREAK_SECONDS;
   const pomoProgress = 1 - pomoSecondsLeft / pomoTotalForMode;
 
-  // Today's Study Tasks – persisted per day in localStorage
-  interface StudyTask { id: string; text: string; done: boolean; }
-  const tasksDayKey = useMemo(() => {
-    const now = new Date();
-    const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-    return `rwj_study_tasks_${localDate}`;
-  }, []);
-  const [studyTasks, setStudyTasks] = useState<StudyTask[]>([]);
+  // Today's Study Tasks – shared with Study Planner via studyPlannerService
+  interface Task {
+    id: string;
+    title: string;
+    subject?: string;
+    type: string;
+    date: string;
+    isCompleted: boolean;
+    actualDuration?: number;
+  }
+  // Deliberately never pass an explicit date string to studyPlannerService here.
+  // The backend's default "today" (no date param) resolves to local midnight,
+  // which is what the Dashboard's study-hours stat exact-matches against. An
+  // explicit "YYYY-MM-DD" string gets stored at noon UTC instead (a separate,
+  // pre-existing convention used for date-navigation), which silently fails
+  // that exact-match — so tasks created that way never count toward Dashboard
+  // hours even though they're genuinely "today".
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
   const [newTaskInput, setNewTaskInput] = useState('');
+  const [addingTask, setAddingTask] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    let cancelled = false;
+    setTasksLoading(true);
+    studyPlannerService.getTodayTasks()
+      .then((res: any) => { if (!cancelled) setTasks(Array.isArray(res.data) ? res.data : []); })
+      .catch(() => { if (!cancelled) setTasks([]); })
+      .finally(() => { if (!cancelled) setTasksLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const toggleTask = async (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+    setTasks((prev) => prev.map((t) => t.id === id ? { ...t, isCompleted: !t.isCompleted } : t));
     try {
-      const storedTasks = JSON.parse(localStorage.getItem(tasksDayKey) || '[]');
-      if (Array.isArray(storedTasks)) setStudyTasks(storedTasks);
+      await studyPlannerService.updateTask(id, { isCompleted: !task.isCompleted });
     } catch {
-      setStudyTasks([]);
+      setTasks((prev) => prev.map((t) => t.id === id ? { ...t, isCompleted: task.isCompleted } : t));
     }
-  }, [tasksDayKey]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(tasksDayKey, JSON.stringify(studyTasks));
-  }, [studyTasks, tasksDayKey]);
-
-  const toggleTask = (id: string) => {
-    setStudyTasks((tasks) => tasks.map((t) => t.id === id ? { ...t, done: !t.done } : t));
   };
   const taskInputRef = useRef<HTMLInputElement>(null);
-  const addTask = (e?: React.FormEvent) => {
+  const addTask = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    const text = newTaskInput.trim();
-    if (!text) return;
-    const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : Date.now().toString();
-    setStudyTasks((tasks) => [...tasks, { id, text, done: false }]);
-    setNewTaskInput('');
-    taskInputRef.current?.focus();
+    const title = newTaskInput.trim();
+    if (!title || addingTask) return;
+    setAddingTask(true);
+    try {
+      const res: any = await studyPlannerService.createTask({ title });
+      if (res.data) setTasks((prev) => [...prev, res.data]);
+      setNewTaskInput('');
+      taskInputRef.current?.focus();
+    } catch {
+      // silent – input keeps its value so the user can retry
+    } finally {
+      setAddingTask(false);
+    }
   };
+
+  // Solo Focus Session time syncs into a daily placeholder StudyPlanTask, so it
+  // counts toward Dashboard study hours the same way Study Planner's own
+  // Focus Session does (both write actualDuration onto real task rows).
+  const SOLO_SESSION_TITLE = 'Solo Focus Session';
+  const SOLO_SESSION_TYPE = 'study';
+  const soloSessionTaskRef = useRef<Task | null>(null);
+
+  useEffect(() => {
+    if (tasksLoading) return;
+    const existing = tasks.find((t) => t.type === SOLO_SESSION_TYPE && t.title === SOLO_SESSION_TITLE);
+    if (existing) soloSessionTaskRef.current = existing;
+  }, [tasks, tasksLoading]);
+
+  const flushSoloSession = useCallback(async (secs: number) => {
+    if (secs <= 0 || tasksLoading) return;
+    try {
+      let task: Task | null = soloSessionTaskRef.current;
+      if (!task) {
+        const res: any = await studyPlannerService.createTask({
+          title: SOLO_SESSION_TITLE,
+          type: SOLO_SESSION_TYPE,
+        });
+        if (!res.data) return;
+        task = res.data as Task;
+        soloSessionTaskRef.current = task;
+        setTasks((prev) => [...prev, task as Task]);
+      }
+      if (!task) return;
+      const updates = { actualDuration: secs, isCompleted: true };
+      await studyPlannerService.updateTask(task.id, updates);
+      const updatedTask: Task = { ...task, ...updates };
+      soloSessionTaskRef.current = updatedTask;
+      setTasks((prev) => prev.map((t) => t.id === updatedTask.id ? updatedTask : t));
+    } catch {
+      // silent – local timer state already has the correct value; next flush retries
+    }
+  }, [tasksLoading]);
+
+  // When focusing while inside a room, also log the same cumulative seconds
+  // as room-scoped time (separate from the personal diary flush above).
+  const flushRoomFocusTime = useCallback(async (secs: number) => {
+    if (secs <= 0 || !inRoom) return;
+    try {
+      await studyGroupService.postFocusTime(inRoom.id, secs);
+    } catch {
+      // silent – next flush retries
+    }
+  }, [inRoom]);
 
   const fetchGroups = useCallback(async () => {
     try {
@@ -268,6 +361,31 @@ export default function StudyGroupsPage() {
     } catch {
       // silent
     }
+  }, []);
+
+  // Restore the immersive "in room" view after navigating away and back —
+  // `inRoom` is plain component state, wiped when this page unmounts on
+  // route change, even though the user is still an active room member
+  // server-side. sessionStorage remembers which room to re-enter.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const activeRoomId = sessionStorage.getItem('rwj_active_room_id');
+    if (!activeRoomId) return;
+    (async () => {
+      try {
+        const res = await studyGroupService.getGroup(activeRoomId);
+        if (res.status === 'success' && res.data && res.data.isMember) {
+          setSelectedGroup(res.data);
+          if (res.data.messages) setMessages(res.data.messages);
+          setInRoom(res.data);
+          setActiveTab('my');
+        } else {
+          sessionStorage.removeItem('rwj_active_room_id');
+        }
+      } catch {
+        // silent – leave the stored id, will retry on next mount
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -332,6 +450,75 @@ export default function StudyGroupsPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const fetchRoomGoalsAndTimes = useCallback(async (roomId: string) => {
+    try {
+      const [goalsRes, timesRes] = await Promise.all([
+        studyGroupService.getGoals(roomId),
+        studyGroupService.getMemberTimes(roomId),
+      ]);
+      if (goalsRes.status === 'success' && goalsRes.data) {
+        setRoomGoals(goalsRes.data.goals || []);
+        setMyCompletedGoalIds(new Set(goalsRes.data.myCompletedGoalIds || []));
+      }
+      if (timesRes.status === 'success' && timesRes.data) {
+        setMemberTimes(timesRes.data.members || []);
+        setTeamTotalSeconds(timesRes.data.teamTotalSeconds || 0);
+      }
+    } catch {
+      // silent
+    }
+  }, []);
+
+  // Fetch + poll room goals and member times every 12s while inside a room
+  useEffect(() => {
+    if (roomPollRef.current) clearInterval(roomPollRef.current);
+    if (!inRoom) { setRoomGoals([]); setMyCompletedGoalIds(new Set()); setMemberTimes([]); setTeamTotalSeconds(0); return; }
+
+    fetchRoomGoalsAndTimes(inRoom.id);
+    roomPollRef.current = setInterval(() => fetchRoomGoalsAndTimes(inRoom.id), 12000);
+    return () => { if (roomPollRef.current) clearInterval(roomPollRef.current); };
+  }, [inRoom?.id, fetchRoomGoalsAndTimes]);
+
+  const handleAddGoal = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const title = newGoalInput.trim();
+    if (!title || !inRoom || addingGoal) return;
+    setAddingGoal(true);
+    try {
+      const res = await studyGroupService.addGoal(inRoom.id, title);
+      if (res.status === 'success' && res.data) {
+        setRoomGoals((prev) => [...prev, res.data]);
+        setNewGoalInput('');
+      }
+    } catch {
+      // silent
+    } finally {
+      setAddingGoal(false);
+    }
+  };
+
+  const handleToggleGoal = async (goalId: string) => {
+    if (!inRoom || togglingGoalIds.has(goalId)) return;
+    const wasCompleted = myCompletedGoalIds.has(goalId);
+    setTogglingGoalIds((prev) => new Set(prev).add(goalId));
+    setMyCompletedGoalIds((prev) => {
+      const next = new Set(prev);
+      if (wasCompleted) next.delete(goalId); else next.add(goalId);
+      return next;
+    });
+    try {
+      await studyGroupService.toggleGoal(inRoom.id, goalId);
+    } catch {
+      setMyCompletedGoalIds((prev) => {
+        const next = new Set(prev);
+        if (wasCompleted) next.add(goalId); else next.delete(goalId);
+        return next;
+      });
+    } finally {
+      setTogglingGoalIds((prev) => { const next = new Set(prev); next.delete(goalId); return next; });
+    }
+  };
+
   const handleJoin = async (groupId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     try {
@@ -346,6 +533,7 @@ export default function StudyGroupsPage() {
           setInRoom(joined);
           setRoomFocusMode(false);
           setActiveTab('my');
+          if (typeof window !== 'undefined') sessionStorage.setItem('rwj_active_room_id', joined.id);
         }
       }
     } catch {
@@ -358,6 +546,7 @@ export default function StudyGroupsPage() {
     await handleLeave(inRoom.id);
     setInRoom(null);
     setRoomFocusMode(false);
+    if (typeof window !== 'undefined') sessionStorage.removeItem('rwj_active_room_id');
   };
 
   const handleLeave = async (groupId: string, e?: React.MouseEvent) => {
@@ -683,13 +872,13 @@ export default function StudyGroupsPage() {
                 </button>
               </div>
 
-              {studyTasks.length === 0 && (
+              {!tasksLoading && tasks.length === 0 && (
                 <p style={{ fontSize: 13, color: '#9AA3B8', marginBottom: 12 }}>No tasks yet. Add one below to track your session goals.</p>
               )}
 
               {/* Task list */}
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {studyTasks.map((task) => (
+                {tasks.map((task) => (
                   <li
                     key={task.id}
                     style={{
@@ -709,8 +898,8 @@ export default function StudyGroupsPage() {
                         width: 20,
                         height: 20,
                         borderRadius: 5,
-                        border: task.done ? '1px solid #22C55E' : '1px solid rgba(11,22,40,0.17)',
-                        background: task.done ? '#22C55E' : 'transparent',
+                        border: task.isCompleted ? '1px solid #22C55E' : '1px solid rgba(11,22,40,0.17)',
+                        background: task.isCompleted ? '#22C55E' : 'transparent',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -719,7 +908,7 @@ export default function StudyGroupsPage() {
                         transition: 'background 0.15s, border-color 0.15s',
                       }}
                     >
-                      {task.done && (
+                      {task.isCompleted && (
                         <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
                           <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
@@ -730,11 +919,11 @@ export default function StudyGroupsPage() {
                         fontFamily: 'DM Sans, sans-serif',
                         fontSize: 13,
                         fontWeight: 400,
-                        color: task.done ? '#9AA3B8' : '#374560',
-                        textDecoration: task.done ? 'line-through' : 'none',
+                        color: task.isCompleted ? '#9AA3B8' : '#374560',
+                        textDecoration: task.isCompleted ? 'line-through' : 'none',
                       }}
                     >
-                      {task.text}
+                      {task.title}
                     </span>
                   </li>
                 ))}
@@ -764,6 +953,7 @@ export default function StudyGroupsPage() {
                 />
                 <button
                   type="submit"
+                  disabled={addingTask}
                   style={{
                     background: 'rgba(232,184,75,0.12)',
                     border: '1px solid rgba(232,184,75,0.30)',
@@ -773,18 +963,19 @@ export default function StudyGroupsPage() {
                     fontWeight: 700,
                     fontSize: 12,
                     color: '#C99730',
-                    cursor: 'pointer',
+                    cursor: addingTask ? 'not-allowed' : 'pointer',
+                    opacity: addingTask ? 0.6 : 1,
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  Add
+                  {addingTask ? 'Adding…' : 'Add'}
                 </button>
               </form>
             </div>
 
             {/* ── Dashboard Stats Row ────────────────────────────── */}
             {(() => {
-              const doneTasks = studyTasks.filter((t) => t.done).length;
+              const doneTasks = tasks.filter((t) => t.isCompleted).length;
               const weekLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
               const todayWeekIdx = (new Date().getDay() + 6) % 7;
               const totalWeekHours = weeklyHours.reduce((a, b) => a + b, 0);
@@ -1491,31 +1682,32 @@ export default function StudyGroupsPage() {
             >
               <p className="mb-4 text-[11px] font-bold uppercase tracking-[1.2px] text-[#6B7A99]">Studying Now</p>
               <div className="flex flex-wrap gap-5">
-                {[
-                  { letter: 'Y', name: 'You', time: formatHourMin(todaySeconds), color: '#172444', dot: '#22C55E' },
-                  { letter: 'R', name: 'Rahul', time: '42m', color: '#1E3A8A', dot: '#F59E0B' },
-                  { letter: 'P', name: 'Priya', time: '1h 8m', color: '#1D4ED8', dot: '#22C55E' },
-                  { letter: 'A', name: 'Arjun', time: '0m', color: '#166534', dot: '#6B7A99' },
-                  { letter: 'S', name: 'Sneha', time: '2h 14m', color: '#78350F', dot: '#F59E0B' },
-                  { letter: 'K', name: 'Kiran', time: '55m', color: '#134E4A', dot: '#22C55E' },
-                ].map((u) => (
-                  <div key={u.name} className="flex flex-col items-center gap-1.5">
-                    <div className="relative">
-                      <div
-                        className="flex h-12 w-12 items-center justify-center rounded-full text-[16px] font-bold text-white"
-                        style={{ background: u.color }}
-                      >
-                        {u.letter}
+                {(() => {
+                  const AVATAR_COLORS = ['#172444', '#1E3A8A', '#1D4ED8', '#166534', '#78350F', '#134E4A', '#5B21B6', '#9D174D'];
+                  return memberTimes.slice(0, 6).map((m, idx) => {
+                    const isMe = m.userId === user?.id;
+                    const displayTime = isMe ? formatHourMin(todaySeconds) : formatHourMin(m.focusSeconds);
+                    const active = isMe ? todaySeconds > 0 : m.focusSeconds > 0;
+                    return (
+                      <div key={m.userId} className="flex flex-col items-center gap-1.5">
+                        <div className="relative">
+                          <div
+                            className="flex h-12 w-12 items-center justify-center rounded-full text-[16px] font-bold text-white"
+                            style={{ background: AVATAR_COLORS[idx % AVATAR_COLORS.length] }}
+                          >
+                            {(isMe ? 'You' : m.name).charAt(0).toUpperCase()}
+                          </div>
+                          <span
+                            className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-white"
+                            style={{ background: active ? '#22C55E' : '#6B7A99' }}
+                          />
+                        </div>
+                        <span className="text-[11px] font-semibold text-[#0C1424]">{isMe ? 'You' : m.name}</span>
+                        <span className="text-[10px] text-[#6B7A99]">{displayTime}</span>
                       </div>
-                      <span
-                        className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-white"
-                        style={{ background: u.dot }}
-                      />
-                    </div>
-                    <span className="text-[11px] font-semibold text-[#0C1424]">{u.name}</span>
-                    <span className="text-[10px] text-[#6B7A99]">{u.time}</span>
-                  </div>
-                ))}
+                    );
+                  });
+                })()}
                 {inRoom.memberCount > 6 && (
                   <div className="flex flex-col items-center gap-1.5">
                     <div
@@ -1600,10 +1792,99 @@ export default function StudyGroupsPage() {
                 </div>
               )}
               {chatTab === 'goals' && (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <span className="text-[32px]">🎯</span>
-                  <p className="mt-2 text-[13px] font-semibold text-[#0C1424]">Goals</p>
-                  <p className="mt-1 text-[12px] text-[#9AA3B8]">Set your session goals here.</p>
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] font-bold uppercase tracking-[1.2px] text-[#6B7A99]">🎯 Room Goals Today</p>
+                      <span className="text-[11px] font-semibold text-[#6B7A99]">
+                        {myCompletedGoalIds.size}/{roomGoals.length} completed
+                      </span>
+                    </div>
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#EDE8DC]">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: roomGoals.length ? `${(myCompletedGoalIds.size / roomGoals.length) * 100}%` : '0%',
+                          background: '#C99730',
+                          transition: 'width 0.2s ease',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {roomGoals.length === 0 ? (
+                    <p className="py-4 text-center text-[12px] text-[#9AA3B8]">No goals yet. Add one below to kick off the session.</p>
+                  ) : (
+                    <ul className="flex flex-col gap-2">
+                      {roomGoals.map((goal) => {
+                        const done = myCompletedGoalIds.has(goal.id);
+                        return (
+                          <li key={goal.id} className="flex items-center gap-2.5 rounded-[10px] bg-white px-3 py-2.5">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleGoal(goal.id)}
+                              disabled={togglingGoalIds.has(goal.id)}
+                              style={{
+                                flexShrink: 0,
+                                width: 18,
+                                height: 18,
+                                borderRadius: 5,
+                                border: done ? '1px solid #22C55E' : '1px solid rgba(11,22,40,0.17)',
+                                background: done ? '#22C55E' : 'transparent',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                padding: 0,
+                              }}
+                            >
+                              {done && (
+                                <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                                  <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              )}
+                            </button>
+                            <span
+                              className="text-[12px]"
+                              style={{ color: done ? '#9AA3B8' : '#0C1424', textDecoration: done ? 'line-through' : 'none' }}
+                            >
+                              {goal.title}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+
+                  <form className="flex items-center gap-2" onSubmit={handleAddGoal}>
+                    <input
+                      type="text"
+                      value={newGoalInput}
+                      onChange={(e) => setNewGoalInput(e.target.value)}
+                      placeholder="Add a goal for the room..."
+                      className="flex-1 rounded-[8px] border border-[#E1E6EF] bg-[#F8F3EA] px-3 py-2 text-[12px] text-[#0C1424] outline-none placeholder:text-[#9CA3AF]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={addingGoal || !newGoalInput.trim()}
+                      className="rounded-[8px] px-3 py-2 text-[12px] font-bold text-[#0C1424] disabled:opacity-50"
+                      style={{ background: '#C99730' }}
+                    >
+                      {addingGoal ? '…' : '+ Add'}
+                    </button>
+                  </form>
+
+                  <div className="border-t border-[#E8E3D8] pt-3 text-center">
+                    <div
+                      className="text-[#C99730]"
+                      style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', fontWeight: 700, fontSize: 20 }}
+                    >
+                      {formatHourMin(teamTotalSeconds)}
+                    </div>
+                    <div className="mt-0.5 text-[10px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">
+                      Team Total Today
+                    </div>
+                  </div>
                 </div>
               )}
               {chatTab === 'board' && (
