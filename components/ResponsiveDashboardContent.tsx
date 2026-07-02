@@ -69,6 +69,25 @@ function compareTasksByTime(a: StudyTask, b: StudyTask) {
   return (a.title || '').localeCompare(b.title || '');
 }
 
+function taskDurationMinutes(task: StudyTask): number | null {
+  if (task.duration && task.duration > 0) return task.duration;
+  if (!task.startTime || !task.endTime) return null;
+  const [sh, sm] = task.startTime.split(':').map(Number);
+  const [eh, em] = task.endTime.split(':').map(Number);
+  const diff = (eh * 60 + em) - (sh * 60 + sm);
+  return diff > 0 ? diff : null;
+}
+
+function formatDurationLabel(mins?: number | null) {
+  if (!mins || mins <= 0) return '';
+  const hours = Math.floor(mins / 60);
+  const remainingMins = mins % 60;
+  if (hours > 0) {
+    return `(${hours} Hr${hours > 1 ? 's' : ''}${remainingMins ? ` ${remainingMins} Min${remainingMins > 1 ? 's' : ''}` : ''})`;
+  }
+  return `(${mins} Min${mins > 1 ? 's' : ''})`;
+}
+
 function toDateParam(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -330,6 +349,7 @@ const ResponsiveDashboardContent = () => {
   const [tasksLoading, setTasksLoading] = useState(true);
   const [tasksError, setTasksError] = useState<string | null>(null);
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [showLoginToast, setShowLoginToast] = useState(false);
   const [isReturningLogin, setIsReturningLogin] = useState(false);
@@ -453,6 +473,27 @@ const ResponsiveDashboardContent = () => {
     }
   }
 
+  async function handleDeleteTask(task: StudyTask) {
+    const taskId = task._id || task.id;
+    if (!taskId || deletingTaskId) return;
+
+    setDeletingTaskId(taskId);
+    setTasks(prev => prev.filter(item => (item._id || item.id) !== taskId));
+
+    try {
+      await studyPlannerService.deleteTask(taskId);
+    } catch {
+      setTasks(prev => {
+        const next = [...prev];
+        const existingIndex = next.findIndex(item => (item._id || item.id) === taskId);
+        if (existingIndex !== -1) return next;
+        return [...next, task].sort(compareTasksByTime);
+      });
+    } finally {
+      setDeletingTaskId(null);
+    }
+  }
+
   function routeSearch() {
     const q = searchInput.trim().toLowerCase();
     if (!q) {
@@ -479,12 +520,7 @@ const ResponsiveDashboardContent = () => {
   }
 
   function formatDuration(mins?: number) {
-    if (!mins) return '';
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    if (h > 0 && m > 0) return `(${h}h ${m}m)`;
-    if (h > 0) return `(${h}h)`;
-    return `(${m}m)`;
+    return formatDurationLabel(mins);
   }
 
   return (
@@ -929,17 +965,16 @@ const ResponsiveDashboardContent = () => {
               {displayTasks.map((task, index) => {
                 const completed = isTaskCompleted(task);
                 // Green left border only for completed tasks; incomplete tasks use a normal grey border.
-                const leftBorderColor = completed ? '#22C55E' : '#E5E7EB';
                 const taskId = task._id || task.id || '';
-                const timeLabel = task.startTime && task.endTime
-                  ? `${task.startTime} - ${task.endTime} ${formatDuration(task.duration)}`
-                  : task.duration ? formatDuration(task.duration) : '';
+                const durationLabel = formatDurationLabel(taskDurationMinutes(task));
+                const timeLabel = task.startTime
+                  ? `${task.startTime}${task.endTime ? ` - ${task.endTime}` : ''} ${durationLabel}`.trim()
+                  : durationLabel;
 
                 return (
                   <div
                     key={task._id || task.id || index}
-                    className={`rounded-lg border border-[#E5E7EB] border-l-4 p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-start justify-between ${completed ? 'bg-green-50' : 'bg-[#F9FAFB]'}`}
-                    style={{ boxShadow: '0 1px 1px rgba(16, 24, 40, 0.04)', borderLeftColor: leftBorderColor }}
+                    className={`group rounded-lg border border-[#E5E7EB] border-l-4 p-[clamp(0.75rem,1vw,1.25rem)] mb-[clamp(0.75rem,1vw,1rem)] flex items-start justify-between shadow-[0_1px_1px_rgba(16,24,40,0.04)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md ${completed ? 'border-l-[#22C55E] bg-green-50 hover:border-[#D1FAE5] hover:border-l-[#22C55E]' : 'border-l-[#E5E7EB] bg-[#F9FAFB] hover:border-indigo-200 hover:border-l-[#94A3B8] hover:bg-indigo-50/30'}`}
                   >
                     <div className="flex-1">
                       <Link href="/dashboard/study-planner" className="block">
@@ -976,19 +1011,36 @@ const ResponsiveDashboardContent = () => {
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleToggleTask(task)}
-                      disabled={updatingTaskId === taskId}
-                      className={`ml-3 w-6 h-6 rounded border-2 transition-colors flex items-center justify-center flex-shrink-0 ${
-                        completed ? 'border-green-600 bg-green-600' : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
-                      } ${updatingTaskId === taskId ? 'opacity-60' : ''}`}
-                    >
-                      {completed && (
-                        <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none">
-                          <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                    <div className="ml-3 flex flex-col items-center gap-2">
+                      <button
+                        onClick={() => handleToggleTask(task)}
+                        disabled={updatingTaskId === taskId}
+                        className={`w-6 h-6 rounded border-2 transition-colors flex items-center justify-center flex-shrink-0 ${
+                          completed ? 'border-green-600 bg-green-600' : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
+                        } ${updatingTaskId === taskId ? 'opacity-60' : ''}`}
+                      >
+                        {completed && (
+                          <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none">
+                            <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTask(task)}
+                        title="Delete task"
+                        aria-label="Delete task"
+                        disabled={deletingTaskId === taskId}
+                        className="flex-shrink-0 text-gray-400 hover:text-red-500 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto transition-colors transition-opacity duration-200 cursor-pointer disabled:opacity-50"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                         </svg>
-                      )}
-                    </button>
+                      </button>
+                    </div>
                   </div>
                 );
               })}

@@ -320,7 +320,7 @@ const PerformanceStatsWidget = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-[clamp(10px,0.73vw,14px)]">
-              {/* Total Study Time */}
+              {/* Today's Study Time */}
               <div
                 className="rounded-[14px] flex flex-col justify-center"
                 style={{
@@ -333,7 +333,7 @@ const PerformanceStatsWidget = () => {
                   {studyTimeToday ?? '--'}
                 </div>
                 <p className="font-arimo text-[#6B7280]" style={{ fontSize: '11px', lineHeight: '1.3' }}>
-                  Total Study Time
+                  Today's Study Time
                 </p>
               </div>
 

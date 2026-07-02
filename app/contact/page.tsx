@@ -148,13 +148,12 @@ export default function ContactPage() {
               </p>
             </div>
 
-            <h2 className="text-[clamp(2.3rem,3.3vw,2.6rem)] leading-[1.2] text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)', fontWeight: 600 }}>
+            <h2
+              className="mb-4 text-[clamp(2.3rem,3.3vw,2.6rem)] leading-[1.2] text-[#0C1424]"
+              style={{ fontFamily: 'var(--font-cormorant)', fontWeight: 600 }}
+            >
               We&apos;re here,
-            </h2>
-            <h2 className="mb-4 text-[clamp(2.3rem,3.3vw,2.6rem)] italic leading-[1.2] text-[#1E3060]" style={{ fontFamily: 'var(--font-cormorant)', fontWeight: 600 }}>
-              not behind a ticket
-              <br />
-              queue
+              <span className="block">not behind a ticket queue</span>
             </h2>
 
             <p className="mb-8 text-[14px] leading-[1.8] text-[#6B7A99]" style={{ fontFamily: 'var(--font-dm-sans)' }}>

@@ -344,7 +344,7 @@ export default function BlogPage() {
             <Link href="/blog" className="text-[#90a1b9] hover:text-white transition-colors">Blog</Link>
           </div>
           <p className="text-[#62748e] text-sm">
-            © 2026 RiseWithJeet Edtech Pvt Ltd · Made with 💛 for every UPSC aspirant
+            © 2026 Jeetpath Academy Pvt. Ltd. · Made with 💛 for every UPSC aspirant
           </p>
         </div>
       </footer>

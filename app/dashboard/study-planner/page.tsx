@@ -29,6 +29,20 @@ function taskDurationSecs(task: Task): number {
   return 3600;
 }
 
+function formatTaskTimeLabel(task: Task): string {
+  if (!task.startTime) return '';
+  const timeRange = `${task.startTime}${task.endTime ? ` - ${task.endTime}` : ''}`;
+  if (!task.endTime) return timeRange;
+
+  const minutes = Math.max(1, Math.round(taskDurationSecs(task) / 60));
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  const durationLabel = hours > 0
+    ? `${hours} Hr${hours > 1 ? 's' : ''}${remainingMins ? ` ${remainingMins} Min${remainingMins > 1 ? 's' : ''}` : ''}`
+    : `${minutes} Min${minutes > 1 ? 's' : ''}`;
+  return `${timeRange} (${durationLabel})`;
+}
+
 function toDateParam(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -433,14 +447,22 @@ export default function StudyPlannerPage() {
   const handleToggleTask = async (id: string, completed: boolean) => {
     try {
       await studyPlannerService.updateTask(id, { isCompleted: !completed });
-      setTasks(prev => prev.map(t => t.id === id ? { ...t, isCompleted: !completed } : t));
+      setTasks(prev => {
+        const nextTasks = prev.map(t => t.id === id ? { ...t, isCompleted: !completed } : t);
+        syncStudiedDayForCurrentDate(nextTasks);
+        return nextTasks;
+      });
     } catch {}
   };
 
   const handleDeleteTask = async (id: string) => {
     try {
       await studyPlannerService.deleteTask(id);
-      setTasks(prev => prev.filter(t => t.id !== id));
+      setTasks(prev => {
+        const nextTasks = prev.filter(t => t.id !== id);
+        syncStudiedDayForCurrentDate(nextTasks);
+        return nextTasks;
+      });
     } catch {}
   };
 
@@ -522,7 +544,11 @@ export default function StudyPlannerPage() {
     if (task && !task.isCompleted) {
       try {
         await studyPlannerService.updateTask(task.id, { isCompleted: true, actualDuration: focusTaskSecs });
-        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, isCompleted: true, actualDuration: focusTaskSecs } : t));
+        setTasks(prev => {
+          const nextTasks = prev.map(t => t.id === task.id ? { ...t, isCompleted: true, actualDuration: focusTaskSecs } : t);
+          syncStudiedDayForCurrentDate(nextTasks);
+          return nextTasks;
+        });
       } catch {}
     }
     const updated = focusSessionTasks.map((t, i) => i === focusTaskIdx ? { ...t, isCompleted: true } : t);
@@ -658,7 +684,20 @@ export default function StudyPlannerPage() {
     return timeOptions.includes(next) ? next : timeOptions[timeOptions.length - 1];
   };
 
-  // Compute total study time from tasks that have start/end times
+  const syncStudiedDayForCurrentDate = (nextTasks: Task[]) => {
+    if (currentDate.getFullYear() !== calYear || currentDate.getMonth() !== calMonthIdx) return;
+
+    const day = currentDate.getDate();
+    const hasCompletedTask = nextTasks.some((task) => task.isCompleted);
+    setStudiedDays((prev) => {
+      if (hasCompletedTask) {
+        return prev.includes(day) ? prev : [...prev, day].sort((a, b) => a - b);
+      }
+      return prev.filter((d) => d !== day);
+    });
+  };
+
+  // Compute Today's Study Time from tasks that have start/end times
   const totalStudyMinutes = tasks.reduce((sum, task) => {
     if (task.startTime && task.endTime) {
       const [sh, sm] = task.startTime.split(':').map(Number);
@@ -685,8 +724,8 @@ export default function StudyPlannerPage() {
   const completedStudyHours = Math.floor(completedStudyMinutes / 60);
 
   const totalStudyLabel = totalStudyMinutes > 0
-    ? `Total Study Time: ${totalStudyMinutes} minutes (${totalStudyHours}h ${totalStudyMins}m)`
-    : 'Total Study Time: -';
+    ? `Today's Study Time: ${totalStudyMinutes} minutes (${totalStudyHours}h ${totalStudyMins}m)`
+    : "Today's Study Time: -";
   const pendingTaskCount = tasks.filter((task) => !task.isCompleted).length;
   const sortedTasks = [...tasks].sort(compareTasksByTime);
 
@@ -1333,8 +1372,9 @@ export default function StudyPlannerPage() {
                     {sortedTasks.map(task => (
                       <div
                         key={task.id}
-                        style={{ borderLeftWidth: '4px', borderLeftColor: task.isCompleted ? '#22C55E' : '#E5E7EB' }}
-                        className="group flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md hover:bg-indigo-50/30"
+                        className={`group flex items-center gap-3 p-3 rounded-lg border border-gray-200 border-l-4 transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 hover:shadow-md ${
+                          task.isCompleted ? 'border-l-[#22C55E] hover:border-green-200 hover:border-l-[#22C55E] hover:bg-green-50' : 'border-l-[#E5E7EB] hover:border-indigo-200 hover:border-l-[#94A3B8] hover:bg-indigo-50/30'
+                        }`}
                       >
                         <button onClick={() => handleToggleTask(task.id, task.isCompleted)}
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${task.isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
@@ -1345,7 +1385,7 @@ export default function StudyPlannerPage() {
                           {(task.startTime || task.type) && (
                             <p className="font-arimo text-xs text-gray-500 flex items-center gap-1.5 flex-wrap">
                               <span>
-                                {task.startTime && <>{task.startTime} - {task.endTime || ''}</>}
+                                {task.startTime && formatTaskTimeLabel(task)}
                                 {task.startTime && studyTypeLabel(task.type) && ' · '}
                                 {studyTypeLabel(task.type)}
                               </span>
@@ -1364,7 +1404,7 @@ export default function StudyPlannerPage() {
                           onClick={() => handleDeleteTask(task.id)}
                           title="Delete task"
                           aria-label="Delete task"
-                          className="flex-shrink-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity duration-200"
+                          className="flex-shrink-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-colors transition-opacity duration-200 cursor-pointer"
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
@@ -1378,7 +1418,7 @@ export default function StudyPlannerPage() {
 
                 {/* Bottom Stats — aligned with the left card's "Add to Today's Plan" button */}
                 <div style={{ paddingTop: '16px', marginTop: 'auto', marginBottom: '44px' }}>
-                  {/* Total Study Time */}
+                  {/* Today's Study Time */}
                   <div
                     className="flex items-center justify-center font-arimo"
                     style={{
@@ -1668,8 +1708,8 @@ export default function StudyPlannerPage() {
             </div>
           </div>
 
-          {/* ═══════ Right Column (290px): Streak + Quick Add ═══════ */}
-          <div className="flex-shrink-0 flex flex-col gap-5 w-full xl:w-[290px]">
+          {/* ═══════ Right Column (340px): Streak + Quick Add ═══════ */}
+          <div className="flex-shrink-0 flex flex-col gap-5 w-full xl:w-[340px]">
 
             {/* Study Streak Card — converted from the reference study-streak/calendar design */}
             <div
@@ -1746,11 +1786,6 @@ export default function StudyPlannerPage() {
                     currentDate.getFullYear() === calYear &&
                     currentDate.getMonth() === calMonthIdx &&
                     currentDate.getDate() === item.day;
-                  // Selected day takes the blue-ring highlight (per reference),
-                  // overriding the status palette so it reads clearly.
-                  const selectedStyle = isSelected
-                    ? { background: '#e8f0ff', color: '#2563eb', boxShadow: 'inset 0 0 0 2px #2563eb' }
-                    : null;
                   return (
                     <button
                       key={i}
@@ -1760,7 +1795,7 @@ export default function StudyPlannerPage() {
                       aria-pressed={isSelected}
                       aria-label={`Open study plan for ${calendarMonthYear} ${item.day}`}
                       title={`View plan for ${item.day} ${calendarMonthYear}`}
-                      style={{ aspectRatio: '1 / 1', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', border: 'none', padding: 0, cursor: 'pointer', ...palette, ...(selectedStyle || {}) }}
+                      style={{ aspectRatio: '1 / 1', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', border: 'none', padding: 0, cursor: 'pointer', ...palette }}
                     >
                       {item.day}
                     </button>
@@ -2043,7 +2078,7 @@ export default function StudyPlannerPage() {
                             {task.title}
                           </p>
                           {task.startTime && (
-                            <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px' }}>{task.startTime}{task.endTime ? ` - ${task.endTime}` : ''}</p>
+                            <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px' }}>{formatTaskTimeLabel(task)}</p>
                           )}
                         </div>
                         {(isActive || isJustMarked) && (
