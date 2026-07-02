@@ -860,6 +860,14 @@ export default function PyqPage() {
     (child) => countKey(child.label) === countKey(selectedSubtopic)
   );
   const currentTopicOptions = currentSubTopicNode?.microTopics || [];
+  const currentSubSubjectHasUntaggedQuestions = Boolean(
+    selectedSubtopic &&
+      questionCounts.byTopic.some(
+        (row) =>
+          countKey(row.subject, row.subSubject) === countKey(selectedSubject, selectedSubtopic) &&
+          !String(row.topic || '').trim()
+      )
+  );
   const paperCounts = useMemo(() => {
     const counts = new Map<string, number>();
     (questionCounts.byPaper || []).forEach((row) => {
@@ -1262,7 +1270,11 @@ export default function PyqPage() {
                 {!selectedSubtopic ? (
                   <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a sub-subject first.</div>
                 ) : !currentTopicOptions.length ? (
-                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">No topics are assigned to this sub-subject.</div>
+                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">
+                    {currentSubSubjectHasUntaggedQuestions
+                      ? `${selectedSubtopic} is tagged as the sub-subject. These PYQs do not have a separate topic tag yet.`
+                      : 'No topics are assigned to this sub-subject.'}
+                  </div>
                 ) : (
                   <div className="grid gap-1">
                     {currentTopicOptions.map((topic) => {
