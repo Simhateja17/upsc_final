@@ -720,6 +720,9 @@ export const adminService = {
   },
   updateUser: (id: string, data: { role?: string; status?: string }) =>
     api.put<any>(`/admin/users/${id}`, data, authConfig()),
+  setMyPlanSimulation: (tier: 'free' | 'aspire' | 'rise' | 'ascent') =>
+    api.post<any>('/admin/me/plan-simulation', { tier }, authConfig()),
+  clearMyPlanSimulation: () => api.delete<any>('/admin/me/plan-simulation', authConfig()),
 
   // PYQ Management
   uploadPYQ: async (file: File, mode: 'prelims' | 'mains' = 'prelims') => {

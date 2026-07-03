@@ -1457,8 +1457,8 @@ export default function StudyPlannerPage() {
             </div>
             </div>
 
-            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals + Time Distribution ── */}
-            <div className="grid grid-cols-1 gap-4 mt-4 xl:grid-cols-[1fr_1fr_360px]">
+            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals ── */}
+            <div className="grid grid-cols-1 gap-6 mt-4 xl:grid-cols-[360px_minmax(360px,1fr)]">
 
               {/* Card 0: Syllabus Coverage */}
               <div
@@ -1618,93 +1618,6 @@ export default function StudyPlannerPage() {
                 </div>
               </div>
 
-              {/* Card 2: Time Distribution – dimensions match surrounding row cards */}
-              <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] flex flex-col"
-              >
-                <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
-                  <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>
-                    <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
-                  </div>
-                  <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
-                    Time Distribution
-                  </span>
-                </div>
-
-                {/* SVG Pie Chart */}
-                <div className="flex items-center justify-center" style={{ marginBottom: '12px' }}>
-                  {!hasCompletedTimeDistribution ? (
-                    <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
-                      Complete at least one task to see distribution
-                    </div>
-                  ) : (
-                    <svg viewBox="0 0 160 160" width="160" height="160">
-                      {(() => {
-                        const cx = 80, cy = 80, r = 60, strokeWidth = 20;
-                        const gap = timeByType.length > 1 ? 0.06 : 0; // small gap between segments
-                        let angle = -Math.PI / 2;
-                        return timeByType.map((slice) => {
-                          const sliceAngle = (slice.seconds / totalTypeSecs) * 2 * Math.PI;
-                          // Single full-ring segment: draw a plain circle (arc can't close 360°).
-                          if (timeByType.length === 1) {
-                            return (
-                              <circle
-                                key={slice.id}
-                                cx={cx}
-                                cy={cy}
-                                r={r}
-                                fill="none"
-                                stroke={slice.color}
-                                strokeWidth={strokeWidth}
-                              />
-                            );
-                          }
-                          const start = angle + gap / 2;
-                          const end = angle + sliceAngle - gap / 2;
-                          const path = donutArcPath(cx, cy, r, start, end);
-                          angle += sliceAngle;
-                          return (
-                            <path
-                              key={slice.id}
-                              d={path}
-                              fill="none"
-                              stroke={slice.color}
-                              strokeWidth={strokeWidth}
-                              strokeLinecap="round"
-                            />
-                          );
-                        });
-                      })()}
-                      <text x="80" y="74" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="26" fontFamily="Arimo, sans-serif">
-                        {fmtDuration(totalTypeSecs)}
-                      </text>
-                      <text x="80" y="96" textAnchor="middle" dominantBaseline="middle" fill="#9CA3AF" fontSize="12" fontFamily="Arimo, sans-serif">
-                        today
-                      </text>
-                    </svg>
-                  )}
-                </div>
-
-                {/* Legend */}
-                <div className="space-y-2">
-                  {!hasCompletedTimeDistribution ? (
-                    <div className="font-arimo text-[#9CA3AF] text-center" style={{ fontSize: '13px', paddingTop: '4px' }}>
-                      Complete tasks to see subject-wise distribution
-                    </div>
-                  ) : (
-                    timeByType.map(slice => (
-                      <div key={slice.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: slice.color }}></span>
-                          <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{slice.label}</span>
-                        </div>
-                        <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtDuration(slice.seconds)}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
             </div>
           </div>
 
@@ -1806,12 +1719,15 @@ export default function StudyPlannerPage() {
 
             {/* Quick Add to Plan */}
             <div
+              className="flex flex-col xl:flex-1 xl:min-h-[596px]"
               style={{
                 width: '100%',
                 borderRadius: '16px',
                 border: '0.8px solid #E5E7EB',
                 background: '#FFFFFF',
+                boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
                 padding: '20px 16px',
+                overflow: 'hidden',
               }}
             >
               {/* Header */}
@@ -1823,7 +1739,7 @@ export default function StudyPlannerPage() {
                 </span>
               </div>
 
-              <div className="flex flex-wrap" style={{ gap: '8px' }}>
+              <div className="flex flex-wrap overflow-y-auto pr-1" style={{ gap: '8px', minHeight: 0 }}>
                 {quickAddSubjects.map((item) => (
                   <button
                     key={item}
@@ -1871,6 +1787,90 @@ export default function StudyPlannerPage() {
                     </span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Time Distribution */}
+            <div
+              className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] xl:h-[424px] flex flex-col"
+            >
+              <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
+                <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>
+                  <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
+                </div>
+                <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
+                  Time Distribution
+                </span>
+              </div>
+
+              <div className="flex items-center justify-center" style={{ marginBottom: '12px' }}>
+                {!hasCompletedTimeDistribution ? (
+                  <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
+                    Complete at least one task to see distribution
+                  </div>
+                ) : (
+                  <svg viewBox="0 0 160 160" width="160" height="160">
+                    {(() => {
+                      const cx = 80, cy = 80, r = 60, strokeWidth = 20;
+                      const gap = timeByType.length > 1 ? 0.06 : 0;
+                      let angle = -Math.PI / 2;
+                      return timeByType.map((slice) => {
+                        const sliceAngle = (slice.seconds / totalTypeSecs) * 2 * Math.PI;
+                        if (timeByType.length === 1) {
+                          return (
+                            <circle
+                              key={slice.id}
+                              cx={cx}
+                              cy={cy}
+                              r={r}
+                              fill="none"
+                              stroke={slice.color}
+                              strokeWidth={strokeWidth}
+                            />
+                          );
+                        }
+                        const start = angle + gap / 2;
+                        const end = angle + sliceAngle - gap / 2;
+                        const path = donutArcPath(cx, cy, r, start, end);
+                        angle += sliceAngle;
+                        return (
+                          <path
+                            key={slice.id}
+                            d={path}
+                            fill="none"
+                            stroke={slice.color}
+                            strokeWidth={strokeWidth}
+                            strokeLinecap="round"
+                          />
+                        );
+                      });
+                    })()}
+                    <text x="80" y="74" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="26" fontFamily="Arimo, sans-serif">
+                      {fmtDuration(totalTypeSecs)}
+                    </text>
+                    <text x="80" y="96" textAnchor="middle" dominantBaseline="middle" fill="#9CA3AF" fontSize="12" fontFamily="Arimo, sans-serif">
+                      today
+                    </text>
+                  </svg>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {!hasCompletedTimeDistribution ? (
+                  <div className="font-arimo text-[#9CA3AF] text-center" style={{ fontSize: '13px', paddingTop: '4px' }}>
+                    Complete tasks to see subject-wise distribution
+                  </div>
+                ) : (
+                  timeByType.map(slice => (
+                    <div key={slice.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: slice.color }}></span>
+                        <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{slice.label}</span>
+                      </div>
+                      <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtDuration(slice.seconds)}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
