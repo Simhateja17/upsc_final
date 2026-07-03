@@ -93,7 +93,7 @@ export default function DailyMainsChallengePage() {
         .da-screen  { animation: da-screenIn .4s ease; }
         .da-av { width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; border:2px solid #fff; }
         .da-chip { display:inline-flex; align-items:center; gap:5px; padding:5px 14px; border-radius:100px; font-size:12px; font-weight:600; letter-spacing:0.02em; white-space:nowrap; }
-        .da-welcome-wrap { width:100%; max-width:420px; margin:0 auto; }
+        .da-welcome-wrap { width:100%; max-width:540px; margin:0 auto; }
         .da-welcome-card { padding:30px 28px 28px !important; border-radius:28px !important; }
         .da-welcome-live-strip { padding:12px 15px !important; border-radius:18px !important; }
         .da-welcome-live-copy { min-width:0; flex:1; text-align:left; white-space:nowrap; font-size:12.5px !important; }
