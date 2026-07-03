@@ -83,9 +83,9 @@ interface Task {
   startTime?: string;
   endTime?: string;
   duration?: number;
-  actualDuration?: number;
   isCompleted: boolean;
   recur?: string;
+  actualDuration?: number | null;
 }
 
 type RecurType = 'daily' | 'weekly' | 'weekdays' | 'custom';
@@ -370,6 +370,7 @@ export default function StudyPlannerPage() {
   }, []);
 
   useEffect(() => {
+    setActualSecondsByTask({});
     studyPlannerService.getTodayTasks(toDateParam(currentDate))
       .then(res => {
         if (res.data) {
@@ -742,9 +743,11 @@ export default function StudyPlannerPage() {
   tasks.filter(t => t.isCompleted).forEach(t => {
     const subj = t.subject?.trim() || 'General';
     let secs = 0;
-    const actual = actualSecondsByTask[t.id];
-    if (actual != null && actual > 0) {
-      secs = actual;
+    const sessionActual = actualSecondsByTask[t.id];
+    if (sessionActual != null && sessionActual > 0) {
+      secs = sessionActual;
+    } else if (t.actualDuration != null && t.actualDuration > 0) {
+      secs = t.actualDuration;
     } else if (t.startTime && t.endTime) {
       const [sh, sm] = t.startTime.split(':').map(Number);
       const [eh, em] = t.endTime.split(':').map(Number);

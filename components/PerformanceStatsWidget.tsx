@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { dashboardService, testSeriesService } from '@/lib/services';
+import { dashboardService, testSeriesService, leaderboardService } from '@/lib/services';
 
 interface PerformanceData {
   studyTimeToday?: string;
@@ -36,21 +36,72 @@ interface AchievementBadge {
   emoji?: string;
 }
 
+interface BadgeData {
+  key: string;
+  title: string;
+  note: string;
+  status: BadgeState;
+}
+
+const BADGE_META: Record<string, { emoji?: string; icon?: string; iconNode?: React.ReactNode; accent: string; tint: string }> = {
+  streak: { emoji: '🔥', icon: '/icons/dashboard/badge-streak.png', accent: '#F59E0B', tint: '#FFF7E8' },
+  learner: { emoji: '🧠', icon: '/icons/dashboard/badge-learner.png', accent: '#F59E0B', tint: '#FFF9EB' },
+  accuracy: { emoji: '🎖️', icon: '/icons/dashboard/badge-accuracy.png', accent: '#4F7CFF', tint: '#EEF4FF' },
+  polity: {
+    accent: '#7C3AED',
+    tint: '#F5F3FF',
+    iconNode: (
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
+        <path d="M3 9L12 4L21 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M9 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M15 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M19 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M4 20H20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  'all-rounder': {
+    accent: '#2563EB',
+    tint: '#EFF6FF',
+    iconNode: (
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
+        <path d="M12 3L13.9 9.1L20 12L13.9 14.9L12 21L10.1 14.9L4 12L10.1 9.1L12 3Z" fill="currentColor" />
+      </svg>
+    ),
+  },
+  centurion: {
+    accent: '#0EA5A4',
+    tint: '#ECFEFF',
+    iconNode: (
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
+        <path d="M6 4.5H16C17.1 4.5 18 5.4 18 6.5V19.5L12 16.5L6 19.5V4.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+        <path d="M9 8H15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M9 11H15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+};
+
 const PerformanceStatsWidget = () => {
   const [performance, setPerformance] = useState<PerformanceData | null>(null);
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
   // Upcoming Test card is shown only to users who have purchased a test series.
   const [hasPurchasedTestSeries, setHasPurchasedTestSeries] = useState(false);
+  const [weeklyRank, setWeeklyRank] = useState<number | null>(null);
+  const [badges, setBadges] = useState<BadgeData[] | null>(null);
 
   useEffect(() => {
     let mounted = true;
     async function fetchData() {
       try {
-        const [perfRes, streakRes, enrolledRes] = await Promise.allSettled([
+        const [perfRes, streakRes, enrolledRes, weeklyRankRes, badgesRes] = await Promise.allSettled([
           dashboardService.getPerformance(),
           dashboardService.getStreak(),
           testSeriesService.getEnrolled(),
+          leaderboardService.getMyRank('week'),
+          dashboardService.getBadges(),
         ]);
         if (mounted) {
           if (perfRes.status === 'fulfilled' && perfRes.value?.data) {
@@ -62,6 +113,12 @@ const PerformanceStatsWidget = () => {
           if (enrolledRes.status === 'fulfilled') {
             const enrolled = enrolledRes.value?.data;
             setHasPurchasedTestSeries(Array.isArray(enrolled) && enrolled.length > 0);
+          }
+          if (weeklyRankRes.status === 'fulfilled' && weeklyRankRes.value?.data) {
+            setWeeklyRank(weeklyRankRes.value.data.rank ?? null);
+          }
+          if (badgesRes.status === 'fulfilled' && badgesRes.value?.data?.badges) {
+            setBadges(badgesRes.value.data.badges);
           }
         }
       } catch {
@@ -82,119 +139,18 @@ const PerformanceStatsWidget = () => {
   const studyTimeToday = performance?.studyTimeToday ?? (loading ? null : '0h 0m');
   const testsTaken = performance?.testsTaken ?? (loading ? null : 0);
   const rank = performance?.rank ?? null;
-  const rankPercentile = performance?.rankPercentile ?? null;
-  const jeetCoins = performance?.jeetCoins ?? (loading ? null : 0);
   const mcqsAttempted = performance?.mcq?.totalAttempts ?? (loading ? null : 0);
   const mainsWritten = performance?.mains?.totalAttempts ?? (loading ? null : 0);
 
   const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  const hasAnyProgress = Boolean((currentStreak ?? 0) > 0 || (testsTaken ?? 0) > 0 || (syllabusCoverage ?? 0) > 0);
-  const isFirstTimeUser = !hasAnyProgress && (jeetCoins ?? 0) === 0 && rank === null;
   const showOnFire = (currentStreak ?? 0) > 7;
-  const badgeStatus = {
-    streak: {
-      earned: (currentStreak ?? 0) >= 30,
-      progress: (currentStreak ?? 0) > 0,
-    },
-    learner: {
-      earned: (testsTaken ?? 0) >= 10,
-      progress: (testsTaken ?? 0) > 0,
-    },
-    accuracy: {
-      earned: (testsTaken ?? 0) > 0 && (rankPercentile ?? 100) <= 5,
-      progress: (testsTaken ?? 0) > 0,
-    },
-    polity: {
-      earned: (syllabusCoverage ?? 0) >= 60,
-      progress: (syllabusCoverage ?? 0) > 0,
-    },
-    allRounder: {
-      earned: (currentStreak ?? 0) >= 7 && (testsTaken ?? 0) >= 5 && (syllabusCoverage ?? 0) >= 40,
-      progress: (currentStreak ?? 0) > 0 || (testsTaken ?? 0) > 0 || (syllabusCoverage ?? 0) > 0,
-    },
-    centurion: {
-      earned: (jeetCoins ?? 0) >= 100,
-      progress: (jeetCoins ?? 0) > 0,
-    },
-  };
-  const achievementBadges: AchievementBadge[] = [
-    {
-      key: 'streak',
-      title: '30-Day Streak',
-      note: `${currentStreak ?? 0} day streak`,
-      emoji: '🔥',
-      icon: '/icons/dashboard/badge-streak.png',
-      accent: '#F59E0B',
-      tint: '#FFF7E8',
-      status: isFirstTimeUser ? 'locked' : badgeStatus.streak.earned ? 'earned' : badgeStatus.streak.progress ? 'in-progress' : 'locked',
-    },
-    {
-      key: 'learner',
-      title: 'Quick Learner',
-      note: `${testsTaken ?? 0} tests done`,
-      emoji: '🧠',
-      icon: '/icons/dashboard/badge-learner.png',
-      accent: '#F59E0B',
-      tint: '#FFF9EB',
-      status: isFirstTimeUser ? 'locked' : badgeStatus.learner.earned ? 'earned' : badgeStatus.learner.progress ? 'in-progress' : 'locked',
-    },
-    {
-      key: 'accuracy',
-      title: '95% Accuracy',
-      note: rankPercentile !== null ? `Top ${rankPercentile}%` : 'Build accuracy',
-      emoji: '🎖️',
-      icon: '/icons/dashboard/badge-accuracy.png',
-      accent: '#4F7CFF',
-      tint: '#EEF4FF',
-      status: isFirstTimeUser ? 'locked' : badgeStatus.accuracy.earned ? 'earned' : badgeStatus.accuracy.progress ? 'in-progress' : 'locked',
-    },
-    {
-      key: 'polity',
-      title: 'Polity Pro',
-      note: `${syllabusCoverage ?? 0}% coverage`,
-      accent: '#7C3AED',
-      tint: '#F5F3FF',
-      status: isFirstTimeUser ? 'locked' : badgeStatus.polity.earned ? 'earned' : badgeStatus.polity.progress ? 'in-progress' : 'locked',
-      iconNode: (
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-          <path d="M3 9L12 4L21 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M5 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M9 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M15 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M19 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M4 20H20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      ),
-    },
-    {
-      key: 'all-rounder',
-      title: 'All-Rounder',
-      note: 'Consistency badge',
-      accent: '#2563EB',
-      tint: '#EFF6FF',
-      status: isFirstTimeUser ? 'locked' : badgeStatus.allRounder.earned ? 'earned' : badgeStatus.allRounder.progress ? 'in-progress' : 'locked',
-      iconNode: (
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-          <path d="M12 3L13.9 9.1L20 12L13.9 14.9L12 21L10.1 14.9L4 12L10.1 9.1L12 3Z" fill="currentColor" />
-        </svg>
-      ),
-    },
-    {
-      key: 'centurion',
-      title: 'Centurion',
-      note: `${jeetCoins ?? 0}/100 coins`,
-      accent: '#0EA5A4',
-      tint: '#ECFEFF',
-      status: isFirstTimeUser ? 'locked' : badgeStatus.centurion.earned ? 'earned' : badgeStatus.centurion.progress ? 'in-progress' : 'locked',
-      iconNode: (
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-          <path d="M6 4.5H16C17.1 4.5 18 5.4 18 6.5V19.5L12 16.5L6 19.5V4.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-          <path d="M9 8H15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M9 11H15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      ),
-    },
-  ];
+  const achievementBadges: AchievementBadge[] = (badges ?? []).map((b) => ({
+    key: b.key,
+    title: b.title,
+    note: b.note,
+    status: b.status,
+    ...BADGE_META[b.key],
+  })) as AchievementBadge[];
   // Show unlocked badges first (earned, then in-progress), locked ones last.
   // Array.prototype.sort is stable, so original order is preserved within each group.
   const badgeOrderRank = (status: AchievementBadge['status']) =>
@@ -406,7 +362,7 @@ const PerformanceStatsWidget = () => {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/add-icon.png" alt="" aria-hidden="true" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
           <span className="font-outfit font-semibold whitespace-nowrap" style={{ fontSize: '18px', lineHeight: '1', color: '#1E2875' }}>
-            Weekly Leaderboard
+            {weeklyRank !== null ? `Weekly Leaderboard — You're #${weeklyRank} this week` : 'Weekly Leaderboard'}
           </span>
           <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="none">
             <path d="M4 12h16M14 6l6 6-6 6" stroke="#1E2875" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>

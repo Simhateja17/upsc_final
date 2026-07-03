@@ -506,6 +506,18 @@ export default function DailyMcqResultsPage() {
                 </Link>
               </div>
 
+              {results && results.wrongCount > 0 && (
+                <Link href="/dashboard/daily-mcq/review">
+                  <button className="w-full bg-[#FEF2F2] border border-[#FECACA] text-[#DC2626] rounded-[clamp(8px,0.52vw,10px)] hover:bg-[#FEE2E2] transition-colors font-arimo font-bold flex items-center justify-center gap-2"
+                    style={{ padding: 'clamp(11px,0.83vw,14px)', fontSize: 'clamp(12px,0.78vw,15px)' }}>
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M8 2C4.686 2 2 4.686 2 8s2.686 6 6 6 6-2.686 6-6-2.686-6-6-6zm0 2.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm0 7.25a4.5 4.5 0 0 1-3.75-2.012C4.266 9.088 6.133 8.5 8 8.5s3.734.588 3.75.238A4.5 4.5 0 0 1 8 11.75z" fill="currentColor"/>
+                    </svg>
+                    Review Weak Areas ({results.wrongCount})
+                  </button>
+                </Link>
+              )}
+
               <div className="grid grid-cols-2 gap-[clamp(0.5rem,0.8vw,1rem)]">
                 <button type="button" onClick={() => setShowNextSteps(true)} className="mcq-act mcq-act-next font-arimo min-w-0" style={{ justifyContent: 'center', textAlign: 'center' }}>
                   <span className="ic">

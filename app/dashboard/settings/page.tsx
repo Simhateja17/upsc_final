@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { userService } from '@/lib/services';
+import { authService } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
 
-type TabId = 'profile' | 'security' | 'notifications' | 'preferences' | 'privacy' | 'delete';
+type TabId = 'security' | 'notifications' | 'preferences' | 'privacy' | 'delete';
 
 const TABS: { id: Exclude<TabId, 'delete'>; label: string; icon: string }[] = [
-  { id: 'profile',       label: 'Profile',       icon: '🗂️' },
   { id: 'security',      label: 'Security',      icon: '🔒' },
   { id: 'notifications', label: 'Notifications', icon: '🔔' },
   { id: 'preferences',   label: 'Preferences',   icon: '🐾' },
@@ -45,7 +45,7 @@ export default function SettingsPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
 
-  const [tab, setTab] = useState<TabId>('profile');
+  const [tab, setTab] = useState<TabId>('security');
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
@@ -69,12 +69,13 @@ export default function SettingsPage() {
   const [nDigest, setNDigest] = useState(true);
   const [nStreak, setNStreak] = useState(true);
   const [nPromo,  setNPromo]  = useState(true);
+  const [nMockTest, setNMockTest] = useState(true);
+  const [nTrio, setNTrio] = useState(true);
 
   // Preferences
   const [dailyTarget,     setDailyTarget]     = useState('');
   const [answerReminder,  setAnswerReminder]  = useState('');
   const [language,        setLanguage]        = useState('');
-  const [theme,           setTheme]           = useState('');
 
   // Privacy
   const [privLeader,    setPrivLeader]    = useState(true);
@@ -106,11 +107,12 @@ export default function SettingsPage() {
         setNDigest(notifs.digest ?? true);
         setNStreak(notifs.streak ?? true);
         setNPromo(notifs.promo   ?? true);
+        setNMockTest(notifs.mockTest ?? true);
+        setNTrio(notifs.trio ?? true);
 
         setDailyTarget(prefs.dailyTarget    || '');
         setAnswerReminder(prefs.answerReminder || '');
         setLanguage(prefs.language          || '');
-        setTheme(prefs.theme                || '');
 
         setPrivLeader(priv.leaderboard ?? true);
         setPrivStudy(priv.studyRoom    ?? true);
@@ -135,7 +137,7 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await userService.updateSettings({
-        notifications: { mcq: nMcq, answer: nAnswer, digest: nDigest, streak: nStreak, promo: nPromo },
+        notifications: { mcq: nMcq, answer: nAnswer, digest: nDigest, streak: nStreak, promo: nPromo, mockTest: nMockTest, trio: nTrio },
       });
       notify('Notification preferences saved.');
     } catch (e: any) {
@@ -148,10 +150,51 @@ export default function SettingsPage() {
   const savePreferences = async () => {
     setSaving(true);
     try {
-      await userService.updateSettings({ preferences: { dailyTarget, answerReminder, language, theme } } as any);
+      await userService.updateSettings({ preferences: { dailyTarget, answerReminder, language } } as any);
       notify('Preferences saved.');
     } catch (e: any) {
       notify(e?.message || 'Could not save.', false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const hasEmail = Boolean(email);
+
+  const savePassword = async () => {
+    if (hasEmail && !currentPw) {
+      notify('Please enter your current password.', false);
+      return;
+    }
+    if (!newPw || !confirmPw) {
+      notify('Please fill in all password fields.', false);
+      return;
+    }
+    if (newPw.length < 8) {
+      notify('New password must be at least 8 characters.', false);
+      return;
+    }
+    if (!/\d/.test(newPw)) {
+      notify('New password must contain a number.', false);
+      return;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPw)) {
+      notify('New password must contain a symbol.', false);
+      return;
+    }
+    if (newPw !== confirmPw) {
+      notify('New passwords do not match.', false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await authService.changePassword(email || undefined, currentPw, newPw);
+      notify('Password updated successfully.');
+      setCurrentPw('');
+      setNewPw('');
+      setConfirmPw('');
+    } catch (e: any) {
+      notify(e?.message || 'Could not update password.', false);
     } finally {
       setSaving(false);
     }
@@ -250,16 +293,25 @@ export default function SettingsPage() {
       <h2 className="text-[20px] font-bold text-[#101828] mb-6">Security &amp; Password</h2>
 
       <div className="flex flex-col gap-5 max-w-[580px]">
-        <div>
-          <label className={lbl}>Current password</label>
-          <input
-            className={inp}
-            type="password"
-            placeholder="Enter current password"
-            value={currentPw}
-            onChange={(e) => setCurrentPw(e.target.value)}
-          />
-        </div>
+        {hasEmail ? (
+          <div>
+            <label className={lbl}>Current password</label>
+            <input
+              className={inp}
+              type="password"
+              placeholder="Enter current password"
+              value={currentPw}
+              onChange={(e) => setCurrentPw(e.target.value)}
+            />
+          </div>
+        ) : (
+          <div className="rounded-[10px] bg-[#EFF6FF] px-4 py-3 flex items-start gap-2">
+            <span className="text-[#1D4ED8] text-[14px] leading-none mt-0.5">ℹ</span>
+            <p className="text-[13px] text-[#475467] leading-[1.5]">
+              You signed in with your phone number. You can set or change your password here without entering a current password. To enable current password verification, link an email to your account in Profile settings.
+            </p>
+          </div>
+        )}
 
         <div>
           <label className={lbl}>New password</label>
@@ -289,7 +341,9 @@ export default function SettingsPage() {
         </div>
 
         <div>
-          <button className={primaryBtn}>Update password</button>
+          <button className={primaryBtn} onClick={savePassword} disabled={saving}>
+            {saving ? 'Updating…' : 'Update password'}
+          </button>
         </div>
       </div>
 
@@ -327,9 +381,11 @@ export default function SettingsPage() {
       <div className="flex flex-col">
         {[
           { label: 'Daily MCQ reminder',            desc: 'Remind to complete daily practice', on: nMcq,    toggle: () => setNMcq(v    => !v) },
+          { label: 'Daily Trio reminder',            desc: "Remind to complete today's MCQ, Mains & Editorial", on: nTrio, toggle: () => setNTrio(v => !v) },
           { label: 'Answer evaluation complete',     desc: 'When AI finishes evaluating',       on: nAnswer, toggle: () => setNAnswer(v => !v) },
-          { label: 'Current affairs morning digest', desc: 'Daily at 8 AM',                    on: nDigest, toggle: () => setNDigest(v => !v) },
+          { label: 'Current affairs morning digest', desc: 'Daily at 9 AM',                    on: nDigest, toggle: () => setNDigest(v => !v) },
           { label: 'Streak at risk',                 desc: 'Alert before streak breaks',        on: nStreak, toggle: () => setNStreak(v => !v) },
+          { label: 'New mock test available',        desc: 'When a new mock test is added',     on: nMockTest, toggle: () => setNMockTest(v => !v) },
           { label: 'Promotional emails',             desc: 'Updates and offers',                on: nPromo,  toggle: () => setNPromo(v  => !v) },
         ].map((item) => (
           <div
@@ -395,18 +451,6 @@ export default function SettingsPage() {
             <option value="">Select language</option>
             <option value="english">English</option>
             <option value="hindi">Hindi (Beta)</option>
-          </select>
-        </div>
-        <div>
-          <label className={lbl}>Theme</label>
-          <select
-            className={`${inp} appearance-auto`}
-            value={theme}
-            onChange={(e) => setTheme(e.target.value)}
-          >
-            <option value="system">System Default</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
           </select>
         </div>
       </div>
@@ -718,7 +762,6 @@ export default function SettingsPage() {
 
           {/* Content */}
           <main className="min-w-0">
-            {tab === 'profile'       && profileView}
             {tab === 'security'      && securityView}
             {tab === 'notifications' && notificationsView}
             {tab === 'preferences'   && preferencesView}

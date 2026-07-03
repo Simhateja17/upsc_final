@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
+import { userService } from '@/lib/services';
 
 interface DashboardHeaderProps {
   onMenuClick?: () => void;
@@ -13,42 +14,43 @@ interface DashboardHeaderProps {
 
 interface NotificationItem {
   id: string;
-  icon: string;
   title: string;
-  time: string;
+  body: string;
+  type: string;
   read: boolean;
+  created_at: string;
 }
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: '1',
-    icon: '🔥',
-    title: '47-day streak! Top 8% of aspirants',
-    time: 'Just now',
-    read: false,
-  },
-  {
-    id: '2',
-    icon: '✅',
-    title: 'Your answer has been evaluated – Score: 7.5/10',
-    time: '2 hours ago',
-    read: false,
-  },
-  {
-    id: '3',
-    icon: '📰',
-    title: "Today's current affairs are ready",
-    time: 'This morning',
-    read: true,
-  },
-  {
-    id: '4',
-    icon: '📌',
-    title: 'New mock test available – GS Prelims Test 15',
-    time: 'Yesterday',
-    read: true,
-  },
-];
+function getNotificationIcon(type: string): string {
+  switch (type) {
+    case 'mcq_reminder': return '\u{1F4DD}';
+    case 'answer_evaluated': return '✅';
+    case 'digest': return '\u{1F4F0}';
+    case 'streak_alert': return '\u{1F525}';
+    case 'streak_daily': return '\u{1F525}';
+    case 'weekly_progress': return '\u{1F4CA}';
+    case 'spaced_rep': return '\u{1F504}';
+    case 'mock_test_available': return '\u{1F4CC}';
+    case 'daily_trio_reminder': return '\u{1F4DA}';
+    default: return '\u{1F514}';
+  }
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
 
 const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const pathname = usePathname();
@@ -56,12 +58,28 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const { openAuthModal } = useAuthModal();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [mounted, setMounted] = useState(false);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await userService.getNotifications();
+      setNotifications(res.data || []);
+    } catch {
+      // Silent fail — notification fetch is non-critical
+    }
+  }, []);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  useEffect(() => {
+    const handleFocus = () => fetchNotifications();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchNotifications]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationModalRef = useRef<HTMLDivElement>(null);
   const isUpgradeActive = pathname === '/dashboard/billing/plans' || pathname.startsWith('/dashboard/billing/plans/');
@@ -90,8 +108,24 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
     ? `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || user?.email?.[0]?.toUpperCase() || ''
     : '';
 
-  const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+  const handleMarkAllRead = async () => {
+    try {
+      await userService.markAllNotificationsRead();
+      setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+    } catch {
+      // Silent fail
+    }
+  };
+
+  const handleNotificationClick = async (id: string) => {
+    try {
+      await userService.markNotificationRead(id);
+      setNotifications((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, read: true } : item))
+      );
+    } catch {
+      // Silent fail
+    }
   };
 
   return (
@@ -350,17 +384,24 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 notifications.map((item, index) => (
                   <div
                     key={item.id}
-                    className="rounded-xl px-4 py-3 flex items-start gap-3"
+                    onClick={() => handleNotificationClick(item.id)}
+                    className="rounded-xl px-4 py-3 flex items-start gap-3 cursor-pointer hover:opacity-90 transition-opacity"
                     style={{
-                      background: index === 0 ? '#F8F2E8' : '#E9EEF8',
-                      opacity: item.read ? 0.82 : 1,
+                      background: item.read ? '#E9EEF8' : index === 0 ? '#F8F2E8' : '#E9EEF8',
+                      opacity: item.read ? 0.75 : 1,
                     }}
                   >
-                    <span className="text-[16px] leading-none mt-[2px]">{item.icon}</span>
+                    <span className="text-[16px] leading-none mt-[2px]">{getNotificationIcon(item.type)}</span>
                     <div className="min-w-0 flex-1">
                       <p className="font-inter text-[14px] leading-[20px] text-[#334155] font-medium truncate">{item.title}</p>
-                      <p className="font-inter text-[12px] leading-[16px] text-[#94A3B8] mt-0.5">{item.time}</p>
+                      {item.body && (
+                        <p className="font-inter text-[12px] leading-[16px] text-[#64748B] mt-0.5 line-clamp-2">{item.body}</p>
+                      )}
+                      <p className="font-inter text-[11px] leading-[16px] text-[#94A3B8] mt-0.5">{formatRelativeTime(item.created_at)}</p>
                     </div>
+                    {!item.read && (
+                      <span className="mt-1.5 w-2 h-2 rounded-full bg-[#2563eb] flex-shrink-0" />
+                    )}
                   </div>
                 ))
               )}

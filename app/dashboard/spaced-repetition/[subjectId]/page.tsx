@@ -88,6 +88,16 @@ export default function SpacedRepetitionSubjectPage() {
     }
   };
 
+  const handleDeleteItem = (id: string) => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    spacedRepService.deleteItem(id).catch(() => {
+      // rollback on failure
+      spacedRepService.getItems().then((res) => {
+        if (res.status === 'success') setItems(res.data);
+      });
+    });
+  };
+
   const toggleRemind = (id: string, current: boolean) => {
     spacedRepService.updateItem(id, { remindEnabled: !current })
       .then(async (res: { status: string }) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import DashboardPageHero from '@/components/DashboardPageHero';
 
@@ -840,12 +840,28 @@ function CategorySection({ category }: { category: BadgeCategory }) {
   );
 }
 
+const FILTER_OPTIONS = [
+  { key: 'all', label: 'All' },
+  { key: 'streak', label: 'Streak' },
+  { key: 'learning', label: 'Learning' },
+  { key: 'practice', label: 'Practice' },
+  { key: 'revision', label: 'Revision' },
+  { key: 'analytics', label: 'Analytics' },
+  { key: 'community', label: 'Community' },
+];
+
 export default function AchievementBadgesPage() {
+  const [selectedFilter, setSelectedFilter] = useState('all');
+
   const totals = useMemo(() => {
     const totalBadges = CATEGORIES.reduce((s, c) => s + c.total, 0);
     const earned = CATEGORIES.reduce((s, c) => s + c.earned, 0);
     return { totalBadges, earned };
   }, []);
+
+  const filteredCategories = selectedFilter === 'all'
+    ? CATEGORIES
+    : CATEGORIES.filter((c) => c.key === selectedFilter);
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] font-arimo">
@@ -869,7 +885,28 @@ export default function AchievementBadgesPage() {
       />
 
       <main className="mx-auto max-w-[1180px] px-4 pb-16">
-        {CATEGORIES.map((category) => (
+        {/* Category Filter Chips */}
+        <div className="flex flex-wrap items-center gap-2 pt-8 pb-2">
+          {FILTER_OPTIONS.map((opt) => {
+            const isActive = selectedFilter === opt.key;
+            return (
+              <button
+                key={opt.key}
+                onClick={() => setSelectedFilter(opt.key)}
+                className="rounded-full px-4 py-[7px] text-[13px] font-bold transition-colors"
+                style={{
+                  background: isActive ? '#F5A623' : '#FFFFFF',
+                  color: isActive ? '#1A1A1A' : '#50617E',
+                  border: `1px solid ${isActive ? '#F5A623' : '#D9E1ED'}`,
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {filteredCategories.map((category) => (
           <CategorySection key={category.key} category={category} />
         ))}
       </main>
