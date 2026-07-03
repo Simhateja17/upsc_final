@@ -553,13 +553,13 @@ export default function JeetGPTPage() {
   // hits the cap after a reply), surface the upgrade popup once. It stays closed
   // after the user dismisses it, and re-arms only once they regain quota.
   useEffect(() => {
-    if (queriesExhausted && user?.role !== 'admin' && !upgradeAutoShown) {
+    if (queriesExhausted && !upgradeAutoShown) {
       setShowUpgradeModal(true);
       setUpgradeAutoShown(true);
     } else if (!queriesExhausted && upgradeAutoShown) {
       setUpgradeAutoShown(false);
     }
-  }, [queriesExhausted, user?.role, upgradeAutoShown]);
+  }, [queriesExhausted, upgradeAutoShown]);
   const showChat = messages.length > 0;
   const displayName = user
     ? ((user.firstName ?? '') + (user.firstName && user.lastName ? ' ' : '') + (user.lastName ?? '')).trim() || user.email
@@ -575,7 +575,6 @@ export default function JeetGPTPage() {
   // NOTE: 50% threshold is a business choice — adjust HIGH_USAGE_THRESHOLD as needed.
   const HIGH_USAGE_THRESHOLD = 0.5;
   const showProBanner =
-    user?.role !== 'admin' &&
     quotaLimit !== null &&
     quotaLimit > 0 &&
     !queriesExhausted &&
