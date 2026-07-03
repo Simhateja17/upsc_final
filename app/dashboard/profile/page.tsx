@@ -54,8 +54,10 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [initialProfile, setInitialProfile] = useState<ProfileSnapshot | null>(null);
   const [saving, setSaving] = useState(false);
-  const [stats, setStats] = useState<any>(null);
+  const [perfStats, setPerfStats] = useState<any>(null);
+  const [dashStats, setDashStats] = useState<any>(null);
   const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null);
+  const [showAllBadges, setShowAllBadges] = useState(false);
 
   const [showCalendar, setShowCalendar] = useState(false);
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
@@ -148,8 +150,11 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
+    dashboardService.getPerformance().then((res) => {
+      if (res.data) setPerfStats(res.data);
+    }).catch(() => {});
     dashboardService.getDashboard().then((res) => {
-      if (res.data) setStats(res.data);
+      if (res.data) setDashStats(res.data);
     }).catch(() => {});
   }, []);
 
@@ -265,7 +270,7 @@ export default function ProfilePage() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-[#FAFBFE] px-6 py-8 relative" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="h-screen bg-[#FAFBFE] px-6 py-4 relative overflow-hidden flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Toast */}
       {toast && (
         <div
@@ -287,7 +292,7 @@ export default function ProfilePage() {
       )}
 
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 mb-4">
+      <nav className="flex items-center gap-2 mb-2">
         <Link href="/dashboard" className="font-normal text-[14px] leading-[20px] text-[#62748e] hover:text-[#314158]">
           Home
         </Link>
@@ -296,15 +301,15 @@ export default function ProfilePage() {
       </nav>
 
       {/* Page Title */}
-      <h1 className="text-[30px] leading-[36px] text-[#0f172b] mb-8" style={{ fontFamily: "'Georgia', serif" }}>
+      <h1 className="text-[26px] leading-[32px] text-[#0f172b] mb-4" style={{ fontFamily: "'Georgia', serif" }}>
         My Profile
       </h1>
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
         {/* Left Column - Profile Form */}
         <div className="flex-1 min-w-0">
           <div
-            className="bg-white rounded-[14px] pt-8 px-8 pb-8 flex flex-col gap-8"
+            className="bg-white rounded-[14px] pt-5 px-6 pb-5 flex flex-col gap-5"
             style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
           >
             {/* Avatar + Name Header */}
@@ -386,7 +391,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Form Fields */}
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
               {/* First name / Last name */}
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 flex flex-col gap-2">
@@ -423,7 +428,7 @@ export default function ProfilePage() {
                   type="email"
                   value={user?.email || ''}
                   disabled
-                  className="w-full h-[45.6px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-[#f8fafc] font-normal text-[16px] leading-[24px] text-[#62748e] cursor-not-allowed"
+                  className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-[#f8fafc] font-normal text-[16px] leading-[24px] text-[#62748e] cursor-not-allowed"
                 />
               </div>
 
@@ -686,10 +691,10 @@ export default function ProfilePage() {
         </div>
 
         {/* Right Column - Stats + Achievements */}
-        <div className="w-full lg:w-[339px] flex flex-col gap-6">
+        <div className="w-full lg:w-[339px] flex flex-col gap-4 overflow-y-auto min-h-0">
           {/* My Stats Card */}
           <div
-            className="bg-white rounded-[14px] pt-6 px-6 pb-6 flex flex-col gap-6"
+            className="bg-white rounded-[14px] pt-4 px-5 pb-4 flex flex-col gap-4"
             style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
           >
             <div className="flex items-center gap-2">
@@ -705,18 +710,18 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">MCQs attempted</span>
-                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{stats?.mcqsAttempted?.toLocaleString() || '0'}</span>
+                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{perfStats?.questionsAttempted?.toLocaleString() || '0'}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Answers evaluated</span>
-                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{stats?.answersEvaluated?.toLocaleString() || '0'}</span>
+                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Tests taken</span>
+                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{perfStats?.testsTaken?.toLocaleString() || '0'}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Mock tests taken</span>
-                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{stats?.mockTestsTaken?.toLocaleString() || '0'}</span>
+                <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Syllabus coverage</span>
+                <span className="font-semibold text-[14px] leading-[20px] text-[#0f172b]">{perfStats?.syllabusCoverage ?? 0}%</span>
               </div>
               {(() => {
-                const streakDays = stats?.streak?.currentStreak ?? 0;
+                const streakDays = dashStats?.streak?.currentStreak ?? 0;
                 return (
                   <div className="flex items-center justify-between border-t border-[#f1f5f9] pt-2">
                     <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Streak</span>
@@ -730,7 +735,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Current rank</span>
                 <span className="font-semibold text-[14px] leading-[20px] text-[#d08700]">
-                  {stats?.rank ? `#${stats.rank.toLocaleString()} / ${stats.totalUsers?.toLocaleString() || '50,000'}` : '-'}
+                  {perfStats?.rank ? `#${perfStats.rank.toLocaleString()}` : '-'}
                 </span>
               </div>
             </div>
@@ -738,26 +743,121 @@ export default function ProfilePage() {
 
           {/* Achievements Card */}
           <div
-            className="bg-white rounded-[14px] pt-6 px-6 pb-6 flex flex-col gap-6"
+            className="bg-white rounded-[14px] pt-4 px-5 pb-4 flex flex-col gap-4"
             style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
           >
-            <div className="flex items-center gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/trophy.png" alt="" width={28} height={28} className="w-7 h-7 object-contain" />
-              <h3 className="font-semibold text-[18px] leading-[28px] text-[#0f172b]">Achievements</h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/icons/trophy.png" alt="" width={28} height={28} className="w-7 h-7 object-contain" />
+                <h3 className="font-semibold text-[18px] leading-[28px] text-[#0f172b]">Achievements</h3>
+              </div>
+              <button
+                onClick={() => setShowAllBadges((v) => !v)}
+                className="font-semibold text-[12px] text-[#1E2875] hover:underline"
+              >
+                {showAllBadges ? '← Less' : 'All →'}
+              </button>
             </div>
 
             {(() => {
+              const streakDays = dashStats?.streak?.currentStreak ?? 0;
+              const mcqs = perfStats?.questionsAttempted ?? 0;
+              const tests = perfStats?.testsTaken ?? 0;
+              const rankPercentile = perfStats?.rankPercentile ?? null;
+              const syllabusCoverage = perfStats?.syllabusCoverage ?? 0;
+              const jeetCoins = perfStats?.jeetCoins ?? 0;
+
+              if (showAllBadges) {
+                const allBadges: { title: string; note: string; icon?: string; status: 'earned' | 'in-progress' | 'locked'; accent: string; tint: string }[] = [
+                  {
+                    title: '30-Day Streak',
+                    note: `${streakDays} day streak`,
+                    icon: '/icons/dashboard/badge-streak.png',
+                    accent: '#F59E0B',
+                    tint: '#FFF7E8',
+                    status: streakDays >= 30 ? 'earned' : streakDays > 0 ? 'in-progress' : 'locked',
+                  },
+                  {
+                    title: 'Quick Learner',
+                    note: `${tests} tests done`,
+                    icon: '/icons/dashboard/badge-learner.png',
+                    accent: '#F59E0B',
+                    tint: '#FFF9EB',
+                    status: tests >= 10 ? 'earned' : tests > 0 ? 'in-progress' : 'locked',
+                  },
+                  {
+                    title: '95% Accuracy',
+                    note: rankPercentile !== null ? `Top ${rankPercentile}%` : 'Build accuracy',
+                    icon: '/icons/dashboard/badge-accuracy.png',
+                    accent: '#4F7CFF',
+                    tint: '#EEF4FF',
+                    status: tests > 0 && (rankPercentile ?? 100) <= 5 ? 'earned' : tests > 0 ? 'in-progress' : 'locked',
+                  },
+                  {
+                    title: 'Polity Pro',
+                    note: `${syllabusCoverage}% coverage`,
+                    accent: '#7C3AED',
+                    tint: '#F5F3FF',
+                    status: syllabusCoverage >= 60 ? 'earned' : syllabusCoverage > 0 ? 'in-progress' : 'locked',
+                  },
+                  {
+                    title: 'All-Rounder',
+                    note: 'Consistency badge',
+                    accent: '#2563EB',
+                    tint: '#EFF6FF',
+                    status: streakDays >= 7 && tests >= 5 && syllabusCoverage >= 40 ? 'earned' : (streakDays > 0 || tests > 0 || syllabusCoverage > 0) ? 'in-progress' : 'locked',
+                  },
+                  {
+                    title: 'Centurion',
+                    note: `${jeetCoins}/100 coins`,
+                    accent: '#0EA5A4',
+                    tint: '#ECFEFF',
+                    status: jeetCoins >= 100 ? 'earned' : jeetCoins > 0 ? 'in-progress' : 'locked',
+                  },
+                ];
+
+                const statusLabel: Record<string, string> = { earned: 'Earned', 'in-progress': 'In Progress', locked: 'Locked' };
+                const statusColor: Record<string, string> = { earned: '#16a34a', 'in-progress': '#d08700', locked: '#94a3b8' };
+
+                return (
+                  <div className="grid grid-cols-2 gap-3">
+                    {allBadges.map((badge) => (
+                      <div
+                        key={badge.title}
+                        className="flex flex-col items-center rounded-[10px] pt-3 pb-3 px-2"
+                        style={{ background: badge.tint, opacity: badge.status === 'locked' ? 0.6 : 1 }}
+                      >
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center mb-1.5"
+                          style={{ background: 'white', border: `1.5px solid ${badge.accent}22` }}
+                        >
+                          {badge.icon ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={badge.icon} alt="" width={28} height={28} className="w-7 h-7 object-contain" />
+                          ) : (
+                            <span style={{ color: badge.accent, fontSize: 20 }}>★</span>
+                          )}
+                        </div>
+                        <span className="font-medium text-[12px] leading-[16px] text-[#0f172b] text-center">{badge.title}</span>
+                        <span className="text-[10px] leading-[14px] text-[#62748e] text-center">{badge.note}</span>
+                        <span
+                          className="mt-1 font-semibold text-[10px] leading-[14px]"
+                          style={{ color: statusColor[badge.status] }}
+                        >
+                          {statusLabel[badge.status]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+
               const earned: { icon: string; label: string }[] = [];
-              const streakDays = stats?.streak?.currentStreak ?? 0;
               if (streakDays >= 3) earned.push({ icon: '/icons/fire.png', label: `${streakDays}-day streak` });
-              const mcqs = stats?.mcqsAttempted ?? 0;
               if (mcqs >= 100) earned.push({ icon: '/icons/target.png', label: `${mcqs.toLocaleString()} MCQs` });
-              const answers = stats?.answersEvaluated ?? 0;
-              if (answers >= 10) earned.push({ icon: '/icons/pencil.png', label: `${answers} Answers` });
-              const mocks = stats?.mockTestsTaken ?? 0;
-              if (mocks >= 5) earned.push({ icon: '/icons/trophy2.png', label: `${mocks} Mock Tests` });
-              if (stats?.rank && stats?.totalUsers && stats.rank / stats.totalUsers <= 0.1) {
+              if (tests >= 5) earned.push({ icon: '/icons/trophy2.png', label: `${tests} Tests` });
+              if (rankPercentile && rankPercentile <= 10) {
                 earned.push({ icon: '/icons/trophy2.png', label: `Top 10% rank` });
               }
 

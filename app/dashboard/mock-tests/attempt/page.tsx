@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { mockTestService } from '@/lib/services';
+import { mockTestService, bookmarkService } from '@/lib/services';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -164,6 +164,7 @@ function MockTestAttemptInner() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
   const [questionStatuses, setQuestionStatuses] = useState<Record<number, QuestionStatus>>({});
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Record<string, boolean>>({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [examTotalSeconds, setExamTotalSeconds] = useState(0); // full exam duration (for the single timer ring)
   const [examRunning, setExamRunning] = useState(true);        // single exam-wide timer running/paused
@@ -227,6 +228,13 @@ function MockTestAttemptInner() {
         }
         setTotalMarks(res.data?.totalMarks || 0);
         setQuestions(qs);
+        bookmarkService.list('mcq').then((bmRes: any) => {
+          if (cancelled) return;
+          const ids = new Set((bmRes.data?.bookmarks || []).map((b: any) => b.entityId));
+          const map: Record<string, boolean> = {};
+          qs.forEach(q => { if (ids.has(String(q.id))) map[String(q.id)] = true; });
+          setBookmarkedQuestions(prev => ({ ...map, ...prev }));
+        }).catch(() => {});
         // Initialize statuses
         const statuses: Record<number, QuestionStatus> = {};
         qs.forEach((_, i) => {
@@ -292,6 +300,32 @@ function MockTestAttemptInner() {
   const handleMark = () => {
     setQuestionStatuses(prev => ({ ...prev, [currentIdx]: 'marked' }));
     handleNext();
+  };
+
+  const handleToggleBookmark = async (q: Question) => {
+    const id = String(q.id);
+    const wasBookmarked = !!bookmarkedQuestions[id];
+    setBookmarkedQuestions(prev => ({ ...prev, [id]: !wasBookmarked }));
+    try {
+      await bookmarkService.toggle({
+        entityType: 'mcq',
+        entityId: id,
+        title: q.text.slice(0, 140),
+        source: 'Mock Test',
+        tag: q.subject,
+        content: {
+          questionText: q.text,
+          options: q.options,
+          correctOption: q.correct,
+          explanation: q.explanation,
+          difficulty: q.difficulty,
+          category: q.subject,
+          status: 'new',
+        },
+      });
+    } catch {
+      setBookmarkedQuestions(prev => ({ ...prev, [id]: wasBookmarked }));
+    }
   };
 
   const handleClear = () => {
@@ -1713,18 +1747,6 @@ function MockTestAttemptInner() {
                   textStyle={{ fontSize: 13, lineHeight: '20px', color: '#101828' }}
                 />
               </div>
-              {/* Bookmark button */}
-              <button
-                onClick={() => {
-                  const newStatuses = { ...questionStatuses };
-                  newStatuses[currentIdx] = newStatuses[currentIdx] === 'marked' ? (selectedOptions[currentIdx] ? 'answered' : 'unattempted') : 'marked';
-                  setQuestionStatuses(newStatuses);
-                }}
-                title={questionStatuses[currentIdx] === 'marked' ? 'Remove bookmark' : 'Bookmark this question'}
-                style={{ display: 'none' }}
-              >
-                {questionStatuses[currentIdx] === 'marked' ? '★' : '☆'}
-              </button>
             </div>
 
             {/* Options */}
@@ -1851,6 +1873,27 @@ function MockTestAttemptInner() {
                 }}
               >
                  Clear
+              </button>
+              <button
+                onClick={() => handleToggleBookmark(currentQ)}
+                title={bookmarkedQuestions[String(currentQ.id)] ? 'Remove bookmark' : 'Bookmark this question'}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  color: bookmarkedQuestions[String(currentQ.id)] ? '#C2410C' : '#6A7282',
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  lineHeight: '20px',
+                }}
+              >
+                <span style={{ fontSize: 15 }}>{bookmarkedQuestions[String(currentQ.id)] ? '★' : '☆'}</span>
+                {bookmarkedQuestions[String(currentQ.id)] ? 'Bookmarked' : 'Bookmark'}
               </button>
               <button
                 onClick={handleNext}

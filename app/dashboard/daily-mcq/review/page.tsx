@@ -260,13 +260,18 @@ function QuestionReviewInner() {
       `}</style>
       {/* Toast Notification */}
       {toast.show && (
-        <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all"
+        <div className="fixed top-4 right-4 z-50 px-5 py-4 rounded-xl shadow-2xl text-sm font-semibold transition-all animate-[slideIn_0.3s_ease-out]"
           style={{
             background: toast.type === 'success' ? '#F0FDF4' : '#FEF2F2',
-            border: toast.type === 'success' ? '1px solid #86EFAC' : '1px solid #FCA5A5',
+            border: toast.type === 'success' ? '2px solid #86EFAC' : '2px solid #FCA5A5',
             color: toast.type === 'success' ? '#166534' : '#991B1B',
+            minWidth: '280px',
+            boxShadow: '0 20px 40px -12px rgba(0,0,0,0.15)',
           }}>
-          {toast.type === 'success' ? '✓' : '✕'} {toast.message}
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '18px' }}>{toast.type === 'success' ? '✅' : '❌'}</span>
+            <span>{toast.message}</span>
+          </div>
         </div>
       )}
 

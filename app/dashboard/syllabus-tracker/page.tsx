@@ -132,10 +132,61 @@ export default function SyllabusTrackerPage() {
       mains.push(essay);
     }
 
+    // Deduplicate sub-topics where prelims and mains data was merged, keeping the more detailed entry.
+    // Normalizes British/American spelling and strips "— detail" suffixes before comparing.
+    const dedupeBase = (s: string) =>
+      s.split(/\s*[—–]\s*/)[0]
+        .toLowerCase()
+        .replace(/isation\b/g, 'ization')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const deduplicateSubs = (subs: string[]): string[] => {
+      const seen = new Map<string, number>();
+      const result: string[] = [];
+      for (const sub of subs) {
+        const key = dedupeBase(sub);
+        if (seen.has(key)) {
+          const existingIdx = seen.get(key)!;
+          if (sub.length > result[existingIdx].length) {
+            result[existingIdx] = sub;
+          }
+        } else {
+          seen.set(key, result.length);
+          result.push(sub);
+        }
+      }
+      return result;
+    };
+
+    const dedupeSubjects = (subjects: Subject[]): Subject[] =>
+      subjects.map(subject => {
+        const topicMap = new Map<string, { name: string; subs: string[] }>();
+        for (const topic of subject.topics) {
+          const key = dedupeBase(topic.name);
+          if (topicMap.has(key)) {
+            const existing = topicMap.get(key)!;
+            if (topic.name.length > existing.name.length) {
+              existing.name = topic.name;
+            }
+            existing.subs.push(...topic.subs);
+          } else {
+            topicMap.set(key, { name: topic.name, subs: [...topic.subs] });
+          }
+        }
+        return {
+          ...subject,
+          topics: Array.from(topicMap.values()).map(t => ({
+            ...t,
+            subs: deduplicateSubs(t.subs),
+          })),
+        };
+      });
+
     return {
-      prelims: raw.prelims?.length ? raw.prelims : PRELIMS_CSV_SUBJECTS,
-      mains,
-      optional: raw.optional || [],
+      prelims: dedupeSubjects(raw.prelims?.length ? raw.prelims : PRELIMS_CSV_SUBJECTS),
+      mains: dedupeSubjects(mains),
+      optional: dedupeSubjects(raw.optional || []),
     };
   }, []);
 
