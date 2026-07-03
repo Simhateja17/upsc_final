@@ -419,6 +419,7 @@ export default function JeetGPTPage() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeAutoShown, setUpgradeAutoShown] = useState(false);
   const [proBannerDismissed, setProBannerDismissed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -548,6 +549,17 @@ export default function JeetGPTPage() {
 
   const aiQuota = entitlements.featureStatus('jeet_ai_message');
   const queriesExhausted = aiQuota?.allowed === false;
+  // When the user is out of quota (e.g. lands on the page already exhausted, or
+  // hits the cap after a reply), surface the upgrade popup once. It stays closed
+  // after the user dismisses it, and re-arms only once they regain quota.
+  useEffect(() => {
+    if (queriesExhausted && user?.role !== 'admin' && !upgradeAutoShown) {
+      setShowUpgradeModal(true);
+      setUpgradeAutoShown(true);
+    } else if (!queriesExhausted && upgradeAutoShown) {
+      setUpgradeAutoShown(false);
+    }
+  }, [queriesExhausted, user?.role, upgradeAutoShown]);
   const showChat = messages.length > 0;
   const displayName = user
     ? ((user.firstName ?? '') + (user.firstName && user.lastName ? ' ' : '') + (user.lastName ?? '')).trim() || user.email
@@ -558,7 +570,6 @@ export default function JeetGPTPage() {
   const quotaLimit = aiQuota?.limit ?? null;
   const quotaUsed = aiQuota?.used ?? 0;
   const fillPct = quotaLimit ? Math.min(100, Math.round((quotaUsed / quotaLimit) * 100)) : 0;
-  const quotaRemaining = quotaLimit !== null ? Math.max(0, quotaLimit - quotaUsed) : null;
   // Proactive "Explore Pro" nudge: shown once usage gets high (>= 50% of the daily
   // cap) but before the cap is hit. The at-limit case is handled by the upgrade modal.
   // NOTE: 50% threshold is a business choice — adjust HIGH_USAGE_THRESHOLD as needed.
@@ -774,20 +785,22 @@ export default function JeetGPTPage() {
         <div className="jai-input-wrap">
           {showProBanner && (
             <div className="jai-pro-banner">
-              <div className="jai-pro-banner-text">
-                <strong>You&apos;re making great progress!</strong>
-                <span>
-                  Pro members get unlimited queries
-                  {quotaRemaining !== null ? ` — you have ${quotaRemaining} of ${quotaLimit} left today.` : '.'}
-                </span>
+              <div className="jai-pro-banner-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2l1.9 5.1L19 9l-5.1 1.9L12 16l-1.9-5.1L5 9l5.1-1.9L12 2z" fill="#fff" />
+                  <path d="M18.5 14l.8 2.2L21.5 17l-2.2.8-.8 2.2-.8-2.2L15.5 17l2.2-.8.8-2.2z" fill="#fff" fillOpacity="0.85" />
+                </svg>
               </div>
+              <p className="jai-pro-banner-text">
+                You&apos;re making great progress! <strong>Pro members</strong> get unlimited queries, saved notes, and priority answer evaluation.
+              </p>
               <div className="jai-pro-banner-actions">
                 <button
                   type="button"
                   className="jai-pro-banner-cta"
                   onClick={() => router.push('/dashboard/billing/plans')}
                 >
-                  Explore Pro
+                  Explore Pro <span aria-hidden="true">→</span>
                 </button>
                 <button
                   type="button"
@@ -860,14 +873,16 @@ export default function JeetGPTPage() {
             </div>
 
             <h2 className="text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '22px', fontWeight: 700, color: '#0E1D54', lineHeight: 1.3, margin: '0 0 8px' }}>
-              Jeet AI Mentor access paused<br />for your current plan
+              {quotaLimit === null
+                ? <>Jeet AI Mentor access paused<br />for your current plan</>
+                : <>You&apos;ve hit <span style={{ color: '#C9A84C' }}>{quotaUsed} / {quotaLimit}</span><br />queries today!</>}
             </h2>
             <p className="text-center" style={{ fontSize: '13px', color: '#6B7899', lineHeight: 1.6, margin: '0 0 22px' }}>
-              {aiQuota?.message || 'Your current quota is up. Upgrade for higher Jeet AI Mentor access and priority answers.'}
+              {aiQuota?.message || <>Your free quota is up. Upgrade to <strong>Jeet Pro</strong> and prep without limits — every day, all day.</>}
             </p>
 
             <div className="flex justify-between items-center" style={{ marginBottom: '7px' }}>
-              <span style={{ fontSize: '12px', color: '#8A96B4', fontWeight: 500 }}>Jeet AI Mentor quota</span>
+              <span style={{ fontSize: '12px', color: '#8A96B4', fontWeight: 500 }}>Daily queries</span>
               <strong style={{ fontSize: '12px', fontWeight: 700, color: '#C05A2A' }}>{quotaLimit === null ? 'Unlimited' : `${quotaUsed} / ${quotaLimit} used`}</strong>
             </div>
             <div style={{ height: '7px', background: '#EEF2FF', borderRadius: '99px', overflow: 'hidden', marginBottom: '22px' }}>
@@ -1010,15 +1025,15 @@ export default function JeetGPTPage() {
         .jai-chip:hover{border-color:#f0a500;color:#b07a00;background:#fffbf0;}
 
         .jai-input-wrap{padding:14px 20px;border-top:0.5px solid #f1f3f5;background:#fff;flex-shrink:0;}
-        .jai-pro-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;padding:10px 14px;border-radius:12px;background:#FFFBEB;border:1px solid #FDE68A;}
-        .jai-pro-banner-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
-        .jai-pro-banner-text strong{font-size:13px;color:#92400E;font-weight:700;}
-        .jai-pro-banner-text span{font-size:12px;color:#B45309;}
-        .jai-pro-banner-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-        .jai-pro-banner-cta{background:#FDC700;color:#101828;font-size:12px;font-weight:700;border:none;border-radius:9px;padding:8px 14px;cursor:pointer;white-space:nowrap;transition:background .2s;}
-        .jai-pro-banner-cta:hover{background:#F5C200;}
-        .jai-pro-banner-close{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border:none;background:transparent;color:#B45309;cursor:pointer;border-radius:7px;transition:background .2s;}
-        .jai-pro-banner-close:hover{background:#FDE68A;}
+        .jai-pro-banner{display:flex;align-items:center;gap:16px;margin-bottom:10px;padding:14px 16px;border-radius:16px;background:#FFF7ED;border:1px solid #FCE3C6;}
+        .jai-pro-banner-icon{display:flex;align-items:center;justify-content:center;width:40px;height:40px;flex-shrink:0;border-radius:11px;background:linear-gradient(135deg,#FB923C 0%,#F97316 100%);box-shadow:0 4px 10px rgba(249,115,22,0.28);}
+        .jai-pro-banner-text{flex:1;min-width:0;margin:0;font-size:14px;line-height:1.4;color:#334155;}
+        .jai-pro-banner-text strong{font-weight:700;color:#1E293B;}
+        .jai-pro-banner-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+        .jai-pro-banner-cta{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#FB923C 0%,#EA580C 100%);color:#fff;font-size:13px;font-weight:700;border:none;border-radius:11px;padding:10px 18px;cursor:pointer;white-space:nowrap;box-shadow:0 4px 12px rgba(234,88,12,0.25);transition:filter .2s;}
+        .jai-pro-banner-cta:hover{filter:brightness(1.05);}
+        .jai-pro-banner-close{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:none;background:#E9EDF2;color:#334155;cursor:pointer;border-radius:9px;transition:background .2s;}
+        .jai-pro-banner-close:hover{background:#DCE2E9;}
         .jai-input-row{display:flex;align-items:center;gap:10px;background:#f8f9fa;border:1px solid #e2e5ed;border-radius:14px;padding:10px 14px;transition:border .2s,background .2s;}
         .jai-input-row:focus-within{border-color:#f0a500;background:#fff;}
         .jai-input{flex:1;border:none;background:transparent;font-size:13px;font-family:var(--font-dm-sans),sans-serif;color:#1a1d23;resize:none;outline:none;line-height:1.5;max-height:80px;text-align:left;}

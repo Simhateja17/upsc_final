@@ -29,6 +29,20 @@ function taskDurationSecs(task: Task): number {
   return 3600;
 }
 
+function formatTaskTimeLabel(task: Task): string {
+  if (!task.startTime) return '';
+  const timeRange = `${task.startTime}${task.endTime ? ` - ${task.endTime}` : ''}`;
+  if (!task.endTime) return timeRange;
+
+  const minutes = Math.max(1, Math.round(taskDurationSecs(task) / 60));
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  const durationLabel = hours > 0
+    ? `${hours} Hr${hours > 1 ? 's' : ''}${remainingMins ? ` ${remainingMins} Min${remainingMins > 1 ? 's' : ''}` : ''}`
+    : `${minutes} Min${minutes > 1 ? 's' : ''}`;
+  return `${timeRange} (${durationLabel})`;
+}
+
 function toDateParam(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -434,14 +448,22 @@ export default function StudyPlannerPage() {
   const handleToggleTask = async (id: string, completed: boolean) => {
     try {
       await studyPlannerService.updateTask(id, { isCompleted: !completed });
-      setTasks(prev => prev.map(t => t.id === id ? { ...t, isCompleted: !completed } : t));
+      setTasks(prev => {
+        const nextTasks = prev.map(t => t.id === id ? { ...t, isCompleted: !completed } : t);
+        syncStudiedDayForCurrentDate(nextTasks);
+        return nextTasks;
+      });
     } catch {}
   };
 
   const handleDeleteTask = async (id: string) => {
     try {
       await studyPlannerService.deleteTask(id);
-      setTasks(prev => prev.filter(t => t.id !== id));
+      setTasks(prev => {
+        const nextTasks = prev.filter(t => t.id !== id);
+        syncStudiedDayForCurrentDate(nextTasks);
+        return nextTasks;
+      });
     } catch {}
   };
 
@@ -523,7 +545,11 @@ export default function StudyPlannerPage() {
     if (task && !task.isCompleted) {
       try {
         await studyPlannerService.updateTask(task.id, { isCompleted: true, actualDuration: focusTaskSecs });
-        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, isCompleted: true, actualDuration: focusTaskSecs } : t));
+        setTasks(prev => {
+          const nextTasks = prev.map(t => t.id === task.id ? { ...t, isCompleted: true, actualDuration: focusTaskSecs } : t);
+          syncStudiedDayForCurrentDate(nextTasks);
+          return nextTasks;
+        });
       } catch {}
     }
     const updated = focusSessionTasks.map((t, i) => i === focusTaskIdx ? { ...t, isCompleted: true } : t);
@@ -659,7 +685,20 @@ export default function StudyPlannerPage() {
     return timeOptions.includes(next) ? next : timeOptions[timeOptions.length - 1];
   };
 
-  // Compute total study time from tasks that have start/end times
+  const syncStudiedDayForCurrentDate = (nextTasks: Task[]) => {
+    if (currentDate.getFullYear() !== calYear || currentDate.getMonth() !== calMonthIdx) return;
+
+    const day = currentDate.getDate();
+    const hasCompletedTask = nextTasks.some((task) => task.isCompleted);
+    setStudiedDays((prev) => {
+      if (hasCompletedTask) {
+        return prev.includes(day) ? prev : [...prev, day].sort((a, b) => a - b);
+      }
+      return prev.filter((d) => d !== day);
+    });
+  };
+
+  // Compute Today's Study Time from tasks that have start/end times
   const totalStudyMinutes = tasks.reduce((sum, task) => {
     if (task.startTime && task.endTime) {
       const [sh, sm] = task.startTime.split(':').map(Number);
@@ -686,8 +725,8 @@ export default function StudyPlannerPage() {
   const completedStudyHours = Math.floor(completedStudyMinutes / 60);
 
   const totalStudyLabel = totalStudyMinutes > 0
-    ? `Total Study Time: ${totalStudyMinutes} minutes (${totalStudyHours}h ${totalStudyMins}m)`
-    : 'Total Study Time: -';
+    ? `Today's Study Time: ${totalStudyMinutes} minutes (${totalStudyHours}h ${totalStudyMins}m)`
+    : "Today's Study Time: -";
   const pendingTaskCount = tasks.filter((task) => !task.isCompleted).length;
   const sortedTasks = [...tasks].sort(compareTasksByTime);
 
@@ -1336,8 +1375,9 @@ export default function StudyPlannerPage() {
                     {sortedTasks.map(task => (
                       <div
                         key={task.id}
-                        style={{ borderLeftWidth: '4px', borderLeftColor: task.isCompleted ? '#22C55E' : '#E5E7EB' }}
-                        className="group flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md hover:bg-indigo-50/30"
+                        className={`group flex items-center gap-3 p-3 rounded-lg border border-gray-200 border-l-4 transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 hover:shadow-md ${
+                          task.isCompleted ? 'border-l-[#22C55E] hover:border-green-200 hover:border-l-[#22C55E] hover:bg-green-50' : 'border-l-[#E5E7EB] hover:border-indigo-200 hover:border-l-[#94A3B8] hover:bg-indigo-50/30'
+                        }`}
                       >
                         <button onClick={() => handleToggleTask(task.id, task.isCompleted)}
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${task.isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
@@ -1348,7 +1388,7 @@ export default function StudyPlannerPage() {
                           {(task.startTime || task.type) && (
                             <p className="font-arimo text-xs text-gray-500 flex items-center gap-1.5 flex-wrap">
                               <span>
-                                {task.startTime && <>{task.startTime} - {task.endTime || ''}</>}
+                                {task.startTime && formatTaskTimeLabel(task)}
                                 {task.startTime && studyTypeLabel(task.type) && ' · '}
                                 {studyTypeLabel(task.type)}
                               </span>
@@ -1367,7 +1407,7 @@ export default function StudyPlannerPage() {
                           onClick={() => handleDeleteTask(task.id)}
                           title="Delete task"
                           aria-label="Delete task"
-                          className="flex-shrink-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity duration-200"
+                          className="flex-shrink-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-colors transition-opacity duration-200 cursor-pointer"
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
@@ -1381,7 +1421,7 @@ export default function StudyPlannerPage() {
 
                 {/* Bottom Stats — aligned with the left card's "Add to Today's Plan" button */}
                 <div style={{ paddingTop: '16px', marginTop: 'auto', marginBottom: '44px' }}>
-                  {/* Total Study Time */}
+                  {/* Today's Study Time */}
                   <div
                     className="flex items-center justify-center font-arimo"
                     style={{
@@ -1420,8 +1460,8 @@ export default function StudyPlannerPage() {
             </div>
             </div>
 
-            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals + Time Distribution ── */}
-            <div className="grid grid-cols-1 gap-4 mt-4 xl:grid-cols-[1fr_1fr_360px]">
+            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals ── */}
+            <div className="grid grid-cols-1 gap-6 mt-4 xl:grid-cols-[360px_minmax(360px,1fr)]">
 
               {/* Card 0: Syllabus Coverage */}
               <div
@@ -1581,98 +1621,11 @@ export default function StudyPlannerPage() {
                 </div>
               </div>
 
-              {/* Card 2: Time Distribution – dimensions match surrounding row cards */}
-              <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] flex flex-col"
-              >
-                <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
-                  <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>
-                    <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
-                  </div>
-                  <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
-                    Time Distribution
-                  </span>
-                </div>
-
-                {/* SVG Pie Chart */}
-                <div className="flex items-center justify-center" style={{ marginBottom: '12px' }}>
-                  {!hasCompletedTimeDistribution ? (
-                    <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
-                      Complete at least one task to see distribution
-                    </div>
-                  ) : (
-                    <svg viewBox="0 0 160 160" width="160" height="160">
-                      {(() => {
-                        const cx = 80, cy = 80, r = 60, strokeWidth = 20;
-                        const gap = timeByType.length > 1 ? 0.06 : 0; // small gap between segments
-                        let angle = -Math.PI / 2;
-                        return timeByType.map((slice) => {
-                          const sliceAngle = (slice.seconds / totalTypeSecs) * 2 * Math.PI;
-                          // Single full-ring segment: draw a plain circle (arc can't close 360°).
-                          if (timeByType.length === 1) {
-                            return (
-                              <circle
-                                key={slice.id}
-                                cx={cx}
-                                cy={cy}
-                                r={r}
-                                fill="none"
-                                stroke={slice.color}
-                                strokeWidth={strokeWidth}
-                              />
-                            );
-                          }
-                          const start = angle + gap / 2;
-                          const end = angle + sliceAngle - gap / 2;
-                          const path = donutArcPath(cx, cy, r, start, end);
-                          angle += sliceAngle;
-                          return (
-                            <path
-                              key={slice.id}
-                              d={path}
-                              fill="none"
-                              stroke={slice.color}
-                              strokeWidth={strokeWidth}
-                              strokeLinecap="round"
-                            />
-                          );
-                        });
-                      })()}
-                      <text x="80" y="74" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="26" fontFamily="Arimo, sans-serif">
-                        {fmtDuration(totalTypeSecs)}
-                      </text>
-                      <text x="80" y="96" textAnchor="middle" dominantBaseline="middle" fill="#9CA3AF" fontSize="12" fontFamily="Arimo, sans-serif">
-                        today
-                      </text>
-                    </svg>
-                  )}
-                </div>
-
-                {/* Legend */}
-                <div className="space-y-2">
-                  {!hasCompletedTimeDistribution ? (
-                    <div className="font-arimo text-[#9CA3AF] text-center" style={{ fontSize: '13px', paddingTop: '4px' }}>
-                      Complete tasks to see subject-wise distribution
-                    </div>
-                  ) : (
-                    timeByType.map(slice => (
-                      <div key={slice.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: slice.color }}></span>
-                          <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{slice.label}</span>
-                        </div>
-                        <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtDuration(slice.seconds)}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
             </div>
           </div>
 
-          {/* ═══════ Right Column (290px): Streak + Quick Add ═══════ */}
-          <div className="flex-shrink-0 flex flex-col gap-5 w-full xl:w-[290px]">
+          {/* ═══════ Right Column (340px): Streak + Quick Add ═══════ */}
+          <div className="flex-shrink-0 flex flex-col gap-5 w-full xl:w-[340px]">
 
             {/* Study Streak Card — converted from the reference study-streak/calendar design */}
             <div
@@ -1749,11 +1702,6 @@ export default function StudyPlannerPage() {
                     currentDate.getFullYear() === calYear &&
                     currentDate.getMonth() === calMonthIdx &&
                     currentDate.getDate() === item.day;
-                  // Selected day takes the blue-ring highlight (per reference),
-                  // overriding the status palette so it reads clearly.
-                  const selectedStyle = isSelected
-                    ? { background: '#e8f0ff', color: '#2563eb', boxShadow: 'inset 0 0 0 2px #2563eb' }
-                    : null;
                   return (
                     <button
                       key={i}
@@ -1763,7 +1711,7 @@ export default function StudyPlannerPage() {
                       aria-pressed={isSelected}
                       aria-label={`Open study plan for ${calendarMonthYear} ${item.day}`}
                       title={`View plan for ${item.day} ${calendarMonthYear}`}
-                      style={{ aspectRatio: '1 / 1', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', border: 'none', padding: 0, cursor: 'pointer', ...palette, ...(selectedStyle || {}) }}
+                      style={{ aspectRatio: '1 / 1', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', border: 'none', padding: 0, cursor: 'pointer', ...palette }}
                     >
                       {item.day}
                     </button>
@@ -1774,12 +1722,15 @@ export default function StudyPlannerPage() {
 
             {/* Quick Add to Plan */}
             <div
+              className="flex flex-col xl:flex-1 xl:min-h-[596px]"
               style={{
                 width: '100%',
                 borderRadius: '16px',
                 border: '0.8px solid #E5E7EB',
                 background: '#FFFFFF',
+                boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
                 padding: '20px 16px',
+                overflow: 'hidden',
               }}
             >
               {/* Header */}
@@ -1791,7 +1742,7 @@ export default function StudyPlannerPage() {
                 </span>
               </div>
 
-              <div className="flex flex-wrap" style={{ gap: '8px' }}>
+              <div className="flex flex-wrap overflow-y-auto pr-1" style={{ gap: '8px', minHeight: 0 }}>
                 {quickAddSubjects.map((item) => (
                   <button
                     key={item}
@@ -1839,6 +1790,90 @@ export default function StudyPlannerPage() {
                     </span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Time Distribution */}
+            <div
+              className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] xl:h-[424px] flex flex-col"
+            >
+              <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
+                <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>
+                  <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
+                </div>
+                <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
+                  Time Distribution
+                </span>
+              </div>
+
+              <div className="flex items-center justify-center" style={{ marginBottom: '12px' }}>
+                {!hasCompletedTimeDistribution ? (
+                  <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
+                    Complete at least one task to see distribution
+                  </div>
+                ) : (
+                  <svg viewBox="0 0 160 160" width="160" height="160">
+                    {(() => {
+                      const cx = 80, cy = 80, r = 60, strokeWidth = 20;
+                      const gap = timeByType.length > 1 ? 0.06 : 0;
+                      let angle = -Math.PI / 2;
+                      return timeByType.map((slice) => {
+                        const sliceAngle = (slice.seconds / totalTypeSecs) * 2 * Math.PI;
+                        if (timeByType.length === 1) {
+                          return (
+                            <circle
+                              key={slice.id}
+                              cx={cx}
+                              cy={cy}
+                              r={r}
+                              fill="none"
+                              stroke={slice.color}
+                              strokeWidth={strokeWidth}
+                            />
+                          );
+                        }
+                        const start = angle + gap / 2;
+                        const end = angle + sliceAngle - gap / 2;
+                        const path = donutArcPath(cx, cy, r, start, end);
+                        angle += sliceAngle;
+                        return (
+                          <path
+                            key={slice.id}
+                            d={path}
+                            fill="none"
+                            stroke={slice.color}
+                            strokeWidth={strokeWidth}
+                            strokeLinecap="round"
+                          />
+                        );
+                      });
+                    })()}
+                    <text x="80" y="74" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="26" fontFamily="Arimo, sans-serif">
+                      {fmtDuration(totalTypeSecs)}
+                    </text>
+                    <text x="80" y="96" textAnchor="middle" dominantBaseline="middle" fill="#9CA3AF" fontSize="12" fontFamily="Arimo, sans-serif">
+                      today
+                    </text>
+                  </svg>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {!hasCompletedTimeDistribution ? (
+                  <div className="font-arimo text-[#9CA3AF] text-center" style={{ fontSize: '13px', paddingTop: '4px' }}>
+                    Complete tasks to see subject-wise distribution
+                  </div>
+                ) : (
+                  timeByType.map(slice => (
+                    <div key={slice.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: slice.color }}></span>
+                        <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{slice.label}</span>
+                      </div>
+                      <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtDuration(slice.seconds)}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -2046,7 +2081,7 @@ export default function StudyPlannerPage() {
                             {task.title}
                           </p>
                           {task.startTime && (
-                            <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px' }}>{task.startTime}{task.endTime ? ` - ${task.endTime}` : ''}</p>
+                            <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px' }}>{formatTaskTimeLabel(task)}</p>
                           )}
                         </div>
                         {(isActive || isJustMarked) && (

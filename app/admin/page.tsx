@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { adminService } from '@/lib/services';
+import { adminService, entitlementService } from '@/lib/services';
+import type { PlanTier, EntitlementSummary } from '@/contexts/EntitlementsContext';
 
 interface Analytics {
   totalUsers?: number;
@@ -15,8 +16,12 @@ interface Analytics {
 
 export default function AdminDashboard() {
   const [analytics, setAnalytics] = useState<Analytics>({});
+  const [entitlements, setEntitlements] = useState<EntitlementSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [planLoading, setPlanLoading] = useState(true);
+  const [planSaving, setPlanSaving] = useState<PlanTier | 'reset' | null>(null);
   const [error, setError] = useState('');
+  const [planMessage, setPlanMessage] = useState('');
 
   useEffect(() => {
     adminService
@@ -27,6 +32,51 @@ export default function AdminDashboard() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const loadEntitlements = async () => {
+    setPlanLoading(true);
+    try {
+      const res = await entitlementService.getMyEntitlements();
+      setEntitlements((res.data || null) as EntitlementSummary | null);
+    } catch (err: any) {
+      setPlanMessage(`Error: ${err.message}`);
+    } finally {
+      setPlanLoading(false);
+    }
+  };
+
+  useEffect(() => { loadEntitlements(); }, []);
+
+  const handlePlanSimulation = async (tier: PlanTier) => {
+    setPlanSaving(tier);
+    setPlanMessage('');
+    try {
+      await adminService.setMyPlanSimulation(tier);
+      await loadEntitlements();
+      setPlanMessage(`Effective plan switched to ${tier}.`);
+    } catch (err: any) {
+      setPlanMessage(`Error: ${err.message}`);
+    } finally {
+      setPlanSaving(null);
+    }
+  };
+
+  const handlePlanReset = async () => {
+    setPlanSaving('reset');
+    setPlanMessage('');
+    try {
+      await adminService.clearMyPlanSimulation();
+      await loadEntitlements();
+      setPlanMessage('Plan simulation cleared. Effective plan now follows real billing.');
+    } catch (err: any) {
+      setPlanMessage(`Error: ${err.message}`);
+    } finally {
+      setPlanSaving(null);
+    }
+  };
+
+  const planTiers: PlanTier[] = ['free', 'aspire', 'rise', 'ascent'];
+  const isSimulated = Boolean(entitlements?.override?.isAdminPlanSimulation);
 
   const statCards = [
     { label: 'Total Users', value: analytics.totalUsers ?? '-', color: '#6366F1' },
@@ -83,6 +133,72 @@ export default function AdminDashboard() {
             </p>
           </div>
         ))}
+      </div>
+
+      <div className="bg-white rounded-2xl p-[clamp(1.25rem,1.5vw,1.75rem)] mb-[clamp(2rem,3vw,3rem)]" style={{ border: '1px solid #E5E7EB' }}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2
+              className="font-inter font-semibold text-[#111827] mb-1"
+              style={{ fontSize: 'clamp(16px, 1.1vw, 20px)' }}
+            >
+              Admin Plan Tester
+            </h2>
+            <p className="font-inter text-[#6B7280]" style={{ fontSize: 'clamp(12px, 0.8vw, 14px)' }}>
+              Effective plan: <span className="font-semibold text-[#111827]">{planLoading ? 'Loading...' : entitlements?.tier || 'free'}</span>
+              {isSimulated ? <span className="ml-2 text-[#B45309]">(simulated)</span> : <span className="ml-2">(real billing)</span>}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {planTiers.map((tier) => {
+              const active = entitlements?.tier === tier && isSimulated;
+              return (
+                <button
+                  key={tier}
+                  type="button"
+                  onClick={() => handlePlanSimulation(tier)}
+                  disabled={Boolean(planSaving)}
+                  className="px-4 py-2 rounded-lg font-inter font-semibold text-sm disabled:opacity-60"
+                  style={{
+                    background: active ? '#111827' : '#F3F4F6',
+                    color: active ? '#FFFFFF' : '#374151',
+                    border: '1px solid #E5E7EB',
+                  }}
+                >
+                  {planSaving === tier ? 'Saving...' : tier[0].toUpperCase() + tier.slice(1)}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={handlePlanReset}
+              disabled={Boolean(planSaving)}
+              className="px-4 py-2 rounded-lg font-inter font-semibold text-sm disabled:opacity-60"
+              style={{ background: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA' }}
+            >
+              {planSaving === 'reset' ? 'Resetting...' : 'Use Real Plan'}
+            </button>
+            <a
+              href="/dashboard"
+              className="px-4 py-2 rounded-lg font-inter font-semibold text-sm"
+              style={{ background: '#6366F1', color: '#FFFFFF' }}
+            >
+              Test Dashboard
+            </a>
+          </div>
+        </div>
+        {planMessage && (
+          <div
+            className="mt-4 px-4 py-3 rounded-lg text-sm font-inter"
+            style={{
+              background: planMessage.startsWith('Error') ? '#FEF2F2' : '#ECFDF5',
+              color: planMessage.startsWith('Error') ? '#991B1B' : '#065F46',
+              border: `1px solid ${planMessage.startsWith('Error') ? '#FECACA' : '#A7F3D0'}`,
+            }}
+          >
+            {planMessage}
+          </div>
+        )}
       </div>
 
       {/* Quick Actions */}

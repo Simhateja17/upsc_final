@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import LandingNav from '@/components/LandingNav';
 import Footer from '@/components/Footer';
 import CompanyPageToc from '@/components/CompanyPageToc';
@@ -56,12 +58,12 @@ function InfoBox({
   icon,
   children,
 }: {
-  icon: string;
-  children: React.ReactNode;
+  icon: ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="flex gap-4 rounded-xl border border-amber-200 bg-amber-50/60 p-5 text-[15px] leading-relaxed">
-      <span className="text-xl shrink-0">{icon}</span>
+      <span className="shrink-0">{icon}</span>
       <div>{children}</div>
     </div>
   );
@@ -72,7 +74,7 @@ function NoteBox({
   children,
 }: {
   icon: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="flex gap-4 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5 text-[15px] leading-relaxed">
@@ -377,9 +379,18 @@ export default function CookiePolicyPage() {
                 understand more about a specific technology we use, please get in
                 touch.
               </p>
-
-              <InfoBox icon="&#x1F4EC;">
-                <strong>RiseWithJeet Edtech Pvt Ltd</strong>
+              <InfoBox
+                icon={
+                  <Image
+                    src="/emm.png"
+                    alt="Mail"
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 object-contain"
+                  />
+                }
+              >
+                <strong>Jeetpath Academy Pvt. Ltd.</strong>
                 <br />
                 Privacy and cookie queries:{' '}
                 <a
@@ -389,6 +400,9 @@ export default function CookiePolicyPage() {
                   together@risewithjeet.com
                 </a>
               </InfoBox>
+              <p style={{ ...bodyTextStyle, marginTop: '14px', marginBottom: 0, fontSize: '14px' }}>
+                This policy may be updated from time to time. The &ldquo;Last updated&rdquo; date at the top of this page will reflect any changes.
+              </p>
             </section>
           </div>
         </div>
