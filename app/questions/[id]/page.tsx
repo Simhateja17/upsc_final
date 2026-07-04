@@ -19,6 +19,7 @@ type PublicQuestion = {
   options?: Array<{ label: string; text: string }> | null;
   correctOption?: string | null;
   explanation?: string | null;
+  modelAnswer?: string | null;
   structuredJson?: any;
   questionStructure?: any;
 };
@@ -165,6 +166,7 @@ export default async function QuestionPage({ params, searchParams }: PageProps) 
   ]);
   const answerText =
     detail.question.correctOption ||
+    detail.question.modelAnswer ||
     detail.question.explanation ||
     detail.question.structuredJson?.explanation?.displayText ||
     undefined;

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { dashboardService, studyPlannerService, syllabusService, userService } from '@/lib/services';
-import { getSubjectEmoji } from '@/lib/subjectEmojis';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 function fmtTimer(secs: number): string {
   const s = Math.max(0, secs);
@@ -221,30 +221,18 @@ const SYLLABUS_SUBJECT_ALIASES: Record<string, string> = {
   Essay: 'Essay',
 };
 
-const SUBJECT_ICON_MAP: Record<string, string> = {
-  Polity: '/study-planner-icons/polity.png',
-  Economy: '/study-planner-icons/economy.png',
-  Society: '/study-planner-icons/society.png',
-  'Indian Society': '/study-planner-icons/society.png',
-  Governance: '/study-planner-icons/governance.png',
-  'Social Justice': '/study-planner-icons/social-justice.png',
-  'International Relations': '/study-planner-icons/international-relations.png',
-  'Disaster Management': '/study-planner-icons/disaster-management.png',
-  Ethics: '/study-planner-icons/ethics.png',
-  'Ethics & Human Values': '/study-planner-icons/ethics.png',
-  CSAT: '/study-planner-icons/csat.png',
-  'Case Studies': '/study-planner-icons/case-studies.png',
-};
-
 const quickAddIconBoxStyle: React.CSSProperties = {
-  width: '24px',
-  height: '24px',
-  minWidth: '24px',
+  width: '28px',
+  height: '28px',
+  minWidth: '28px',
   flexShrink: 0,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   overflow: 'hidden',
+  borderRadius: '999px',
+  fontSize: '16px',
+  lineHeight: '20px',
 };
 
 export default function StudyPlannerPage() {
@@ -1743,53 +1731,56 @@ export default function StudyPlannerPage() {
               </div>
 
               <div className="flex flex-wrap overflow-y-auto pr-1" style={{ gap: '8px', minHeight: 0 }}>
-                {quickAddSubjects.map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => handleQuickAdd(item)}
-                    className="font-arimo hover:bg-gray-100 transition-colors"
-                    style={{
-                      minHeight: '40px',
-                      borderRadius: '10px',
-                      border: '0.8px solid #E5E7EB',
-                      background: '#F9FAFB',
-                      fontSize: '12px',
-                      lineHeight: '16px',
-                      fontWeight: 500,
-                      color: '#374151',
-                      padding: '8px 10px',
-                      flex: '1 1 120px',
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      textAlign: 'left',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    {SUBJECT_ICON_MAP[item] ? (
-                      <span aria-hidden="true" style={quickAddIconBoxStyle}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={SUBJECT_ICON_MAP[item]}
-                          alt=""
-                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }}
-                        />
-                      </span>
-                    ) : (
+                {quickAddSubjects.map((item) => {
+                  const meta = getSubjectMetaStyle(item);
+                  return (
+                    <button
+                      key={item}
+                      onClick={() => handleQuickAdd(item)}
+                      className="font-arimo transition-all"
+                      style={{
+                        minHeight: '44px',
+                        borderRadius: '12px',
+                        border: `0.8px solid ${meta.border}`,
+                        background: meta.bg,
+                        boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                        fontSize: '12px',
+                        lineHeight: '16px',
+                        fontWeight: 700,
+                        color: meta.color,
+                        padding: '8px 10px',
+                        flex: '1 1 132px',
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textAlign: 'left',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-start',
+                        gap: '8px',
+                      }}
+                      onMouseEnter={(event) => {
+                        event.currentTarget.style.transform = 'translateY(-2px)';
+                        event.currentTarget.style.boxShadow = `0 10px 20px ${meta.accent}22`;
+                        event.currentTarget.style.borderColor = meta.accent;
+                      }}
+                      onMouseLeave={(event) => {
+                        event.currentTarget.style.transform = 'translateY(0)';
+                        event.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
+                        event.currentTarget.style.borderColor = meta.border;
+                      }}
+                    >
                       <span
                         aria-hidden="true"
-                        style={{ ...quickAddIconBoxStyle, fontSize: '18px', lineHeight: '24px' }}
+                        style={{ ...quickAddIconBoxStyle, background: 'rgba(255,255,255,0.74)', border: `1px solid ${meta.border}` }}
                       >
-                        {getSubjectEmoji(item)}
+                        {meta.icon}
                       </span>
-                    )}
-                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item}
-                    </span>
-                  </button>
-                ))}
+                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -1996,11 +1987,14 @@ export default function StudyPlannerPage() {
                         Task {focusTaskIdx + 1} of {focusSessionTasks.length}
                       </p>
                       <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '20px', lineHeight: '1.3' }}>{task?.title ?? '-'}</h3>
-                      {task?.subject && (
-                        <span className="inline-block font-arimo text-[#312C85] mt-1" style={{ fontSize: '12px', background: '#EEF2FF', borderRadius: '6px', padding: '2px 8px' }}>
-                          {getSubjectEmoji(task.subject)} {task.subject}
-                        </span>
-                      )}
+                      {task?.subject && (() => {
+                        const meta = getSubjectMetaStyle(task.subject);
+                        return (
+                          <span className="inline-flex items-center gap-1 font-arimo mt-1" style={{ fontSize: '12px', background: meta.bg, color: meta.color, border: `1px solid ${meta.border}`, borderRadius: '999px', padding: '3px 9px', fontWeight: 700 }}>
+                            <span aria-hidden>{meta.icon}</span> {task.subject}
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     {/* Countdown */}

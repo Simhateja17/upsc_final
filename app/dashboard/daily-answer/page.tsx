@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { dailyAnswerService, dashboardService } from '@/lib/services';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 interface AnswerData {
   id: string;
@@ -155,8 +156,14 @@ export default function DailyMainsChallengePage() {
 
             {/* Chips */}
             <div className="flex justify-center flex-wrap" style={{ gap: '8px', marginTop: '16px' }}>
-              <span className="da-chip" style={{ background: '#EEF0FF', color: '#4338CA' }}>{data.paper}</span>
-              <span className="da-chip" style={{ background: '#E8F0FF', color: '#1d4ed8' }}>{data.subject}</span>
+              {[data.paper, data.subject].map((label) => {
+                const meta = getSubjectMetaStyle(label);
+                return (
+                  <span key={label} className="da-chip inline-flex items-center gap-1.5" style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>
+                    <span aria-hidden>{meta.icon}</span>{label}
+                  </span>
+                );
+              })}
             </div>
 
             {/* Stat boxes */}

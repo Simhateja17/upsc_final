@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { videoService, libraryService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import StudyMaterialReaderModal from '@/components/StudyMaterialReaderModal';
+import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 /* ─── Types ─── */
 interface VideoItem {
@@ -177,70 +178,8 @@ function normalizeSubjectKey(name: string) {
 }
 
 function subjectEmoji(name: string) {
-  const n = normalizeSubjectKey(name);
-  if (n.includes('polity')) return '⚖️';
-  if (n.includes('history')) return '🏛️';
-  if (n.includes('geography')) return '🌍';
-  if (n.includes('economy')) return '💰';
-  if (n.includes('environment')) return '🌿';
-  if (n.includes('science')) return '🔬';
-  if (n.includes('art')) return '🎨';
-  if (n.includes('current')) return '📰';
-  if (n.includes('international')) return '🌐';
-  if (n.includes('security')) return '🛡️';
-  if (n.includes('csat')) return '📊';
-  return '📹';
+  return getSubjectMetaStyle(name).icon;
 }
-
-/*
- * Exact subject palette from the supplied reference page.
- * Each subject has a foreground accent, card background, boundary and icon tile.
- */
-const SUBJECT_CARD_PALETTE: Array<{ key: string; color: string; bg: string; border: string; tag: string }> = [
-  { key: 'polity',       color: '#5B8DD9', bg: '#F5F9FF', border: '#D0E2FF', tag: '#DBEAFE' },
-  { key: 'history',      color: '#C0854E', bg: '#FFFBF5', border: '#FFE0B8', tag: '#FFF3E0' },
-  { key: 'geography',    color: '#5BAD7A', bg: '#F5FDF6', border: '#B8F0C8', tag: '#D1FAE5' },
-  { key: 'economy',      color: '#D4A853', bg: '#FFFDF5', border: '#F5E4B8', tag: '#FEF3C7' },
-  { key: 'environment',  color: '#3D9E5F', bg: '#F4FDF4', border: '#B8EFC8', tag: '#DCFCE7' },
-  { key: 'science',      color: '#4C6FD4', bg: '#F5F8FF', border: '#C8D8FF', tag: '#E0EBFF' },
-  { key: 'current',      color: '#D4608A', bg: '#FFF5F8', border: '#FFD0E0', tag: '#FFE4EC' },
-  { key: 'csat',         color: '#7C5CBF', bg: '#F8F5FF', border: '#DDD0FF', tag: '#EDE9FE' },
-  { key: 'society',      color: '#C0609A', bg: '#FFF6FB', border: '#F5C8E8', tag: '#FCE7F3' },
-  { key: 'governance',   color: '#7B6FA0', bg: '#F7F5FF', border: '#D8D0F8', tag: '#EDE9FE' },
-  { key: 'justice',      color: '#D4784A', bg: '#FFF5F0', border: '#FFD8C0', tag: '#FFE8D8' },
-  { key: 'relations',    color: '#3A8EC0', bg: '#F5FBFF', border: '#B8DFFF', tag: '#DBEEFE' },
-  { key: 'agriculture',  color: '#5A9E35', bg: '#F6FDF0', border: '#C8EEAD', tag: '#DCFCE7' },
-  { key: 'security',     color: '#C85858', bg: '#FFF5F5', border: '#FFD0D0', tag: '#FFE4E4' },
-  { key: 'disaster',     color: '#C87A30', bg: '#FFF8F2', border: '#FFD8A8', tag: '#FFE8C8' },
-  { key: 'ethics',       color: '#6A9BD4', bg: '#F6FAFF', border: '#C8DEFF', tag: '#E0EFFF' },
-  { key: 'case-studies', color: '#A8853A', bg: '#FDFAF5', border: '#EAD8B0', tag: '#FEF3C7' },
-];
-
-/* Canonical colour + progress/badge for the well-known subjects. */
-const CORE_SUBJECT_META: Array<{
-  match: (n: string) => boolean;
-  key: string;
-  progress: number;
-  showNew?: boolean;
-}> = [
-  { match: (n) => n.includes('polity'),                                  key: 'polity', progress: 80, showNew: true },
-  { match: (n) => n.includes('history'),                                 key: 'history', progress: 65 },
-  { match: (n) => n.includes('geography'),                               key: 'geography', progress: 55 },
-  { match: (n) => n.includes('economy'),                                 key: 'economy', progress: 70 },
-  { match: (n) => n.includes('environment'),                             key: 'environment', progress: 45 },
-  { match: (n) => n.includes('science'),                                 key: 'science', progress: 60, showNew: true },
-  { match: (n) => n.includes('current'),                                 key: 'current', progress: 45 },
-  { match: (n) => n.includes('csat'),                                    key: 'csat', progress: 45 },
-  { match: (n) => n.includes('society'),                                 key: 'society', progress: 45 },
-  { match: (n) => n.includes('governance'),                              key: 'governance', progress: 45 },
-  { match: (n) => n.includes('justice'),                                 key: 'justice', progress: 45 },
-  { match: (n) => n.includes('international') || n.includes('relation'), key: 'relations', progress: 35 },
-  { match: (n) => n.includes('agriculture'),                             key: 'agriculture', progress: 45 },
-  { match: (n) => n.includes('security'),                                key: 'security', progress: 22, showNew: true },
-  { match: (n) => n.includes('disaster'),                                key: 'disaster', progress: 45 },
-  { match: (n) => n.includes('case stud'),                               key: 'case-studies', progress: 45 },
-  { match: (n) => n.includes('ethics'),                                  key: 'ethics', progress: 40 },
-];
 
 function stableHash(s: string) {
   let h = 0;
@@ -256,48 +195,24 @@ function stableHash(s: string) {
  */
 function buildSubjectThemeMap(subjects: SubjectItem[]): Map<string, SubjectCardTheme> {
   const map = new Map<string, SubjectCardTheme>();
-  const usedKeys = new Set<string>();
-
-  const meta = new Map<string, { key: string; progress: number; showNew?: boolean }>();
   for (const subject of subjects) {
-    const n = normalizeSubjectKey(subject.name);
-    const core = CORE_SUBJECT_META.find((m) => m.match(n));
-    meta.set(
-      subject.name,
-      core
-        ? { key: core.key, progress: core.progress, showNew: core.showNew }
-        : { key: '', progress: 30 + (stableHash(n) % 46) }, // 30-75, stable per name
-    );
-  }
-
-  // Pass 1: reserve each subject's canonical hue while it is still free.
-  for (const subject of subjects) {
-    const info = meta.get(subject.name)!;
-    if (info.key && !usedKeys.has(info.key)) {
-      const pal = SUBJECT_CARD_PALETTE.find((p) => p.key === info.key)!;
-      usedKeys.add(pal.key);
-      map.set(subject.name, { bg: pal.bg, border: pal.border, color: pal.color, tag: pal.tag, progress: info.progress, showNew: info.showNew });
-    }
-  }
-
-  // Pass 2: everyone left gets the next unused palette colour.
-  for (const subject of subjects) {
-    if (map.has(subject.name)) continue;
-    const info = meta.get(subject.name)!;
-    const pal =
-      SUBJECT_CARD_PALETTE.find((p) => !usedKeys.has(p.key)) ??
-      SUBJECT_CARD_PALETTE[stableHash(subject.name) % SUBJECT_CARD_PALETTE.length]; // palette exhausted: stable fallback
-    usedKeys.add(pal.key);
-    map.set(subject.name, { bg: pal.bg, border: pal.border, color: pal.color, tag: pal.tag, progress: info.progress, showNew: info.showNew });
+    const card = getSubjectCardStyle(subject.name);
+    map.set(subject.name, {
+      bg: card.bg,
+      border: card.border,
+      color: card.bar,
+      tag: card.iconBg,
+      progress: 45,
+      showNew: subject.isNew,
+    });
   }
 
   return map;
 }
 
 function getSubjectReferenceTheme(name: string) {
-  const n = normalizeSubjectKey(name);
-  const core = CORE_SUBJECT_META.find((meta) => meta.match(n));
-  return SUBJECT_CARD_PALETTE.find((palette) => palette.key === core?.key) ?? SUBJECT_CARD_PALETTE[0];
+  const card = getSubjectCardStyle(name);
+  return { bg: card.bg, border: card.border, color: card.bar, tag: card.iconBg };
 }
 
 function formatViews(n: number) {
@@ -319,7 +234,13 @@ function formatSubjectViews(n: number) {
 }
 
 function getSubjectHeroLabel(name: string) {
-  return name.replace(/^Indian\s+/i, '').trim();
+  const normalized = name
+    .replace(/^Indian\s+/i, '')
+    .replace(/^Modern History$/i, 'History')
+    .replace(/^Indian Polity(?:\s*&\s*Governance)?$/i, 'Polity')
+    .replace(/^Ethics,\s*Integrity\s*&\s*Aptitude$/i, 'Ethics')
+    .trim();
+  return normalized || name;
 }
 
 /* Topic subtitle shown under "<Subject> Simplified" in the playlist header.
@@ -904,7 +825,7 @@ export default function VideoLecturesPage() {
                   </div>
                   <div
                     className="font-arimo font-bold"
-                    title={subject.name}
+                    title={getSubjectHeroLabel(subject.name)}
                     style={{
                       fontSize: '17px',
                       lineHeight: '22px',
@@ -916,7 +837,7 @@ export default function VideoLecturesPage() {
                       overflow: 'hidden',
                     }}
                   >
-                    {subject.name}
+                    {getSubjectHeroLabel(subject.name)}
                   </div>
                   <div
                     className="font-arimo flex items-center"

@@ -7,6 +7,7 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import Toast from '@/components/Toast';
 import { EntitlementGate, UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { getSubjectAccentColor } from '@/lib/subjectPalette';
 
 
 // ─── SVG Line Chart ───────────────────────────────────────────────────────────
@@ -91,7 +92,6 @@ function timeColor(s: number): string {
   return '#EF4444';
 }
 
-const SUBJECT_COLORS = ['#00BBA7', '#A855F7', '#14B8A6', '#F97316', '#155DFC', '#EF4444', '#D97706', '#EC4899'];
 const WEEK_BAR_COLORS = ['#111827', '#111827', '#111827', '#111827', '#FDC700', '#D1D5DB', '#D1D5DB'];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -343,27 +343,30 @@ export default function TestAnalyticsPage() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-4">
-                    {subjectAccuracy.slice(0, 8).map((s, i) => (
-                      <div key={s.subject}>
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: SUBJECT_COLORS[i % SUBJECT_COLORS.length] }} />
-                            <span className="text-[13px] font-medium" style={{ color: '#1A1F36' }}>{s.subject}</span>
+                    {subjectAccuracy.slice(0, 8).map((s) => {
+                      const subjectColor = getSubjectAccentColor(s.subject);
+                      return (
+                        <div key={s.subject}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: subjectColor }} />
+                              <span className="text-[13px] font-medium" style={{ color: '#1A1F36' }}>{s.subject}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-[12px]">
+                              <span style={{ color: '#22C55E' }}>{s.correct}✓</span>
+                              <span style={{ color: '#EF4444' }}>{s.wrong}✗</span>
+                              <span className="font-semibold" style={{ color: subjectColor }}>{s.accuracy}%</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3 text-[12px]">
-                            <span style={{ color: '#22C55E' }}>{s.correct}✓</span>
-                            <span style={{ color: '#EF4444' }}>{s.wrong}✗</span>
-                            <span className="font-semibold" style={{ color: SUBJECT_COLORS[i % SUBJECT_COLORS.length] }}>{s.accuracy}%</span>
+                          <div className="w-full rounded-full" style={{ height: 6, background: '#F3F4F6' }}>
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{ width: `${s.accuracy}%`, background: subjectColor }}
+                            />
                           </div>
                         </div>
-                        <div className="w-full rounded-full" style={{ height: 6, background: '#F3F4F6' }}>
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${s.accuracy}%`, background: SUBJECT_COLORS[i % SUBJECT_COLORS.length] }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

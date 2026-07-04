@@ -9,6 +9,7 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import FlashcardScienceSections from '@/components/FlashcardScienceSections';
 import { UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 type Deck = {
   id: string;
@@ -255,17 +256,19 @@ export default function FlashcardsPage() {
                 const due = item.totalCards - item.masteredCards;
                 const progressWidth = hasDeck ? Math.max(item.mastery, 10) : 0;
                 const title = item.shortLabel ?? displaySubjectName(item.subject);
+                const paletteCard = getSubjectCardStyle(item.subject);
+                const paletteMeta = getSubjectMetaStyle(item.subject);
 
                 const cardContent = (
                   <>
-                    <div className="subjhx-accent" style={{ background: item.card.bar }} />
+                    <div className="subjhx-accent" style={{ background: paletteCard.bar }} />
                     <div className="flex items-start justify-between gap-3">
                       <span
                         aria-hidden
                         className="flex items-center justify-center flex-shrink-0"
-                        style={{ width: 44, height: 44, borderRadius: 12, background: `${item.card.bar}33`, fontSize: 24, lineHeight: 1 }}
+                        style={{ width: 44, height: 44, borderRadius: 12, background: paletteCard.iconBg, border: `1px solid ${paletteCard.border}`, fontSize: 24, lineHeight: 1 }}
                       >
-                        {item.icon}
+                        {paletteMeta.icon}
                       </span>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         {item.isNew && (
@@ -348,7 +351,7 @@ export default function FlashcardsPage() {
                       key={item.id}
                       href={`/dashboard/flashcards/${item.id}`}
                       className="subjhx-card block rounded-[16px] p-5 text-left flex flex-col"
-                      style={{ ['--subjhx-border']: item.card.border, background: item.card.bg, height: 190 } as React.CSSProperties}
+                      style={{ ['--subjhx-border']: paletteCard.border, background: paletteCard.bg, height: 190 } as React.CSSProperties}
                       onMouseEnter={() => setHoveredCard(item.id)}
                       onMouseLeave={() => setHoveredCard(null)}
                     >
@@ -367,7 +370,7 @@ export default function FlashcardsPage() {
                       setShowAddModal(true);
                     }}
                     className="subjhx-card rounded-[16px] p-5 text-left flex flex-col"
-                    style={{ ['--subjhx-border']: item.card.border, background: item.card.bg, height: 190 } as React.CSSProperties}
+                    style={{ ['--subjhx-border']: paletteCard.border, background: paletteCard.bg, height: 190 } as React.CSSProperties}
                     onMouseEnter={() => setHoveredCard(item.id)}
                     onMouseLeave={() => setHoveredCard(null)}
                   >

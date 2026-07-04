@@ -9,12 +9,13 @@ import { liveStudentCount } from '@/lib/liveCount';
 import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 /* ─── Static Config (UI structure only, not data) ─── */
 
 const prelimsPaperTypes = [
-  { id: 'gs1', emoji: '🌐', label: 'GS Paper I', description: 'History · Geography · Polity · Economy · Science', isDefault: true },
-  { id: 'csat', emoji: '🧮', label: 'CSAT', description: 'Aptitude · Comprehension · Logical Reasoning' },
+  { id: 'gs1', emoji: '🔑', label: 'GS Paper I', description: 'History · Geography · Polity · Economy · Science', isDefault: true },
+  { id: 'csat', emoji: '🧩', label: 'CSAT', description: 'Aptitude · Comprehension · Logical Reasoning' },
 ];
 
 const fallbackQuestionSources = [
@@ -159,10 +160,10 @@ const fallbackExamModes = [
 ];
 
 const fallbackMainsPaperTypes = [
-  { id: 'gs1', emoji: '🏛️', label: 'GS Paper I', description: 'History · Geography · Society' },
-  { id: 'gs2', emoji: '⚖️', label: 'GS Paper II', description: 'Polity · Governance · IR' },
-  { id: 'gs3', emoji: '📈', label: 'GS Paper III', description: 'Economy · Environment · Sci-Tech' },
-  { id: 'gs4', emoji: '🎯', label: 'GS Paper IV', description: 'Ethics, Integrity & Aptitude' },
+  { id: 'gs1', emoji: '📘', label: 'GS Paper I', description: 'History · Geography · Society' },
+  { id: 'gs2', emoji: '📗', label: 'GS Paper II', description: 'Polity · Governance · IR' },
+  { id: 'gs3', emoji: '📙', label: 'GS Paper III', description: 'Economy · Environment · Sci-Tech' },
+  { id: 'gs4', emoji: '📕', label: 'GS Paper IV', description: 'Ethics, Integrity & Aptitude' },
   { id: 'essay', emoji: '✏️', label: 'Essay', description: 'Paper I · 2 essays' },
   { id: 'optional', emoji: '📚', label: 'Optional', description: 'Choose your optional subject' },
 ];
@@ -723,6 +724,7 @@ function MockTestsPageInner() {
               {(selectedExamMode === 'mains' ? mainsPaperTypes : prelimsPaperTypes).map(paper => {
                 const isSelected = selectedPaperType === paper.id;
                 const isComingSoon = selectedExamMode === 'prelims' && paper.id === 'csat';
+                const paperStyle = getSubjectMetaStyle(paper.label);
                 return (
                   <button
                     key={paper.id}
@@ -731,8 +733,8 @@ function MockTestsPageInner() {
                     }}
                     disabled={isComingSoon}
                     style={{
-                      background: isSelected ? '#EFF6FF' : '#FAFAFA',
-                      border: isSelected ? '1.8px solid #17223E' : '1.6px solid #E5E7EB',
+                      background: isSelected ? paperStyle.bg : '#FAFAFA',
+                      border: isSelected ? `1.8px solid ${paperStyle.accent}` : `1.6px solid ${paperStyle.border}`,
                       borderRadius: '12px',
                       padding: '14px 12px',
                       cursor: isComingSoon ? 'not-allowed' : 'pointer',
@@ -746,7 +748,7 @@ function MockTestsPageInner() {
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    <span style={{ fontSize: '22px', flexShrink: 0, lineHeight: 1 }}>
+                    <span style={{ fontSize: '22px', flexShrink: 0, lineHeight: 1, width: 42, height: 42, borderRadius: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#FFFFFFAA', border: `1px solid ${paperStyle.border}` }}>
                       {(paper as any).emoji ?? '📄'}
                     </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -759,7 +761,7 @@ function MockTestsPageInner() {
                     </div>
                     <div style={{
                       width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
-                      border: isSelected ? '5px solid #17223E' : '1.5px solid #D1D5DB',
+                      border: isSelected ? `5px solid ${paperStyle.accent}` : '1.5px solid #D1D5DB',
                       background: '#FFF', transition: 'all 0.15s ease',
                     }} />
                   </button>
@@ -1376,8 +1378,10 @@ function MockTestsPageInner() {
                 style={{
                 width: '100%',
                 marginTop: 'auto',
-                background: generating || quotaExhausted
+                background: generating
                   ? '#9CA3AF'
+                  : quotaExhausted
+                  ? 'linear-gradient(90deg, #FDC700, #FF8904, #FF6900)'
                   : generateBtnHovered
                   ? 'linear-gradient(90deg, #E6B000, #E87200, #E05800)'
                   : 'linear-gradient(90deg, #FDC700, #FF8904, #FF6900)',
@@ -1391,11 +1395,11 @@ function MockTestsPageInner() {
                 cursor: generating || loading || quotaExhausted ? 'not-allowed' : 'pointer',
                 letterSpacing: '0.02em',
                 marginBottom: 'clamp(14px, 1.1vw, 20px)',
-                opacity: generating || loading || quotaExhausted ? 0.7 : 1,
+                opacity: generating || loading ? 0.7 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
+                gap: '10px',
                 transition: 'background 0.2s ease',
               }}>
                 {generating ? (
@@ -1411,9 +1415,15 @@ function MockTestsPageInner() {
                     Generating...
                     <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
                   </>
-                ) : (
-                  quotaExhausted ? 'Limit reached - upgrade to continue' : '🚀 Generate My Mock Test'
-                )}
+                ) : quotaExhausted ? (
+                  <>
+                    <span style={{ fontSize: 'clamp(20px, 1.4vw, 26px)', lineHeight: 1 }}>🔒</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.3 }}>
+                      <span style={{ color: '#162456' }}>Free Attempts Exhausted</span>
+                      <span style={{ color: '#162456' }}>Unlock Unlimited Access</span>
+                    </div>
+                  </>
+                ) : '🚀 Generate My Mock Test'}
               </button>
 
               {/* Bottom info */}

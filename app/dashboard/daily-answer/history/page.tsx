@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { dailyAnswerService } from '@/lib/services';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 interface CalendarItem {
   date: string;
@@ -35,23 +36,6 @@ function formatDateLabel(dateStr: string, todayStr: string): string {
   const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
   const year = d.getUTCFullYear();
   return `${day} ${month}, ${year}`;
-}
-
-const SUBJECT_STYLES: Record<string, { bg: string; color: string }> = {
-  'Science & Technology': { bg: '#CCFBF1', color: '#0F766E' },
-  'Environment & Ecology': { bg: '#DCFCE7', color: '#15803D' },
-  Polity: { bg: '#EFF6FF', color: '#1447E6' },
-  Economy: { bg: '#FEF3C7', color: '#92400E' },
-  History: { bg: '#FAF5FF', color: '#8200DB' },
-  Geography: { bg: '#FCE7F3', color: '#BE185D' },
-  Society: { bg: '#E0F2FE', color: '#0369A1' },
-  Ethics: { bg: '#FFE4E6', color: '#BE123C' },
-  Governance: { bg: '#ECFCCB', color: '#3F6212' },
-  'International Relations': { bg: '#E0E7FF', color: '#4338CA' },
-};
-const DEFAULT_SUBJECT_STYLE = { bg: '#F3F4F6', color: '#374151' };
-function subjectStyle(subject: string) {
-  return SUBJECT_STYLES[subject] || DEFAULT_SUBJECT_STYLE;
 }
 
 export default function DailyAnswerHistoryPage() {
@@ -101,7 +85,8 @@ export default function DailyAnswerHistoryPage() {
             ) : (
               <div className="flex flex-col gap-3">
                 {items.map((c) => {
-                  const style = subjectStyle(c.subject);
+                  const paperStyle = getSubjectMetaStyle(c.paper);
+                  const subjectStyle = getSubjectMetaStyle(c.subject);
                   return (
                     <Link
                       key={c.date}
@@ -111,8 +96,8 @@ export default function DailyAnswerHistoryPage() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-white font-bold" style={{ background: '#2B7FFF', fontSize: '12px', padding: '4px 12px', borderRadius: '999px' }}>{c.paper}</span>
-                          <span className="font-medium" style={{ background: style.bg, color: style.color, fontSize: '12px', padding: '4px 12px', borderRadius: '999px' }}>{c.subject}</span>
+                          <span className="font-bold inline-flex items-center gap-1" style={{ background: paperStyle.bg, color: paperStyle.color, border: `1px solid ${paperStyle.border}`, fontSize: '12px', padding: '4px 12px', borderRadius: '999px' }}><span aria-hidden>{paperStyle.icon}</span>{c.paper}</span>
+                          <span className="font-medium inline-flex items-center gap-1" style={{ background: subjectStyle.bg, color: subjectStyle.color, border: `1px solid ${subjectStyle.border}`, fontSize: '12px', padding: '4px 12px', borderRadius: '999px' }}><span aria-hidden>{subjectStyle.icon}</span>{c.subject}</span>
                         </div>
                         <span className="text-[#6A7282]" style={{ fontSize: '12px' }}>{formatDateLabel(c.date, todayStr)}</span>
                       </div>
