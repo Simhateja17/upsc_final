@@ -374,7 +374,7 @@ const PerformanceStatsWidget = () => {
               wordBreak: 'break-word',
             }}
           >
-            Weekly Leaderboard —
+            Weekly Leaderboard
           </span>
           <svg style={{ width: '18px', height: '18px', flexShrink: 0 }} viewBox="0 0 24 24" fill="none">
             <path d="M4 12h16M14 6l6 6-6 6" stroke="#1E2875" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
