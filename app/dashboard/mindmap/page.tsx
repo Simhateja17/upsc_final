@@ -6,17 +6,7 @@ import { mindmapService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
-
-const SUBJECT_CARD_STYLES: Record<string, { bg: string; border: string; bar: string }> = {
-  'indian-polity': { bg: '#FDF0DE', border: '#C0D9F5', bar: '#E9A12D' },
-  'modern-history': { bg: '#FFF8EE', border: '#FFD5A8', bar: '#E8B164' },
-  geography: { bg: 'rgba(201, 168, 76, 0.19)', border: '#B2EDD0', bar: '#D5A53C' },
-  'indian-economy': { bg: 'linear-gradient(139deg, #F3EFFD 0%, #EDE7FB 100%)', border: '#E8E1FD', bar: '#F16CB0' },
-  environment: { bg: 'linear-gradient(139deg, #EDF9F3 0%, #E0F5EA 100%)', border: '#B2EDD0', bar: '#D6A437' },
-  'science-and-tech': { bg: 'linear-gradient(139deg, #E0EBF9 0%, #D4E4F7 100%)', border: '#C0D9F5', bar: '#E0A446' },
-  'current-affairs': { bg: 'linear-gradient(139deg, #FFF1E8 0%, #FFE6D5 100%)', border: '#FFD1AA', bar: '#F39A3C' },
-  'gs-iv-ethics': { bg: 'linear-gradient(139deg, #EEF0FF 0%, #E0E3FF 100%)', border: '#C4C9F8', bar: '#4F46E5' },
-};
+import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 const SUBJECT_NAMES: Record<string, string> = {
   'indian-polity': 'Polity',
@@ -137,8 +127,9 @@ export default function MindmapPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
             {visibleSubjects.map((subject) => {
-              const cardStyle = SUBJECT_CARD_STYLES[subject.slug] ?? { bg: '#FFFFFF', border: '#E5E7EB', bar: '#16A34A' };
               const subjectName = SUBJECT_NAMES[subject.slug] ?? subject.name;
+              const cardStyle = getSubjectCardStyle(subjectName);
+              const subjectMeta = getSubjectMetaStyle(subjectName);
               const toGo = Math.max(0, subject.total - subject.explored);
               const progressWidth = subject.total > 0 ? Math.max(subject.progress, 10) : 0;
               return (
@@ -150,7 +141,7 @@ export default function MindmapPage() {
                 >
                   <div className="subjhx-accent" style={{ background: cardStyle.bar }} />
                   <div className="flex items-start justify-between gap-3">
-                    <span aria-hidden style={{ fontSize: 24, lineHeight: '24px' }}>{subject.icon}</span>
+                    <span aria-hidden className="inline-flex items-center justify-center" style={{ width: 44, height: 44, borderRadius: 12, background: cardStyle.iconBg, border: `1px solid ${cardStyle.border}`, fontSize: 24, lineHeight: '24px' }}>{subjectMeta.icon}</span>
                     {toGo > 0 && (
                       <span
                         className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"

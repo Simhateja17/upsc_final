@@ -14,6 +14,7 @@ export default function VideoManager() {
   const [showSubjectForm, setShowSubjectForm] = useState(false);
   const [showVideoForm, setShowVideoForm] = useState(false);
   const [showQuestionForm, setShowQuestionForm] = useState(false);
+  const [editingSubjectId, setEditingSubjectId] = useState<string | null>(null);
 
   const [subjectForm, setSubjectForm] = useState({ name: '', description: '', iconUrl: '', order: 0 });
   const [videoForm, setVideoForm] = useState({ subjectId: '', title: '', description: '', videoUrl: '', thumbnailUrl: '', duration: '', instructor: '', order: 0 });
@@ -35,17 +36,47 @@ export default function VideoManager() {
 
   useEffect(() => { loadSubjects(); }, []);
 
-  const handleCreateSubject = async () => {
+  const displaySubjectName = (name: string) =>
+    name
+      .replace(/^Indian Economy$/i, 'Economy')
+      .replace(/^Modern History$/i, 'History')
+      .replace(/^Indian Polity(?:\s*&\s*Governance)?$/i, 'Polity')
+      .replace(/^Ethics,\s*Integrity\s*&\s*Aptitude$/i, 'Ethics');
+
+  const resetSubjectForm = () => {
+    setSubjectForm({ name: '', description: '', iconUrl: '', order: 0 });
+    setEditingSubjectId(null);
+    setShowSubjectForm(false);
+  };
+
+  const handleSaveSubject = async () => {
     setMsg('');
     try {
-      await adminService.createVideoSubject({ ...subjectForm });
-      setMsg('Subject created!');
-      setShowSubjectForm(false);
-      setSubjectForm({ name: '', description: '', iconUrl: '', order: 0 });
+      if (editingSubjectId) {
+        const payload = { ...subjectForm, name: displaySubjectName(subjectForm.name) };
+        const res = await adminService.updateVideoSubject(editingSubjectId, payload);
+        setMsg('Subject updated!');
+        if (selectedSubject?.id === editingSubjectId) setSelectedSubject(res.data ?? { ...selectedSubject, ...payload });
+      } else {
+        await adminService.createVideoSubject({ ...subjectForm });
+        setMsg('Subject created!');
+      }
+      resetSubjectForm();
       loadSubjects();
     } catch (err: any) {
       setMsg(`Error: ${err.message}`);
     }
+  };
+
+  const handleEditSubject = (subject: any) => {
+    setEditingSubjectId(subject.id);
+    setSubjectForm({
+      name: displaySubjectName(subject.name || ''),
+      description: subject.description || '',
+      iconUrl: subject.iconUrl || '',
+      order: Number(subject.order || 0),
+    });
+    setShowSubjectForm(true);
   };
 
   const handleDeleteSubject = async (id: string) => {
@@ -163,7 +194,14 @@ export default function VideoManager() {
           Video Lecture Manager
         </h1>
         <button
-          onClick={() => setShowSubjectForm(!showSubjectForm)}
+          onClick={() => {
+            if (showSubjectForm) resetSubjectForm();
+            else {
+              setEditingSubjectId(null);
+              setSubjectForm({ name: '', description: '', iconUrl: '', order: 0 });
+              setShowSubjectForm(true);
+            }
+          }}
           className="px-4 py-2 rounded-lg text-sm font-inter font-medium text-white"
           style={{ background: '#6366F1' }}
         >
@@ -184,12 +222,12 @@ export default function VideoManager() {
       {/* Subject Form */}
       {showSubjectForm && (
         <div className="bg-white rounded-2xl p-6 mb-6" style={{ border: '1px solid #E5E7EB' }}>
-          <h2 className="font-inter font-semibold text-[#111827] mb-4">Add Video Subject</h2>
+          <h2 className="font-inter font-semibold text-[#111827] mb-4">{editingSubjectId ? 'Edit Video Subject' : 'Add Video Subject'}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <div>
               <label className="block text-sm text-[#6B7280] mb-1">Name *</label>
               <input value={subjectForm.name} onChange={(e) => setSubjectForm({ ...subjectForm, name: e.target.value })}
-                placeholder="e.g. Indian Polity" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                placeholder="e.g. Polity" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
             </div>
             <div>
               <label className="block text-sm text-[#6B7280] mb-1">Icon URL</label>
@@ -207,10 +245,18 @@ export default function VideoManager() {
             <input type="number" value={subjectForm.order} onChange={(e) => setSubjectForm({ ...subjectForm, order: parseInt(e.target.value) || 0 })}
               className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
           </div>
-          <button onClick={handleCreateSubject}
-            className="px-5 py-2 rounded-lg text-white font-inter font-medium text-sm" style={{ background: '#10B981' }}>
-            Create Subject
-          </button>
+          <div className="flex gap-2">
+            <button onClick={handleSaveSubject}
+              className="px-5 py-2 rounded-lg text-white font-inter font-medium text-sm" style={{ background: '#10B981' }}>
+              {editingSubjectId ? 'Save Subject' : 'Create Subject'}
+            </button>
+            {editingSubjectId && (
+              <button onClick={resetSubjectForm}
+                className="px-5 py-2 rounded-lg font-inter font-medium text-sm border border-[#D1D5DB] text-[#374151]">
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -236,15 +282,23 @@ export default function VideoManager() {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-[#111827]">{s.name}</p>
+                      <p className="text-sm font-medium text-[#111827]">{displaySubjectName(s.name)}</p>
                       <p className="text-xs text-[#6B7280]">{s._count?.videos ?? s.videoCount} videos</p>
                     </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteSubject(s.id); }}
-                      className="text-xs px-2 py-1 rounded text-[#EF4444] hover:bg-[#FEF2F2]"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEditSubject(s); }}
+                        className="text-xs px-2 py-1 rounded text-[#2563EB] hover:bg-[#EFF6FF]"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteSubject(s.id); }}
+                        className="text-xs px-2 py-1 rounded text-[#EF4444] hover:bg-[#FEF2F2]"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -256,7 +310,7 @@ export default function VideoManager() {
         <div className="bg-white rounded-2xl p-6" style={{ border: '1px solid #E5E7EB' }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-inter font-semibold text-[#111827]">
-              {selectedSubject ? `Videos in "${selectedSubject.name}"` : 'Select a subject'}
+              {selectedSubject ? `Videos in "${displaySubjectName(selectedSubject.name)}"` : 'Select a subject'}
             </h2>
             {selectedSubject && (
               <button

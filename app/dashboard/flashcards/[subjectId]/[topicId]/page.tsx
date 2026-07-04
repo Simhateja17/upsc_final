@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { flashcardService } from '@/lib/services';
 
 type Card = {
@@ -24,8 +24,10 @@ function pretty(slug: string) {
 
 export default function FlashcardReviewPage() {
   const params = useParams<{ subjectId: string; topicId: string }>();
+  const searchParams = useSearchParams();
   const subjectId = typeof params?.subjectId === 'string' ? params.subjectId : '';
   const topicId   = typeof params?.topicId   === 'string' ? params.topicId   : '';
+  const targetCardId = searchParams.get('cardId');
 
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,10 +44,15 @@ export default function FlashcardReviewPage() {
         if (res.status === 'success') {
           setCards(res.data);
           setMasteredCount(res.data.filter((c: Card) => c.mastered).length);
+          if (targetCardId) {
+            const index = res.data.findIndex((c: Card) => c.id === targetCardId);
+            if (index >= 0) setCurrentIndex(index);
+          }
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subjectId, topicId]);
 
   const totalCards = cards.length;

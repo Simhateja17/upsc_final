@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import { editorialService } from '@/lib/services';
 import { ApiRequestError } from '@/lib/api';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 interface EditorialCard {
   id: string;
@@ -59,24 +60,6 @@ function parseSections(md: string): { title: string; body: string }[] {
   if (cur) sections.push({ title: cur.title, body: cur.lines.join('\n').trim() });
   return sections;
 }
-
-const categoryColors: Record<string, { color: string; bg: string }> = {
-  'History': { color: '#B45309', bg: '#FEF3C7' },
-  'Geography': { color: '#1D4ED8', bg: '#DBEAFE' },
-  'Polity': { color: '#7C3AED', bg: '#EDE9FE' },
-  'Economy': { color: '#EA580C', bg: '#FFF7ED' },
-  'Environment & Ecology': { color: '#16A34A', bg: '#F0FDF4' },
-  'Science & Technology': { color: '#0369A1', bg: '#DBEAFE' },
-  'Current Affairs': { color: '#C2410C', bg: '#FFF7ED' },
-  'Society': { color: '#BE185D', bg: '#FDF2F8' },
-  'Governance': { color: '#1D4ED8', bg: '#EFF6FF' },
-  'International Relations': { color: '#0F766E', bg: '#F0FDFA' },
-  'Social Justice': { color: '#9A3412', bg: '#FFF7ED' },
-  'Agriculture': { color: '#15803D', bg: '#F0FDF4' },
-  'Internal Security': { color: '#991B1B', bg: '#FEF2F2' },
-  'Disaster Management': { color: '#92400E', bg: '#FFFBEB' },
-  'Ethics': { color: '#4338CA', bg: '#EEF2FF' },
-};
 
 const subjects = [
   { id: 'polity', label: 'Polity', emoji: '⚖️', bg: '#EDE9FE', border: '#DDD6FE', color: '#7C3AED', terms: ['polity'] },
@@ -500,7 +483,7 @@ export default function DailyEditorialPage() {
                 <div className="flex items-center justify-between" style={{ marginBottom: 'clamp(8px, 0.9vw, 12px)' }}>
                   <div className="flex items-center flex-wrap" style={{ gap: 'clamp(6px, 0.6vw, 8px)' }}>
                     {tagList.map((tag) => {
-                      const colors = categoryColors[tag] || { color: '#1E40AF', bg: '#DBEAFE' };
+                      const colors = getSubjectMetaStyle(tag);
                       return (
                       <span
                         key={tag}
@@ -819,15 +802,9 @@ export default function DailyEditorialPage() {
               </span>
             </div>
             <div className="grid grid-cols-2" style={{ gap: '12px' }}>
-              {[
-                { id: 'history',                 emoji: '📜', label: 'History',              bg: '#FEF3C7', border: '#FDE68A', color: '#B45309' },
-                { id: 'geography',               emoji: '🌍', label: 'Geography',            bg: '#DBEAFE', border: '#BFDBFE', color: '#1D4ED8' },
-                { id: 'polity',                  emoji: '⚖️', label: 'Polity',               bg: '#EDE9FE', border: '#DDD6FE', color: '#7C3AED' },
-                { id: 'economy',                 emoji: '💰', label: 'Economy',              bg: '#FFF7ED', border: '#FED7AA', color: '#EA580C' },
-                { id: 'environment',             emoji: '🌿', label: 'Environment & Ecology', bg: '#F0FDF4', border: '#BBF7D0', color: '#16A34A' },
-                { id: 'science-tech',            emoji: '🔬', label: 'Science & Technology',  bg: '#DBEAFE', border: '#BFDBFE', color: '#0369A1' },
-              ].map((s) => {
+              {subjects.slice(0, 6).map((s) => {
                 const active = selectedSubject === s.id;
+                const meta = getSubjectMetaStyle(s.label);
                 return (
                   <button
                     key={s.id}
@@ -836,9 +813,9 @@ export default function DailyEditorialPage() {
                     style={{
                       padding: '10px 12px',
                       borderRadius: '14px',
-                      background: active ? '#17223E' : s.bg,
-                      border: `0.8px solid ${active ? '#17223E' : s.border}`,
-                      color: active ? '#FFFFFF' : s.color,
+                      background: active ? '#17223E' : meta.bg,
+                      border: `0.8px solid ${active ? '#17223E' : meta.border}`,
+                      color: active ? '#FFFFFF' : meta.color,
                       fontSize: '13px',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
@@ -849,7 +826,7 @@ export default function DailyEditorialPage() {
                     {active ? (
                       <span style={{ fontSize: '15px', flexShrink: 0 }}>✓</span>
                     ) : (
-                      <span style={{ fontSize: '15px', flexShrink: 0 }}>{s.emoji}</span>
+                      <span style={{ fontSize: '15px', flexShrink: 0 }}>{meta.icon}</span>
                     )}
                     {s.label}
                   </button>
@@ -861,6 +838,7 @@ export default function DailyEditorialPage() {
                 .filter((subject) => !['history', 'geography', 'polity', 'economy'].includes(subject.id) && !['environment-ecology', 'science-technology'].includes(subject.id))
                 .map((subject) => {
                   const active = selectedSubject === subject.id;
+                  const meta = getSubjectMetaStyle(subject.label);
                   return (
                     <button
                       key={subject.id}
@@ -869,9 +847,9 @@ export default function DailyEditorialPage() {
                       style={{
                         padding: '12px 16px',
                         borderRadius: '14px',
-                        background: active ? '#17223E' : subject.bg,
-                        border: `0.8px solid ${active ? '#17223E' : subject.border}`,
-                        color: active ? '#FFFFFF' : subject.color,
+                        background: active ? '#17223E' : meta.bg,
+                        border: `0.8px solid ${active ? '#17223E' : meta.border}`,
+                        color: active ? '#FFFFFF' : meta.color,
                         fontSize: '14px',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
@@ -884,7 +862,7 @@ export default function DailyEditorialPage() {
                           height: '28px',
                           borderRadius: '999px',
                           background: active ? 'rgba(255,255,255,0.16)' : '#FFFFFF',
-                          border: active ? '1px solid rgba(255,255,255,0.18)' : `1px solid ${subject.border}`,
+                          border: active ? '1px solid rgba(255,255,255,0.18)' : `1px solid ${meta.border}`,
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -892,7 +870,7 @@ export default function DailyEditorialPage() {
                           fontSize: active ? '15px' : '14px',
                         }}
                       >
-                        {active ? '✓' : subject.emoji}
+                        {active ? '✓' : meta.icon}
                       </span>
                       <span style={{ lineHeight: 1.3 }}>{subject.label}</span>
                     </button>

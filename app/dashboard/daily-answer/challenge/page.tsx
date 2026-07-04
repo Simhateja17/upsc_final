@@ -8,6 +8,7 @@ import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 interface QuestionData {
   id: string;
@@ -108,23 +109,6 @@ function formatDateLabel(dateStr: string, todayStr: string): string {
   const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
   const year = d.getUTCFullYear();
   return `${day} ${month}, ${year}`;
-}
-
-const SUBJECT_STYLES: Record<string, { bg: string; color: string }> = {
-  'Science & Technology': { bg: '#CCFBF1', color: '#0F766E' },
-  'Environment & Ecology': { bg: '#DCFCE7', color: '#15803D' },
-  Polity: { bg: '#EFF6FF', color: '#1447E6' },
-  Economy: { bg: '#FEF3C7', color: '#92400E' },
-  History: { bg: '#FAF5FF', color: '#8200DB' },
-  Geography: { bg: '#FCE7F3', color: '#BE185D' },
-  Society: { bg: '#E0F2FE', color: '#0369A1' },
-  Ethics: { bg: '#FFE4E6', color: '#BE123C' },
-  Governance: { bg: '#ECFCCB', color: '#3F6212' },
-  'International Relations': { bg: '#E0E7FF', color: '#4338CA' },
-};
-const DEFAULT_SUBJECT_STYLE = { bg: '#F3F4F6', color: '#374151' };
-function subjectStyle(subject: string) {
-  return SUBJECT_STYLES[subject] || DEFAULT_SUBJECT_STYLE;
 }
 
 interface UserBadgeStats {
@@ -597,8 +581,14 @@ function DailyMainsChallengeInner() {
             {/* Tags row */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="dms-chip" style={{ background: '#EEF0FF', color: '#4338CA' }}>{data.paper}</span>
-                <span className="dms-chip" style={{ background: '#E8F0FF', color: '#1d4ed8' }}>{data.subject}</span>
+                {[data.paper, data.subject].map((label) => {
+                  const meta = getSubjectMetaStyle(label);
+                  return (
+                    <span key={label} className="dms-chip inline-flex items-center gap-1.5" style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>
+                      <span aria-hidden>{meta.icon}</span>{label}
+                    </span>
+                  );
+                })}
               </div>
               <div className="flex items-center gap-2">
                 <span className="dms-chip" style={{ background: '#FFE9E9', color: '#DC2626' }}><span className="dms-livedot" /> LIVE NOW</span>
@@ -703,8 +693,14 @@ function DailyMainsChallengeInner() {
                       <div className="flex items-center gap-4">
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="flex items-center gap-2 flex-wrap mb-2.5">
-                            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: 700, background: a.pillBg, color: a.pillColor }}>{c.paper}</span>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: 700, background: a.pillBg, color: a.pillColor }}>{c.subject}</span>
+                            {[c.paper, c.subject].map((label) => {
+                              const meta = getSubjectMetaStyle(label);
+                              return (
+                                <span key={label} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: 700, background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>
+                                  <span aria-hidden>{meta.icon}</span>{label}
+                                </span>
+                              );
+                            })}
                             <span style={{ fontSize: '11px', color: '#6B7280' }}>· {formatDateLabel(c.date, todayStr)}</span>
                           </div>
                           <div style={{ fontWeight: 500, fontSize: '14px', lineHeight: '1.6', color: '#374151', fontFamily: 'var(--font-merriweather), Inter, sans-serif' }}>{c.title}</div>
@@ -985,12 +981,15 @@ function DailyMainsChallengeInner() {
           >
             {/* Tags */}
             <div className="flex items-center flex-wrap gap-2 sm:gap-3 mb-4">
-              <div className="flex items-center px-3 py-1 rounded-[8px]" style={{ background: '#FAF5FF' }}>
-                <span style={{ fontSize: '13px', color: '#8200DB' }}>{data.paper}</span>
-              </div>
-              <div className="flex items-center px-3 py-1 bg-[#EFF6FF] rounded-[8px]">
-                <span style={{ fontSize: '13px', color: '#1447E6' }}>{data.subject}</span>
-              </div>
+              {[data.paper, data.subject].map((label) => {
+                const meta = getSubjectMetaStyle(label);
+                return (
+                  <div key={label} className="flex items-center gap-1.5 px-3 py-1 rounded-[8px]" style={{ background: meta.bg, border: `1px solid ${meta.border}` }}>
+                    <span aria-hidden style={{ fontSize: '13px' }}>{meta.icon}</span>
+                    <span style={{ fontSize: '13px', color: meta.color, fontWeight: 700 }}>{label}</span>
+                  </div>
+                );
+              })}
               <div className="ml-auto flex items-center px-3 py-1 gap-2" style={{ background: '#FEF2F2', border: '0.8px solid #FFC9C9', borderRadius: '20px' }}>
                 <div className="w-1.5 h-1.5 bg-[#DC2626] live-siren-dot" />
                 <span style={{ color: '#DC2626', fontSize: '11px', fontWeight: 700 }}>LIVE NOW</span>
