@@ -518,27 +518,6 @@ const MAINS_OPTIONAL_SUBJECTS = {
     'Literature: Urdu',
   ],
 };
-const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
-  prelims: [],
-  mains: [
-    { label: 'History', icon: '🏛️', children: [{ label: 'Ancient India' }, { label: 'Medieval India' }, { label: 'Modern India' }, { label: 'Post-Independence' }, { label: 'Art & Culture' }] },
-    { label: 'Geography', icon: '🌍', children: [{ label: 'Physical Geography' }, { label: 'Indian Geography' }, { label: 'World Geography' }] },
-    { label: 'Polity', icon: '⚖️', children: [{ label: 'Constitution' }, { label: 'Parliament & Executive' }, { label: 'Judiciary' }] },
-    { label: 'Economy', icon: '💰', children: [{ label: 'Growth & Development' }, { label: 'Inclusive Development' }, { label: 'Budgeting' }] },
-    { label: 'Environment & Ecology', icon: '🌿', children: [{ label: 'Conservation' }, { label: 'Climate Change' }, { label: 'Biodiversity' }] },
-    { label: 'Science & Technology', icon: '🔬', children: [{ label: 'Emerging Tech' }, { label: 'Space' }, { label: 'Biotech' }] },
-    { label: 'Society', icon: '👥', children: [{ label: 'Social Issues' }, { label: 'Women' }, { label: 'Globalization' }] },
-    { label: 'Governance', icon: '🏛', children: [{ label: 'Transparency' }, { label: 'Citizen Centricity' }, { label: 'E-Governance' }] },
-    { label: 'International Relations', icon: '🌐', children: [{ label: 'Neighbourhood' }, { label: 'Global Groupings' }, { label: 'Bilateral Relations' }] },
-    { label: 'Social Justice', icon: '🤝', children: [{ label: 'Welfare Schemes' }, { label: 'Education' }, { label: 'Health' }] },
-    { label: 'Agriculture', icon: '🌾', children: [{ label: 'Cropping' }, { label: 'Irrigation' }, { label: 'Food Processing' }] },
-    { label: 'Internal Security', icon: '🛡️', children: [{ label: 'Terrorism' }, { label: 'Cyber Security' }, { label: 'Border Management' }] },
-    { label: 'Disaster Management', icon: '🚨', children: [{ label: 'Preparedness' }, { label: 'Response' }, { label: 'Risk Reduction' }] },
-    { label: 'Ethics', icon: '🧭', children: [{ label: 'Ethics Theory' }, { label: 'Aptitude' }, { label: 'Case Studies' }] },
-    { label: 'Current Affairs', icon: '📰', children: [{ label: 'Government Initiatives' }, { label: 'International Developments' }, { label: 'Reports & Data' }] },
-  ],
-};
-
 export default function PyqPage() {
   const entitlements = useEntitlements();
   const mainsQuota = entitlements.featureStatus('mains_evaluation');
@@ -875,12 +854,8 @@ export default function PyqPage() {
         };
       });
 
-    if (mode === 'prelims') return dynamicSubjects;
-
-    const existingSubjects = new Set(dynamicSubjects.map((node) => countKey(node.label)));
-    const staticMainsSubjects = PYQ_SUBJECT_TREE.mains.filter((node) => !existingSubjects.has(countKey(node.label)));
-    return [...dynamicSubjects, ...staticMainsSubjects];
-  }, [mode, questionCounts.bySubject, questionCounts.bySubSubject, questionCounts.byTopic]);
+    return dynamicSubjects;
+  }, [questionCounts.bySubject, questionCounts.bySubSubject, questionCounts.byTopic]);
 
   const visibleQuestions = useMemo(() => {
     if (!selectedTopics.length) return questions;
@@ -1095,11 +1070,9 @@ export default function PyqPage() {
     [paperCounts]
   );
 
-  const taxonomyLabels = questionCounts.taxonomyLabels || {
-    level1: 'Subject',
-    level2: mode === 'mains' ? 'Theme / Area' : 'Sub-Subject',
-    level3: mode === 'mains' ? 'Topic / Micro-theme' : 'Topic',
-  };
+  const taxonomyLabels = mode === 'mains'
+    ? { level1: 'Subject', level2: 'Theme', level3: 'Topic' }
+    : questionCounts.taxonomyLabels || { level1: 'Subject', level2: 'Sub-Subject', level3: 'Topic' };
 
   const paperOptions = mode === 'prelims'
     ? [
@@ -1713,7 +1686,7 @@ export default function PyqPage() {
         badgeText="PREVIOUS YEAR QUESTIONS"
         title={
           <>
-            Decode <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>UPSC</em>
+            The Complete <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>PYQ Bank</em> to Decode UPSC
           </>
         }
         subtitle="Explore 6,500+ UPSC Previous Year Questions, organized by subject, topic, and year, with in-depth solutions and detailed explanations."
