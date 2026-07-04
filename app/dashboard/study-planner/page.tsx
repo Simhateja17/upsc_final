@@ -222,17 +222,18 @@ const SYLLABUS_SUBJECT_ALIASES: Record<string, string> = {
 };
 
 const quickAddIconBoxStyle: React.CSSProperties = {
-  width: '28px',
-  height: '28px',
-  minWidth: '28px',
+  width: '38px',
+  height: '38px',
+  minWidth: '38px',
   flexShrink: 0,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   overflow: 'hidden',
-  borderRadius: '999px',
-  fontSize: '16px',
+  borderRadius: '10px',
+  fontSize: '19px',
   lineHeight: '20px',
+  boxShadow: '0 2px 8px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.3)',
 };
 
 export default function StudyPlannerPage() {
@@ -1739,16 +1740,16 @@ export default function StudyPlannerPage() {
                       onClick={() => handleQuickAdd(item)}
                       className="font-arimo transition-all"
                       style={{
-                        minHeight: '44px',
+                        minHeight: '62px',
                         borderRadius: '12px',
-                        border: `0.8px solid ${meta.border}`,
-                        background: meta.bg,
-                        boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                        border: '1.5px solid #E0E8F4',
+                        background: '#FFFFFF',
+                        boxShadow: '0 2px 8px rgba(15,31,61,.05)',
                         fontSize: '12px',
                         lineHeight: '16px',
                         fontWeight: 700,
                         color: meta.color,
-                        padding: '8px 10px',
+                        padding: '10px 12px',
                         flex: '1 1 132px',
                         minWidth: 0,
                         overflow: 'hidden',
@@ -1760,18 +1761,20 @@ export default function StudyPlannerPage() {
                       }}
                       onMouseEnter={(event) => {
                         event.currentTarget.style.transform = 'translateY(-2px)';
-                        event.currentTarget.style.boxShadow = `0 10px 20px ${meta.accent}22`;
-                        event.currentTarget.style.borderColor = meta.accent;
+                        event.currentTarget.style.boxShadow = `0 8px 18px ${meta.accent}18`;
+                        event.currentTarget.style.borderColor = meta.border;
+                        event.currentTarget.style.background = '#FDFEFF';
                       }}
                       onMouseLeave={(event) => {
                         event.currentTarget.style.transform = 'translateY(0)';
-                        event.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
-                        event.currentTarget.style.borderColor = meta.border;
+                        event.currentTarget.style.boxShadow = '0 2px 8px rgba(15,31,61,.05)';
+                        event.currentTarget.style.borderColor = '#E0E8F4';
+                        event.currentTarget.style.background = '#FFFFFF';
                       }}
                     >
                       <span
                         aria-hidden="true"
-                        style={{ ...quickAddIconBoxStyle, background: 'rgba(255,255,255,0.74)', border: `1px solid ${meta.border}` }}
+                        style={{ ...quickAddIconBoxStyle, background: meta.bg }}
                       >
                         {meta.icon}
                       </span>

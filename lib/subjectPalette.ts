@@ -28,16 +28,16 @@ const SUBJECT_META_STYLES: Array<{
   { label: 'Disaster Management', icon: '🚨', bg: '#FAD2A7', accent: '#BC7224', aliases: ['disaster management', 'disaster mgmt'] },
   { label: 'Internal Security', icon: '🛡️', bg: '#EFEFE1', accent: '#7F806B', aliases: ['internal security', 'security'] },
   { label: 'Ethics', icon: '🧭', bg: '#E1D5F5', accent: '#7760B4', aliases: ['ethics', 'ethics integrity aptitude', 'ethics gs4', 'gs-iv ethics'] },
-  { label: 'Current Affairs', icon: '📰', bg: '#E8EEF5', accent: '#4E6A8F', aliases: ['current affairs', 'current-affairs'] },
+  { label: 'Current Affairs', icon: '📰', bg: '#E3F0F7', accent: '#4E6A8F', aliases: ['current affairs', 'current-affairs'] },
   { label: 'Agriculture', icon: '🌾', bg: '#E8F5D8', accent: '#6E9C3F', aliases: ['agriculture', 'agri'] },
-  { label: 'Essay', icon: '✍️', bg: '#FDF1B6', accent: '#B89516', aliases: ['essay', 'essay writing'] },
-  { label: 'CSAT', icon: '🧩', bg: '#E1D8F5', accent: '#7964B4', aliases: ['csat', 'paper ii', 'csat paper ii'] },
-  { label: 'GS Paper 1', icon: '📘', bg: '#D8EDF5', accent: '#3D8CAE', aliases: ['gs1', 'gs i', 'gs paper i', 'gs paper 1', 'gs paper1'] },
-  { label: 'GS Paper 2', icon: '📗', bg: '#D8E2F3', accent: '#4D6FA9', aliases: ['gs2', 'gs ii', 'gs paper ii', 'gs paper 2', 'gs paper2'] },
-  { label: 'GS Paper 3', icon: '📙', bg: '#F5D8D0', accent: '#B66D5A', aliases: ['gs3', 'gs iii', 'gs paper iii', 'gs paper 3', 'gs paper3'] },
-  { label: 'GS Paper 4', icon: '📕', bg: '#E1D5F5', accent: '#7760B4', aliases: ['gs4', 'gs iv', 'gs paper iv', 'gs paper 4', 'gs paper4'] },
-  { label: 'Optional Paper 1', icon: '📓', bg: '#EFEFE1', accent: '#7F806B', aliases: ['optional paper 1', 'optional i'] },
-  { label: 'Optional Paper 2', icon: '📔', bg: '#EFEFE1', accent: '#7F806B', aliases: ['optional paper 2', 'optional ii'] },
+  { label: 'Essay', icon: '✍️', bg: '#F9F3D9', accent: '#B89516', aliases: ['essay', 'essay writing'] },
+  { label: 'CSAT', icon: '🧩', bg: '#F4EDE4', accent: '#9A8258', aliases: ['csat', 'csat paper ii'] },
+  { label: 'GS Paper 1', icon: '📘', bg: '#E8F4F8', accent: '#3D7A9E', aliases: ['gs1', 'gs i', 'gs paper i', 'gs paper 1', 'gs paper1'] },
+  { label: 'GS Paper 2', icon: '📗', bg: '#E6F5E8', accent: '#529B59', aliases: ['gs2', 'gs ii', 'gs paper ii', 'gs paper 2', 'gs paper2'] },
+  { label: 'GS Paper 3', icon: '📙', bg: '#F7ECE1', accent: '#B66D5A', aliases: ['gs3', 'gs iii', 'gs paper iii', 'gs paper 3', 'gs paper3'] },
+  { label: 'GS Paper 4', icon: '📕', bg: '#EBE4F5', accent: '#7760B4', aliases: ['gs4', 'gs iv', 'gs paper iv', 'gs paper 4', 'gs paper4'] },
+  { label: 'Optional Paper 1', icon: '📓', bg: '#E8EDF5', accent: '#5A6B99', aliases: ['optional paper 1', 'optional i'] },
+  { label: 'Optional Paper 2', icon: '📔', bg: '#F0ECE6', accent: '#8A7B63', aliases: ['optional paper 2', 'optional ii'] },
 ];
 
 const SUBJECT_THEME_CHIPS: Record<string, { bg: string; topic: string }[]> = {
@@ -92,7 +92,7 @@ const SUBJECT_THEME_CHIPS: Record<string, { bg: string; topic: string }[]> = {
     { topic: 'Ecology & Ecosystems', bg: '#D1E1F5' },
     { topic: 'Biodiversity', bg: '#F5E1D1' },
     { topic: 'Conservation & Protected Areas', bg: '#D1F5F2' },
-    { topic: 'Climate Change', bg: '#F5D1E1' },
+    { topic: 'Climate Change', bg: '#E1D1F5' },
   ],
   science: [
     { topic: 'General Science', bg: '#D0F5D5' },
@@ -121,9 +121,22 @@ function withAlpha(hex: string, alphaHex: string) {
 
 export function getSubjectMetaStyle(subjectName: string): SubjectMetaStyle {
   const n = normalizeSubjectName(subjectName || '');
+  const tokens = n.split(' ');
   const meta = SUBJECT_META_STYLES.find((entry) => {
     if (normalizeSubjectName(entry.label) === n) return true;
-    return entry.aliases.some((alias) => n.includes(normalizeSubjectName(alias)));
+    return entry.aliases.some((alias) => {
+      const a = normalizeSubjectName(alias);
+      if (!a) return false;
+      // Word-boundary match so short aliases (e.g. 'ir') don't match inside
+      // unrelated words like 'envIRonment'.
+      return (
+        n === a ||
+        tokens.includes(a) ||
+        n.includes(` ${a} `) ||
+        n.startsWith(`${a} `) ||
+        n.endsWith(` ${a}`)
+      );
+    });
   });
 
   if (!meta) {

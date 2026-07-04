@@ -3,7 +3,39 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { authService, User, storeTokens, clearTokens, SignupData, LoginData } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { userService } from '@/lib/services';
 import type { Session } from '@supabase/supabase-js';
+
+const LAST_REGISTERED_SESSION_KEY = 'last_registered_session';
+
+/** Decode the Supabase auth session_id claim from an access token (no verify). */
+function sessionIdFromToken(accessToken: string): string | null {
+  try {
+    const payload = JSON.parse(
+      atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))
+    );
+    return payload.session_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Register this session as the account's single active session — but only once
+ * per session_id, so page reloads and token refreshes don't re-claim the slot
+ * and wrongly kick a device that logged in more recently (last-login-wins).
+ */
+async function maybeRegisterSession(session: Session): Promise<void> {
+  const sid = sessionIdFromToken(session.access_token);
+  if (!sid) return;
+  try {
+    if (localStorage.getItem(LAST_REGISTERED_SESSION_KEY) === sid) return;
+    await userService.registerSession();
+    localStorage.setItem(LAST_REGISTERED_SESSION_KEY, sid);
+  } catch {
+    // Non-fatal: enforcement simply won't bind this device until next attempt.
+  }
+}
 
 /** Build a fallback User from the Supabase session when /auth/me is unavailable  */
 function userFromSession(session: Session): User {
@@ -90,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (event === 'SIGNED_OUT') {
         clearTokens();
+        try { localStorage.removeItem(LAST_REGISTERED_SESSION_KEY); } catch {}
         setUser(null);
         setIsLoading(false);
         return;
@@ -97,6 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (session) {
         storeTokens(session.access_token, session.refresh_token ?? '');
+        void maybeRegisterSession(session);
         try {
           const freshUser = await fetchMe();
           setUser(freshUser);

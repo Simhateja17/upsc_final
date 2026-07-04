@@ -811,24 +811,39 @@ export default function DailyEditorialPage() {
                     onClick={() => setSelectedSubject(active ? null : s.id)}
                     className="flex items-center gap-2 font-arimo font-bold relative"
                     style={{
+                      minHeight: '62px',
                       padding: '10px 12px',
-                      borderRadius: '14px',
-                      background: active ? '#17223E' : meta.bg,
-                      border: `0.8px solid ${active ? '#17223E' : meta.border}`,
-                      color: active ? '#FFFFFF' : meta.color,
+                      borderRadius: '12px',
+                      background: '#FFFFFF',
+                      border: `1.5px solid ${active ? meta.border : '#E0E8F4'}`,
+                      color: meta.color,
+                      boxShadow: active ? `0 4px 16px ${meta.accent}18` : '0 2px 8px rgba(15,31,61,.05)',
                       fontSize: '13px',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
                       lineHeight: 1.3,
-                      wordBreak: 'break-word',
+                      minWidth: 0,
                     }}
                   >
-                    {active ? (
-                      <span style={{ fontSize: '15px', flexShrink: 0 }}>✓</span>
-                    ) : (
-                      <span style={{ fontSize: '15px', flexShrink: 0 }}>{meta.icon}</span>
-                    )}
-                    {s.label}
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        minWidth: '38px',
+                        borderRadius: '10px',
+                        background: meta.bg,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        fontSize: '19px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.3)',
+                      }}
+                    >
+                      {active ? '✓' : meta.icon}
+                    </span>
+                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</span>
                   </button>
                 );
               })}
@@ -845,34 +860,38 @@ export default function DailyEditorialPage() {
                       onClick={() => setSelectedSubject(active ? null : subject.id)}
                       className="flex items-center gap-2 font-arimo font-bold"
                       style={{
-                        padding: '12px 16px',
-                        borderRadius: '14px',
-                        background: active ? '#17223E' : meta.bg,
-                        border: `0.8px solid ${active ? '#17223E' : meta.border}`,
-                        color: active ? '#FFFFFF' : meta.color,
+                        minHeight: '62px',
+                        padding: '10px 12px',
+                        borderRadius: '12px',
+                        background: '#FFFFFF',
+                        border: `1.5px solid ${active ? meta.border : '#E0E8F4'}`,
+                        color: meta.color,
+                        boxShadow: active ? `0 4px 16px ${meta.accent}18` : '0 2px 8px rgba(15,31,61,.05)',
                         fontSize: '14px',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                         textAlign: 'left',
+                        minWidth: 0,
                       }}
                     >
                       <span
                         style={{
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: '999px',
-                          background: active ? 'rgba(255,255,255,0.16)' : '#FFFFFF',
-                          border: active ? '1px solid rgba(255,255,255,0.18)' : `1px solid ${meta.border}`,
+                          width: '38px',
+                          height: '38px',
+                          minWidth: '38px',
+                          borderRadius: '10px',
+                          background: meta.bg,
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           flexShrink: 0,
-                          fontSize: active ? '15px' : '14px',
+                          fontSize: active ? '17px' : '19px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.3)',
                         }}
                       >
                         {active ? '✓' : meta.icon}
                       </span>
-                      <span style={{ lineHeight: 1.3 }}>{subject.label}</span>
+                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3 }}>{subject.label}</span>
                     </button>
                   );
                 })}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { userService } from '@/lib/services';
@@ -81,6 +81,33 @@ export default function SettingsPage() {
   const [privLeader,    setPrivLeader]    = useState(true);
   const [privStudy,     setPrivStudy]     = useState(true);
   const [privAnalytics, setPrivAnalytics] = useState(true);
+
+  // Active sessions (single-device model → one active session)
+  type SessionInfo = { id: string; device: string; location: string | null; lastSeenAt: string | null; isCurrent: boolean };
+  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [revoking, setRevoking] = useState(false);
+
+  const loadSessions = useCallback(() => {
+    userService
+      .getSessions()
+      .then((res) => setSessions(res.data || []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => { loadSessions(); }, [loadSessions]);
+
+  const handleSignOutEverywhere = async () => {
+    setRevoking(true);
+    try {
+      await userService.revokeSession('all');
+      notify('Signed out on all devices.');
+      // The current device's session was revoked too — sign it out locally.
+      window.location.href = '/';
+    } catch {
+      notify('Could not sign out other devices.', false);
+      setRevoking(false);
+    }
+  };
 
   const notify = (msg: string, ok = true) => {
     setToast({ ok, msg });
@@ -349,27 +376,42 @@ export default function SettingsPage() {
 
       {/* Active Sessions */}
       <div className="mt-8 pt-6 border-t border-[#F2F4F7]">
-        <h3 className="text-[18px] font-bold text-[#101828] mb-5">Active Sessions</h3>
+        <h3 className="text-[18px] font-bold text-[#101828] mb-1">Active Sessions</h3>
+        <p className="text-[13px] text-[#667085] mb-5">Your account can be signed in on one device at a time. Signing in elsewhere signs this device out.</p>
         <div className="flex flex-col gap-3 max-w-[580px]">
-          <div className="rounded-[12px] border border-[#E4E7EC] px-5 py-4 flex items-center justify-between">
-            <div>
-              <p className="text-[15px] font-semibold text-[#101828]">Chrome · macOS · Delhi, IN</p>
-              <p className="mt-1 flex items-center gap-1.5 text-[13px] font-medium text-[#12B76A]">
-                <span className="inline-block h-2 w-2 rounded-full bg-[#12B76A]" />
-                Current session
-              </p>
-            </div>
-          </div>
-          <div className="rounded-[12px] border border-[#E4E7EC] px-5 py-4 flex items-center justify-between">
-            <div>
-              <p className="text-[15px] font-semibold text-[#101828]">Safari · iPhone 15</p>
-              <p className="mt-1 text-[13px] text-[#667085]">Last seen 2d ago</p>
-            </div>
-            <button className="h-[36px] rounded-[8px] border border-[#FECDCA] px-4 text-[14px] font-semibold text-[#D92D20] hover:bg-[#FEF3F2] transition">
-              Revoke
-            </button>
-          </div>
+          {sessions.length === 0 ? (
+            <p className="text-[14px] text-[#667085]">No active session information available.</p>
+          ) : (
+            sessions.map((s) => (
+              <div key={s.id} className="rounded-[12px] border border-[#E4E7EC] px-5 py-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[15px] font-semibold text-[#101828]">
+                    {[s.device, s.location].filter(Boolean).join(' · ')}
+                  </p>
+                  {s.isCurrent ? (
+                    <p className="mt-1 flex items-center gap-1.5 text-[13px] font-medium text-[#12B76A]">
+                      <span className="inline-block h-2 w-2 rounded-full bg-[#12B76A]" />
+                      Current session
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-[13px] text-[#667085]">
+                      {s.lastSeenAt ? `Last seen ${new Date(s.lastSeenAt).toLocaleString()}` : 'Active'}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
+        {sessions.length > 0 && (
+          <button
+            onClick={handleSignOutEverywhere}
+            disabled={revoking}
+            className="mt-4 h-[38px] rounded-[8px] border border-[#FECDCA] px-4 text-[14px] font-semibold text-[#D92D20] hover:bg-[#FEF3F2] transition disabled:opacity-60"
+          >
+            {revoking ? 'Signing out…' : 'Sign out on all devices'}
+          </button>
+        )}
       </div>
     </div>
   );

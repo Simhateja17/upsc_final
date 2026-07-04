@@ -687,6 +687,7 @@ export const userService = {
   saveSyllabusTracker: (data: { mode: string; states: any }) =>
     api.put<any>('/user/syllabus-tracker', data, authConfig()),
   getSessions: () => api.get<any>('/user/sessions', authConfig()),
+  registerSession: () => api.post<any>('/user/sessions/register', {}, authConfig()),
   revokeSession: (sessionId: string) => api.delete<any>(`/user/sessions/${sessionId}`, authConfig()),
   getSubscription: () => api.get<any>('/user/subscription', authConfig()),
   startTrial: () => api.post<any>('/user/subscription/trial', {}, authConfig()),

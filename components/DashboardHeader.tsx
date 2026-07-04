@@ -27,6 +27,7 @@ function getNotificationIcon(type: string): string {
     case 'answer_evaluated': return '✅';
     case 'digest': return '\u{1F4F0}';
     case 'streak_alert': return '\u{1F525}';
+    case 'streak_milestone': return '\u{1F525}';
     case 'streak_daily': return '\u{1F525}';
     case 'weekly_progress': return '\u{1F4CA}';
     case 'spaced_rep': return '\u{1F504}';
@@ -52,6 +53,10 @@ function formatRelativeTime(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
+// Only these high-value, out-of-band notification types pop a transient toast.
+// Everything else (reminders, digests) lives quietly in the bell.
+const TOAST_WHITELIST = new Set(['streak_milestone', 'answer_evaluated']);
+
 const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
@@ -59,16 +64,43 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [toasts, setToasts] = useState<NotificationItem[]>([]);
   const [mounted, setMounted] = useState(false);
+
+  const seenKey = user?.id ? `notif_seen_${user.id}` : null;
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await userService.getNotifications();
-      setNotifications(res.data || []);
+      const list = (res.data || []) as NotificationItem[];
+      setNotifications(list);
+
+      // Surface only genuinely-new, high-value notifications as toasts. "Seen"
+      // ids are persisted per-user so a page refresh or tab-focus refetch never
+      // re-toasts something the user has already been shown.
+      if (seenKey) {
+        let seen: string[] = [];
+        try { seen = JSON.parse(localStorage.getItem(seenKey) || '[]'); } catch {}
+        const seenSet = new Set(seen);
+        const fresh = list.filter(
+          (n) => TOAST_WHITELIST.has(n.type) && !n.read && !seenSet.has(n.id)
+        );
+        if (fresh.length > 0) {
+          const toShow = fresh.slice(0, 3);
+          setToasts((prev) => [...toShow, ...prev].slice(0, 3));
+          toShow.forEach((n) => setTimeout(() => dismissToast(n.id), 6000));
+        }
+        const merged = Array.from(new Set([...seen, ...list.map((n) => n.id)])).slice(-300);
+        try { localStorage.setItem(seenKey, JSON.stringify(merged)); } catch {}
+      }
     } catch {
       // Silent fail — notification fetch is non-critical
     }
-  }, []);
+  }, [seenKey, dismissToast]);
 
   useEffect(() => {
     setMounted(true);
@@ -201,8 +233,12 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" fill="currentColor"/>
                 <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" fill="currentColor"/>
               </svg>
-              {/* Notification dot */}
-              {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>}
+              {/* Unread count badge */}
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </button>
 
             {/* User Avatar - Simple gold circle with initials */}
@@ -422,6 +458,34 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
               </button>
             </div>
           </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* Transient toasts for high-value notifications (top-right) */}
+      {mounted && toasts.length > 0 && createPortal(
+        <div className="fixed top-[76px] right-4 z-[9999] flex flex-col gap-2 w-[340px] max-w-[calc(100vw-2rem)]">
+          {toasts.map((t) => (
+            <div
+              key={t.id}
+              onClick={() => dismissToast(t.id)}
+              role="status"
+              className="cursor-pointer rounded-xl bg-white shadow-[0_8px_24px_rgba(15,23,42,0.16)] border border-[#E5E7EB] px-4 py-3 flex gap-3 items-start animate-[slideInRight_0.25s_ease-out]"
+            >
+              <span className="text-[18px] leading-none mt-[2px]">{getNotificationIcon(t.type)}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-inter font-semibold text-[14px] leading-[20px] text-[#334155]">{t.title}</p>
+                <p className="font-inter text-[13px] leading-[18px] text-[#64748B] mt-0.5">{t.body}</p>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); dismissToast(t.id); }}
+                className="text-[#94A3B8] hover:text-[#334155] text-[16px] leading-none flex-shrink-0"
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+          ))}
         </div>,
         document.body,
       )}
