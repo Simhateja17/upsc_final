@@ -4,10 +4,294 @@ import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { studyGroupService, dashboardService, studyPlannerService } from '@/lib/services';
-import { EntitlementGate } from '@/components/entitlements';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 const ROOM_FILTERS = ['All', 'Open', 'Full'];
+
+// ── Reference design-system maps (ported from STUDY_GROUP_SURI_FINAL) ──────
+// SVG icon markup keyed by subject/icon slug, rendered inside a tinted tile.
+const SUBJECT_ICONS: Record<string, string> = {
+  polity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 7l7-3 7 3"/><path d="M5 7l-2 6a4 4 0 008 0L9 7"/><path d="M19 7l-2 6a4 4 0 008 0l-2-6"/><path d="M4 21h16"/></svg>',
+  history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v4"/><path d="M12 14v4"/><path d="M16 14v4"/></svg>',
+  economy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M15 9.5c0-1.4-1.3-2-3-2s-3 .6-3 2 1.5 1.8 3 2 3 .6 3 2-1.3 2-3 2-3-.6-3-2"/></svg>',
+  geography: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 010 18"/><path d="M12 3a15 15 0 000 18"/></svg>',
+  current: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a3 3 0 003-3V5H8v14a3 3 0 01-3 3 3 3 0 01-3-3v-8h4"/><path d="M11 7h7"/><path d="M11 11h7"/><path d="M11 15h7"/></svg>',
+  ethics: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>',
+  sci: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg>',
+  books: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>',
+  graduation: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 4 2 10l10 6 10-6z"/><path d="M6 12v5c0 1.7 3 3 6 3s6-1.3 6-3v-5"/></svg>',
+  pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
+  brain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4a3 3 0 00-3 3v.5A3 3 0 006 10a3 3 0 00.5 6A3 3 0 009 20a3 3 0 003-3V4z"/><path d="M12 4a3 3 0 013 3v.5A3 3 0 0118 10a3 3 0 01-.5 6A3 3 0 0115 20a3 3 0 01-3-3V4z"/></svg>',
+  rocket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1 0-2.9a2 2 0 00-3 0z"/><path d="M12 15l-3-3a22 22 0 012-9 12.8 12.8 0 0110 0 22 22 0 01-2 9l-3 3H12z"/><path d="M15 9a2 2 0 11-4 0 2 2 0 014 0z"/><path d="M9 12H4l3-3h3"/><path d="M15 12h5l-3 3h-3"/></svg>',
+  target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v5a6 6 0 01-12 0V4z"/><path d="M6 6H3v2a3 3 0 003 3"/><path d="M18 6h3v2a3 3 0 01-3 3"/><path d="M10 15h4v3h-4z"/><path d="M8 21h8"/></svg>',
+  flame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s5 5 5 10a5 5 0 01-10 0c0-2 1-3 1-3s-1 4 2 4 3-3 2-6c-1-2 0-5 0-5z"/></svg>',
+  lightbulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7c1 1 1.5 1.8 1.5 3.3h5c0-1.5.5-2.3 1.5-3.3A7 7 0 0012 2z"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15 9 22 9.5 17 14 18.5 21 12 17.5 5.5 21 7 14 2 9.5 9 9 12 2"/></svg>',
+  constitution: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13a3 3 0 013 3v13H7a3 3 0 01-3-3V4z"/><path d="M4 17a3 3 0 013-3h13"/><path d="M12 8l1 2 2 .3-1.5 1.5.4 2.2L12 13l-2 1 .4-2.2L9 10.3 11 10z"/></svg>',
+  parliament: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M4 21V10"/><path d="M20 21V10"/><path d="M9 21v-6"/><path d="M15 21v-6"/><path d="M12 21v-6"/><path d="M2 10h20"/><path d="M4 10a8 8 0 0116 0"/><path d="M12 2v3"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/><polyline points="9 12 11 14 15 10"/></svg>',
+  environment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 019.8 6.14 11 11 0 0122 3c0 5-2.5 10-11 17z"/><path d="M2 22c3-4 7-6 11-6"/></svg>',
+  satellite: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l6-6 4 4-6 6z"/><path d="M14 8l2-2 4 4-2 2"/><path d="M8 14l2 2"/><path d="M12 18a6 6 0 006-6"/><path d="M15 21a9 9 0 009-9"/></svg>',
+  map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 8 3 16 6 23 3 23 18 16 21 8 18 1 21 1 6"/><line x1="8" y1="3" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="21"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
+};
+const SUBJECT_LABELS: Record<string, string> = {
+  polity: 'Polity', history: 'History', economy: 'Economy', geography: 'Geography',
+  current: 'Current Affairs', ethics: 'Ethics', sci: 'Sci & Tech', books: 'Books',
+  graduation: 'Graduation', pen: 'Notes', brain: 'Brain', rocket: 'Launch',
+  target: 'Goal', trophy: 'Achieve', flame: 'Streak', lightbulb: 'Ideas', star: 'Star',
+  constitution: 'Constitution', parliament: 'Parliament', shield: 'IAS Shield',
+  environment: 'Environment', satellite: 'Space & ISRO', map: 'Indian Map', clock: 'Focus',
+};
+const ICON_PALETTE: Record<string, { bg: string; color: string }> = {
+  slate: { bg: 'linear-gradient(135deg,#F7F7F5,#EEEEEB)', color: '#4B5563' },
+  ink: { bg: 'linear-gradient(135deg,#F4F5F7,#EBECF0)', color: '#3F3D56' },
+  plum: { bg: 'linear-gradient(135deg,#F5F1F4,#EBE4EB)', color: '#6B4E71' },
+  teal: { bg: 'linear-gradient(135deg,#F0F4F3,#E4EDEB)', color: '#4C6E6C' },
+  sage: { bg: 'linear-gradient(135deg,#F2F5EF,#E6ECE0)', color: '#5C7350' },
+  brick: { bg: 'linear-gradient(135deg,#F5EFED,#ECE1DD)', color: '#8B4A4A' },
+  ochre: { bg: 'linear-gradient(135deg,#F5F1E9,#ECE4D5)', color: '#8B6F3E' },
+  indigo: { bg: 'linear-gradient(135deg,#F1F2F6,#E5E8EF)', color: '#4F5B85' },
+  rose: { bg: 'linear-gradient(135deg,#F5EFF1,#ECE1E6)', color: '#8B5A6B' },
+};
+const SUBJECT_STYLE_KEY: Record<string, keyof typeof ICON_PALETTE> = {
+  polity: 'indigo', history: 'ochre', economy: 'sage', geography: 'teal',
+  current: 'ink', ethics: 'rose', sci: 'indigo', books: 'plum', graduation: 'indigo',
+  pen: 'ochre', brain: 'rose', rocket: 'plum', target: 'brick', trophy: 'ochre',
+  flame: 'brick', lightbulb: 'ochre', star: 'ochre', constitution: 'ochre',
+  parliament: 'brick', shield: 'indigo', environment: 'sage', satellite: 'slate',
+  map: 'sage', clock: 'teal',
+};
+const iconStyle = (k: string) => ICON_PALETTE[SUBJECT_STYLE_KEY[k] || 'indigo'];
+type UpgradeIntent =
+  | { kind: 'solo' } | { kind: 'mygroup' } | { kind: 'filter' } | { kind: 'create' }
+  | { kind: 'rooms' } | { kind: 'room'; title?: string; subject?: string } | null;
+
+// Upgrade-modal copy, personalised to what the locked user just tried to do.
+function personalizeUpgrade(intent: UpgradeIntent): { title: string; sub: string } {
+  if (!intent) return { title: "You're one step from your study circle.", sub: 'Live Study Rooms are available on Rise and Ascent plans.' };
+  switch (intent.kind) {
+    case 'solo': return { title: 'Enter your Solo Focus sanctuary.', sub: 'Pomodoro timer, task tracker, and focus streaks — zero distractions.' };
+    case 'mygroup': return { title: 'Rejoin your study group in seconds.', sub: 'Your study groups are waiting on the other side.' };
+    case 'room':
+      if (intent.subject) return { title: `Join the ${intent.subject} room in seconds.`, sub: `${intent.title ? `"${intent.title}" ` : ''}is live right now — sit alongside peers.` };
+      return { title: intent.title ? `Join "${intent.title}" in seconds.` : 'Join this live room in seconds.', sub: 'Sit alongside peers preparing for the same exam.' };
+    case 'filter': return { title: 'Filter and join live rooms instantly.', sub: 'Available on Rise and Ascent — start your first session today.' };
+    case 'create': return { title: 'Host your own study room.', sub: 'Invite peers, set the pace, and lead the session.' };
+    default: return { title: "You're one step from your study circle.", sub: 'Join live rooms with peers preparing for the same exam — right now.' };
+  }
+}
+const PLAN_PRICES = {
+  rise: { price: '399', suffix: '/mo', tag: 'Most students choose this', badge: 'RECOMMENDED' },
+  ascent: { price: '699', suffix: '/mo', tag: 'For serious rankers', badge: 'PREMIUM' },
+};
+// Icons offered in the Create-Room icon picker.
+const ICON_PICKER_KEYS = [
+  'polity', 'history', 'economy', 'geography', 'current', 'ethics', 'sci', 'constitution',
+  'parliament', 'shield', 'environment', 'satellite', 'map', 'books', 'graduation', 'pen',
+  'brain', 'rocket', 'target', 'trophy', 'flame', 'lightbulb', 'star', 'clock',
+];
+
+// Scoped design-system CSS ported from the client reference. Everything is
+// namespaced under `.sg` so it can never leak into the dashboard shell.
+const SG_CSS = `
+.sg { --gold:#F4C430; --gold-light:#F8D04D; --gold-dark:#E6B800; --green:#22C55E;
+  --green-bg:#DCFCE7; --green-dark:#166534; --red:#EF4444; --red-bg:#FEE2E2;
+  --bg-dark:#0B1021; --text-primary:#1A1D2E; --text-secondary:#6B7280; --text-muted:#9CA3AF;
+  --border:#E5E7EB; --border-light:#F3F4F6; --radius-full:9999px; --orange:#F59E0B;
+  --transition:0.25s cubic-bezier(0.4,0,0.2,1); }
+@keyframes sgPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.15);} }
+@keyframes sgSlideUp { from{opacity:0;transform:translateY(16px);} to{opacity:1;transform:translateY(0);} }
+@keyframes sgScaleIn { from{opacity:0;transform:scale(0.96);} to{opacity:1;transform:scale(1);} }
+@keyframes sgPop { from{opacity:0;transform:scale(0.96) translateY(6px);} to{opacity:1;transform:scale(1) translateY(0);} }
+@keyframes sgLive { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.55);} 50%{box-shadow:0 0 0 6px rgba(34,197,94,0);} }
+
+/* Filter pills */
+.sg .sg-pill { padding:8px 16px; border-radius:var(--radius-full); font-size:13px; font-weight:500;
+  color:var(--text-secondary); background:#fff; border:1px solid var(--border); transition:var(--transition); cursor:pointer; }
+.sg .sg-pill:hover { border-color:var(--gold); color:var(--gold-dark); }
+.sg .sg-pill.active { background:var(--bg-dark); color:var(--gold); border-color:var(--gold); font-weight:600; }
+
+/* Section label */
+.sg .sg-section-label { font-size:11px; font-weight:700; letter-spacing:1.5px; color:var(--text-muted);
+  text-transform:uppercase; display:flex; align-items:center; gap:16px; }
+.sg .sg-section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* Subject icon tile */
+.sg .subject-icon { width:40px; height:40px; flex-shrink:0; display:inline-flex; align-items:center;
+  justify-content:center; border-radius:11px; border:1px solid rgba(15,23,42,0.05);
+  transition:transform 0.25s ease, box-shadow 0.25s ease; }
+.sg .subject-icon svg { width:20px; height:20px; stroke-width:1.5; opacity:0.92; }
+
+/* Room card */
+.sg .room-card { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);
+  border:1px solid var(--border); transition:var(--transition); animation:sgSlideUp 0.4s ease backwards; cursor:pointer; position:relative; }
+.sg .room-card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.08); transform:translateY(-3px); }
+.sg .room-card:hover .subject-icon { transform:scale(1.04); box-shadow:0 3px 8px rgba(15,23,42,0.06); }
+.sg .room-card.is-full { background:#FAFAFB; border-color:#ECEDEF; box-shadow:none; }
+.sg .room-card.is-full .subject-icon { filter:grayscale(0.7); opacity:0.55; }
+.sg .room-card.is-full .room-card-title { color:#8A8F9C; }
+.sg .room-card.is-full .member-count { color:#A5A9B4; }
+.sg .room-card-top { height:4px; width:100%; }
+.sg .room-card-body { padding:16px 20px 20px; }
+.sg .room-card-title-row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.sg .room-card-title { font-size:17px; font-weight:700; color:var(--text-primary); line-height:1.25; }
+.sg .room-card-desc { font-size:12.5px; color:var(--text-secondary); margin-bottom:14px; min-height:18px; }
+.sg .room-card-footer { display:flex; align-items:center; justify-content:space-between; }
+.sg .member-avatars { display:flex; }
+.sg .m-av { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:#fff; margin-left:-6px; border:2px solid #fff; }
+.sg .m-av:first-child { margin-left:0; }
+.sg .member-count { font-size:12px; color:var(--text-secondary); font-weight:500; margin-left:8px; }
+.sg .badge-open { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:var(--radius-full);
+  background:var(--green-bg); color:var(--green-dark); font-size:11px; font-weight:700; }
+.sg .badge-open::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--green); animation:sgPulse 2s infinite; }
+.sg .badge-full { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:var(--radius-full);
+  background:var(--red-bg); color:var(--red); font-size:11px; font-weight:700; }
+.sg .badge-subject { padding:4px 10px; border-radius:var(--radius-full); background:var(--border-light);
+  color:var(--text-secondary); font-size:11px; font-weight:600; }
+.sg .btn-join { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:var(--radius-full);
+  background:var(--gold); color:var(--bg-dark); font-size:13px; font-weight:700; transition:var(--transition); border:none; cursor:pointer; }
+.sg .btn-join:hover { background:var(--gold-light); transform:scale(1.03); }
+.sg .btn-join.enter { background:var(--green); color:#fff; }
+.sg .btn-join.full { background:var(--red-bg); color:var(--red); cursor:not-allowed; }
+
+/* Locked plan treatment */
+.sg.plan-locked .room-card::before { content:''; position:absolute; top:10px; right:10px; width:26px; height:26px; z-index:2;
+  border-radius:50%; background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B8860B' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='11' width='16' height='10' rx='2'/><path d='M8 11V7a4 4 0 018 0v4'/></svg>") center/14px no-repeat;
+  box-shadow:0 2px 8px rgba(0,0,0,0.12); border:1px solid rgba(244,196,48,0.5); }
+
+/* Plan ribbon */
+.sg .plan-ribbon { display:flex; align-items:center; gap:10px; margin:16px 0 4px; padding:10px 16px; border-radius:16px;
+  background:linear-gradient(90deg, rgba(244,196,48,0.14), rgba(244,196,48,0.04)); border:1px solid rgba(244,196,48,0.35);
+  color:#7a5c00; font-size:13px; font-weight:600; }
+.sg .plan-ribbon .ribbon-spark { width:24px; height:24px; border-radius:50%;
+  background:linear-gradient(135deg, var(--gold), var(--gold-light)); display:flex; align-items:center; justify-content:center;
+  color:var(--bg-dark); font-weight:800; font-size:13px; box-shadow:0 2px 8px rgba(244,196,48,0.45); }
+.sg .plan-ribbon .ribbon-cta { margin-left:auto; background:var(--bg-dark); color:var(--gold); padding:6px 14px;
+  border-radius:999px; font-size:12px; font-weight:700; transition:var(--transition); border:none; cursor:pointer; }
+.sg .plan-ribbon .ribbon-cta:hover { background:#000; transform:translateY(-1px); }
+
+/* Overlays */
+.sg-overlay { position:fixed; inset:0; z-index:500; background:rgba(11,16,33,0.62); backdrop-filter:blur(8px);
+  display:flex; align-items:center; justify-content:center; padding:20px; animation:sgScaleIn 0.2s ease; }
+
+/* Preview modal */
+.sg-preview-box { background:#fff; border-radius:24px; width:600px; max-width:92vw; max-height:88vh;
+  box-shadow:0 24px 80px rgba(0,0,0,0.25); animation:sgScaleIn 0.3s ease; overflow:hidden; display:flex; flex-direction:column; }
+.sg-preview-header { padding:24px 28px 20px; border-bottom:1px solid var(--border); position:relative; }
+.sg-preview-header::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; }
+.sg-preview-close { position:absolute; top:16px; right:16px; width:36px; height:36px; border-radius:50%; display:flex;
+  align-items:center; justify-content:center; font-size:22px; color:var(--text-muted); background:var(--border-light); border:none; cursor:pointer; }
+.sg-preview-close:hover { background:var(--border); }
+.sg-preview-badges { display:flex; gap:8px; margin-bottom:10px; }
+.sg-preview-title { font-size:26px; font-weight:700; margin-bottom:6px; color:var(--text-primary); }
+.sg-preview-desc { font-size:14px; color:var(--text-secondary); line-height:1.5; }
+.sg-preview-body { padding:24px 28px; overflow-y:auto; }
+.sg-preview-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:22px; }
+.sg-preview-stat { background:var(--border-light); border-radius:12px; padding:16px; text-align:center; }
+.sg-preview-stat-num { font-size:22px; font-weight:800; display:block; }
+.sg-preview-stat-lbl { font-size:10px; font-weight:700; letter-spacing:1px; color:var(--text-muted); text-transform:uppercase; margin-top:4px; }
+.sg-preview-footer { padding:18px 28px; border-top:1px solid var(--border); display:flex; gap:12px; justify-content:flex-end; background:var(--border-light); }
+.sg-btn-back { padding:11px 22px; border-radius:var(--radius-full); font-size:14px; font-weight:600; color:var(--text-secondary);
+  border:1.5px solid var(--border); background:#fff; cursor:pointer; }
+.sg-btn-primary { padding:11px 26px; border-radius:var(--radius-full); background:var(--gold); color:var(--bg-dark);
+  font-size:14px; font-weight:700; display:inline-flex; align-items:center; gap:8px; border:none; cursor:pointer; transition:var(--transition); }
+.sg-btn-primary:hover { background:var(--gold-light); transform:translateY(-1px); }
+
+/* Icon picker (Create modal) */
+.sg-icon-picker-wrap { position:relative; }
+.sg-icon-trigger { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:12px; background:#fff;
+  display:flex; align-items:center; gap:12px; cursor:pointer; font-size:14px; font-weight:600; color:var(--text-primary); text-align:left; }
+.sg-icon-trigger.open { border-color:var(--gold); box-shadow:0 0 0 3px rgba(244,196,48,0.15); }
+.sg-icon-trigger .subject-icon { width:32px; height:32px; border-radius:9px; }
+.sg-icon-trigger .subject-icon svg { width:18px; height:18px; }
+.sg-icon-trigger .trigger-label { flex:1; }
+.sg-icon-trigger .trigger-hint { font-size:11px; font-weight:500; color:var(--text-muted); display:block; margin-top:2px; }
+.sg-icon-trigger .trigger-chev { width:16px; height:16px; color:var(--text-muted); transition:transform 0.25s ease; }
+.sg-icon-trigger.open .trigger-chev { transform:rotate(180deg); }
+.sg-icon-panel { position:absolute; top:calc(100% + 6px); left:0; right:0; background:#fff; border:1px solid var(--border);
+  border-radius:12px; box-shadow:0 10px 30px rgba(15,23,42,0.12); padding:14px; z-index:20; max-height:300px; overflow-y:auto; animation:sgScaleIn 0.15s ease; }
+.sg-icon-search { width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;
+  margin-bottom:12px; outline:none; background:#F8F9FB; }
+.sg-icon-search:focus { border-color:var(--gold); background:#fff; }
+.sg-icon-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+.sg-icon-item { aspect-ratio:1/1; border:1.5px solid transparent; border-radius:10px; background:transparent; display:flex;
+  align-items:center; justify-content:center; cursor:pointer; transition:transform 0.15s ease, border-color 0.15s ease; position:relative; padding:4px; }
+.sg-icon-item .subject-icon { width:100%; height:100%; border-radius:8px; }
+.sg-icon-item .subject-icon svg { width:18px; height:18px; }
+.sg-icon-item:hover { transform:translateY(-1px); background:#F5F6F8; }
+.sg-icon-item.selected { border-color:var(--gold); background:rgba(244,196,48,0.08); }
+
+/* Join Study Room prompt */
+.sg-join-box { position:relative; background:#fff; border-radius:22px; width:420px; max-width:92vw; padding:32px 28px 24px;
+  box-shadow:0 24px 80px rgba(0,0,0,0.25); animation:sgScaleIn 0.24s ease; text-align:center; }
+.sg-join-icon { width:56px; height:56px; margin:0 auto 16px; border-radius:16px; display:flex; align-items:center; justify-content:center;
+  border:1px solid rgba(15,23,42,0.05); }
+.sg-join-icon svg { width:28px; height:28px; stroke-width:1.5; }
+.sg-join-title { font-size:20px; font-weight:700; color:var(--text-primary); margin-bottom:4px; }
+.sg-join-name { font-size:15px; font-weight:600; color:var(--text-secondary); margin-bottom:12px; }
+.sg-join-badges { display:flex; gap:8px; justify-content:center; margin-bottom:14px; }
+.sg-join-desc { font-size:13.5px; color:var(--text-secondary); line-height:1.55; margin-bottom:16px; }
+.sg-join-note { display:flex; align-items:center; gap:8px; justify-content:center; padding:10px 14px; border-radius:10px;
+  background:#FFFBEB; border:1px solid #FCD34D; color:#92400E; font-size:12px; font-weight:600; margin-bottom:20px; text-align:left; }
+.sg-join-note svg { flex-shrink:0; color:#B8860B; }
+.sg-join-footer { display:flex; gap:12px; }
+.sg-join-footer .sg-btn-back, .sg-join-footer .sg-btn-primary { flex:1; justify-content:center; }
+
+/* Upgrade modal */
+.sg-upgrade { width:100%; max-width:520px; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,0.35);
+  overflow:hidden; position:relative; animation:sgPop 0.24s cubic-bezier(0.2,0.9,0.35,1.1); max-height:92vh; overflow-y:auto; }
+.sg-upgrade::before { content:''; position:absolute; top:0; left:0; right:0; height:4px;
+  background:linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light)); }
+.sg-upgrade-close { position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:50%; background:rgba(0,0,0,0.04);
+  color:var(--text-secondary); display:flex; align-items:center; justify-content:center; font-size:18px; border:none; cursor:pointer; z-index:2; }
+.sg-upgrade-head { padding:32px 28px 18px; text-align:center; }
+.sg-upgrade-icon { width:56px; height:56px; margin:0 auto 14px; border-radius:16px;
+  background:linear-gradient(135deg, var(--gold), var(--gold-light)); display:flex; align-items:center; justify-content:center;
+  color:var(--bg-dark); box-shadow:0 8px 22px rgba(244,196,48,0.4); }
+.sg-upgrade-icon svg { width:28px; height:28px; }
+.sg-upgrade-title { font-size:23px; font-weight:700; line-height:1.25; color:var(--text-primary); margin-bottom:8px; }
+.sg-upgrade-sub { font-size:14px; color:var(--text-secondary); line-height:1.5; max-width:360px; margin:0 auto; }
+.sg-upgrade-social { margin:18px 28px 20px; padding:12px 16px;
+  background:linear-gradient(90deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02)); border:1px solid rgba(34,197,94,0.22);
+  border-radius:12px; display:flex; align-items:center; gap:12px; }
+.sg-upgrade-social .m-av { width:26px; height:26px; margin-left:-8px; }
+.sg-upgrade-social .m-av:first-child { margin-left:0; }
+.sg-upgrade-social-text { font-size:13px; color:var(--green-dark); font-weight:600; }
+.sg-upgrade-social-text .live-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--green);
+  margin-right:6px; animation:sgLive 1.6s ease-in-out infinite; }
+.sg-upgrade-benefits { padding:0 28px 20px; display:grid; gap:10px; }
+.sg-upgrade-benefit { display:flex; align-items:flex-start; gap:12px; padding:10px 12px; border-radius:10px; background:#F4F5F7; }
+.sg-upgrade-benefit-icon { width:30px; height:30px; border-radius:8px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.06);
+  display:flex; align-items:center; justify-content:center; color:var(--gold-dark); flex-shrink:0; }
+.sg-upgrade-benefit-icon svg { width:16px; height:16px; }
+.sg-upgrade-benefit-text { font-size:13px; color:var(--text-primary); line-height:1.45; }
+.sg-upgrade-plans { padding:4px 28px 22px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.sg-upgrade-plan { position:relative; border:1.5px solid var(--border); border-radius:14px; padding:16px 14px 14px; background:#fff;
+  transition:var(--transition); cursor:pointer; }
+.sg-upgrade-plan:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+.sg-upgrade-plan.featured { border-color:var(--gold); background:linear-gradient(180deg, rgba(244,196,48,0.06), rgba(244,196,48,0));
+  box-shadow:0 6px 20px rgba(244,196,48,0.18); }
+.sg-upgrade-plan-badge { position:absolute; top:-10px; left:50%; transform:translateX(-50%); padding:3px 10px; border-radius:999px;
+  background:var(--bg-dark); color:var(--gold); font-size:10px; font-weight:700; white-space:nowrap; }
+.sg-upgrade-plan.featured .sg-upgrade-plan-badge { background:var(--gold); color:var(--bg-dark); }
+.sg-upgrade-plan-name { font-size:18px; font-weight:700; margin-bottom:2px; color:var(--text-primary); }
+.sg-upgrade-plan-tag { font-size:11px; color:var(--text-secondary); margin-bottom:10px; }
+.sg-upgrade-plan-price { font-size:22px; font-weight:800; color:var(--text-primary); margin-bottom:12px; }
+.sg-upgrade-plan-price small { font-size:12px; font-weight:500; color:var(--text-secondary); }
+.sg-upgrade-plan .btn { width:100%; padding:10px 12px; border-radius:10px; font-size:13px; font-weight:700; border:none; cursor:pointer; }
+.sg-upgrade-plan.featured .btn { background:linear-gradient(135deg, var(--gold), var(--gold-light)); color:var(--bg-dark); }
+.sg-upgrade-plan .btn.ghost { background:transparent; color:var(--text-primary); border:1.5px solid var(--border); }
+.sg-upgrade-trust { padding:0 28px 12px; display:flex; flex-wrap:wrap; gap:14px; justify-content:center; font-size:11px;
+  color:var(--text-secondary); font-weight:500; }
+.sg-upgrade-trust span { display:inline-flex; align-items:center; gap:4px; }
+.sg-upgrade-trust svg { width:12px; height:12px; color:var(--green); }
+.sg-upgrade-later { display:block; width:100%; padding:14px 28px 22px; text-align:center; font-size:13px; color:var(--text-muted);
+  font-weight:500; background:none; border:none; cursor:pointer; }
+`;
 
 interface Group {
   id: string;
@@ -44,7 +328,24 @@ interface Message {
 export default function StudyGroupsPage() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const { canAccess } = useEntitlements();
   const userInitials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
+
+  // Plan gating — Rise/Ascent get full Live Study Room access; Free/Aspire are
+  // "locked": they see the whole UI but any interaction opens the upgrade modal.
+  const locked = !canAccess('live_study_room', ['full']);
+  const [upgrade, setUpgrade] = useState<{ title: string; sub: string } | null>(null);
+  const openUpgrade = useCallback((intent: UpgradeIntent) => setUpgrade(personalizeUpgrade(intent)), []);
+  // Run `fn` only when unlocked; otherwise surface the personalised upgrade modal.
+  const guard = useCallback((intent: UpgradeIntent, fn: () => void) => {
+    if (locked) { openUpgrade(intent); return; }
+    fn();
+  }, [locked, openUpgrade]);
+
+  // Create-Room icon picker
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const [selectedIcon, setSelectedIcon] = useState('polity');
+  const [iconSearch, setIconSearch] = useState('');
   const [groups, setGroups] = useState<Group[]>([]);
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [previewGroup, setPreviewGroup] = useState<Group | null>(null);
@@ -595,6 +896,12 @@ export default function StudyGroupsPage() {
     return () => { if (roomPollRef.current) clearInterval(roomPollRef.current); };
   }, [inRoom?.id, fetchRoomGoalsAndTimes]);
 
+  // Entering (or switching) a room resets the studying session: the user is
+  // present but idle, and the timer is paused until they click Start Studying.
+  useEffect(() => {
+    setPomoRunning(false);
+  }, [inRoom?.id]);
+
   const handleAddGoal = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const title = newGoalInput.trim();
@@ -910,12 +1217,6 @@ export default function StudyGroupsPage() {
     closed: '#6B728018',
   };
 
-  const statusBorder: Record<string, string> = {
-    live: '#EF444433',
-    open: '#22C55E33',
-    closed: '#6B728033',
-  };
-
   const roomTopBorderColors = [
     '#DC2626',
     '#2563EB',
@@ -927,14 +1228,8 @@ export default function StudyGroupsPage() {
 
   return (
     <>
-    <EntitlementGate
-      accessKey="live_study_room"
-      allowed={['full']}
-      requiredTier="rise"
-      title="Study Groups are available on Rise+"
-      message="Upgrade to Rise to join live study rooms, group accountability, and focused community sessions."
-    >
-    <div className="min-h-screen bg-[#F9FAFB] font-arimo text-[#0C1424]">
+    <div className={`sg min-h-screen bg-[#F9FAFB] font-arimo text-[#0C1424]${locked ? ' plan-locked' : ''}`}>
+      <style dangerouslySetInnerHTML={{ __html: SG_CSS }} />
       <DashboardPageHero
         // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/study-together-icon.png" alt="Study Together" style={{ width: '26px', height: '26px', objectFit: 'contain' }} />}
@@ -968,7 +1263,7 @@ export default function StudyGroupsPage() {
               ️ Study Rooms
             </button>
             <button
-              onClick={() => setActiveTab('solo')}
+              onClick={() => guard({ kind: 'solo' }, () => setActiveTab('solo'))}
               className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'solo' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
             >
               <svg className="hidden shrink-0 sm:block" width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -978,7 +1273,7 @@ export default function StudyGroupsPage() {
               Solo Focus
             </button>
             <button
-              onClick={() => setActiveTab('my')}
+              onClick={() => guard({ kind: 'mygroup' }, () => setActiveTab('my'))}
               className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'my' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
             >
                My Study Group {myGroups.length > 0 ? `(${myGroups.length})` : ''}
@@ -986,7 +1281,7 @@ export default function StudyGroupsPage() {
           </div>
           <div className="grid w-full grid-cols-2 gap-2 md:flex md:w-auto md:gap-3">
             <button
-              onClick={() => setActiveTab('solo')}
+              onClick={() => guard({ kind: 'solo' }, () => setActiveTab('solo'))}
               className="flex min-w-0 items-center justify-center gap-2 rounded-[8px] bg-[#090E1C] px-3 py-2 text-[12px] font-semibold text-white md:px-5 md:text-[13px]"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -1009,7 +1304,7 @@ export default function StudyGroupsPage() {
               </button>
             )}
             <button
-              onClick={() => setShowCreate(true)}
+              onClick={() => guard({ kind: 'create' }, () => setShowCreate(true))}
               className="min-w-0 rounded-[8px] bg-[#E8B84B] px-3 py-2 text-[12px] font-semibold text-[#090E1C] md:px-5 md:text-[13px]"
             >
               + Create Room
@@ -1028,6 +1323,7 @@ export default function StudyGroupsPage() {
               <h2 className="text-[24px] font-bold text-[#0C1424]">Solo Session</h2>
             </div>
 
+            <div className="grid items-start gap-5 lg:grid-cols-2">
             <div className="rounded-[18px] border border-[#E1E6EF] bg-white px-6 py-10 shadow-sm">
               {/* Time picker – shown when timer is idle */}
               {!pomoRunning && (
@@ -1150,7 +1446,7 @@ export default function StudyGroupsPage() {
 
             {/* Today's Study Tasks */}
             <div
-              className="mt-5 bg-white"
+              className="bg-white"
               style={{
                 borderRadius: 16,
                 border: '1px solid rgba(11,22,40,0.09)',
@@ -1270,6 +1566,7 @@ export default function StudyGroupsPage() {
                   {addingTask ? 'Adding…' : 'Add'}
                 </button>
               </form>
+            </div>
             </div>
 
             {/* ── Dashboard Stats Row ────────────────────────────── */}
@@ -1410,13 +1707,21 @@ export default function StudyGroupsPage() {
         )}
 
         {/* Search & filters - only show for rooms tab */}
+        {activeTab === 'rooms' && locked && (
+          <div className="plan-ribbon">
+            <span className="ribbon-spark">✦</span>
+            <span>Live Study Rooms are a Rise feature — join peers studying in real time.</span>
+            <button className="ribbon-cta" onClick={() => openUpgrade({ kind: 'rooms' })}>Unlock with Rise</button>
+          </div>
+        )}
+
         {activeTab === 'rooms' && (
         <section className="mt-5 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap gap-2">
             {ROOM_FILTERS.map((item) => (
               <button
                 key={item}
-                onClick={() => setRoomFilter(item)}
+                onClick={() => guard({ kind: 'filter' }, () => setRoomFilter(item))}
                 className={`rounded-full border px-4 py-2 text-[12px] font-semibold ${roomFilter === item ? 'border-[#E8B84B] bg-[#090E1C] text-[#E8B84B]' : 'border-[#DDE3EC] bg-white text-[#6B7A99]'}`}
               >
                 {item}
@@ -1464,7 +1769,7 @@ export default function StudyGroupsPage() {
               return (
                 <article
                   key={group.id}
-                  onClick={() => openGroup(group)}
+                  onClick={() => guard({ kind: 'room', title: group.name, subject: group.subject }, () => openGroup(group))}
                   className={`cursor-pointer overflow-hidden rounded-[16px] border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${isFull && !group.isMember ? 'opacity-60 grayscale-[0.35]' : ''}`}
                   style={{ borderColor: '#E1E6EF', borderTop: `4px solid ${roomTopBorderColors[index % roomTopBorderColors.length]}` }}
                 >
@@ -1511,7 +1816,7 @@ export default function StudyGroupsPage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleEnterRoom(group.id);
+                            guard({ kind: 'room', title: group.name, subject: group.subject }, () => handleEnterRoom(group.id));
                           }}
                           className="shrink-0 rounded-full bg-[#22C55E] px-5 py-2 text-[13px] font-bold text-white"
                         >
@@ -1522,7 +1827,7 @@ export default function StudyGroupsPage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            openGroup(group);
+                            guard({ kind: 'room', title: group.name, subject: group.subject }, () => openGroup(group));
                           }}
                           className="shrink-0 rounded-full bg-[#FEE2E2] px-5 py-2 text-[12px] font-bold text-[#EF4444]"
                         >
@@ -1533,7 +1838,7 @@ export default function StudyGroupsPage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            openGroup(group);
+                            guard({ kind: 'room', title: group.name, subject: group.subject }, () => openGroup(group));
                           }}
                           className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#F1F3F8] px-4 py-2 text-[12px] font-bold text-[#6B7A99]"
                         >
@@ -1545,7 +1850,7 @@ export default function StudyGroupsPage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            openGroup(group);
+                            guard({ kind: 'room', title: group.name, subject: group.subject }, () => openGroup(group));
                           }}
                           className="shrink-0 rounded-full bg-[#E8B84B] px-5 py-2 text-[13px] font-bold text-[#090E1C]"
                         >
@@ -1626,6 +1931,61 @@ export default function StudyGroupsPage() {
                   placeholder="e.g., Polity Warriors · Evening Batch"
                   className="w-full rounded-[12px] border border-[#DDE3EC] bg-white px-4 py-3 text-[14px] text-[#0C1424] outline-none placeholder:text-[#9CA3AF] focus:border-[#E8B84B]"
                 />
+              </div>
+
+              {/* Room Icon picker */}
+              <div>
+                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[1px] text-[#6B7A99]">
+                  Room Icon
+                </label>
+                <div className="sg-icon-picker-wrap">
+                  <button
+                    type="button"
+                    className={`sg-icon-trigger${iconPickerOpen ? ' open' : ''}`}
+                    onClick={() => setIconPickerOpen((o) => !o)}
+                  >
+                    <span
+                      className="subject-icon"
+                      style={{ background: iconStyle(selectedIcon).bg, color: iconStyle(selectedIcon).color }}
+                      dangerouslySetInnerHTML={{ __html: SUBJECT_ICONS[selectedIcon] || SUBJECT_ICONS.polity }}
+                    />
+                    <span className="trigger-label">
+                      {SUBJECT_LABELS[selectedIcon] || 'Polity'}
+                      <span className="trigger-hint">Click to browse UPSC icons</span>
+                    </span>
+                    <svg className="trigger-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                  </button>
+                  {iconPickerOpen && (
+                    <div className="sg-icon-panel">
+                      <input
+                        type="text"
+                        className="sg-icon-search"
+                        placeholder="Search icons..."
+                        value={iconSearch}
+                        onChange={(e) => setIconSearch(e.target.value)}
+                      />
+                      <div className="sg-icon-grid">
+                        {ICON_PICKER_KEYS
+                          .filter((k) => !iconSearch || (SUBJECT_LABELS[k] || k).toLowerCase().includes(iconSearch.toLowerCase()))
+                          .map((k) => (
+                            <button
+                              key={k}
+                              type="button"
+                              title={SUBJECT_LABELS[k] || k}
+                              className={`sg-icon-item${selectedIcon === k ? ' selected' : ''}`}
+                              onClick={() => { setSelectedIcon(k); setIconPickerOpen(false); setIconSearch(''); }}
+                            >
+                              <span
+                                className="subject-icon"
+                                style={{ background: iconStyle(k).bg, color: iconStyle(k).color }}
+                                dangerouslySetInnerHTML={{ __html: SUBJECT_ICONS[k] }}
+                              />
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Group Rules */}
@@ -1859,7 +2219,7 @@ export default function StudyGroupsPage() {
                 ) : (
                   <button
                     type="button"
-                    onClick={(e) => handleJoin(previewGroup.id, e)}
+                    onClick={(e) => guard({ kind: 'room', title: previewGroup.name, subject: previewGroup.subject }, () => handleJoin(previewGroup.id, e))}
                     className="rounded-full bg-[#E8B84B] px-8 py-3 text-[14px] font-bold text-[#090E1C]"
                   >
                     Request to Join →
@@ -1870,8 +2230,67 @@ export default function StudyGroupsPage() {
           </div>
         );
       })()}
+
+      {/* ── Upgrade Modal (Free/Aspire plans) ──────────────────────────── */}
+      {upgrade && (
+        <div className="sg-overlay" onClick={() => setUpgrade(null)}>
+          <div className="sg-upgrade" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <button className="sg-upgrade-close" aria-label="Close" onClick={() => setUpgrade(null)}>×</button>
+            <div className="sg-upgrade-head">
+              <div className="sg-upgrade-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" /></svg>
+              </div>
+              <h2 className="sg-upgrade-title">{upgrade.title}</h2>
+              <p className="sg-upgrade-sub">{upgrade.sub}</p>
+            </div>
+            <div className="sg-upgrade-social">
+              <div className="member-avatars" style={{ display: 'flex' }}>
+                {[['RK', '#5B2C6F'], ['MT', '#1E4E8C'], ['PS', '#166534'], ['AS', '#8B5CF6'], ['SN', '#B8860B']].map(([t, c]) => (
+                  <span key={t} className="m-av" style={{ background: c }}>{t}</span>
+                ))}
+              </div>
+              <div className="sg-upgrade-social-text"><span className="live-dot" />237 students studying right now</div>
+            </div>
+            <div className="sg-upgrade-benefits">
+              {[
+                ['Solo Focus rooms', ' with Pomodoro timer & task tracker'],
+                ['Live subject groups', ' — Polity, History, Economy & more'],
+                ['Weekly focus streaks', ' & leaderboard among 15,000+ aspirants'],
+              ].map(([b, rest]) => (
+                <div key={b} className="sg-upgrade-benefit">
+                  <div className="sg-upgrade-benefit-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                  </div>
+                  <div className="sg-upgrade-benefit-text"><b>{b}</b>{rest}</div>
+                </div>
+              ))}
+            </div>
+            <div className="sg-upgrade-plans">
+              <div className="sg-upgrade-plan featured" onClick={() => { if (typeof window !== 'undefined') window.location.assign('/pricing'); }}>
+                <div className="sg-upgrade-plan-badge">{PLAN_PRICES.rise.badge}</div>
+                <div className="sg-upgrade-plan-name">Rise</div>
+                <div className="sg-upgrade-plan-tag">{PLAN_PRICES.rise.tag}</div>
+                <div className="sg-upgrade-plan-price">₹{PLAN_PRICES.rise.price}<small>{PLAN_PRICES.rise.suffix}</small></div>
+                <button className="btn">Start with Rise →</button>
+              </div>
+              <div className="sg-upgrade-plan" onClick={() => { if (typeof window !== 'undefined') window.location.assign('/pricing'); }}>
+                <div className="sg-upgrade-plan-badge">{PLAN_PRICES.ascent.badge}</div>
+                <div className="sg-upgrade-plan-name">Ascent</div>
+                <div className="sg-upgrade-plan-tag">{PLAN_PRICES.ascent.tag}</div>
+                <div className="sg-upgrade-plan-price">₹{PLAN_PRICES.ascent.price}<small>{PLAN_PRICES.ascent.suffix}</small></div>
+                <button className="btn ghost">Compare Ascent</button>
+              </div>
+            </div>
+            <div className="sg-upgrade-trust">
+              {['Cancel anytime', '7-day access on us', 'Instant activation'].map((t) => (
+                <span key={t}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg> {t}</span>
+              ))}
+            </div>
+            <button className="sg-upgrade-later" onClick={() => setUpgrade(null)}>Maybe later</button>
+          </div>
+        </div>
+      )}
     </div>
-    </EntitlementGate>
 
     {/* ── Full-screen Room View ────────────────────────────────────────── */}
     {inRoom && (
@@ -2087,7 +2506,7 @@ export default function StudyGroupsPage() {
                     {roomRunning ? (
                       <>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
-                        Pause
+                        Pause Studying
                       </>
                     ) : (
                       <>
@@ -2125,7 +2544,23 @@ export default function StudyGroupsPage() {
               className="rounded-[20px] bg-white p-6"
               style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}
             >
-              <p className="mb-4 text-[11px] font-bold uppercase tracking-[1.2px] text-[#6B7A99]">Studying Now</p>
+              {(() => {
+                const othersStudying = memberTimes.filter((m) => m.userId !== user?.id && (m.focusSeconds || 0) > 0).length;
+                const studyingCount = othersStudying + (isStudying ? 1 : 0);
+                return (
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="text-[11px] font-bold uppercase tracking-[1.2px] text-[#6B7A99]">Studying Now</p>
+                    <span
+                      className="rounded-full px-3 py-1 text-[11px] font-bold"
+                      style={studyingCount > 0
+                        ? { background: 'rgba(34,197,94,0.12)', color: '#166534' }
+                        : { background: '#F1F3F8', color: '#6B7A99' }}
+                    >
+                      {studyingCount} {studyingCount === 1 ? 'person' : 'people'} studying
+                    </span>
+                  </div>
+                );
+              })()}
               <div className="flex flex-wrap gap-5">
                 {(() => {
                   const AVATAR_COLORS = ['#172444', '#1E3A8A', '#1D4ED8', '#166534', '#78350F', '#134E4A', '#5B21B6', '#9D174D'];
