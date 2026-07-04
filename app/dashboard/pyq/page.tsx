@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { pyqService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
@@ -270,6 +272,46 @@ function ExplanationRenderer({ question }: { question: any }) {
         </section>
       )}
     </div>
+  );
+}
+
+function ModelAnswerRenderer({ text }: { text: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        h1: ({ children }) => (
+          <h1 className="mb-4 mt-6 text-[24px] font-bold leading-[32px] text-[#101828] first:mt-0">{children}</h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="mb-3 mt-6 text-[21px] font-bold leading-[30px] text-[#101828] first:mt-0">{children}</h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="mb-3 mt-5 text-[18px] font-bold leading-[28px] text-[#111827] first:mt-0">{children}</h3>
+        ),
+        h4: ({ children }) => (
+          <h4 className="mb-2 mt-5 text-[16px] font-bold leading-[26px] text-[#1E2939] first:mt-0">{children}</h4>
+        ),
+        p: ({ children }) => (
+          <p className="mb-4 text-[15.5px] leading-[27px] text-[#364153] last:mb-0">{children}</p>
+        ),
+        ul: ({ children }) => (
+          <ul className="mb-5 ml-5 list-disc space-y-2 text-[15.5px] leading-[27px] text-[#364153]">{children}</ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="mb-5 ml-5 list-decimal space-y-2 text-[15.5px] leading-[27px] text-[#364153]">{children}</ol>
+        ),
+        li: ({ children }) => <li className="pl-1">{children}</li>,
+        strong: ({ children }) => <strong className="font-bold text-[#111827]">{children}</strong>,
+        blockquote: ({ children }) => (
+          <blockquote className="my-4 border-l-4 border-[#E8B84B] bg-[#FFFBEB] px-4 py-3 text-[#364153]">
+            {children}
+          </blockquote>
+        ),
+      }}
+    >
+      {text}
+    </ReactMarkdown>
   );
 }
 
@@ -572,9 +614,7 @@ export default function PyqPage() {
         years: yearMode === 'custom' && selectedYears.length > 0 ? selectedYears : undefined,
         paper: selectedPaper || undefined,
         subject: selectedSubject !== 'All Papers' ? selectedSubject : undefined,
-        ...(mode === 'mains'
-          ? { topic: selectedSubtopic || undefined }
-          : { subSubject: selectedSubtopic || undefined }),
+        subSubject: selectedSubtopic || undefined,
         topic: selectedTopics.length ? selectedTopics : undefined,
         page,
         limit: 20,
@@ -2189,31 +2229,45 @@ export default function PyqPage() {
           onClick={() => setShowModelAnswerModal(false)}
         >
           <div
-            className="rounded-[24px] bg-white p-8"
-            style={{ width: 720, maxWidth: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
+            className="flex overflow-hidden rounded-[18px] bg-white"
+            style={{
+              width: 840,
+              maxWidth: 'calc(100vw - 32px)',
+              maxHeight: 'min(82vh, 760px)',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <h2 className="m-0 text-[24px] font-bold text-[#101828]">Model Answer</h2>
-              <button
-                type="button"
-                onClick={() => setShowModelAnswerModal(false)}
-                className="h-10 w-10 rounded-full bg-[#101828] text-white"
-                aria-label="Close model answer"
-              >
-                x
-              </button>
+            <div className="flex min-h-0 w-full flex-col">
+              <div className="flex flex-shrink-0 items-start justify-between gap-4 border-b border-[#E5E7EB] bg-white px-6 py-5">
+                <div>
+                  <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A6A16]">
+                    UPSC Mains
+                  </p>
+                  <h2 className="m-0 text-[22px] font-bold leading-[30px] text-[#101828]">Model Answer</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowModelAnswerModal(false)}
+                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#101828] text-[18px] font-bold text-white"
+                  aria-label="Close model answer"
+                >
+                  x
+                </button>
+              </div>
+              <div className="min-h-0 overflow-y-auto bg-[#F8FAFC] px-5 py-5">
+                <div className="rounded-[14px] border border-[#E5E7EB] bg-white px-6 py-5">
+                  <ModelAnswerRenderer
+                    text={
+                      selectedQuestion?.modelAnswer ||
+                      selectedQuestion?.answer ||
+                      selectedQuestion?.explanation ||
+                      'Model answer is being prepared for this question.'
+                    }
+                  />
+                </div>
+              </div>
             </div>
-            <QuestionTextRenderer
-              text={
-                selectedQuestion?.modelAnswer ||
-                selectedQuestion?.answer ||
-                selectedQuestion?.explanation ||
-                'Model answer is being prepared for this question.'
-              }
-              className="rounded-[16px] border border-[#E5E7EB] bg-[#F9FAFB] p-5"
-              textClassName="text-[16px] leading-[28px] text-[#1E2939]"
-            />
           </div>
         </div>
       )}

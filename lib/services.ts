@@ -97,6 +97,7 @@ export const dashboardService = {
   getPerformance: () => api.get<any>('/user/performance', authConfig()),
   getPracticeStats: () => api.get<any>('/user/practice-stats', authConfig()),
   getBadges: () => api.get<any>('/user/badges', authConfig()),
+  getStreakCalendar: () => api.get<any>('/user/streak-calendar', authConfig()),
   getTestAnalytics: async () => {
     const config = { ...(await freshAuthConfig()), timeout: 5000 };
 

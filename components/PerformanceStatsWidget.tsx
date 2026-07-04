@@ -354,17 +354,29 @@ const PerformanceStatsWidget = () => {
         className="cursor-pointer hover:shadow-md transition-shadow flex items-center justify-center"
         style={{
           background: '#74A0FF30',
-          height: '50px',
+          minHeight: '50px',
           borderRadius: '16px',
+          padding: '10px 16px',
         }}
       >
-        <div className="flex items-center" style={{ gap: '8px' }}>
+        <div className="flex items-center" style={{ gap: '8px', minWidth: 0, width: '100%' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/add-icon.png" alt="" aria-hidden="true" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
-          <span className="font-outfit font-semibold whitespace-nowrap" style={{ fontSize: '18px', lineHeight: '1', color: '#1E2875' }}>
+          <img src="/add-icon.png" alt="" aria-hidden="true" style={{ width: '18px', height: '18px', objectFit: 'contain', flexShrink: 0 }} />
+          <span
+            className="font-outfit font-semibold"
+            style={{
+              fontSize: 'clamp(13px,1.1vw,18px)',
+              lineHeight: '1.3',
+              color: '#1E2875',
+              minWidth: 0,
+              flex: '1 1 auto',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+            }}
+          >
             {weeklyRank !== null ? `Weekly Leaderboard — You're #${weeklyRank} this week` : 'Weekly Leaderboard'}
           </span>
-          <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="none">
+          <svg style={{ width: '18px', height: '18px', flexShrink: 0 }} viewBox="0 0 24 24" fill="none">
             <path d="M4 12h16M14 6l6 6-6 6" stroke="#1E2875" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </div>
