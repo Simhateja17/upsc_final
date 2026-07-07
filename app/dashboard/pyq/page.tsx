@@ -462,62 +462,6 @@ function PyqEvaluationProgressModal({
   );
 }
 
-const MAINS_OPTIONAL_SUBJECTS = {
-  science: [
-    'Agriculture',
-    'Animal Husbandry & Veterinary Science',
-    'Botany',
-    'Chemistry',
-    'Civil Engineering',
-    'Electrical Engineering',
-    'Geology',
-    'Mathematics',
-    'Mechanical Engineering',
-    'Medical Science',
-    'Physics',
-    'Statistics',
-    'Zoology',
-  ],
-  social: [
-    'Anthropology',
-    'Commerce & Accountancy',
-    'Economics',
-    'Geography (Optional)',
-    'History (Optional)',
-    'Law',
-    'Management',
-    'Philosophy',
-    'Political Science & International Relations',
-    'Psychology',
-    'Public Administration',
-    'Sociology',
-  ],
-  literature: [
-    'Literature: Assamese',
-    'Literature: Bengali',
-    'Literature: Bodo',
-    'Literature: Dogri',
-    'Literature: English',
-    'Literature: Gujarati',
-    'Literature: Hindi',
-    'Literature: Kannada',
-    'Literature: Kashmiri',
-    'Literature: Konkani',
-    'Literature: Maithili',
-    'Literature: Malayalam',
-    'Literature: Manipuri',
-    'Literature: Marathi',
-    'Literature: Nepali',
-    'Literature: Odia',
-    'Literature: Punjabi',
-    'Literature: Sanskrit',
-    'Literature: Santhali',
-    'Literature: Sindhi',
-    'Literature: Tamil',
-    'Literature: Telugu',
-    'Literature: Urdu',
-  ],
-};
 export default function PyqPage() {
   const entitlements = useEntitlements();
   const mainsQuota = entitlements.featureStatus('mains_evaluation');
@@ -1076,17 +1020,20 @@ export default function PyqPage() {
 
   const paperOptions = mode === 'prelims'
     ? [
-        { label: 'GS Paper 1', value: 'GS Paper 1', icon: '🔑', aliases: ['GS-I', 'GS Paper I'] },
-        { label: 'CSAT', value: 'CSAT', icon: '🧩', aliases: ['Paper II', 'CSAT Paper II'] },
+        { label: 'GS Paper 1', value: 'GS Paper 1', icon: '🔑', aliases: ['GS-I', 'GS Paper I'], comingSoon: false },
+        { label: 'CSAT', value: 'CSAT', icon: '🧩', aliases: ['Paper II', 'CSAT Paper II'], comingSoon: false },
       ]
     : [
-        { label: 'GS Paper 1', value: 'GS Paper 1', icon: '📘', aliases: ['GS-I', 'GS Paper I'] },
-        { label: 'GS Paper 2', value: 'GS Paper 2', icon: '📗', aliases: ['GS-II', 'GS Paper II'] },
-        { label: 'GS Paper 3', value: 'GS Paper 3', icon: '📙', aliases: ['GS-III', 'GS Paper III'] },
-        { label: 'GS Paper 4', value: 'GS Paper 4', icon: '📕', aliases: ['GS-IV', 'GS Paper IV'] },
+        { label: 'GS Paper 1', value: 'GS Paper 1', icon: '📘', aliases: ['GS-I', 'GS Paper I'], comingSoon: false },
+        { label: 'GS Paper 2', value: 'GS Paper 2', icon: '📗', aliases: ['GS-II', 'GS Paper II'], comingSoon: false },
+        { label: 'GS Paper 3', value: 'GS Paper 3', icon: '📙', aliases: ['GS-III', 'GS Paper III'], comingSoon: false },
+        { label: 'GS Paper 4', value: 'GS Paper 4', icon: '📕', aliases: ['GS-IV', 'GS Paper IV'], comingSoon: false },
+        { label: 'Optional Paper 1', value: 'Optional Paper 1', icon: '📝', aliases: ['Optional-I', 'Optional Paper I'], comingSoon: true },
+        { label: 'Optional Paper 2', value: 'Optional Paper 2', icon: '📝', aliases: ['Optional-II', 'Optional Paper II'], comingSoon: true },
       ];
 
   const visiblePaperOptions = paperOptions.filter((paper) => {
+    if (paper.comingSoon) return true;
     const count = getPaperCount(paper.value, paper.aliases);
     return count > 0 || selectedPapers.some((p) => countKey(p) === countKey(paper.value));
   });
@@ -1267,28 +1214,6 @@ export default function PyqPage() {
             <span className="font-semibold">📘 All Papers</span>
             <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-bold">{questionCounts.total || total}</span>
           </button>
-          {mode === 'mains' && (
-            <select
-              value=""
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val) toggleSubject(val);
-                e.target.value = '';
-              }}
-              className="h-11 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[13px] font-semibold text-[#374151] outline-none"
-            >
-              <option value="">Add Optional Subject…</option>
-              <optgroup label="Science & Engineering">
-                {MAINS_OPTIONAL_SUBJECTS.science.map((s) => <option key={s} value={s}>{s}</option>)}
-              </optgroup>
-              <optgroup label="Social Sciences & Humanities">
-                {MAINS_OPTIONAL_SUBJECTS.social.map((s) => <option key={s} value={s}>{s}</option>)}
-              </optgroup>
-              <optgroup label="Literature">
-                {MAINS_OPTIONAL_SUBJECTS.literature.map((s) => <option key={s} value={s}>{s}</option>)}
-              </optgroup>
-            </select>
-          )}
           {subjectTree.map(({ label, icon, children }) => {
             const selected = selectedSubjectKeys.has(countKey(label));
             const expanded = expandedSubject === label;
@@ -1426,8 +1351,9 @@ export default function PyqPage() {
                       <button
                         key={paper.value}
                         type="button"
-                        onClick={() => togglePaper(paper.value)}
-                        className="flex min-h-[72px] items-center gap-3 rounded-[13px] border bg-white px-3 text-left transition-colors hover:border-[#D4AF37]"
+                        disabled={paper.comingSoon}
+                        onClick={() => !paper.comingSoon && togglePaper(paper.value)}
+                        className="flex min-h-[72px] items-center gap-3 rounded-[13px] border bg-white px-3 text-left transition-colors hover:border-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-[#E5E7EB]"
                         style={{
                           borderColor: selected ? paperStyle.accent : paperStyle.border,
                           background: selected ? paperStyle.bg : '#FFFFFF',
@@ -1438,9 +1364,16 @@ export default function PyqPage() {
                           {paper.icon}
                         </span>
                         <span className="min-w-0">
-                          <span className="block text-[15px] font-bold leading-5 text-[#101828]">{paper.label}</span>
+                          <span className="flex items-center gap-1.5">
+                            <span className="block truncate text-[15px] font-bold leading-5 text-[#101828]">{paper.label}</span>
+                            {paper.comingSoon && (
+                              <span className="flex-shrink-0 rounded-full bg-[#F0F1F3] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#6A7282]">
+                                Coming soon
+                              </span>
+                            )}
+                          </span>
                           <span className="block text-[12px] font-medium leading-4 text-[#9AA3B2]">
-                            {count} questions
+                            {paper.comingSoon ? 'PYQs not added yet' : `${count} questions`}
                           </span>
                         </span>
                       </button>
@@ -2284,15 +2217,6 @@ export default function PyqPage() {
                         <span aria-hidden>📄</span>
                         <span>Model Answer</span>
                       </button>
-                      <button
-                        type="button"
-                        className="flex items-center justify-center"
-                        style={{ width: '59px', height: '59px', borderRadius: '14px', background: '#FFFFFF', border: '1.6px solid #FFC9C9', fontSize: '20px', cursor: 'pointer', flexShrink: 0 }}
-                        aria-label="Write answer"
-                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(MAINS_TIME_LIMIT); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
-                      >
-                        ✏️
-                      </button>
                     </div>
 
                     {expandedModelAnswerIds.has(q.id) && (
@@ -2600,8 +2524,8 @@ export default function PyqPage() {
               </button>
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[1fr_300px] lg:overflow-hidden">
-              <div className="min-h-0 overflow-y-auto px-8 py-5">
+            <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_300px]">
+              <div className="min-h-0 px-8 py-5">
                 <div className="rounded-[12px] bg-[#F9FAFB] p-4" style={{ borderLeft: '4px solid #D4AF37' }}>
                   <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Question</div>
                   <QuestionTextRenderer
@@ -2726,20 +2650,6 @@ export default function PyqPage() {
                   </>
                 )}
 
-                {mainsQuota && (
-                  <div className="mt-4 flex items-center gap-3 rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#DCFCE7]">✅</span>
-                    <div>
-                      <p className="text-[13px] font-bold text-[#166534]">Free evaluation available</p>
-                      <p className="text-[12px] text-[#4A5565]">
-                        {mainsQuota.limit === null || mainsQuota.period === 'unlimited'
-                          ? 'Unlimited evaluations remaining'
-                          : `${mainsQuota.remaining ?? 0} of ${mainsQuota.limit ?? 0} free evaluations remaining`}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
                 {mainsSubmitError && (
                   <div className="mt-4 rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[13px] text-[#B91C1C]">
                     {mainsSubmitError}
@@ -2792,7 +2702,7 @@ export default function PyqPage() {
                 </button>
               </div>
 
-              <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto bg-[#F8F9FB] p-5">
+              <aside className="flex min-h-0 flex-col gap-4 bg-[#F8F9FB] p-5">
                 <div className="rounded-[18px] bg-white p-4 text-center shadow-sm">
                   <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Writing Timer</div>
                   {(() => {
