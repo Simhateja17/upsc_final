@@ -1363,15 +1363,13 @@ export default function PyqPage() {
                         <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] text-[19px]" style={{ background: '#FFFFFFAA', border: `1px solid ${paperStyle.border}` }}>
                           {paper.icon}
                         </span>
-                        <span className="min-w-0">
-                          <span className="flex items-center gap-1.5">
-                            <span className="block truncate text-[15px] font-bold leading-5 text-[#101828]">{paper.label}</span>
-                            {paper.comingSoon && (
-                              <span className="flex-shrink-0 rounded-full bg-[#F0F1F3] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#6A7282]">
-                                Coming soon
-                              </span>
-                            )}
-                          </span>
+                        <span className="min-w-0 flex-1">
+                          {paper.comingSoon && (
+                            <span className="mb-1 inline-block flex-shrink-0 rounded-full bg-[#F0F1F3] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#6A7282]">
+                              Coming soon
+                            </span>
+                          )}
+                          <span className="block whitespace-nowrap text-[15px] font-bold leading-5 text-[#101828]">{paper.label}</span>
                           <span className="block text-[12px] font-medium leading-4 text-[#9AA3B2]">
                             {paper.comingSoon ? 'PYQs not added yet' : `${count} questions`}
                           </span>

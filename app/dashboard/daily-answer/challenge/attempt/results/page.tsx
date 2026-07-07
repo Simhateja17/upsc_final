@@ -1008,9 +1008,9 @@ function ResultsPageInner() {
       {/* ===== MODEL ANSWER MODAL ===== */}
       {modelAnswerOpen && (
         <div className="dmc-modal-overlay" onClick={() => setModelAnswerOpen(false)}>
-          <div className="dmc-modal-content" style={{ maxWidth: 680, padding: 0, overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+          <div className="dmc-modal-content" style={{ maxWidth: 680, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }} onClick={(e) => e.stopPropagation()}>
             {/* Warning */}
-            <div style={{ background: 'linear-gradient(135deg,#FFF7ED 0%,#FEF3C7 100%)', padding: '16px 24px', borderBottom: '1px solid rgba(245,158,11,0.2)' }}>
+            <div style={{ background: 'linear-gradient(135deg,#FFF7ED 0%,#FEF3C7 100%)', padding: '16px 24px', borderBottom: '1px solid rgba(245,158,11,0.2)', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                 <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(245,158,11,0.15)', display: 'grid', placeItems: 'center', flexShrink: 0 }}><span style={{ fontSize: 16 }}>⚡</span></div>
                 <div style={{ flex: 1 }}>
@@ -1020,7 +1020,7 @@ function ResultsPageInner() {
               </div>
             </div>
             {/* Header */}
-            <div style={{ padding: '24px 28px 20px', borderBottom: '1px solid var(--line)' }}>
+            <div style={{ padding: '24px 28px 20px', borderBottom: '1px solid var(--line)', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span className="chip chip-purple">{paperLabel}</span>
@@ -1032,7 +1032,7 @@ function ResultsPageInner() {
               <div style={{ fontFamily: 'var(--font-heading)', fontSize: 20, lineHeight: 1.4, color: 'var(--ink)' }}>India&apos;s National Security Architecture: A Multi-Dimensional Approach</div>
             </div>
             {/* Body */}
-            <div style={{ padding: '24px 28px', maxHeight: '60vh', overflowY: 'auto' }}>
+            <div style={{ padding: '24px 28px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
               {data.modelAnswerContent ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {data.modelAnswerContent.split(/\n+/).map((p) => p.trim()).filter(Boolean).map((para, i) => (
@@ -1085,7 +1085,7 @@ function ResultsPageInner() {
               )}
             </div>
             {/* Footer */}
-            <div style={{ padding: '16px 28px', borderTop: '1px solid var(--line)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '16px 28px', borderTop: '1px solid var(--line)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
               <div style={{ fontSize: 11, color: 'var(--muted)' }}>Reference answer · Read after your attempt</div>
               <button className="btn-primary" onClick={() => { setModelAnswerOpen(false); router.push('/dashboard/daily-answer/challenge'); }} style={{ padding: '10px 20px', fontSize: 13 }}>✍️ Rewrite with this knowledge</button>
             </div>
