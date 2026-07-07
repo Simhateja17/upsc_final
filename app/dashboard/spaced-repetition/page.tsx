@@ -184,10 +184,10 @@ export default function SpacedRepetitionPage() {
                         {pending} to revisit
                       </span>
                     )}
+                    statusLine={acc > 0 ? meta.status : undefined}
+                    statusLineColor={meta.color}
                     progressPercent={barWidth}
                     progressColor={style.bar}
-                    footerLeft={meta.status}
-                    footerLeftColor={meta.color}
                     footerRight="Start revising →"
                     footerRightColor="#6A7282"
                   />

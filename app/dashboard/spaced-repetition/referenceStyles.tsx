@@ -51,7 +51,7 @@ const CSS = `
 .sr-scope .section-header p{color:var(--text-mid);font-size:15px;max-width:540px;margin:0 auto}
 
 /* === SUBJECT CARDS === */
-.sr-scope .subjects-section{padding:32px 32px 32px;max-width:1100px;margin:0 auto}
+.sr-scope .subjects-section{padding:32px 32px 32px;max-width:1600px;margin:0 auto}
 .sr-scope .subjects-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px;padding-bottom:20px;border-bottom:1px solid var(--border-light)}
 .sr-scope .subjects-header .left h2{font-family:var(--font-serif);font-size:28px;font-weight:700;line-height:1.3}
 .sr-scope .subjects-header .left h2 em{font-family:var(--font-serif);font-style:italic;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:0 2px 12px rgba(212,175,55,.15)}

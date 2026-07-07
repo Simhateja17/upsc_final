@@ -13,9 +13,11 @@ export type SubjectChoiceCardProps = {
   title: string;
   meta: string;
   topRight?: React.ReactNode;
+  statusLine?: React.ReactNode;
+  statusLineColor?: string;
   progressPercent: number;
   progressColor?: string;
-  footerLeft: React.ReactNode;
+  footerLeft?: React.ReactNode;
   footerLeftColor?: string;
   footerRight: React.ReactNode;
   footerRightColor?: string;
@@ -40,6 +42,8 @@ export default function SubjectChoiceCard({
   title,
   meta,
   topRight,
+  statusLine,
+  statusLineColor = '#8A94A6',
   progressPercent,
   progressColor = '#16A34A',
   footerLeft,
@@ -76,14 +80,21 @@ export default function SubjectChoiceCard({
       </p>
 
       <div className="mt-auto">
+        {statusLine && (
+          <div className="mb-1.5 truncate" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: statusLineColor }}>
+            {statusLine}
+          </div>
+        )}
         <div className="h-[4px] w-full rounded-full" style={{ background: 'rgba(0,0,0,0.08)' }}>
           <div className="h-full rounded-full transition-all" style={{ width: `${progressPercent}%`, background: progressColor }} />
         </div>
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: footerLeftColor }}>
-            {footerLeft}
-          </span>
-          <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', color: footerRightColor }}>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          {footerLeft && (
+            <span className="truncate" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: footerLeftColor, whiteSpace: 'nowrap' }}>
+              {footerLeft}
+            </span>
+          )}
+          <span className="flex-shrink-0" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', color: footerRightColor, whiteSpace: 'nowrap', marginLeft: footerLeft ? 0 : 'auto' }}>
             {footerRight}
           </span>
         </div>
