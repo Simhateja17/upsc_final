@@ -24,6 +24,130 @@ interface EditorialCard {
   isSaved: boolean;
 }
 
+type StructuredEditorialSummary = {
+  keyArguments?: string[];
+  criticalAnalysis?: Array<{ label?: string; text?: string }>;
+  upscRelevance?: Array<{ paper?: string; topics?: string }>;
+  keyTerms?: Array<{ term?: string; definition?: string }>;
+  examQuestions?: Array<{ type?: string; question?: string }>;
+};
+
+const GENERIC_KEY_TERMS = new Set([
+  'deep',
+  'white',
+  'high',
+  'low',
+  'major',
+  'minor',
+  'stable',
+  'strong',
+  'weak',
+  'positive',
+  'negative',
+  'important',
+  'critical',
+  'strategic',
+  'economic',
+  'political',
+  'governance',
+  'security',
+]);
+
+function cleanSummaryText(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/\*\*/g, '')
+    .replace(/^[\s\-•*\d.)]+/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isCompleteText(value: string): boolean {
+  const text = cleanSummaryText(value);
+  if (text.length < 24) return false;
+  if (!/[A-Za-z]{3,}/.test(text)) return false;
+  return /[.?!]$/.test(text) || text.split(/\s+/).length >= 8;
+}
+
+function isValidKeyTerm(term: string, definition: string): boolean {
+  const cleanedTerm = cleanSummaryText(term).replace(/:$/, '');
+  const cleanedDefinition = cleanSummaryText(definition);
+  if (cleanedTerm.length < 3 || cleanedTerm.length > 80) return false;
+  if (!isCompleteText(cleanedDefinition)) return false;
+
+  const knownShortTerm = /^[A-Z0-9-]{3,12}$/.test(cleanedTerm) || cleanedTerm === 'Quad';
+  const wordCount = cleanedTerm.split(/\s+/).length;
+  if (!knownShortTerm && wordCount < 2) return false;
+  if (GENERIC_KEY_TERMS.has(cleanedTerm.toLowerCase())) return false;
+  return true;
+}
+
+function isValidExamQuestion(question: string): boolean {
+  const cleaned = cleanSummaryText(question);
+  if (cleaned.length < 45 || cleaned.length > 280) return false;
+  if (!cleaned.endsWith('?')) return false;
+  if (cleaned.split(/\s+/).length < 8) return false;
+  return /\b(discuss|examine|analyse|analyze|evaluate|critically|how|why|what|assess|comment)\b/i.test(cleaned);
+}
+
+function structuredSummaryToMarkdown(value: StructuredEditorialSummary): string {
+  const keyArguments = Array.isArray(value.keyArguments)
+    ? value.keyArguments.map(cleanSummaryText).filter(isCompleteText).slice(0, 6)
+    : [];
+  const criticalAnalysis = Array.isArray(value.criticalAnalysis)
+    ? value.criticalAnalysis
+        .map(item => ({ label: cleanSummaryText(item?.label).replace(/:$/, ''), text: cleanSummaryText(item?.text) }))
+        .filter(item => item.label.length >= 3 && isCompleteText(item.text))
+        .slice(0, 4)
+    : [];
+  const upscRelevance = Array.isArray(value.upscRelevance)
+    ? value.upscRelevance
+        .map(item => ({ paper: cleanSummaryText(item?.paper).replace(/:$/, ''), topics: cleanSummaryText(item?.topics) }))
+        .filter(item => item.paper.length >= 3 && item.topics.length >= 8)
+        .slice(0, 5)
+    : [];
+  const keyTerms = Array.isArray(value.keyTerms)
+    ? value.keyTerms
+        .map(item => ({ term: cleanSummaryText(item?.term).replace(/:$/, ''), definition: cleanSummaryText(item?.definition) }))
+        .filter(item => isValidKeyTerm(item.term, item.definition))
+        .slice(0, 8)
+    : [];
+  const examQuestions = Array.isArray(value.examQuestions)
+    ? value.examQuestions
+        .map(item => ({ type: cleanSummaryText(item?.type) || 'Mains', question: cleanSummaryText(item?.question) }))
+        .filter(item => isValidExamQuestion(item.question))
+        .slice(0, 3)
+    : [];
+
+  const lines: string[] = [];
+  if (keyArguments.length) lines.push('1. Key Arguments', ...keyArguments.map(item => `- ${item}`));
+  if (criticalAnalysis.length) lines.push('2. Critical Analysis', ...criticalAnalysis.map(item => `- **${item.label}:** ${item.text}`));
+  if (upscRelevance.length) lines.push('3. UPSC Relevance', ...upscRelevance.map(item => `**${item.paper}**: ${item.topics}`));
+  if (keyTerms.length >= 3) lines.push('4. Key Terms & Concepts', ...keyTerms.map(item => `**${item.term}**: ${item.definition}`));
+  if (examQuestions.length) lines.push('5. Potential Exam Questions', ...examQuestions.map((item, index) => `${index + 1}. ${item.question}`));
+  return lines.join('\n');
+}
+
+function normalizeSummaryForDisplay(raw: unknown, structured?: StructuredEditorialSummary | null): string | null {
+  const structuredText = structured ? structuredSummaryToMarkdown(structured) : '';
+  if (parseSections(structuredText).length > 0) return structuredText;
+
+  const rawText = cleanSummaryText(raw);
+  if (!rawText) return null;
+
+  if (rawText.startsWith('{') && rawText.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(rawText) as StructuredEditorialSummary;
+      const markdown = structuredSummaryToMarkdown(parsed);
+      return parseSections(markdown).length > 0 ? markdown : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return parseSections(rawText).length > 0 ? rawText : null;
+}
+
 /* ── parse markdown into named sections (mirrors the inline parser used
    when rendering the summary modal, exposed here so handleSummarize can
    validate a fetched summary actually has parseable sections) ── */
@@ -40,7 +164,9 @@ function parseSections(md: string): { title: string; body: string }[] {
     const h12Match = trimmed.match(/^#{1,2}\s*((?:\d+[.)]\s*)?.+)$/);
     if (h12Match) return h12Match[1].trim();
     const numMatch = trimmed.match(/^(\d+[.)]\s+)([A-Z].+)$/);
-    if (numMatch && sections.length < 6) return numMatch[0].trim();
+    if (numMatch && /key arguments|critical analysis|upsc relevance|key terms|potential exam questions/i.test(numMatch[2])) {
+      return numMatch[0].trim();
+    }
     return null;
   };
 
@@ -230,7 +356,26 @@ export default function DailyEditorialPage() {
   const handleSummarize = async (card: EditorialCard) => {
     // Use cached summary if available – no AI call needed
     if (card.aiSummary) {
-      setSummaryModal({ open: true, loading: false, editorial: card, summary: card.aiSummary, loadStep: 4, error: null });
+      const summary = normalizeSummaryForDisplay(card.aiSummary);
+      if (!summary) {
+        setEditorials(prev => prev.map(e => e.id === card.id ? { ...e, aiSummary: null } : e));
+      } else {
+        setSummaryModal({ open: true, loading: false, editorial: card, summary, loadStep: 4, error: null });
+        return;
+      }
+    }
+
+    if (card.summary) {
+      const summary = normalizeSummaryForDisplay(card.summary);
+      if (summary) {
+        setSummaryModal({ open: true, loading: false, editorial: card, summary, loadStep: 4, error: null });
+        return;
+      }
+    }
+
+    if (card.aiSummary && !normalizeSummaryForDisplay(card.aiSummary)) {
+      // Cached value exists but is not renderable, so force a fresh summarize call.
+    } else if (card.aiSummary) {
       return;
     }
 
@@ -248,17 +393,10 @@ export default function DailyEditorialPage() {
     try {
       const res = await editorialService.summarize(card.id);
       clearInterval(interval);
-      const rawSummary = res.data?.summary || "";
-      const summary = rawSummary.trim().length > 50 ? rawSummary.trim() : null;
+      const data = res.data as { summary?: string; structuredSummary?: StructuredEditorialSummary } | undefined;
+      const summary = normalizeSummaryForDisplay(data?.summary, data?.structuredSummary);
 
       if (!summary) {
-        setEditorials(prev => prev.filter(e => e.id !== card.id));
-        setSummaryModal(prev => ({ ...prev, open: false }));
-        return;
-      }
-
-      const testSections = parseSections(summary);
-      if (testSections.length === 0) {
         setEditorials(prev => prev.filter(e => e.id !== card.id));
         setSummaryModal(prev => ({ ...prev, open: false }));
         return;
@@ -1136,7 +1274,9 @@ export default function DailyEditorialPage() {
             const h12Match = trimmed.match(/^#{1,2}\s*((?:\d+[.)]\s*)?.+)$/);
             if (h12Match) return h12Match[1].trim();
             const numMatch = trimmed.match(/^(\d+[.)]\s+)([A-Z].+)$/);
-            if (numMatch && sections.length < 6) return numMatch[0].trim();
+            if (numMatch && /key arguments|critical analysis|upsc relevance|key terms|potential exam questions/i.test(numMatch[2])) {
+              return numMatch[0].trim();
+            }
             return null;
           };
 
@@ -1162,20 +1302,17 @@ export default function DailyEditorialPage() {
           const tl = title.toLowerCase();
 
           if (tl.includes('key arguments')) {
-            const blocks = body.split(/\n(?=\*\*|###\s*\d|[A-Z][a-z]{2,}:)/).filter(Boolean);
+            const blocks = body
+              .split(/\n+/)
+              .map(line => line.replace(/^[-*]\s*/, '').trim())
+              .filter(line => isCompleteText(line));
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {blocks.map((block, i) => {
-                  const lines = block.trim().split('\n');
-                  const heading = lines[0].replace(/\*\*/g, '').replace(/^###?\s*/, '').replace(/:$/, '').trim();
-                  const text = lines.slice(1).join(' ').replace(/\*\*/g, '').trim() || lines[0].replace(/\*\*/g, '').trim();
-                  return (
-                    <div key={i} style={{ paddingLeft: 12, borderLeft: '2.5px solid #dce3ef' }}>
-                      {lines.length > 1 && <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2233', marginBottom: 4 }}>{heading}</div>}
-                      <div style={{ fontSize: 13, color: '#4a5a72', lineHeight: 1.65 }} dangerouslySetInnerHTML={{ __html: text.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#1a2233;font-weight:700">$1</strong>') }} />
-                    </div>
-                  );
-                })}
+                {blocks.map((text, i) => (
+                  <div key={i} style={{ paddingLeft: 12, borderLeft: '2.5px solid #dce3ef' }}>
+                    <div style={{ fontSize: 13, color: '#4a5a72', lineHeight: 1.65 }} dangerouslySetInnerHTML={{ __html: text.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#1a2233;font-weight:700">$1</strong>') }} />
+                  </div>
+                ))}
               </div>
             );
           }
@@ -1197,18 +1334,23 @@ export default function DailyEditorialPage() {
           }
 
           if (tl.includes('key term')) {
-            let content = body.replace(/^#{1,3}\s*(?:\d+[.)]\s*)?Key Terms[^-]*/i, '').trim();
-            const terms: string[] = [];
-            const candidates = content.split(/\s*[-–—]\s*|\n/).map(t => t.trim()).filter(Boolean);
-            for (const candidate of candidates) {
-              const cleaned = candidate.replace(/\*\*/g, '').replace(/[#_~`]/g, '').trim();
-              if (!cleaned || cleaned.length < 3) continue;
-              terms.push(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
-            }
+            const terms = body
+              .split(/\n+/)
+              .map(line => line.replace(/^[-*]\s*/, '').trim())
+              .map(line => {
+                const cleaned = line.replace(/[#_~`]/g, '').trim();
+                const parts = cleaned.split(':');
+                const term = cleanSummaryText(parts.shift()).replace(/:$/, '');
+                const definition = cleanSummaryText(parts.join(':'));
+                return { term, definition };
+              })
+              .filter(item => isValidKeyTerm(item.term, item.definition));
             return (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {terms.map((term, i) => (
-                  <span key={i} style={{ display: 'inline-flex', alignItems: 'center', background: '#eef2fb', border: '1px solid #c8d7f5', color: '#2a4a8a', fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 8 }}>{term}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {terms.map((item, i) => (
+                  <div key={i} style={{ padding: '10px 12px', background: '#eef2fb', border: '1px solid #c8d7f5', color: '#2a4a8a', fontSize: 12, fontWeight: 600, borderRadius: 8, lineHeight: 1.55 }}>
+                    <strong style={{ color: '#203f78' }}>{item.term}:</strong> <span style={{ color: '#40516b', fontWeight: 500 }}>{item.definition}</span>
+                  </div>
                 ))}
               </div>
             );
@@ -1217,7 +1359,7 @@ export default function DailyEditorialPage() {
           if (tl.includes('exam question') || tl.includes('potential')) {
             const qs = body.split('\n')
               .map(l => l.replace(/\*\*/g, '').replace(/^[-*"'0-9.\s]+/, '').replace(/['"\s]+$/, '').trim())
-              .filter(Boolean);
+              .filter(isValidExamQuestion);
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {qs.map((q, i) => (
@@ -1231,8 +1373,8 @@ export default function DailyEditorialPage() {
 
           if (tl.includes('critical analysis')) {
             const blocks = body
-              .split(/(?:^|\s)-\s+(?=\*\*)/)
-              .map(b => b.trim())
+              .split(/\n+/)
+              .map(b => b.replace(/^[-*]\s*/, '').trim())
               .filter(Boolean);
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

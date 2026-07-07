@@ -1072,7 +1072,7 @@ export default function PyqPage() {
 
   const taxonomyLabels = mode === 'mains'
     ? { level1: 'Subject', level2: 'Theme', level3: 'Topic' }
-    : questionCounts.taxonomyLabels || { level1: 'Subject', level2: 'Sub-Subject', level3: 'Topic' };
+    : questionCounts.taxonomyLabels || { level1: 'Subject', level2: 'Theme', level3: 'Topic' };
 
   const paperOptions = mode === 'prelims'
     ? [
@@ -2600,8 +2600,8 @@ export default function PyqPage() {
               </button>
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[1fr_300px]">
-              <div className="min-h-0 px-8 py-5">
+            <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[1fr_300px] lg:overflow-hidden">
+              <div className="min-h-0 overflow-y-auto px-8 py-5">
                 <div className="rounded-[12px] bg-[#F9FAFB] p-4" style={{ borderLeft: '4px solid #D4AF37' }}>
                   <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Question</div>
                   <QuestionTextRenderer
@@ -2615,11 +2615,6 @@ export default function PyqPage() {
                   <span>◷ 20 min</span>
                   <span>✍️ 250 words</span>
                   <span>☆ {selectedQuestion?.marks || selectedQuestion?.maxMarks || 15} marks</span>
-                </div>
-
-                <div className="mt-4 flex items-center gap-2 text-[16px] font-bold text-[#0F172B]">
-                  <span className="text-[#D4AF37]">⇧</span>
-                  Upload your answer
                 </div>
 
               <input
@@ -2641,68 +2636,94 @@ export default function PyqPage() {
                   setMainsFile(selected[0] || null);
                 }}
               />
-                <div
-                  className="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-[14px] px-6 py-9 text-center"
-                  style={{
-                    minHeight: 270,
-                    border: mainsFiles.length > 0 ? '1.5px dashed #17223E' : '1px dashed #CBD5E1',
-                    background: mainsFiles.length > 0 ? '#EFF6FF' : '#F9FAFB',
-                  }}
-                  onClick={() => mainsFileInputRef.current?.click()}
-                >
-                  <div className="mb-5 grid h-12 w-12 place-items-center rounded-[12px] bg-[#0F1424] text-[#D4AF37]">⇧</div>
-                  <p className="mb-2 text-[16px] font-bold text-[#0F172B]">
-                    {mainsFiles.length > 1 ? `${mainsFiles.length} pages selected` : mainsFile ? mainsFile.name : 'Drop your answer script here'}
-                  </p>
-                  <p className="mb-5 text-[14px] text-[#9AA3B2]">Upload handwritten answers for AI evaluation</p>
-                  {mainsFiles.length > 1 && (
-                    <div className="mb-5 max-w-full px-6 text-left text-[12px] text-[#4B5563]">
-                      {mainsFiles.map((file, index) => (
-                        <div key={`${file.name}-${index}`} className="truncate">Page {index + 1}: {file.name}</div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="mb-5 flex flex-wrap justify-center gap-2">
-                    {['JPG', 'PNG', 'PDF', 'Max 10MB'].map((fmt) => (
-                      <span key={fmt} className="rounded bg-[#E5E7EB] px-2.5 py-1 text-[12px] text-[#374151]">{fmt}</span>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      mainsFileInputRef.current?.click();
-                    }}
-                    className="rounded-[8px] border border-[#D1D5DB] bg-white px-6 py-2 text-[14px] font-bold text-[#111827]"
-                  >
-                    Browse Files
-                  </button>
-                </div>
 
-                <button type="button" onClick={() => setTextAnswerExpanded((v) => !v)} className="mt-4 flex w-full items-center gap-3">
-                  <div className="h-px flex-1 bg-[#E5E7EB]" />
-                  <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">
-                    <span
-                      aria-hidden="true"
-                      className="h-2 w-2 border-b-2 border-r-2 border-[#8B919B]"
-                      style={{ transform: textAnswerExpanded ? 'rotate(225deg)' : 'rotate(45deg)' }}
-                    />
-                    {textAnswerExpanded ? 'Hide typed answer' : 'OR Type your answer'}
-                  </span>
-                  <div className="h-px flex-1 bg-[#E5E7EB]" />
-                </button>
+                {!textAnswerExpanded && (
+                  <>
+                    <div className="mt-4 flex items-center gap-2 text-[16px] font-bold text-[#0F172B]">
+                      <span className="text-[#D4AF37]">⇧</span>
+                      Upload your answer
+                    </div>
+
+                    <div
+                      className="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-[14px] px-6 py-9 text-center"
+                      style={{
+                        minHeight: 270,
+                        border: mainsFiles.length > 0 ? '1.5px dashed #17223E' : '1px dashed #CBD5E1',
+                        background: mainsFiles.length > 0 ? '#EFF6FF' : '#F9FAFB',
+                      }}
+                      onClick={() => mainsFileInputRef.current?.click()}
+                    >
+                      <div className="mb-5 grid h-12 w-12 place-items-center rounded-[12px] bg-[#0F1424] text-[#D4AF37]">⇧</div>
+                      <p className="mb-2 text-[16px] font-bold text-[#0F172B]">
+                        {mainsFiles.length > 1 ? `${mainsFiles.length} pages selected` : mainsFile ? mainsFile.name : 'Drop your answer script here'}
+                      </p>
+                      <p className="mb-5 text-[14px] text-[#9AA3B2]">Upload handwritten answers for AI evaluation</p>
+                      {mainsFiles.length > 1 && (
+                        <div className="mb-5 max-w-full px-6 text-left text-[12px] text-[#4B5563]">
+                          {mainsFiles.map((file, index) => (
+                            <div key={`${file.name}-${index}`} className="truncate">Page {index + 1}: {file.name}</div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="mb-5 flex flex-wrap justify-center gap-2">
+                        {['JPG', 'PNG', 'PDF', 'Max 10MB'].map((fmt) => (
+                          <span key={fmt} className="rounded bg-[#E5E7EB] px-2.5 py-1 text-[12px] text-[#374151]">{fmt}</span>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          mainsFileInputRef.current?.click();
+                        }}
+                        className="rounded-[8px] border border-[#D1D5DB] bg-white px-6 py-2 text-[14px] font-bold text-[#111827]"
+                      >
+                        Browse Files
+                      </button>
+                    </div>
+
+                    <button type="button" onClick={() => setTextAnswerExpanded(true)} className="mt-4 flex w-full items-center gap-3">
+                      <div className="h-px flex-1 bg-[#E5E7EB]" />
+                      <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">
+                        <span
+                          aria-hidden="true"
+                          className="h-2 w-2 border-b-2 border-r-2 border-[#8B919B]"
+                          style={{ transform: 'rotate(45deg)' }}
+                        />
+                        OR Type your answer
+                      </span>
+                      <div className="h-px flex-1 bg-[#E5E7EB]" />
+                    </button>
+                  </>
+                )}
 
                 {textAnswerExpanded && (
-                  <div className="mt-4">
-                    <textarea
-                      value={mainsAnswerText}
-                      onChange={(e) => setMainsAnswerText(e.target.value)}
-                      placeholder="Write your answer here..."
-                      className="w-full resize-y rounded-[10px] border border-[#D1D5DB] bg-[#F9FAFB] p-4 text-[#101828] outline-none"
-                      style={{ minHeight: 120, fontSize: 15, lineHeight: '24px' }}
-                    />
-                    <p className="mt-1 text-right text-[12px] text-[#6A7282]">{mainsAnswerText.trim().split(/\s+/).filter(Boolean).length} words</p>
-                  </div>
+                  <>
+                    <button type="button" onClick={() => setTextAnswerExpanded(false)} className="mt-4 flex w-full items-center gap-3">
+                      <div className="h-px flex-1 bg-[#E5E7EB]" />
+                      <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">
+                        <span
+                          aria-hidden="true"
+                          className="h-2 w-2 border-b-2 border-r-2 border-[#8B919B]"
+                          style={{ transform: 'rotate(225deg)' }}
+                        />
+                        Hide
+                      </span>
+                      <div className="h-px flex-1 bg-[#E5E7EB]" />
+                    </button>
+
+                    <div className="mt-4">
+                      <textarea
+                        value={mainsAnswerText}
+                        onChange={(e) => setMainsAnswerText(e.target.value)}
+                        placeholder="Write your answer here..."
+                        autoFocus
+                        className="w-full resize-y rounded-[10px] border border-[#D1D5DB] bg-[#F9FAFB] p-4 text-[#101828] outline-none"
+                        style={{ minHeight: 160, fontSize: 15, lineHeight: '24px' }}
+                      />
+                      <p className="mt-1 text-right text-[12px] text-[#6A7282]">{mainsAnswerText.trim().split(/\s+/).filter(Boolean).length} words</p>
+                    </div>
+                  </>
                 )}
 
                 {mainsQuota && (
@@ -2771,20 +2792,20 @@ export default function PyqPage() {
                 </button>
               </div>
 
-              <aside className="flex min-h-0 flex-col gap-4 bg-[#F8F9FB] p-5">
+              <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto bg-[#F8F9FB] p-5">
                 <div className="rounded-[18px] bg-white p-4 text-center shadow-sm">
                   <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Writing Timer</div>
                   {(() => {
-                    const radius = 62;
+                    const radius = 82;
                     const circumference = 2 * Math.PI * radius;
                     const pct = Math.max(0, Math.min(1, mainsTimeLeft / MAINS_TIME_LIMIT));
                     return (
-                      <div className="relative mx-auto mb-3 flex h-[132px] w-[132px] items-center justify-center">
-                        <svg width="132" height="132" viewBox="0 0 150 150" style={{ transform: 'rotate(-90deg)' }}>
-                          <circle cx="75" cy="75" r={radius} fill="none" stroke="#E6E8EE" strokeWidth="5" />
+                      <div className="relative mx-auto mb-3 flex h-[180px] w-[180px] items-center justify-center">
+                        <svg width="180" height="180" viewBox="0 0 180 180" style={{ transform: 'rotate(-90deg)' }}>
+                          <circle cx="90" cy="90" r={radius} fill="none" stroke="#E6E8EE" strokeWidth="5" />
                           <circle
-                            cx="75"
-                            cy="75"
+                            cx="90"
+                            cy="90"
                             r={radius}
                             fill="none"
                             stroke={mainsTimeLeft <= 60 ? '#EF4444' : '#D4AF37'}
@@ -2794,11 +2815,11 @@ export default function PyqPage() {
                             strokeDashoffset={circumference * (1 - pct)}
                           />
                         </svg>
-                        <div className="absolute">
-                          <div className="font-mono text-[26px] font-bold text-[#0B1020]">
+                        <div className="absolute flex flex-col items-center">
+                          <div className="font-mono text-[32px] font-bold text-[#0B1020]" style={{ fontVariantNumeric: 'tabular-nums' }}>
                             {Math.floor(mainsTimeLeft / 60)}:{String(mainsTimeLeft % 60).padStart(2, '0')}
                           </div>
-                          <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9AA3B2]">
+                          <div className="mt-1 whitespace-nowrap text-[9px] font-semibold uppercase tracking-[0.1em] text-[#9AA3B2]">
                             {mainsReadTimeLeft !== null ? `Auto-start ${mainsReadTimeLeft}s` : 'Minutes left'}
                           </div>
                         </div>
@@ -3139,10 +3160,10 @@ export default function PyqPage() {
             >
               <div className="flex items-center gap-2 flex-wrap">
                 <div
-                  className="rounded-[14px] flex items-center justify-center flex-shrink-0"
-                  style={{ width: 48, height: 48, background: '#1E293B', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: '18px', lineHeight: '28px' }}
+                  className="rounded-[14px] flex items-center justify-center flex-shrink-0 px-3"
+                  style={{ minWidth: 64, height: 48, background: '#1E293B', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: '15px', lineHeight: '22px' }}
                 >
-                  {selectedQuestion?.questionNum ?? '?'}
+                  {selectedQuestion?.paper || 'Mains'}
                 </div>
                 <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: '#1E293B', color: '#FFFFFF' }}>{selectedQuestion?.year}</span>
                 {selectedQuestion?.subject && (() => {
