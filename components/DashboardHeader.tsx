@@ -139,6 +139,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const initials = isLoggedIn
     ? `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || user?.email?.[0]?.toUpperCase() || ''
     : '';
+  const avatarUrl = isLoggedIn ? user?.avatarUrl || '' : '';
 
   const handleMarkAllRead = async () => {
     try {
@@ -241,17 +242,28 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
               )}
             </button>
 
-            {/* User Avatar - Simple gold circle with initials */}
+            {/* User Avatar */}
             <div className="relative flex-shrink-0" ref={dropdownRef}>
               <div
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="w-[clamp(38px,2.8vw,48px)] h-[clamp(38px,2.8vw,48px)] rounded-full flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity font-serif font-bold text-[#0E182D]"
+                className="w-[clamp(38px,2.8vw,48px)] h-[clamp(38px,2.8vw,48px)] rounded-full flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity font-serif font-bold text-[#0E182D] overflow-hidden"
                 style={{
-                  background: 'linear-gradient(135deg, #FFD170 0%, #D4A843 100%)',
+                  background: avatarUrl ? '#0E182D' : 'linear-gradient(135deg, #FFD170 0%, #D4A843 100%)',
                   fontSize: 'clamp(14px, 1.1vw, 18px)',
                 }}
+                title={displayName || 'Profile'}
               >
-                {initials}
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl}
+                    alt={displayName || 'Profile'}
+                    className="h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  initials
+                )}
               </div>
 
           {/* Dropdown Menu */}
