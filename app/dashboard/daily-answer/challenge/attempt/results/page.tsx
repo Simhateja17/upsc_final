@@ -25,6 +25,7 @@ interface ResultsData {
   annotationPlan?: unknown;
   wordCount?: number | null;
   submittedAt?: string | null;
+  answerText?: string | null;
   keyTerms?: Array<{ term: string; found: boolean }>;
   nextAttemptFocus?: string | null;
   evaluatorConclusion?: string | null;
@@ -371,8 +372,8 @@ function ResultsPageInner() {
   // Markup viewer state
   const [markupPage, setMarkupPage] = useState(1);
   const [zoom, setZoom] = useState(100);
-  const [markupsHidden, setMarkupsHidden] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [unreadableModalOpen, setUnreadableModalOpen] = useState(false);
 
   useEffect(() => {
     if (dateParam) return;
@@ -427,12 +428,15 @@ function ResultsPageInner() {
   const maxScore = data?.maxScore ?? 15;
   const scorePercent = maxScore > 0 ? Math.max(0, Math.min(100, Math.round((score / maxScore) * 100))) : 0;
 
-  const strengths = data?.strengths?.length ? data.strengths : DEMO_STRENGTHS;
-  const improvements = data?.improvements?.length ? data.improvements : DEMO_IMPROVEMENTS;
-  const suggestions = data?.suggestions?.length ? data.suggestions : DEMO_SUGGESTIONS;
-  const keyTerms = data?.keyTerms?.length ? data.keyTerms : DEMO_KEY_TERMS;
-  const nextFocus = data?.nextAttemptFocus?.trim() || DEMO_NEXT_FOCUS;
-  const conclusion = data?.evaluatorConclusion?.trim() || DEMO_CONCLUSION;
+  // Once a real evaluation result is loaded, never show demo placeholder data.
+  // Empty sections will render their own empty state instead of misleading sample text.
+  const hasRealEvaluation = !!data?.submittedAt;
+  const strengths = data?.strengths?.length ? data.strengths : (hasRealEvaluation ? [] : DEMO_STRENGTHS);
+  const improvements = data?.improvements?.length ? data.improvements : (hasRealEvaluation ? [] : DEMO_IMPROVEMENTS);
+  const suggestions = data?.suggestions?.length ? data.suggestions : (hasRealEvaluation ? [] : DEMO_SUGGESTIONS);
+  const keyTerms = data?.keyTerms?.length ? data.keyTerms : (hasRealEvaluation ? [] : DEMO_KEY_TERMS);
+  const nextFocus = data?.nextAttemptFocus?.trim() || (hasRealEvaluation ? '' : DEMO_NEXT_FOCUS);
+  const conclusion = data?.evaluatorConclusion?.trim() || (hasRealEvaluation ? '' : DEMO_CONCLUSION);
   const wordCount = data?.wordCount ?? 247;
 
   const detailedFeedback = data?.detailedFeedback?.trim() ?? '';
@@ -446,12 +450,33 @@ function ResultsPageInner() {
       : [];
   const useRealImages = realImagePages.length > 0;
 
-  const totalMarkupPages = useRealImages ? realImagePages.length : DEMO_MARKUP_PAGES.length;
+  // Detect an uploaded image that could not be read as a handwritten answer
+  // (random image, cover page, blurry photo, etc.). The backend returns score 0,
+  // no answerText, no checked copy, and specific guidance in improvements.
+  const isUnreadableUpload = useMemo(() => {
+    if (!data) return false;
+    const hasNoAnswerText = !data.answerText?.trim();
+    const hasNoCheckedCopy = realImagePages.length === 0;
+    const isLowScore = (data.score ?? 0) === 0;
+    const hasUnreadableMessage = data.improvements?.some(
+      (i) =>
+        i.toLowerCase().includes("couldn't read") ||
+        i.toLowerCase().includes("handwriting") ||
+        i.toLowerCase().includes("uploaded file") ||
+        i.toLowerCase().includes("readable response")
+    );
+    return hasNoAnswerText && hasNoCheckedCopy && (isLowScore || hasUnreadableMessage);
+  }, [data, realImagePages.length]);
+
+  useEffect(() => {
+    if (isUnreadableUpload) setUnreadableModalOpen(true);
+  }, [isUnreadableUpload]);
+
+  const totalMarkupPages = useRealImages ? realImagePages.length : 1;
   const safeMarkupPage = Math.max(1, Math.min(totalMarkupPages, markupPage));
-  const activeDemoPage = DEMO_MARKUP_PAGES[safeMarkupPage - 1] ?? DEMO_MARKUP_PAGES[0];
   const examinerComment = useRealImages
-    ? (detailedFeedback || activeDemoPage.comment)
-    : activeDemoPage.comment;
+    ? (detailedFeedback || '')
+    : (detailedFeedback || 'No examiner markup was generated for this submission.');
 
   const rubricRows = useMemo(() => {
     if (data?.parameterScores?.length) {
@@ -461,8 +486,8 @@ function ResultsPageInner() {
         return { label: p.parameter, percent: pct, fraction: `${p.score}/${p.maxScore}`, color, note: p.comment || '' };
       });
     }
-    return DEMO_RUBRIC;
-  }, [data?.parameterScores]);
+    return hasRealEvaluation ? [] : DEMO_RUBRIC;
+  }, [data?.parameterScores, hasRealEvaluation]);
 
   const breadcrumbDate = useMemo(() => {
     const raw = data?.question?.date || data?.submittedAt;
@@ -505,6 +530,73 @@ function ResultsPageInner() {
   return (
     <div id="dmcResults">
       <style dangerouslySetInnerHTML={{ __html: SCOPED_CSS }} />
+
+      {/* Unreadable-upload popup: appears when the user submits an image that
+          is not a readable handwritten answer (random image, cover page, etc.) */}
+      {unreadableModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(11,16,32,0.55)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+          onClick={() => setUnreadableModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="unreadable-title"
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 520,
+              background: '#fff',
+              borderRadius: 24,
+              padding: '32px 28px',
+              boxShadow: '0 24px 60px rgba(11,16,32,0.22)',
+              textAlign: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 56, marginBottom: 12 }}>📝</div>
+            <h2 id="unreadable-title" style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', marginBottom: 10 }}>
+              Upload not recognized as an answer
+            </h2>
+            <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 20 }}>
+              We could not detect any handwritten answer text in the image you uploaded. It may be a cover page, a random photo, or too unclear to read.
+            </p>
+            <div style={{ textAlign: 'left', background: '#F8FAFC', borderRadius: 16, padding: '18px 20px', marginBottom: 24 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>What you can do</p>
+              <ul style={{ fontSize: 13, color: 'var(--ink2)', lineHeight: 1.7, paddingLeft: 18, margin: 0 }}>
+                <li>Upload a clear photo of your actual handwritten answer.</li>
+                <li>Use bright, even lighting and keep the page flat and in full frame.</li>
+                <li>Make sure the handwriting is dark and readable.</li>
+                <li>Or type your answer directly for instant evaluation.</li>
+              </ul>
+            </div>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button
+                className="btn-primary"
+                type="button"
+                onClick={() => setUnreadableModalOpen(false)}
+              >
+                Got it
+              </button>
+              <Link href="/dashboard/daily-answer/challenge" style={{ textDecoration: 'none' }}>
+                <button className="btn-secondary" type="button">
+                  Upload new answer
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="container">
 
         {/* Breadcrumb + top actions */}
@@ -593,9 +685,11 @@ function ResultsPageInner() {
                     What You Did Well
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {strengths.map((s, i) => (
+                    {strengths.length > 0 ? strengths.map((s, i) => (
                       <div key={i} style={{ background: '#E6F7EC', borderRadius: 12, padding: 12, fontSize: 13, lineHeight: 1.5 }}>→ {s}</div>
-                    ))}
+                    )) : (
+                      <div style={{ fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>No strengths recorded for this submission.</div>
+                    )}
                   </div>
                 </div>
                 <div className="feedback-divider" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -639,9 +733,11 @@ function ResultsPageInner() {
               </div>
               <p style={{ fontSize: 13, color: 'var(--muted)' }}>Terms an examiner would expect in a {marks}-mark answer.</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
-                {keyTerms.map((kt, i) => (
+                {keyTerms.length > 0 ? keyTerms.map((kt, i) => (
                   <span key={i} className={`key-term${kt.found ? ' found' : ''}`}><span style={{ fontSize: 10 }}>{kt.found ? '✓' : '✗'}</span> {kt.term}</span>
-                ))}
+                )) : (
+                  <div style={{ fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>No key-term analysis available.</div>
+                )}
               </div>
               <div style={{ marginTop: 12, fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ color: 'var(--accent-red)', fontWeight: 600 }}>✗ Missed</span> terms should appear in your next attempt.
@@ -649,22 +745,26 @@ function ResultsPageInner() {
             </div>
 
             {/* Next Attempt Focus */}
-            <div style={{ borderRadius: 16, padding: 20, background: '#EEF0FF', border: '1px solid rgba(99,102,241,0.1)', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 14 }}>🎯</span>
-                <span style={{ fontSize: 10, letterSpacing: '0.12em', fontWeight: 700, color: '#4F46E5' }}>NEXT ATTEMPT FOCUS</span>
+            {nextFocus && (
+              <div style={{ borderRadius: 16, padding: 20, background: '#EEF0FF', border: '1px solid rgba(99,102,241,0.1)', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 14 }}>🎯</span>
+                  <span style={{ fontSize: 10, letterSpacing: '0.12em', fontWeight: 700, color: '#4F46E5' }}>NEXT ATTEMPT FOCUS</span>
+                </div>
+                <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--ink)' }}>{nextFocus}</p>
               </div>
-              <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--ink)' }}>{nextFocus}</p>
-            </div>
+            )}
 
             {/* Evaluator's Conclusion */}
-            <div style={{ borderRadius: 16, padding: 20, background: '#E6F7EC', border: '1px solid rgba(22,163,74,0.1)', marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 14 }}>✅</span>
-                <span style={{ fontSize: 10, letterSpacing: '0.12em', fontWeight: 700, color: '#16A34A' }}>EVALUATOR&apos;S CONCLUSION</span>
+            {conclusion && (
+              <div style={{ borderRadius: 16, padding: 20, background: '#E6F7EC', border: '1px solid rgba(22,163,74,0.1)', marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 14 }}>✅</span>
+                  <span style={{ fontSize: 10, letterSpacing: '0.12em', fontWeight: 700, color: '#16A34A' }}>EVALUATOR&apos;S CONCLUSION</span>
+                </div>
+                <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--ink)' }}>{conclusion}</p>
               </div>
-              <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--ink)' }}>{conclusion}</p>
-            </div>
+            )}
           </div>
         )}
 
@@ -685,9 +785,8 @@ function ResultsPageInner() {
                   <button className="zoom-btn" type="button" onClick={() => setZoom((z) => Math.min(160, z + 10))} aria-label="Zoom in">+</button>
                 </div>
                 <div className="markup-toolbar-right">
-                  <button className="markup-link-btn" type="button" onClick={() => setFullscreen((f) => !f)}>{fullscreen ? '✕ Close full size' : '⤢ Open full size'}</button>
-                  {!useRealImages && (
-                    <button className="toggle-btn" type="button" onClick={() => setMarkupsHidden((h) => !h)}>👁 {markupsHidden ? 'Show markups' : 'Hide markups'}</button>
+                  {useRealImages && (
+                    <button className="markup-link-btn" type="button" onClick={() => setFullscreen((f) => !f)}>{fullscreen ? '✕ Close full size' : '⤢ Open full size'}</button>
                   )}
                 </div>
               </div>
@@ -700,41 +799,14 @@ function ResultsPageInner() {
                     <img src={realImagePages[safeMarkupPage - 1]?.checkedCopyUrl || ''} alt={`Checked copy page ${safeMarkupPage}`} style={{ width: '100%', borderRadius: 10, display: 'block' }} />
                   </div>
                 ) : (
-                  <div className="markup-paper" style={{ transform: `scale(${zoom / 100})` }}>
-                    {DEMO_MARKUP_PAGES.map((pg) => (
-                      <div key={pg.page} className={`markup-page${pg.page === safeMarkupPage ? ' active' : ''}`}>
-                        <div className="paper-watermark">Page {pg.page}</div>
-                        <div className="paper-title">{pg.title}</div>
-                        {pg.blocks.map((block, bi) => {
-                          if (block.type === 'line') {
-                            return (
-                              <p key={bi} className="handwriting-line">
-                                {block.segments.map((seg, si) =>
-                                  seg.flag ? (
-                                    <span key={si} className={`markup-annotation flag-${seg.flag}${markupsHidden ? ' markup-clean' : ''}`} title={seg.title}>{seg.text}</span>
-                                  ) : (
-                                    <span key={si}>{seg.text}</span>
-                                  )
-                                )}
-                              </p>
-                            );
-                          }
-                          if (block.type === 'note') {
-                            return (
-                              <div key={bi} className={`markup-annotation examiner-note note-${block.tone}${markupsHidden ? ' markup-note-hidden' : ''}`}>
-                                <strong>{block.strong}</strong> {block.text}
-                              </div>
-                            );
-                          }
-                          return (
-                            <div key={bi} className={`expected-answer-card markup-annotation${markupsHidden ? ' markup-note-hidden' : ''}`}>
-                              <div className="expected-title">{block.title}</div>
-                              <ul>{block.items.map((it, ii) => <li key={ii}>{it}</li>)}</ul>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
+                  <div className="markup-paper markup-empty" style={{ transform: `scale(${zoom / 100})`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '80px 40px' }}>
+                    <div style={{ fontSize: 48, marginBottom: 16 }}>📝</div>
+                    <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', marginBottom: 8 }}>No examiner markup available</h3>
+                    <p style={{ fontSize: 14, color: 'var(--muted)', maxWidth: 420, lineHeight: 1.6 }}>
+                      {data?.checkedCopyStatus === 'failed' || data?.checkedCopyStatus === null || data?.checkedCopyStatus === undefined
+                        ? 'We could not generate a checked copy for this upload. Try typing your answer or uploading a clearer handwritten image of your actual answer.'
+                        : 'Upload a handwritten answer to generate AI examiner markup.'}
+                    </p>
                   </div>
                 )}
               </div>
@@ -748,10 +820,12 @@ function ResultsPageInner() {
             </div>
 
             {/* Examiner's overall comment */}
-            <div className="examiner-comment">
-              <div className="examiner-comment-label">📋 Examiner&apos;s Overall Comment — Page {safeMarkupPage}</div>
-              <p className="examiner-comment-text">{examinerComment}</p>
-            </div>
+            {examinerComment && (
+              <div className="examiner-comment">
+                <div className="examiner-comment-label">📋 Examiner&apos;s Overall Comment{useRealImages ? ` — Page ${safeMarkupPage}` : ''}</div>
+                <p className="examiner-comment-text">{examinerComment}</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -770,6 +844,11 @@ function ResultsPageInner() {
               </span>
             </div>
             <div className="rubric-bars">
+              {rubricRows.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--muted)', fontSize: 14 }}>
+                  No score breakdown available for this submission.
+                </div>
+              )}
               {rubricRows.map((r, i) => (
                 <div key={i} className="rubric-row" style={{ ['--rubric-color' as string]: r.color, ['--rubric-percent' as string]: `${r.percent}%`, animationDelay: `${i * 60}ms` } as React.CSSProperties}>
                   <div className="rubric-row-top">
