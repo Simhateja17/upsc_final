@@ -7,6 +7,7 @@ export type SubjectChoiceCardProps = {
   href?: string;
   onClick?: () => void;
   disabled?: boolean;
+  selected?: boolean;
   icon: React.ReactNode;
   iconBg: string;
   accentColor: string;
@@ -36,6 +37,7 @@ export default function SubjectChoiceCard({
   href,
   onClick,
   disabled,
+  selected,
   icon,
   iconBg,
   accentColor,
@@ -102,8 +104,13 @@ export default function SubjectChoiceCard({
     </>
   );
 
-  const className = 'subject-choice-card block rounded-[16px] p-5 text-left flex flex-col';
-  const style = { ['--subject-choice-border']: '#E4EAF5', background: '#FFFFFF', height: 190 } as React.CSSProperties;
+  const className = `subject-choice-card block rounded-[16px] p-5 text-left flex flex-col${selected ? ' subject-choice-card-selected' : ''}`;
+  const style = {
+    ['--subject-choice-border']: selected ? accentColor : '#E4EAF5',
+    background: '#FFFFFF',
+    height: 190,
+    ...(selected ? { boxShadow: `0 4px 24px ${accentColor}30` } : {}),
+  } as React.CSSProperties;
 
   if (href) {
     return (
@@ -135,6 +142,7 @@ export function SubjectChoiceCardStyles() {
       .subject-choice-card:hover{transform:translateY(-3px);box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);border-color:transparent;}
       .subject-choice-accent{position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:opacity .3s;z-index:2;}
       .subject-choice-card:hover .subject-choice-accent{opacity:1;}
+      .subject-choice-card-selected .subject-choice-accent{opacity:1;}
     `}</style>
   );
 }

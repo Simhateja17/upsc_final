@@ -7,6 +7,7 @@ import { videoService, libraryService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import StudyMaterialReaderModal from '@/components/StudyMaterialReaderModal';
 import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
+import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
 
 /* ─── Types ─── */
 interface VideoItem {
@@ -732,6 +733,7 @@ export default function VideoLecturesPage() {
         </div>
 
         {/* Subject grid */}
+        <SubjectChoiceCardStyles />
         {subjectsLoading ? (
           <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
             <div className="w-10 h-10 border-4 border-[#e8a820] border-t-transparent rounded-full animate-spin mb-4" />
@@ -741,14 +743,8 @@ export default function VideoLecturesPage() {
           </div>
         ) : (
           <div
-            className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 justify-center"
-            style={{
-              justifyContent: 'center',
-              justifyItems: 'center',
-              columnGap: '20px',
-              rowGap: '22px',
-              marginBottom: selectedSubject ? 'clamp(24px, 2.5vw, 36px)' : '0',
-            }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5"
+            style={{ marginBottom: selectedSubject ? 'clamp(24px, 2.5vw, 36px)' : '0' }}
           >
             {visibleSubjects.map((subject) => {
               const theme = subjectThemeMap.get(subject.name) ?? { bg: '#F5F9FF', border: '#D0E2FF', color: '#5B8DD9', tag: '#DBEAFE', progress: 50 };
@@ -757,134 +753,34 @@ export default function VideoLecturesPage() {
               const watchedCount = (watchedBySubject[normalizeSubjectKey(subject.name)] || []).length;
               const totalCount = subject.videoCount ?? 0;
               const progressPct = totalCount > 0 ? Math.min(100, Math.round((watchedCount / totalCount) * 100)) : 0;
+              const status = progressPct === 100 ? 'Completed' : progressPct > 0 ? 'In progress' : 'Not started';
+              const statusColor = progressPct === 100 ? '#16A34A' : progressPct > 0 ? '#2563EB' : '#8A94A6';
+              const iconBg = getSubjectMetaStyle(subject.name).bg;
               return (
-                <button
-                  type="button"
+                <SubjectChoiceCard
                   key={subject.name}
                   onClick={() => handleSubjectClick(subject.name)}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = `0 12px 28px ${theme.color}30`;
-                    e.currentTarget.style.borderColor = theme.color;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = isSelected ? 'translateY(-2px) scale(1.01)' : 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = isSelected ? `0 8px 28px ${theme.color}45` : '0 1px 4px rgba(0,0,0,0.05)';
-                    e.currentTarget.style.borderColor = isSelected ? theme.color : theme.border;
-                  }}
-                  style={{
-                    width: '100%',
-                    minHeight: '188px',
-                    background: isSelected ? theme.color : theme.bg,
-                    borderRadius: '20px',
-                    padding: '20px 18px 18px',
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-                    border: `1.5px solid ${isSelected ? theme.color : theme.border}`,
-                    boxShadow: isSelected ? `0 8px 28px ${theme.color}45` : '0 1px 4px rgba(0,0,0,0.05)',
-                    transform: isSelected ? 'translateY(-2px) scale(1.01)' : 'translateY(0) scale(1)',
-                    position: 'relative',
-                    textAlign: 'left',
-                  }}
-                >
-                  {showNew && (
-                    <div
-                      className="font-arimo font-bold"
-                      style={{
-                        position: 'absolute',
-                        top: '12px',
-                        right: '12px',
-                        height: '22px',
-                        minWidth: '48px',
-                        padding: '3px 11px 0',
-                        borderRadius: '20px',
-                        background: '#3B82F6',
-                        color: '#FFFFFF',
-                        fontSize: '11px',
-                        lineHeight: '16px',
-                        letterSpacing: '0',
-                      }}
+                  selected={isSelected}
+                  icon={subjectEmoji(subject.name)}
+                  iconBg={iconBg}
+                  accentColor={theme.color}
+                  title={getSubjectHeroLabel(subject.name)}
+                  meta={`${subject.videoCount ?? 0} videos · ${formatSubjectViews(getSubjectViewCount(subject))} views`}
+                  topRight={showNew && (
+                    <span
+                      className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
+                      style={{ background: '#3B82F6', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
                     >
                       NEW
-                    </div>
+                    </span>
                   )}
-
-                  <div
-                    className="flex items-center justify-center"
-                    style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '12px',
-                      background: isSelected ? 'rgba(255,255,255,0.22)' : theme.tag,
-                      fontSize: '24px',
-                      lineHeight: '32px',
-                      marginBottom: '12px',
-                    }}
-                  >
-                    {subjectEmoji(subject.name)}
-                  </div>
-                  <div
-                    className="font-arimo font-bold"
-                    title={getSubjectHeroLabel(subject.name)}
-                    style={{
-                      fontSize: '17px',
-                      lineHeight: '22px',
-                      color: isSelected ? '#FFFFFF' : '#1E293B',
-                      letterSpacing: '-0.3px',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {getSubjectHeroLabel(subject.name)}
-                  </div>
-                  <div
-                    className="font-arimo flex items-center"
-                    style={{ fontSize: '13px', lineHeight: '18px', color: isSelected ? 'rgba(255,255,255,0.75)' : '#64748B', marginTop: '6px', marginBottom: '12px', gap: '14px', whiteSpace: 'nowrap' }}
-                  >
-                    <span className="inline-flex items-center" style={{ gap: '5px' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10" />
-                        <polygon points="10 8 16 12 10 16 10 8" />
-                      </svg>
-                      {subject.videoCount ?? 0} videos
-                    </span>
-                    <span className="inline-flex items-center" style={{ gap: '5px' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                      {formatSubjectViews(getSubjectViewCount(subject))}
-                    </span>
-                  </div>
-                  {(() => {
-                    const status = progressPct === 100 ? 'Completed' : progressPct > 0 ? 'In progress' : 'Not started';
-                    const barColor = isSelected ? 'rgba(255,255,255,0.85)' : progressPct === 100 ? '#2563EB' : theme.color;
-                    const labelColor = isSelected ? 'rgba(255,255,255,0.9)' : '#64748B';
-                    return (
-                      <>
-                        {/* Status + completion percentage */}
-                        <div
-                          className="flex items-center justify-between font-arimo font-bold"
-                          style={{ fontSize: '11px', color: labelColor, marginBottom: '6px', width: '100%' }}
-                        >
-                          <span>{status}</span>
-                          <span>{progressPct}%</span>
-                        </div>
-                        <div
-                          className="rounded-full overflow-hidden"
-                          style={{ width: '100%', height: '6px', background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.7)' }}
-                        >
-                          <div
-                            className="h-full rounded-full"
-                            style={{ width: `${progressPct}%`, background: barColor, transition: 'width 0.3s ease' }}
-                          />
-                        </div>
-                      </>
-                    );
-                  })()}
-                </button>
+                  progressPercent={progressPct}
+                  progressColor={theme.color}
+                  footerLeft={status}
+                  footerLeftColor={statusColor}
+                  footerRight={`${progressPct}%`}
+                  footerRightColor={statusColor}
+                />
               );
             })}
           </div>
