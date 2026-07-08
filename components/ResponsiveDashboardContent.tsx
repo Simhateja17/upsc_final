@@ -747,7 +747,7 @@ const ResponsiveDashboardContent = () => {
                 href="/dashboard/daily-mcq"
                 aria-label="Open Daily MCQ"
                 className="block bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] relative cursor-pointer h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg"
-                style={{ borderColor: isMcqCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #22C55E' }}
+                style={{ borderColor: isMcqCompleted ? '#22C55E' : '#E5E7EB', borderTop: isMcqCompleted ? '3px solid #22C55E' : '3px solid #94A3B8' }}
               >
                 {isMcqCompleted && (
                   <div className="absolute top-4 right-4 w-8 h-8 bg-[#22C55E] rounded-full flex items-center justify-center">
@@ -797,7 +797,7 @@ const ResponsiveDashboardContent = () => {
               <Link href="/dashboard/daily-answer" className="block h-full">
               <div
                 className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg cursor-pointer relative"
-                style={{ borderColor: isMainsCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #94A3B8' }}
+                style={{ borderColor: isMainsCompleted ? '#22C55E' : '#E5E7EB', borderTop: isMainsCompleted ? '3px solid #22C55E' : '3px solid #94A3B8' }}
               >
                 {isMainsCompleted && (
                   <div className="absolute top-4 right-4 w-8 h-8 bg-[#22C55E] rounded-full flex items-center justify-center">
@@ -842,7 +842,7 @@ const ResponsiveDashboardContent = () => {
               <Link href="/dashboard/daily-editorial" className="block h-full">
               <div
                 className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg cursor-pointer relative"
-                style={{ borderColor: isEditorialCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #F59E0B' }}
+                style={{ borderColor: isEditorialCompleted ? '#22C55E' : '#E5E7EB', borderTop: isEditorialCompleted ? '3px solid #22C55E' : '3px solid #94A3B8' }}
               >
                 {isEditorialCompleted && (
                   <div className="absolute top-4 right-4 w-8 h-8 bg-[#22C55E] rounded-full flex items-center justify-center">
