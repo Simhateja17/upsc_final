@@ -1711,7 +1711,7 @@ export default function StudyPlannerPage() {
 
             {/* Quick Add to Plan */}
             <div
-              className="flex flex-col xl:flex-1 xl:min-h-[596px]"
+              className="flex flex-col"
               style={{
                 width: '100%',
                 borderRadius: '16px',
@@ -1789,7 +1789,7 @@ export default function StudyPlannerPage() {
 
             {/* Time Distribution */}
             <div
-              className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] xl:h-[424px] flex flex-col"
+              className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] xl:flex-1 flex flex-col"
             >
               <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
                 <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>

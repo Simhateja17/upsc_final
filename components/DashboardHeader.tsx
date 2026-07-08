@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
 import { userService } from '@/lib/services';
@@ -37,6 +37,22 @@ function getNotificationIcon(type: string): string {
   }
 }
 
+function getNotificationRoute(type: string): string {
+  switch (type) {
+    case 'mcq_reminder': return '/dashboard/daily-mcq';
+    case 'answer_evaluated': return '/dashboard/daily-answer/history';
+    case 'digest': return '/dashboard/current-affairs';
+    case 'streak_alert': return '/dashboard';
+    case 'streak_milestone': return '/dashboard';
+    case 'streak_daily': return '/dashboard';
+    case 'weekly_progress': return '/dashboard/performance';
+    case 'spaced_rep': return '/dashboard/spaced-repetition';
+    case 'mock_test_available': return '/dashboard/mock-tests';
+    case 'daily_trio_reminder': return '/dashboard';
+    default: return '/dashboard';
+  }
+}
+
 function formatRelativeTime(dateStr: string): string {
   const now = new Date();
   const date = new Date(dateStr);
@@ -59,6 +75,7 @@ const TOAST_WHITELIST = new Set(['streak_milestone', 'answer_evaluated']);
 
 const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isLoading } = useAuth();
   const { openAuthModal } = useAuthModal();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -150,12 +167,14 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
     }
   };
 
-  const handleNotificationClick = async (id: string) => {
+  const handleNotificationClick = async (item: NotificationItem) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
+    );
+    setShowNotifications(false);
+    router.push(getNotificationRoute(item.type));
     try {
-      await userService.markNotificationRead(id);
-      setNotifications((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, read: true } : item))
-      );
+      await userService.markNotificationRead(item.id);
     } catch {
       // Silent fail
     }
@@ -432,7 +451,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 notifications.map((item, index) => (
                   <div
                     key={item.id}
-                    onClick={() => handleNotificationClick(item.id)}
+                    onClick={() => handleNotificationClick(item)}
                     className="rounded-xl px-4 py-3 flex items-start gap-3 cursor-pointer hover:opacity-90 transition-opacity"
                     style={{
                       background: item.read ? '#E9EEF8' : index === 0 ? '#F8F2E8' : '#E9EEF8',
@@ -480,7 +499,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
           {toasts.map((t) => (
             <div
               key={t.id}
-              onClick={() => dismissToast(t.id)}
+              onClick={() => { dismissToast(t.id); handleNotificationClick(t); }}
               role="status"
               className="cursor-pointer rounded-xl bg-white shadow-[0_8px_24px_rgba(15,23,42,0.16)] border border-[#E5E7EB] px-4 py-3 flex gap-3 items-start animate-[slideInRight_0.25s_ease-out]"
             >

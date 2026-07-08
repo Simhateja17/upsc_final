@@ -329,6 +329,82 @@ function ModelAnswerRenderer({ text }: { text: string }) {
   );
 }
 
+type EssayPartKey = 'topicDecoding' | 'modelEssay' | 'valueAdditionRepository';
+
+const ESSAY_PART_LABELS: Record<EssayPartKey, string> = {
+  topicDecoding: 'Topic Decoding',
+  modelEssay: 'Model Essay',
+  valueAdditionRepository: 'Value Addition Repository',
+};
+
+const getEssayModelAnswerParts = (question: any): Array<{ key: EssayPartKey; label: string; text: string }> => {
+  const parts = question?.structuredJson?.essay?.parts;
+  if (!parts || typeof parts !== 'object') return [];
+
+  return (['topicDecoding', 'modelEssay', 'valueAdditionRepository'] as EssayPartKey[])
+    .map((key) => ({
+      key,
+      label: ESSAY_PART_LABELS[key],
+      text: typeof parts[key] === 'string' ? parts[key].trim() : '',
+    }))
+    .filter((part) => part.text.length > 0);
+};
+
+function EssayModelAnswerRenderer({
+  question,
+  essayPartOrder,
+  onToggleOrder,
+}: {
+  question: any;
+  essayPartOrder: 'decode-first' | 'essay-first';
+  onToggleOrder: () => void;
+}) {
+  const parts = getEssayModelAnswerParts(question);
+  if (parts.length === 0) {
+    return (
+      <ModelAnswerRenderer
+        text={question?.modelAnswer || question?.answer || question?.explanation || 'Model answer is being prepared for this question.'}
+      />
+    );
+  }
+
+  const firstTwoKeys: EssayPartKey[] = essayPartOrder === 'essay-first'
+    ? ['modelEssay', 'topicDecoding']
+    : ['topicDecoding', 'modelEssay'];
+  const orderedParts = [...firstTwoKeys, 'valueAdditionRepository']
+    .map((key) => parts.find((part) => part.key === key))
+    .filter(Boolean) as Array<{ key: EssayPartKey; label: string; text: string }>;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-[13px] font-bold uppercase tracking-[0.08em] text-[#6A7282]">
+          Essay Answer Parts
+        </div>
+        {parts.length > 1 && (
+          <button
+            type="button"
+            onClick={onToggleOrder}
+            className="rounded-[10px] border border-[#D8DEE8] bg-white px-3 py-2 text-[13px] font-bold text-[#101828] shadow-sm hover:bg-[#F8FAFC]"
+          >
+            {essayPartOrder === 'decode-first' ? 'Show Essay First' : 'Show Decoding First'}
+          </button>
+        )}
+      </div>
+      <div className="space-y-6">
+        {orderedParts.map((part, index) => (
+          <section key={part.key} className={index > 0 ? 'border-t border-[#E6E8EE] pt-5' : undefined}>
+            <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#D4AF37]">
+              {part.label}
+            </div>
+            <ModelAnswerRenderer text={part.text} />
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const EvalCheckIcon = () => (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <circle cx="12" cy="12" r="10" stroke="#22C55E" strokeWidth="2" />
@@ -474,6 +550,7 @@ export default function PyqPage() {
   const [prelimsSubmitError, setPrelimsSubmitError] = useState<string | null>(null);
   const [showMainsWriteModal, setShowMainsWriteModal] = useState(false);
   const [expandedModelAnswerIds, setExpandedModelAnswerIds] = useState<Set<string>>(new Set());
+  const [essayPartOrder, setEssayPartOrder] = useState<'decode-first' | 'essay-first'>('decode-first');
   const router = useRouter();
   const [mainsBookmarkedIds, setMainsBookmarkedIds] = useState<Set<string>>(new Set());
   const [mainsFlashcardIds, setMainsFlashcardIds] = useState<Set<string>>(new Set());
@@ -1028,6 +1105,7 @@ export default function PyqPage() {
         { label: 'GS Paper 2', value: 'GS Paper 2', icon: '📗', aliases: ['GS-II', 'GS Paper II'], comingSoon: false },
         { label: 'GS Paper 3', value: 'GS Paper 3', icon: '📙', aliases: ['GS-III', 'GS Paper III'], comingSoon: false },
         { label: 'GS Paper 4', value: 'GS Paper 4', icon: '📕', aliases: ['GS-IV', 'GS Paper IV'], comingSoon: false },
+        { label: 'Essay', value: 'Essay', icon: '✍️', aliases: ['Essay Paper'], comingSoon: false },
         { label: 'Optional Paper 1', value: 'Optional Paper 1', icon: '📝', aliases: ['Optional-I', 'Optional Paper I'], comingSoon: true },
         { label: 'Optional Paper 2', value: 'Optional Paper 2', icon: '📝', aliases: ['Optional-II', 'Optional Paper II'], comingSoon: true },
       ];
@@ -2232,13 +2310,10 @@ export default function PyqPage() {
                           <span>Model Answer</span>
                         </div>
 
-                        <ModelAnswerRenderer
-                          text={
-                            q.modelAnswer ||
-                            q.answer ||
-                            q.explanation ||
-                            'Model answer is being prepared for this question.'
-                          }
+                        <EssayModelAnswerRenderer
+                          question={q}
+                          essayPartOrder={essayPartOrder}
+                          onToggleOrder={() => setEssayPartOrder((current) => current === 'decode-first' ? 'essay-first' : 'decode-first')}
                         />
 
                         <div className="flex flex-wrap items-center gap-3 pt-4 mt-2" style={{ borderTop: '1px solid rgba(212,175,55,0.15)' }}>
