@@ -455,7 +455,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                     className="rounded-xl px-4 py-3 flex items-start gap-3 cursor-pointer hover:opacity-90 transition-opacity"
                     style={{
                       background: item.read ? '#E9EEF8' : index === 0 ? '#F8F2E8' : '#E9EEF8',
-                      opacity: item.read ? 0.75 : 1,
+                      opacity: item.read ? 0.5 : 1,
                     }}
                   >
                     <span className="text-[16px] leading-none mt-[2px]">{getNotificationIcon(item.type)}</span>
