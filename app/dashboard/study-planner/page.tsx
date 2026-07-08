@@ -776,7 +776,7 @@ export default function StudyPlannerPage() {
         <div className="flex flex-col xl:flex-row gap-5 p-4 md:p-6">
 
           {/* ═══════ Left Column: Main Content ═══════ */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col">
 
             {/* Hero Banner – matches Figma study planner design */}
             <div
@@ -1450,11 +1450,11 @@ export default function StudyPlannerPage() {
             </div>
 
             {/* ── Bottom Row: Syllabus Coverage + Weekly Goals ── */}
-            <div className="grid grid-cols-1 gap-6 mt-4 xl:grid-cols-[360px_minmax(360px,1fr)]">
+            <div className="grid grid-cols-1 gap-6 mt-4 flex-1 xl:grid-cols-[360px_minmax(360px,1fr)]">
 
               {/* Card 0: Syllabus Coverage */}
               <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] flex flex-col"
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] h-full flex flex-col"
               >
                 {/* Header (stays fixed — indentation preserved up to the pie-chart icon) */}
                 <div className="flex items-center gap-2 mb-4">
@@ -1482,7 +1482,7 @@ export default function StudyPlannerPage() {
                 })()}
 
                 {/* Scrollable subject list */}
-                <div className="flex-1 overflow-y-auto pr-1" style={{ maxHeight: '240px' }}>
+                <div className="flex-1 overflow-y-auto pr-1">
                   <div className="space-y-3">
                     {syllabusCoverage.length === 0 ? (
                       <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '13px' }}>No syllabus data yet.</p>
@@ -1519,7 +1519,7 @@ export default function StudyPlannerPage() {
 
               {/* Card 1: Weekly Goals */}
               <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] h-full flex flex-col"
               >
                 {/* Header */}
                 <div className="flex items-center gap-2 mb-4">
@@ -1550,7 +1550,7 @@ export default function StudyPlannerPage() {
                 })()}
 
                 {/* Goals list */}
-                <div className="space-y-3 mb-5">
+                <div className="flex-1 overflow-y-auto space-y-3 mb-5">
                   {weeklyGoals.length > 0 ? (
                     weeklyGoals.map((goal, i) => (
                       <div key={i} className="flex items-start gap-3 group">
@@ -1853,11 +1853,7 @@ export default function StudyPlannerPage() {
               </div>
 
               <div className="space-y-2">
-                {!hasCompletedTimeDistribution ? (
-                  <div className="font-arimo text-[#9CA3AF] text-center" style={{ fontSize: '13px', paddingTop: '4px' }}>
-                    Complete tasks to see subject-wise distribution
-                  </div>
-                ) : (
+                {!hasCompletedTimeDistribution ? null : (
                   timeByType.map(slice => (
                     <div key={slice.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
