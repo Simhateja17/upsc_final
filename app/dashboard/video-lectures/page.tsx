@@ -753,6 +753,9 @@ export default function VideoLecturesPage() {
               const watchedCount = (watchedBySubject[normalizeSubjectKey(subject.name)] || []).length;
               const totalCount = subject.videoCount ?? 0;
               const progressPct = totalCount > 0 ? Math.min(100, Math.round((watchedCount / totalCount) * 100)) : 0;
+              // Match the shared subject-card fill behaviour (min 10% so a started deck reads as progress).
+              const progressWidth = totalCount > 0 ? Math.max(progressPct, 10) : 0;
+              const toGo = Math.max(0, totalCount - watchedCount);
               const status = progressPct === 100 ? 'Completed' : progressPct > 0 ? 'In progress' : 'Not started';
               const statusColor = progressPct === 100 ? '#16A34A' : progressPct > 0 ? '#2563EB' : '#8A94A6';
               const iconBg = getSubjectMetaStyle(subject.name).bg;
@@ -765,21 +768,22 @@ export default function VideoLecturesPage() {
                   iconBg={iconBg}
                   accentColor={theme.color}
                   title={getSubjectHeroLabel(subject.name)}
-                  meta={`${subject.videoCount ?? 0} videos · ${formatSubjectViews(getSubjectViewCount(subject))} views`}
+                  meta={`${totalCount} videos · ${formatSubjectViews(getSubjectViewCount(subject))} views`}
                   topRight={showNew && (
                     <span
                       className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
-                      style={{ background: '#3B82F6', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
+                      style={{ background: '#FDB022', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
                     >
                       NEW
                     </span>
                   )}
-                  progressPercent={progressPct}
+                  statusLine={status}
+                  statusLineColor={statusColor}
+                  progressPercent={progressWidth}
                   progressColor={theme.color}
-                  footerLeft={status}
-                  footerLeftColor={statusColor}
-                  footerRight={`${progressPct}%`}
-                  footerRightColor={statusColor}
+                  footerLeft={`✓ ${watchedCount} watched`}
+                  footerRight={totalCount === 0 ? 'Start here' : toGo === 0 ? '✓ All done' : `${toGo} to go`}
+                  footerRightColor={totalCount > 0 && toGo === 0 ? '#16A34A' : '#EF4444'}
                 />
               );
             })}
@@ -1285,6 +1289,12 @@ export default function VideoLecturesPage() {
         .vlm-copy-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#0b1226;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
         .vlm-copy-btn:hover{background:#1a2a4a;}
         .vlm-copy-btn.copied{background:#16a34a;}
+        /* Subject cards — shared 1:1 with Flashcards / Mindmaps / Spaced Repetition */
+        .subjhx-card{position:relative;overflow:hidden;border:1px solid var(--subjhx-border);transition:transform .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1),border-color .3s cubic-bezier(.4,0,.2,1);}
+        .subjhx-card:hover{transform:translateY(-3px);box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);border-color:transparent;}
+        .subjhx-accent{position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:opacity .3s;z-index:2;}
+        .subjhx-card:hover .subjhx-accent{opacity:1;}
+        .subjhx-card.is-selected .subjhx-accent{opacity:1;}
       `}</style>
 
       {/* ============ GET PDF POPUP (redirect to Study Material) ============ */}

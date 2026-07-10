@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { mindmapService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import MindmapIntroSections from '@/components/MindmapIntroSections';
 import { UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
@@ -88,9 +89,9 @@ export default function MindmapPage() {
           paddingTop: 'clamp(24px, 3vw, 40px)',
         }}
       >
-      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 pb-12">
+      <div className="w-full max-w-[1120px] mx-auto px-4 sm:px-8 pb-12">
         {!hasFullAccess && (
-          <div className="mb-6 ml-0 sm:ml-11">
+          <div className="mb-6">
             <UpgradePrompt
               title="Mindmaps preview"
               currentTier={entitlements.tier}
@@ -109,7 +110,7 @@ export default function MindmapPage() {
         <SubjectChoiceCardStyles />
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
+          <div className="subject-card-grid">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="h-[190px] animate-pulse rounded-[16px] border border-[#E5E7EB] bg-white" />
             ))}
@@ -120,7 +121,7 @@ export default function MindmapPage() {
             <p className="text-sm">Ask an admin to seed some mindmaps to get started.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
+          <div className="subject-card-grid">
             {visibleSubjects.map((subject) => {
               const subjectName = SUBJECT_NAMES[subject.slug] ?? subject.name;
               const cardStyle = getSubjectCardStyle(subjectName);
@@ -154,6 +155,8 @@ export default function MindmapPage() {
           </div>
         )}
       </div>
+
+      <MindmapIntroSections />
       </div>
     </div>
   );

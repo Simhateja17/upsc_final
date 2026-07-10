@@ -149,6 +149,25 @@ function flattenTree(
   }
 }
 
+/**
+ * Ids of every node that has children, using the same path scheme flattenTree
+ * builds ids with ('root', 'root-0', 'root-0-1', ...). Leaves are omitted,
+ * so this matches the set of ids that are ever added to expandedIds.
+ */
+export function collectExpandableIds(root: TreeNode): Set<string> {
+  const ids = new Set<string>();
+
+  function walk(node: TreeNode, id: string): void {
+    const children = node.children ?? [];
+    if (children.length === 0) return;
+    ids.add(id);
+    children.forEach((child, i) => walk(child, `${id}-${i}`));
+  }
+
+  walk(root, 'root');
+  return ids;
+}
+
 // ---------- Deterministic tree layout ----------
 
 const RANK_GAP = 110;

@@ -159,7 +159,7 @@ export default function SpacedRepetitionPage() {
                 Add Question
               </button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+            <div className="subject-card-grid">
               {SUBJECT_HEALTH.map((s) => {
                 const style = getSubjectCardStyle(s.label);
                 const subjectMeta = getSubjectMetaStyle(s.label);

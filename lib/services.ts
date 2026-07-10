@@ -610,7 +610,17 @@ export const spacedRepService = {
   }) => api.post<any>('/spaced-repetition', data, authConfig()),
   updateItem: (
     id: string,
-    data: { scheduleDay?: number; scheduleDays?: number[]; remindEnabled?: boolean; addedToFlashcard?: boolean }
+    data: {
+      scheduleDay?: number;
+      scheduleDays?: number[];
+      remindEnabled?: boolean;
+      addedToFlashcard?: boolean;
+      questionText?: string;
+      answer?: string;
+      subject?: string;
+      source?: string;
+      sourceType?: string;
+    }
   ) =>
     api.patch<any>(`/spaced-repetition/${id}`, data, authConfig()),
   deleteItem: (id: string) => api.delete<any>(`/spaced-repetition/${id}`, authConfig()),
@@ -866,6 +876,13 @@ export const adminService = {
     api.post<any>('/admin/faqs', data, authConfig()),
   updateFaq: (id: string, data: any) => api.put<any>(`/admin/faqs/${id}`, data, authConfig()),
   deleteFaq: (id: string) => api.delete<any>(`/admin/faqs/${id}`, authConfig()),
+
+  // Custom Tags Management
+  getTags: () => api.get<any>('/admin/tags', authConfig()),
+  createTag: (data: { name: string; color?: string; description?: string; order?: number; isActive?: boolean }) =>
+    api.post<any>('/admin/tags', data, authConfig()),
+  updateTag: (id: string, data: any) => api.put<any>(`/admin/tags/${id}`, data, authConfig()),
+  deleteTag: (id: string) => api.delete<any>(`/admin/tags/${id}`, authConfig()),
 
   // CMS
   getCmsPages: () => api.get<any>('/admin/cms/pages', authConfig()),

@@ -55,7 +55,7 @@ export default function AddSubjectModal({ open, onClose, onCreate }: Props) {
     >
       <div
         className="relative w-full max-w-[560px] rounded-3xl overflow-hidden bg-white"
-        style={{ border: '1px solid #E9EAEE', boxShadow: '0 40px 100px -30px rgba(11,18,38,0.6)' }}
+        style={{ boxShadow: '0 40px 100px -30px rgba(11,18,38,0.6)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
