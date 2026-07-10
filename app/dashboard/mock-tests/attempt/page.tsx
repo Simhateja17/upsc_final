@@ -18,6 +18,7 @@ interface Question {
   options: { label: string; text: string }[];
   correct: string;
   explanation: string;
+  marks?: number | null;
 }
 
 interface MainsAnswer {
@@ -786,7 +787,6 @@ function MockTestAttemptInner() {
   /* ──────────────────────────── MAINS UI ──────────────────────────── */
   if (isMains) {
     const marksPerQ = totalMarks && totalQuestions ? Math.round(totalMarks / totalQuestions) : 15;
-    const minPerQ = Math.max(1, Math.round(marksPerQ * 0.5));
     const isHandwrite = answerMode === 'handwrite';
     const answeredCount = questions.reduce((acc, _, i) => {
       const a = mainsAnswers[i];
@@ -1049,9 +1049,18 @@ function MockTestAttemptInner() {
                       QUESTION {i + 1} OF {totalQuestions}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>⏱️ {minPerQ} min</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>📝 250 words</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>⭐ {marksPerQ} marks</span>
+                      {(() => {
+                        const qMarks = q.marks ?? marksPerQ;
+                        const qWords = qMarks >= 15 ? 250 : qMarks >= 12 ? 200 : qMarks >= 10 ? 150 : 100;
+                        const qMin = Math.max(1, Math.round(qMarks * 0.8));
+                        return (
+                          <>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>⏱️ {qMin} min</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>📝 {qWords} words</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>⭐ {qMarks} marks</span>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
 
