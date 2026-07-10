@@ -44,6 +44,9 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const didTryRefreshRef = useRef(false);
   const hideSidebar = HIDE_SIDEBAR_ROUTES.includes(pathname);
+  // Standalone, full-page routes that render their own header/footer (like the
+  // public /questions/[id] page) and must not show the dashboard chrome.
+  const isBareRoute = /^\/dashboard\/pyq\/essay\/[^/]+$/.test(pathname);
   const isPublicRoute = PUBLIC_DASHBOARD_ROUTES.some((r) => pathname.startsWith(r));
   const userId = user?.id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -182,6 +185,16 @@ export default function DashboardLayout({
           <p className="font-inter text-[#6B7280] text-sm">Loading dashboard...</p>
         </div>
       </div>
+    );
+  }
+
+  if (isBareRoute) {
+    return (
+      <EntitlementsProvider>
+        <div className="min-h-[100dvh] overflow-x-hidden" style={{ background: '#F8F9FB' }}>
+          {children}
+        </div>
+      </EntitlementsProvider>
     );
   }
 

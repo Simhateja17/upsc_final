@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { wordCountChip } from '@/lib/mainsPattern';
 
 export interface MainsParameterScore {
   parameter: string;
@@ -419,6 +420,10 @@ export default function MainsResultsView({
   const marks = data.question?.marks ?? data.maxScore ?? 15;
   const questionText = data.question?.questionText?.trim() || '';
   const questionTitle = data.question?.title?.trim() || questionText;
+  // Word-limit verdict is derived, not stored: it's a pure function of the
+  // student's word count and the question's marks, so it can never drift from
+  // the limit the evaluator graded against.
+  const wordChip = wordCountChip(wordCount, marks);
 
   const hasModelAnswer = Boolean(
     data.curatedModelAnswer ||
@@ -622,11 +627,23 @@ export default function MainsResultsView({
                   <span style={{ fontSize: 18 }}>🎯</span>
                   <h3 style={{ fontWeight: 700, fontSize: 17 }}>Personalised Feedback</h3>
                 </div>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 100, background: '#E8F7F3', fontSize: 12, fontWeight: 600, color: '#0D9488' }}>
-                  Words Count: {wordCount} <span style={{ fontSize: 14 }}>✓</span>
+                <span
+                  title={`UPSC pattern: ${marks}-marker → ${wordChip.limit} words`}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 100, background: wordChip.bg, fontSize: 12, fontWeight: 600, color: wordChip.color }}
+                >
+                  {wordChip.label} <span style={{ fontSize: 14 }}>{wordChip.icon}</span>
                 </span>
               </div>
               <p style={{ fontSize: 13, color: 'var(--muted)' }}>Actionable insights to help you improve, not just a score.</p>
+
+              {wordChip.status !== 'within' && (
+                <div style={{ marginTop: 14, borderRadius: 12, padding: '12px 16px', background: wordChip.bg, border: `1px solid ${wordChip.color}22`, fontSize: 13, lineHeight: 1.6, color: wordChip.color }}>
+                  <strong>Word limit breached.</strong>{' '}
+                  {wordChip.status === 'over'
+                    ? `A ${marks}-mark answer must be about ${wordChip.limit} words — you wrote ${wordCount}. In the real exam the surplus goes unread and eats time meant for other questions. Trim to the limit and prioritise analysis over listing.`
+                    : `A ${marks}-mark answer should be about ${wordChip.limit} words — you wrote only ${wordCount}. At this length the question's demand cannot be fully developed.`}
+                </div>
+              )}
 
               <div className="feedback-grid" style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr auto 1fr', gap: 0, marginTop: 20 }}>
                 {/* What You Did Well */}

@@ -311,13 +311,13 @@ function ModelAnswerMarkdown({ text }: { text: string }) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
-        h1: ({ children }) => <h3 className="mb-2 mt-4 text-[16px] font-bold leading-[24px] text-[#1F2937] first:mt-0">{children}</h3>,
-        h2: ({ children }) => <h3 className="mb-2 mt-4 text-[15px] font-bold leading-[23px] text-[#1F2937] first:mt-0">{children}</h3>,
-        h3: ({ children }) => <h4 className="mb-2 mt-3 text-[14px] font-bold leading-[22px] text-[#1F2937] first:mt-0">{children}</h4>,
-        h4: ({ children }) => <h4 className="mb-1.5 mt-3 text-[13px] font-bold leading-[20px] text-[#374151] first:mt-0">{children}</h4>,
-        p: ({ children }) => <p className="mb-2.5 text-[14px] leading-relaxed text-[#374151] last:mb-0">{children}</p>,
-        ul: ({ children }) => <ul className="mb-2.5 ml-4 list-disc space-y-1.5 text-[13px] leading-relaxed text-[#374151]">{children}</ul>,
-        ol: ({ children }) => <ol className="mb-2.5 ml-4 list-decimal space-y-1.5 text-[13px] leading-relaxed text-[#374151]">{children}</ol>,
+        h1: ({ children }) => <h3 className="mb-2 mt-4 text-[24px] font-bold leading-[24px] text-[#1F2937] first:mt-0">{children}</h3>,
+        h2: ({ children }) => <h3 className="mb-2 mt-4 text-[21px] font-bold leading-[23px] text-[#1F2937] first:mt-0">{children}</h3>,
+        h3: ({ children }) => <h4 className="mb-2 mt-3 text-[18px] font-bold leading-[22px] text-[#1F2937] first:mt-0">{children}</h4>,
+        h4: ({ children }) => <h4 className="mb-1.5 mt-3 text-[16px] font-bold leading-[20px] text-[#374151] first:mt-0">{children}</h4>,
+        p: ({ children }) => <p className="mb-2.5 text-[15.5px] leading-relaxed text-[#374151] last:mb-0">{children}</p>,
+        ul: ({ children }) => <ul className="mb-2.5 ml-4 list-disc space-y-1.5 text-[15.5px] leading-relaxed text-[#374151]">{children}</ul>,
+        ol: ({ children }) => <ol className="mb-2.5 ml-4 list-decimal space-y-1.5 text-[15.5px] leading-relaxed text-[#374151]">{children}</ol>,
         li: ({ children }) => <li className="pl-1">{children}</li>,
         strong: ({ children }) => <strong className="font-bold text-[#1f2937]">{children}</strong>,
         em: ({ children }) => <em className="italic text-[#a17c1a]">{children}</em>,

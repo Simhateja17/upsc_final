@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { userService } from '@/lib/services';
-import { authService } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
 
 type TabId = 'security' | 'notifications' | 'preferences' | 'privacy' | 'delete';
@@ -57,11 +56,6 @@ export default function SettingsPage() {
   const [lastName,  setLastName]  = useState('');
   const [email,     setEmail]     = useState('');
   const [bio,       setBio]       = useState('');
-
-  // Security
-  const [currentPw, setCurrentPw] = useState('');
-  const [newPw,     setNewPw]     = useState('');
-  const [confirmPw, setConfirmPw] = useState('');
 
   // Notifications
   const [nMcq,    setNMcq]    = useState(true);
@@ -186,47 +180,6 @@ export default function SettingsPage() {
     }
   };
 
-  const hasEmail = Boolean(email);
-
-  const savePassword = async () => {
-    if (hasEmail && !currentPw) {
-      notify('Please enter your current password.', false);
-      return;
-    }
-    if (!newPw || !confirmPw) {
-      notify('Please fill in all password fields.', false);
-      return;
-    }
-    if (newPw.length < 8) {
-      notify('New password must be at least 8 characters.', false);
-      return;
-    }
-    if (!/\d/.test(newPw)) {
-      notify('New password must contain a number.', false);
-      return;
-    }
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPw)) {
-      notify('New password must contain a symbol.', false);
-      return;
-    }
-    if (newPw !== confirmPw) {
-      notify('New passwords do not match.', false);
-      return;
-    }
-    setSaving(true);
-    try {
-      await authService.changePassword(email || undefined, currentPw, newPw);
-      notify('Password updated successfully.');
-      setCurrentPw('');
-      setNewPw('');
-      setConfirmPw('');
-    } catch (e: any) {
-      notify(e?.message || 'Could not update password.', false);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const savePrivacy = async () => {
     setSaving(true);
     try {
@@ -317,65 +270,7 @@ export default function SettingsPage() {
 
   const securityView = (
     <div className="rounded-[16px] border border-[#E4E7EC] bg-white p-6 md:p-8" style={cardStyle}>
-      <h2 className="text-[20px] font-bold text-[#101828] mb-6">Security &amp; Password</h2>
-
-      <div className="flex flex-col gap-5 max-w-[580px]">
-        {hasEmail ? (
-          <div>
-            <label className={lbl}>Current password</label>
-            <input
-              className={inp}
-              type="password"
-              placeholder="Enter current password"
-              value={currentPw}
-              onChange={(e) => setCurrentPw(e.target.value)}
-            />
-          </div>
-        ) : (
-          <div className="rounded-[10px] bg-[#EFF6FF] px-4 py-3 flex items-start gap-2">
-            <span className="text-[#1D4ED8] text-[14px] leading-none mt-0.5">ℹ</span>
-            <p className="text-[13px] text-[#475467] leading-[1.5]">
-              You signed in with your phone number. You can set or change your password here without entering a current password. To enable current password verification, link an email to your account in Profile settings.
-            </p>
-          </div>
-        )}
-
-        <div>
-          <label className={lbl}>New password</label>
-          <input
-            className={inp}
-            type="password"
-            placeholder="Min. 8 characters"
-            value={newPw}
-            onChange={(e) => setNewPw(e.target.value)}
-          />
-          <ul className="mt-2 flex flex-col gap-0.5 pl-0 list-none">
-            {['At least 8 characters', 'Contains a number', 'Contains a symbol (@ # $ !)'].map((hint) => (
-              <li key={hint} className="text-[13px] text-[#667085]">{hint}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
-          <label className={lbl}>Confirm new password</label>
-          <input
-            className={inp}
-            type="password"
-            placeholder="Repeat new password"
-            value={confirmPw}
-            onChange={(e) => setConfirmPw(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <button className={primaryBtn} onClick={savePassword} disabled={saving}>
-            {saving ? 'Updating…' : 'Update password'}
-          </button>
-        </div>
-      </div>
-
-      {/* Active Sessions */}
-      <div className="mt-8 pt-6 border-t border-[#F2F4F7]">
+      <div>
         <h3 className="text-[18px] font-bold text-[#101828] mb-1">Active Sessions</h3>
         <p className="text-[13px] text-[#667085] mb-5">Your account can be signed in on one device at a time. Signing in elsewhere signs this device out.</p>
         <div className="flex flex-col gap-3 max-w-[580px]">

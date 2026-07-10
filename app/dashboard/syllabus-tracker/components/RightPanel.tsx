@@ -17,6 +17,7 @@ interface RightPanelProps {
 interface SubjectProgress extends Subject {
   total: number;
   done: number;
+  tracked: number;
   pct: number;
 }
 
@@ -33,18 +34,22 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
   const getSubjectStats = useCallback((subject: Subject) => {
     let total = 0;
     let done = 0;
+    let tracked = 0;
 
     subject.topics.forEach((topic, ti) => {
       topic.subs.forEach((_, si) => {
         total++;
         const key = `${subject.id}__${ti}__${si}`;
-        if (states[key]?.status === 'done') done++;
+        const status = states[key]?.status;
+        if (status && status !== 'none') tracked++;
+        if (status === 'done') done++;
       });
     });
 
     return {
       total,
       done,
+      tracked,
       pct: total > 0 ? Math.round((done / total) * 100) : 0,
     };
   }, [states]);
@@ -86,6 +91,11 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
       ...withMode(syllabusData.optional, 'Optional'),
     ] as Array<SubjectProgress & { stage: string }>;
   }, [getSubjectStats, syllabusData]);
+
+  const subjectsWithProgress = useMemo(
+    () => allSubjects.filter((subject) => subject.tracked > 0),
+    [allSubjects]
+  );
 
   return (
     <>
@@ -272,7 +282,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
             </div>
 
             <div className="space-y-2">
-              {allSubjects.map((subject) => (
+              {subjectsWithProgress.map((subject) => (
                 <div key={subject.id} className="rounded-[10px] border border-[#E5E7EB] p-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -294,9 +304,15 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
                   </div>
                   <div className="text-[11px] text-[#64748B] mt-1">
                     {subject.done} of {subject.total} topics done
+                    {subject.tracked > subject.done && ` · ${subject.tracked - subject.done} active`}
                   </div>
                 </div>
               ))}
+              {subjectsWithProgress.length === 0 && (
+                <div className="rounded-[10px] border border-dashed border-[#CBD5E1] bg-[#F8FAFC] px-4 py-8 text-center text-[13px] text-[#64748B]">
+                  No subject progress yet. Update a topic status to see it here.
+                </div>
+              )}
             </div>
           </div>
         </div>

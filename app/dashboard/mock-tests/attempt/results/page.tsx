@@ -163,6 +163,8 @@ interface MainsPerQuestion {
   evaluatorConclusion?: string | null;
   modelAnswerKeyPoints?: string[];
   modelAnswerContent?: string;
+  curatedModelAnswer?: string | null;
+  curatedModelAnswerKeyPoints?: string[];
 }
 
 
@@ -373,6 +375,8 @@ function MockTestResultsInner() {
             evaluatorConclusion: d.evaluatorConclusion,
             modelAnswerKeyPoints: Array.isArray(d.modelAnswerKeyPoints) ? d.modelAnswerKeyPoints : [],
             modelAnswerContent: d.modelAnswerContent,
+            curatedModelAnswer: d.curatedModelAnswer || null,
+            curatedModelAnswerKeyPoints: Array.isArray(d.curatedModelAnswerKeyPoints) ? d.curatedModelAnswerKeyPoints : [],
           });
         }
         if (!cancelled) {
@@ -760,6 +764,8 @@ function MockTestResultsInner() {
           evaluatorConclusion: q.evaluatorConclusion,
           modelAnswerKeyPoints: q.modelAnswerKeyPoints,
           modelAnswerContent: q.modelAnswerContent,
+          curatedModelAnswer: q.curatedModelAnswer,
+          curatedModelAnswerKeyPoints: q.curatedModelAnswerKeyPoints,
           parameterScores: q.parameterScores,
           question: {
             questionText: q.questionText,

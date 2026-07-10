@@ -21,6 +21,8 @@ interface NotificationItem {
   created_at: string;
 }
 
+type NotificationTab = 'all' | 'unread' | 'alerts';
+
 function getNotificationIcon(type: string): string {
   switch (type) {
     case 'mcq_reminder': return '\u{1F4DD}';
@@ -53,6 +55,29 @@ function getNotificationRoute(type: string): string {
   }
 }
 
+function getNotificationIconStyle(type: string): { background: string; color: string } {
+  switch (type) {
+    case 'streak_alert':
+    case 'streak_milestone':
+    case 'streak_daily':
+      return { background: '#FFF1DC', color: '#E48A00' };
+    case 'answer_evaluated':
+      return { background: '#EAF2FF', color: '#3459E6' };
+    case 'digest':
+      return { background: '#EAFFF3', color: '#0DA95E' };
+    case 'weekly_progress':
+      return { background: '#FFF5D8', color: '#C98A06' };
+    case 'spaced_rep':
+      return { background: '#F3EFFF', color: '#7447DB' };
+    default:
+      return { background: '#FFF0F0', color: '#C83333' };
+  }
+}
+
+function isAlertNotification(type: string): boolean {
+  return ['streak_alert', 'streak_milestone', 'streak_daily', 'mock_test_available', 'answer_evaluated'].includes(type);
+}
+
 function formatRelativeTime(dateStr: string): string {
   const now = new Date();
   const date = new Date(dateStr);
@@ -80,6 +105,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const { openAuthModal } = useAuthModal();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationTab, setNotificationTab] = useState<NotificationTab>('all');
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [toasts, setToasts] = useState<NotificationItem[]>([]);
   const [mounted, setMounted] = useState(false);
@@ -133,6 +159,11 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const notificationModalRef = useRef<HTMLDivElement>(null);
   const isUpgradeActive = pathname === '/dashboard/billing/plans' || pathname.startsWith('/dashboard/billing/plans/');
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const visibleNotifications = notifications.filter((item) => {
+    if (notificationTab === 'unread') return !item.read;
+    if (notificationTab === 'alerts') return isAlertNotification(item.type);
+    return true;
+  });
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -425,71 +456,81 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
       </div>
 
       {isLoggedIn && showNotifications && mounted && createPortal(
-        <div className="fixed inset-0 z-[90] bg-black/35 backdrop-blur-[1px] flex items-center justify-center p-4">
-          <div
-            ref={notificationModalRef}
-            className="w-full max-w-[520px] max-h-[90vh] rounded-2xl bg-white border border-[#E5E7EB] shadow-[0_20px_60px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Notifications"
-          >
-            <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
-              <h2 className="font-inter font-semibold text-[20px] leading-[28px] text-[#334155]">Notifications</h2>
-              <button
-                onClick={() => setShowNotifications(false)}
-                className="w-8 h-8 rounded-md text-[#94A3B8] hover:bg-[#F8FAFC] transition-colors flex items-center justify-center"
-                aria-label="Close notifications"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-3">
-              {notifications.length === 0 ? (
-                <p className="font-inter text-[14px] text-[#94A3B8] text-center py-6">You&apos;re all caught up.</p>
-              ) : (
-                notifications.map((item, index) => (
-                  <div
-                    key={item.id}
-                    onClick={() => handleNotificationClick(item)}
-                    className="rounded-xl px-4 py-3 flex items-start gap-3 cursor-pointer hover:opacity-90 transition-opacity"
-                    style={{
-                      background: item.read ? '#E9EEF8' : index === 0 ? '#F8F2E8' : '#E9EEF8',
-                      opacity: item.read ? 0.5 : 1,
-                    }}
-                  >
-                    <span className="text-[16px] leading-none mt-[2px]">{getNotificationIcon(item.type)}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-inter text-[14px] leading-[20px] text-[#334155] font-medium truncate">{item.title}</p>
-                      {item.body && (
-                        <p className="font-inter text-[12px] leading-[16px] text-[#64748B] mt-0.5 line-clamp-2">{item.body}</p>
-                      )}
-                      <p className="font-inter text-[11px] leading-[16px] text-[#94A3B8] mt-0.5">{formatRelativeTime(item.created_at)}</p>
-                    </div>
-                    {!item.read && (
-                      <span className="mt-1.5 w-2 h-2 rounded-full bg-[#2563eb] flex-shrink-0" />
-                    )}
-                  </div>
-                ))
+        <aside
+          ref={notificationModalRef}
+          className="fixed right-5 top-[calc(clamp(56px,5.78vw,111px)+12px)] z-[90] flex max-h-[calc(100vh-100px)] w-[min(400px,calc(100vw-24px))] flex-col overflow-hidden rounded-[20px] border border-[#E5EAF4] bg-white shadow-[0_28px_70px_rgba(10,17,35,0.22)] max-sm:left-2.5 max-sm:right-2.5 max-sm:w-auto"
+          role="dialog"
+          aria-label="Notifications"
+        >
+          <div className="flex items-center justify-between border-b border-[#EEF1F8] px-5 pb-3.5 pt-[18px]">
+            <div className="flex items-center gap-2.5">
+              <h2 className="font-inter text-[18px] font-black tracking-[-0.03em] text-[#171B2A]">Notifications</h2>
+              {unreadCount > 0 && (
+                <span className="min-w-[22px] rounded-full bg-gradient-to-br from-[#FFBD00] to-[#FF8A00] px-2 py-[3px] text-center text-[11px] font-black text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
               )}
             </div>
-
-            <div className="flex-shrink-0 px-5 py-4 border-t border-[#E5E7EB] flex justify-end gap-2">
-              <button
-                onClick={() => setShowNotifications(false)}
-                className="px-4 py-2 rounded-lg border border-[#D8DFEC] bg-[#F2F5FB] text-[#64748B] font-inter text-[13px] leading-[18px] font-semibold hover:bg-[#E9EEF8] transition-colors"
-              >
-                Close
-              </button>
-              <button
-                onClick={handleMarkAllRead}
-                className="px-4 py-2 rounded-lg border border-[#D8DFEC] bg-[#F2F5FB] text-[#334155] font-inter text-[13px] leading-[18px] font-semibold hover:bg-[#E9EEF8] transition-colors"
-              >
-                Mark all read
-              </button>
-            </div>
+            <button
+              onClick={handleMarkAllRead}
+              className="rounded-lg px-2 py-1 text-[12px] font-black text-[#4F63D9] transition-colors hover:bg-[#EAF0FF]"
+            >
+              Mark all read
+            </button>
           </div>
-        </div>,
+
+          <div className="flex gap-1.5 px-5 pb-1.5 pt-3">
+            {([
+              ['all', 'All'],
+              ['unread', 'Unread'],
+              ['alerts', 'Alerts'],
+            ] as Array<[NotificationTab, string]>).map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setNotificationTab(tab)}
+                className="rounded-full px-3 py-1.5 text-[12px] font-black transition-colors"
+                style={{ background: notificationTab === tab ? '#111933' : '#F0F3FA', color: notificationTab === tab ? '#FFFFFF' : '#626C80' }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="max-h-[380px] overflow-y-auto px-3 pb-3 pt-2 [scrollbar-width:thin] [scrollbar-color:#D5DAE6_transparent]">
+            {visibleNotifications.length === 0 ? (
+              <p className="px-5 py-10 text-center text-[13px] font-bold text-[#A0A8B9]">You&apos;re all caught up.</p>
+            ) : (
+              visibleNotifications.map((item) => {
+                const iconStyle = getNotificationIconStyle(item.type);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleNotificationClick(item)}
+                    className="grid w-full grid-cols-[40px_minmax(0,1fr)_auto] items-start gap-3 rounded-[14px] px-2.5 py-3 text-left transition-all hover:-translate-x-0.5 hover:bg-[#F7F9FD]"
+                    style={{ background: item.read ? 'transparent' : '#F7F9FD' }}
+                  >
+                    <span className="grid h-10 w-10 place-items-center rounded-[12px] text-[18px]" style={iconStyle}>
+                      {getNotificationIcon(item.type)}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[14px] font-black tracking-[-0.01em] text-[#171B2A]">{item.title}</span>
+                      {item.body && <span className="mt-[3px] block line-clamp-2 text-[12.5px] leading-[1.4] text-[#626C80]">{item.body}</span>}
+                    </span>
+                    <span className="mt-[3px] whitespace-nowrap text-[10.5px] font-extrabold text-[#A0A8B9]">{formatRelativeTime(item.created_at)}</span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div className="border-t border-[#EEF1F8] px-5 py-3 text-center">
+            <button type="button" onClick={() => setShowNotifications(false)} className="text-[13px] font-black text-[#27337A] transition-colors hover:text-[#4F63D9]">
+              View all notifications →
+            </button>
+          </div>
+        </aside>,
         document.body,
       )}
 
