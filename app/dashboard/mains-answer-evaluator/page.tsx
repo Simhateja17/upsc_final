@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
 import { mainsEvaluatorService } from '@/lib/services';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 /* ─── Static config ─── */
 
 const PAPERS = [
-  { id: 'gs1', emoji: '🏛️', label: 'GS Paper I', description: 'History · Geography · Society' },
-  { id: 'gs2', emoji: '⚖️', label: 'GS Paper II', description: 'Polity · Governance · IR' },
-  { id: 'gs3', emoji: '📈', label: 'GS Paper III', description: 'Economy · Environment · Sci-Tech' },
-  { id: 'gs4', emoji: '🎯', label: 'GS Paper IV', description: 'Ethics, Integrity & Aptitude' },
+  { id: 'gs1', emoji: '📘', label: 'GS Paper I', description: 'History · Geography · Society' },
+  { id: 'gs2', emoji: '📗', label: 'GS Paper II', description: 'Polity · Governance · IR' },
+  { id: 'gs3', emoji: '📙', label: 'GS Paper III', description: 'Economy · Environment · Sci-Tech' },
+  { id: 'gs4', emoji: '📕', label: 'GS Paper IV', description: 'Ethics, Integrity & Aptitude' },
   { id: 'essay', emoji: '✏️', label: 'Essay', description: 'Paper I · 2 essays' },
   { id: 'optional', emoji: '📚', label: 'Optional', description: 'Choose your optional subject' },
 ];
@@ -190,6 +191,26 @@ export default function MainsAnswerEvaluatorPage() {
 
   const paperLabel = PAPERS.find(p => p.id === selectedPaper)?.label ?? 'GS Paper 1';
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('mainsEvaluatorPrefill');
+      if (!raw) return;
+      sessionStorage.removeItem('mainsEvaluatorPrefill');
+      const prefill = JSON.parse(raw) as { question?: string; paper?: string; answer?: string };
+      if (prefill.question) setQuestion(prefill.question);
+      if (prefill.paper) {
+        setSelectedPaper(prefill.paper);
+        setPaperTouched(true);
+      }
+      if (prefill.answer) {
+        setAnswerText(prefill.answer);
+        setShowTypeAnswer(true);
+      }
+    } catch {
+      // no prefill available — start blank
+    }
+  }, []);
+
   /* ─── Step completion ─── */
   const paperDone = paperTouched;
   const questionDone = question.trim().length > 0; // optional
@@ -325,13 +346,14 @@ export default function MainsAnswerEvaluatorPage() {
                   }}>
                     {PAPERS.map(paper => {
                       const isSelected = selectedPaper === paper.id;
+                      const paperStyle = getSubjectMetaStyle(paper.label);
                       return (
                         <button
                           key={paper.id}
                           onClick={() => { setSelectedPaper(paper.id); setPaperTouched(true); setFocusSubject(''); }}
                           style={{
-                            background: isSelected ? '#EFF6FF' : '#FAFAFA',
-                            border: isSelected ? '1.8px solid #17223E' : '1.6px solid #E5E7EB',
+                            background: isSelected ? paperStyle.bg : '#FAFAFA',
+                            border: isSelected ? `1.8px solid ${paperStyle.accent}` : `1.6px solid ${paperStyle.border}`,
                             borderRadius: '12px',
                             padding: '14px 12px',
                             cursor: 'pointer',
@@ -344,7 +366,7 @@ export default function MainsAnswerEvaluatorPage() {
                             transition: 'all 0.15s ease',
                           }}
                         >
-                          <span style={{ fontSize: '22px', flexShrink: 0, lineHeight: 1 }}>
+                          <span style={{ fontSize: '22px', flexShrink: 0, lineHeight: 1, width: 42, height: 42, borderRadius: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#FFFFFFAA', border: `1px solid ${paperStyle.border}` }}>
                             {paper.emoji}
                           </span>
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -357,7 +379,7 @@ export default function MainsAnswerEvaluatorPage() {
                           </div>
                           <div style={{
                             width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
-                            border: isSelected ? '5px solid #17223E' : '1.5px solid #D1D5DB',
+                            border: isSelected ? `5px solid ${paperStyle.accent}` : '1.5px solid #D1D5DB',
                             background: '#FFF', transition: 'all 0.15s ease',
                           }} />
                         </button>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { mockTestService, bookmarkService } from '@/lib/services';
+import { mockTestService, bookmarkService, flagService } from '@/lib/services';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -137,7 +137,6 @@ function MockTestAttemptInner() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const entitlements = useEntitlements();
-  const [navOpen, setNavOpen] = useState(false);
   const searchParams = useSearchParams();
   const testId = searchParams.get('testId');
   const examMode = searchParams.get('examMode') || 'prelims';
@@ -156,8 +155,6 @@ function MockTestAttemptInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [submitFlowStep, setSubmitFlowStep] = useState(0);
-  const [submitFlowProgress, setSubmitFlowProgress] = useState(40);
   const [totalMarks, setTotalMarks] = useState(0);
 
   /* ─── Quiz State ─── */
@@ -165,6 +162,9 @@ function MockTestAttemptInner() {
   const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
   const [questionStatuses, setQuestionStatuses] = useState<Record<number, QuestionStatus>>({});
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Record<string, boolean>>({});
+  const [skipped, setSkipped] = useState<Record<number, boolean>>({});
+  const [flagged, setFlagged] = useState<Record<string, boolean>>({});
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [examTotalSeconds, setExamTotalSeconds] = useState(0); // full exam duration (for the single timer ring)
   const [examRunning, setExamRunning] = useState(true);        // single exam-wide timer running/paused
@@ -235,6 +235,10 @@ function MockTestAttemptInner() {
           qs.forEach(q => { if (ids.has(String(q.id))) map[String(q.id)] = true; });
           setBookmarkedQuestions(prev => ({ ...map, ...prev }));
         }).catch(() => {});
+        flagService.check('mcq', qs.map(q => String(q.id))).then((fRes: any) => {
+          if (cancelled) return;
+          setFlagged(fRes.data?.flagged || {});
+        }).catch(() => {});
         // Initialize statuses
         const statuses: Record<number, QuestionStatus> = {};
         qs.forEach((_, i) => {
@@ -295,11 +299,33 @@ function MockTestAttemptInner() {
   const handleSelectOption = (label: string) => {
     setSelectedOptions(prev => ({ ...prev, [currentIdx]: label }));
     setQuestionStatuses(prev => ({ ...prev, [currentIdx]: 'answered' }));
+    // Selecting an answer clears any prior "skipped" flag on this question.
+    setSkipped(prev => {
+      if (!prev[currentIdx]) return prev;
+      const next = { ...prev };
+      delete next[currentIdx];
+      return next;
+    });
   };
 
-  const handleMark = () => {
-    setQuestionStatuses(prev => ({ ...prev, [currentIdx]: 'marked' }));
-    handleNext();
+  // Flag = "Mark for Review" (mirrors Daily MCQ Challenge).
+  const handleToggleFlag = async (q: Question) => {
+    const id = String(q.id);
+    const wasFlagged = !!flagged[id];
+    setFlagged(prev => ({ ...prev, [id]: !wasFlagged }));
+    try {
+      await flagService.toggle({ questionType: 'mcq', questionId: id, questionText: q.text });
+    } catch {
+      setFlagged(prev => ({ ...prev, [id]: wasFlagged }));
+    }
+  };
+
+  // Skip = advance, marking the current question skipped if still unanswered.
+  const handleSkip = () => {
+    if (!selectedOptions[currentIdx]) {
+      setSkipped(prev => ({ ...prev, [currentIdx]: true }));
+    }
+    if (currentIdx < totalQuestions - 1) goToQuestion(currentIdx + 1);
   };
 
   const handleToggleBookmark = async (q: Question) => {
@@ -326,14 +352,6 @@ function MockTestAttemptInner() {
     } catch {
       setBookmarkedQuestions(prev => ({ ...prev, [id]: wasBookmarked }));
     }
-  };
-
-  const handleClear = () => {
-    setSelectedOptions(prev => { const n = { ...prev }; delete n[currentIdx]; return n; });
-    setQuestionStatuses(prev => ({
-      ...prev,
-      [currentIdx]: prev[currentIdx] === 'marked' ? 'unattempted' : prev[currentIdx] === 'answered' ? 'unattempted' : prev[currentIdx],
-    }));
   };
 
   const handleNext = () => {
@@ -451,14 +469,12 @@ function MockTestAttemptInner() {
   };
 
   const handleSubmit = async () => {
-    const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
     // Sample mode (no testId): store local results and open results screen
     if (!testId) {
       const total = questions.length;
       const correctCount = correct;
       const wrongCount = wrong;
-      const skippedCount = Math.max(0, total - Object.keys(selectedOptions).length);
+      const skippedTotal = Math.max(0, total - Object.keys(selectedOptions).length);
       const accuracyPct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
       const review = questions.map((q, idx) => {
         const selected = selectedOptions[idx];
@@ -484,7 +500,7 @@ function MockTestAttemptInner() {
             total,
             correct: correctCount,
             wrong: wrongCount,
-            skipped: skippedCount,
+            skipped: skippedTotal,
             accuracyPct,
             scoreText: `${correctCount}/${total}`,
             review,
@@ -495,45 +511,12 @@ function MockTestAttemptInner() {
       }
 
       setSubmitting(true);
-      setSubmitFlowStep(0);
-      setSubmitFlowProgress(40);
-      await wait(650);
-      setSubmitFlowStep(1);
-      setSubmitFlowProgress(58);
-      await wait(650);
-      setSubmitFlowStep(2);
-      setSubmitFlowProgress(76);
-      await wait(650);
-      setSubmitFlowStep(3);
-      setSubmitFlowProgress(90);
-      await wait(550);
-      setSubmitFlowStep(4);
-      setSubmitFlowProgress(100);
-      await wait(450);
       router.push(`/dashboard/mock-tests/attempt/results?mode=sample&title=${encodeURIComponent(title)}`);
       return;
     }
     setSubmitting(true);
-    setSubmitFlowStep(0);
-    setSubmitFlowProgress(40);
     setError(null);
     try {
-      const flow = (async () => {
-        await wait(650);
-        setSubmitFlowStep(1);
-        setSubmitFlowProgress(58);
-        await wait(650);
-        setSubmitFlowStep(2);
-        setSubmitFlowProgress(76);
-        await wait(650);
-        setSubmitFlowStep(3);
-        setSubmitFlowProgress(90);
-        await wait(550);
-        setSubmitFlowStep(4);
-        setSubmitFlowProgress(100);
-        await wait(450);
-      })();
-
       const timeTaken = Math.floor((Date.now() - startTime) / 1000);
       // Build answers map: questionId -> selected option label
       const answersMap: Record<string, string> = {};
@@ -543,95 +526,27 @@ function MockTestAttemptInner() {
           answersMap[String(q.id)] = opt;
         }
       });
-      await Promise.all([mockTestService.submit(testId, answersMap, timeTaken), flow]);
+      await mockTestService.submit(testId, answersMap, timeTaken);
       router.push(`/dashboard/mock-tests/attempt/results?testId=${testId}`);
     } catch (err: any) {
       console.error('Failed to submit test:', err);
       setError(err.message || 'Failed to submit test. Please try again.');
       setSubmitting(false);
-      setSubmitFlowStep(0);
-      setSubmitFlowProgress(40);
     }
   };
 
-  // Stats
-  const answered = Object.values(questionStatuses).filter(s => s === 'answered').length;
-  const marked = Object.values(questionStatuses).filter(s => s === 'marked').length;
+  // Stats — Daily MCQ Challenge semantics: a flagged question counts as
+  // "Mark for Review"; answered/skipped/not-visited are mutually exclusive.
+  const answeredCount = questions.filter((q, i) => selectedOptions[i] && !flagged[String(q.id)]).length;
+  const skippedCount = questions.filter((q, i) => skipped[i] && !selectedOptions[i] && !flagged[String(q.id)]).length;
+  const markedCount = questions.filter((q) => flagged[String(q.id)]).length;
+  const bookmarkedCount = questions.filter((q) => bookmarkedQuestions[String(q.id)]).length;
+  const notVisitedCount = Math.max(0, questions.length - answeredCount - skippedCount - markedCount);
+  // Correct / wrong drive the sample-mode results payload (net score w/ negative marking).
   const correct = Object.entries(selectedOptions).filter(([idx, opt]) => questions[Number(idx)]?.correct === opt).length;
   const wrong = Object.keys(selectedOptions).length - correct;
-  const netScore = correct * 2 - wrong * 0.67;
 
   const currentQ = questions[currentIdx];
-
-  const renderSubmitEvaluationCard = (progressPct = 40, activeStep = 0) => {
-    const evalSteps = [
-      'Reading your handwritten answers',
-      'Identifying key points & arguments',
-      'Comparing with model answers',
-      'Preparing detailed markup & feedback',
-      "Generating Jeet Sir's analysis",
-    ];
-
-    return (
-      <div
-        style={{
-          width: 'min(960px, calc(100vw - 40px))',
-          minHeight: 472,
-          borderRadius: 32,
-          background: 'linear-gradient(154deg, #1D293D 0%, #0F172B 50%, #162456 100%)',
-          boxShadow: '0 20px 12.5px rgba(0,0,0,0.10), 0 8px 5px rgba(0,0,0,0.10), 0 22px 44px rgba(15,23,42,0.18)',
-          padding: '40px clamp(28px, 5vw, 48px) 44px',
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          fontFamily: 'Inter, sans-serif',
-        }}
-      >
-        <div style={{ fontSize: 56, lineHeight: '60px', marginBottom: 24 }}>🧠</div>
-        <h2 style={{ margin: 0, color: '#FFFFFF', fontSize: 'clamp(24px, 3vw, 30px)', lineHeight: '36px', fontWeight: 800, textAlign: 'center' }}>
-          AI is evaluating your answers...
-        </h2>
-        <p style={{ margin: '12px 0 38px', color: '#BEDBFF', fontSize: 16, lineHeight: '24px', textAlign: 'center' }}>
-          This usually takes about 30 seconds
-        </p>
-
-        <div style={{ width: 'min(448px, 100%)', height: 8, borderRadius: 999, background: '#314158', overflow: 'hidden', marginBottom: 32 }}>
-          <div style={{ width: `${Math.min(100, Math.max(8, progressPct))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, #FDC700 0%, #FF6900 100%)', transition: 'width 0.35s ease' }} />
-        </div>
-
-        <div style={{ width: 'min(448px, 100%)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {evalSteps.map((label, index) => {
-            const isDone = index < activeStep || activeStep >= evalSteps.length - 1;
-            const isActive = index === activeStep && activeStep < evalSteps.length - 1;
-            const isHighlighted = isDone || isActive;
-
-            return (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, height: 20 }}>
-                <div style={{ width: 20, height: 20, borderRadius: '50%', background: isHighlighted ? '#FDC700' : '#314158', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {isHighlighted && (
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                      <path d="M3 6.1L5.05 8.15L9 4.2" stroke="#162033" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </div>
-                <span style={{ color: isHighlighted ? '#FDC700' : '#6A7282', fontSize: 14, lineHeight: '20px', fontWeight: isHighlighted ? 600 : 400 }}>
-                  {label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const statusColor: Record<QuestionStatus, string> = {
-    answered: '#00C950',
-    current: '#2B7FFF',
-    marked: '#FDC700',
-    unattempted: '#314158',
-  };
 
   /* ─── Loading State ─── */
   if (loading) {
@@ -1511,469 +1426,279 @@ function MockTestAttemptInner() {
   }
   /* ─────────────────────────── END MAINS UI ─────────────────────────── */
 
-  // Reusable navigator card (inline aside on desktop, bottom-sheet drawer on mobile)
+  // Reusable navigator + session-stats column (mirrors Daily MCQ Challenge)
+  const cardStyle: React.CSSProperties = { background: '#FFFFFF', borderRadius: 16, border: '1px solid #E5E7EB', padding: 16, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)', flexShrink: 0 };
+  const sectionHeading: React.CSSProperties = { fontWeight: 700, fontSize: 11, letterSpacing: '0.14em', color: '#8892A4', textTransform: 'uppercase' };
   const navigatorCard = (
-    <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 14, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>
-        Question Navigator
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Question Navigator card */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={sectionHeading}>Question Navigator</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF' }}>{totalQuestions} total</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+          {questions.map((qu, idx) => {
+            const isCurrent = idx === currentIdx;
+            const isAnswered = !!selectedOptions[idx] && !flagged[String(qu.id)];
+            const isSkipped = !!skipped[idx] && !selectedOptions[idx] && !flagged[String(qu.id)];
+            const isMarked = !!flagged[String(qu.id)];
+            const isBookmarked = !!bookmarkedQuestions[String(qu.id)];
+
+            let bg = '#F4F6FA';
+            let color = '#475067';
+            if (isSkipped) { bg = '#FEE2E2'; color = '#9F1239'; }
+            if (isBookmarked) { bg = '#FFFBEB'; color = '#D97706'; }
+            if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
+            if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
+            if (isCurrent) { bg = '#060C1C'; color = '#FFFFFF'; }
+
+            return (
+              <button
+                key={qu.id ?? idx}
+                onClick={() => goToQuestion(idx)}
+                style={{ height: 38, borderRadius: 10, border: isCurrent ? '1px solid #060C1C' : '1px solid transparent', background: bg, color, fontWeight: 700, fontSize: 13, cursor: 'pointer', boxShadow: isCurrent ? '0 0 0 3px rgba(6,12,28,0.18)' : 'none' }}
+              >
+                {idx + 1}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Color-coded question buttons */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, overflow: 'auto', flex: 1, alignContent: 'flex-start' }}>
-        {questions.map((_, idx) => {
-          const status = questionStatuses[idx] || 'unattempted';
-          const isCurrent = idx === currentIdx;
-          const isAnswered = status === 'answered';
-          const isMarked = status === 'marked';
-
-          let bg = '#F3F4F6';
-          let color = '#6B7280';
-          if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
-          if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
-          if (isCurrent) { bg = '#0F172B'; color = '#FFFFFF'; }
-
-          return (
-            <button
-              key={idx}
-              onClick={() => { goToQuestion(idx); setNavOpen(false); }}
-              style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #E5E7EB', background: bg, color, fontWeight: 700, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}
-            >
-              {idx + 1}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
-      <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 8, marginBottom: 8 }}>
+      {/* Session Stats card */}
+      <div style={cardStyle}>
+        <div style={{ ...sectionHeading, marginBottom: 12 }}>Session Stats</div>
         {[
-          { label: 'Answered', color: '#00C950', value: answered },
-          { label: 'Unanswered', color: '#D1D5DB', value: Math.max(0, totalQuestions - answered - marked) },
-          { label: 'Marked for review', color: '#F59E0B', value: marked },
+          { label: 'Answered', color: '#22C55E', background: '#DCFCE7', value: answeredCount },
+          { label: 'Not Visited', color: '#D1D5DB', background: '#F3F4F6', value: notVisitedCount },
+          { label: 'Skipped', color: '#EF4444', background: '#FEE2E2', value: skippedCount },
+          { label: 'Mark for Review', color: '#F59E0B', background: '#FEF3C7', value: markedCount },
         ].map((row) => (
-          <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <div style={{ width: 14, height: 14, borderRadius: 3, background: row.label === 'Answered' ? '#DCFCE7' : row.label === 'Marked for review' ? '#FEF3C7' : '#F3F4F6', border: `1px solid ${row.color}` }} />
-              <span style={{ fontSize: 11, color: '#374151' }}>{row.label}</span>
+          <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 12, height: 12, borderRadius: 3, background: row.background, border: `1px solid ${row.color}` }} />
+              <span style={{ fontSize: 12, color: '#374151' }}>{row.label}</span>
             </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>{row.value}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#111827' }}>{row.value}</span>
           </div>
         ))}
-      </div>
 
-      <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 10 }}>
-        <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          style={{ width: '100%', height: 38, background: '#0F172B', border: 'none', borderRadius: 10, color: '#FFFFFF', fontWeight: 700, fontSize: 13, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
-        >
-          ✓ Submit Test
-        </button>
+        <div style={{ borderTop: '1px solid #F1F3F5', paddingTop: 12, marginTop: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#111827', marginBottom: 3 }}>Ready to submit?</div>
+          <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 12 }}>
+            {answeredCount} answered · {notVisitedCount} not visited · {skippedCount} skipped · {markedCount} marked
+          </div>
+          <button
+            onClick={() => setShowSubmitConfirm(true)}
+            disabled={submitting}
+            style={{ width: '100%', height: 44, background: 'linear-gradient(180deg, #F5C518, #E6A817)', border: 'none', borderRadius: 12, color: '#0B1426', fontWeight: 800, fontSize: 14, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, boxShadow: '0 6px 16px -6px rgba(245,197,24,0.6)' }}
+          >
+            {submitting ? 'Submitting...' : '✓ Submit Test'}
+          </button>
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : 0, background: '#E8EDF5', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif', overflow: isMobile ? 'visible' : 'hidden' }}>
+    <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : undefined, background: '#FAFBFE', fontFamily: 'Inter, sans-serif', padding: isMobile ? '10px' : '12px 20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: isMobile ? 'auto' : 'hidden' }}>
+      <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0 }}>
 
-      {/* ── Prelims submitting overlay ── */}
-      {submitting && !isMains && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(248,250,252,0.92)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, fontFamily: 'Inter, sans-serif', padding: 24 }}>
-          {renderSubmitEvaluationCard(submitFlowProgress, submitFlowStep)}
-        </div>
-      )}
-
-      {/* ── Sub-header: title left + timer right ── */}
-      <div
-        style={{
-          background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
-          padding: '8px 24px 9px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          {/* Title */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-            <span aria-hidden="true" style={{ fontSize: 14, lineHeight: '16px', flexShrink: 0 }}>🏛️</span>
-            <div style={{ minWidth: 0 }}>
-              <span style={{ fontWeight: 700, fontSize: 13, lineHeight: '18px', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
-                {title}
-              </span>
-              <div style={{ fontWeight: 500, fontSize: 10, lineHeight: '14px', color: 'rgba(255,255,255,0.55)', marginTop: 1 }}>
-                Today Prelims Mock Test · {totalQuestions} Questions · +0.67 per wrong
-              </div>
-            </div>
+        {error && (
+          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <span style={{ fontSize: 14 }}>⚠️</span>
+            <span style={{ fontSize: 14, color: '#991B1B' }}>{error}</span>
           </div>
-          {/* Timer — white text on dark bg */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/timer-icon.png" alt="Timer" style={{ width: 32, height: 32, objectFit: 'contain' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 20, lineHeight: '24px', color: timeLeft < 60 ? '#FB2C36' : '#FFFFFF' }}>
-                {formatTime(timeLeft)}
-              </span>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
-                TIME LEFT
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+        )}
 
-      {/* ── Progress row ── */}
-      <div
-        style={{
-          background: '#FFFFFF',
-          borderBottom: '0.8px solid #D1D9E6',
-          display: 'flex',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 1400,
-            height: 32,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingLeft: 24,
-            paddingRight: 24,
-            boxSizing: 'border-box',
-          }}
-        >
-          <div style={{ flex: 1, marginRight: 16, height: 4, borderRadius: 999, background: '#D1D9E6', overflow: 'hidden' }}>
-            <div
-              style={{
-                width: `${Math.round((answered / Math.max(1, totalQuestions)) * 100)}%`,
-                height: '100%',
-                background: '#00C950',
-                transition: 'width 0.3s ease',
-              }}
-            />
-          </div>
-          <div style={{ fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#364153', whiteSpace: 'nowrap' }}>
-            Q {currentIdx + 1} / {totalQuestions} · {answered} Answered
-          </div>
-          {isMobile && (
-            <button
-              onClick={() => setNavOpen(true)}
-              style={{ marginLeft: 12, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, background: '#0F172B', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '6px 12px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3.5h12M2 8h12M2 12.5h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
-              Questions
-            </button>
-          )}
-        </div>
-      </div>
+        <div style={{ flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16, alignItems: isMobile ? 'stretch' : 'flex-start' }}>
 
-      {/* ── Submit Error Banner ── */}
-      {error && (
-        <div style={{
-          background: '#FEF2F2',
-          border: '1px solid #FECACA',
-          padding: '12px 32px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}>
-          <span style={{ fontSize: '14px' }}>⚠️</span>
-          <span style={{ fontSize: '14px', color: '#991B1B' }}>{error}</span>
-        </div>
-      )}
+          {/* LEFT: question card */}
+          <div style={{ flex: 1, minWidth: 0, width: '100%', display: isMobile ? 'block' : 'flex', minHeight: isMobile ? 'auto' : 0, maxHeight: isMobile ? 'none' : '100%' }}>
+            <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, maxHeight: isMobile ? 'none' : '100%', width: '100%', background: '#FFFFFF', borderRadius: 16, border: '1px solid #ECECF1', boxShadow: '0 4px 24px rgba(0,0,0,0.05)', overflow: isMobile ? 'visible' : 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Body (centered fixed frame) ── */}
-      <div
-        style={{
-          flex: 1,
-          padding: isMobile ? '8px' : '6px 6px 8px',
-          boxSizing: 'border-box',
-          display: 'flex',
-          justifyContent: 'center',
-          overflow: isMobile ? 'visible' : 'hidden',
-          minHeight: 0,
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: isMobile ? '100%' : 'calc(100vw - 96px)',
-            display: 'flex',
-            gap: 12,
-            boxSizing: 'border-box',
-            alignItems: 'flex-start',
-            height: isMobile ? 'auto' : '100%',
-          }}
-        >
-        {/* ─ Question Panel ── */}
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, height: isMobile ? 'auto' : '100%', overflow: isMobile ? 'visible' : 'hidden', width: '100%' }}>
-
-          {/* Question Card */}
-          <div
-            style={{
-              background: '#FFFFFF',
-              borderRadius: 10,
-              border: 'none',
-              padding: isMobile ? '14px 16px' : '16px 24px',
-              boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)',
-              overflow: isMobile ? 'visible' : 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-              flex: isMobile ? 'none' : 1,
-            }}
-          >
-            {/* Subject pill + difficulty pill */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexShrink: 0 }}>
-              {/* Subject pill */}
-              <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[34px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/tag-one.png" alt="Tag" className="w-4 h-4" />
-                <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px]">{currentQ.subject || 'General'}</span>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 22px 11px', flexWrap: 'wrap', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/target-icon.png" alt="" style={{ width: 30, height: 30, objectFit: 'contain', flexShrink: 0 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                    <span style={{ fontFamily: 'Arimo, sans-serif', fontSize: 20, fontWeight: 700, lineHeight: '26px', color: '#101828' }}>{title}</span>
+                    <span style={{ fontFamily: 'Arimo, sans-serif', fontSize: 12.5, color: '#9CA3AF' }}>Prelims Mock Test · {totalQuestions} Questions · +2 correct / −0.67 wrong</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 999, padding: '4px 12px' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#DC2626' }}>Mock Test in Progress</span>
+                </div>
               </div>
-              {/* Difficulty pill */}
-              <div className="flex items-center gap-2 bg-[#FFF7ED] px-4 rounded-full h-[34px]">
-                <span className="font-arimo font-bold text-[#C2410C] text-[14px] leading-[16px]">{currentQ.difficulty || 'Medium'}</span>
-              </div>
-            </div>
+              <div style={{ height: 1, background: '#F1F3F5' }} />
 
-            {/* Question text */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14, flexShrink: 0 }}>
-              <div className="font-arimo font-bold text-[#101828]" style={{ flex: 1, fontSize: 13, lineHeight: '20px' }}>
-                <span style={{ fontWeight: 700 }}>Question {currentIdx + 1} of {totalQuestions}:</span>{' '}
-                <StructuredQuestionRenderer
-                  questionText={currentQ.text}
-                  textStyle={{ fontSize: 13, lineHeight: '20px', color: '#101828' }}
-                />
-              </div>
-            </div>
-
-            {/* Options */}
-            <div className="space-y-2" style={{ overflow: isMobile ? 'visible' : 'hidden', flex: isMobile ? 'none' : 1, minHeight: 0 }}>
-              {currentQ.options.map(opt => {
-                const isSelected = selectedOptions[currentIdx] === opt.label;
-
-                let bg = '#FFFFFF';
-                let border = '2px solid #E2E8F0';
-                let circleColor = '#CBD5E1';
-                let circleBg = 'transparent';
-                let circleText = '#64748B';
-                let circleIcon: string = opt.label;
-                let textColor = '#1E293B';
-                let fontWeight = 400;
-
-                if (isSelected) {
-                  bg = '#EFF6FF';
-                  border = '2px solid #2B7FFF';
-                  circleColor = '#2B7FFF';
-                  circleBg = '#DBEAFE';
-                  circleText = '#2B7FFF';
-                  fontWeight = 600;
-                }
-
-                return (
+              {/* Chips + timer */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 22px 0', flexShrink: 0 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#EFF6FF', border: '1px solid #155DFC33', borderRadius: 999, padding: '5px 12px' }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#155DFC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#155DFC' }}>{currentQ.subject || 'General'}</span>
+                  </div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', background: '#FFF7ED', border: '1px solid #C2410C33', borderRadius: 999, padding: '5px 12px' }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#C2410C' }}>{currentQ.difficulty || 'Medium'}</span>
+                  </div>
+                  {/* Flag = Mark for Review */}
                   <button
-                    key={opt.label}
-                    onClick={() => handleSelectOption(opt.label)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '16px',
-                      padding: '10px 18px',
-                      borderRadius: '12px',
-                      minHeight: 58,
-                      border,
-                      background: bg,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease',
-                      width: '100%',
-                    }}
+                    type="button"
+                    onClick={() => handleToggleFlag(currentQ)}
+                    title={flagged[String(currentQ.id)] ? 'Unmark for review' : 'Mark for review'}
+                    aria-label={flagged[String(currentQ.id)] ? 'Unmark for review' : 'Mark for review'}
+                    style={{ width: 32, height: 32, borderRadius: 9, border: `1px solid ${flagged[String(currentQ.id)] ? '#F5C518' : '#E5E7EB'}`, background: flagged[String(currentQ.id)] ? '#FEF3C7' : '#FFFFFF', color: flagged[String(currentQ.id)] ? '#D97706' : '#6B7280', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
                   >
-                    <span style={{
-                      width: '30px',
-                      height: '30px',
-                      borderRadius: '50%',
-                      border: `2px solid ${circleColor}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: '14px',
-                      color: circleText,
-                      flexShrink: 0,
-                      background: circleBg,
-                    }}>
-                      {circleIcon}
-                    </span>
-                    <span style={{ fontSize: '14px', color: textColor, fontWeight }}>
-                      {opt.text}
-                    </span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill={flagged[String(currentQ.id)] ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                      <line x1="4" y1="22" x2="4" y2="15" />
+                    </svg>
                   </button>
-                );
-              })}
-            </div>
+                  {/* Bookmark */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleBookmark(currentQ)}
+                    title={bookmarkedQuestions[String(currentQ.id)] ? 'Remove bookmark' : 'Bookmark question'}
+                    aria-label={bookmarkedQuestions[String(currentQ.id)] ? 'Remove bookmark' : 'Bookmark question'}
+                    style={{ width: 32, height: 32, borderRadius: 9, border: `1px solid ${bookmarkedQuestions[String(currentQ.id)] ? '#BFDBFE' : '#E5E7EB'}`, background: bookmarkedQuestions[String(currentQ.id)] ? '#EFF6FF' : '#FFFFFF', color: bookmarkedQuestions[String(currentQ.id)] ? '#1E3A8A' : '#6B7280', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill={bookmarkedQuestions[String(currentQ.id)] ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </button>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/timer-icon.png" alt="Timer" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <span style={{ fontWeight: 800, fontSize: 19, lineHeight: '22px', color: timeLeft < 60 ? '#EF4444' : '#1A1D23' }}>{formatTime(timeLeft)}</span>
+                    <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>Time Left</span>
+                  </div>
+                </div>
+              </div>
 
-            {/* Explanations are hidden during the quiz and revealed only on the
-                results screen, so students focus on finishing first. */}
-          </div>
+              {/* Content: question (fills) + options (2-col grid) */}
+              <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: 'column', padding: '12px 22px 14px', overflow: isMobile ? 'visible' : 'hidden' }}>
+                <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', fontSize: 14, lineHeight: '23px', color: '#1A1D23', paddingRight: 6 }}>
+                  <span style={{ fontWeight: 700 }}>Question {currentIdx + 1}: </span>
+                  <StructuredQuestionRenderer
+                    questionText={currentQ.text}
+                    textStyle={{ fontSize: 14, lineHeight: '23px', color: '#1A1D23' }}
+                  />
+                </div>
+                <div style={{ flexShrink: 0, marginTop: 12, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
+                  {currentQ.options.map((option) => {
+                    const optKey = option.label;
+                    const isSelected = selectedOptions[currentIdx] === optKey;
+                    return (
+                      <button
+                        key={optKey}
+                        onClick={() => handleSelectOption(optKey)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderRadius: 12, minHeight: 50,
+                          border: isSelected ? '1.5px solid #0B1426' : '1px solid #E5E7EB',
+                          background: isSelected ? '#0B1426' : '#FFFFFF',
+                          cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s ease', width: '100%',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                        }}
+                      >
+                        <span style={{
+                          width: 30, height: 30, borderRadius: 8,
+                          border: 'none',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontWeight: 700, fontSize: 13, color: isSelected ? '#0B1426' : '#475067',
+                          background: isSelected ? '#F5C518' : '#F1F4F9', flexShrink: 0,
+                        }}>{optKey}</span>
+                        <span style={{ fontSize: 13.5, color: isSelected ? '#FFFFFF' : '#1E293B', fontWeight: isSelected ? 600 : 400 }}>{option.text}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-          {/* Controls Bar */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: '#FFFFFF',
-            borderRadius: 10,
-            padding: '8px 12px',
-            border: '1px solid #E5E7EB',
-            flexShrink: 0,
-            position: isMobile ? 'sticky' : 'static',
-            bottom: isMobile ? 8 : undefined,
-            zIndex: isMobile ? 5 : undefined,
-            boxShadow: isMobile ? '0 -2px 8px rgba(0,0,0,0.06)' : undefined,
-          }}>
-            {/* Left actions */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <button
-                onClick={handleMark}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  color: '#FB2C36',
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  lineHeight: '20px',
-                }}
-              >
-                 Mark
-              </button>
-              <button
-                onClick={handleClear}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  width: '52px',
-                  height: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#6A7282',
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  lineHeight: '20px',
-                  letterSpacing: '0px',
-                  padding: 0,
-                }}
-              >
-                 Clear
-              </button>
-              <button
-                onClick={() => handleToggleBookmark(currentQ)}
-                title={bookmarkedQuestions[String(currentQ.id)] ? 'Remove bookmark' : 'Bookmark this question'}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  color: bookmarkedQuestions[String(currentQ.id)] ? '#C2410C' : '#6A7282',
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  lineHeight: '20px',
-                }}
-              >
-                <span style={{ fontSize: 15 }}>{bookmarkedQuestions[String(currentQ.id)] ? '★' : '☆'}</span>
-                {bookmarkedQuestions[String(currentQ.id)] ? 'Bookmarked' : 'Bookmark'}
-              </button>
-              <button
-                onClick={handleNext}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  color: '#155DFC',
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  lineHeight: '20px',
-                }}
-              >
-                Skip
-              </button>
-            </div>
+              {/* Bottom nav */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 22px', borderTop: '1px solid #F1F3F5', flexWrap: 'wrap', flexShrink: 0 }}>
+                <button
+                  onClick={handlePrev}
+                  disabled={currentIdx === 0}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 10, padding: '9px 18px', fontSize: 13, fontWeight: 600, color: currentIdx === 0 ? '#C7CDD6' : '#374151', cursor: currentIdx === 0 ? 'not-allowed' : 'pointer' }}
+                >
+                  ← Previous
+                </button>
 
-            {/* Right nav */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button
-                onClick={handlePrev}
-                disabled={currentIdx === 0}
-                style={{
-                  background: 'none',
-                  border: '1.5px solid #CBD5E1',
-                  borderRadius: '8px',
-                  padding: '5px 13px',
-                  color: currentIdx === 0 ? '#CBD5E1' : '#334155',
-                  cursor: currentIdx === 0 ? 'not-allowed' : 'pointer',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                }}
-              >
-                ← Prev
-              </button>
-              <button
-                onClick={handleNext}
-                disabled={currentIdx === totalQuestions - 1}
-                style={{
-                  background: currentIdx === totalQuestions - 1 ? '#1E293B' : '#2B7FFF',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '5px 18px',
-                  color: '#FFFFFF',
-                  cursor: currentIdx === totalQuestions - 1 ? 'not-allowed' : 'pointer',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                }}
-              >
-                Next →
-              </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <button
+                    onClick={handleSkip}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 10, padding: '9px 20px', fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer' }}
+                  >
+                    Skip
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (currentIdx === totalQuestions - 1) {
+                        setShowSubmitConfirm(true);
+                      } else {
+                        handleNext();
+                      }
+                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#0B1426', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: 'pointer' }}
+                  >
+                    {currentIdx === totalQuestions - 1 ? 'Finish' : 'Save & Next →'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </main>
 
-        {/* ── Right panel (Navigator card) — desktop only ── */}
-        {!isMobile && (
-          <aside style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {/* RIGHT: navigator + session stats */}
+          <aside style={{ width: isMobile ? '100%' : 312, flexShrink: 0, minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', paddingRight: 2 }}>
             {navigatorCard}
           </aside>
-        )}
         </div>
       </div>
 
-      {/* ── Mobile navigator bottom-sheet drawer ── */}
-      {isMobile && navOpen && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'flex-end' }}
-          onClick={() => setNavOpen(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ width: '100%', maxHeight: '80vh', background: '#FFFFFF', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 14, boxShadow: '0 -8px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column' }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-              <div style={{ width: 40, height: 4, borderRadius: 999, background: '#D1D5DB' }} />
+      {/* Submit confirmation modal */}
+      {showSubmitConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 24, padding: '32px 36px', maxWidth: 460, width: '100%', textAlign: 'center', boxShadow: '0px 20px 40px -10px rgba(0,0,0,0.25)' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>📋</div>
+            <h2 style={{ fontFamily: 'Arimo, sans-serif', fontWeight: 800, letterSpacing: '-0.01em', color: '#17223E', fontSize: 22, marginBottom: 8 }}>Submit Test?</h2>
+            <p style={{ fontFamily: 'Arimo, sans-serif', fontWeight: 500, color: '#475467', fontSize: 14, marginBottom: 20 }}>
+              Are you sure you want to submit your answers?
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
+              <div style={{ background: '#F3F4F6', borderRadius: 12, padding: '14px 8px' }}>
+                <div style={{ fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: 24, color: '#22C55E' }}>{answeredCount}</div>
+                <div style={{ fontFamily: 'Arimo, sans-serif', fontSize: 12, color: '#6B7280', marginTop: 2 }}>Answered</div>
+              </div>
+              <div style={{ background: '#F3F4F6', borderRadius: 12, padding: '14px 8px' }}>
+                <div style={{ fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: 24, color: '#F59E0B' }}>{skippedCount}</div>
+                <div style={{ fontFamily: 'Arimo, sans-serif', fontSize: 12, color: '#6B7280', marginTop: 2 }}>Skipped</div>
+              </div>
+              <div style={{ background: '#F3F4F6', borderRadius: 12, padding: '14px 8px' }}>
+                <div style={{ fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: 24, color: '#F59E0B' }}>{bookmarkedCount}</div>
+                <div style={{ fontFamily: 'Arimo, sans-serif', fontSize: 12, color: '#6B7280', marginTop: 2 }}>Bookmarked</div>
+              </div>
             </div>
-            {navigatorCard}
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => setShowSubmitConfirm(false)}
+                style={{ flex: 1, height: 48, background: '#F3F4F6', border: 'none', borderRadius: 12, color: '#101828', fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+              >
+                Review More
+              </button>
+              <button
+                onClick={() => { setShowSubmitConfirm(false); handleSubmit(); }}
+                disabled={submitting}
+                style={{ flex: 1, height: 48, background: '#101828', border: 'none', borderRadius: 12, color: '#FFFFFF', fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: 15, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
+              >
+                Submit Now
+              </button>
+            </div>
           </div>
         </div>
       )}

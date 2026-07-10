@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { mockTestService, flashcardService, spacedRepService } from '@/lib/services';
+import { mockTestService, flashcardService, spacedRepService, leaderboardService } from '@/lib/services';
 
 interface Question {
   id: number;
@@ -126,6 +126,8 @@ interface ResultsData {
   netScore: string | number;
   scorePct: number;
   perfLabel: string;
+  timeTaken?: number;
+  durationSeconds?: number;
   subjectStats: SubjectStat[];
   analysis: AnalysisItem[];
   testLabel?: string;
@@ -262,6 +264,8 @@ function MockTestResultsInner() {
   const [modelOpen, setModelOpen] = useState(false);    // mains: model answer modal
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+  // Real leaderboard rank (prelims/MCQ bucket) — powers the Rank stat tile.
+  const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank: number; realRankedCount: number } | null>(null);
 
   /* ─── Next-steps tab state ─── */
   // Both modes open on the review/answers view; "Next" reveals the recommendations.
@@ -390,6 +394,14 @@ function MockTestResultsInner() {
     return () => { cancelled = true; };
   }, [isMains, testId]);
 
+  // Real leaderboard rank for this aspirant (all-time, MCQ/prelims bucket).
+  useEffect(() => {
+    if (isMains) return;
+    leaderboardService.getMyRank('all')
+      .then(res => setMyRank(res.data || null))
+      .catch(() => setMyRank(null));
+  }, [isMains]);
+
   useEffect(() => {
     if (isMains) return;
     if (mode === 'sample') {
@@ -405,6 +417,8 @@ function MockTestResultsInner() {
           netScore: (Number(data.correct ?? 0) * 2 - Number(data.wrong ?? 0) * 0.67).toFixed(2),
           scorePct: data.accuracyPct ?? 0,
           perfLabel: 'Keep Going — Every Attempt Makes You Better!',
+          timeTaken: 0,
+          durationSeconds: 0,
           subjectStats: [],
           analysis: [],
           testLabel: title,
@@ -445,6 +459,10 @@ function MockTestResultsInner() {
           ?? (correct + wrong + skipped > 0 ? correct + wrong + skipped : (data.questions?.length ?? 0));
         const netScore = data.netScore ?? data.score ?? (correct * 2 - wrong * 0.67).toFixed(2);
         const scorePct = data.scorePct ?? data.scorePercentage ?? data.accuracy ?? (total > 0 ? Math.round((correct / total) * 100) : 0);
+        const timeTaken = Number(data.timeTaken ?? data.time_taken ?? data.timeTakenSeconds ?? data.time_taken_seconds ?? 0) || 0;
+        const rawDuration = Number(data.duration ?? data.durationSeconds ?? data.duration_seconds ?? 0) || 0;
+        // DB may store duration in minutes; normalize to seconds.
+        const durationSeconds = rawDuration > 0 && rawDuration <= 240 ? Math.round(rawDuration * 60) : Math.round(rawDuration);
 
         const perfLabel = data.perfLabel ?? data.performanceLabel ?? (
           scorePct >= 80 ? 'Excellent Work!' :
@@ -497,6 +515,8 @@ function MockTestResultsInner() {
           netScore: typeof netScore === 'number' ? netScore.toFixed(2) : netScore,
           scorePct,
           perfLabel,
+          timeTaken,
+          durationSeconds,
           subjectStats,
           analysis,
           testLabel: data.testLabel ?? 'Prelims · Daily MCQ',
@@ -1248,9 +1268,53 @@ function MockTestResultsInner() {
   }
 
   /* ─── Prelims Results View ─── */
-  const { total, correct, wrong, skipped, scorePct } = results!;
+  const { total, correct, wrong, scorePct } = results!;
   const sample = (results as any)._sample as any | undefined;
   const showConfetti = scorePct > 50;
+
+  /* ─── Daily-MCQ-style completion card derivations ─── */
+  const timeTaken = Math.max(0, Math.round(results!.timeTaken ?? 0));
+  const durationSeconds = Math.max(0, Math.round(results!.durationSeconds ?? 0));
+  const timeMinutes = Math.floor(timeTaken / 60);
+  const timeSeconds = timeTaken % 60;
+  const durationLabel = durationSeconds > 0 ? `of ${Math.round(durationSeconds / 60)} min` : 'this attempt';
+  const attemptedCount = correct + wrong;
+  const speedPerQ = attemptedCount > 0 ? (timeTaken / 60 / attemptedCount).toFixed(2) : '0';
+  // Real leaderboard rank (prelims/MCQ bucket). Falls back to an unlock hint.
+  const rankUnlocked = !!myRank?.isRankUnlocked && !!myRank?.mcqRank;
+  const rankedTotal = myRank?.realRankedCount ?? 0;
+  const rankLabel = rankUnlocked
+    ? `#${(myRank!.mcqRank as number).toLocaleString('en-IN')}`
+    : myRank && myRank.attemptsToUnlockRank > 0
+      ? `${myRank.attemptsToUnlockRank} more to unlock`
+      : 'Rankings updating...';
+  const rankSubLabel = rankUnlocked && rankedTotal > 0
+    ? `of ${rankedTotal.toLocaleString('en-IN')} ranked`
+    : 'among aspirants today';
+  const rankBarPct = rankUnlocked && rankedTotal > 0
+    ? Math.max(4, Math.min(100, Math.round((1 - ((myRank!.mcqRank as number) - 1) / rankedTotal) * 100)))
+    : 0;
+  // Share Score: native share sheet with a clipboard fallback.
+  const handleShareScore = async () => {
+    const shareText = `I scored ${correct}/${total} (${scorePct}%) on a ${title} prelims mock on RiseWithJeet!`;
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+    try {
+      if (typeof navigator !== 'undefined' && (navigator as any).share) {
+        await (navigator as any).share({ title: 'My Mock Test Score', text: shareText, url: shareUrl });
+        return;
+      }
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(`${shareText} ${shareUrl}`.trim());
+        setToast({ show: true, message: 'Score copied to clipboard!', type: 'success' });
+        setTimeout(() => setToast(t => ({ ...t, show: false })), 2000);
+      }
+    } catch {
+      /* user dismissed the share sheet — no-op */
+    }
+  };
+  const retakeHref = mode === 'sample'
+    ? `/dashboard/mock-tests/attempt?mode=sample&title=${encodeURIComponent(title)}`
+    : `/dashboard/mock-tests/attempt?testId=${testId}`;
 
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif' }}>
@@ -1303,7 +1367,7 @@ function MockTestResultsInner() {
       )}
       <div
         style={{
-          width: 'min(100%, 1280px)',
+          width: 'min(100%, 868px)',
           minHeight: 955.9750366210938,
           marginTop: 52,
           marginLeft: 'auto',
@@ -1321,67 +1385,185 @@ function MockTestResultsInner() {
           ← Back to Dashboard
         </button>
 
-        {/* Score header card — always visible */}
+        {/* Completion card — mirrors Daily MCQ Challenge results (same narrow, centered width) */}
         <div
           style={{
+            width: 'clamp(640px, 42vw, 820px)',
+            maxWidth: '100%',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            background: '#FFFFFF',
             borderRadius: 16,
-            background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
-            padding: '28px 32px',
-            textAlign: 'center',
-            color: '#FFFFFF',
+            border: '1px solid #ECECF1',
+            padding: 'clamp(1.25rem,1.6vw,2rem) clamp(1.4rem,1.8vw,2.2rem)',
             marginBottom: 18,
+            boxShadow: '0 26px 60px -30px rgba(15,23,42,0.24), 0 12px 28px -20px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.9)',
           }}
         >
-          <div style={{ width: 96, height: 96, borderRadius: 999, background: '#FFFFFF', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ color: '#0F172B', fontWeight: 800, fontSize: 26, lineHeight: '28px' }}>
-              {correct}/{total}
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280' }}>Score</div>
-            </div>
+          <style>{`
+            .dmscore-card{position:relative;border-radius:16px;padding:clamp(12px,1vw,18px);overflow:hidden;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;border:1px solid #E5E7EB;box-shadow:0 1px 2px rgba(16,24,40,.04),0 6px 18px -10px rgba(16,24,40,.08);}
+            .dmscore-card:hover{transform:translateY(-2px);border-color:#D1D5DB;box-shadow:0 1px 2px rgba(16,24,40,.05),0 14px 28px -14px rgba(16,24,40,.15);}
+            .dmscore-card::after{content:"";position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.55),rgba(255,255,255,0));pointer-events:none;}
+            .dmscore-accuracy{border-color:#DCE8E1;background:linear-gradient(160deg,#FBFDFC 0%,#F1F7F4 100%);}
+            .dmscore-time{border-color:#DCE2EC;background:linear-gradient(160deg,#FBFCFE 0%,#F1F4F9 100%);}
+            .dmscore-speed{border-color:#E8DFCE;background:linear-gradient(160deg,#FDFCFA 0%,#F8F4EE 100%);}
+            .dmscore-rank{border-color:#E2DAEC;background:linear-gradient(160deg,#FCFBFD 0%,#F4F1F8 100%);}
+            .dmscore-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;}
+            .dmscore-icon-accuracy{background:#ECF5F0;color:#3F8C6E;}
+            .dmscore-icon-time{background:#EEF2F8;color:#4A6B96;}
+            .dmscore-icon-speed{background:#F6F0E6;color:#9C7A3F;}
+            .dmscore-icon-rank{background:#F1EDF6;color:#7A6699;}
+            .dmscore-bar{height:5px;border-radius:999px;background:rgba(255,255,255,.6);overflow:hidden;position:relative;z-index:1;}
+            .dmscore-bar>span{display:block;height:100%;border-radius:999px;transition:width .4s ease;}
+            .qw-review-btn{color:#0B1426;background:radial-gradient(120% 140% at 100% 0%, rgba(245,197,24,.18) 0%, rgba(245,197,24,0) 55%),linear-gradient(135deg,#FBF6E7 0%,#F4ECD8 55%,#EFE3BE 100%);box-shadow:0 10px 22px -14px rgba(107,83,32,.45), inset 0 1px 0 rgba(255,255,255,.6);border:1px solid #E4D8B5;letter-spacing:.01em;}
+            .qw-review-btn::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#F5C518,#B7860B);border-radius:12px 0 0 12px;}
+            .qw-review-btn:hover{filter:brightness(1.02);transform:translateY(-1px);box-shadow:0 16px 30px -16px rgba(107,83,32,.55);}
+            .qw-badge{position:relative;z-index:1;background:#0B1426;color:#F5C518;font-size:10.5px;font-weight:800;letter-spacing:.14em;padding:3px 8px;border-radius:999px;border:1px solid #0B1426;}
+            .mcq-act{display:flex;align-items:center;gap:clamp(8px,0.8vw,12px);padding:clamp(10px,0.85vw,14px) clamp(12px,1vw,16px);border-radius:14px;font-weight:700;font-size:clamp(12px,0.78vw,14px);border:1px solid transparent;cursor:pointer;transition:all .18s;background:#fff;width:100%;text-align:left;}
+            .mcq-act:hover{transform:translateY(-1px);box-shadow:0 10px 24px -16px rgba(11,20,38,.18);}
+            .mcq-act .ic{width:clamp(28px,2.2vw,34px);height:clamp(28px,2.2vw,34px);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+            .mcq-act-share{background:#EDF2EE;color:#34503F;border-color:#D6DFD9;}
+            .mcq-act-share .ic{background:#fff;color:#34503F;}
+            .mcq-act-download{background:#E8EDF5;color:#2E3C5C;border-color:#D2DAE8;}
+            .mcq-act-download .ic{background:#fff;color:#2E3C5C;}
+            .mcq-act-retake{background:#F4E2DD;color:#8A4A39;border-color:#E8CFC7;}
+            .mcq-act-retake .ic{background:#fff;color:#8A4A39;}
+            .mcq-act-next{background:linear-gradient(135deg,#0B1426,#1A2848);color:#fff;border-color:#0B1426;}
+            .mcq-act-next .ic{background:#F5C518;color:#0B1426;}
+            .mcq-act-dash{background:#FBFAF7;color:#3A4357;border-color:#ECE7DD;}
+            .mcq-act-dash .ic{background:#fff;color:#3A4357;}
+          `}</style>
+
+          {/* Completed badge */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'clamp(0.5rem,0.8vw,0.85rem)' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 999, fontWeight: 700, background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '4px 12px', fontSize: 12, color: '#047857' }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+              Test Completed
+            </span>
           </div>
 
-          <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Keep Going, Every Attempt Makes You Better!</div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 14 }}>
-            {title} · Mock Test · {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
+          {/* Heading */}
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(0.9rem,1.2vw,1.25rem)' }}>
+            <h1 style={{ fontWeight: 800, letterSpacing: '-0.02em', color: '#17223E', fontSize: 28, lineHeight: '34px', margin: '0 0 6px' }}>
+              Prelims Mock Test Completed!
+            </h1>
+            <p style={{ fontWeight: 500, color: '#475467', fontSize: 14, lineHeight: '20px', margin: 0 }}>
+              Great effort! Here{'\''}s your performance analysis
+            </p>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 18 }}>
-            <StatMini label="CORRECT" value={correct} color="#00C950" />
-            <StatMini label="WRONG" value={wrong} color="#FB2C36" />
-            <StatMini label="SKIPPED" value={skipped} color="#60A5FA" />
-            <StatMini label="ACCURACY" value={`${scorePct}%`} color="#FFFFFF" />
+          {/* Score ring */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'clamp(1rem,1.5vw,1.4rem)' }}>
+            {(() => {
+              const size = 140;
+              const stroke = 11;
+              const radius = (size - stroke) / 2;
+              const circ = 2 * Math.PI * radius;
+              const dash = (Math.max(0, Math.min(100, scorePct)) / 100) * circ;
+              return (
+                <div style={{ position: 'relative', width: size, height: size }}>
+                  <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+                    <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#E5E7EB" strokeWidth={stroke} />
+                    <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#10B981" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${dash} ${circ}`} />
+                  </svg>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1, fontSize: 38, color: '#17223E' }}>
+                      {correct}<span style={{ color: '#9CA3AF', fontSize: '0.58em' }}>/{total}</span>
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', color: '#10B981', marginTop: 6, textTransform: 'uppercase' }}>
+                      Score · {scorePct}%
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
-            <button
-              type="button"
-              onClick={() => router.push(`/dashboard/mock-tests/attempt?mode=sample&title=${encodeURIComponent(title)}`)}
-              style={{ height: 36, borderRadius: 10, padding: '0 16px', border: 'none', background: 'linear-gradient(89.92deg, #F1A901 0.07%, #FD7302 99.93%)', color: '#0B1120', fontWeight: 800, cursor: 'pointer' }}
-            >
-              ↻ Reattempt
-            </button>
+          {/* Stat tiles */}
+          <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: 'clamp(0.65rem,0.9vw,1rem)', marginBottom: 'clamp(0.85rem,1.2vw,1.15rem)' }}>
+            {[
+              { label: 'Accuracy', value: `${scorePct}%`, sub: 'this attempt', valueSize: 26, cls: 'dmscore-accuracy', iconCls: 'dmscore-icon-accuracy', barColor: '#7FB29A', barPct: Math.max(0, Math.min(100, Math.round(scorePct))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>) },
+              { label: 'Time Taken', value: `${timeMinutes}m ${timeSeconds}s`, sub: durationLabel, valueSize: 26, cls: 'dmscore-time', iconCls: 'dmscore-icon-time', barColor: '#8AA3C4', barPct: durationSeconds > 0 ? Math.max(0, Math.min(100, Math.round((timeTaken / durationSeconds) * 100))) : 0, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg>) },
+              { label: 'Speed', value: `${speedPerQ} min/Q`, sub: 'Avg per question', valueSize: 22, cls: 'dmscore-speed', iconCls: 'dmscore-icon-speed', barColor: '#C9A876', barPct: Math.max(0, Math.min(100, Math.round(parseFloat(speedPerQ) * 100))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="currentColor" stroke="none"/></svg>) },
+              { label: 'Rank', value: rankLabel, sub: rankSubLabel, valueSize: 22, cls: 'dmscore-rank', iconCls: 'dmscore-icon-rank', barColor: '#A99BC4', barPct: rankBarPct, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4H3v2a3 3 0 0 0 3 3"/><path d="M19 4h2v2a3 3 0 0 1-3 3"/><path d="M12 13v4"/><path d="M8 21h8"/><path d="M9 17h6l1 4H8z" fill="currentColor" stroke="none"/></svg>) },
+            ].map((s) => (
+              <div key={s.label} className={`dmscore-card ${s.cls}`}>
+                <div className={`dmscore-icon ${s.iconCls}`}>{s.icon}</div>
+                <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', color: '#64748B', textTransform: 'uppercase', marginTop: 10, position: 'relative', zIndex: 1 }}>{s.label}</div>
+                <div style={{ fontWeight: 800, letterSpacing: '-0.02em', color: '#0F172A', fontSize: s.valueSize, lineHeight: 1.1, marginTop: 4, position: 'relative', zIndex: 1 }}>{s.value}</div>
+                <div className="dmscore-bar" style={{ marginTop: 8 }}><span style={{ width: `${s.barPct}%`, background: s.barColor }} /></div>
+                <div style={{ fontSize: 12, color: '#64748B', marginTop: 8, position: 'relative', zIndex: 1 }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Question-wise review + actions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.65rem,0.85vw,0.9rem)' }}>
             <button
               type="button"
               onClick={() => {
                 setActiveTab('review');
                 setTimeout(() => {
-                  const el = document.getElementById('mt-full-analysis');
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  else router.push('/dashboard/test-analytics');
+                  document.getElementById('mt-full-analysis')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 50);
               }}
-              style={{ height: 36, borderRadius: 10, padding: '0 16px', border: 'none', background: '#314158', color: '#FFFFFF', fontWeight: 700, cursor: 'pointer' }}
+              className="qw-review-btn"
+              style={{ position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(8px,0.9vw,12px)', borderRadius: 14, padding: 'clamp(12px,1vw,16px)', fontSize: 'clamp(13px,0.8vw,15px)', fontWeight: 700, cursor: 'pointer' }}
             >
-              📊 Full Analysis
+              <span className="qw-badge">{total} Q</span>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true" style={{ position: 'relative', zIndex: 1 }}>
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+              <span style={{ position: 'relative', zIndex: 1 }}>View Question-wise Review</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ position: 'relative', zIndex: 1 }}>
+                <path d="M9 6l6 6-6 6" />
+              </svg>
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== 'undefined') window.print();
-              }}
-              style={{ height: 36, borderRadius: 10, padding: '0 16px', border: 'none', background: '#314158', color: '#FFFFFF', fontWeight: 700, cursor: 'pointer' }}
-            >
-              📄 PDF Report
-            </button>
+
+            <div className="grid grid-cols-3" style={{ gap: 'clamp(0.5rem,0.65vw,0.75rem)' }}>
+              <button type="button" onClick={handleShareScore} className="mcq-act mcq-act-share" style={{ justifyContent: 'center', textAlign: 'center' }}>
+                <span className="ic">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M6.5 5.5L10 3.5M6.5 10.5L10 12.5M6.5 8A2 2 0 1 1 2.5 8A2 2 0 0 1 6.5 8ZM13.5 3A2 2 0 1 1 9.5 3A2 2 0 0 1 13.5 3ZM13.5 13A2 2 0 1 1 9.5 13A2 2 0 0 1 13.5 13Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                Share Score
+              </button>
+              <button type="button" onClick={() => { if (typeof window !== 'undefined') window.print(); }} className="mcq-act mcq-act-download" style={{ justifyContent: 'center', textAlign: 'center' }}>
+                <span className="ic">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M8 2V9M8 9L5 6M8 9L11 6M3 12V13.5H13V12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                Download Report
+              </button>
+              <button type="button" onClick={() => router.push(retakeHref)} className="mcq-act mcq-act-retake" style={{ justifyContent: 'center', textAlign: 'center' }}>
+                <span className="ic">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M13 7A5 5 0 1 0 11.5 10.55M13 7V3.5M13 7H9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                Retake
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2" style={{ gap: 'clamp(0.5rem,0.8vw,1rem)' }}>
+              <button type="button" onClick={() => setActiveTab('next-steps')} className="mcq-act mcq-act-next" style={{ justifyContent: 'center', textAlign: 'center' }}>
+                <span className="ic">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M8 2.5L9.15 6.85L13.5 8L9.15 9.15L8 13.5L6.85 9.15L2.5 8L6.85 6.85L8 2.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                View Smart Next Steps
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              </button>
+              <button type="button" onClick={() => router.push('/dashboard')} className="mcq-act mcq-act-dash" style={{ justifyContent: 'center', textAlign: 'center' }}>
+                <span className="ic">🏠</span>
+                Back to Dashboard
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1613,15 +1795,6 @@ function MockTestResultsInner() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function StatMini({ label, value, color }: { label: string; value: any; color: string }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-      <div style={{ fontSize: 22, fontWeight: 900, color }}>{value}</div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em' }}>{label}</div>
     </div>
   );
 }

@@ -2,13 +2,17 @@
 
 import React, { useState, useEffect, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import { pyqService } from '@/lib/services';
+import { bookmarkService, flashcardService, pyqService, spacedRepService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
 import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
 import { handleEntitlementError, formatPeriod } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 const AI_EVAL_STEPS = [
   {
@@ -84,9 +88,14 @@ type PYQCountData = {
   bySubject: Array<{ subject: string | null; count: number }>;
   bySubSubject: Array<{ subject: string | null; subSubject: string | null; count: number }>;
   byTopic: Array<{ subject: string | null; subSubject: string | null; topic: string | null; count: number }>;
+  taxonomyLabels?: {
+    level1: string;
+    level2: string;
+    level3: string;
+  };
 };
 
-type FilterId = 'paper' | 'subject' | 'subSubject' | 'topic' | 'year' | 'difficulty';
+type FilterId = 'paper' | 'subject' | 'subSubject' | 'topic' | 'year';
 
 const EMPTY_COUNTS: PYQCountData = {
   total: 0,
@@ -200,6 +209,13 @@ const questionChips = (q: any, styles: Record<string, React.CSSProperties>) => {
   ].filter(Boolean) as Array<{ key: string; label: string; style: React.CSSProperties }>;
 };
 
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'general';
+
 const getExplanationText = (question: any) =>
   question?.explanation ||
   question?.structuredJson?.explanation?.displayText ||
@@ -269,6 +285,122 @@ function ExplanationRenderer({ question }: { question: any }) {
           </p>
         </section>
       )}
+    </div>
+  );
+}
+
+function ModelAnswerRenderer({ text }: { text: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        h1: ({ children }) => (
+          <h1 className="mb-4 mt-6 text-[24px] font-bold leading-[32px] text-[#101828] first:mt-0">{children}</h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="mb-3 mt-6 text-[21px] font-bold leading-[30px] text-[#101828] first:mt-0">{children}</h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="mb-3 mt-5 text-[18px] font-bold leading-[28px] text-[#111827] first:mt-0">{children}</h3>
+        ),
+        h4: ({ children }) => (
+          <h4 className="mb-2 mt-5 text-[16px] font-bold leading-[26px] text-[#1E2939] first:mt-0">{children}</h4>
+        ),
+        p: ({ children }) => (
+          <p className="mb-4 text-[15.5px] leading-[27px] text-[#364153] last:mb-0">{children}</p>
+        ),
+        ul: ({ children }) => (
+          <ul className="mb-5 ml-5 list-disc space-y-2 text-[15.5px] leading-[27px] text-[#364153]">{children}</ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="mb-5 ml-5 list-decimal space-y-2 text-[15.5px] leading-[27px] text-[#364153]">{children}</ol>
+        ),
+        li: ({ children }) => <li className="pl-1">{children}</li>,
+        strong: ({ children }) => <strong className="font-bold text-[#111827]">{children}</strong>,
+        blockquote: ({ children }) => (
+          <blockquote className="my-4 border-l-4 border-[#E8B84B] bg-[#FFFBEB] px-4 py-3 text-[#364153]">
+            {children}
+          </blockquote>
+        ),
+      }}
+    >
+      {text}
+    </ReactMarkdown>
+  );
+}
+
+type EssayPartKey = 'topicDecoding' | 'modelEssay' | 'valueAdditionRepository';
+
+const ESSAY_PART_LABELS: Record<EssayPartKey, string> = {
+  topicDecoding: 'Topic Decoding',
+  modelEssay: 'Model Essay',
+  valueAdditionRepository: 'Value Addition Repository',
+};
+
+const getEssayModelAnswerParts = (question: any): Array<{ key: EssayPartKey; label: string; text: string }> => {
+  const parts = question?.structuredJson?.essay?.parts;
+  if (!parts || typeof parts !== 'object') return [];
+
+  return (['topicDecoding', 'modelEssay', 'valueAdditionRepository'] as EssayPartKey[])
+    .map((key) => ({
+      key,
+      label: ESSAY_PART_LABELS[key],
+      text: typeof parts[key] === 'string' ? parts[key].trim() : '',
+    }))
+    .filter((part) => part.text.length > 0);
+};
+
+function EssayModelAnswerRenderer({
+  question,
+  essayPartOrder,
+  onToggleOrder,
+}: {
+  question: any;
+  essayPartOrder: 'decode-first' | 'essay-first';
+  onToggleOrder: () => void;
+}) {
+  const parts = getEssayModelAnswerParts(question);
+  if (parts.length === 0) {
+    return (
+      <ModelAnswerRenderer
+        text={question?.modelAnswer || question?.answer || question?.explanation || 'Model answer is being prepared for this question.'}
+      />
+    );
+  }
+
+  const firstTwoKeys: EssayPartKey[] = essayPartOrder === 'essay-first'
+    ? ['modelEssay', 'topicDecoding']
+    : ['topicDecoding', 'modelEssay'];
+  const orderedParts = [...firstTwoKeys, 'valueAdditionRepository']
+    .map((key) => parts.find((part) => part.key === key))
+    .filter(Boolean) as Array<{ key: EssayPartKey; label: string; text: string }>;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-[13px] font-bold uppercase tracking-[0.08em] text-[#6A7282]">
+          Essay Answer Parts
+        </div>
+        {parts.length > 1 && (
+          <button
+            type="button"
+            onClick={onToggleOrder}
+            className="rounded-[10px] border border-[#D8DEE8] bg-white px-3 py-2 text-[13px] font-bold text-[#101828] shadow-sm hover:bg-[#F8FAFC]"
+          >
+            {essayPartOrder === 'decode-first' ? 'Show Essay First' : 'Show Decoding First'}
+          </button>
+        )}
+      </div>
+      <div className="space-y-6">
+        {orderedParts.map((part, index) => (
+          <section key={part.key} className={index > 0 ? 'border-t border-[#E6E8EE] pt-5' : undefined}>
+            <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#D4AF37]">
+              {part.label}
+            </div>
+            <ModelAnswerRenderer text={part.text} />
+          </section>
+        ))}
+      </div>
     </div>
   );
 }
@@ -406,89 +538,6 @@ function PyqEvaluationProgressModal({
   );
 }
 
-const MAINS_OPTIONAL_SUBJECTS = {
-  science: [
-    'Agriculture',
-    'Animal Husbandry & Veterinary Science',
-    'Botany',
-    'Chemistry',
-    'Civil Engineering',
-    'Electrical Engineering',
-    'Geology',
-    'Mathematics',
-    'Mechanical Engineering',
-    'Medical Science',
-    'Physics',
-    'Statistics',
-    'Zoology',
-  ],
-  social: [
-    'Anthropology',
-    'Commerce & Accountancy',
-    'Economics',
-    'Geography (Optional)',
-    'History (Optional)',
-    'Law',
-    'Management',
-    'Philosophy',
-    'Political Science & International Relations',
-    'Psychology',
-    'Public Administration',
-    'Sociology',
-  ],
-  literature: [
-    'Literature: Assamese',
-    'Literature: Bengali',
-    'Literature: Bodo',
-    'Literature: Dogri',
-    'Literature: English',
-    'Literature: Gujarati',
-    'Literature: Hindi',
-    'Literature: Kannada',
-    'Literature: Kashmiri',
-    'Literature: Konkani',
-    'Literature: Maithili',
-    'Literature: Malayalam',
-    'Literature: Manipuri',
-    'Literature: Marathi',
-    'Literature: Nepali',
-    'Literature: Odia',
-    'Literature: Punjabi',
-    'Literature: Sanskrit',
-    'Literature: Santhali',
-    'Literature: Sindhi',
-    'Literature: Tamil',
-    'Literature: Telugu',
-    'Literature: Urdu',
-  ],
-};
-const MAINS_OPTIONAL_ALL = [
-  ...MAINS_OPTIONAL_SUBJECTS.science,
-  ...MAINS_OPTIONAL_SUBJECTS.social,
-  ...MAINS_OPTIONAL_SUBJECTS.literature,
-];
-
-const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
-  prelims: [],
-  mains: [
-    { label: 'History', icon: '🏛️', children: [{ label: 'Ancient India' }, { label: 'Medieval India' }, { label: 'Modern India' }, { label: 'Post-Independence' }, { label: 'Art & Culture' }] },
-    { label: 'Geography', icon: '🌍', children: [{ label: 'Physical Geography' }, { label: 'Indian Geography' }, { label: 'World Geography' }] },
-    { label: 'Polity', icon: '⚖️', children: [{ label: 'Constitution' }, { label: 'Parliament & Executive' }, { label: 'Judiciary' }] },
-    { label: 'Economy', icon: '💰', children: [{ label: 'Growth & Development' }, { label: 'Inclusive Development' }, { label: 'Budgeting' }] },
-    { label: 'Environment & Ecology', icon: '🌿', children: [{ label: 'Conservation' }, { label: 'Climate Change' }, { label: 'Biodiversity' }] },
-    { label: 'Science & Technology', icon: '🔬', children: [{ label: 'Emerging Tech' }, { label: 'Space' }, { label: 'Biotech' }] },
-    { label: 'Society', icon: '👥', children: [{ label: 'Social Issues' }, { label: 'Women' }, { label: 'Globalization' }] },
-    { label: 'Governance', icon: '🏛', children: [{ label: 'Transparency' }, { label: 'Citizen Centricity' }, { label: 'E-Governance' }] },
-    { label: 'International Relations', icon: '🌐', children: [{ label: 'Neighbourhood' }, { label: 'Global Groupings' }, { label: 'Bilateral Relations' }] },
-    { label: 'Social Justice', icon: '🤝', children: [{ label: 'Welfare Schemes' }, { label: 'Education' }, { label: 'Health' }] },
-    { label: 'Agriculture', icon: '🌾', children: [{ label: 'Cropping' }, { label: 'Irrigation' }, { label: 'Food Processing' }] },
-    { label: 'Internal Security', icon: '🛡️', children: [{ label: 'Terrorism' }, { label: 'Cyber Security' }, { label: 'Border Management' }] },
-    { label: 'Disaster Management', icon: '🚨', children: [{ label: 'Preparedness' }, { label: 'Response' }, { label: 'Risk Reduction' }] },
-    { label: 'Ethics', icon: '🧭', children: [{ label: 'Ethics Theory' }, { label: 'Aptitude' }, { label: 'Case Studies' }] },
-    { label: 'Current Affairs', icon: '📰', children: [{ label: 'Government Initiatives' }, { label: 'International Developments' }, { label: 'Reports & Data' }] },
-  ],
-};
-
 export default function PyqPage() {
   const entitlements = useEntitlements();
   const mainsQuota = entitlements.featureStatus('mains_evaluation');
@@ -500,7 +549,15 @@ export default function PyqPage() {
   const [showAttemptModal, setShowAttemptModal] = useState(false);
   const [prelimsSubmitError, setPrelimsSubmitError] = useState<string | null>(null);
   const [showMainsWriteModal, setShowMainsWriteModal] = useState(false);
-  const [showModelAnswerModal, setShowModelAnswerModal] = useState(false);
+  const [expandedModelAnswerIds, setExpandedModelAnswerIds] = useState<Set<string>>(new Set());
+  const [essayPartOrder, setEssayPartOrder] = useState<'decode-first' | 'essay-first'>('decode-first');
+  const router = useRouter();
+  const [mainsBookmarkedIds, setMainsBookmarkedIds] = useState<Set<string>>(new Set());
+  const [mainsFlashcardIds, setMainsFlashcardIds] = useState<Set<string>>(new Set());
+  const [mainsReviewIds, setMainsReviewIds] = useState<Set<string>>(new Set());
+  const [mainsBookmarkBusyIds, setMainsBookmarkBusyIds] = useState<Set<string>>(new Set());
+  const [mainsFlashcardBusyIds, setMainsFlashcardBusyIds] = useState<Set<string>>(new Set());
+  const [mainsReviewBusyIds, setMainsReviewBusyIds] = useState<Set<string>>(new Set());
   const [showAiEvalModal, setShowAiEvalModal] = useState(false);
   const [showAiEvalCompleteModal, setShowAiEvalCompleteModal] = useState(false);
   const [aiEvalProgress, setAiEvalProgress] = useState(0);
@@ -537,9 +594,9 @@ export default function PyqPage() {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [yearMode, setYearMode] = useState<'all' | 'custom'>('all');
   const [yearSearch, setYearSearch] = useState('');
-  const [selectedPaper, setSelectedPaper] = useState<string | null>(null);
-  const [selectedSubject, setSelectedSubject] = useState('All Papers');
-  const [selectedSubtopic, setSelectedSubtopic] = useState<string | null>(null);
+  const [selectedPapers, setSelectedPapers] = useState<string[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedSubSubjects, setSelectedSubSubjects] = useState<string[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
   const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
@@ -562,6 +619,99 @@ export default function PyqPage() {
     setNavigatingQuestionHref(href);
   };
 
+  const toggleMainsBookmark = async (q: any) => {
+    if (mainsBookmarkBusyIds.has(q.id)) return;
+    setMainsBookmarkBusyIds((prev) => new Set(prev).add(q.id));
+    try {
+      await bookmarkService.toggle({
+        entityType: 'pyq',
+        entityId: q.id,
+        title: String(q.questionText || '').slice(0, 90),
+        source: 'PYQ Mains',
+        sourceUrl: `/questions/${q.id}?mode=mains`,
+        tag: `${q.year || 'UPSC'} · ${q.subject || 'General'}`,
+        content: { mode: 'mains', year: q.year, subject: q.subject, topic: q.topic, difficulty: q.difficulty },
+      });
+      setMainsBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(q.id)) next.delete(q.id);
+        else next.add(q.id);
+        return next;
+      });
+    } catch {
+      // keep prior state — bookmark toggle failed
+    } finally {
+      setMainsBookmarkBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(q.id);
+        return next;
+      });
+    }
+  };
+
+  const addMainsFlashcard = async (q: any) => {
+    if (mainsFlashcardBusyIds.has(q.id)) return;
+    setMainsFlashcardBusyIds((prev) => new Set(prev).add(q.id));
+    try {
+      const subject = String(q.subject || 'General Studies');
+      const subjectId = slugify(subject);
+      const topic = String(q.topic || q.paper || 'Custom');
+      const topicId = slugify(topic);
+      const answer = q.modelAnswer || q.answer || getExplanationText(q) || 'Refer to the model answer on RiseWithJeet.';
+      const res = await flashcardService.createCard({
+        subjectId,
+        subject,
+        topicId,
+        topic,
+        question: q.questionText,
+        answer,
+        difficulty: q.difficulty || undefined,
+      });
+      setMainsFlashcardIds((prev) => new Set(prev).add(q.id));
+      const cardId = res?.data?.id;
+      router.push(`/dashboard/flashcards/${subjectId}/${topicId}${cardId ? `?cardId=${cardId}` : ''}`);
+    } catch {
+      // keep prior state — flashcard creation failed
+    } finally {
+      setMainsFlashcardBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(q.id);
+        return next;
+      });
+    }
+  };
+
+  const toggleMainsReview = async (q: any) => {
+    if (mainsReviewBusyIds.has(q.id)) return;
+    if (mainsReviewIds.has(q.id)) {
+      setMainsReviewIds((prev) => {
+        const next = new Set(prev);
+        next.delete(q.id);
+        return next;
+      });
+      return;
+    }
+    setMainsReviewBusyIds((prev) => new Set(prev).add(q.id));
+    try {
+      await spacedRepService.addItem({
+        questionText: q.questionText,
+        answer: q.modelAnswer || q.answer || getExplanationText(q) || undefined,
+        subject: String(q.subject || 'General Studies'),
+        source: 'PYQ Mains',
+        sourceType: 'pyq',
+      });
+      setMainsReviewIds((prev) => new Set(prev).add(q.id));
+    } catch {
+      // keep prior state — review save failed
+    } finally {
+      setMainsReviewBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(q.id);
+        return next;
+      });
+    }
+  };
+
   const fetchQuestions = useCallback(async () => {
     const requestSeq = ++questionsRequestSeqRef.current;
     setLoading(true);
@@ -570,11 +720,9 @@ export default function PyqPage() {
       const res = await pyqService.getQuestions({
         mode,
         years: yearMode === 'custom' && selectedYears.length > 0 ? selectedYears : undefined,
-        paper: selectedPaper || undefined,
-        subject: selectedSubject !== 'All Papers' ? selectedSubject : undefined,
-        ...(mode === 'mains'
-          ? { topic: selectedSubtopic || undefined }
-          : { subSubject: selectedSubtopic || undefined }),
+        paper: selectedPapers.length ? selectedPapers : undefined,
+        subject: selectedSubjects.length ? selectedSubjects : undefined,
+        subSubject: selectedSubSubjects.length ? selectedSubSubjects : undefined,
         topic: selectedTopics.length ? selectedTopics : undefined,
         page,
         limit: 20,
@@ -598,12 +746,12 @@ export default function PyqPage() {
         setLoading(false);
       }
     }
-  }, [mode, yearMode, selectedYears, selectedPaper, selectedSubject, selectedSubtopic, selectedTopics, page]);
+  }, [mode, yearMode, selectedYears, selectedPapers, selectedSubjects, selectedSubSubjects, selectedTopics, page]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [mode, yearMode, selectedYears, selectedPaper, selectedSubject, selectedSubtopic, selectedTopics]);
+  }, [mode, yearMode, selectedYears, selectedPapers, selectedSubjects, selectedSubSubjects, selectedTopics]);
 
   useEffect(() => {
     questionsRequestSeqRef.current += 1;
@@ -612,11 +760,11 @@ export default function PyqPage() {
     setTotalPages(0);
     setSelectedQuestion(null);
     setShowMainsWriteModal(false);
-    setShowModelAnswerModal(false);
+    setExpandedModelAnswerIds(new Set());
     setShowAttemptModal(false);
-    setSelectedPaper(null);
-    setSelectedSubject('All Papers');
-    setSelectedSubtopic(null);
+    setSelectedPapers([]);
+    setSelectedSubjects([]);
+    setSelectedSubSubjects([]);
     setSelectedTopics([]);
     setExpandedSubject(null);
     setExpandedSubtopic(null);
@@ -700,19 +848,6 @@ export default function PyqPage() {
     return counts;
   }, [questionCounts.bySubSubject]);
 
-  const getTopicQuestionCount = useCallback(
-    (subject: string, subSubject: string | null, topic: string) => {
-      const needle = topic.trim().toLowerCase();
-      return questionCounts.byTopic.reduce((sum, row) => {
-        const sameSubject = countKey(row.subject) === countKey(subject);
-        const sameSubSubject = !subSubject || countKey(row.subSubject) === countKey(subSubject);
-        const topicText = (row.topic || '').toLowerCase();
-        return sameSubject && sameSubSubject && topicText.includes(needle) ? sum + row.count : sum;
-      }, 0);
-    },
-    [questionCounts.byTopic]
-  );
-
   const subjectTree = useMemo(() => {
     const dynamicSubjects = questionCounts.bySubject
       .filter((row) => row.subject)
@@ -740,12 +875,8 @@ export default function PyqPage() {
         };
       });
 
-    if (mode === 'prelims') return dynamicSubjects;
-
-    const existingSubjects = new Set(dynamicSubjects.map((node) => countKey(node.label)));
-    const staticMainsSubjects = PYQ_SUBJECT_TREE.mains.filter((node) => !existingSubjects.has(countKey(node.label)));
-    return [...dynamicSubjects, ...staticMainsSubjects];
-  }, [mode, questionCounts.bySubject, questionCounts.bySubSubject, questionCounts.byTopic]);
+    return dynamicSubjects;
+  }, [questionCounts.bySubject, questionCounts.bySubSubject, questionCounts.byTopic]);
 
   const visibleQuestions = useMemo(() => {
     if (!selectedTopics.length) return questions;
@@ -835,39 +966,115 @@ export default function PyqPage() {
     };
   }, [showAiEvalModal, mainsAttemptId, selectedQuestion]);
 
-  const resetAllFilters = () => {
-    setYearMode('all');
-    setSelectedYears([]);
-    setYearSearch('');
-    setSelectedPaper(null);
-    setSelectedSubject('All Papers');
-    setSelectedSubtopic(null);
-    setSelectedTopics([]);
-    setExpandedSubject(null);
-    setExpandedSubtopic(null);
-    setOpenFilter(null);
-  };
-
   const hasActiveFilters =
     yearMode === 'custom' ||
-    Boolean(selectedPaper) ||
-    selectedSubject !== 'All Papers' ||
-    Boolean(selectedSubtopic) ||
+    selectedPapers.length > 0 ||
+    selectedSubjects.length > 0 ||
+    selectedSubSubjects.length > 0 ||
     selectedTopics.length > 0;
 
-  const currentSubjectNode = subjectTree.find((node) => countKey(node.label) === countKey(selectedSubject));
-  const currentSubTopicNode = currentSubjectNode?.children?.find(
-    (child) => countKey(child.label) === countKey(selectedSubtopic)
+  const selectedSubjectKeys = useMemo(
+    () => new Set(selectedSubjects.map((s) => countKey(s))),
+    [selectedSubjects]
   );
-  const currentTopicOptions = currentSubTopicNode?.microTopics || [];
+  const selectedSubSubjectKeys = useMemo(
+    () => new Set(selectedSubSubjects.map((s) => countKey(s))),
+    [selectedSubSubjects]
+  );
+
+  // Subject-tree nodes for every currently selected subject.
+  const currentSubjectNodes = useMemo(
+    () => subjectTree.filter((node) => selectedSubjectKeys.has(countKey(node.label))),
+    [subjectTree, selectedSubjectKeys]
+  );
+
+  // Union of sub-subjects across the selected subjects, de-duplicated by label.
+  const availableSubSubjects = useMemo(() => {
+    const seen = new Set<string>();
+    const list: Array<{ label: string; subject: string }> = [];
+    currentSubjectNodes.forEach((node) => {
+      (node.children || []).forEach((child) => {
+        const key = countKey(child.label);
+        if (seen.has(key)) return;
+        seen.add(key);
+        list.push({ label: child.label, subject: node.label });
+      });
+    });
+    return list;
+  }, [currentSubjectNodes]);
+
+  // Union of micro-topics across the selected sub-subjects, de-duplicated.
+  const currentTopicOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const list: string[] = [];
+    currentSubjectNodes.forEach((node) => {
+      (node.children || []).forEach((child) => {
+        if (!selectedSubSubjectKeys.has(countKey(child.label))) return;
+        (child.microTopics || []).forEach((topic) => {
+          const key = topic.trim().toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          list.push(topic);
+        });
+      });
+    });
+    return list;
+  }, [currentSubjectNodes, selectedSubSubjectKeys]);
+
   const currentSubSubjectHasUntaggedQuestions = Boolean(
-    selectedSubtopic &&
+    selectedSubSubjects.length > 0 &&
+      currentTopicOptions.length === 0 &&
       questionCounts.byTopic.some(
         (row) =>
-          countKey(row.subject, row.subSubject) === countKey(selectedSubject, selectedSubtopic) &&
+          selectedSubSubjectKeys.has(countKey(row.subSubject)) &&
           !String(row.topic || '').trim()
       )
   );
+
+  // Keep the hierarchy coherent: drop selected sub-subjects that are no longer
+  // reachable from the selected subjects, and topics no longer reachable from
+  // the selected sub-subjects. Runs only when the available options change, so
+  // it never fights an active selection.
+  useEffect(() => {
+    const allowed = new Set(availableSubSubjects.map((s) => countKey(s.label)));
+    setSelectedSubSubjects((prev) => {
+      const next = prev.filter((s) => allowed.has(countKey(s)));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [availableSubSubjects]);
+
+  useEffect(() => {
+    const allowed = new Set(currentTopicOptions.map((t) => t.trim().toLowerCase()));
+    setSelectedTopics((prev) => {
+      const next = prev.filter((t) => allowed.has(t.trim().toLowerCase()));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [currentTopicOptions]);
+
+  const toggleSubject = useCallback((label: string) => {
+    setSelectedSubjects((prev) =>
+      prev.some((s) => countKey(s) === countKey(label))
+        ? prev.filter((s) => countKey(s) !== countKey(label))
+        : [...prev, label]
+    );
+  }, []);
+
+  const toggleSubSubject = useCallback((label: string) => {
+    setSelectedSubSubjects((prev) =>
+      prev.some((s) => countKey(s) === countKey(label))
+        ? prev.filter((s) => countKey(s) !== countKey(label))
+        : [...prev, label]
+    );
+  }, []);
+
+  const togglePaper = useCallback((value: string) => {
+    setSelectedPapers((prev) =>
+      prev.some((p) => countKey(p) === countKey(value))
+        ? prev.filter((p) => countKey(p) !== countKey(value))
+        : [...prev, value]
+    );
+  }, []);
+
   const paperCounts = useMemo(() => {
     const counts = new Map<string, number>();
     (questionCounts.byPaper || []).forEach((row) => {
@@ -884,17 +1091,30 @@ export default function PyqPage() {
     [paperCounts]
   );
 
+  const taxonomyLabels = mode === 'mains'
+    ? { level1: 'Subject', level2: 'Theme', level3: 'Topic' }
+    : questionCounts.taxonomyLabels || { level1: 'Subject', level2: 'Theme', level3: 'Topic' };
+
   const paperOptions = mode === 'prelims'
     ? [
-        { label: 'GS Paper 1', value: 'GS Paper 1', icon: '📋', aliases: ['GS-I', 'GS Paper I'] },
-        { label: 'CSAT', value: 'CSAT', icon: '🧮', aliases: ['Paper II', 'CSAT Paper II'] },
+        { label: 'GS Paper 1', value: 'GS Paper 1', icon: '🔑', aliases: ['GS-I', 'GS Paper I'], comingSoon: false },
+        { label: 'CSAT', value: 'CSAT', icon: '🧩', aliases: ['Paper II', 'CSAT Paper II'], comingSoon: false },
       ]
     : [
-        { label: 'GS Paper 1', value: 'GS Paper 1', icon: '📜', aliases: ['GS-I', 'GS Paper I'] },
-        { label: 'GS Paper 2', value: 'GS Paper 2', icon: '⚖️', aliases: ['GS-II', 'GS Paper II'] },
-        { label: 'GS Paper 3', value: 'GS Paper 3', icon: '📊', aliases: ['GS-III', 'GS Paper III'] },
-        { label: 'GS Paper 4', value: 'GS Paper 4', icon: '🧠', aliases: ['GS-IV', 'GS Paper IV'] },
+        { label: 'GS Paper 1', value: 'GS Paper 1', icon: '📘', aliases: ['GS-I', 'GS Paper I'], comingSoon: false },
+        { label: 'GS Paper 2', value: 'GS Paper 2', icon: '📗', aliases: ['GS-II', 'GS Paper II'], comingSoon: false },
+        { label: 'GS Paper 3', value: 'GS Paper 3', icon: '📙', aliases: ['GS-III', 'GS Paper III'], comingSoon: false },
+        { label: 'GS Paper 4', value: 'GS Paper 4', icon: '📕', aliases: ['GS-IV', 'GS Paper IV'], comingSoon: false },
+        { label: 'Essay', value: 'Essay', icon: '✍️', aliases: ['Essay Paper'], comingSoon: false },
+        { label: 'Optional Paper 1', value: 'Optional Paper 1', icon: '📝', aliases: ['Optional-I', 'Optional Paper I'], comingSoon: true },
+        { label: 'Optional Paper 2', value: 'Optional Paper 2', icon: '📝', aliases: ['Optional-II', 'Optional Paper II'], comingSoon: true },
       ];
+
+  const visiblePaperOptions = paperOptions.filter((paper) => {
+    if (paper.comingSoon) return true;
+    const count = getPaperCount(paper.value, paper.aliases);
+    return count > 0 || selectedPapers.some((p) => countKey(p) === countKey(paper.value));
+  });
 
   const filterButtonBase =
     'inline-flex h-9 flex-shrink-0 items-center gap-2 rounded-[10px] px-2.5 text-[13px] font-bold text-[#101828] transition-colors hover:bg-[#F4F5F7]';
@@ -902,7 +1122,7 @@ export default function PyqPage() {
   const tinyIconStyle: React.CSSProperties = {
     width: 18,
     height: 18,
-    color: '#8B919B',
+    color: 'currentColor',
     flexShrink: 0,
   };
 
@@ -968,26 +1188,66 @@ export default function PyqPage() {
   const FilterTrigger = ({
     id,
     label,
-    value,
     icon,
+    active = false,
+    count,
   }: {
     id: typeof openFilter;
     label: string;
-    value?: string;
     icon: React.ReactNode;
-  }) => (
-    <button
-      type="button"
-      onClick={() => setOpenFilter(openFilter === id ? null : id)}
-      className={filterButtonBase}
-      style={{ background: openFilter === id ? '#F4F5F7' : 'transparent' }}
-      aria-expanded={openFilter === id}
-    >
-      {icon}
-      <span className="whitespace-nowrap">{value || label}</span>
-      <span className="text-[#9AA3B2]">⌄</span>
-    </button>
-  );
+    // Whether this filter currently holds a selection (drives the dark highlight + badge).
+    active?: boolean;
+    // Number shown in the gold badge; defaults to 1 when active.
+    count?: number;
+  }) => {
+    const isOpen = openFilter === id;
+    // Highlight (dark pill) whenever a value is selected; light tint while only the popover is open.
+    const style: React.CSSProperties = active
+      ? {
+          background: '#0F172B',
+          color: '#FFFFFF',
+          boxShadow: '0 2px 10px rgba(15,17,26,0.18),0 1px 3px rgba(15,17,26,0.12)',
+        }
+      : { background: isOpen ? '#F4F5F7' : 'transparent', color: '#101828' };
+    const badgeCount = count ?? 1;
+    return (
+      <button
+        type="button"
+        onClick={() => setOpenFilter(isOpen ? null : id)}
+        className={filterButtonBase}
+        style={style}
+        aria-expanded={isOpen}
+        aria-pressed={active}
+      >
+        <span style={{ color: active ? '#FFFFFF' : '#8B919B', display: 'inline-flex' }}>{icon}</span>
+        <span className="whitespace-nowrap">{label}</span>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          style={{
+            width: 11,
+            height: 11,
+            opacity: active ? 0.8 : 0.4,
+            transition: 'transform .25s',
+            transform: isOpen ? 'rotate(180deg)' : 'none',
+            flexShrink: 0,
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+        {active ? (
+          <span
+            className="inline-flex min-w-[18px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold leading-[16px]"
+            style={{ background: '#D4AF37', color: '#0F172B', boxShadow: '0 1px 4px rgba(212,175,55,0.35)' }}
+          >
+            {badgeCount}
+          </span>
+        ) : null}
+      </button>
+    );
+  };
 
   const FilterPopover = ({ id, children, width = 420 }: { id: typeof openFilter; children: React.ReactNode; width?: number }) => (
     openFilter === id ? (
@@ -1020,89 +1280,95 @@ export default function PyqPage() {
           <button
             type="button"
             onClick={() => {
-              setSelectedSubject('All Papers');
-              setSelectedSubtopic(null);
+              setSelectedSubjects([]);
+              setSelectedSubSubjects([]);
               setSelectedTopics([]);
               setExpandedSubject(null);
               setExpandedSubtopic(null);
             }}
             className="flex min-h-[50px] items-center justify-between rounded-[12px] px-3 text-left"
-            style={{ background: selectedSubject === 'All Papers' ? '#0F1A30' : '#FFFFFF', color: selectedSubject === 'All Papers' ? '#FFFFFF' : '#101828' }}
+            style={{ background: selectedSubjects.length === 0 ? '#0F1A30' : '#FFFFFF', color: selectedSubjects.length === 0 ? '#FFFFFF' : '#101828' }}
           >
             <span className="font-semibold">📘 All Papers</span>
             <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-bold">{questionCounts.total || total}</span>
           </button>
-          {mode === 'mains' && (
-            <select
-              value={MAINS_OPTIONAL_ALL.includes(selectedSubject) ? selectedSubject : ''}
-              onChange={(e) => {
-                const val = e.target.value;
-                setSelectedSubject(val || 'All Papers');
-                setSelectedSubtopic(null);
-                setSelectedTopics([]);
-                setExpandedSubject(null);
-                setExpandedSubtopic(null);
-              }}
-              className="h-11 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[13px] font-semibold text-[#374151] outline-none"
-            >
-              <option value="">Select Optional Subject</option>
-              <optgroup label="Science & Engineering">
-                {MAINS_OPTIONAL_SUBJECTS.science.map((s) => <option key={s} value={s}>{s}</option>)}
-              </optgroup>
-              <optgroup label="Social Sciences & Humanities">
-                {MAINS_OPTIONAL_SUBJECTS.social.map((s) => <option key={s} value={s}>{s}</option>)}
-              </optgroup>
-              <optgroup label="Literature">
-                {MAINS_OPTIONAL_SUBJECTS.literature.map((s) => <option key={s} value={s}>{s}</option>)}
-              </optgroup>
-            </select>
-          )}
           {subjectTree.map(({ label, icon, children }) => {
-            const selected = selectedSubject === label;
+            const selected = selectedSubjectKeys.has(countKey(label));
             const expanded = expandedSubject === label;
             const subjectCount = subjectQuestionCounts.get(countKey(label)) || 0;
             return (
               <div key={label} className="overflow-hidden rounded-[12px] bg-white">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedSubject(label);
-                    setSelectedSubtopic(null);
-                    setSelectedTopics([]);
-                    setExpandedSubtopic(null);
-                    setExpandedSubject(expanded ? null : label);
-                  }}
+                <div
                   className="flex min-h-[50px] w-full items-center justify-between px-3 text-left"
                   style={{ background: selected ? '#0F1A30' : '#FFFFFF', color: selected ? '#FFFFFF' : '#101828' }}
                 >
-                  <span className="flex min-w-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleSubject(label)}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  >
+                    <span
+                      className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-[6px] border text-[11px]"
+                      style={{
+                        borderColor: selected ? '#D4AF37' : '#CBD2DC',
+                        background: selected ? '#D4AF37' : 'transparent',
+                        color: selected ? '#0F172B' : 'transparent',
+                      }}
+                    >
+                      ✓
+                    </span>
                     <span aria-hidden>{icon}</span>
                     <span className="truncate text-[14px] font-semibold">{label}</span>
-                  </span>
+                  </button>
                   <span className="flex items-center gap-2">
                     <span className="rounded-full bg-[#F0F1F3] px-2 py-0.5 text-[10px] font-bold text-[#6A7282]">{subjectCount}</span>
-                    {children?.length ? <span style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>⌄</span> : null}
+                    {children?.length ? (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedSubject(expanded ? null : label)}
+                        aria-label={expanded ? 'Collapse' : 'Expand'}
+                        className="flex h-6 w-6 items-center justify-center"
+                        style={{ color: selected ? '#FFFFFF' : '#101828', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      >
+                        ⌄
+                      </button>
+                    ) : null}
                   </span>
-                </button>
+                </div>
                 {expanded && children?.length ? (
                   <div className="border-t border-[#E5E7EB]">
-                    {children.map((child) => (
-                      <button
-                        key={child.label}
-                        type="button"
-                        onClick={() => {
-                          setSelectedSubtopic(child.label);
-                          setSelectedTopics([]);
-                          setExpandedSubtopic(expandedSubtopic === child.label ? null : child.label);
-                        }}
-                        className="flex w-full items-center justify-between border-b border-[#EEF0F4] px-4 py-2.5 text-left last:border-b-0 hover:bg-[#F9FAFB]"
-                      >
-                        <span className="truncate text-[12px] font-semibold text-[#5A6478]">{child.label}</span>
-                        <span className="rounded-full bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-bold text-[#9AA3B2]">
-                          {subSubjectQuestionCounts.get(countKey(label, child.label)) || 0}
-                        </span>
-                      </button>
-                    ))}
+                    {children.map((child) => {
+                      const childSelected = selectedSubSubjectKeys.has(countKey(child.label));
+                      return (
+                        <button
+                          key={child.label}
+                          type="button"
+                          onClick={() => {
+                            if (!selected) toggleSubject(label);
+                            toggleSubSubject(child.label);
+                          }}
+                          className="flex w-full items-center justify-between border-b border-[#EEF0F4] px-4 py-2.5 text-left last:border-b-0 hover:bg-[#F9FAFB]"
+                          style={{ background: childSelected ? '#FFF3CC' : undefined }}
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span
+                              className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[5px] border text-[9px]"
+                              style={{
+                                borderColor: childSelected ? '#B45309' : '#CBD2DC',
+                                background: childSelected ? '#B45309' : 'transparent',
+                                color: childSelected ? '#FFFFFF' : 'transparent',
+                              }}
+                            >
+                              ✓
+                            </span>
+                            <span className="truncate text-[12px] font-semibold text-[#5A6478]">{child.label}</span>
+                          </span>
+                          <span className="rounded-full bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-bold text-[#9AA3B2]">
+                            {subSubjectQuestionCounts.get(countKey(label, child.label)) || 0}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : null}
               </div>
@@ -1117,14 +1383,21 @@ export default function PyqPage() {
     <div className="sticky top-3 z-40 mb-8">
       <div className="relative">
         <div
-          className="flex max-w-full items-center gap-1.5 overflow-visible rounded-[14px] border bg-white px-8 py-2 shadow-[0_2px_8px_rgba(15,17,26,0.05),0_12px_36px_rgba(15,17,26,0.07)]"
-          style={{ borderColor: '#F3E9C8', scrollbarWidth: 'none' }}
+          className="flex max-w-full items-center gap-1.5 overflow-visible rounded-[14px] border bg-white px-8 py-2 transition-[border-color,box-shadow] duration-300"
+          style={{
+            borderColor: hasActiveFilters ? 'rgba(212,175,55,0.35)' : '#F3E9C8',
+            boxShadow: hasActiveFilters
+              ? '0 2px 8px rgba(15,17,26,0.05),0 12px 36px rgba(15,17,26,0.07),0 0 0 1px rgba(212,175,55,0.12)'
+              : '0 2px 8px rgba(15,17,26,0.05),0 12px 36px rgba(15,17,26,0.07)',
+            scrollbarWidth: 'none',
+          }}
         >
           <div className="relative">
             <FilterTrigger
               id="paper"
               label="Paper"
-              value={selectedPaper || 'Paper'}
+              active={selectedPapers.length > 0}
+              count={selectedPapers.length}
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="M7 3h8l4 4v14H7V3Z" stroke="currentColor" strokeWidth="2"/><path d="M15 3v5h5" stroke="currentColor" strokeWidth="2"/></svg>}
             />
             <FilterPopover id="paper" width={440}>
@@ -1148,46 +1421,48 @@ export default function PyqPage() {
                 </div>
                 <div className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-[#9AA3B2]">All Papers</div>
                 <div className="grid grid-cols-2 gap-3">
-                  {paperOptions.map((paper) => {
-                    const selected = selectedPaper === paper.value;
+                  {visiblePaperOptions.map((paper) => {
+                    const selected = selectedPapers.some((p) => countKey(p) === countKey(paper.value));
                     const count = getPaperCount(paper.value, paper.aliases);
+                    const paperStyle = getSubjectMetaStyle(paper.value);
                     return (
                       <button
                         key={paper.value}
                         type="button"
-                        onClick={() => {
-                          setSelectedPaper(selected ? null : paper.value);
-                          setOpenFilter(null);
-                        }}
-                        className="flex min-h-[72px] items-center gap-3 rounded-[13px] border bg-white px-3 text-left transition-colors hover:border-[#D4AF37]"
+                        disabled={paper.comingSoon}
+                        onClick={() => !paper.comingSoon && togglePaper(paper.value)}
+                        className="flex min-h-[72px] items-center gap-3 rounded-[13px] border bg-white px-3 text-left transition-colors hover:border-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-[#E5E7EB]"
                         style={{
-                          borderColor: selected ? '#0F172B' : '#E5E7EB',
-                          boxShadow: selected ? '0 0 0 1px #0F172B' : '0 1px 2px rgba(15,17,26,0.04)',
+                          borderColor: selected ? paperStyle.accent : paperStyle.border,
+                          background: selected ? paperStyle.bg : '#FFFFFF',
+                          boxShadow: selected ? `0 0 0 1px ${paperStyle.accent}` : '0 1px 2px rgba(15,17,26,0.04)',
                         }}
                       >
-                        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] bg-[#FAF7EF] text-[19px]">
+                        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] text-[19px]" style={{ background: '#FFFFFFAA', border: `1px solid ${paperStyle.border}` }}>
                           {paper.icon}
                         </span>
-                        <span className="min-w-0">
-                          <span className="block text-[15px] font-bold leading-5 text-[#101828]">{paper.label}</span>
+                        <span className="min-w-0 flex-1">
+                          {paper.comingSoon && (
+                            <span className="mb-1 inline-block flex-shrink-0 rounded-full bg-[#F0F1F3] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#6A7282]">
+                              Coming soon
+                            </span>
+                          )}
+                          <span className="block whitespace-nowrap text-[15px] font-bold leading-5 text-[#101828]">{paper.label}</span>
                           <span className="block text-[12px] font-medium leading-4 text-[#9AA3B2]">
-                            {count || 'All'} questions
+                            {paper.comingSoon ? 'PYQs not added yet' : `${count} questions`}
                           </span>
                         </span>
                       </button>
                     );
                   })}
                 </div>
-                {selectedPaper && (
+                {selectedPapers.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedPaper(null);
-                      setOpenFilter(null);
-                    }}
+                    onClick={() => setSelectedPapers([])}
                     className="mt-4 rounded-full bg-white px-4 py-2 text-[13px] font-bold text-[#6A7282]"
                   >
-                    Clear paper
+                    Clear papers
                   </button>
                 )}
                 {false && (
@@ -1216,7 +1491,8 @@ export default function PyqPage() {
             <FilterTrigger
               id="subject"
               label="Subject"
-              value={selectedSubject !== 'All Papers' ? selectedSubject : 'Subject'}
+              active={selectedSubjects.length > 0}
+              count={selectedSubjects.length}
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a3 3 0 0 1-3-3V5a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="2"/><path d="M8 17h11" stroke="currentColor" strokeWidth="2"/></svg>}
             />
             <SubjectTreePopover />
@@ -1225,32 +1501,42 @@ export default function PyqPage() {
           <div className="relative">
             <FilterTrigger
               id="subSubject"
-              label="Sub-Subject"
-              value={selectedSubtopic || 'Sub-Subject'}
+              label={taxonomyLabels.level2}
+              active={selectedSubSubjects.length > 0}
+              count={selectedSubSubjects.length}
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21M12 3c-2.5 2.6-3.8 5.6-3.8 9s1.3 6.4 3.8 9" stroke="currentColor" strokeWidth="1.6"/></svg>}
             />
             <FilterPopover id="subSubject" width={360}>
               <div {...scrollableFilterProps('subSubject')} className="max-h-[360px] overflow-y-auto p-4">
-                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Sub-Subject</div>
-                {!currentSubjectNode?.children?.length ? (
+                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">{taxonomyLabels.level2}</div>
+                {!availableSubSubjects.length ? (
                   <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a subject first.</div>
                 ) : (
                   <div className="grid gap-2">
-                    {currentSubjectNode.children.map((child) => (
-                      <button
-                        key={child.label}
-                        type="button"
-                        onClick={() => {
-                          setSelectedSubtopic(child.label);
-                          setSelectedTopics([]);
-                          setOpenFilter(null);
-                        }}
-                        className="rounded-[12px] px-4 py-3 text-left text-[13px] font-bold"
-                        style={{ background: selectedSubtopic === child.label ? '#0F172B' : '#FFFFFF', color: selectedSubtopic === child.label ? '#FFFFFF' : '#101828' }}
-                      >
-                        {child.label}
-                      </button>
-                    ))}
+                    {availableSubSubjects.map((child) => {
+                      const childSelected = selectedSubSubjectKeys.has(countKey(child.label));
+                      return (
+                        <button
+                          key={child.label}
+                          type="button"
+                          onClick={() => toggleSubSubject(child.label)}
+                          className="flex items-center gap-2 rounded-[12px] px-4 py-3 text-left text-[13px] font-bold"
+                          style={{ background: childSelected ? '#0F172B' : '#FFFFFF', color: childSelected ? '#FFFFFF' : '#101828' }}
+                        >
+                          <span
+                            className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[5px] border text-[9px]"
+                            style={{
+                              borderColor: childSelected ? '#D4AF37' : '#CBD2DC',
+                              background: childSelected ? '#D4AF37' : 'transparent',
+                              color: childSelected ? '#0F172B' : 'transparent',
+                            }}
+                          >
+                            ✓
+                          </span>
+                          <span className="truncate">{child.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1260,25 +1546,35 @@ export default function PyqPage() {
           <div className="relative">
             <FilterTrigger
               id="topic"
-              label="Topic"
-              value={selectedTopics.length ? `${selectedTopics.length} topics` : 'Topic'}
+              label={taxonomyLabels.level3}
+              active={selectedTopics.length > 0}
+              count={selectedTopics.length}
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2"/><path d="m15 9-4.5 1.5L9 15l4.5-1.5L15 9Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>}
             />
             <FilterPopover id="topic" width={420}>
               <div {...scrollableFilterProps('topic')} className="max-h-[360px] overflow-y-auto p-4">
-                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Topic</div>
-                {!selectedSubtopic ? (
-                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a sub-subject first.</div>
+                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">{taxonomyLabels.level3}</div>
+                {selectedSubSubjects.length === 0 ? (
+                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a {taxonomyLabels.level2.toLowerCase()} first.</div>
                 ) : !currentTopicOptions.length ? (
                   <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">
                     {currentSubSubjectHasUntaggedQuestions
-                      ? `${selectedSubtopic} is tagged as the sub-subject. These PYQs do not have a separate topic tag yet.`
-                      : 'No topics are assigned to this sub-subject.'}
+                      ? `${selectedSubSubjects.join(', ')} ${selectedSubSubjects.length === 1 ? 'is' : 'are'} tagged at this level. These PYQs do not have a separate ${taxonomyLabels.level3.toLowerCase()} tag yet.`
+                      : `No ${taxonomyLabels.level3.toLowerCase()} values are assigned to the selected ${taxonomyLabels.level2.toLowerCase()} value(s).`}
                   </div>
                 ) : (
                   <div className="grid gap-1">
                     {currentTopicOptions.map((topic) => {
                       const active = selectedTopics.includes(topic);
+                      const needle = topic.trim().toLowerCase();
+                      const topicCount = questionCounts.byTopic.reduce(
+                        (sum, row) =>
+                          selectedSubSubjectKeys.has(countKey(row.subSubject)) &&
+                          (row.topic || '').toLowerCase().includes(needle)
+                            ? sum + row.count
+                            : sum,
+                        0
+                      );
                       return (
                         <button
                           key={topic}
@@ -1291,7 +1587,7 @@ export default function PyqPage() {
                         >
                           <span>{topic}</span>
                           <span className="ml-3 rounded-full bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] text-[#9AA3B2]">
-                            {getTopicQuestionCount(selectedSubject, selectedSubtopic, topic)}
+                            {topicCount}
                           </span>
                         </button>
                       );
@@ -1307,8 +1603,9 @@ export default function PyqPage() {
           <div className="relative">
             <FilterTrigger
               id="year"
-              label="Year"
-              value={yearMode === 'custom' && selectedYears.length ? `${selectedYears.length} years` : 'Year'}
+              label={yearMode === 'custom' && selectedYears.length ? `${selectedYears.length}Y` : 'Year'}
+              active={yearMode === 'custom' && selectedYears.length > 0}
+              count={selectedYears.length}
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="M7 3v4M17 3v4M4 9h16M5 5h14v15H5V5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>}
             />
             <FilterPopover id="year" width={420}>
@@ -1364,38 +1661,12 @@ export default function PyqPage() {
             </FilterPopover>
           </div>
 
-          <div className="relative">
-            <FilterTrigger
-              id="difficulty"
-              label="Difficulty"
-              icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2 7.5 14 3 9.6l6.2-.9L12 3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>}
-            />
-            <FilterPopover id="difficulty" width={280}>
-              <div className="p-4">
-                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Difficulty</div>
-                <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">
-                  Difficulty is shown on each question. The live PYQ API does not expose a difficulty filter yet.
-                </div>
-              </div>
-            </FilterPopover>
-          </div>
-
           {filterDocked && (
             <div className="hidden flex-shrink-0 px-1 lg:block">
               <ExamModeToggle compact />
             </div>
           )}
 
-          <div className="ml-auto flex flex-shrink-0 items-center gap-1.5">
-            <button
-              type="button"
-              onClick={resetAllFilters}
-              disabled={!hasActiveFilters}
-              className="rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-[14px] font-semibold text-[#9AA3B2] transition-colors hover:text-[#C10007] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              × Clear all
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -1424,7 +1695,7 @@ export default function PyqPage() {
         badgeText="PREVIOUS YEAR QUESTIONS"
         title={
           <>
-            Decode <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>UPSC</em>
+            The Complete <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>PYQ Bank</em> to Decode UPSC
           </>
         }
         subtitle="Explore 6,500+ UPSC Previous Year Questions, organized by subject, topic, and year, with in-depth solutions and detailed explanations."
@@ -1442,6 +1713,70 @@ export default function PyqPage() {
         </div>
 
         <FilterToolbar />
+
+        {/* Active filter pills */}
+        {(() => {
+          const pills: Array<{ key: string; label: string; onRemove: () => void }> = [];
+          selectedPapers.forEach((paper) => {
+            pills.push({
+              key: `paper:${paper}`,
+              label: `Paper: ${paper}`,
+              onRemove: () => setSelectedPapers((prev) => prev.filter((p) => p !== paper)),
+            });
+          });
+          selectedSubjects.forEach((subject) => {
+            pills.push({
+              key: `subject:${subject}`,
+              label: subject,
+              onRemove: () => setSelectedSubjects((prev) => prev.filter((s) => s !== subject)),
+            });
+          });
+          selectedSubSubjects.forEach((subSubject) => {
+            pills.push({
+              key: `subSubject:${subSubject}`,
+              label: subSubject,
+              onRemove: () => setSelectedSubSubjects((prev) => prev.filter((s) => s !== subSubject)),
+            });
+          });
+          selectedTopics.forEach((topic) => {
+            pills.push({
+              key: `topic:${topic}`,
+              label: topic,
+              onRemove: () => setSelectedTopics((prev) => prev.filter((t) => t !== topic)),
+            });
+          });
+          if (yearMode === 'custom' && selectedYears.length > 0) {
+            selectedYears.forEach((yr) => {
+              pills.push({
+                key: `year:${yr}`,
+                label: `Year: ${yr}`,
+                onRemove: () => setSelectedYears((prev) => prev.filter((y) => y !== yr)),
+              });
+            });
+          }
+          if (!pills.length) return null;
+          return (
+            <div className="mb-6 flex flex-wrap items-center gap-2">
+              <span className="mr-1 text-[13px] font-medium text-[#9AA3B2]">Active filters:</span>
+              {pills.map((pill) => (
+                <span
+                  key={pill.key}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#EEF0F3] bg-white py-1.5 pl-4 pr-1.5 text-[13px] font-medium text-[#101828] shadow-[0_1px_2px_rgba(15,17,26,0.04)]"
+                >
+                  {pill.label}
+                  <button
+                    type="button"
+                    aria-label={`Remove ${pill.label}`}
+                    onClick={pill.onRemove}
+                    className="flex h-5 w-5 items-center justify-center rounded-full bg-[#F0F1F3] text-[11px] text-[#9AA3B2] transition-colors hover:bg-[#C10007] hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Content area */}
         <div className="flex flex-col gap-8">
@@ -1464,49 +1799,12 @@ export default function PyqPage() {
               <nav aria-label="Filter path" className="flex flex-wrap items-center gap-1.5 mb-4">
                 <button
                   type="button"
-                  onClick={() => { setSelectedSubject('All Papers'); setSelectedSubtopic(null); setSelectedTopics([]); setExpandedSubject(null); setExpandedSubtopic(null); }}
+                  onClick={() => { setSelectedSubjects([]); setSelectedSubSubjects([]); setSelectedTopics([]); setExpandedSubject(null); setExpandedSubtopic(null); }}
                   className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                  style={{ background: selectedSubject === 'All Papers' ? '#0F1A30' : '#EEF2FF', color: selectedSubject === 'All Papers' ? '#FFFFFF' : '#4338CA' }}
+                  style={{ background: selectedSubjects.length === 0 ? '#0F1A30' : '#EEF2FF', color: selectedSubjects.length === 0 ? '#FFFFFF' : '#4338CA' }}
                 >
                   📘 All Papers
                 </button>
-                {selectedSubject !== 'All Papers' && (
-                  <>
-                    <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedSubtopic(null); setSelectedTopics([]); setExpandedSubtopic(null); }}
-                      className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                      style={{ background: !selectedSubtopic ? '#0F1A30' : '#DBEAFE', color: !selectedSubtopic ? '#FFFFFF' : '#1D4ED8' }}
-                    >
-                      {iconForSubject(selectedSubject)} {selectedSubject}
-                    </button>
-                  </>
-                )}
-                {selectedSubtopic && (
-                  <>
-                    <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTopics([])}
-                      className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                      style={{ background: !selectedTopics[0] ? '#0F1A30' : '#FEF3C7', color: !selectedTopics[0] ? '#FFFFFF' : '#92400E' }}
-                    >
-                      {selectedSubtopic}
-                    </button>
-                  </>
-                )}
-                {selectedTopics[0] && (
-                  <>
-                    <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
-                    <span
-                      className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold"
-                      style={{ background: '#0F1A30', color: '#FFFFFF' }}
-                    >
-                      {selectedTopics[0]}
-                    </span>
-                  </>
-                )}
               </nav>
 
               {/* Loading skeleton */}
@@ -1870,49 +2168,12 @@ export default function PyqPage() {
                 <nav aria-label="Filter path" className="flex flex-wrap items-center gap-1.5 mb-5">
                   <button
                     type="button"
-                    onClick={() => { setSelectedSubject('All Papers'); setSelectedSubtopic(null); setSelectedTopics([]); setExpandedSubject(null); setExpandedSubtopic(null); }}
+                    onClick={() => { setSelectedSubjects([]); setSelectedSubSubjects([]); setSelectedTopics([]); setExpandedSubject(null); setExpandedSubtopic(null); }}
                     className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                    style={{ background: selectedSubject === 'All Papers' ? '#0F1A30' : '#EEF2FF', color: selectedSubject === 'All Papers' ? '#FFFFFF' : '#4338CA' }}
+                    style={{ background: selectedSubjects.length === 0 ? '#0F1A30' : '#EEF2FF', color: selectedSubjects.length === 0 ? '#FFFFFF' : '#4338CA' }}
                   >
                     📘 All Papers
                   </button>
-                  {selectedSubject !== 'All Papers' && (
-                    <>
-                      <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedSubtopic(null); setSelectedTopics([]); setExpandedSubtopic(null); }}
-                        className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                        style={{ background: !selectedSubtopic ? '#0F1A30' : '#DBEAFE', color: !selectedSubtopic ? '#FFFFFF' : '#1D4ED8' }}
-                      >
-                        {iconForSubject(selectedSubject)} {selectedSubject}
-                      </button>
-                    </>
-                  )}
-                  {selectedSubtopic && (
-                    <>
-                      <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedTopics([])}
-                        className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                        style={{ background: !selectedTopics[0] ? '#0F1A30' : '#FEF3C7', color: !selectedTopics[0] ? '#FFFFFF' : '#92400E' }}
-                      >
-                        {selectedSubtopic}
-                      </button>
-                    </>
-                  )}
-                  {selectedTopics[0] && (
-                    <>
-                      <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
-                      <span
-                        className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold"
-                        style={{ background: '#0F1A30', color: '#FFFFFF' }}
-                      >
-                        {selectedTopics[0]}
-                      </span>
-                    </>
-                  )}
                 </nav>
 
                 {/* Loading skeleton */}
@@ -2019,24 +2280,134 @@ export default function PyqPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setSelectedQuestion(q);
-                          setShowModelAnswerModal(true);
+                          setExpandedModelAnswerIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(q.id)) next.delete(q.id);
+                            else next.add(q.id);
+                            return next;
+                          });
                         }}
-                        className="flex items-center justify-center"
-                        style={{ height: '59px', borderRadius: '14px', background: '#0F172A', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
+                        className="flex items-center justify-center gap-2"
+                        style={{ height: '59px', borderRadius: '14px', background: '#FFFFFF', color: '#101828', border: '1.5px solid #E5E7EB', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
+                        <span aria-hidden>📄</span>
                         <span>Model Answer</span>
                       </button>
-                      <button
-                        type="button"
-                        className="flex items-center justify-center"
-                        style={{ width: '59px', height: '59px', borderRadius: '14px', background: '#FFFFFF', border: '1.6px solid #FFC9C9', fontSize: '20px', cursor: 'pointer', flexShrink: 0 }}
-                        aria-label="Write answer"
-                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(MAINS_TIME_LIMIT); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
-                      >
-                        ✏️
-                      </button>
                     </div>
+
+                    {expandedModelAnswerIds.has(q.id) && (
+                      <div
+                        className="mt-1"
+                        style={{
+                          padding: '20px',
+                          borderRadius: '14px',
+                          border: '1px solid rgba(212,175,55,0.25)',
+                          background: 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, rgba(212,175,55,0.02) 100%)',
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-4" style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '1px', color: '#101828', textTransform: 'uppercase' }}>
+                          <span aria-hidden style={{ color: '#D4AF37' }}>★</span>
+                          <span>Model Answer</span>
+                        </div>
+
+                        <EssayModelAnswerRenderer
+                          question={q}
+                          essayPartOrder={essayPartOrder}
+                          onToggleOrder={() => setEssayPartOrder((current) => current === 'decode-first' ? 'essay-first' : 'decode-first')}
+                        />
+
+                        <div className="flex flex-wrap items-center gap-3 pt-4 mt-2" style={{ borderTop: '1px solid rgba(212,175,55,0.15)' }}>
+                          <button
+                            type="button"
+                            onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(MAINS_TIME_LIMIT); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                            className="flex items-center gap-2"
+                            style={{ padding: '10px 20px', borderRadius: '10px', background: '#101828', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', border: 'none' }}
+                          >
+                            <span aria-hidden>✨</span>
+                            <span>Write &amp; Evaluate</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleMainsBookmark(q)}
+                            disabled={mainsBookmarkBusyIds.has(q.id)}
+                            className="flex items-center gap-2"
+                            style={{
+                              padding: '9px 18px',
+                              borderRadius: '10px',
+                              fontFamily: 'Inter, sans-serif',
+                              fontWeight: 600,
+                              fontSize: '14px',
+                              border: mainsBookmarkedIds.has(q.id) ? '1.5px solid #D4AF37' : '1.5px solid #E5E7EB',
+                              background: mainsBookmarkedIds.has(q.id) ? 'rgba(212,175,55,0.1)' : '#FFFFFF',
+                              color: mainsBookmarkedIds.has(q.id) ? '#9A7B0E' : '#101828',
+                              opacity: mainsBookmarkBusyIds.has(q.id) ? 0.6 : 1,
+                            }}
+                          >
+                            <span aria-hidden>🔖</span>
+                            <span>{mainsBookmarkBusyIds.has(q.id) ? 'Saving...' : mainsBookmarkedIds.has(q.id) ? 'Bookmarked' : 'Bookmark'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addMainsFlashcard(q)}
+                            disabled={mainsFlashcardBusyIds.has(q.id)}
+                            className="flex items-center gap-2"
+                            style={{
+                              padding: '9px 18px',
+                              borderRadius: '10px',
+                              fontFamily: 'Inter, sans-serif',
+                              fontWeight: 600,
+                              fontSize: '14px',
+                              border: mainsFlashcardIds.has(q.id) ? '1.5px solid #0891B2' : '1.5px solid #E5E7EB',
+                              background: mainsFlashcardIds.has(q.id) ? 'rgba(8,145,178,0.08)' : '#FFFFFF',
+                              color: mainsFlashcardIds.has(q.id) ? '#0891B2' : '#101828',
+                              opacity: mainsFlashcardBusyIds.has(q.id) ? 0.6 : 1,
+                            }}
+                          >
+                            <span aria-hidden>⚡</span>
+                            <span>{mainsFlashcardBusyIds.has(q.id) ? 'Adding...' : mainsFlashcardIds.has(q.id) ? 'In Flashcards' : 'Add to Flashcard'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleMainsReview(q)}
+                            disabled={mainsReviewBusyIds.has(q.id)}
+                            className="flex items-center gap-2"
+                            style={{
+                              padding: '9px 18px',
+                              borderRadius: '10px',
+                              fontFamily: 'Inter, sans-serif',
+                              fontWeight: 600,
+                              fontSize: '14px',
+                              border: mainsReviewIds.has(q.id) ? '1.5px solid #E65100' : '1.5px solid #E5E7EB',
+                              background: mainsReviewIds.has(q.id) ? 'rgba(230,81,0,0.08)' : '#FFFFFF',
+                              color: mainsReviewIds.has(q.id) ? '#E65100' : '#101828',
+                              opacity: mainsReviewBusyIds.has(q.id) ? 0.6 : 1,
+                            }}
+                          >
+                            <span aria-hidden>🕐</span>
+                            <span>{mainsReviewBusyIds.has(q.id) ? 'Saving...' : mainsReviewIds.has(q.id) ? 'Added to Review' : 'Need to Review'}</span>
+                          </button>
+                        </div>
+
+                        <div
+                          className="flex items-start gap-2 mt-4"
+                          style={{
+                            padding: '12px 14px',
+                            background: 'rgba(212,175,55,0.06)',
+                            borderLeft: '3px solid #D4AF37',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            lineHeight: 1.6,
+                            color: '#4A5565',
+                          }}
+                        >
+                          <span aria-hidden>ⓘ</span>
+                          <span>
+                            Model answers may exceed the prescribed word limit for better clarity and depth. Use them as a
+                            reference, always frame your final answer within the exam&apos;s word limit.
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
                   </div>
                   );
@@ -2182,42 +2553,6 @@ export default function PyqPage() {
         </div>
       )}
 
-      {showModelAnswerModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(15,23,42,0.55)' }}
-          onClick={() => setShowModelAnswerModal(false)}
-        >
-          <div
-            className="rounded-[24px] bg-white p-8"
-            style={{ width: 720, maxWidth: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <h2 className="m-0 text-[24px] font-bold text-[#101828]">Model Answer</h2>
-              <button
-                type="button"
-                onClick={() => setShowModelAnswerModal(false)}
-                className="h-10 w-10 rounded-full bg-[#101828] text-white"
-                aria-label="Close model answer"
-              >
-                x
-              </button>
-            </div>
-            <QuestionTextRenderer
-              text={
-                selectedQuestion?.modelAnswer ||
-                selectedQuestion?.answer ||
-                selectedQuestion?.explanation ||
-                'Model answer is being prepared for this question.'
-              }
-              className="rounded-[16px] border border-[#E5E7EB] bg-[#F9FAFB] p-5"
-              textClassName="text-[16px] leading-[28px] text-[#1E2939]"
-            />
-          </div>
-        </div>
-      )}
-
       {/* Mains Write & AI Evaluate modal - opens from Write & Evaluate on Mains tab */}
       {showMainsWriteModal && (
         <div
@@ -2241,8 +2576,14 @@ export default function PyqPage() {
                 <div>
                   <h2 className="m-0 font-bold" style={{ fontFamily: 'Merriweather, serif', fontSize: 22 }}>Craft Your Answer</h2>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    {selectedQuestion?.paper && <span className="rounded-[7px] border border-[#D9B84A]/35 bg-[#D9B84A]/15 px-3 py-1 text-[12px] font-bold text-[#D9B84A]">{selectedQuestion.paper}</span>}
-                    {selectedQuestion?.subject && <span className="rounded-[7px] border border-[#4ADE80]/25 bg-[#4ADE80]/15 px-3 py-1 text-[12px] font-bold text-[#86EFAC]">{selectedQuestion.subject}</span>}
+                    {selectedQuestion?.paper && (() => {
+                      const style = getSubjectMetaStyle(selectedQuestion.paper);
+                      return <span className="inline-flex items-center gap-1 rounded-[7px] px-3 py-1 text-[12px] font-bold" style={{ border: `1px solid ${style.border}`, background: style.bg, color: style.color }}><span aria-hidden>{style.icon}</span>{selectedQuestion.paper}</span>;
+                    })()}
+                    {selectedQuestion?.subject && (() => {
+                      const style = getSubjectMetaStyle(selectedQuestion.subject);
+                      return <span className="inline-flex items-center gap-1 rounded-[7px] px-3 py-1 text-[12px] font-bold" style={{ border: `1px solid ${style.border}`, background: style.bg, color: style.color }}><span aria-hidden>{style.icon}</span>{selectedQuestion.subject}</span>;
+                    })()}
                   </div>
                 </div>
               </div>
@@ -2256,7 +2597,7 @@ export default function PyqPage() {
               </button>
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[1fr_300px]">
+            <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_300px]">
               <div className="min-h-0 px-8 py-5">
                 <div className="rounded-[12px] bg-[#F9FAFB] p-4" style={{ borderLeft: '4px solid #D4AF37' }}>
                   <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Question</div>
@@ -2271,11 +2612,6 @@ export default function PyqPage() {
                   <span>◷ 20 min</span>
                   <span>✍️ 250 words</span>
                   <span>☆ {selectedQuestion?.marks || selectedQuestion?.maxMarks || 15} marks</span>
-                </div>
-
-                <div className="mt-4 flex items-center gap-2 text-[16px] font-bold text-[#0F172B]">
-                  <span className="text-[#D4AF37]">⇧</span>
-                  Upload your answer
                 </div>
 
               <input
@@ -2297,77 +2633,94 @@ export default function PyqPage() {
                   setMainsFile(selected[0] || null);
                 }}
               />
-                <div
-                  className="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-[14px] text-center"
-                  style={{
-                    minHeight: 190,
-                    border: mainsFiles.length > 0 ? '1.5px dashed #17223E' : '1px dashed #CBD5E1',
-                    background: mainsFiles.length > 0 ? '#EFF6FF' : '#F9FAFB',
-                  }}
-                  onClick={() => mainsFileInputRef.current?.click()}
-                >
-                  <div className="mb-3 grid h-11 w-11 place-items-center rounded-[12px] bg-[#0F1424] text-[#D4AF37]">⇧</div>
-                  <p className="mb-1 text-[15px] font-bold text-[#0F172B]">
-                    {mainsFiles.length > 1 ? `${mainsFiles.length} pages selected` : mainsFile ? mainsFile.name : 'Drop your answer script here'}
-                  </p>
-                  <p className="mb-3 text-[13px] text-[#9AA3B2]">Upload handwritten answers for AI evaluation</p>
-                  {mainsFiles.length > 1 && (
-                    <div className="mb-3 max-w-full px-6 text-left text-[12px] text-[#4B5563]">
-                      {mainsFiles.map((file, index) => (
-                        <div key={`${file.name}-${index}`} className="truncate">Page {index + 1}: {file.name}</div>
-                      ))}
+
+                {!textAnswerExpanded && (
+                  <>
+                    <div className="mt-4 flex items-center gap-2 text-[16px] font-bold text-[#0F172B]">
+                      <span className="text-[#D4AF37]">⇧</span>
+                      Upload your answer
                     </div>
-                  )}
-                  <div className="mb-3 flex flex-wrap justify-center gap-2">
-                    {['JPG', 'PNG', 'PDF', 'Max 10MB'].map((fmt) => (
-                      <span key={fmt} className="rounded bg-[#E5E7EB] px-2.5 py-1 text-[12px] text-[#374151]">{fmt}</span>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      mainsFileInputRef.current?.click();
-                    }}
-                    className="rounded-[8px] border border-[#D1D5DB] bg-white px-6 py-2 text-[14px] font-bold text-[#111827]"
-                  >
-                    Browse Files
-                  </button>
-                </div>
 
-                <button type="button" onClick={() => setTextAnswerExpanded((v) => !v)} className="mt-4 flex w-full items-center gap-3">
-                  <div className="h-px flex-1 bg-[#E5E7EB]" />
-                  <span className="rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">
-                    {textAnswerExpanded ? '⌃ Hide typed answer' : '⌄ OR Type your answer'}
-                  </span>
-                  <div className="h-px flex-1 bg-[#E5E7EB]" />
-                </button>
+                    <div
+                      className="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-[14px] px-6 py-9 text-center"
+                      style={{
+                        minHeight: 270,
+                        border: mainsFiles.length > 0 ? '1.5px dashed #17223E' : '1px dashed #CBD5E1',
+                        background: mainsFiles.length > 0 ? '#EFF6FF' : '#F9FAFB',
+                      }}
+                      onClick={() => mainsFileInputRef.current?.click()}
+                    >
+                      <div className="mb-5 grid h-12 w-12 place-items-center rounded-[12px] bg-[#0F1424] text-[#D4AF37]">⇧</div>
+                      <p className="mb-2 text-[16px] font-bold text-[#0F172B]">
+                        {mainsFiles.length > 1 ? `${mainsFiles.length} pages selected` : mainsFile ? mainsFile.name : 'Drop your answer script here'}
+                      </p>
+                      <p className="mb-5 text-[14px] text-[#9AA3B2]">Upload handwritten answers for AI evaluation</p>
+                      {mainsFiles.length > 1 && (
+                        <div className="mb-5 max-w-full px-6 text-left text-[12px] text-[#4B5563]">
+                          {mainsFiles.map((file, index) => (
+                            <div key={`${file.name}-${index}`} className="truncate">Page {index + 1}: {file.name}</div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="mb-5 flex flex-wrap justify-center gap-2">
+                        {['JPG', 'PNG', 'PDF', 'Max 10MB'].map((fmt) => (
+                          <span key={fmt} className="rounded bg-[#E5E7EB] px-2.5 py-1 text-[12px] text-[#374151]">{fmt}</span>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          mainsFileInputRef.current?.click();
+                        }}
+                        className="rounded-[8px] border border-[#D1D5DB] bg-white px-6 py-2 text-[14px] font-bold text-[#111827]"
+                      >
+                        Browse Files
+                      </button>
+                    </div>
 
-                {textAnswerExpanded && (
-                  <div className="mt-4">
-                    <textarea
-                      value={mainsAnswerText}
-                      onChange={(e) => setMainsAnswerText(e.target.value)}
-                      placeholder="Write your answer here..."
-                      className="w-full resize-y rounded-[10px] border border-[#D1D5DB] bg-[#F9FAFB] p-4 text-[#101828] outline-none"
-                      style={{ minHeight: 120, fontSize: 15, lineHeight: '24px' }}
-                    />
-                    <p className="mt-1 text-right text-[12px] text-[#6A7282]">{mainsAnswerText.trim().split(/\s+/).filter(Boolean).length} words</p>
-                  </div>
+                    <button type="button" onClick={() => setTextAnswerExpanded(true)} className="mt-4 flex w-full items-center gap-3">
+                      <div className="h-px flex-1 bg-[#E5E7EB]" />
+                      <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">
+                        <span
+                          aria-hidden="true"
+                          className="h-2 w-2 border-b-2 border-r-2 border-[#8B919B]"
+                          style={{ transform: 'rotate(45deg)' }}
+                        />
+                        OR Type your answer
+                      </span>
+                      <div className="h-px flex-1 bg-[#E5E7EB]" />
+                    </button>
+                  </>
                 )}
 
-                {mainsQuota && (
-                  <div className="mt-4 flex items-center gap-3 rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#DCFCE7]">✅</span>
-                    <div>
-                      <p className="text-[13px] font-bold text-[#166534]">Free evaluation available</p>
-                      <p className="text-[12px] text-[#4A5565]">
-                        {mainsQuota.limit === null || mainsQuota.period === 'unlimited'
-                          ? 'Unlimited evaluations remaining'
-                          : `${mainsQuota.remaining ?? 0} of ${mainsQuota.limit ?? 0} free evaluations remaining`}
-                      </p>
+                {textAnswerExpanded && (
+                  <>
+                    <button type="button" onClick={() => setTextAnswerExpanded(false)} className="mt-4 flex w-full items-center gap-3">
+                      <div className="h-px flex-1 bg-[#E5E7EB]" />
+                      <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">
+                        <span
+                          aria-hidden="true"
+                          className="h-2 w-2 border-b-2 border-r-2 border-[#8B919B]"
+                          style={{ transform: 'rotate(225deg)' }}
+                        />
+                        Hide
+                      </span>
+                      <div className="h-px flex-1 bg-[#E5E7EB]" />
+                    </button>
+
+                    <div className="mt-4">
+                      <textarea
+                        value={mainsAnswerText}
+                        onChange={(e) => setMainsAnswerText(e.target.value)}
+                        placeholder="Write your answer here..."
+                        autoFocus
+                        className="w-full resize-y rounded-[10px] border border-[#D1D5DB] bg-[#F9FAFB] p-4 text-[#101828] outline-none"
+                        style={{ minHeight: 160, fontSize: 15, lineHeight: '24px' }}
+                      />
+                      <p className="mt-1 text-right text-[12px] text-[#6A7282]">{mainsAnswerText.trim().split(/\s+/).filter(Boolean).length} words</p>
                     </div>
-                  </div>
+                  </>
                 )}
 
                 {mainsSubmitError && (
@@ -2426,16 +2779,16 @@ export default function PyqPage() {
                 <div className="rounded-[18px] bg-white p-4 text-center shadow-sm">
                   <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Writing Timer</div>
                   {(() => {
-                    const radius = 62;
+                    const radius = 82;
                     const circumference = 2 * Math.PI * radius;
                     const pct = Math.max(0, Math.min(1, mainsTimeLeft / MAINS_TIME_LIMIT));
                     return (
-                      <div className="relative mx-auto mb-3 flex h-[132px] w-[132px] items-center justify-center">
-                        <svg width="132" height="132" viewBox="0 0 150 150" style={{ transform: 'rotate(-90deg)' }}>
-                          <circle cx="75" cy="75" r={radius} fill="none" stroke="#E6E8EE" strokeWidth="5" />
+                      <div className="relative mx-auto mb-3 flex h-[180px] w-[180px] items-center justify-center">
+                        <svg width="180" height="180" viewBox="0 0 180 180" style={{ transform: 'rotate(-90deg)' }}>
+                          <circle cx="90" cy="90" r={radius} fill="none" stroke="#E6E8EE" strokeWidth="5" />
                           <circle
-                            cx="75"
-                            cy="75"
+                            cx="90"
+                            cy="90"
                             r={radius}
                             fill="none"
                             stroke={mainsTimeLeft <= 60 ? '#EF4444' : '#D4AF37'}
@@ -2445,11 +2798,11 @@ export default function PyqPage() {
                             strokeDashoffset={circumference * (1 - pct)}
                           />
                         </svg>
-                        <div className="absolute">
-                          <div className="font-mono text-[26px] font-bold text-[#0B1020]">
+                        <div className="absolute flex flex-col items-center">
+                          <div className="font-mono text-[32px] font-bold text-[#0B1020]" style={{ fontVariantNumeric: 'tabular-nums' }}>
                             {Math.floor(mainsTimeLeft / 60)}:{String(mainsTimeLeft % 60).padStart(2, '0')}
                           </div>
-                          <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9AA3B2]">
+                          <div className="mt-1 whitespace-nowrap text-[9px] font-semibold uppercase tracking-[0.1em] text-[#9AA3B2]">
                             {mainsReadTimeLeft !== null ? `Auto-start ${mainsReadTimeLeft}s` : 'Minutes left'}
                           </div>
                         </div>
@@ -2790,13 +3143,20 @@ export default function PyqPage() {
             >
               <div className="flex items-center gap-2 flex-wrap">
                 <div
-                  className="rounded-[14px] flex items-center justify-center flex-shrink-0"
-                  style={{ width: 48, height: 48, background: '#1E293B', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: '18px', lineHeight: '28px' }}
+                  className="rounded-[14px] flex items-center justify-center flex-shrink-0 px-3"
+                  style={{ minWidth: 64, height: 48, background: '#1E293B', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: '15px', lineHeight: '22px' }}
                 >
-                  {selectedQuestion?.questionNum ?? '?'}
+                  {selectedQuestion?.paper || 'Mains'}
                 </div>
                 <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: '#1E293B', color: '#FFFFFF' }}>{selectedQuestion?.year}</span>
-                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: '#FEF3C6', color: '#BB4D00' }}>{selectedQuestion?.subject}</span>
+                {selectedQuestion?.subject && (() => {
+                  const style = getSubjectMetaStyle(selectedQuestion.subject);
+                  return (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}>
+                      <span aria-hidden>{style.icon}</span>{selectedQuestion.subject}
+                    </span>
+                  );
+                })()}
                 <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#FFEDD4', color: '#F54900' }}>🔥 {selectedQuestion?.difficulty}</span>
                 {hasSubmitted
                   ? <span className="px-3 py-1 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#DCFCE7', color: '#008236' }}>✅ Attempted</span>

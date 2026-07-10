@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { dailyMcqService, dashboardService } from '@/lib/services';
+import { dailyMcqService, dashboardService, leaderboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import SmartNextStepsModal from '@/components/SmartNextStepsModal';
 
@@ -178,6 +178,8 @@ export default function DailyMcqResultsPage() {
   const [showNextSteps, setShowNextSteps] = useState(false);
   const [includeRankStreak, setIncludeRankStreak] = useState(true);
   const [streak, setStreak] = useState<number | null>(null);
+  // Real leaderboard rank (prelims/MCQ bucket) — replaces the old "Top X%" percentile bucket.
+  const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank: number; realRankedCount: number } | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -193,6 +195,13 @@ export default function DailyMcqResultsPage() {
     dashboardService.getStreak()
       .then(res => setStreak(Number(res.data?.currentStreak ?? 0)))
       .catch(() => setStreak(null));
+  }, []);
+
+  // Real leaderboard rank for this aspirant (all-time, MCQ/prelims bucket).
+  useEffect(() => {
+    leaderboardService.getMyRank('all')
+      .then(res => setMyRank(res.data || null))
+      .catch(() => setMyRank(null));
   }, []);
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
@@ -242,11 +251,22 @@ export default function DailyMcqResultsPage() {
   const effectiveTimeSeconds = Math.min(r.timeTaken, 10 * 60);
   const speed = attemptedCount > 0 ? (effectiveTimeSeconds / 60 / attemptedCount).toFixed(2) : '0';
 
-  // Fix ranking display: show meaningful rank even with low participation
-  const displayPercentile = Math.min(Math.max(r.percentile, 0), 99);
-  const rankLabel = r.rank > 0 && r.questionCount > 1
-    ? displayPercentile >= 95 ? `Top 5%` : displayPercentile >= 90 ? `Top 10%` : displayPercentile >= 75 ? `Top 25%` : displayPercentile >= 50 ? `Top 50%` : `Keep practicing!`
-    : r.rank === 0 && r.questionCount > 0 ? 'First to attempt!' : 'Rankings updating...';
+  // Real leaderboard rank (prelims/MCQ bucket). Falls back to an unlock hint until
+  // the aspirant has enough attempts, then to a neutral "updating" message.
+  const rankUnlocked = !!myRank?.isRankUnlocked && !!myRank?.mcqRank;
+  const rankedTotal = myRank?.realRankedCount ?? 0;
+  const rankLabel = rankUnlocked
+    ? `#${(myRank!.mcqRank as number).toLocaleString('en-IN')}`
+    : myRank && myRank.attemptsToUnlockRank > 0
+      ? `${myRank.attemptsToUnlockRank} more to unlock`
+      : 'Rankings updating...';
+  const rankSubLabel = rankUnlocked && rankedTotal > 0
+    ? `of ${rankedTotal.toLocaleString('en-IN')} ranked`
+    : 'among aspirants today';
+  // Bar fills more the higher you rank (rank #1 ≈ full bar).
+  const rankBarPct = rankUnlocked && rankedTotal > 0
+    ? Math.max(4, Math.min(100, Math.round((1 - ((myRank!.mcqRank as number) - 1) / rankedTotal) * 100)))
+    : 0;
 
   // Report metadata shown in the download/share popups (matches the reference: date · name · report id).
   const reportName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Aspirant';
@@ -401,7 +421,7 @@ export default function DailyMcqResultsPage() {
                 { label: 'Accuracy', value: `${Math.round(r.accuracy)}%`, sub: 'this attempt', valueSize: 'clamp(18px,1.35vw,26px)', cls: 'dmscore-accuracy', iconCls: 'dmscore-icon-accuracy', barColor: '#7FB29A', barPct: Math.max(0, Math.min(100, Math.round(r.accuracy))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>) },
                 { label: 'Time Taken', value: `${minutes}m ${seconds}s`, sub: 'of 10 min', valueSize: 'clamp(18px,1.35vw,26px)', cls: 'dmscore-time', iconCls: 'dmscore-icon-time', barColor: '#8AA3C4', barPct: Math.max(0, Math.min(100, Math.round((effectiveTimeSeconds / 600) * 100))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg>) },
                 { label: 'Speed', value: `${speed} min/Q`, sub: 'Avg per question', valueSize: 'clamp(14px,1.1vw,22px)', cls: 'dmscore-speed', iconCls: 'dmscore-icon-speed', barColor: '#C9A876', barPct: Math.max(0, Math.min(100, Math.round(parseFloat(speed) * 100))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="currentColor" stroke="none"/></svg>) },
-                { label: 'Rank', value: rankLabel, sub: 'among aspirants today', valueSize: 'clamp(15px,1.15vw,22px)', cls: 'dmscore-rank', iconCls: 'dmscore-icon-rank', barColor: '#A99BC4', barPct: Math.max(0, Math.min(100, displayPercentile)), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4H3v2a3 3 0 0 0 3 3"/><path d="M19 4h2v2a3 3 0 0 1-3 3"/><path d="M12 13v4"/><path d="M8 21h8"/><path d="M9 17h6l1 4H8z" fill="currentColor" stroke="none"/></svg>) },
+                { label: 'Rank', value: rankLabel, sub: rankSubLabel, valueSize: 'clamp(15px,1.15vw,22px)', cls: 'dmscore-rank', iconCls: 'dmscore-icon-rank', barColor: '#A99BC4', barPct: rankBarPct, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4H3v2a3 3 0 0 0 3 3"/><path d="M19 4h2v2a3 3 0 0 1-3 3"/><path d="M12 13v4"/><path d="M8 21h8"/><path d="M9 17h6l1 4H8z" fill="currentColor" stroke="none"/></svg>) },
               ].map((s) => (
                 <div key={s.label} className={`dmscore-card ${s.cls}`}>
                   <div className={`dmscore-icon ${s.iconCls}`}>{s.icon}</div>
@@ -426,25 +446,6 @@ export default function DailyMcqResultsPage() {
                   </svg>
                   <span style={{ position: 'relative', zIndex: 1 }}>View Question-wise Review</span>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ position: 'relative', zIndex: 1 }}>
-                    <path d="M9 6l6 6-6 6" />
-                  </svg>
-                </button>
-              </Link>
-
-              {/* Review Weak Areas — jumps straight to the questions you got wrong,
-                  where each can be saved to the Spaced Repetition / Weakness Tracker. */}
-              <Link href="/dashboard/daily-mcq/review?filter=wrong">
-                <button
-                  type="button"
-                  className="weak-review-btn w-full font-arimo font-bold"
-                  style={{ position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(8px,0.9vw,12px)', borderRadius: 14, padding: 'clamp(12px,1vw,16px)', fontSize: 'clamp(13px,0.8vw,15px)', cursor: 'pointer' }}>
-                  <span className="weak-badge">⚠ {r.questionCount - r.correctCount} weak</span>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M3 2v6h6" />
-                    <path d="M3.51 15a9 9 0 1 0 .49-9.36L3 8" />
-                  </svg>
-                  <span>Review Weak Areas</span>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M9 6l6 6-6 6" />
                   </svg>
                 </button>

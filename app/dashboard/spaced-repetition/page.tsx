@@ -8,6 +8,8 @@ import { EntitlementGate, UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import SpacedRepStyles from './referenceStyles';
 import AddQuestionModal, { type AddQuestionPayload } from './AddQuestionModal';
+import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
+import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
 import {
   SUBJECT_HEALTH,
   isSameLocalDate,
@@ -17,18 +19,6 @@ import {
   subjectOptions,
   type SpacedRepItem,
 } from './shared';
-
-// Per-subject card tint + accent colour, matching the reference layout exactly.
-const CARD_STYLE: Record<string, { tint: string; accent: string }> = {
-  polity: { tint: 'tint-yellow', accent: 'var(--orange)' },
-  geography: { tint: 'tint-green', accent: 'var(--green)' },
-  history: { tint: 'tint-peach', accent: 'var(--orange)' },
-  economy: { tint: 'tint-yellow', accent: 'var(--gold)' },
-  'environment-ecology': { tint: 'tint-mint', accent: 'var(--green)' },
-  'science-technology': { tint: 'tint-peach', accent: 'var(--orange)' },
-  'current-affairs': { tint: 'tint-rose', accent: 'var(--red)' },
-  ethics: { tint: 'tint-yellow', accent: 'var(--gold)' },
-};
 
 export default function SpacedRepetitionPage() {
   const entitlements = useEntitlements();
@@ -132,6 +122,7 @@ export default function SpacedRepetitionPage() {
       message="Free users can preview other revision tools. Aspire unlocks a 2-question spaced-repetition preview; Rise unlocks the full system."
     >
     <SpacedRepStyles />
+    <SubjectChoiceCardStyles />
     <div className="flex overflow-hidden" style={{ background: '#F9FAFB', height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
         <DashboardPageHero
@@ -170,28 +161,36 @@ export default function SpacedRepetitionPage() {
             </div>
             <div className="subject-card-grid">
               {SUBJECT_HEALTH.map((s) => {
-                const style = CARD_STYLE[s.id] ?? { tint: 'tint-yellow', accent: 'var(--gold)' };
+                const style = getSubjectCardStyle(s.label);
+                const subjectMeta = getSubjectMetaStyle(s.label);
                 const acc = resolveAccuracy(subjectAccuracy, s);
                 const meta = strengthMeta(acc);
                 const barWidth = acc <= 0 ? 0 : Math.max(acc, 6);
                 const pending = subjectCounts[s.label] ?? 0;
-                const showStrengthBadge = pending === 0 && acc > 0 && (acc >= 65 || (acc >= 50 && acc < 65));
                 return (
-                  <Link key={s.id} href={`/dashboard/spaced-repetition/${s.id}`} className={`subject-card ${style.tint}`}>
-                    <div className="card-accent" style={{ background: style.accent }} />
-                    {pending > 0 && <span className="s-badge warn">{pending} to revisit</span>}
-                    {showStrengthBadge && (
-                      <span className={`s-badge ${acc >= 65 ? 'good' : 'mid'}`}>
-                        {acc >= 65 ? '✓ Excellent' : '⚡ Moderate'}
+                  <SubjectChoiceCard
+                    key={s.id}
+                    href={`/dashboard/spaced-repetition/${s.id}`}
+                    icon={subjectMeta.icon}
+                    iconBg={subjectMeta.bg}
+                    accentColor={style.bar}
+                    title={s.shortLabel ?? s.label}
+                    meta={acc > 0 ? `${acc}% ${meta.word}` : 'No data yet'}
+                    topRight={pending > 0 && (
+                      <span
+                        className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
+                        style={{ background: '#EF4444', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
+                      >
+                        {pending} to revisit
                       </span>
                     )}
-                    <span className="s-icon">{s.icon}</span>
-                    <h3>{s.shortLabel ?? s.label}</h3>
-                    <div className="s-status">{acc > 0 ? `${acc}% ${meta.word}` : 'No data yet'}</div>
-                    <div className="s-bar"><div className="s-bar-fill" style={{ width: `${barWidth}%`, background: style.accent }} /></div>
-                    <div className="s-action">⊕ Start revising</div>
-                    <span className="s-click-hint">Click to view →</span>
-                  </Link>
+                    statusLine={acc > 0 ? meta.status : undefined}
+                    statusLineColor={meta.color}
+                    progressPercent={barWidth}
+                    progressColor={style.bar}
+                    footerRight="Start revising →"
+                    footerRightColor="#6A7282"
+                  />
                 );
               })}
             </div>

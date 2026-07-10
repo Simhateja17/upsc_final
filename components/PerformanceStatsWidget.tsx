@@ -394,14 +394,25 @@ const PerformanceStatsWidget = () => {
         style={{
           background: '#74A0FF30',
           minHeight: '50px',
-          padding: '8px 12px',
           borderRadius: '16px',
+          padding: '8px 12px',
         }}
       >
-        <div className="flex items-center justify-center min-w-0" style={{ gap: '8px' }}>
+        <div className="flex items-center justify-center" style={{ gap: '8px', minWidth: 0, width: '100%' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/add-icon.png" alt="" aria-hidden="true" style={{ width: '18px', height: '18px', objectFit: 'contain', flexShrink: 0 }} />
-          <span className="font-outfit font-semibold text-center" style={{ fontSize: '18px', lineHeight: '1.15', color: '#1E2875' }}>
+          <span
+            className="font-outfit font-semibold text-center"
+            style={{
+              fontSize: 'clamp(13px,1.1vw,18px)',
+              lineHeight: '1.3',
+              color: '#1E2875',
+              minWidth: 0,
+              flex: '1 1 auto',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+            }}
+          >
             {weeklyRank !== null ? `Weekly Leaderboard — You're #${weeklyRank} this week` : 'Weekly Leaderboard'}
           </span>
           <svg style={{ width: '18px', height: '18px', flexShrink: 0 }} viewBox="0 0 24 24" fill="none">

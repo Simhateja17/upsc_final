@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { videoService, libraryService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import StudyMaterialReaderModal from '@/components/StudyMaterialReaderModal';
+import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
+import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
 
 /* ─── Types ─── */
 interface VideoItem {
@@ -177,70 +179,8 @@ function normalizeSubjectKey(name: string) {
 }
 
 function subjectEmoji(name: string) {
-  const n = normalizeSubjectKey(name);
-  if (n.includes('polity')) return '⚖️';
-  if (n.includes('history')) return '🏛️';
-  if (n.includes('geography')) return '🌍';
-  if (n.includes('economy')) return '💰';
-  if (n.includes('environment')) return '🌿';
-  if (n.includes('science')) return '🔬';
-  if (n.includes('art')) return '🎨';
-  if (n.includes('current')) return '📰';
-  if (n.includes('international')) return '🌐';
-  if (n.includes('security')) return '🛡️';
-  if (n.includes('csat')) return '📊';
-  return '📹';
+  return getSubjectMetaStyle(name).icon;
 }
-
-/*
- * Exact subject palette from the supplied reference page.
- * Each subject has a foreground accent, card background, boundary and icon tile.
- */
-const SUBJECT_CARD_PALETTE: Array<{ key: string; color: string; bg: string; border: string; tag: string }> = [
-  { key: 'polity',       color: '#5B8DD9', bg: '#F5F9FF', border: '#D0E2FF', tag: '#DBEAFE' },
-  { key: 'history',      color: '#C0854E', bg: '#FFFBF5', border: '#FFE0B8', tag: '#FFF3E0' },
-  { key: 'geography',    color: '#5BAD7A', bg: '#F5FDF6', border: '#B8F0C8', tag: '#D1FAE5' },
-  { key: 'economy',      color: '#D4A853', bg: '#FFFDF5', border: '#F5E4B8', tag: '#FEF3C7' },
-  { key: 'environment',  color: '#3D9E5F', bg: '#F4FDF4', border: '#B8EFC8', tag: '#DCFCE7' },
-  { key: 'science',      color: '#4C6FD4', bg: '#F5F8FF', border: '#C8D8FF', tag: '#E0EBFF' },
-  { key: 'current',      color: '#D4608A', bg: '#FFF5F8', border: '#FFD0E0', tag: '#FFE4EC' },
-  { key: 'csat',         color: '#7C5CBF', bg: '#F8F5FF', border: '#DDD0FF', tag: '#EDE9FE' },
-  { key: 'society',      color: '#C0609A', bg: '#FFF6FB', border: '#F5C8E8', tag: '#FCE7F3' },
-  { key: 'governance',   color: '#7B6FA0', bg: '#F7F5FF', border: '#D8D0F8', tag: '#EDE9FE' },
-  { key: 'justice',      color: '#D4784A', bg: '#FFF5F0', border: '#FFD8C0', tag: '#FFE8D8' },
-  { key: 'relations',    color: '#3A8EC0', bg: '#F5FBFF', border: '#B8DFFF', tag: '#DBEEFE' },
-  { key: 'agriculture',  color: '#5A9E35', bg: '#F6FDF0', border: '#C8EEAD', tag: '#DCFCE7' },
-  { key: 'security',     color: '#C85858', bg: '#FFF5F5', border: '#FFD0D0', tag: '#FFE4E4' },
-  { key: 'disaster',     color: '#C87A30', bg: '#FFF8F2', border: '#FFD8A8', tag: '#FFE8C8' },
-  { key: 'ethics',       color: '#6A9BD4', bg: '#F6FAFF', border: '#C8DEFF', tag: '#E0EFFF' },
-  { key: 'case-studies', color: '#A8853A', bg: '#FDFAF5', border: '#EAD8B0', tag: '#FEF3C7' },
-];
-
-/* Canonical colour + progress/badge for the well-known subjects. */
-const CORE_SUBJECT_META: Array<{
-  match: (n: string) => boolean;
-  key: string;
-  progress: number;
-  showNew?: boolean;
-}> = [
-  { match: (n) => n.includes('polity'),                                  key: 'polity', progress: 80, showNew: true },
-  { match: (n) => n.includes('history'),                                 key: 'history', progress: 65 },
-  { match: (n) => n.includes('geography'),                               key: 'geography', progress: 55 },
-  { match: (n) => n.includes('economy'),                                 key: 'economy', progress: 70 },
-  { match: (n) => n.includes('environment'),                             key: 'environment', progress: 45 },
-  { match: (n) => n.includes('science'),                                 key: 'science', progress: 60, showNew: true },
-  { match: (n) => n.includes('current'),                                 key: 'current', progress: 45 },
-  { match: (n) => n.includes('csat'),                                    key: 'csat', progress: 45 },
-  { match: (n) => n.includes('society'),                                 key: 'society', progress: 45 },
-  { match: (n) => n.includes('governance'),                              key: 'governance', progress: 45 },
-  { match: (n) => n.includes('justice'),                                 key: 'justice', progress: 45 },
-  { match: (n) => n.includes('international') || n.includes('relation'), key: 'relations', progress: 35 },
-  { match: (n) => n.includes('agriculture'),                             key: 'agriculture', progress: 45 },
-  { match: (n) => n.includes('security'),                                key: 'security', progress: 22, showNew: true },
-  { match: (n) => n.includes('disaster'),                                key: 'disaster', progress: 45 },
-  { match: (n) => n.includes('case stud'),                               key: 'case-studies', progress: 45 },
-  { match: (n) => n.includes('ethics'),                                  key: 'ethics', progress: 40 },
-];
 
 function stableHash(s: string) {
   let h = 0;
@@ -256,48 +196,24 @@ function stableHash(s: string) {
  */
 function buildSubjectThemeMap(subjects: SubjectItem[]): Map<string, SubjectCardTheme> {
   const map = new Map<string, SubjectCardTheme>();
-  const usedKeys = new Set<string>();
-
-  const meta = new Map<string, { key: string; progress: number; showNew?: boolean }>();
   for (const subject of subjects) {
-    const n = normalizeSubjectKey(subject.name);
-    const core = CORE_SUBJECT_META.find((m) => m.match(n));
-    meta.set(
-      subject.name,
-      core
-        ? { key: core.key, progress: core.progress, showNew: core.showNew }
-        : { key: '', progress: 30 + (stableHash(n) % 46) }, // 30-75, stable per name
-    );
-  }
-
-  // Pass 1: reserve each subject's canonical hue while it is still free.
-  for (const subject of subjects) {
-    const info = meta.get(subject.name)!;
-    if (info.key && !usedKeys.has(info.key)) {
-      const pal = SUBJECT_CARD_PALETTE.find((p) => p.key === info.key)!;
-      usedKeys.add(pal.key);
-      map.set(subject.name, { bg: pal.bg, border: pal.border, color: pal.color, tag: pal.tag, progress: info.progress, showNew: info.showNew });
-    }
-  }
-
-  // Pass 2: everyone left gets the next unused palette colour.
-  for (const subject of subjects) {
-    if (map.has(subject.name)) continue;
-    const info = meta.get(subject.name)!;
-    const pal =
-      SUBJECT_CARD_PALETTE.find((p) => !usedKeys.has(p.key)) ??
-      SUBJECT_CARD_PALETTE[stableHash(subject.name) % SUBJECT_CARD_PALETTE.length]; // palette exhausted: stable fallback
-    usedKeys.add(pal.key);
-    map.set(subject.name, { bg: pal.bg, border: pal.border, color: pal.color, tag: pal.tag, progress: info.progress, showNew: info.showNew });
+    const card = getSubjectCardStyle(subject.name);
+    map.set(subject.name, {
+      bg: card.bg,
+      border: card.border,
+      color: card.bar,
+      tag: card.iconBg,
+      progress: 45,
+      showNew: subject.isNew,
+    });
   }
 
   return map;
 }
 
 function getSubjectReferenceTheme(name: string) {
-  const n = normalizeSubjectKey(name);
-  const core = CORE_SUBJECT_META.find((meta) => meta.match(n));
-  return SUBJECT_CARD_PALETTE.find((palette) => palette.key === core?.key) ?? SUBJECT_CARD_PALETTE[0];
+  const card = getSubjectCardStyle(name);
+  return { bg: card.bg, border: card.border, color: card.bar, tag: card.iconBg };
 }
 
 function formatViews(n: number) {
@@ -319,7 +235,13 @@ function formatSubjectViews(n: number) {
 }
 
 function getSubjectHeroLabel(name: string) {
-  return name.replace(/^Indian\s+/i, '').trim();
+  const normalized = name
+    .replace(/^Indian\s+/i, '')
+    .replace(/^Modern History$/i, 'History')
+    .replace(/^Indian Polity(?:\s*&\s*Governance)?$/i, 'Polity')
+    .replace(/^Ethics,\s*Integrity\s*&\s*Aptitude$/i, 'Ethics')
+    .trim();
+  return normalized || name;
 }
 
 /* Topic subtitle shown under "<Subject> Simplified" in the playlist header.
@@ -811,6 +733,7 @@ export default function VideoLecturesPage() {
         </div>
 
         {/* Subject grid */}
+        <SubjectChoiceCardStyles />
         {subjectsLoading ? (
           <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
             <div className="w-10 h-10 border-4 border-[#e8a820] border-t-transparent rounded-full animate-spin mb-4" />
@@ -820,14 +743,8 @@ export default function VideoLecturesPage() {
           </div>
         ) : (
           <div
-            className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 justify-center"
-            style={{
-              justifyContent: 'center',
-              justifyItems: 'center',
-              columnGap: '20px',
-              rowGap: '20px',
-              marginBottom: selectedSubject ? 'clamp(24px, 2.5vw, 36px)' : '0',
-            }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5"
+            style={{ marginBottom: selectedSubject ? 'clamp(24px, 2.5vw, 36px)' : '0' }}
           >
             {visibleSubjects.map((subject) => {
               const theme = subjectThemeMap.get(subject.name) ?? { bg: '#F5F9FF', border: '#D0E2FF', color: '#5B8DD9', tag: '#DBEAFE', progress: 50 };
@@ -839,71 +756,35 @@ export default function VideoLecturesPage() {
               // Match the shared subject-card fill behaviour (min 10% so a started deck reads as progress).
               const progressWidth = totalCount > 0 ? Math.max(progressPct, 10) : 0;
               const toGo = Math.max(0, totalCount - watchedCount);
+              const status = progressPct === 100 ? 'Completed' : progressPct > 0 ? 'In progress' : 'Not started';
+              const statusColor = progressPct === 100 ? '#16A34A' : progressPct > 0 ? '#2563EB' : '#8A94A6';
+              const iconBg = getSubjectMetaStyle(subject.name).bg;
               return (
-                <button
-                  type="button"
+                <SubjectChoiceCard
                   key={subject.name}
                   onClick={() => handleSubjectClick(subject.name)}
-                  className={`subjhx-card block rounded-[16px] p-5 text-left flex flex-col${isSelected ? ' is-selected' : ''}`}
-                  style={{
-                    ['--subjhx-border']: isSelected ? theme.color : theme.border,
-                    background: theme.bg,
-                    width: '100%',
-                    height: 190,
-                    cursor: 'pointer',
-                  } as React.CSSProperties}
-                >
-                  <div className="subjhx-accent" style={{ background: theme.color }} />
-
-                  <div className="flex items-start justify-between gap-3">
+                  selected={isSelected}
+                  icon={subjectEmoji(subject.name)}
+                  iconBg={iconBg}
+                  accentColor={theme.color}
+                  title={getSubjectHeroLabel(subject.name)}
+                  meta={`${totalCount} videos · ${formatSubjectViews(getSubjectViewCount(subject))} views`}
+                  topRight={showNew && (
                     <span
-                      aria-hidden
-                      className="flex items-center justify-center flex-shrink-0"
-                      style={{ width: 44, height: 44, borderRadius: 12, background: `${theme.color}33`, fontSize: 24, lineHeight: 1 }}
+                      className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
+                      style={{ background: '#FDB022', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
                     >
-                      {subjectEmoji(subject.name)}
+                      NEW
                     </span>
-                    {showNew && (
-                      <span
-                        className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
-                        style={{ background: '#FDB022', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '12px', color: '#FFFFFF' }}
-                      >
-                        NEW
-                      </span>
-                    )}
-                  </div>
-
-                  <h3
-                    className="mt-3"
-                    title={subject.name}
-                    style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 17, lineHeight: '22px', color: '#22304D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                  >
-                    {subject.name}
-                  </h3>
-
-                  <p
-                    className="mt-1"
-                    style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, lineHeight: '15px', color: '#8A94A6' }}
-                  >
-                    {totalCount} videos · {formatSubjectViews(getSubjectViewCount(subject))} views
-                  </p>
-
-                  <div className="mt-4 h-[4px] w-full rounded-full" style={{ background: 'rgba(0,0,0,0.08)' }}>
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${progressWidth}%`, background: '#16A34A' }}
-                    />
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#16A34A' }}>
-                      ✓ {watchedCount} watched
-                    </span>
-                    <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', color: totalCount > 0 && toGo === 0 ? '#16A34A' : '#EF4444' }}>
-                      {totalCount === 0 ? 'Start here' : toGo === 0 ? '✓ All done' : `${toGo} to go`}
-                    </span>
-                  </div>
-                </button>
+                  )}
+                  statusLine={status}
+                  statusLineColor={statusColor}
+                  progressPercent={progressWidth}
+                  progressColor={theme.color}
+                  footerLeft={`✓ ${watchedCount} watched`}
+                  footerRight={totalCount === 0 ? 'Start here' : toGo === 0 ? '✓ All done' : `${toGo} to go`}
+                  footerRightColor={totalCount > 0 && toGo === 0 ? '#16A34A' : '#EF4444'}
+                />
               );
             })}
           </div>

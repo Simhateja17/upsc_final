@@ -97,6 +97,7 @@ export const dashboardService = {
   getPerformance: () => api.get<any>('/user/performance', authConfig()),
   getPracticeStats: () => api.get<any>('/user/practice-stats', authConfig()),
   getBadges: () => api.get<any>('/user/badges', authConfig()),
+  getStreakCalendar: () => api.get<any>('/user/streak-calendar', authConfig()),
   getTestAnalytics: async () => {
     const config = { ...(await freshAuthConfig()), timeout: 5000 };
 
@@ -467,14 +468,21 @@ export const pyqService = {
     years?: number[];
     yearFrom?: number;
     yearTo?: number;
-    subject?: string;
-    subSubject?: string;
+    subject?: string | string[];
+    subSubject?: string | string[];
     topic?: string | string[];
-    paper?: string;
+    paper?: string | string[];
     page?: number;
     limit?: number;
   }) => {
     const query = new URLSearchParams();
+    const appendMulti = (key: string, value: string | string[] | undefined) => {
+      if (value === undefined) return;
+      const values = Array.isArray(value) ? value : [value];
+      values.forEach((v) => {
+        if (v) query.append(key, v);
+      });
+    };
     if (params?.mode) query.set('mode', params.mode);
     if (params?.years && params.years.length > 0) {
       params.years.forEach((y) => query.append('years', String(y)));
@@ -483,18 +491,10 @@ export const pyqService = {
     }
     if (params?.yearFrom) query.set('yearFrom', String(params.yearFrom));
     if (params?.yearTo) query.set('yearTo', String(params.yearTo));
-    if (params?.subject) query.set('subject', params.subject);
-    if (params?.subSubject) query.set('subSubject', params.subSubject);
-    if (params?.topic) {
-      if (Array.isArray(params.topic)) {
-        params.topic.forEach((t) => {
-          if (t) query.append('topic', t);
-        });
-      } else {
-        query.set('topic', params.topic);
-      }
-    }
-    if (params?.paper) query.set('paper', params.paper);
+    appendMulti('subject', params?.subject);
+    appendMulti('subSubject', params?.subSubject);
+    appendMulti('topic', params?.topic);
+    appendMulti('paper', params?.paper);
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit));
     const qs = query.toString();
@@ -667,6 +667,15 @@ export const studyGroupService = {
   getMemberTimes: (id: string) => api.get<any>(`/study-groups/${id}/member-times`, authConfig()),
   postFocusTime: (id: string, seconds: number) =>
     api.post<any>(`/study-groups/${id}/focus-time`, { seconds }, authConfig()),
+  // Live "studying now" presence
+  startStudying: (id: string) => api.post<any>(`/study-groups/${id}/studying`, {}, authConfig()),
+  stopStudying: (id: string) => api.post<any>(`/study-groups/${id}/stop-studying`, {}, authConfig()),
+  // Join-request approval flow
+  getJoinRequests: () => api.get<any[]>('/study-groups/join-requests', authConfig()),
+  approveJoinRequest: (id: string, requestId: string) =>
+    api.post<any>(`/study-groups/${id}/requests/${requestId}/approve`, {}, authConfig()),
+  rejectJoinRequest: (id: string, requestId: string) =>
+    api.post<any>(`/study-groups/${id}/requests/${requestId}/reject`, {}, authConfig()),
 };
 
 // ==================== User Profile & Settings ====================
@@ -688,6 +697,7 @@ export const userService = {
   saveSyllabusTracker: (data: { mode: string; states: any }) =>
     api.put<any>('/user/syllabus-tracker', data, authConfig()),
   getSessions: () => api.get<any>('/user/sessions', authConfig()),
+  registerSession: () => api.post<any>('/user/sessions/register', {}, authConfig()),
   revokeSession: (sessionId: string) => api.delete<any>(`/user/sessions/${sessionId}`, authConfig()),
   getSubscription: () => api.get<any>('/user/subscription', authConfig()),
   startTrial: () => api.post<any>('/user/subscription/trial', {}, authConfig()),

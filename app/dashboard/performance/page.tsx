@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { dashboardService } from '@/lib/services';
+import { dashboardService, leaderboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { EntitlementGate, UpgradePrompt } from '@/components/entitlements';
@@ -11,6 +11,16 @@ import { useEntitlements } from '@/contexts/EntitlementsContext';
 type DayActivity = { questionsAttempted: number; hours: number };
 type SubjectRow = { name: string; accuracy: number; questions: number; tag?: string; color?: string };
 type DistributionItem = { label: string; value: number; color: string; hours: number };
+type StreakDay = {
+  day: number;
+  intensity: number;
+  studyTime: string;
+  mcqAttempts: number;
+  mainsAttempts: number;
+  mockAttempts: number;
+  editorialsRead: number;
+  editorialsTotal: number;
+};
 
 const orderedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const subjectColors = ['#4A7DFF', '#58BE87', '#F4C33F', '#9B51E0', '#F2742F'];
@@ -31,13 +41,6 @@ function formatHours(value: number) {
   if (hours === 0) return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
   if (minutes === 0) return seconds > 0 ? `${hours}h ${seconds}s` : `${hours}h`;
   return seconds > 0 ? `${hours}h ${minutes}m ${seconds}s` : `${hours}h ${minutes}m`;
-}
-
-function getDaysToPrelims() {
-  const prelimsDate = new Date('2026-05-24T00:00:00+05:30');
-  const today = new Date();
-  const diff = prelimsDate.getTime() - today.getTime();
-  return Math.max(0, Math.ceil(diff / 86400000));
 }
 
 function ProgressBar({ value, color }: { value: number; color: string }) {
@@ -133,6 +136,10 @@ function DonutChart({ items, centerLabel }: { items: DistributionItem[]; centerL
 export default function PerformancePage() {
   const [data, setData] = useState<any>(null);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [badgesData, setBadgesData] = useState<any>(null);
+  const [streakCalendar, setStreakCalendar] = useState<any>(null);
+  const [weeklyLeaderboard, setWeeklyLeaderboard] = useState<any[] | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const entitlements = useEntitlements();
@@ -143,8 +150,11 @@ export default function PerformancePage() {
     Promise.allSettled([
       dashboardService.getPerformance(),
       dashboardService.getTestAnalytics(),
+      dashboardService.getBadges(),
+      dashboardService.getStreakCalendar(),
+      leaderboardService.getLeaderboard('overall', 'week'),
     ])
-      .then(([performanceResult, analyticsResult]) => {
+      .then(([performanceResult, analyticsResult, badgesResult, streakCalendarResult, leaderboardResult]) => {
         if (!mounted) return;
 
         if (performanceResult.status === 'fulfilled') {
@@ -153,6 +163,18 @@ export default function PerformancePage() {
 
         if (analyticsResult.status === 'fulfilled') {
           setAnalyticsData(analyticsResult.value.data);
+        }
+
+        if (badgesResult.status === 'fulfilled') {
+          setBadgesData(badgesResult.value.data);
+        }
+
+        if (streakCalendarResult.status === 'fulfilled') {
+          setStreakCalendar(streakCalendarResult.value.data);
+        }
+
+        if (leaderboardResult.status === 'fulfilled') {
+          setWeeklyLeaderboard(leaderboardResult.value.data);
         }
       })
       .finally(() => {
@@ -207,6 +229,10 @@ export default function PerformancePage() {
   const dailyAvgHours = activeStudyDays > 0 ? totalStudyHours / activeStudyDays : 0;
   const maxStudyHours = Math.max(...dailyBars.map((day) => day.hours), 1);
 
+  const selectedDayDetail: StreakDay | undefined = streakCalendar?.days.find(
+    (d: StreakDay) => d.day === (selectedDay ?? streakCalendar.today),
+  );
+
   const subjectAccuracy = analyticsData?.subjectAccuracy ?? [];
   const apiStrongTopics = (data?.strongTopics ?? []).map((topic: any, index: number) => ({
     name: topic.name,
@@ -257,17 +283,21 @@ export default function PerformancePage() {
     hours: Number(item.hours ?? 0),
   }));
 
-  const earnedBadges = [
-    { icon: '🔥', title: '30-Day Streak', earned: currentStreak >= 30, note: `${currentStreak} day streak` },
-    { icon: '⚡', title: 'Quick Learner', earned: totalQuestions >= 100, note: `${totalQuestions.toLocaleString('en-IN')} Qs done` },
-    { icon: '🧠', title: '1000 Qs Club', earned: totalQuestions >= 1000, note: `${totalQuestions.toLocaleString('en-IN')} Qs done` },
-    { icon: '📚', title: 'Polity Master', earned: strongAreas.some((area) => /polity/i.test(area.name)), note: 'Subject mastery' },
-    { icon: '🎯', title: '95% Accuracy', earned: overallAccuracy >= 95, note: `${overallAccuracy}% now` },
-    { icon: '👑', title: 'Top 100 Rank', earned: Boolean(data?.rank && data.rank <= 100), note: data?.rank ? `#${data.rank} now` : 'Rank pending' },
-    { icon: '🎓', title: 'Syllabus Master', earned: (data?.syllabusCoverage ?? 0) >= 90, note: `${data?.syllabusCoverage ?? 0}% covered` },
-    { icon: '🧑‍💻', title: 'Mock Test King', earned: (mockTests.totalAttempts ?? 0) >= 50, note: `${mockTests.totalAttempts ?? 0}/50 done` },
-  ];
-  const earnedBadgeCount = earnedBadges.filter((badge) => badge.earned).length;
+  const badgeIcons: Record<string, string> = {
+    streak: '🔥',
+    learner: '⚡',
+    accuracy: '🎯',
+    polity: '📚',
+    'all-rounder': '🎓',
+    centurion: '👑',
+  };
+  const earnedBadges = (badgesData?.badges ?? []).map((badge: any) => ({
+    icon: badgeIcons[badge.key] ?? '🏅',
+    title: badge.title,
+    earned: badge.status === 'earned',
+    note: badge.note,
+  }));
+  const earnedBadgeCount = earnedBadges.filter((badge: any) => badge.earned).length;
 
   const summaryCards = [
     {
@@ -315,7 +345,6 @@ export default function PerformancePage() {
   ];
 
   const userFirstName = user?.firstName || 'Arjun';
-  const daysToPrelims = useMemo(getDaysToPrelims, []);
 
   return (
     <EntitlementGate
@@ -471,7 +500,7 @@ export default function PerformancePage() {
               <div className="mb-7 flex items-center justify-between gap-4">
                 <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
                   <span aria-hidden>📅</span>
-                  Study Streak – April 2026
+                  Study Streak – {streakCalendar?.monthLabel ?? new Date().toLocaleString('en-US', { month: 'long' })} {streakCalendar?.year ?? new Date().getFullYear()}
                 </h2>
                 <span className="font-bold text-[#F2742F]">🔥 {currentStreak} Days!</span>
               </div>
@@ -489,28 +518,79 @@ export default function PerformancePage() {
                 ))}
               </div>
 
-              <div className="mb-6 grid grid-cols-7 gap-2 text-center text-[12px] text-[#6A7282]">
+              <div className="mb-4 grid grid-cols-7 gap-2 text-center text-[12px] text-[#6A7282]">
                 {orderedDays.map((day) => <span key={day}>{day}</span>)}
-                {Array.from({ length: 30 }, (_, index) => {
-                  const day = index + 1;
-                  const active = day <= Math.min(currentStreak, 30);
-                  const highlighted = day === 23;
+                {streakCalendar && (() => {
+                  const firstWeekday = (new Date(streakCalendar.year, streakCalendar.month - 1, 1).getDay() + 6) % 7;
+                  return Array.from({ length: firstWeekday }, (_, index) => <div key={`blank-${index}`} />);
+                })()}
+                {(streakCalendar?.days ?? []).map((entry: StreakDay) => {
+                  const isToday = entry.day === streakCalendar.today;
+                  const isSelected = entry.day === (selectedDay ?? streakCalendar.today);
+                  const intensityColor = ['#EEF0F3', '#D7F8E4', '#A8EBC7', '#58BE87'][entry.intensity];
 
                   return (
-                    <div
-                      key={day}
-                      className="flex aspect-square items-center justify-center rounded-[8px] text-[14px] font-semibold"
+                    <button
+                      key={entry.day}
+                      type="button"
+                      onClick={() => setSelectedDay(entry.day)}
+                      className="flex aspect-square items-center justify-center rounded-[8px] text-[14px] font-semibold transition-shadow"
                       style={{
-                        background: highlighted ? '#FFF7CC' : active ? '#58BE87' : '#EEF0F3',
-                        border: highlighted ? '1px solid #E8B84B' : '1px solid transparent',
-                        color: active ? '#FFFFFF' : '#101828',
+                        background: isSelected ? '#0F1626' : intensityColor,
+                        border: isSelected
+                          ? '2px solid #0F1626'
+                          : isToday
+                            ? '1px solid #0F1626'
+                            : '1px solid transparent',
+                        color: isSelected ? '#F4B740' : entry.intensity >= 2 ? '#FFFFFF' : '#101828',
                       }}
                     >
-                      {day}
-                    </div>
+                      {entry.day}
+                    </button>
                   );
                 })}
               </div>
+
+              {selectedDayDetail && (() => {
+                const hasActivity =
+                  selectedDayDetail.studyTime !== '0h 0m' ||
+                  selectedDayDetail.mcqAttempts > 0 ||
+                  selectedDayDetail.mainsAttempts > 0 ||
+                  selectedDayDetail.mockAttempts > 0 ||
+                  selectedDayDetail.editorialsRead > 0;
+
+                return (
+                  <div className="mb-6 rounded-[12px] border border-[#EEF0F3] bg-[#F8FAFC] px-4 py-3">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-[13px] font-bold text-[#101828]">
+                        {streakCalendar?.monthLabel} {selectedDayDetail.day}, {streakCalendar?.year}
+                      </span>
+                      <span className="text-[12px] font-semibold" style={{ color: hasActivity ? '#22A06B' : '#99A1AF' }}>
+                        {hasActivity ? 'Active' : 'No activity'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-5 gap-2 text-center">
+                      {[
+                        { label: 'Study', value: selectedDayDetail.studyTime },
+                        { label: 'MCQ', value: String(selectedDayDetail.mcqAttempts) },
+                        { label: 'Mains', value: String(selectedDayDetail.mainsAttempts) },
+                        { label: 'Mock', value: String(selectedDayDetail.mockAttempts) },
+                        {
+                          label: 'Editorial',
+                          value: selectedDayDetail.editorialsTotal > 0
+                            ? `${selectedDayDetail.editorialsRead}/${selectedDayDetail.editorialsTotal}`
+                            : '—',
+                        },
+                      ].map((stat) => (
+                        <div key={stat.label}>
+                          <div className="text-[15px] font-bold leading-tight text-[#101828]">{stat.value}</div>
+                          <div className="mt-1 text-[10px] uppercase tracking-[0.4px] text-[#6A7282]">{stat.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="grid grid-cols-3 border-t border-[#EEF0F3] pt-4 text-center">
                 <div>
@@ -537,7 +617,7 @@ export default function PerformancePage() {
               {[
                 { icon: '📚', title: 'Daily MCQ Challenge', subtitle: 'Polity, Economy, Geography', value: Math.min(activeStudyDays, 7), color: '#58BE87' },
                 { icon: '✍️', title: 'Daily Mains Challenge', subtitle: 'Answer Writing, AI Evaluated', value: Math.min(mains.totalAttempts ?? 0, 7), color: '#0E1830' },
-                { icon: '📰', title: 'Daily News Analysis', subtitle: 'The Hindu, Indian Express', value: 0, color: '#E8B84B' },
+                { icon: '📰', title: 'Daily News Analysis', subtitle: 'The Hindu, Indian Express', value: Math.min(analyticsData?.editorialDaysThisWeek ?? 0, 7), color: '#E8B84B' },
               ].map((item) => (
                 <div
                   key={item.title}
@@ -580,7 +660,7 @@ export default function PerformancePage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                {earnedBadges.map((badge) => (
+                {earnedBadges.map((badge: any) => (
                   <div
                     key={badge.title}
                     className="rounded-[10px] border px-3 py-5 text-center"
@@ -607,28 +687,28 @@ export default function PerformancePage() {
                   <span aria-hidden>🏅</span>
                   Weekly Leaderboard
                 </h2>
-                <span className="text-[13px] font-semibold text-[#258F7D]">View All →</span>
+                <Link href="/dashboard/leaderboard" className="text-[13px] font-semibold text-[#258F7D] hover:underline">View All →</Link>
               </div>
 
-              {analyticsData?.leaderboard?.length ? (
+              {weeklyLeaderboard?.length ? (
                 <div className="space-y-3">
-                  {analyticsData.leaderboard.slice(0, 8).map((entry: any, index: number) => (
-                    <div key={entry.id ?? entry.name ?? index} className="flex items-center justify-between rounded-[8px] bg-[#F8FAFC] px-4 py-3">
+                  {weeklyLeaderboard.slice(0, 8).map((entry: any, index: number) => (
+                    <div key={entry.userId ?? entry.name ?? index} className="flex items-center justify-between rounded-[8px] bg-[#F8FAFC] px-4 py-3">
                       <div className="flex items-center gap-4">
                         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4A7DFF] font-bold text-white">
-                          {index + 1}
+                          {entry.rank ?? index + 1}
                         </span>
                         <span className="font-semibold text-[#101828]">{entry.name}</span>
                       </div>
-                      <span className="font-bold text-[#258F7D]">{entry.score}</span>
+                      <span className="font-bold text-[#258F7D]">{entry.totalScore}</span>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="rounded-[10px] bg-[#F8FAFC] px-5 py-10 text-center">
-                  <div className="text-[15px] font-semibold text-[#101828]">No leaderboard API data yet</div>
+                  <div className="text-[15px] font-semibold text-[#101828]">No leaderboard data yet</div>
                   <p className="mx-auto mt-2 max-w-[360px] text-[13px] leading-5 text-[#6A7282]">
-                    This section is wired to `analyticsData.leaderboard` and will populate once the backend exposes weekly ranks.
+                    Attempt a few tests this week to appear on the weekly leaderboard.
                   </p>
                 </div>
               )}

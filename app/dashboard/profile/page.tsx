@@ -38,6 +38,17 @@ function formatDisplayDate(iso: string) {
   return `${String(d).padStart(2, '0')} ${MONTHS[m - 1]} ${y}`;
 }
 
+function phoneToTenDigitInput(value: string | undefined | null) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (digits.length > 10 && digits.startsWith('91')) return digits.slice(2, 12);
+  return digits.slice(-10);
+}
+
+function phoneForSave(value: string) {
+  const digits = phoneToTenDigitInput(value);
+  return digits ? `+91${digits}` : '';
+}
+
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
   const [firstName, setFirstName] = useState('');
@@ -68,7 +79,7 @@ export default function ProfilePage() {
   const applyProfile = (profile: ProfileSnapshot) => {
     setFirstName(profile.firstName);
     setLastName(profile.lastName);
-    setPhone(profile.phone);
+    setPhone(phoneToTenDigitInput(profile.phone));
     setState(profile.state);
     setTargetYear(profile.targetYear);
     setOptionalSubject(profile.optionalSubject);
@@ -104,7 +115,7 @@ export default function ProfilePage() {
       const profile = {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
-        phone: (user as any).phone || '',
+        phone: phoneToTenDigitInput((user as any).phone),
         avatarUrl: user.avatarUrl || '',
         state: ((user as any).profile || {}).state || '',
         targetYear: ((user as any).profile || {}).targetYear || '',
@@ -130,7 +141,7 @@ export default function ProfilePage() {
         const profile = {
           firstName: d.firstName || '',
           lastName: d.lastName || '',
-          phone: d.phone || '',
+          phone: phoneToTenDigitInput(d.phone),
           state: d.state || '',
           targetYear: d.targetYear || '',
           optionalSubject: d.optionalSubject || '',
@@ -195,7 +206,7 @@ export default function ProfilePage() {
       await userService.updateProfile({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        phone: phone.trim(),
+        phone: phoneForSave(phone),
         state: state.trim(),
         targetYear: targetYear.trim(),
         optionalSubject: optionalSubject.trim(),
@@ -222,8 +233,7 @@ export default function ProfilePage() {
   };
 
   const handlePhoneChange = (raw: string) => {
-    const cleaned = raw.replace(/\D/g, '').replace(/^91/, '').slice(0, 10);
-    setPhone(cleaned);
+    setPhone(phoneToTenDigitInput(raw));
   };
 
   const handleAvatarSelect = (file: File | undefined) => {
@@ -270,7 +280,7 @@ export default function ProfilePage() {
     : 0;
 
   return (
-    <div className="h-screen bg-[#FAFBFE] px-6 py-4 relative overflow-hidden flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-[#FAFBFE] px-4 py-4 md:px-6 lg:px-8 relative overflow-y-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Toast */}
       {toast && (
         <div
@@ -305,20 +315,20 @@ export default function ProfilePage() {
         My Profile
       </h1>
 
-      <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+      <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-4 xl:flex-row xl:items-start">
         {/* Left Column - Profile Form */}
         <div className="flex-1 min-w-0">
           <div
-            className="bg-white rounded-[14px] pt-5 px-6 pb-5 flex flex-col gap-5"
+            className="bg-white rounded-[14px] px-4 py-4 md:px-5 lg:px-6 flex flex-col gap-5"
             style={{ boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1)' }}
           >
             {/* Avatar + Name Header */}
-            <div className="flex flex-col gap-6 border-b border-[#e2e8f0] pb-8 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col gap-5 border-b border-[#e2e8f0] pb-5 md:flex-row md:items-start md:justify-between">
               <div className="flex flex-col gap-5 md:flex-row md:items-start">
-                <div className="flex w-[132px] flex-shrink-0 flex-col items-center gap-3">
-                  <div className="relative h-28 w-28">
+                <div className="flex w-full flex-shrink-0 flex-row items-center gap-4 md:w-[132px] md:flex-col md:gap-3">
+                  <div className="relative h-24 w-24 md:h-28 md:w-28">
                     <div
-                      className="h-28 w-28 rounded-full flex items-center justify-center text-white font-semibold text-[38px] leading-[44px]"
+                      className="h-24 w-24 rounded-full flex items-center justify-center text-white font-semibold text-[34px] leading-[40px] md:h-28 md:w-28 md:text-[38px] md:leading-[44px]"
                       style={{ background: visibleAvatarUrl ? `url(${visibleAvatarUrl}) center/cover` : '#c98a0c' }}
                     >
                       {!visibleAvatarUrl && initials}
@@ -345,27 +355,31 @@ export default function ProfilePage() {
                       onChange={(e) => handleAvatarSelect(e.target.files?.[0])}
                     />
                   </div>
-                  <button
-                    type="button"
-                    disabled={!isEditing || saving}
-                    onClick={() => avatarInputRef.current?.click()}
-                    className={`flex h-11 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-[8px] border border-[#cad5e2] bg-white px-2 text-[13px] font-semibold text-[#314158] transition-colors ${
-                      isEditing ? 'hover:bg-[#f8fafc]' : 'cursor-not-allowed opacity-70'
-                    }`}
-                  >
-                    <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#62748e" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="17 8 12 3 7 8" />
-                      <line x1="12" y1="3" x2="12" y2="15" />
-                    </svg>
-                    Upload Photo
-                  </button>
-                  <p className="text-center text-[13px] leading-[18px] text-[#62748e]">JPG, PNG up to 5MB</p>
+                  <div className="flex min-w-0 flex-col gap-2 md:w-full">
+                    <button
+                      type="button"
+                      disabled={!isEditing || saving}
+                      onClick={() => avatarInputRef.current?.click()}
+                      className={`flex h-10 w-fit items-center justify-center gap-1.5 whitespace-nowrap rounded-[8px] border border-[#cad5e2] bg-white px-3 text-[13px] font-semibold text-[#314158] transition-colors md:w-full md:px-2 ${
+                        isEditing ? 'hover:bg-[#f8fafc]' : 'cursor-not-allowed opacity-70'
+                      }`}
+                    >
+                      <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#62748e" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                      Upload Photo
+                    </button>
+                    <p className="text-[12px] leading-[16px] text-[#62748e] md:text-center">JPG, PNG up to 5MB</p>
+                  </div>
                 </div>
 
                 <div className="flex min-w-0 flex-col pt-2">
                   <h2 className="font-semibold text-[26px] leading-[34px] text-[#0f172b] break-words">{displayName}</h2>
-                  <p className="font-normal text-[16px] leading-[24px] text-[#62748e] truncate">{user?.email}</p>
+                  <p className="font-normal text-[14px] leading-[22px] text-[#62748e] truncate">
+                    {user?.email || 'No email linked'}
+                  </p>
                   <span
                     className="mt-3 inline-flex w-fit min-w-[92px] justify-center rounded-[6px] px-4 py-2 font-medium text-[14px] leading-[20px] text-[#8a5a00]"
                     style={{ background: '#fef9c2' }}
@@ -424,12 +438,9 @@ export default function ProfilePage() {
                     <span className="text-[12px] leading-[16px] text-[#00a63e]">✓ Verified</span>
                   )}
                 </label>
-                <input
-                  type="email"
-                  value={user?.email || ''}
-                  disabled
-                  className="w-full h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-[#f8fafc] font-normal text-[16px] leading-[24px] text-[#62748e] cursor-not-allowed"
-                />
+                <div className="w-full min-h-[40px] px-4 py-[10px] rounded-[10px] border-[0.8px] border-[#e2e8f0] bg-[#f8fafc] font-normal text-[15px] leading-[20px] text-[#62748e]">
+                  {user?.email || 'No email linked to this account'}
+                </div>
               </div>
 
               {/* Gender / Date of Birth */}
@@ -691,7 +702,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Right Column - Stats + Achievements */}
-        <div className="w-full lg:w-[339px] flex flex-col gap-4 overflow-y-auto min-h-0">
+        <div className="w-full xl:w-[339px] xl:sticky xl:top-4 flex flex-col gap-4">
           {/* My Stats Card */}
           <div
             className="bg-white rounded-[14px] pt-4 px-5 pb-4 flex flex-col gap-4"

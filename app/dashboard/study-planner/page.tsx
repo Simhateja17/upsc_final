@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { dashboardService, studyPlannerService, syllabusService, userService } from '@/lib/services';
-import { getSubjectEmoji } from '@/lib/subjectEmojis';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 function fmtTimer(secs: number): string {
   const s = Math.max(0, secs);
@@ -221,30 +221,19 @@ const SYLLABUS_SUBJECT_ALIASES: Record<string, string> = {
   Essay: 'Essay',
 };
 
-const SUBJECT_ICON_MAP: Record<string, string> = {
-  Polity: '/study-planner-icons/polity.png',
-  Economy: '/study-planner-icons/economy.png',
-  Society: '/study-planner-icons/society.png',
-  'Indian Society': '/study-planner-icons/society.png',
-  Governance: '/study-planner-icons/governance.png',
-  'Social Justice': '/study-planner-icons/social-justice.png',
-  'International Relations': '/study-planner-icons/international-relations.png',
-  'Disaster Management': '/study-planner-icons/disaster-management.png',
-  Ethics: '/study-planner-icons/ethics.png',
-  'Ethics & Human Values': '/study-planner-icons/ethics.png',
-  CSAT: '/study-planner-icons/csat.png',
-  'Case Studies': '/study-planner-icons/case-studies.png',
-};
-
 const quickAddIconBoxStyle: React.CSSProperties = {
-  width: '24px',
-  height: '24px',
-  minWidth: '24px',
+  width: '38px',
+  height: '38px',
+  minWidth: '38px',
   flexShrink: 0,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   overflow: 'hidden',
+  borderRadius: '10px',
+  fontSize: '19px',
+  lineHeight: '20px',
+  boxShadow: '0 2px 8px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.3)',
 };
 
 export default function StudyPlannerPage() {
@@ -787,7 +776,7 @@ export default function StudyPlannerPage() {
         <div className="flex flex-col xl:flex-row gap-5 p-4 md:p-6">
 
           {/* ═══════ Left Column: Main Content ═══════ */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col">
 
             {/* Hero Banner – matches Figma study planner design */}
             <div
@@ -1461,11 +1450,11 @@ export default function StudyPlannerPage() {
             </div>
 
             {/* ── Bottom Row: Syllabus Coverage + Weekly Goals ── */}
-            <div className="grid grid-cols-1 gap-6 mt-4 xl:grid-cols-[360px_minmax(360px,1fr)]">
+            <div className="grid grid-cols-1 gap-6 mt-4 flex-1 xl:grid-cols-[360px_minmax(360px,1fr)]">
 
               {/* Card 0: Syllabus Coverage */}
               <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] flex flex-col"
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] h-full flex flex-col"
               >
                 {/* Header (stays fixed — indentation preserved up to the pie-chart icon) */}
                 <div className="flex items-center gap-2 mb-4">
@@ -1493,7 +1482,7 @@ export default function StudyPlannerPage() {
                 })()}
 
                 {/* Scrollable subject list */}
-                <div className="flex-1 overflow-y-auto pr-1" style={{ maxHeight: '240px' }}>
+                <div className="flex-1 overflow-y-auto pr-1">
                   <div className="space-y-3">
                     {syllabusCoverage.length === 0 ? (
                       <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '13px' }}>No syllabus data yet.</p>
@@ -1530,7 +1519,7 @@ export default function StudyPlannerPage() {
 
               {/* Card 1: Weekly Goals */}
               <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] h-full flex flex-col"
               >
                 {/* Header */}
                 <div className="flex items-center gap-2 mb-4">
@@ -1561,7 +1550,7 @@ export default function StudyPlannerPage() {
                 })()}
 
                 {/* Goals list */}
-                <div className="space-y-3 mb-5">
+                <div className="flex-1 overflow-y-auto space-y-3 mb-5">
                   {weeklyGoals.length > 0 ? (
                     weeklyGoals.map((goal, i) => (
                       <div key={i} className="flex items-start gap-3 group">
@@ -1722,7 +1711,7 @@ export default function StudyPlannerPage() {
 
             {/* Quick Add to Plan */}
             <div
-              className="flex flex-col xl:flex-1 xl:min-h-[596px]"
+              className="flex flex-col"
               style={{
                 width: '100%',
                 borderRadius: '16px',
@@ -1743,59 +1732,64 @@ export default function StudyPlannerPage() {
               </div>
 
               <div className="flex flex-wrap overflow-y-auto pr-1" style={{ gap: '8px', minHeight: 0 }}>
-                {quickAddSubjects.map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => handleQuickAdd(item)}
-                    className="font-arimo hover:bg-gray-100 transition-colors"
-                    style={{
-                      minHeight: '40px',
-                      borderRadius: '10px',
-                      border: '0.8px solid #E5E7EB',
-                      background: '#F9FAFB',
-                      fontSize: '12px',
-                      lineHeight: '16px',
-                      fontWeight: 500,
-                      color: '#374151',
-                      padding: '8px 10px',
-                      flex: '1 1 120px',
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      textAlign: 'left',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    {SUBJECT_ICON_MAP[item] ? (
-                      <span aria-hidden="true" style={quickAddIconBoxStyle}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={SUBJECT_ICON_MAP[item]}
-                          alt=""
-                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }}
-                        />
-                      </span>
-                    ) : (
+                {quickAddSubjects.map((item) => {
+                  const meta = getSubjectMetaStyle(item);
+                  return (
+                    <button
+                      key={item}
+                      onClick={() => handleQuickAdd(item)}
+                      className="font-arimo transition-all"
+                      style={{
+                        minHeight: '62px',
+                        borderRadius: '12px',
+                        border: '1.5px solid #E0E8F4',
+                        background: '#FFFFFF',
+                        boxShadow: '0 2px 8px rgba(15,31,61,.05)',
+                        fontSize: '12px',
+                        lineHeight: '16px',
+                        fontWeight: 700,
+                        color: meta.color,
+                        padding: '10px 12px',
+                        flex: '1 1 132px',
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textAlign: 'left',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-start',
+                        gap: '8px',
+                      }}
+                      onMouseEnter={(event) => {
+                        event.currentTarget.style.transform = 'translateY(-2px)';
+                        event.currentTarget.style.boxShadow = `0 8px 18px ${meta.accent}18`;
+                        event.currentTarget.style.borderColor = meta.border;
+                        event.currentTarget.style.background = '#FDFEFF';
+                      }}
+                      onMouseLeave={(event) => {
+                        event.currentTarget.style.transform = 'translateY(0)';
+                        event.currentTarget.style.boxShadow = '0 2px 8px rgba(15,31,61,.05)';
+                        event.currentTarget.style.borderColor = '#E0E8F4';
+                        event.currentTarget.style.background = '#FFFFFF';
+                      }}
+                    >
                       <span
                         aria-hidden="true"
-                        style={{ ...quickAddIconBoxStyle, fontSize: '18px', lineHeight: '24px' }}
+                        style={{ ...quickAddIconBoxStyle, background: meta.bg }}
                       >
-                        {getSubjectEmoji(item)}
+                        {meta.icon}
                       </span>
-                    )}
-                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item}
-                    </span>
-                  </button>
-                ))}
+                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Time Distribution */}
             <div
-              className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] xl:h-[424px] flex flex-col"
+              className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] xl:flex-1 flex flex-col"
             >
               <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
                 <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>
@@ -1859,11 +1853,7 @@ export default function StudyPlannerPage() {
               </div>
 
               <div className="space-y-2">
-                {!hasCompletedTimeDistribution ? (
-                  <div className="font-arimo text-[#9CA3AF] text-center" style={{ fontSize: '13px', paddingTop: '4px' }}>
-                    Complete tasks to see subject-wise distribution
-                  </div>
-                ) : (
+                {!hasCompletedTimeDistribution ? null : (
                   timeByType.map(slice => (
                     <div key={slice.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -1996,11 +1986,14 @@ export default function StudyPlannerPage() {
                         Task {focusTaskIdx + 1} of {focusSessionTasks.length}
                       </p>
                       <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '20px', lineHeight: '1.3' }}>{task?.title ?? '-'}</h3>
-                      {task?.subject && (
-                        <span className="inline-block font-arimo text-[#312C85] mt-1" style={{ fontSize: '12px', background: '#EEF2FF', borderRadius: '6px', padding: '2px 8px' }}>
-                          {getSubjectEmoji(task.subject)} {task.subject}
-                        </span>
-                      )}
+                      {task?.subject && (() => {
+                        const meta = getSubjectMetaStyle(task.subject);
+                        return (
+                          <span className="inline-flex items-center gap-1 font-arimo mt-1" style={{ fontSize: '12px', background: meta.bg, color: meta.color, border: `1px solid ${meta.border}`, borderRadius: '999px', padding: '3px 9px', fontWeight: 700 }}>
+                            <span aria-hidden>{meta.icon}</span> {task.subject}
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     {/* Countdown */}

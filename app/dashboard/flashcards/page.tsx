@@ -9,6 +9,8 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import FlashcardScienceSections from '@/components/FlashcardScienceSections';
 import { UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
+import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
 
 type Deck = {
   id: string;
@@ -169,12 +171,7 @@ export default function FlashcardsPage() {
             </div>
           )}
 
-          <style>{`
-            .subjhx-card{position:relative;overflow:hidden;border:1px solid var(--subjhx-border);transition:transform .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1),border-color .3s cubic-bezier(.4,0,.2,1);}
-            .subjhx-card:hover{transform:translateY(-3px);box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);border-color:transparent;}
-            .subjhx-accent{position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:opacity .3s;z-index:2;}
-            .subjhx-card:hover .subjhx-accent{opacity:1;}
-          `}</style>
+          <SubjectChoiceCardStyles />
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <div
@@ -255,124 +252,75 @@ export default function FlashcardsPage() {
                 const due = item.totalCards - item.masteredCards;
                 const progressWidth = hasDeck ? Math.max(item.mastery, 10) : 0;
                 const title = item.shortLabel ?? displaySubjectName(item.subject);
+                const paletteCard = getSubjectCardStyle(item.subject);
+                const paletteMeta = getSubjectMetaStyle(item.subject);
 
-                const cardContent = (
+                const topRight = (
                   <>
-                    <div className="subjhx-accent" style={{ background: item.card.bar }} />
-                    <div className="flex items-start justify-between gap-3">
+                    {item.isNew && (
                       <span
-                        aria-hidden
-                        className="flex items-center justify-center flex-shrink-0"
-                        style={{ width: 44, height: 44, borderRadius: 12, background: `${item.card.bar}33`, fontSize: 24, lineHeight: 1 }}
+                        className="inline-flex items-center rounded-full px-2 py-0.5"
+                        style={{ background: '#FDB022', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '12px', color: '#FFFFFF' }}
                       >
-                        {item.icon}
+                        NEW
                       </span>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        {item.isNew && (
-                          <span
-                            className="inline-flex items-center rounded-full px-2 py-0.5"
-                            style={{ background: '#FDB022', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '12px', color: '#FFFFFF' }}
-                          >
-                            NEW
-                          </span>
-                        )}
-                        {hasDeck && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setDeleteTarget({ id: item.id, subject: item.subject, totalCards: item.totalCards });
-                            }}
-                            onMouseEnter={() => setHoveredBin(item.id)}
-                            onMouseLeave={() => setHoveredBin(null)}
-                            style={{
-                              opacity: hoveredCard === item.id ? 1 : 0,
-                              transition: 'opacity 0.15s, color 0.15s',
-                              background: 'none',
-                              border: 'none',
-                              cursor: 'pointer',
-                              padding: 4,
-                              lineHeight: 1,
-                              color: hoveredBin === item.id ? '#EF4444' : '#9CA3AF',
-                            }}
-                            aria-label={`Delete ${item.subject}`}
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                              <path d="M10 11v6" />
-                              <path d="M14 11v6" />
-                              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <h3
-                      className="mt-3"
-                      style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 17, lineHeight: '22px', color: '#22304D' }}
-                    >
-                      {title}
-                    </h3>
-
-                    <p
-                      className="mt-1"
-                      style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, lineHeight: '15px', color: '#8A94A6' }}
-                    >
-                      {hasDeck ? `${item.totalCards} cards · ${item.topics} topics · ${item.viewsLabel}` : '0 cards · Start here'}
-                    </p>
-
-                    <div className="mt-4 h-[4px] w-full rounded-full" style={{ background: 'rgba(0,0,0,0.08)' }}>
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{ width: `${progressWidth}%`, background: '#16A34A' }}
-                      />
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#16A34A' }}>
-                        {hasDeck ? `✓ ${item.masteredCards} mastered` : 'Create first card'}
-                      </span>
-                      <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', color: hasDeck && due === 0 ? '#16A34A' : '#EF4444' }}>
-                        {hasDeck ? (due === 0 ? '✓ All done' : `${due} to go`) : 'New deck'}
-                      </span>
-                    </div>
+                    )}
+                    {hasDeck && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDeleteTarget({ id: item.id, subject: item.subject, totalCards: item.totalCards });
+                        }}
+                        onMouseEnter={() => setHoveredBin(item.id)}
+                        onMouseLeave={() => setHoveredBin(null)}
+                        style={{
+                          opacity: hoveredCard === item.id ? 1 : 0,
+                          transition: 'opacity 0.15s, color 0.15s',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 4,
+                          lineHeight: 1,
+                          color: hoveredBin === item.id ? '#EF4444' : '#9CA3AF',
+                        }}
+                        aria-label={`Delete ${item.subject}`}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
+                      </button>
+                    )}
                   </>
                 );
 
-                if (hasDeck) {
-                  return (
-                    <Link
-                      key={item.id}
-                      href={`/dashboard/flashcards/${item.id}`}
-                      className="subjhx-card block rounded-[16px] p-5 text-left flex flex-col"
-                      style={{ ['--subjhx-border']: item.card.border, background: item.card.bg, height: 190 } as React.CSSProperties}
-                      onMouseEnter={() => setHoveredCard(item.id)}
-                      onMouseLeave={() => setHoveredCard(null)}
-                    >
-                      {cardContent}
-                    </Link>
-                  );
-                }
-
                 return (
-                  <button
+                  <SubjectChoiceCard
                     key={item.id}
-                    type="button"
-                    onClick={() => {
+                    href={hasDeck ? `/dashboard/flashcards/${item.id}` : undefined}
+                    onClick={hasDeck ? undefined : () => {
                       if (!hasFullAccess) return;
                       setPrefillSubject(item.subject);
                       setShowAddModal(true);
                     }}
-                    className="subjhx-card rounded-[16px] p-5 text-left flex flex-col"
-                    style={{ ['--subjhx-border']: item.card.border, background: item.card.bg, height: 190 } as React.CSSProperties}
+                    icon={paletteMeta.icon}
+                    iconBg={paletteMeta.bg}
+                    accentColor={paletteCard.bar}
+                    title={title}
+                    meta={hasDeck ? `${item.totalCards} cards · ${item.topics} topics · ${item.viewsLabel}` : '0 cards · Start here'}
+                    topRight={topRight}
+                    progressPercent={progressWidth}
+                    footerLeft={hasDeck ? `✓ ${item.masteredCards} mastered` : 'Create first card'}
+                    footerRight={hasDeck ? (due === 0 ? '✓ All done' : `${due} to go`) : 'New deck'}
+                    footerRightColor={hasDeck && due === 0 ? '#16A34A' : '#EF4444'}
                     onMouseEnter={() => setHoveredCard(item.id)}
                     onMouseLeave={() => setHoveredCard(null)}
-                  >
-                    {cardContent}
-                  </button>
+                  />
                 );
               })}
 

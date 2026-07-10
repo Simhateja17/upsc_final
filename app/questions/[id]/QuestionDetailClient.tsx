@@ -4,13 +4,16 @@ import { useEffect, useMemo, useState } from 'react';
 import type { MouseEvent, ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import Footer from '@/components/Footer';
 import LandingNav from '@/components/LandingNav';
 import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
-import { bookmarkService, pyqService } from '@/lib/services';
+import { bookmarkService, flashcardService, pyqService, spacedRepService } from '@/lib/services';
 
 type PublicQuestion = {
   id: string;
@@ -26,6 +29,7 @@ type PublicQuestion = {
   options?: Array<{ label: string; text: string }> | null;
   correctOption?: string | null;
   explanation?: string | null;
+  modelAnswer?: string | null;
   structuredJson?: any;
   questionStructure?: any;
 };
@@ -88,6 +92,32 @@ function getExplanationText(question: PublicQuestion) {
     question.structuredJson?.explanation?.rawText ||
     ''
   );
+}
+
+function getModelAnswerText(question: PublicQuestion) {
+  return (
+    cleanText(question.modelAnswer) ||
+    cleanText(question.explanation) ||
+    cleanText(question.structuredJson?.explanation?.displayText) ||
+    ''
+  );
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'general';
+}
+
+function paperCode(paper?: string | null) {
+  const normalized = cleanText(paper).toLowerCase();
+  if (normalized.includes('iv')) return 'gs4';
+  if (normalized.includes('iii')) return 'gs3';
+  if (normalized.includes('ii')) return 'gs2';
+  if (normalized.includes('i')) return 'gs1';
+  return 'gs1';
 }
 
 function optionList(question: PublicQuestion) {
@@ -276,6 +306,293 @@ function Explanation({ question }: { question: PublicQuestion }) {
   );
 }
 
+function ModelAnswerMarkdown({ text }: { text: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        h1: ({ children }) => <h3 className="mb-2 mt-4 text-[16px] font-bold leading-[24px] text-[#1F2937] first:mt-0">{children}</h3>,
+        h2: ({ children }) => <h3 className="mb-2 mt-4 text-[15px] font-bold leading-[23px] text-[#1F2937] first:mt-0">{children}</h3>,
+        h3: ({ children }) => <h4 className="mb-2 mt-3 text-[14px] font-bold leading-[22px] text-[#1F2937] first:mt-0">{children}</h4>,
+        h4: ({ children }) => <h4 className="mb-1.5 mt-3 text-[13px] font-bold leading-[20px] text-[#374151] first:mt-0">{children}</h4>,
+        p: ({ children }) => <p className="mb-2.5 text-[14px] leading-relaxed text-[#374151] last:mb-0">{children}</p>,
+        ul: ({ children }) => <ul className="mb-2.5 ml-4 list-disc space-y-1.5 text-[13px] leading-relaxed text-[#374151]">{children}</ul>,
+        ol: ({ children }) => <ol className="mb-2.5 ml-4 list-decimal space-y-1.5 text-[13px] leading-relaxed text-[#374151]">{children}</ol>,
+        li: ({ children }) => <li className="pl-1">{children}</li>,
+        strong: ({ children }) => <strong className="font-bold text-[#1f2937]">{children}</strong>,
+        em: ({ children }) => <em className="italic text-[#a17c1a]">{children}</em>,
+        blockquote: ({ children }) => (
+          <blockquote className="my-3 border-l-2 border-[#D4AF37] bg-[#FFFDF5] px-3 py-2 text-[#374151]">{children}</blockquote>
+        ),
+      }}
+    >
+      {text}
+    </ReactMarkdown>
+  );
+}
+
+function ModelAnswerBox({ question }: { question: PublicQuestion }) {
+  const answer = getModelAnswerText(question);
+  if (!answer) return null;
+
+  return (
+    <div className="model-answer-parchment">
+      <div className="mb-3 inline-flex items-center gap-2">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#B8941E" strokeWidth={2} strokeLinejoin="round">
+          <path d="M12 2l2.4 6.4L21 9l-5 4.5L17.5 21 12 17.5 6.5 21 8 13.5 3 9l6.6-.6L12 2z" />
+        </svg>
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#9a8347]">Model Answer</span>
+      </div>
+      <ModelAnswerMarkdown text={answer} />
+    </div>
+  );
+}
+
+function MainsAnswerWorkspace({
+  question,
+  isLoggedIn,
+  onRequireAuth,
+}: {
+  question: PublicQuestion;
+  isLoggedIn: boolean;
+  onRequireAuth: () => void;
+}) {
+  const router = useRouter();
+  const [writeOpen, setWriteOpen] = useState(false);
+  const [answerText, setAnswerText] = useState('');
+  const wordCount = answerText.trim() ? answerText.trim().split(/\s+/).length : 0;
+
+  const handleSubmit = () => {
+    if (!isLoggedIn) {
+      onRequireAuth();
+      return;
+    }
+    try {
+      sessionStorage.setItem(
+        'mainsEvaluatorPrefill',
+        JSON.stringify({
+          question: question.questionText,
+          paper: paperCode(question.paper),
+          answer: answerText,
+        }),
+      );
+    } catch {
+      // sessionStorage unavailable — evaluator will just open blank
+    }
+    router.push('/dashboard/mains-answer-evaluator');
+  };
+
+  return (
+    <div className="mt-4">
+      {!writeOpen ? (
+        <button
+          type="button"
+          onClick={() => setWriteOpen(true)}
+          className="group inline-flex items-center gap-2.5 rounded-[12px] border-2 border-[#0B1229] bg-[#0B1229] px-5 py-3 text-[14px] font-semibold text-white transition hover:bg-[#141F42]"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ transform: 'scaleX(-1)' }}>
+            <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+          Write &amp; Evaluate Your Answer
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="transition-transform group-hover:translate-x-1">
+            <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+          </svg>
+        </button>
+      ) : (
+        <div className="rounded-[14px] border-2 border-dashed border-[#E2E6EE] bg-[#F8F9FB] p-5">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#0B1229]">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2}>
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-[14px] font-bold text-[#1F2937]">Write Your Answer</p>
+              <p className="text-[12px] text-[#6B7280]">Draft here, then submit for AI evaluation</p>
+            </div>
+          </div>
+          <textarea
+            value={answerText}
+            onChange={(event) => setAnswerText(event.target.value)}
+            className="h-32 w-full resize-none rounded-[10px] border border-[#E2E6EE] bg-white p-3 text-[14px] text-[#364153] placeholder:text-[#9CA3AF] focus:border-[#D4AF37] focus:outline-none"
+            placeholder="Start writing your answer here..."
+          />
+          <div className="mt-3 flex items-center justify-between">
+            <p className="text-[12px] text-[#6B7280]">{wordCount} words</p>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="rounded-[10px] bg-gradient-to-r from-[#F5D06E] to-[#D4AF37] px-5 py-2 text-[13px] font-bold text-[#0B1229] transition hover:shadow-[0_4px_16px_rgba(212,175,55,0.4)]"
+            >
+              Submit for Evaluation
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MainsActionButtons({
+  question,
+  subject,
+  isLoggedIn,
+  onRequireAuth,
+}: {
+  question: PublicQuestion;
+  subject: string;
+  isLoggedIn: boolean;
+  onRequireAuth: () => void;
+}) {
+  const router = useRouter();
+  const [reviewStatus, setReviewStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
+  const [flashcardStatus, setFlashcardStatus] = useState<'idle' | 'saving' | 'error'>('idle');
+
+  const addFlashcard = async () => {
+    if (!isLoggedIn) return onRequireAuth();
+    if (flashcardStatus === 'saving') return;
+    setFlashcardStatus('saving');
+    try {
+      const subjectId = slugify(subject);
+      const topic = cleanText(question.topic) || cleanText(question.paper) || 'Custom';
+      const topicId = slugify(topic);
+      const res = await flashcardService.createCard({
+        subjectId,
+        subject,
+        topicId,
+        topic,
+        question: question.questionText,
+        answer: getModelAnswerText(question) || 'Refer to the model answer on RiseWithJeet.',
+        difficulty: cleanText(question.difficulty) || undefined,
+      });
+      const cardId = res?.data?.id;
+      router.push(`/dashboard/flashcards/${subjectId}/${topicId}${cardId ? `?cardId=${cardId}` : ''}`);
+    } catch {
+      setFlashcardStatus('error');
+    }
+  };
+
+  const addReviewLater = async () => {
+    if (!isLoggedIn) return onRequireAuth();
+    if (reviewStatus === 'saving' || reviewStatus === 'saved') return;
+    setReviewStatus('saving');
+    try {
+      await spacedRepService.addItem({
+        questionText: question.questionText,
+        answer: getModelAnswerText(question) || undefined,
+        subject,
+        source: 'PYQ Mains',
+        sourceType: 'pyq',
+      });
+      setReviewStatus('saved');
+    } catch {
+      setReviewStatus('error');
+    }
+  };
+
+  const share = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'UPSC Mains PYQ', text: truncateForUi(question.questionText, 100), url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShareStatus('copied');
+      setTimeout(() => setShareStatus('idle'), 2000);
+    } catch {
+      // user cancelled share or clipboard unavailable — no-op
+    }
+  };
+
+  return (
+    <div className="mt-5 flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        onClick={addFlashcard}
+        className="flex items-center gap-2 rounded-[10px] border border-[#E2E6EE] bg-white px-4 py-2.5 text-[13px] font-medium text-[#4A5568] transition hover:border-[#D4AF37] hover:text-[#B8941E] disabled:opacity-60"
+        disabled={flashcardStatus === 'saving'}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
+        {flashcardStatus === 'saving' ? 'Adding...' : flashcardStatus === 'error' ? 'Try again' : 'Add to Flashcard'}
+      </button>
+      <button
+        type="button"
+        onClick={addReviewLater}
+        className="flex items-center gap-2 rounded-[10px] border border-[#E2E6EE] bg-white px-4 py-2.5 text-[13px] font-medium text-[#4A5568] transition hover:border-[#D4AF37] hover:text-[#B8941E]"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+        {reviewStatus === 'saving' ? 'Saving...' : reviewStatus === 'saved' ? 'Added to Review' : reviewStatus === 'error' ? 'Try again' : 'Review Later'}
+      </button>
+      <button
+        type="button"
+        onClick={share}
+        className="flex items-center gap-2 rounded-[10px] border border-[#E2E6EE] bg-white px-4 py-2.5 text-[13px] font-medium text-[#4A5568] transition hover:border-[#D4AF37] hover:text-[#B8941E]"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
+        {shareStatus === 'copied' ? 'Link Copied!' : 'Share'}
+      </button>
+    </div>
+  );
+}
+
+function AnswerLengthNote() {
+  return (
+    <div className="mt-4 flex items-start gap-3 rounded-[10px] border border-[#E2E6EE] bg-[#F8F9FB] px-4 py-3">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B95A8" strokeWidth={2} className="mt-0.5 shrink-0">
+        <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+      </svg>
+      <p className="text-[12px] leading-relaxed text-[#6B7280]">
+        <strong className="text-[#4A5568]">Note:</strong> Model answers may exceed the prescribed word limit for better clarity and depth. Use them as a reference — always frame your final answer within the exam&apos;s word limit.
+      </p>
+    </div>
+  );
+}
+
+function EvaluateAnswerCard() {
+  return (
+    <div className="eval-card rounded-[14px] border border-[#E2E6EE] p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <p className="text-[14px] font-bold text-[#1F2937]">Evaluate Your Answer</p>
+          <p className="eval-subline mt-0.5 text-[10px] text-[#6B7280]">Jeet AI-powered assessment</p>
+        </div>
+        <div className="eval-writing-scene" aria-hidden="true">
+          <div className="answer-copy" />
+          <svg className="answer-pen" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
+          </svg>
+          <span className="answer-spark" />
+        </div>
+      </div>
+
+      <div className="mb-4 space-y-3">
+        {[
+          { icon: 'M22 11.08V12a10 10 0 11-5.93-9.14', check: true, bg: 'bg-[#ECFDF5]', color: '#10B981', title: 'Instant Feedback', sub: 'Get marks & suggestions within 60 seconds' },
+          { icon: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z', bg: 'bg-[#EFF6FF]', color: '#3B82F6', title: 'Detailed Analysis', sub: 'Strengths, weaknesses & improvements' },
+          { icon: 'M22 12h-4l-3 9L9 3l-3 9H2', bg: 'bg-[#F5F3FF]', color: '#8B5CF6', title: 'Track Progress', sub: 'Monitor improvement over time' },
+        ].map((item) => (
+          <div key={item.title} className="flex items-start gap-2.5">
+            <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] ${item.bg}`}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={item.color} strokeWidth={2.5}><path d={item.icon} /></svg>
+            </div>
+            <div>
+              <p className="text-[12px] font-semibold leading-tight text-[#1F2937]">{item.title}</p>
+              <p className="mt-0.5 text-[10px] text-[#6B7280]">{item.sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Link href="/?auth=signup" className="group flex w-full items-center justify-center gap-1.5 rounded-[8px] bg-gradient-to-r from-[#F5D06E] to-[#D4AF37] py-2.5 text-[12px] font-bold text-[#0B1229] transition hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(212,175,55,0.3)]">
+        Write Now
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="transition-transform group-hover:translate-x-0.5"><path d="M5 12h14" /></svg>
+      </Link>
+    </div>
+  );
+}
+
 function PublicHeader() {
   return (
     <div className="question-public-nav">
@@ -383,6 +700,7 @@ function PublicSidebar({
 }
 
 function PracticeSidebar({
+  isPrelims,
   revealed,
   selectedOption,
   correctOption,
@@ -396,6 +714,7 @@ function PracticeSidebar({
   onRevision,
   question,
 }: {
+  isPrelims: boolean;
   revealed: boolean;
   selectedOption: string | null;
   correctOption: string;
@@ -412,33 +731,35 @@ function PracticeSidebar({
   const isCorrect = revealed && selectedOption && correctOption && selectedOption === correctOption;
   return (
     <>
-      <div className="rounded-[18px] border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
-        <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.16em] text-[#8B95A8]">Practice Status</p>
-        <h3 className="text-[22px] font-bold leading-[1.15] text-[#111827]" style={{ fontFamily: 'var(--font-cormorant-garamond), Georgia, serif' }}>
-          {revealed ? (isCorrect ? 'Correct answer' : 'Review this one') : 'Attempt this question'}
-        </h3>
-        <div className="mt-4 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9FB] p-4">
-          <div className="flex items-center justify-between text-[13px]">
-            <span className="font-semibold text-[#6B7280]">Your answer</span>
-            <span className="font-bold text-[#111827]">{selectedOption || 'Not attempted'}</span>
-          </div>
-          {revealed ? (
-            <div className="mt-2 flex items-center justify-between text-[13px]">
-              <span className="font-semibold text-[#6B7280]">Correct answer</span>
-              <span className="font-bold text-[#047857]">{correctOption || 'See explanation'}</span>
+      {isPrelims ? (
+        <div className="rounded-[18px] border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+          <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.16em] text-[#8B95A8]">Practice Status</p>
+          <h3 className="text-[22px] font-bold leading-[1.15] text-[#111827]" style={{ fontFamily: 'var(--font-cormorant-garamond), Georgia, serif' }}>
+            {revealed ? (isCorrect ? 'Correct answer' : 'Review this one') : 'Attempt this question'}
+          </h3>
+          <div className="mt-4 rounded-[12px] border border-[#E5E7EB] bg-[#F8F9FB] p-4">
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="font-semibold text-[#6B7280]">Your answer</span>
+              <span className="font-bold text-[#111827]">{selectedOption || 'Not attempted'}</span>
             </div>
-          ) : null}
+            {revealed ? (
+              <div className="mt-2 flex items-center justify-between text-[13px]">
+                <span className="font-semibold text-[#6B7280]">Correct answer</span>
+                <span className="font-bold text-[#047857]">{correctOption || 'See explanation'}</span>
+              </div>
+            ) : null}
+          </div>
+          <p className="mt-3 text-[12px] leading-5 text-[#6B7280]">
+            {submitStatus === 'saving'
+              ? 'Saving your attempt...'
+              : submitStatus === 'saved'
+                ? 'Attempt saved to your account.'
+                : submitStatus === 'error'
+                  ? `Attempt shown locally. ${submitError || 'Could not save right now.'}`
+                  : 'Choose an option to reveal the explanation.'}
+          </p>
         </div>
-        <p className="mt-3 text-[12px] leading-5 text-[#6B7280]">
-          {submitStatus === 'saving'
-            ? 'Saving your attempt...'
-            : submitStatus === 'saved'
-              ? 'Attempt saved to your account.'
-              : submitStatus === 'error'
-                ? `Attempt shown locally. ${submitError || 'Could not save right now.'}`
-                : 'Choose an option to reveal the explanation.'}
-        </p>
-      </div>
+      ) : null}
 
       <div className="rounded-[18px] border border-[#E5E7EB] bg-white p-5 text-[13px] shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
         <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.16em] text-[#8B95A8]">Question Details</p>
@@ -595,6 +916,132 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
           box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
           border-color: rgba(212, 175, 55, 0.45);
         }
+        .model-answer-parchment {
+          position: relative;
+          isolation: isolate;
+          border-radius: 14px;
+          padding: 24px 26px 22px;
+          margin-top: 6px;
+          background:
+            radial-gradient(ellipse 90% 70% at 90% 100%, rgba(212, 175, 55, 0.045) 0%, transparent 60%),
+            radial-gradient(ellipse 80% 60% at 5% 0%, rgba(245, 208, 110, 0.035) 0%, transparent 55%),
+            linear-gradient(180deg, #ffffff 0%, #fdfcf8 100%);
+          border: 1px solid rgba(212, 175, 55, 0.14);
+          overflow: hidden;
+        }
+        .eval-card {
+          background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+          box-shadow: 0 10px 32px rgba(15, 27, 61, 0.06);
+          transition: box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        .eval-card:hover {
+          border-color: rgba(212, 175, 55, 0.34);
+          box-shadow: 0 16px 42px rgba(15, 27, 61, 0.1), 0 0 0 1px rgba(212, 175, 55, 0.08);
+        }
+        .eval-writing-scene {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          background:
+            radial-gradient(circle at 30% 20%, rgba(245, 208, 110, 0.3), transparent 40%),
+            radial-gradient(circle at 70% 80%, rgba(212, 175, 55, 0.12), transparent 40%),
+            linear-gradient(145deg, #fffdf5 0%, #fdf6e3 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 4px 16px rgba(212, 175, 55, 0.12);
+        }
+        .answer-copy {
+          width: 26px;
+          height: 32px;
+          border-radius: 4px;
+          background: linear-gradient(180deg, #ffffff 0%, #fffef9 100%);
+          border: 1px solid rgba(212, 175, 55, 0.2);
+          box-shadow: 0 3px 10px rgba(212, 175, 55, 0.08);
+          position: relative;
+          transform: rotate(-1.5deg);
+        }
+        .answer-copy::before {
+          content: '';
+          position: absolute;
+          top: 5px;
+          left: 4px;
+          right: 4px;
+          height: 2px;
+          border-radius: 999px;
+          background: rgba(212, 175, 55, 0.2);
+        }
+        .answer-copy::after {
+          content: '';
+          position: absolute;
+          left: 4px;
+          top: 11px;
+          width: 0;
+          height: 1.5px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, rgba(212, 175, 55, 0.5), rgba(212, 175, 55, 0.8));
+          box-shadow: 0 5px 0 rgba(212, 175, 55, 0.18), 0 10px 0 rgba(212, 175, 55, 0.12);
+          animation: evalInkWrite 3.5s ease-in-out infinite;
+        }
+        .answer-pen {
+          position: absolute;
+          width: 16px;
+          height: 16px;
+          right: 10px;
+          top: 14px;
+          z-index: 3;
+          filter: drop-shadow(0 2px 4px rgba(212, 175, 55, 0.25));
+          transform-origin: 75% 75%;
+          animation: evalPenWriting 3.5s cubic-bezier(0.37, 0, 0.22, 1) infinite;
+        }
+        .answer-spark {
+          position: absolute;
+          right: 6px;
+          top: 6px;
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          display: block;
+          background: rgba(245, 208, 110, 0.8);
+          box-shadow: 0 0 6px rgba(212, 175, 55, 0.4);
+          animation: evalSpark 3.5s ease-in-out infinite;
+        }
+        .eval-subline {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+        }
+        .eval-subline::before {
+          content: '';
+          width: 5px;
+          height: 5px;
+          border-radius: 999px;
+          background: #10b981;
+          animation: evalAiPulse 2.2s ease-out infinite;
+        }
+        @keyframes evalPenWriting {
+          0%, 100% { transform: translate(-4px, -2px) rotate(-15deg); }
+          25% { transform: translate(-2px, 1px) rotate(-12deg); }
+          50% { transform: translate(0px, 3px) rotate(-10deg); }
+          75% { transform: translate(-3px, 5px) rotate(-13deg); }
+        }
+        @keyframes evalInkWrite {
+          0%, 10% { width: 0; opacity: 0.2; }
+          40% { width: 10px; opacity: 0.7; }
+          65% { width: 16px; opacity: 0.7; }
+          85%, 100% { width: 16px; opacity: 0.3; }
+        }
+        @keyframes evalSpark {
+          0%, 25%, 100% { opacity: 0; transform: scale(0.4); }
+          50%, 70% { opacity: 0.8; transform: scale(1); }
+        }
+        @keyframes evalAiPulse {
+          0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35); }
+          70% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
       `}</style>
 
       {isLoggedIn ? <AuthQuestionHeader userName={displayName} initials={userInitials} /> : <PublicHeader />}
@@ -688,19 +1135,40 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
                 </div>
               ) : null}
 
-              {(revealed || !options.length) ? <Explanation question={question} /> : null}
+              {isPrelims ? (
+                <>
+                  {(revealed || !options.length) ? <Explanation question={question} /> : null}
 
-              {!isLoggedIn && revealed ? (
-                <div className="mt-5 rounded-[16px] border border-[#F5D06E]/60 bg-[#FFFDF5] p-5">
-                  <p className="text-[15px] font-bold text-[#0B1229]">Want to save this attempt?</p>
-                  <p className="mt-1 text-[13px] leading-5 text-[#6B7280]">Your answer was checked locally. Create an account to save progress, bookmarks, and revision history.</p>
-                  <button type="button" onClick={() => openAuthModal('signup')} className="mt-4 rounded-[12px] bg-[#0B1229] px-5 py-3 text-[14px] font-bold text-white">
-                    Save Progress for Free
-                  </button>
+                  {!isLoggedIn && revealed ? (
+                    <div className="mt-5 rounded-[16px] border border-[#F5D06E]/60 bg-[#FFFDF5] p-5">
+                      <p className="text-[15px] font-bold text-[#0B1229]">Want to save this attempt?</p>
+                      <p className="mt-1 text-[13px] leading-5 text-[#6B7280]">Your answer was checked locally. Create an account to save progress, bookmarks, and revision history.</p>
+                      <button type="button" onClick={() => openAuthModal('signup')} className="mt-4 rounded-[12px] bg-[#0B1229] px-5 py-3 text-[14px] font-bold text-white">
+                        Save Progress for Free
+                      </button>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <div className="border-t border-[#E5E7EB] pt-5">
+                  <ModelAnswerBox question={question} />
+                  <MainsAnswerWorkspace
+                    question={question}
+                    isLoggedIn={isLoggedIn}
+                    onRequireAuth={() => openAuthModal('signup')}
+                  />
+                  <MainsActionButtons
+                    question={question}
+                    subject={subject}
+                    isLoggedIn={isLoggedIn}
+                    onRequireAuth={() => openAuthModal('signup')}
+                  />
                 </div>
-              ) : null}
+              )}
             </div>
           </article>
+
+          {!isPrelims ? <AnswerLengthNote /> : null}
 
           {relatedQuestions.length > 0 ? (
             <section className="mt-10">
@@ -734,8 +1202,10 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-[96px] lg:self-start">
+          {!isPrelims ? <EvaluateAnswerCard /> : null}
           {isLoggedIn ? (
             <PracticeSidebar
+              isPrelims={isPrelims}
               revealed={revealed}
               selectedOption={selectedOption}
               correctOption={correctOption}

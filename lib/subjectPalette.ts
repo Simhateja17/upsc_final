@@ -1,66 +1,187 @@
-// Tag colors sourced from upsc_subject_color_palette.html
-export const SUBJECT_PALETTE: Record<string, { bg: string; color: string; topic: string }[]> = {
+export type SubjectBadgeStyle = { bg: string; color: string };
+export type SubjectMetaStyle = SubjectBadgeStyle & {
+  icon: string;
+  border: string;
+  accent: string;
+  label: string;
+};
+
+const DARK_TEXT = '#17223E';
+
+const SUBJECT_META_STYLES: Array<{
+  label: string;
+  icon: string;
+  bg: string;
+  accent: string;
+  aliases: string[];
+}> = [
+  { label: 'History', icon: '🏛️', bg: '#F5E6CC', accent: '#A8783E', aliases: ['history', 'modern history', 'ancient history', 'medieval history', 'art culture', 'art & culture'] },
+  { label: 'Indian Society', icon: '👥', bg: '#F3D8E2', accent: '#B35B7A', aliases: ['indian society', 'society'] },
+  { label: 'Geography', icon: '🌍', bg: '#D8EDF5', accent: '#3D8CAE', aliases: ['geography', 'geog'] },
+  { label: 'Polity', icon: '⚖️', bg: '#D8E2F3', accent: '#4D6FA9', aliases: ['polity', 'indian polity'] },
+  { label: 'Governance', icon: '🏛️', bg: '#FDF1B6', accent: '#B89516', aliases: ['governance'] },
+  { label: 'Social Justice', icon: '🤝', bg: '#FADADD', accent: '#C65D66', aliases: ['social justice'] },
+  { label: 'International Relations', icon: '🌐', bg: '#D9D6F5', accent: '#6D68B8', aliases: ['international relations', 'int relations', "int'l relations", 'ir', 'foreign policy'] },
+  { label: 'Economy', icon: '📈', bg: '#F5D8D0', accent: '#B66D5A', aliases: ['economy', 'indian economy', 'economic'] },
+  { label: 'Science & Technology', icon: '🔬', bg: '#E1D8F5', accent: '#7964B4', aliases: ['science & technology', 'science and technology', 'science technology', 'science & tech', 'science and tech', 's&t', 'science', 'technology'] },
+  { label: 'Environment', icon: '🌿', bg: '#E1F5E1', accent: '#529B59', aliases: ['environment', 'environment & ecology', 'environment ecology', 'ecology'] },
+  { label: 'Disaster Management', icon: '🚨', bg: '#FAD2A7', accent: '#BC7224', aliases: ['disaster management', 'disaster mgmt'] },
+  { label: 'Internal Security', icon: '🛡️', bg: '#EFEFE1', accent: '#7F806B', aliases: ['internal security', 'security'] },
+  { label: 'Ethics', icon: '🧭', bg: '#E1D5F5', accent: '#7760B4', aliases: ['ethics', 'ethics integrity aptitude', 'ethics gs4', 'gs-iv ethics'] },
+  { label: 'Current Affairs', icon: '📰', bg: '#E3F0F7', accent: '#4E6A8F', aliases: ['current affairs', 'current-affairs'] },
+  { label: 'Agriculture', icon: '🌾', bg: '#E8F5D8', accent: '#6E9C3F', aliases: ['agriculture', 'agri'] },
+  { label: 'Essay', icon: '✍️', bg: '#F9F3D9', accent: '#B89516', aliases: ['essay', 'essay writing'] },
+  { label: 'CSAT', icon: '🧩', bg: '#F4EDE4', accent: '#9A8258', aliases: ['csat', 'csat paper ii'] },
+  { label: 'GS Paper 1', icon: '📘', bg: '#E8F4F8', accent: '#3D7A9E', aliases: ['gs1', 'gs i', 'gs paper i', 'gs paper 1', 'gs paper1'] },
+  { label: 'GS Paper 2', icon: '📗', bg: '#E6F5E8', accent: '#529B59', aliases: ['gs2', 'gs ii', 'gs paper ii', 'gs paper 2', 'gs paper2'] },
+  { label: 'GS Paper 3', icon: '📙', bg: '#F7ECE1', accent: '#B66D5A', aliases: ['gs3', 'gs iii', 'gs paper iii', 'gs paper 3', 'gs paper3'] },
+  { label: 'GS Paper 4', icon: '📕', bg: '#EBE4F5', accent: '#7760B4', aliases: ['gs4', 'gs iv', 'gs paper iv', 'gs paper 4', 'gs paper4'] },
+  { label: 'Optional Paper 1', icon: '📓', bg: '#E8EDF5', accent: '#5A6B99', aliases: ['optional paper 1', 'optional i'] },
+  { label: 'Optional Paper 2', icon: '📔', bg: '#F0ECE6', accent: '#8A7B63', aliases: ['optional paper 2', 'optional ii'] },
+];
+
+const SUBJECT_THEME_CHIPS: Record<string, { bg: string; topic: string }[]> = {
   history: [
-    { bg: '#F5E8D4', color: '#7A5230', topic: 'Ancient India' },
-    { bg: '#EDD5E6', color: '#7A3D72', topic: 'Medieval India' },
-    { bg: '#FDE9C0', color: '#8A6010', topic: 'Art & Culture' },
-    { bg: '#D8E4CC', color: '#445E38', topic: 'Modern History' },
+    { topic: 'Ancient History', bg: '#E6D8F5' },
+    { topic: 'Medieval India', bg: '#D8F5E9' },
+    { topic: 'Art & Culture', bg: '#F5D8D8' },
+    { topic: 'Modern History', bg: '#CDE6F5' },
+    { topic: 'World History', bg: '#F5F5D8' },
+    { topic: 'Post Independence India', bg: '#D8E5F5' },
   ],
   geography: [
-    { bg: '#C8E8F4', color: '#1E6A9A', topic: 'Physical Geo – World' },
-    { bg: '#D8F0DC', color: '#2E6E3E', topic: 'Physical Geo – India' },
-    { bg: '#F4EDD0', color: '#826020', topic: 'Economic Geography' },
-    { bg: '#ECD8F4', color: '#6A3A90', topic: 'Human Geography' },
+    { topic: 'Physical Geography', bg: '#E0F5F2' },
+    { topic: 'Indian Geography', bg: '#E5E0F5' },
+    { topic: 'Human Geography', bg: '#F5E6D8' },
+    { topic: 'Economic Geography', bg: '#F5D8EB' },
+    { topic: 'World Geography', bg: '#F5F5D8' },
+    { topic: 'Mapping', bg: '#D8F5E0' },
   ],
   polity: [
-    { bg: '#D0DDF4', color: '#2A4490', topic: 'Polity' },
+    { topic: 'Constitutional History', bg: '#E8F3D8' },
+    { topic: 'Constitutional Framework', bg: '#E0D8F1' },
+    { topic: 'Executive', bg: '#D8F3EF' },
+    { topic: 'Legislature', bg: '#EBE0F7' },
+    { topic: 'Judiciary', bg: '#E6E6E6' },
+    { topic: 'Federalism', bg: '#F3E1D8' },
+    { topic: 'Local Governance', bg: '#F3D8F0' },
+  ],
+  'indian society': [
+    { topic: 'Salient Features of Indian Society', bg: '#D8F3E9' },
+    { topic: 'Diversity & National Integration', bg: '#E9F3D8' },
+    { topic: 'Women & Gender Issues', bg: '#D8E9F3' },
+    { topic: 'Population & Urbanization', bg: '#F3E9D8' },
+    { topic: 'Poverty & Development Issues', bg: '#E2D8F3' },
+  ],
+  governance: [
+    { topic: 'Governance Basics', bg: '#B6FDF1' },
+    { topic: 'Government Policies & Programmes', bg: '#B6C2FD' },
+    { topic: 'Civil Society & Development', bg: '#FDB6C2' },
+    { topic: 'E-Governance', bg: '#C2B6FD' },
   ],
   economy: [
-    { bg: '#F8EDD8', color: '#7A5818', topic: 'Basic Economy' },
-    { bg: '#D0ECD8', color: '#2E6848', topic: 'Public Finance' },
-    { bg: '#C8ECF4', color: '#1E6880', topic: 'External Sector' },
-    { bg: '#D8F0CC', color: '#3A6828', topic: 'Agriculture' },
-    { bg: '#F4F0CC', color: '#6A6018', topic: 'Sectors of Economy' },
-    { bg: '#D4DCE8', color: '#3A4A62', topic: 'Infrastructure' },
-    { bg: '#F4E0D8', color: '#7A3A28', topic: 'Human Resource Dev.' },
+    { topic: 'Economic Fundamentals', bg: '#D0F5E8' },
+    { topic: 'Financial System', bg: '#D0E8F5' },
+    { topic: 'Public Finance', bg: '#F5D0E8' },
+    { topic: 'External Sector', bg: '#E8F5D0' },
+    { topic: 'Agriculture', bg: '#F5F0D0' },
+    { topic: 'Industry & Services', bg: '#D0D5F5' },
+    { topic: 'Infrastructure', bg: '#E8D0F5' },
   ],
   environment: [
-    { bg: '#C8ECCC', color: '#2A6438', topic: 'Ecology & Ecosystem' },
-    { bg: '#D0F0D4', color: '#1E5C34', topic: 'Biodiversity' },
-    { bg: '#E8E4DC', color: '#5A5248', topic: 'Pollution' },
-    { bg: '#D8ECF8', color: '#1E5A80', topic: 'Climate Change' },
-    { bg: '#D4EEDC', color: '#2A6040', topic: 'Conservation Efforts' },
+    { topic: 'Ecology & Ecosystems', bg: '#D1E1F5' },
+    { topic: 'Biodiversity', bg: '#F5E1D1' },
+    { topic: 'Conservation & Protected Areas', bg: '#D1F5F2' },
+    { topic: 'Climate Change', bg: '#E1D1F5' },
   ],
   science: [
-    { bg: '#DCF0F8', color: '#1A5878', topic: 'General Science' },
-    { bg: '#CCF0D4', color: '#1A5830', topic: 'Biotechnology' },
-    { bg: '#F8DCDC', color: '#7A2828', topic: 'Human Health & Diseases' },
-    { bg: '#D4D0F4', color: '#3A2A90', topic: 'Space' },
-    { bg: '#D8E0CC', color: '#3A4828', topic: 'Defence' },
-    { bg: '#F4F0BC', color: '#6A6010', topic: 'Nuclear Energy' },
-    { bg: '#C8ECF8', color: '#1A5870', topic: 'Electronics & IT' },
-    { bg: '#E8E4F4', color: '#4A3880', topic: 'Nano Science' },
+    { topic: 'General Science', bg: '#D0F5D5' },
+    { topic: 'Biotechnology', bg: '#D8F5E1' },
+    { topic: 'Human Health & Diseases', bg: '#F5E1D8' },
+    { topic: 'Space Technology', bg: '#D8F5F1' },
+    { topic: 'Defence Technology', bg: '#F5F5D8' },
+    { topic: 'Nuclear Technology', bg: '#D8E1F5' },
   ],
 };
 
-export const NEUTRAL_TAG_STYLE = { bg: '#F3F4F6', color: '#6A7282' };
+export const NEUTRAL_TAG_STYLE = { bg: '#F3F4F6', color: '#17223E' };
 
-// One distinct badge color per subject (Polity→Purple, Geography→Blue,
-// Economy→Yellow, Environment→Green, …). Matched by substring so variant
-// names like "Indian Polity & Governance" still resolve correctly.
-export const SUBJECT_BADGE_STYLES: Array<{ match: (n: string) => boolean; bg: string; color: string }> = [
-  { match: (n) => n.includes('polit') || n.includes('governance'), bg: '#EDE9FE', color: '#6D28D9' }, // Purple
-  { match: (n) => n.includes('geo'), bg: '#DBEAFE', color: '#1D4ED8' }, // Blue
-  { match: (n) => n.includes('econ'), bg: '#FEF3C7', color: '#92400E' }, // Yellow
-  { match: (n) => n.includes('environ') || n.includes('ecolog'), bg: '#DCFCE7', color: '#15803D' }, // Green
-  { match: (n) => n.includes('histor') || n.includes('art') || n.includes('culture'), bg: '#FFEDD5', color: '#9A3412' }, // Orange
-  { match: (n) => n.includes('scien') || n.includes('tech'), bg: '#CFFAFE', color: '#0E7490' }, // Cyan
-  { match: (n) => n.includes('current') || n.includes('affair'), bg: '#FFE4E6', color: '#BE123C' }, // Rose
-];
+function normalizeSubjectName(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-export function getSubjectBadgeStyle(subjectName: string): { bg: string; color: string } {
-  const n = (subjectName || '').toLowerCase();
-  return SUBJECT_BADGE_STYLES.find((s) => s.match(n)) ?? { bg: '#EFF6FF', color: '#17223E' };
+function withAlpha(hex: string, alphaHex: string) {
+  return `${hex}${alphaHex}`;
+}
+
+export function getSubjectMetaStyle(subjectName: string): SubjectMetaStyle {
+  const n = normalizeSubjectName(subjectName || '');
+  const tokens = n.split(' ');
+  const meta = SUBJECT_META_STYLES.find((entry) => {
+    if (normalizeSubjectName(entry.label) === n) return true;
+    return entry.aliases.some((alias) => {
+      const a = normalizeSubjectName(alias);
+      if (!a) return false;
+      // Word-boundary match so short aliases (e.g. 'ir') don't match inside
+      // unrelated words like 'envIRonment'.
+      return (
+        n === a ||
+        tokens.includes(a) ||
+        n.includes(` ${a} `) ||
+        n.startsWith(`${a} `) ||
+        n.endsWith(` ${a}`)
+      );
+    });
+  });
+
+  if (!meta) {
+    return {
+      bg: '#EFF6FF',
+      color: DARK_TEXT,
+      border: '#D8E2F3',
+      accent: '#4D6FA9',
+      icon: '📚',
+      label: subjectName || 'Subject',
+    };
+  }
+
+  return {
+    bg: meta.bg,
+    color: DARK_TEXT,
+    border: withAlpha(meta.accent, '55'),
+    accent: meta.accent,
+    icon: meta.icon,
+    label: meta.label,
+  };
+}
+
+export function getSubjectBadgeStyle(subjectName: string): SubjectBadgeStyle {
+  const meta = getSubjectMetaStyle(subjectName);
+  return { bg: meta.bg, color: meta.color };
+}
+
+export function getSubjectAccentColor(subjectName: string): string {
+  return getSubjectMetaStyle(subjectName).accent;
+}
+
+export function getSubjectIcon(subjectName?: string): string {
+  return getSubjectMetaStyle(subjectName || '').icon;
+}
+
+export function getSubjectCardStyle(subjectName: string): { bg: string; border: string; bar: string; iconBg: string; color: string } {
+  const meta = getSubjectMetaStyle(subjectName);
+  return {
+    bg: meta.bg,
+    border: meta.border,
+    bar: meta.accent,
+    iconBg: '#FFFFFFAA',
+    color: meta.color,
+  };
 }
 
 export function hashIndex(str: string, mod: number): number {
@@ -70,23 +191,23 @@ export function hashIndex(str: string, mod: number): number {
 }
 
 function chipsForSubject(subjectName: string) {
-  const lower = subjectName.toLowerCase();
-  return Object.entries(SUBJECT_PALETTE).find(([key]) => lower.includes(key))?.[1];
+  const meta = getSubjectMetaStyle(subjectName);
+  const key = normalizeSubjectName(meta.label).replace(/\s+/g, ' ');
+  const chips = SUBJECT_THEME_CHIPS[key] ?? SUBJECT_THEME_CHIPS[key.split(' ')[0]];
+  if (chips?.length) {
+    return chips.map((chip) => ({ bg: chip.bg, color: DARK_TEXT, topic: chip.topic }));
+  }
+  return [{ bg: meta.bg, color: DARK_TEXT, topic: meta.label }];
 }
 
-// Returns one pill style per key, picking distinct palette chips for the
-// given subject so none of the tags land on the same color (falls back to
-// neutral grey if the subject isn't in the palette, or reuses a chip if
-// the palette doesn't have enough distinct colors for every key).
-export function getDistinctChipStyles(subjectName: string, keys: string[]): { bg: string; color: string }[] {
+export function getDistinctChipStyles(subjectName: string, keys: string[]): SubjectBadgeStyle[] {
   const chips = chipsForSubject(subjectName);
-  if (!chips || chips.length === 0) {
-    return keys.map(() => NEUTRAL_TAG_STYLE);
-  }
+  if (!chips || chips.length === 0) return keys.map(() => NEUTRAL_TAG_STYLE);
 
   const used = new Set<number>();
   return keys.map((key) => {
-    let idx = hashIndex(key, chips.length);
+    const exactIdx = chips.findIndex((chip) => normalizeSubjectName(chip.topic) === normalizeSubjectName(key));
+    let idx = exactIdx >= 0 ? exactIdx : hashIndex(key, chips.length);
     let attempts = 0;
     while (used.has(idx) && attempts < chips.length) {
       idx = (idx + 1) % chips.length;
@@ -95,4 +216,12 @@ export function getDistinctChipStyles(subjectName: string, keys: string[]): { bg
     used.add(idx);
     return { bg: chips[idx].bg, color: chips[idx].color };
   });
+}
+
+export function getTagStyles(subjectName: string, topicText: string, subSubjectText: string): {
+  topic: SubjectBadgeStyle;
+  subSubject: SubjectBadgeStyle;
+} {
+  const [subSubject, topic] = getDistinctChipStyles(subjectName, [subSubjectText, topicText]);
+  return { topic, subSubject };
 }

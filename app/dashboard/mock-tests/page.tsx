@@ -9,12 +9,13 @@ import { liveStudentCount } from '@/lib/liveCount';
 import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 /* ─── Static Config (UI structure only, not data) ─── */
 
 const prelimsPaperTypes = [
-  { id: 'gs1', emoji: '🌐', label: 'GS Paper I', description: 'History · Geography · Polity · Economy · Science', isDefault: true },
-  { id: 'csat', emoji: '🧮', label: 'CSAT', description: 'Aptitude · Comprehension · Logical Reasoning' },
+  { id: 'gs1', emoji: '🔑', label: 'GS Paper I', description: 'History · Geography · Polity · Economy · Science', isDefault: true },
+  { id: 'csat', emoji: '🧩', label: 'CSAT', description: 'Aptitude · Comprehension · Logical Reasoning' },
 ];
 
 const fallbackQuestionSources = [
@@ -159,10 +160,10 @@ const fallbackExamModes = [
 ];
 
 const fallbackMainsPaperTypes = [
-  { id: 'gs1', emoji: '🏛️', label: 'GS Paper I', description: 'History · Geography · Society' },
-  { id: 'gs2', emoji: '⚖️', label: 'GS Paper II', description: 'Polity · Governance · IR' },
-  { id: 'gs3', emoji: '📈', label: 'GS Paper III', description: 'Economy · Environment · Sci-Tech' },
-  { id: 'gs4', emoji: '🎯', label: 'GS Paper IV', description: 'Ethics, Integrity & Aptitude' },
+  { id: 'gs1', emoji: '📘', label: 'GS Paper I', description: 'History · Geography · Society' },
+  { id: 'gs2', emoji: '📗', label: 'GS Paper II', description: 'Polity · Governance · IR' },
+  { id: 'gs3', emoji: '📙', label: 'GS Paper III', description: 'Economy · Environment · Sci-Tech' },
+  { id: 'gs4', emoji: '📕', label: 'GS Paper IV', description: 'Ethics, Integrity & Aptitude' },
   { id: 'essay', emoji: '✏️', label: 'Essay', description: 'Paper I · 2 essays' },
   { id: 'optional', emoji: '📚', label: 'Optional', description: 'Choose your optional subject' },
 ];
@@ -292,7 +293,7 @@ function MockTestsPageInner() {
   const [selectedExamMode, setSelectedExamMode] = useState('prelims');
   const [selectedPaperType, setSelectedPaperType] = useState('gs1');
   const [selectedOptional, setSelectedOptional] = useState<string | null>(null);
-  const [questionCount, setQuestionCount] = useState(5);
+  const [questionCount, setQuestionCount] = useState(1);
   const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
 
   /* ─── API State ─── */
@@ -312,21 +313,23 @@ function MockTestsPageInner() {
   const [pricingPlans, setPricingPlans] = useState<any[]>([]);
   const questionPresets = selectedExamMode === 'mains'
     ? [
-        { value: 2, label: 'Free · 2', icon: '/90.png', pro: false },
+        { value: 1, label: 'Free · 1', icon: '/90.png', pro: false },
         { value: 5, label: 'Practice · 5', icon: '/text7.png', pro: true },
         { value: 10, label: 'Deep · 10', icon: '/text8.png', pro: true },
         { value: 15, label: 'Answer · 15', icon: '/text8.png', pro: true },
         { value: 20, label: 'Full · 20', icon: '/text8.png', pro: true },
       ]
     : [
-        { value: 5, label: 'Quick 5', icon: '/90.png', pro: false },
+        { value: 1, label: 'Quick 1', icon: '/90.png', pro: false },
         { value: 10, label: 'Standard 10', icon: '/text7.png', pro: false },
         { value: 25, label: '25 Q', icon: '/text8.png', pro: true },
         { value: 50, label: '50 Q', icon: '/text8.png', pro: true },
         { value: 75, label: '75 Q', icon: '/text8.png', pro: true },
         { value: 100, label: 'Full 100', icon: '/text8.png', pro: true },
       ];
+  const minQuestionCount = 1;
   const maxQuestionCount = selectedExamMode === 'mains' ? 20 : 100;
+  const questionSliderProgress = ((questionCount - minQuestionCount) / (maxQuestionCount - minQuestionCount)) * 100;
   const subjectCountMap = subjects.reduce<Record<string, number>>((acc, subject) => {
     acc[subject.name] = subject.count;
     return acc;
@@ -459,8 +462,8 @@ function MockTestsPageInner() {
 
   useEffect(() => {
     setQuestionCount((count) => {
-      if (selectedExamMode === 'mains') return Math.min(Math.max(count, 2), 20);
-      return Math.min(Math.max(count, 5), 100);
+      if (selectedExamMode === 'mains') return Math.min(Math.max(count, minQuestionCount), 20);
+      return Math.min(Math.max(count, minQuestionCount), 100);
     });
   }, [selectedExamMode]);
 
@@ -551,6 +554,27 @@ function MockTestsPageInner() {
 
   return (
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
+      <style>{`
+        .question-count-slider::-webkit-slider-thumb {
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #2F75FF;
+          border: none;
+          box-shadow: 0 1px 4px rgba(47, 117, 255, 0.28);
+          cursor: pointer;
+        }
+        .question-count-slider::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #2F75FF;
+          border: none;
+          box-shadow: 0 1px 4px rgba(47, 117, 255, 0.28);
+          cursor: pointer;
+        }
+      `}</style>
 
       {/* ── Generating Test popup (blurred backdrop + pop-out) ── */}
       {generating && (
@@ -700,6 +724,7 @@ function MockTestsPageInner() {
               {(selectedExamMode === 'mains' ? mainsPaperTypes : prelimsPaperTypes).map(paper => {
                 const isSelected = selectedPaperType === paper.id;
                 const isComingSoon = selectedExamMode === 'prelims' && paper.id === 'csat';
+                const paperStyle = getSubjectMetaStyle(paper.label);
                 return (
                   <button
                     key={paper.id}
@@ -708,8 +733,8 @@ function MockTestsPageInner() {
                     }}
                     disabled={isComingSoon}
                     style={{
-                      background: isSelected ? '#EFF6FF' : '#FAFAFA',
-                      border: isSelected ? '1.8px solid #17223E' : '1.6px solid #E5E7EB',
+                      background: isSelected ? paperStyle.bg : '#FAFAFA',
+                      border: isSelected ? `1.8px solid ${paperStyle.accent}` : `1.6px solid ${paperStyle.border}`,
                       borderRadius: '12px',
                       padding: '14px 12px',
                       cursor: isComingSoon ? 'not-allowed' : 'pointer',
@@ -723,7 +748,7 @@ function MockTestsPageInner() {
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    <span style={{ fontSize: '22px', flexShrink: 0, lineHeight: 1 }}>
+                    <span style={{ fontSize: '22px', flexShrink: 0, lineHeight: 1, width: 42, height: 42, borderRadius: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#FFFFFFAA', border: `1px solid ${paperStyle.border}` }}>
                       {(paper as any).emoji ?? '📄'}
                     </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -736,7 +761,7 @@ function MockTestsPageInner() {
                     </div>
                     <div style={{
                       width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
-                      border: isSelected ? '5px solid #17223E' : '1.5px solid #D1D5DB',
+                      border: isSelected ? `5px solid ${paperStyle.accent}` : '1.5px solid #D1D5DB',
                       background: '#FFF', transition: 'all 0.15s ease',
                     }} />
                   </button>
@@ -817,8 +842,6 @@ function MockTestsPageInner() {
               </span>
               <style>{`
                 @keyframes spin { to { transform: rotate(360deg); } }
-                .mains-slider::-webkit-slider-thumb { appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 2px solid #C9A227; box-shadow: 0 1px 4px rgba(0,0,0,0.15); cursor: pointer; }
-                .mains-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 2px solid #C9A227; cursor: pointer; }
               `}</style>
             </div>
           )}
@@ -931,7 +954,7 @@ function MockTestsPageInner() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(4px, 0.4vw, 8px)', marginBottom: 'clamp(16px, 1.2vw, 22px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(18px, 1.5vw, 28px)' }}>
                 <button
-                  onClick={() => setQuestionCount(c => Math.max(selectedExamMode === 'mains' ? 1 : 5, c - 1))}
+                  onClick={() => setQuestionCount(c => Math.max(minQuestionCount, c - 1))}
                   style={{
                     width: '56px', height: '56px', borderRadius: '50%',
                     border: selectedExamMode === 'mains' ? '1.5px solid #D4B483' : 'none',
@@ -991,22 +1014,20 @@ function MockTestsPageInner() {
               <div style={{ position: 'relative', marginBottom: '8px' }}>
                 <input
                   type="range"
-                  min={selectedExamMode === 'mains' ? 0 : 5}
+                  min={minQuestionCount}
                   max={maxQuestionCount}
                   value={questionCount}
                   onChange={(e) => setQuestionCount(Number(e.target.value))}
-                  className={selectedExamMode === 'mains' ? 'mains-slider' : ''}
+                  className="question-count-slider"
                   style={{
                     width: '100%', height: '6px', borderRadius: '999px',
-                    background: selectedExamMode === 'mains'
-                      ? `linear-gradient(90deg, #C9A227 0%, #C9A227 ${(questionCount / maxQuestionCount) * 100}%, #E5DFC8 ${(questionCount / maxQuestionCount) * 100}%, #E5DFC8 100%)`
-                      : `linear-gradient(90deg, #0F172A 0%, #0F172A ${(questionCount / maxQuestionCount) * 100}%, #E5E7EB ${(questionCount / maxQuestionCount) * 100}%, #E5E7EB 100%)`,
+                    background: `linear-gradient(90deg, #C9A227 0%, #C9A227 ${questionSliderProgress}%, #E5DFC8 ${questionSliderProgress}%, #E5DFC8 100%)`,
                     appearance: 'none', cursor: 'pointer',
                   }}
                 />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                {(selectedExamMode === 'mains' ? [0, 5, 10, 15, 20] : [5, 25, 50, 75, 100]).map(val => (
+                {(selectedExamMode === 'mains' ? [1, 5, 10, 15, 20] : [1, 25, 50, 75, 100]).map(val => (
                   <span
                     key={val}
                     onClick={() => setQuestionCount(val)}
@@ -1357,8 +1378,10 @@ function MockTestsPageInner() {
                 style={{
                 width: '100%',
                 marginTop: 'auto',
-                background: generating || quotaExhausted
+                background: generating
                   ? '#9CA3AF'
+                  : quotaExhausted
+                  ? 'linear-gradient(90deg, #FDC700, #FF8904, #FF6900)'
                   : generateBtnHovered
                   ? 'linear-gradient(90deg, #E6B000, #E87200, #E05800)'
                   : 'linear-gradient(90deg, #FDC700, #FF8904, #FF6900)',
@@ -1372,11 +1395,11 @@ function MockTestsPageInner() {
                 cursor: generating || loading || quotaExhausted ? 'not-allowed' : 'pointer',
                 letterSpacing: '0.02em',
                 marginBottom: 'clamp(14px, 1.1vw, 20px)',
-                opacity: generating || loading || quotaExhausted ? 0.7 : 1,
+                opacity: generating || loading ? 0.7 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
+                gap: '10px',
                 transition: 'background 0.2s ease',
               }}>
                 {generating ? (
@@ -1392,9 +1415,15 @@ function MockTestsPageInner() {
                     Generating...
                     <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
                   </>
-                ) : (
-                  quotaExhausted ? 'Limit reached - upgrade to continue' : '🚀 Generate My Mock Test'
-                )}
+                ) : quotaExhausted ? (
+                  <>
+                    <span style={{ fontSize: 'clamp(20px, 1.4vw, 26px)', lineHeight: 1 }}>🔒</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.3 }}>
+                      <span style={{ color: '#162456' }}>Free Attempts Exhausted</span>
+                      <span style={{ color: '#162456' }}>Unlock Unlimited Access</span>
+                    </div>
+                  </>
+                ) : '🚀 Generate My Mock Test'}
               </button>
 
               {/* Bottom info */}

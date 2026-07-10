@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import StudyMaterialReaderModal from '@/components/StudyMaterialReaderModal';
+import { getSubjectMetaStyle, getTagStyles as getSharedTagStyles } from '@/lib/subjectPalette';
 
 /* ------------------------------------------------------------------ */
 /*  Study-material action button styling (Read / Get PDF / Unlock)     */
@@ -77,125 +78,19 @@ const TrophyIcon = () => (
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const SUBJECT_ICONS: Record<string, string> = {
-  'polity': '⚖️',
-  'history': '🏛️',
-  'geography': '🌍',
-  'economy': '💰',
-  'environment': '🌿',
-  'science': '🔬',
-};
-
 function subjectIcon(name: string): string {
-  const lower = name.toLowerCase();
-  for (const [key, icon] of Object.entries(SUBJECT_ICONS)) {
-    if (lower.includes(key)) return icon;
-  }
-  return '\uD83D\uDCDA';
+  return getSubjectMetaStyle(name).icon;
 }
-
-// Static per-subject styling for the sidebar (icon-box tint).
-const SUBJECT_META: Record<string, { box: string }> = {
-  'history': { box: '#FEF3C7' },
-  'geography': { box: '#E0F2FE' },
-  'polity': { box: '#FFE4E6' },
-  'economy': { box: '#FEF9C3' },
-  'environment': { box: '#D1FAE5' },
-  'science': { box: '#E0E7FF' },
-  'current affairs': { box: '#FAE8FF' },
-};
 
 function subjectMeta(name: string): { box: string } {
-  const lower = name.toLowerCase();
-  for (const [key, val] of Object.entries(SUBJECT_META)) {
-    if (lower.includes(key)) return val;
-  }
-  return { box: '#F1F5F9' };
+  return { box: getSubjectMetaStyle(name).bg };
 }
 
-// Tag colors sourced from upsc_subject_color_palette.html
-const SUBJECT_PALETTE: Record<string, { bg: string; color: string; topic: string }[]> = {
-  history: [
-    { bg: '#F5E8D4', color: '#7A5230', topic: 'Ancient India' },
-    { bg: '#EDD5E6', color: '#7A3D72', topic: 'Medieval India' },
-    { bg: '#FDE9C0', color: '#8A6010', topic: 'Art & Culture' },
-    { bg: '#D8E4CC', color: '#445E38', topic: 'Modern History' },
-  ],
-  geography: [
-    { bg: '#C8E8F4', color: '#1E6A9A', topic: 'Physical Geo \u2013 World' },
-    { bg: '#D8F0DC', color: '#2E6E3E', topic: 'Physical Geo \u2013 India' },
-    { bg: '#F4EDD0', color: '#826020', topic: 'Economic Geography' },
-    { bg: '#ECD8F4', color: '#6A3A90', topic: 'Human Geography' },
-  ],
-  polity: [
-    { bg: '#D0DDF4', color: '#2A4490', topic: 'Polity' },
-  ],
-  economy: [
-    { bg: '#F8EDD8', color: '#7A5818', topic: 'Basic Economy' },
-    { bg: '#D0ECD8', color: '#2E6848', topic: 'Public Finance' },
-    { bg: '#C8ECF4', color: '#1E6880', topic: 'External Sector' },
-    { bg: '#D8F0CC', color: '#3A6828', topic: 'Agriculture' },
-    { bg: '#F4F0CC', color: '#6A6018', topic: 'Sectors of Economy' },
-    { bg: '#D4DCE8', color: '#3A4A62', topic: 'Infrastructure' },
-    { bg: '#F4E0D8', color: '#7A3A28', topic: 'Human Resource Dev.' },
-  ],
-  environment: [
-    { bg: '#C8ECCC', color: '#2A6438', topic: 'Ecology & Ecosystem' },
-    { bg: '#D0F0D4', color: '#1E5C34', topic: 'Biodiversity' },
-    { bg: '#E8E4DC', color: '#5A5248', topic: 'Pollution' },
-    { bg: '#D8ECF8', color: '#1E5A80', topic: 'Climate Change' },
-    { bg: '#D4EEDC', color: '#2A6040', topic: 'Conservation Efforts' },
-  ],
-  science: [
-    { bg: '#DCF0F8', color: '#1A5878', topic: 'General Science' },
-    { bg: '#CCF0D4', color: '#1A5830', topic: 'Biotechnology' },
-    { bg: '#F8DCDC', color: '#7A2828', topic: 'Human Health & Diseases' },
-    { bg: '#D4D0F4', color: '#3A2A90', topic: 'Space' },
-    { bg: '#D8E0CC', color: '#3A4828', topic: 'Defence' },
-    { bg: '#F4F0BC', color: '#6A6010', topic: 'Nuclear Energy' },
-    { bg: '#C8ECF8', color: '#1A5870', topic: 'Electronics & IT' },
-    { bg: '#E8E4F4', color: '#4A3880', topic: 'Nano Science' },
-  ],
-};
-
-function hashIndex(str: string, mod: number): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
-  return mod > 0 ? h % mod : 0;
-}
-
-const NEUTRAL_TAG_STYLE = { bg: '#F3F4F6', color: '#6A7282' };
-
-// Returns distinct pill colors for the topic tag and the sub-subject tag,
-// preferring an exact palette match for the sub-subject and never letting
-// the two pills land on the same color.
 function getTagStyles(subjectName: string, topicText: string, subSubjectText: string): {
   topic: { bg: string; color: string };
   subSubject: { bg: string; color: string };
 } {
-  const lower = subjectName.toLowerCase();
-  const chips = Object.entries(SUBJECT_PALETTE).find(([key]) => lower.includes(key))?.[1];
-  if (!chips || chips.length === 0) {
-    return { topic: NEUTRAL_TAG_STYLE, subSubject: NEUTRAL_TAG_STYLE };
-  }
-
-  const findChipIndex = (text: string) => {
-    const matchedIdx = chips.findIndex((c) => c.topic.toLowerCase() === text.toLowerCase());
-    return matchedIdx !== -1 ? matchedIdx : hashIndex(text, chips.length);
-  };
-
-  const subIdx = findChipIndex(subSubjectText);
-  let topicIdx = findChipIndex(topicText);
-  if (topicIdx === subIdx) {
-    topicIdx = chips.length > 1 ? (topicIdx + 1) % chips.length : topicIdx;
-  }
-
-  const subChip = chips[subIdx];
-  const topicChip = chips.length > 1 ? chips[topicIdx] : NEUTRAL_TAG_STYLE;
-  return {
-    topic: { bg: topicChip.bg, color: topicChip.color },
-    subSubject: { bg: subChip.bg, color: subChip.color },
-  };
+  return getSharedTagStyles(subjectName, topicText, subSubjectText);
 }
 
 const features = [

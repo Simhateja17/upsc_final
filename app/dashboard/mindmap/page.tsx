@@ -1,23 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { mindmapService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import MindmapIntroSections from '@/components/MindmapIntroSections';
 import { UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
-
-const SUBJECT_CARD_STYLES: Record<string, { bg: string; border: string; bar: string }> = {
-  'indian-polity': { bg: '#FDF0DE', border: '#C0D9F5', bar: '#E9A12D' },
-  'modern-history': { bg: '#FFF8EE', border: '#FFD5A8', bar: '#E8B164' },
-  geography: { bg: 'rgba(201, 168, 76, 0.19)', border: '#B2EDD0', bar: '#D5A53C' },
-  'indian-economy': { bg: 'linear-gradient(139deg, #F3EFFD 0%, #EDE7FB 100%)', border: '#E8E1FD', bar: '#F16CB0' },
-  environment: { bg: 'linear-gradient(139deg, #EDF9F3 0%, #E0F5EA 100%)', border: '#B2EDD0', bar: '#D6A437' },
-  'science-and-tech': { bg: 'linear-gradient(139deg, #E0EBF9 0%, #D4E4F7 100%)', border: '#C0D9F5', bar: '#E0A446' },
-  'current-affairs': { bg: 'linear-gradient(139deg, #FFF1E8 0%, #FFE6D5 100%)', border: '#FFD1AA', bar: '#F39A3C' },
-  'gs-iv-ethics': { bg: 'linear-gradient(139deg, #EEF0FF 0%, #E0E3FF 100%)', border: '#C4C9F8', bar: '#4F46E5' },
-};
+import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
+import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
 
 const SUBJECT_NAMES: Record<string, string> = {
   'indian-polity': 'Polity',
@@ -117,12 +107,7 @@ export default function MindmapPage() {
           </h2>
         </div>
         <p className="text-[#6A7282] text-[14px] mb-6 ml-11">Select the subject whose mindmaps you want to study today</p>
-        <style>{`
-          .subjhx-card{position:relative;overflow:hidden;border:1px solid var(--subjhx-border);transition:transform .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1),border-color .3s cubic-bezier(.4,0,.2,1);}
-          .subjhx-card:hover{transform:translateY(-3px);box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);border-color:transparent;}
-          .subjhx-accent{position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:opacity .3s;z-index:2;}
-          .subjhx-card:hover .subjhx-accent{opacity:1;}
-        `}</style>
+        <SubjectChoiceCardStyles />
 
         {loading ? (
           <div className="subject-card-grid">
@@ -138,54 +123,33 @@ export default function MindmapPage() {
         ) : (
           <div className="subject-card-grid">
             {visibleSubjects.map((subject) => {
-              const cardStyle = SUBJECT_CARD_STYLES[subject.slug] ?? { bg: '#FFFFFF', border: '#E5E7EB', bar: '#16A34A' };
               const subjectName = SUBJECT_NAMES[subject.slug] ?? subject.name;
+              const cardStyle = getSubjectCardStyle(subjectName);
+              const subjectMeta = getSubjectMetaStyle(subjectName);
               const toGo = Math.max(0, subject.total - subject.explored);
               const progressWidth = subject.total > 0 ? Math.max(subject.progress, 10) : 0;
               return (
-                <Link
+                <SubjectChoiceCard
                   key={subject.slug}
                   href={`/dashboard/mindmap/${subject.slug}`}
-                  className="subjhx-card block h-[190px] rounded-[16px] p-5 text-left"
-                  style={{ ['--subjhx-border']: cardStyle.border, background: cardStyle.bg } as React.CSSProperties}
-                >
-                  <div className="subjhx-accent" style={{ background: cardStyle.bar }} />
-                  <div className="flex items-start justify-between gap-3">
-                    <span aria-hidden style={{ fontSize: 24, lineHeight: '24px' }}>{subject.icon}</span>
-                    {toGo > 0 && (
-                      <span
-                        className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
-                        style={{ background: '#EF4444', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
-                      >
-                        {toGo} due
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="mt-3" style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 17, lineHeight: '22px', color: '#22304D' }}>
-                    {subjectName}
-                  </h3>
-
-                  <p className="mt-1" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, lineHeight: '15px', color: '#8A94A6' }}>
-                    {subject.total} cards · {subject.total} topics
-                  </p>
-
-                  <div className="mt-4 h-[4px] w-full rounded-full" style={{ background: 'rgba(0,0,0,0.08)' }}>
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${progressWidth}%`, background: '#16A34A' }}
-                    />
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#16A34A' }}>
-                      ✓ {subject.explored} mastered
+                  icon={subjectMeta.icon}
+                  iconBg={subjectMeta.bg}
+                  accentColor={cardStyle.bar}
+                  title={subjectName}
+                  meta={`${subject.total} cards · ${subject.total} topics`}
+                  topRight={toGo > 0 && (
+                    <span
+                      className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
+                      style={{ background: '#EF4444', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
+                    >
+                      {toGo} due
                     </span>
-                    <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '18px', color: toGo === 0 ? '#16A34A' : '#EF4444' }}>
-                      {toGo === 0 ? '✓ All done' : `${toGo} to go`}
-                    </span>
-                  </div>
-                </Link>
+                  )}
+                  progressPercent={progressWidth}
+                  footerLeft={`✓ ${subject.explored} mastered`}
+                  footerRight={toGo === 0 ? '✓ All done' : `${toGo} to go`}
+                  footerRightColor={toGo === 0 ? '#16A34A' : '#EF4444'}
+                />
               );
             })}
           </div>

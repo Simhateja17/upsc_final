@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 /* ─────────────────────────────────────────────────────────────
    ExamInstructions — pre-test gate shown after the test is
@@ -92,6 +93,7 @@ export default function ExamInstructions({
 }: Props) {
   const [accepted, setAccepted] = useState(false);
   const guidelines = isMains ? MAINS_GUIDELINES : PRELIMS_GUIDELINES;
+  const paperStyle = getSubjectMetaStyle(paperLabel);
 
   return (
     <div
@@ -179,7 +181,7 @@ export default function ExamInstructions({
           >
             <StatCard emoji="📋" tint="#FBEFD0" value={`${questionCount} Questions`} label="Total Questions" />
             <StatCard emoji="⏱️" tint="#D6F0E0" value={`${totalTimeMinutes} minutes`} label={isMains ? 'Total Writing Time' : 'Total Time'} />
-            <StatCard emoji="📄" tint="#E4E1F7" value={paperLabel} label="Paper" />
+            <StatCard emoji={paperStyle.icon} tint={paperStyle.bg} value={paperLabel} label="Paper" />
             <StatCard emoji="⚡" tint="#FBE2CB" value={difficultyLabel} label="Difficulty" />
           </div>
 
