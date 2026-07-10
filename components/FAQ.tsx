@@ -12,7 +12,7 @@ const FEATURED_FAQS = [
   {
     question: 'Are the current prices a promotional offer?',
     answer:
-      'Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, so lock in these rates while you can. Once you subscribe, your price remains locked for as long as you stay subscribed, even if prices increase for new users later.',
+      'Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, and any updated pricing will apply to all users.',
   },
   {
     question: 'Can I upgrade or cancel my subscription anytime?',

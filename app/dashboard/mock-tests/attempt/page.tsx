@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import ExamInstructions from '@/components/ExamInstructions';
 import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
 import FilePreviewThumb from '@/components/FilePreviewThumb';
+import { mainsWordLimit, mainsTimeLimit } from '@/lib/mainsPattern';
 
 interface Question {
   id: number;
@@ -145,7 +146,6 @@ function MockTestAttemptInner() {
   const title = searchParams.get('title') || (isMains ? 'Mains Practice' : 'Prelims Practice');
   const paperParam = searchParams.get('paper') || '';
   const subjectParam = searchParams.get('subject') || '';
-  const difficultyParam = searchParams.get('difficulty') || 'Medium';
 
   /* ─── Pre-test instructions gate ─── */
   const startedKey = testId ? `mockTestStarted:${testId}` : null;
@@ -620,9 +620,13 @@ function MockTestAttemptInner() {
       || (isMains ? 'GS Paper I' : 'GS Paper I');
     let totalTimeMinutes: number;
     if (isMains) {
-      const marksPerQ = totalMarks && totalQuestions ? Math.round(totalMarks / totalQuestions) : 15;
-      const minPerQ = Math.max(8, Math.round(marksPerQ * 0.8));
-      totalTimeMinutes = minPerQ * totalQuestions;
+      // Sum each question's own UPSC time budget — a Full Length paper mixes
+      // 10- and 15-markers, so a single averaged figure would misstate it.
+      const fallbackMarks = totalMarks && totalQuestions ? Math.round(totalMarks / totalQuestions) : 15;
+      totalTimeMinutes = questions.reduce(
+        (total, q) => total + mainsTimeLimit(q.marks ?? fallbackMarks),
+        0
+      );
     } else {
       totalTimeMinutes = Math.max(1, Math.round(timeLeft / 60));
     }
@@ -632,7 +636,6 @@ function MockTestAttemptInner() {
         questionCount={totalQuestions}
         totalTimeMinutes={totalTimeMinutes}
         paperLabel={paperLabel}
-        difficultyLabel={difficultyParam}
         onBack={() => router.push('/dashboard/mock-tests')}
         onStart={() => {
           setStarted(true);
@@ -866,7 +869,7 @@ function MockTestAttemptInner() {
               <span style={{ fontSize: 18 }}>✍️</span>
               <div>
                 <span style={{ fontWeight: 700, fontSize: 14, color: '#101828' }}>
-                  Mains Mock Test – {paperParam || 'Paper'}, {subjectParam || 'Subject'}, {difficultyParam}
+                  Mains Mock Test – {paperParam || 'Paper'}, {subjectParam || 'Subject'}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                   {questions.map((_, idx) => (
@@ -1051,8 +1054,8 @@ function MockTestAttemptInner() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                       {(() => {
                         const qMarks = q.marks ?? marksPerQ;
-                        const qWords = qMarks >= 15 ? 250 : qMarks >= 12 ? 200 : qMarks >= 10 ? 150 : 100;
-                        const qMin = Math.max(1, Math.round(qMarks * 0.8));
+                        const qWords = mainsWordLimit(qMarks);
+                        const qMin = mainsTimeLimit(qMarks);
                         return (
                           <>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>⏱️ {qMin} min</span>
@@ -1550,9 +1553,6 @@ function MockTestAttemptInner() {
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#EFF6FF', border: '1px solid #155DFC33', borderRadius: 999, padding: '5px 12px' }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#155DFC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#155DFC' }}>{currentQ.subject || 'General'}</span>
-                  </div>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', background: '#FFF7ED', border: '1px solid #C2410C33', borderRadius: 999, padding: '5px 12px' }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#C2410C' }}>{currentQ.difficulty || 'Medium'}</span>
                   </div>
                   {/* Flag = Mark for Review */}
                   <button

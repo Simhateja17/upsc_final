@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import DashboardHeader from '@/components/DashboardHeader';
+import LandingNav from '@/components/LandingNav';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { contactService } from '@/lib/services';
@@ -118,7 +118,7 @@ export default function ContactPage() {
   const capIcon = <img src="/help-support-icon.png" alt="help and support" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />;
   return (
     <main className="min-h-screen flex flex-col">
-      <DashboardHeader />
+      <LandingNav />
 
       <div style={{ background: '#0F131F' }}>
         <DashboardPageHero

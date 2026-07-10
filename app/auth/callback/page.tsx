@@ -58,7 +58,9 @@ export default function AuthCallback() {
           localStorage.setItem('rwj_has_logged_in', '1');
           sessionStorage.setItem('rwj_login_success', '1');
         }
-        router.replace(userRole === 'admin' ? '/admin' : '/dashboard');
+        const redirectTo = sessionStorage.getItem('rwj_post_auth_redirect');
+        sessionStorage.removeItem('rwj_post_auth_redirect');
+        router.replace(userRole === 'admin' ? '/admin' : redirectTo?.startsWith('/') ? redirectTo : '/dashboard');
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : 'Something went wrong.');
         setStatus('error');

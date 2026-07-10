@@ -13,6 +13,7 @@ import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer'
 import { handleEntitlementError, formatPeriod } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
+import { isEssayQuestion } from '@/lib/essayModelAnswer';
 
 const AI_EVAL_STEPS = [
   {
@@ -1230,11 +1231,21 @@ export default function PyqPage() {
     );
   };
 
-  const FilterPopover = ({ id, children, width = 420 }: { id: typeof openFilter; children: React.ReactNode; width?: number }) => (
+  const FilterPopover = ({
+    id,
+    children,
+    width = 420,
+    align = 'start',
+  }: {
+    id: typeof openFilter;
+    children: React.ReactNode;
+    width?: number;
+    align?: 'start' | 'end';
+  }) => (
     openFilter === id ? (
       <div
-        className="absolute left-0 top-[calc(100%+10px)] z-50 max-h-[460px] overflow-hidden rounded-[18px] border border-[#E5E7EB] bg-[#F4F5F7] shadow-[0_18px_52px_rgba(15,17,26,0.14)]"
-        style={{ width: `min(${width}px, calc(100vw - 48px))` }}
+        className={`absolute top-[calc(100%+10px)] z-[70] max-h-[460px] max-w-[calc(100vw-32px)] overflow-hidden rounded-[18px] border border-[#E5E7EB] bg-[#F4F5F7] shadow-[0_18px_52px_rgba(15,17,26,0.14)] ${align === 'end' ? 'right-0' : 'left-0'}`}
+        style={{ width: `min(${width}px, calc(100vw - 32px))` }}
       >
         {children}
       </div>
@@ -1252,7 +1263,7 @@ export default function PyqPage() {
 
   const SubjectTreePopover = () => (
     <FilterPopover id="subject" width={520}>
-      <div {...scrollableFilterProps('subject')} className="max-h-[440px] overflow-y-auto p-5">
+      <div {...scrollableFilterProps('subject')} className="max-h-[440px] overflow-x-hidden overflow-y-auto p-5">
         <div className="mb-4 flex items-center justify-between border-b border-[#E5E7EB] pb-3">
           <div className="text-[15px] font-bold text-[#101828]">Subject Filter</div>
           <button type="button" onClick={() => setOpenFilter(null)} className="h-8 w-8 rounded-[10px] bg-white text-[#6A7282]">×</button>
@@ -1361,10 +1372,10 @@ export default function PyqPage() {
   );
 
   const FilterToolbar = () => (
-    <div className="sticky top-3 z-40 mb-8">
+    <div className="sticky top-3 z-40 mb-8 max-w-full">
       <div className="relative">
         <div
-          className="flex max-w-full items-center gap-1.5 overflow-visible rounded-[14px] border bg-white px-8 py-2 transition-[border-color,box-shadow] duration-300"
+          className="flex max-w-full flex-wrap items-center gap-1.5 overflow-visible rounded-[14px] border bg-white px-8 py-2 transition-[border-color,box-shadow] duration-300"
           style={{
             borderColor: hasActiveFilters ? 'rgba(212,175,55,0.35)' : '#F3E9C8',
             boxShadow: hasActiveFilters
@@ -1488,7 +1499,7 @@ export default function PyqPage() {
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21M12 3c-2.5 2.6-3.8 5.6-3.8 9s1.3 6.4 3.8 9" stroke="currentColor" strokeWidth="1.6"/></svg>}
             />
             <FilterPopover id="subSubject" width={360}>
-              <div {...scrollableFilterProps('subSubject')} className="max-h-[360px] overflow-y-auto p-4">
+              <div {...scrollableFilterProps('subSubject')} className="max-h-[360px] overflow-x-hidden overflow-y-auto p-4">
                 <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">{taxonomyLabels.level2}</div>
                 {!availableSubSubjects.length ? (
                   <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a subject first.</div>
@@ -1501,7 +1512,7 @@ export default function PyqPage() {
                           key={child.label}
                           type="button"
                           onClick={() => toggleSubSubject(child.label)}
-                          className="flex items-center gap-2 rounded-[12px] px-4 py-3 text-left text-[13px] font-bold"
+                          className="flex min-w-0 items-center gap-2 rounded-[12px] px-4 py-3 text-left text-[13px] font-bold"
                           style={{ background: childSelected ? '#0F172B' : '#FFFFFF', color: childSelected ? '#FFFFFF' : '#101828' }}
                         >
                           <span
@@ -1514,7 +1525,7 @@ export default function PyqPage() {
                           >
                             ✓
                           </span>
-                          <span className="truncate">{child.label}</span>
+                          <span className="min-w-0 break-words whitespace-normal">{child.label}</span>
                         </button>
                       );
                     })}
@@ -1533,7 +1544,7 @@ export default function PyqPage() {
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2"/><path d="m15 9-4.5 1.5L9 15l4.5-1.5L15 9Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>}
             />
             <FilterPopover id="topic" width={420}>
-              <div {...scrollableFilterProps('topic')} className="max-h-[360px] overflow-y-auto p-4">
+              <div {...scrollableFilterProps('topic')} className="max-h-[360px] overflow-x-hidden overflow-y-auto p-4">
                 <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">{taxonomyLabels.level3}</div>
                 {selectedSubSubjects.length === 0 ? (
                   <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a {taxonomyLabels.level2.toLowerCase()} first.</div>
@@ -1544,7 +1555,7 @@ export default function PyqPage() {
                       : `No ${taxonomyLabels.level3.toLowerCase()} values are assigned to the selected ${taxonomyLabels.level2.toLowerCase()} value(s).`}
                   </div>
                 ) : (
-                  <div className="grid gap-1">
+                  <div className="grid gap-2">
                     {currentTopicOptions.map((topic) => {
                       const active = selectedTopics.includes(topic);
                       const needle = topic.trim().toLowerCase();
@@ -1563,11 +1574,23 @@ export default function PyqPage() {
                           onClick={() => {
                             setSelectedTopics((prev) => active ? prev.filter((t) => t !== topic) : [...prev, topic]);
                           }}
-                          className="flex items-center justify-between rounded-[10px] px-3 py-2.5 text-left text-[12px] font-bold hover:bg-white"
-                          style={{ background: active ? '#FFF3CC' : 'transparent', color: active ? '#B45309' : '#5A6478' }}
+                          className="flex min-h-[50px] items-center justify-between rounded-[12px] bg-white px-4 py-3 text-left text-[13px] font-bold"
+                          style={{ background: active ? '#0F1A30' : '#FFFFFF', color: active ? '#FFFFFF' : '#101828' }}
                         >
-                          <span>{topic}</span>
-                          <span className="ml-3 rounded-full bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] text-[#9AA3B2]">
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span
+                              className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[5px] border text-[9px]"
+                              style={{
+                                borderColor: active ? '#D4AF37' : '#CBD2DC',
+                                background: active ? '#D4AF37' : 'transparent',
+                                color: active ? '#0F172B' : 'transparent',
+                              }}
+                            >
+                              ✓
+                            </span>
+                            <span className="min-w-0 break-words whitespace-normal">{topic}</span>
+                          </span>
+                          <span className="ml-3 flex-shrink-0 rounded-full bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] text-[#9AA3B2]">
                             {topicCount}
                           </span>
                         </button>
@@ -1589,7 +1612,7 @@ export default function PyqPage() {
               count={selectedYears.length}
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="M7 3v4M17 3v4M4 9h16M5 5h14v15H5V5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>}
             />
-            <FilterPopover id="year" width={420}>
+            <FilterPopover id="year" width={420} align="end">
               <div className="p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Exam Year</div>
@@ -2261,6 +2284,12 @@ export default function PyqPage() {
                       <button
                         type="button"
                         onClick={() => {
+                          // Essay questions open the dedicated model-answer experience;
+                          // all other papers keep the inline expand/collapse.
+                          if (isEssayQuestion(q)) {
+                            router.push(`/dashboard/pyq/essay/${encodeURIComponent(q.id)}`);
+                            return;
+                          }
                           setExpandedModelAnswerIds((prev) => {
                             const next = new Set(prev);
                             if (next.has(q.id)) next.delete(q.id);
@@ -2276,7 +2305,7 @@ export default function PyqPage() {
                       </button>
                     </div>
 
-                    {expandedModelAnswerIds.has(q.id) && (
+                    {!isEssayQuestion(q) && expandedModelAnswerIds.has(q.id) && (
                       <div
                         className="mt-1"
                         style={{

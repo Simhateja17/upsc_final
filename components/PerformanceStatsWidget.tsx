@@ -390,7 +390,7 @@ const PerformanceStatsWidget = () => {
       {/* Weekly Leaderboard */}
       <Link
         href="/dashboard/leaderboard"
-        className="cursor-pointer hover:shadow-md transition-shadow flex items-center justify-center text-center"
+        className="cursor-pointer hover:shadow-md transition-shadow flex items-center justify-center text-left"
         style={{
           background: '#74A0FF30',
           minHeight: '50px',
@@ -402,18 +402,18 @@ const PerformanceStatsWidget = () => {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/add-icon.png" alt="" aria-hidden="true" style={{ width: '18px', height: '18px', objectFit: 'contain', flexShrink: 0 }} />
           <span
-            className="font-outfit font-semibold text-center"
+            className="font-outfit font-semibold text-left"
             style={{
               fontSize: 'clamp(13px,1.1vw,18px)',
               lineHeight: '1.3',
               color: '#1E2875',
               minWidth: 0,
-              flex: '1 1 auto',
+              flex: '0 1 auto',
               whiteSpace: 'normal',
               wordBreak: 'break-word',
             }}
           >
-            {weeklyRank !== null ? `Weekly Leaderboard — You're #${weeklyRank} this week` : 'Weekly Leaderboard'}
+            Weekly Leaderboard
           </span>
           <svg style={{ width: '18px', height: '18px', flexShrink: 0 }} viewBox="0 0 24 24" fill="none">
             <path d="M4 12h16M14 6l6 6-6 6" stroke="#1E2875" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>

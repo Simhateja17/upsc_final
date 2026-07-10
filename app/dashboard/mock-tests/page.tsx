@@ -7,6 +7,7 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import GeneratingTestModal from '@/components/GeneratingTestModal';
 import { liveStudentCount } from '@/lib/liveCount';
 import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
+import { MAINS_PATTERN, mainsWordLimit, mainsTimeLimit } from '@/lib/mainsPattern';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
@@ -143,15 +144,10 @@ const optionalSubjectIcons: Record<string, string> = {
   'Literature': '📚',
 };
 
+// Mock Test Mains only uses 10-mark questions (cheaper to auto-evaluate),
+// so every question in the set is a 10-marker — including Full Length.
 function buildMainsMarksPattern(questionCount: number) {
-  if (questionCount <= 1) return [10];
-  if (questionCount === 2) return [10, 15];
-
-  const pattern: number[] = [];
-  for (let idx = 0; idx < questionCount; idx += 1) {
-    pattern.push((idx + 1) % 3 === 0 ? 15 : 10);
-  }
-  return pattern;
+  return Array(Math.max(1, questionCount)).fill(10);
 }
 
 const fallbackExamModes = [
@@ -529,12 +525,14 @@ function MockTestsPageInner() {
   };
 
   const estimatedMinutes = selectedExamMode === 'mains'
-    ? mainsMarksPattern.reduce((total, marks) => total + (marks === 15 ? 11 : 7), 0)
+    ? mainsMarksPattern.reduce((total, marks) => total + mainsTimeLimit(marks), 0)
     : questionCount;
   const upgradePlans = (pricingPlans.length > 0 ? pricingPlans : fallbackUpgradePlans).slice(0, 3);
 
   /* Derive display labels for summary */
-  const sourceLabel = questionSources.find(s => s.id === selectedSource)?.label ?? 'Daily MCQ';
+  const sourceLabel = selectedExamMode === 'mains'
+    ? (mainsQuestionSources.find(s => s.id === selectedSource)?.label ?? 'Daily Mains Challenge')
+    : (questionSources.find(s => s.id === selectedSource)?.label ?? 'Daily MCQ');
   const paperLabel = selectedExamMode === 'mains'
     ? (mainsPaperTypes.find(p => p.id === selectedPaperType)?.label ?? 'GS I')
     : (prelimsPaperTypes.find(p => p.id === selectedPaperType)?.label ?? 'GS Paper I');
@@ -635,7 +633,7 @@ function MockTestsPageInner() {
             boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.10)',
           }}>
             <button
-              onClick={() => setSelectedExamMode('prelims')}
+              onClick={() => { setSelectedExamMode('prelims'); setSelectedSource('daily_mcq'); }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -655,7 +653,7 @@ function MockTestsPageInner() {
               <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '17px', color: selectedExamMode === 'prelims' ? '#FFFFFF' : '#4A5565' }}>Prelims</span>
             </button>
             <button
-              onClick={() => setSelectedExamMode('mains')}
+              onClick={() => { setSelectedExamMode('mains'); setSelectedSource('daily-mains'); }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1067,9 +1065,8 @@ function MockTestsPageInner() {
 
             {/* Mains Marking Pattern */}
             {selectedExamMode === 'mains' && (() => {
-              const count10 = mainsMarksPattern.filter(m => m === 10).length;
-              const count15 = mainsMarksPattern.filter(m => m === 15).length;
-              const totalWords = count10 * 150 + count15 * 200;
+              const count10 = mainsMarksPattern.length; // all mains questions are 10-markers
+              const totalWords = mainsMarksPattern.reduce((total, m) => total + mainsWordLimit(m), 0);
               return (
                 <div style={{
                   background: '#F8F4E8', border: '1px solid #E8DFC0',
@@ -1099,18 +1096,20 @@ function MockTestsPageInner() {
                   {/* Collapsible content */}
                   {markingPatternOpen && (
                     <div style={{ padding: '0 18px 16px' }}>
-                      {[{ marker: 10, min: 7, words: 150 }, { marker: 15, min: 11, words: 200 }, { marker: 20, min: 14, words: 250 }].map(row => (
-                        <div key={row.marker} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed #E0D4B0' }}>
+                      {/* Mock Test Mains is 10-mark only, so we show just the
+                          10-marker row — what's listed matches what's generated. */}
+                      {MAINS_PATTERN.filter(row => row.marks === 10).map(row => (
+                        <div key={row.marks} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed #E0D4B0' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#C9A227', display: 'inline-block', flexShrink: 0 }} />
-                            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#17223E' }}>{row.marker} marker</span>
+                            <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px', color: '#17223E' }}>{row.marks} marker</span>
                           </div>
-                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280' }}>approx. {row.min} min</span>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#6B7280' }}>approx. {row.minutes} min</span>
                           <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#C9A227' }}>{row.words} words</span>
                         </div>
                       ))}
                       <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '13px', color: '#17223E', marginTop: '10px' }}>
-                        Your set: {count10 > 0 && `${count10} × 10-marker`}{count10 > 0 && count15 > 0 && ' + '}{count15 > 0 && `${count15} × 15-marker`} · ~{estimatedMinutes} min · {totalWords} words total
+                        Your set: {count10} × 10-marker · ~{estimatedMinutes} min · {totalWords} words total
                       </div>
                     </div>
                   )}

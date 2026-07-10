@@ -31,7 +31,7 @@ const faqData: FAQSection[] = [
       },
       {
         question: 'Are the current prices a promotional offer?',
-        answer: '<p>Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, so lock in these rates while you can. Once you subscribe, your price remains locked for as long as you stay subscribed, even if prices increase for new users later.</p>',
+        answer: '<p>Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, and any updated pricing will apply to all users.</p>',
       },
       {
         question: 'Can I upgrade or cancel my subscription anytime?',

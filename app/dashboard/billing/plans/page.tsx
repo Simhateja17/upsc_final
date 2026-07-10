@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { billingService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAuthModal } from '@/contexts/AuthModalContext';
 import { PlanTier, useEntitlements } from '@/contexts/EntitlementsContext';
 
 // ── Hero ──────────────────────────────────────────────────────────────────────
@@ -1228,7 +1229,11 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
 // ── Plans page ────────────────────────────────────────────────────────────────
 export default function ExplorePlansPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const entitlements = useEntitlements();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanKey | null>(null);
@@ -1242,6 +1247,13 @@ export default function ExplorePlansPage() {
   const isPaidValid = currentTier !== 'free' && !!entitlements.subscription;
   const canShowPlan = (plan: PlanKey) => ({ aspire: 1, rise: 2, ascent: 3 }[plan] > currentRank);
   const handleOpenCheckout = (plan: PlanKey) => {
+    if (!isAuthenticated) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('rwj_post_auth_redirect', `${pathname}?checkout=${plan}`);
+      }
+      openAuthModal('signup');
+      return;
+    }
     if (!canShowPlan(plan)) return;
     setCheckoutPlan(plan);
   };
@@ -1281,6 +1293,14 @@ export default function ExplorePlansPage() {
       window.removeEventListener('keydown', onEsc);
     };
   }, [checkoutPlan]);
+
+  useEffect(() => {
+    const requestedPlan = searchParams.get('checkout');
+    if (authLoading || !isAuthenticated || !requestedPlan || !['aspire', 'rise', 'ascent'].includes(requestedPlan)) return;
+
+    setCheckoutPlan(requestedPlan as PlanKey);
+    router.replace(pathname, { scroll: false });
+  }, [authLoading, isAuthenticated, pathname, router, searchParams]);
 
   return (
     <div className="min-h-screen" style={{ background: '#FAFBFE', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -1600,9 +1620,9 @@ export default function ExplorePlansPage() {
                       { feature: 'Spaced Repetition', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
                     ] },
                     { icon: '👥', title: 'COMMUNITY & WELLNESS', rows: [
-                      { feature: 'Discussion Forum', free: '–', aspire: '✓', rise: '✓', ascent: '✓' },
+                      { feature: 'Discussion Forum', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
                       { feature: 'Mental Health Buddy', free: '–', aspire: '✓', rise: '✓', ascent: '✓' },
-                      { feature: 'Live Study Room', free: '–', aspire: '–', rise: 'Full Access', ascent: 'Full Access' },
+                      { feature: 'Study Groups', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
                     ] },
                     { icon: '👑', title: 'MENTOR-LED GROWTH (ASCENT ONLY)', rows: [
                       { feature: 'Bi-Weekly 1-on-1 Mentorship', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
@@ -1788,7 +1808,7 @@ export default function ExplorePlansPage() {
           {(() => {
             const faqs = [
               { q: 'Is free plan really free forever?', a: 'Yes, absolutely. Our Free plan gives you lifetime free access to daily MCQ, daily news analysis, 10,000+ PYQs, study planner, leaderboard, plus 3 mains evaluations (lifetime), 1 Prelims test (lifetime) and 1 Jeet AI chat session. No card, no expiry, no hidden upgrades.' },
-              { q: 'Are the current prices a promotional offer?', a: 'Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, so lock in these rates while you can. Once you subscribe, your price remains locked for as long as you stay subscribed, even if prices increase for new users later.' },
+              { q: 'Are the current prices a promotional offer?', a: 'Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, and any updated pricing will apply to all users.' },
               { q: 'Can I upgrade or cancel my subscription anytime?', a: 'Absolutely. You can upgrade from Aspire to Rise or Ascent instantly (pro-rated). Cancellation is self-serve from your dashboard - you keep full access until the end of your billing cycle. No cancellation fees, no hassle.' },
               { q: 'What is the refund policy?', a: 'We offer a 3-day, no-questions-asked refund on all paid subscriptions. Just reach out to support within 3 days of your purchase and we will process the refund within 24 hours. After 3 days, refunds are not applicable but you can cancel future billing.' },
               { q: "What's the difference between Aspire, Rise and Ascent?", a: 'Aspire: 5 mains evaluations/day, 5 Prelims tests/day, 5 Jeet AI messages/day, limited analytics & revision suite. Rise: 25 mains evals/day, 50 Prelims tests/day, 100 AI messages, full analytics dashboard, full revision suite (flashcards, mindmaps, spaced repetition), smart syllabus tracker, live study room. Ascent: Everything in Rise, plus unlimited evaluations & tests, unlimited AI messages, bi-weekly 1-on-1 mentorship, interview prep module, personalised roadmap, priority support, monthly review call and early access.' },
