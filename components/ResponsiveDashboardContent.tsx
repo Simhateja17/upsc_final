@@ -836,9 +836,9 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
                 <div className="mb-1 py-0 text-[clamp(12px,0.73vw,13px)] invisible">Status</div>
 
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="text-[26px] leading-none" aria-hidden="true">✍️</span>
+                  <span className="text-[26px] leading-none" aria-hidden="true">📝</span>
                   <h3 className="font-inter font-bold text-[clamp(18px,1.15vw,20px)] text-[#1A1A1A]">
-                    Daily Mains Challenge
+                    Daily Answer Writing
                   </h3>
                 </div>
 
