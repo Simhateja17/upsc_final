@@ -164,24 +164,6 @@ const asTextList = (value: any): string[] => {
   return [String(value)];
 };
 
-const asDemandCoverageList = (value: any): Array<{ demand: string; status?: string }> => {
-  if (!value) return [];
-  if (!Array.isArray(value)) {
-    return asTextList(value).map((demand) => ({ demand }));
-  }
-  return value
-    .map((item) => {
-      if (typeof item === 'string') return { demand: item };
-      if (item && typeof item === 'object' && typeof item.demand === 'string') {
-        return {
-          demand: item.demand,
-          status: typeof item.status === 'string' ? humanizeKey(item.status) : undefined,
-        };
-      }
-      return { demand: asTextList(item).join(' ') };
-    })
-    .filter((item) => item.demand.trim().length > 0);
-};
 
 const humanizeKey = (key: string) =>
   key
@@ -559,7 +541,6 @@ export default function PyqPage() {
   const [mainsFlashcardBusyIds, setMainsFlashcardBusyIds] = useState<Set<string>>(new Set());
   const [mainsReviewBusyIds, setMainsReviewBusyIds] = useState<Set<string>>(new Set());
   const [showAiEvalModal, setShowAiEvalModal] = useState(false);
-  const [showAiEvalCompleteModal, setShowAiEvalCompleteModal] = useState(false);
   const [aiEvalProgress, setAiEvalProgress] = useState(0);
   const [aiEvalStepIndex, setAiEvalStepIndex] = useState(0);
   const [mode, setMode] = useState<'prelims' | 'mains'>('prelims');
@@ -569,7 +550,6 @@ export default function PyqPage() {
   const [mainsFile, setMainsFile] = useState<File | null>(null);
   const [mainsFiles, setMainsFiles] = useState<File[]>([]);
   const [mainsAttemptId, setMainsAttemptId] = useState<string | null>(null);
-  const [mainsEvalResults, setMainsEvalResults] = useState<any>(null);
   const [mainsSubmitting, setMainsSubmitting] = useState(false);
   const [mainsSubmitError, setMainsSubmitError] = useState<string | null>(null);
   const pageRootRef = useRef<HTMLDivElement>(null);
@@ -925,7 +905,6 @@ export default function PyqPage() {
       setAiEvalStepIndex(0);
       return;
     }
-    setShowAiEvalCompleteModal(false);
     setAiEvalStepIndex(0);
     const start = Date.now();
 
@@ -945,15 +924,17 @@ export default function PyqPage() {
         if (res.data?.evaluationStatus === 'completed' || res.data?.isComplete) {
           clearInterval(pollInterval);
           clearInterval(progressInterval);
-          // Fetch full results
-          const resultsRes = await pyqService.getMainsResults(selectedQuestion.id, mainsAttemptId);
-          if (resultsRes.data) {
-            setMainsEvalResults(resultsRes.data);
-          }
           setAiEvalProgress(100);
           setAiEvalStepIndex(AI_EVAL_STEPS.length);
           setShowAiEvalModal(false);
-          setShowAiEvalCompleteModal(true);
+          // Hand off to the dedicated results page (shared Daily-style UI).
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(
+              'pyqMainsResultsSession',
+              JSON.stringify({ questionId: selectedQuestion.id, attemptId: mainsAttemptId })
+            );
+          }
+          router.push(`/dashboard/pyq/results?questionId=${encodeURIComponent(selectedQuestion.id)}&attemptId=${encodeURIComponent(mainsAttemptId)}`);
         }
       } catch (err) {
         console.error('Polling eval status failed:', err);
@@ -964,7 +945,7 @@ export default function PyqPage() {
       clearInterval(progressInterval);
       clearInterval(pollInterval);
     };
-  }, [showAiEvalModal, mainsAttemptId, selectedQuestion]);
+  }, [showAiEvalModal, mainsAttemptId, selectedQuestion, router]);
 
   const hasActiveFilters =
     yearMode === 'custom' ||
@@ -2270,7 +2251,7 @@ export default function PyqPage() {
                     <div className="flex items-center gap-3 mb-4">
                       <button
                         type="button"
-                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(MAINS_TIME_LIMIT); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsSubmitError(null); setMainsTimeLeft(MAINS_TIME_LIMIT); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
                         className="flex items-center justify-center"
                         style={{ height: '59px', borderRadius: '14px', background: '#101828', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
@@ -2319,7 +2300,7 @@ export default function PyqPage() {
                         <div className="flex flex-wrap items-center gap-3 pt-4 mt-2" style={{ borderTop: '1px solid rgba(212,175,55,0.15)' }}>
                           <button
                             type="button"
-                            onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(MAINS_TIME_LIMIT); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                            onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsSubmitError(null); setMainsTimeLeft(MAINS_TIME_LIMIT); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
                             className="flex items-center gap-2"
                             style={{ padding: '10px 20px', borderRadius: '10px', background: '#101828', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', border: 'none' }}
                           >
@@ -2864,256 +2845,6 @@ export default function PyqPage() {
       {/* AI evaluation progress modal - opens after Submit for AI Evaluation */}
       {showAiEvalModal && (
         <PyqEvaluationProgressModal progress={aiEvalProgress} completedStepCount={aiEvalStepIndex} />
-      )}
-
-      {/* Rich AI evaluation result - opens after real evaluation */}
-      {showAiEvalCompleteModal && mainsEvalResults && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto"
-          style={{ background: 'rgba(15,23,42,0.64)' }}
-          onClick={() => setShowAiEvalCompleteModal(false)}
-        >
-          <div
-            className="rounded-[28px] flex flex-col my-8 overflow-hidden w-full max-w-[840px]"
-            style={{
-              background: '#F8FAFC',
-              boxShadow: '0px 25px 50px -12px rgba(0,0,0,0.5)',
-              maxHeight: 'calc(100vh - 64px)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="px-8 pt-7 pb-6 flex flex-col md:flex-row md:items-start md:justify-between gap-4" style={{ background: '#FFFFFF', borderBottom: '1px solid #E5E7EB' }}>
-              <div>
-                <div className="flex items-center gap-2 mb-2" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', letterSpacing: '0.05em', color: '#2563EB', textTransform: 'uppercase' }}>
-                  Evaluation
-                </div>
-                <h2 className="font-bold mb-1" style={{ fontFamily: 'Inter', fontSize: 28, lineHeight: 1.2, color: '#111827' }}>
-                  Marks scored: {mainsEvalResults.score}/{mainsEvalResults.maxScore}
-                </h2>
-                <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: 1.4, color: '#6B7280' }}>
-                  {mainsEvalResults.question?.paper || 'Mains'} · {mainsEvalResults.question?.subject || ''} · {mainsEvalResults.wordCount || 0} words
-                </p>
-              </div>
-              {(() => {
-                const pct = mainsEvalResults.maxScore > 0 ? Math.round((mainsEvalResults.score / mainsEvalResults.maxScore) * 100) : 0;
-                return (
-                  <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 relative w-20 h-20 flex items-center justify-center">
-                      <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 80 80">
-                        <circle cx="40" cy="40" r="36" fill="none" stroke="#E5E7EB" strokeWidth="6" />
-                        <circle cx="40" cy="40" r="36" fill="none" stroke={pct >= 60 ? '#22C55E' : pct >= 35 ? '#F59E0B' : '#EF4444'} strokeWidth="6" strokeDasharray={`${2 * Math.PI * 36}`} strokeDashoffset={2 * Math.PI * 36 * (1 - pct / 100)} strokeLinecap="round" />
-                      </svg>
-                      <div className="relative flex flex-col items-center justify-center">
-                        <span className="font-bold block leading-none" style={{ fontFamily: 'Inter', fontSize: 18, color: '#111827' }}>{pct}%</span>
-                        <span className="block mt-0.5" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, lineHeight: 1.2, color: '#6B7280' }}>MARKS</span>
-                      </div>
-                    </div>
-                    <button type="button" onClick={() => setShowAiEvalCompleteModal(false)} className="h-11 w-11 rounded-full bg-[#111827] text-white text-[24px] leading-none" aria-label="Close evaluation modal">
-                      ×
-                    </button>
-                  </div>
-                );
-              })()}
-            </div>
-
-            <div className="flex-1 px-8 py-6 space-y-6 overflow-y-auto">
-              <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                <QuestionTextRenderer
-                  text={mainsEvalResults.question?.questionText}
-                  textClassName="font-[Inter] font-semibold text-[15px] leading-[1.55] text-[#111827]"
-                />
-              </div>
-
-              {(() => {
-                const checkedCopyPages = Array.isArray(mainsEvalResults.checkedCopyPages)
-                  ? mainsEvalResults.checkedCopyPages.filter((page: any) => page?.checkedCopyUrl)
-                  : [];
-                const displayCheckedCopyPages = checkedCopyPages.length > 0
-                  ? checkedCopyPages
-                  : mainsEvalResults.checkedCopyUrl
-                    ? [{ pageNumber: 1, checkedCopyUrl: mainsEvalResults.checkedCopyUrl }]
-                    : [];
-                return (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                  <div className="flex items-baseline justify-between gap-3 mb-4">
-                    <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, color: '#111827' }}>Word count: {mainsEvalResults.wordCount || 0}</p>
-                    <span className="rounded-full px-3 py-1" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, color: (mainsEvalResults.wordCount || 0) > 280 ? '#BE123C' : '#047857', border: `1px solid ${(mainsEvalResults.wordCount || 0) > 280 ? '#FDA4AF' : '#86EFAC'}` }}>
-                      {(mainsEvalResults.wordCount || 0) > 280 ? 'OVER LIMIT' : 'RECORDED'}
-                    </span>
-                  </div>
-                  <p style={{ fontFamily: 'Inter', fontSize: 14, lineHeight: 1.6, color: '#4B5563' }}>
-                    Word limit is considered while calculating your marks.
-                  </p>
-                </div>
-
-                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                  <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, color: '#111827' }}>Checked copy</p>
-                  <p style={{ fontFamily: 'Inter', fontSize: 14, lineHeight: 1.6, color: '#4B5563' }}>
-                    {displayCheckedCopyPages.length > 0
-                      ? `Teacher-style markup is ready for ${displayCheckedCopyPages.length} page${displayCheckedCopyPages.length === 1 ? '' : 's'}.`
-                      : mainsFile
-                        ? 'Markup is not available yet for this attempt.'
-                        : 'Upload a handwritten image to generate visual markup.'}
-                  </p>
-                  {displayCheckedCopyPages.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById('pyq-examiner-markup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                      className="inline-flex mt-4 rounded-[12px] px-4 py-2"
-                      style={{ background: '#2563EB', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: 14 }}
-                    >
-                      View checked pages
-                    </button>
-                  )}
-                </div>
-              </div>
-                );
-              })()}
-
-              {(() => {
-                const checkedCopyPages = Array.isArray(mainsEvalResults.checkedCopyPages)
-                  ? mainsEvalResults.checkedCopyPages.filter((page: any) => page?.checkedCopyUrl)
-                  : [];
-                const displayCheckedCopyPages = checkedCopyPages.length > 0
-                  ? checkedCopyPages
-                  : mainsEvalResults.checkedCopyUrl
-                    ? [{ pageNumber: 1, checkedCopyUrl: mainsEvalResults.checkedCopyUrl }]
-                    : [];
-                if (displayCheckedCopyPages.length === 0) return null;
-                return (
-                  <div id="pyq-examiner-markup" className="rounded-[22px] p-5 scroll-mt-6" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                    <div className="flex items-center justify-between gap-3 mb-4">
-                      <p style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#111827' }}>Examiner markup</p>
-                      <span className="rounded-full px-3 py-1" style={{ background: '#FEE2E2', color: '#B91C1C', fontFamily: 'Inter', fontWeight: 800, fontSize: 12 }}>BETA</span>
-                    </div>
-                    <div className="space-y-4">
-                      {displayCheckedCopyPages.map((page: any) => (
-                        <div key={page.pageNumber || page.checkedCopyUrl}>
-                          <div className="mb-2 flex items-center justify-between">
-                            <span style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 14, color: '#364153' }}>Page {page.pageNumber || 1}</span>
-                            <a href={page.checkedCopyUrl} target="_blank" rel="noreferrer" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 13, color: '#2563EB' }}>Open full size</a>
-                          </div>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={page.checkedCopyUrl}
-                            alt={`Checked copy page ${page.pageNumber || 1} with evaluator markup`}
-                            className="w-full rounded-[14px]"
-                            style={{ border: '1px solid #E5E7EB', background: '#F3F4F6' }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {asDemandCoverageList(mainsEvalResults.demandCoverage).length > 0 && (
-                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                  <p className="mb-4" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 22, color: '#111827' }}>Demand of the question</p>
-                  <ul className="space-y-3 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 16, lineHeight: 1.55, color: '#111827' }}>
-                    {asDemandCoverageList(mainsEvalResults.demandCoverage).map((item, i) => (
-                      <li key={i}>
-                        {item.demand}
-                        {item.status ? (
-                          <>
-                            {' -> '}
-                            <strong>{item.status}</strong>
-                          </>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {mainsEvalResults.answerText && (
-                <div className="rounded-[18px] p-5" style={{ background: '#E0F2FE', border: '1px solid #BAE6FD' }}>
-                  <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#0F172A' }}>What you wrote</p>
-                  <p style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.75, color: '#0F172A', whiteSpace: 'pre-line' }}>
-                    {mainsEvalResults.answerText}
-                  </p>
-                </div>
-              )}
-
-              {mainsEvalResults.sectionFeedback && typeof mainsEvalResults.sectionFeedback === 'object' && !Array.isArray(mainsEvalResults.sectionFeedback) && (
-                <div className="space-y-4">
-                  {Object.entries(mainsEvalResults.sectionFeedback).map(([section, feedback]) => (
-                    <div key={section} className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                      <p className="mb-3 uppercase" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 14, letterSpacing: '0.06em', color: '#6B7280' }}>
-                        {humanizeKey(section)}
-                      </p>
-                      <ul className="space-y-2 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.6, color: '#1F2937' }}>
-                        {asTextList(feedback).map((item, i) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {mainsEvalResults.strengths?.length > 0 && (
-                  <div className="rounded-[18px] p-5" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-                    <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#166534' }}>Strengths</p>
-                    <ul className="space-y-2 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.6, color: '#14532D' }}>
-                      {mainsEvalResults.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                    </ul>
-                  </div>
-                )}
-
-                {mainsEvalResults.improvements?.length > 0 && (
-                  <div className="rounded-[18px] p-5" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
-                    <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#C2410C' }}>Areas to improve</p>
-                    <ul className="space-y-2 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.6, color: '#7C2D12' }}>
-                      {mainsEvalResults.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              {mainsEvalResults.suggestions?.length > 0 && (
-                <div className="rounded-[18px] p-5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
-                  <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#1D4ED8' }}>Suggestions to improve</p>
-                  <ul className="space-y-3 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.65, color: '#1E3A8A' }}>
-                    {mainsEvalResults.suggestions.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                  </ul>
-                </div>
-              )}
-
-              {mainsEvalResults.modelAnswer && (
-                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                  <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#111827' }}>Model answer</p>
-                  <p style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.7, color: '#1F2937', whiteSpace: 'pre-line' }}>
-                    {mainsEvalResults.modelAnswer}
-                  </p>
-                </div>
-              )}
-
-              {mainsEvalResults.detailedFeedback && (
-                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                  <p className="mb-3 uppercase" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 14, letterSpacing: '0.06em', color: '#6B7280' }}>Overall feedback</p>
-                  <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 16, lineHeight: 1.7, color: '#111827', whiteSpace: 'pre-line' }}>
-                    {mainsEvalResults.detailedFeedback}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Close button */}
-            <div className="px-8 pb-8 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowAiEvalCompleteModal(false)}
-                className="w-full flex items-center justify-center gap-2 rounded-[16px] py-4"
-                style={{ background: '#2563EB', fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '24px', color: '#FFFFFF' }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Attempt / Question review modal - Prelims only */}
