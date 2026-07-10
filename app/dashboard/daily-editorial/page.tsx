@@ -224,21 +224,34 @@ function getCalendarDays(year: number, month: number) {
   return days;
 }
 
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function getIstDateKey(dayOffset = 0, now = new Date()): string {
+  return new Date(now.getTime() + IST_OFFSET_MS + dayOffset * DAY_MS).toISOString().slice(0, 10);
+}
+
+function getDateKeyParts(dateKey: string) {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return { year, monthIndex: month - 1, day };
+}
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 export default function DailyEditorialPage() {
   const router = useRouter();
+  const latestEditionDate = getIstDateKey(-1);
+  const initialEdition = getDateKeyParts(latestEditionDate);
   const [activeNewspaper, setActiveNewspaper] = useState<'hindu' | 'express'>('hindu');
-  const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
-  const [calYear, setCalYear] = useState(() => new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(initialEdition.monthIndex);
+  const [calYear, setCalYear] = useState(initialEdition.year);
   const [editorials, setEditorials] = useState<EditorialCard[]>([]);
   const [learningStats, setLearningStats] = useState(defaultLearningStats);
   const [glanceStats, setGlanceStats] = useState({ hindu: 0, express: 0, read: 0, ai: 0 });
   const [loading, setLoading] = useState(true);
-  const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState<string>(latestEditionDate);
   const [availableDates, setAvailableDates] = useState<Set<string>>(new Set());
   const [availabilityLoading, setAvailabilityLoading] = useState(true);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -283,20 +296,8 @@ export default function DailyEditorialPage() {
         const articles = res.data && Array.isArray(res.data) ? res.data : [];
         if (articles.length > 0) {
           setEditorials(articles);
-          setLastFetched(new Date());
         } else {
-          // DB empty – fall back to live News API (only for today)
-          const isToday = selectedDate === new Date().toISOString().slice(0, 10);
-          if (isToday) {
-            return editorialService.getLiveNews(source).then(liveRes => {
-              if (liveRes.data && Array.isArray(liveRes.data)) {
-                setEditorials(liveRes.data);
-                setLastFetched(new Date());
-              }
-            });
-          } else {
-            setEditorials([]);
-          }
+          setEditorials([]);
         }
       })
       .catch(() => {})
@@ -420,8 +421,6 @@ export default function DailyEditorialPage() {
 
 
   const calDays = getCalendarDays(calYear, calMonth);
-  const now = new Date();
-  const today = now.getMonth() === calMonth && now.getFullYear() === calYear ? now.getDate() : -1;
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const dayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
   const selectedSubjectMeta = subjects.find((subject) => subject.id === selectedSubject);
@@ -574,11 +573,14 @@ export default function DailyEditorialPage() {
           {/* Divider */}
           <div style={{ borderBottom: '1px solid #D1D5DC', marginBottom: 'clamp(14px, 1.5vw, 20px)' }} />
 
-          {/* Last updated + article count */}
+          {/* Edition date + article count */}
           {!loading && editorials.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-2" style={{ marginBottom: '12px' }}>
               <span className="font-arimo" style={{ fontSize: '13px', color: '#6A7282' }}>
-                🕐 Updated {lastFetched ? lastFetched.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'just now'} &nbsp;·&nbsp; {editorials.length} articles (last 24 hrs)
+                {(() => {
+                  const { monthIndex, day } = getDateKeyParts(selectedDate);
+                  return `${day} ${monthNames[monthIndex]} edition · ${editorials.length} articles`;
+                })()}
               </span>
               <span className="font-arimo" style={{ fontSize: '13px', color: '#6A7282' }}>
                 Page {Math.min(currentPage, totalPages)} of {totalPages}
@@ -600,7 +602,7 @@ export default function DailyEditorialPage() {
               if (filteredEditorials.length === 0) {
                 return (
                   <div className="text-center py-12 text-gray-500">
-                    {selectedSubject ? 'No articles for this subject on this date.' : 'No articles in the last 24 hours. Check back later.'}
+                    {selectedSubject ? 'No articles for this subject in this edition.' : 'No articles are available for this edition.'}
                   </div>
                 );
               }
@@ -842,8 +844,8 @@ export default function DailyEditorialPage() {
                 }}
               >
                 {(() => {
-                  const d = new Date(selectedDate + 'T00:00:00');
-                  return `${d.getDate()} ${monthNames[d.getMonth()]}`;
+                  const { monthIndex, day } = getDateKeyParts(selectedDate);
+                  return `${day} ${monthNames[monthIndex]}`;
                 })()}
               </span>
             </div>
@@ -889,15 +891,15 @@ export default function DailyEditorialPage() {
                   return <div key={idx} />;
                 }
                 const iso = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const isFuture = new Date(iso) > new Date();
+                const isAfterLatestEdition = iso > latestEditionDate;
                 const hasArticles = availableDates.has(iso);
                 const isUnavailable = !availabilityLoading && !hasArticles;
-                const isSelected = iso === selectedDate && !isFuture && !isUnavailable;
+                const isSelected = iso === selectedDate && !isAfterLatestEdition && !isUnavailable;
                 return (
                   <button
                     key={idx}
-                    disabled={isFuture || isUnavailable}
-                    onClick={() => !(isFuture || isUnavailable) && setSelectedDate(iso)}
+                    disabled={isAfterLatestEdition || isUnavailable}
+                    onClick={() => !(isAfterLatestEdition || isUnavailable) && setSelectedDate(iso)}
                     className="flex flex-col items-center justify-center font-arimo"
                     style={{
                       width: '100%',
@@ -906,9 +908,9 @@ export default function DailyEditorialPage() {
                       fontSize: '14px',
                       borderRadius: '10px',
                       background: isSelected ? '#162456' : 'transparent',
-                      color: isSelected ? '#FFFFFF' : (isFuture || isUnavailable) ? '#B8C0CC' : '#364153',
+                      color: isSelected ? '#FFFFFF' : (isAfterLatestEdition || isUnavailable) ? '#B8C0CC' : '#364153',
                       fontWeight: isSelected ? 700 : 400,
-                      cursor: (isFuture || isUnavailable) ? 'not-allowed' : 'pointer',
+                      cursor: (isAfterLatestEdition || isUnavailable) ? 'not-allowed' : 'pointer',
                       border: 'none',
                       gap: '2px',
                     }}
