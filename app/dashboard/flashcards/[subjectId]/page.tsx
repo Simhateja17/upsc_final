@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import CreateFlashcardModal from '@/components/CreateFlashcardModal';
 import NewTopicModal from '@/components/NewTopicModal';
 import { flashcardService } from '@/lib/services';
+import { getTopicIcon } from '@/lib/topic-icons';
 
 type Topic = {
   id: string;
@@ -24,64 +25,10 @@ function displaySubjectName(subject: string) {
   return subject;
 }
 
-function getMasteryColor(mastery: number): { barColor: string; textColor: string; accentColor: string } {
-  if (mastery === 100) return { barColor: '#16A34A', textColor: '#16A34A', accentColor: '#16A34A' };
-  if (mastery > 0)    return { barColor: '#F59E0B', textColor: '#D97706', accentColor: '#F59E0B' };
-  return               { barColor: '#EF4444', textColor: '#EF4444', accentColor: '#EF4444' };
-}
-
-const TOPIC_ICONS: Record<string, string> = {
-  // Polity
-  'Constitutional Amendments': '📜', 'Amendment': '📜',
-  'Fundamental Rights': '⚖️', 'Fundamental Rights & DPSPs': '⚖️', 'DPSP': '📖',
-  'Judiciary': '🏛️', 'Supreme Court': '🏛️', 'Judiciary & Supreme Court': '🏛️',
-  'Centre-State': '🗺️', 'Centre-State Relations': '🗺️', 'Federalism': '🗺️',
-  'Election Commission': '🗳️', 'Election': '🗳️',
-  'Parliament': '🏛️', 'Lok Sabha': '🏛️', 'Rajya Sabha': '🏛️',
-  'President': '👑', 'Governor': '🏛️', 'Prime Minister': '👔',
-  'Emergency': '🚨', 'Emergency Provisions': '🚨',
-  'Panchayati Raj': '🏘️', 'Local Government': '🏘️', 'Municipalities': '🏘️',
-  'Constitutional Bodies': '📋', 'Statutory Bodies': '📋',
-  'UPSC': '📋', 'CAG': '📋', 'Finance Commission': '💹',
-  'Directive Principles': '📖', 'Fundamental Duties': '✊',
-  'Citizenship': '🪪', 'Preamble': '📜', 'Schedules': '📋',
-  // History
-  'Ancient India': '🏺', 'Vedic': '📿', 'Harappan': '🏺', 'Indus Valley': '🏺',
-  'Maurya': '🦁', 'Gupta': '🌟', 'Buddhism': '☸️', 'Jainism': '🕯️',
-  'Medieval India': '🏰', 'Mughal': '🕌', 'Maratha': '⚔️', 'Delhi Sultanate': '🕌',
-  'Modern India': '🇮🇳', 'British': '🗺️', 'Freedom Movement': '🇮🇳',
-  'Independence': '🇮🇳', 'Revolt': '⚔️', 'Partition': '🗓️',
-  'Art & Culture': '🎨', 'Architecture': '🕌', 'Literature': '📚',
-  'Post-Independence': '📜', 'Post Independence': '📜',
-  // Geography
-  'Physical Geography': '🌍', 'Climate': '☁️', 'Rivers': '🌊', 'Mountains': '⛰️',
-  'Soil': '🌱', 'Agriculture': '🌾', 'Industry': '🏭',
-  'Transport': '🚆', 'Natural Disasters': '🌪️', 'Ocean': '🌊',
-  'World Geography': '🌐', 'Indian Geography': '🗺️', 'Atmosphere': '🌤️',
-  // Economy
-  'National Income': '💹', 'GDP': '💹', 'Money': '💰', 'Banking': '🏦',
-  'Inflation': '📈', 'Budget': '💼', 'Fiscal': '💼', 'Poverty': '🤝',
-  'Agriculture Sector': '🌾', 'Industry Sector': '🏭', 'Services': '🏢',
-  'External Sector': '🌐', 'Trade': '🌐', 'Balance of Payments': '⚖️',
-  'Infrastructure': '🏗️', 'Human Development': '👥',
-  // Environment
-  'Ecosystem': '🌿', 'Ecology': '🌿', 'Biodiversity': '🦋',
-  'Pollution': '🏭', 'Climate Change': '🌡️', 'Wildlife': '🐘',
-  'Conservation': '🌳', 'Wetlands': '💧', 'Protected Areas': '🌳',
-  // Science
-  'Physics': '⚛️', 'Chemistry': '🧪', 'Biology': '🧬',
-  'Space': '🚀', 'Nuclear': '☢️', 'Computer': '💻', 'IT': '💻',
-  'Biotechnology': '🧬', 'Nanotechnology': '🔬', 'Defence': '🛡️',
-  'Health': '🏥', 'Disease': '🦠',
-};
-
-function getTopicIcon(name: string): string {
-  if (TOPIC_ICONS[name]) return TOPIC_ICONS[name];
-  const lower = name.toLowerCase();
-  for (const [key, icon] of Object.entries(TOPIC_ICONS)) {
-    if (lower.includes(key.toLowerCase())) return icon;
-  }
-  return '📄';
+function getMasteryColor(mastery: number): { barColor: string; textColor: string } {
+  if (mastery === 100) return { barColor: '#16A34A', textColor: '#16A34A' };
+  if (mastery > 0)    return { barColor: '#F59E0B', textColor: '#D97706' };
+  return               { barColor: '#EF4444', textColor: '#EF4444' };
 }
 
 export default function FlashcardsSubjectPage() {
@@ -226,7 +173,7 @@ export default function FlashcardsSubjectPage() {
                 2
               </div>
               <h2 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828' }}>
-                Choose a <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Topic</span>
+                Choose a <span style={{ fontStyle: 'italic', color: '#E89A2B' }}>Topic</span>
               </h2>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -262,7 +209,7 @@ export default function FlashcardsSubjectPage() {
           {loading ? (
             <div className="space-y-2 mb-6">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="rounded-[28px] h-[68px] animate-pulse" style={{ background: '#F0F2F5', border: '0.8px solid #E5E7EB' }} />
+                <div key={i} className="rounded-[8px] h-[68px] animate-pulse" style={{ background: '#F0F2F5', border: '0.8px solid #E5E7EB' }} />
               ))}
             </div>
           ) : topics.length === 0 ? (
@@ -272,7 +219,7 @@ export default function FlashcardsSubjectPage() {
           ) : (
             <div className="space-y-2 mb-6">
               {topics.map((topic) => {
-                const { barColor, textColor, accentColor } = getMasteryColor(topic.mastery);
+                const { barColor, textColor } = getMasteryColor(topic.mastery);
                 const readMin = Math.max(1, Math.ceil(topic.cards * 0.5));
                 const topicIcon = getTopicIcon(topic.name);
                 const isDeleting = deletingTopicId === topic.id;
@@ -282,8 +229,8 @@ export default function FlashcardsSubjectPage() {
                     onClick={() => router.push(`/dashboard/flashcards/${subjectId}/${topic.id}`)}
                     onMouseEnter={() => setHoveredCard(topic.id)}
                     onMouseLeave={() => { setHoveredCard(null); setHoveredBin(null); }}
-                    className="flex items-center rounded-[28px] overflow-hidden transition-all hover:shadow-md hover:-translate-y-px cursor-pointer"
-                    style={{ borderTop: '0.8px solid #E2E5ED', borderRight: '0.8px solid #E2E5ED', borderBottom: '0.8px solid #E2E5ED', borderLeft: `4px solid ${accentColor}`, background: '#FFFFFF', minHeight: 68 }}
+                    className="flex items-center rounded-[8px] overflow-hidden transition-all hover:shadow-md hover:-translate-y-px cursor-pointer"
+                    style={{ border: '0.8px solid #E2E5ED', background: '#FFFFFF', minHeight: 68 }}
                   >
                     {/* Icon */}
                     <div className="flex-shrink-0 flex items-center justify-center mx-4" style={{ width: 40, height: 40, borderRadius: 12, background: '#EFF6FF', fontSize: 20 }}>

@@ -326,3 +326,17 @@ html, body {
 }
 .sm-shine:hover::after { transform: translateX(100%); }
 .sm-btn:disabled { opacity: .6; cursor: default; }
+
+/* Subject card grid — shared by the Flashcards, Mindmaps and Spaced Repetition
+   modules so the three stay visually identical.
+   auto-fill keys the column count off the container's width rather than the
+   viewport's, so the dashboard sidebar can't force a premature 2-up. Within the
+   1120px container (1056px of content) this resolves to exactly four columns.
+   auto-fill rather than auto-fit: it keeps the empty tracks, so a subject list
+   short enough to leave gaps (an entitlement preview, say) still renders
+   normal-width cards instead of one stretched across the row. */
+.subject-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}

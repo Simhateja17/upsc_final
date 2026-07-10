@@ -7,6 +7,34 @@ import { useAuth } from '@/contexts/AuthContext';
 import { dashboardService, studyPlannerService } from '@/lib/services';
 import { getSubjectEmoji } from '@/lib/subjectEmojis';
 
+// Complete study-planner subject list — mirrors SUBJECT_OPTIONS in the Study
+// Planner page and VALID_STUDY_PLANNER_SUBJECTS on the backend so custom tasks
+// offer every subject (not just the 6 core ones).
+const STUDY_TASK_SUBJECTS = [
+  'Polity',
+  'History',
+  'Geography',
+  'Economy',
+  'Environment & Ecology',
+  'Science & Technology',
+  'Current Affairs',
+  'Society',
+  'Governance',
+  'International Relations',
+  'Social Justice',
+  'Agriculture',
+  'Internal Security',
+  'Disaster Management',
+  'Ethics',
+  'GS1',
+  'GS2',
+  'GS3',
+  'GS4',
+  'Essay',
+  'Optional Paper 1',
+  'Optional Paper 2',
+];
+
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good morning';
@@ -224,12 +252,11 @@ const AddTaskModal = ({
               className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#f5b400] focus:outline-none transition-colors text-sm bg-white"
             >
               <option value="">Select Subject</option>
-              <option value="history">History</option>
-              <option value="geography">Geography</option>
-              <option value="polity">Polity</option>
-              <option value="economy">Economy</option>
-              <option value="environment">Environment & Ecology</option>
-              <option value="science-tech">Science & Technology</option>
+              {STUDY_TASK_SUBJECTS.map((s) => (
+                <option key={s} value={s}>
+                  {getSubjectEmoji(s)} {s}
+                </option>
+              ))}
             </select>
             <input
               type="text"
@@ -746,7 +773,7 @@ const ResponsiveDashboardContent = () => {
               <Link
                 href="/dashboard/daily-mcq"
                 aria-label="Open Daily MCQ"
-                className="block bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] relative cursor-pointer h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg"
+                className={`block rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] relative cursor-pointer h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg ${isMcqCompleted ? 'bg-green-50' : 'bg-[#F9FAFB] hover:bg-indigo-50/30'}`}
                 style={{ borderColor: isMcqCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #22C55E' }}
               >
                 {isMcqCompleted && (
@@ -796,7 +823,7 @@ const ResponsiveDashboardContent = () => {
               {/* Mains Question Card */}
               <Link href="/dashboard/daily-answer" className="block h-full">
               <div
-                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg cursor-pointer relative"
+                className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg cursor-pointer relative ${isMainsCompleted ? 'bg-green-50' : 'bg-[#F9FAFB] hover:bg-indigo-50/30'}`}
                 style={{ borderColor: isMainsCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #94A3B8' }}
               >
                 {isMainsCompleted && (
@@ -841,7 +868,7 @@ const ResponsiveDashboardContent = () => {
               {/* Daily Editorial Card */}
               <Link href="/dashboard/daily-editorial" className="block h-full">
               <div
-                className="bg-[#F9FAFB] rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg cursor-pointer relative"
+                className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex flex-col transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg cursor-pointer relative ${isEditorialCompleted ? 'bg-green-50' : 'bg-[#F9FAFB] hover:bg-indigo-50/30'}`}
                 style={{ borderColor: isEditorialCompleted ? '#22C55E' : '#E5E7EB', borderTop: '3px solid #F59E0B' }}
               >
                 {isEditorialCompleted && (
@@ -988,12 +1015,12 @@ const ResponsiveDashboardContent = () => {
                         </h3>
                       </Link>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-blue-600" style={{ background: '#DBEAFE' }}>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[clamp(12px,0.68vw,13px)] font-medium text-blue-600" style={{ background: '#DBEAFE' }}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src="/b.png" alt="Type" className="w-3.5 h-3.5" />
                           {(() => { const t = task.type || 'Reading'; return t.charAt(0).toUpperCase() + t.slice(1); })()}
                         </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[clamp(12px,0.68vw,13px)] font-medium text-purple-700" style={{ background: '#F3E8FF' }}>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[clamp(12px,0.68vw,13px)] font-medium text-purple-700" style={{ background: '#F3E8FF' }}>
                           {task.subject ? `${getSubjectEmoji(task.subject)} ${task.subject}` : '📚 General'}
                         </span>
                         {timeLabel && (

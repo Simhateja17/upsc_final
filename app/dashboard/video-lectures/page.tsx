@@ -825,7 +825,7 @@ export default function VideoLecturesPage() {
               justifyContent: 'center',
               justifyItems: 'center',
               columnGap: '20px',
-              rowGap: '22px',
+              rowGap: '20px',
               marginBottom: selectedSubject ? 'clamp(24px, 2.5vw, 36px)' : '0',
             }}
           >
@@ -836,133 +836,73 @@ export default function VideoLecturesPage() {
               const watchedCount = (watchedBySubject[normalizeSubjectKey(subject.name)] || []).length;
               const totalCount = subject.videoCount ?? 0;
               const progressPct = totalCount > 0 ? Math.min(100, Math.round((watchedCount / totalCount) * 100)) : 0;
+              // Match the shared subject-card fill behaviour (min 10% so a started deck reads as progress).
+              const progressWidth = totalCount > 0 ? Math.max(progressPct, 10) : 0;
+              const toGo = Math.max(0, totalCount - watchedCount);
               return (
                 <button
                   type="button"
                   key={subject.name}
                   onClick={() => handleSubjectClick(subject.name)}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = `0 12px 28px ${theme.color}30`;
-                    e.currentTarget.style.borderColor = theme.color;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = isSelected ? 'translateY(-2px) scale(1.01)' : 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = isSelected ? `0 8px 28px ${theme.color}45` : '0 1px 4px rgba(0,0,0,0.05)';
-                    e.currentTarget.style.borderColor = isSelected ? theme.color : theme.border;
-                  }}
+                  className={`subjhx-card block rounded-[16px] p-5 text-left flex flex-col${isSelected ? ' is-selected' : ''}`}
                   style={{
+                    ['--subjhx-border']: isSelected ? theme.color : theme.border,
+                    background: theme.bg,
                     width: '100%',
-                    minHeight: '188px',
-                    background: isSelected ? theme.color : theme.bg,
-                    borderRadius: '20px',
-                    padding: '20px 18px 18px',
+                    height: 190,
                     cursor: 'pointer',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-                    border: `1.5px solid ${isSelected ? theme.color : theme.border}`,
-                    boxShadow: isSelected ? `0 8px 28px ${theme.color}45` : '0 1px 4px rgba(0,0,0,0.05)',
-                    transform: isSelected ? 'translateY(-2px) scale(1.01)' : 'translateY(0) scale(1)',
-                    position: 'relative',
-                    textAlign: 'left',
-                  }}
+                  } as React.CSSProperties}
                 >
-                  {showNew && (
-                    <div
-                      className="font-arimo font-bold"
-                      style={{
-                        position: 'absolute',
-                        top: '12px',
-                        right: '12px',
-                        height: '22px',
-                        minWidth: '48px',
-                        padding: '3px 11px 0',
-                        borderRadius: '20px',
-                        background: '#3B82F6',
-                        color: '#FFFFFF',
-                        fontSize: '11px',
-                        lineHeight: '16px',
-                        letterSpacing: '0',
-                      }}
-                    >
-                      NEW
-                    </div>
-                  )}
+                  <div className="subjhx-accent" style={{ background: theme.color }} />
 
-                  <div
-                    className="flex items-center justify-center"
-                    style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '12px',
-                      background: isSelected ? 'rgba(255,255,255,0.22)' : theme.tag,
-                      fontSize: '24px',
-                      lineHeight: '32px',
-                      marginBottom: '12px',
-                    }}
-                  >
-                    {subjectEmoji(subject.name)}
+                  <div className="flex items-start justify-between gap-3">
+                    <span
+                      aria-hidden
+                      className="flex items-center justify-center flex-shrink-0"
+                      style={{ width: 44, height: 44, borderRadius: 12, background: `${theme.color}33`, fontSize: 24, lineHeight: 1 }}
+                    >
+                      {subjectEmoji(subject.name)}
+                    </span>
+                    {showNew && (
+                      <span
+                        className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
+                        style={{ background: '#FDB022', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '12px', color: '#FFFFFF' }}
+                      >
+                        NEW
+                      </span>
+                    )}
                   </div>
-                  <div
-                    className="font-arimo font-bold"
+
+                  <h3
+                    className="mt-3"
                     title={subject.name}
-                    style={{
-                      fontSize: '17px',
-                      lineHeight: '22px',
-                      color: isSelected ? '#FFFFFF' : '#1E293B',
-                      letterSpacing: '-0.3px',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
+                    style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 17, lineHeight: '22px', color: '#22304D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                   >
                     {subject.name}
-                  </div>
-                  <div
-                    className="font-arimo flex items-center"
-                    style={{ fontSize: '13px', lineHeight: '18px', color: isSelected ? 'rgba(255,255,255,0.75)' : '#64748B', marginTop: '6px', marginBottom: '12px', gap: '14px', whiteSpace: 'nowrap' }}
+                  </h3>
+
+                  <p
+                    className="mt-1"
+                    style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, lineHeight: '15px', color: '#8A94A6' }}
                   >
-                    <span className="inline-flex items-center" style={{ gap: '5px' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10" />
-                        <polygon points="10 8 16 12 10 16 10 8" />
-                      </svg>
-                      {subject.videoCount ?? 0} videos
+                    {totalCount} videos · {formatSubjectViews(getSubjectViewCount(subject))} views
+                  </p>
+
+                  <div className="mt-4 h-[4px] w-full rounded-full" style={{ background: 'rgba(0,0,0,0.08)' }}>
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${progressWidth}%`, background: '#16A34A' }}
+                    />
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#16A34A' }}>
+                      ✓ {watchedCount} watched
                     </span>
-                    <span className="inline-flex items-center" style={{ gap: '5px' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                      {formatSubjectViews(getSubjectViewCount(subject))}
+                    <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', color: totalCount > 0 && toGo === 0 ? '#16A34A' : '#EF4444' }}>
+                      {totalCount === 0 ? 'Start here' : toGo === 0 ? '✓ All done' : `${toGo} to go`}
                     </span>
                   </div>
-                  {(() => {
-                    const status = progressPct === 100 ? 'Completed' : progressPct > 0 ? 'In progress' : 'Not started';
-                    const barColor = isSelected ? 'rgba(255,255,255,0.85)' : progressPct === 100 ? '#2563EB' : theme.color;
-                    const labelColor = isSelected ? 'rgba(255,255,255,0.9)' : '#64748B';
-                    return (
-                      <>
-                        {/* Status + completion percentage */}
-                        <div
-                          className="flex items-center justify-between font-arimo font-bold"
-                          style={{ fontSize: '11px', color: labelColor, marginBottom: '6px', width: '100%' }}
-                        >
-                          <span>{status}</span>
-                          <span>{progressPct}%</span>
-                        </div>
-                        <div
-                          className="rounded-full overflow-hidden"
-                          style={{ width: '100%', height: '6px', background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.7)' }}
-                        >
-                          <div
-                            className="h-full rounded-full"
-                            style={{ width: `${progressPct}%`, background: barColor, transition: 'width 0.3s ease' }}
-                          />
-                        </div>
-                      </>
-                    );
-                  })()}
                 </button>
               );
             })}
@@ -1468,6 +1408,12 @@ export default function VideoLecturesPage() {
         .vlm-copy-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#0b1226;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
         .vlm-copy-btn:hover{background:#1a2a4a;}
         .vlm-copy-btn.copied{background:#16a34a;}
+        /* Subject cards — shared 1:1 with Flashcards / Mindmaps / Spaced Repetition */
+        .subjhx-card{position:relative;overflow:hidden;border:1px solid var(--subjhx-border);transition:transform .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1),border-color .3s cubic-bezier(.4,0,.2,1);}
+        .subjhx-card:hover{transform:translateY(-3px);box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);border-color:transparent;}
+        .subjhx-accent{position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:opacity .3s;z-index:2;}
+        .subjhx-card:hover .subjhx-accent{opacity:1;}
+        .subjhx-card.is-selected .subjhx-accent{opacity:1;}
       `}</style>
 
       {/* ============ GET PDF POPUP (redirect to Study Material) ============ */}

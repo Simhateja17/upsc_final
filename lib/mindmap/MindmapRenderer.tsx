@@ -6,6 +6,7 @@ import {
   Controls,
   Background,
   BackgroundVariant,
+  Panel,
   useReactFlow,
   ReactFlowProvider,
   type Node,
@@ -14,7 +15,12 @@ import '@xyflow/react/dist/style.css';
 
 import MindmapNode from './MindmapNode';
 import AnimatedEdge from './AnimatedEdge';
-import { buildMindmapFlow, type MindmapTree, type MindmapNodeData } from './tree-to-flow';
+import {
+  buildMindmapFlow,
+  collectExpandableIds,
+  type MindmapTree,
+  type MindmapNodeData,
+} from './tree-to-flow';
 
 const nodeTypes = { mindmapNode: MindmapNode };
 const edgeTypes = { animatedEdge: AnimatedEdge };
@@ -36,6 +42,26 @@ function MindmapFlowInner({ tree, onNodeClick, className }: Props) {
     () => buildMindmapFlow(tree, expandedIds),
     [tree, expandedIds]
   );
+
+  const expandableIds = useMemo(() => collectExpandableIds(tree.root), [tree.root]);
+
+  // 'root' is force-expanded by the layout builder, so it never counts either way.
+  const allExpanded = useMemo(
+    () => Array.from(expandableIds).every((id) => id === 'root' || expandedIds.has(id)),
+    [expandableIds, expandedIds]
+  );
+  const allCollapsed = useMemo(
+    () => Array.from(expandedIds).every((id) => id === 'root'),
+    [expandedIds]
+  );
+
+  const expandAll = useCallback(() => {
+    setExpandedIds(new Set(expandableIds));
+  }, [expandableIds]);
+
+  const collapseAll = useCallback(() => {
+    setExpandedIds(new Set<string>(['root']));
+  }, []);
 
   // Fit view when layout changes
   useEffect(() => {
@@ -92,6 +118,28 @@ function MindmapFlowInner({ tree, onNodeClick, className }: Props) {
         zoomOnDoubleClick={false}
         className="!bg-[#F8FAFC]"
       >
+        <Panel position="top-right" className="!m-3">
+          <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+            <button
+              type="button"
+              onClick={expandAll}
+              disabled={allExpanded}
+              className="rounded-lg px-2.5 py-1.5 text-[12px] font-medium text-[#6B7280] transition-colors hover:bg-gray-50 hover:text-[#101828] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#6B7280]"
+            >
+              Expand All
+            </button>
+            <span aria-hidden className="h-4 w-px bg-gray-200" />
+            <button
+              type="button"
+              onClick={collapseAll}
+              disabled={allCollapsed}
+              className="rounded-lg px-2.5 py-1.5 text-[12px] font-medium text-[#6B7280] transition-colors hover:bg-gray-50 hover:text-[#101828] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#6B7280]"
+            >
+              Collapse All
+            </button>
+          </div>
+        </Panel>
+
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#E2E8F0" />
         <Controls
           showInteractive={false}

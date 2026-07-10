@@ -168,7 +168,7 @@ export default function SpacedRepetitionPage() {
                 Add Question
               </button>
             </div>
-            <div className="subjects-grid">
+            <div className="subject-card-grid">
               {SUBJECT_HEALTH.map((s) => {
                 const style = CARD_STYLE[s.id] ?? { tint: 'tint-yellow', accent: 'var(--gold)' };
                 const acc = resolveAccuracy(subjectAccuracy, s);

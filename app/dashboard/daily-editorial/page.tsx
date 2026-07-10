@@ -238,10 +238,16 @@ export default function DailyEditorialPage() {
   };
 
   const handleMarkRead = async (id: string) => {
+    const target = editorials.find(e => e.id === id);
+    if (!target || target.isRead) return;
+    // Optimistically reflect the read state, then revert if the request fails.
+    setEditorials(prev => prev.map(e => e.id === id ? { ...e, isRead: true } : e));
     try {
       await editorialService.markRead(id);
-      setEditorials(prev => prev.map(e => e.id === id ? { ...e, isRead: true } : e));
-    } catch {}
+    } catch (err) {
+      console.error('Failed to mark editorial as read:', err);
+      setEditorials(prev => prev.map(e => e.id === id ? { ...e, isRead: false } : e));
+    }
   };
 
   const handleSummarize = async (card: EditorialCard) => {
@@ -680,7 +686,10 @@ export default function DailyEditorialPage() {
         {/* ========================================================== */}
         {/*  RIGHT COLUMN – Sidebar Widgets                             */}
         {/* ========================================================== */}
-        <div className="flex flex-col" style={{ gap: 'clamp(14px, 1.5vw, 20px)' }}>
+        <div
+          className="flex flex-col xl:sticky xl:self-start xl:top-6 xl:max-h-[calc(100dvh-120px)] xl:overflow-y-auto"
+          style={{ gap: 'clamp(14px, 1.5vw, 20px)' }}
+        >
           {/* -------------------------------------------------------- */}
           {/*  Calendar Widget                                          */}
           {/* -------------------------------------------------------- */}
@@ -919,7 +928,7 @@ export default function DailyEditorialPage() {
                 <path d="M2 14L7 9L11 13L18 5" stroke="#E7000B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M14 5H18V9" stroke="#E7000B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span className="font-arimo font-bold" style={{ fontSize: '16px', color: '#101828' }}>
+              <span className="font-arimo font-bold" style={{ fontSize: '14px', color: '#6A7282', letterSpacing: '0.35px', textTransform: 'uppercase' }}>
                 Your Learning Streak
               </span>
             </div>
@@ -1376,7 +1385,7 @@ export default function DailyEditorialPage() {
                         },
                       },
                       {
-                        icon: '✏️', label: 'Practice MCQ',
+                        icon: '🎯', label: 'Practice MCQ',
                         action: () => { if (!ed) return; closeModal(); router.push(`/dashboard/mock-tests?from=editorial&editorialId=${ed.id}&mode=prelims`); },
                       },
                       {

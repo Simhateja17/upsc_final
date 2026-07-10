@@ -157,7 +157,7 @@ export default function FlashcardsPage() {
           stats={bannerMetrics.map((metric) => ({ value: metric.value, label: metric.label, color: metric.valueColor }))}
         />
 
-        <div className="w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="w-full max-w-[1120px] mx-auto px-4 py-6 sm:px-8 sm:py-8">
           {!hasFullAccess && (
             <div className="mb-6">
               <UpgradePrompt
@@ -239,7 +239,7 @@ export default function FlashcardsPage() {
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="subject-card-grid">
               {[...Array(10)].map((_, index) => (
                 <div
                   key={index}
@@ -249,7 +249,7 @@ export default function FlashcardsPage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="subject-card-grid">
               {visibleSubjectCards.map((item) => {
                 const hasDeck = Boolean(item.deck);
                 const due = item.totalCards - item.masteredCards;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { SUBJECT_HEALTH } from './shared';
+import { SUBJECT_HEALTH, scheduleOptions, subjectLabelToId, type SpacedRepItem } from './shared';
 
 export type AddQuestionPayload = {
   questionText: string;
@@ -15,6 +15,12 @@ type Props = {
   open: boolean;
   onClose: () => void;
   defaultSubjectId?: string;
+  /**
+   * When set, the modal edits this item instead of creating a new one. The schedule
+   * field is hidden — reviews are rescheduled from the day buttons on the question row.
+   * Must be a stable reference (component state), not an object built during render.
+   */
+  editItem?: SpacedRepItem | null;
   /** Returns true on success (modal resets + closes), false to keep it open. */
   onSubmit: (payload: AddQuestionPayload) => Promise<boolean>;
 };
@@ -26,35 +32,45 @@ const TYPE_OPTIONS = [
   { id: 'custom', label: '📄 Custom' },
 ];
 
-const REVIEW_OPTIONS = [
-  { days: 1, label: '1 day' },
-  { days: 3, label: '3 days' },
-  { days: 7, label: '7 days' },
-  { days: 15, label: '15 days' },
-];
+// Mirrors the day buttons on each question row so a new item always lands on one of them.
+const REVIEW_OPTIONS = scheduleOptions.map((days) => ({ days, label: `${days} day${days === 1 ? '' : 's'}` }));
+const DEFAULT_REVIEW_DAYS = scheduleOptions[0];
 
-export default function AddQuestionModal({ open, onClose, defaultSubjectId, onSubmit }: Props) {
+export default function AddQuestionModal({ open, onClose, defaultSubjectId, editItem, onSubmit }: Props) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [subjectId, setSubjectId] = useState(defaultSubjectId ?? SUBJECT_HEALTH[0].id);
   const [sourceType, setSourceType] = useState('mcq');
-  const [firstReview, setFirstReview] = useState(3);
+  const [firstReview, setFirstReview] = useState(DEFAULT_REVIEW_DAYS);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isEdit = Boolean(editItem);
+
   useEffect(() => {
-    if (open && defaultSubjectId) setSubjectId(defaultSubjectId);
-  }, [open, defaultSubjectId]);
+    if (!open) return;
+    setError(null);
+    if (editItem) {
+      setQuestion(editItem.questionText);
+      setAnswer(editItem.answer ?? '');
+      setSubjectId(subjectLabelToId(editItem.subject));
+      setSourceType(editItem.sourceType || 'custom');
+      return;
+    }
+    setQuestion('');
+    setAnswer('');
+    setSubjectId(defaultSubjectId ?? SUBJECT_HEALTH[0].id);
+    setSourceType('mcq');
+    setFirstReview(DEFAULT_REVIEW_DAYS);
+  }, [open, editItem, defaultSubjectId]);
 
   if (!open) return null;
 
-  const reset = () => {
-    setQuestion('');
-    setAnswer('');
-    setSourceType('mcq');
-    setFirstReview(3);
-    setError(null);
-  };
+  // An item may sit in a subject the health grid doesn't list (e.g. GS1) — keep it selectable
+  // so editing never silently reassigns it.
+  const subjectChoices = SUBJECT_HEALTH.some((s) => s.id === subjectId)
+    ? SUBJECT_HEALTH
+    : [...SUBJECT_HEALTH, { id: subjectId, label: editItem?.subject ?? subjectId, shortLabel: undefined }];
 
   const handleSubmit = async () => {
     if (!question.trim() || saving) return;
@@ -68,16 +84,17 @@ export default function AddQuestionModal({ open, onClose, defaultSubjectId, onSu
         sourceType,
         firstReviewDays: firstReview,
       });
-      if (ok) {
-        reset();
-        onClose();
-      }
+      if (ok) onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add question. Please try again.');
+      setError(err instanceof Error ? err.message : `Failed to ${isEdit ? 'save' : 'add'} question. Please try again.`);
     } finally {
       setSaving(false);
     }
   };
+
+  const submitLabel = saving
+    ? (isEdit ? 'Saving…' : 'Adding…')
+    : (isEdit ? 'Save Changes' : '+ Add Question');
 
   return (
     <div className="sr-modal-overlay" onClick={onClose}>
@@ -87,7 +104,7 @@ export default function AddQuestionModal({ open, onClose, defaultSubjectId, onSu
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M3 21L3.00012 17.0001L15.5858 4.4144C15.9574 4.04285 16.4612 3.83404 16.9863 3.83404C17.5115 3.83404 18.0153 4.04285 18.3868 4.4144L19.5856 5.6132C19.9571 5.98475 20.1659 6.48856 20.1659 7.0137C20.1659 7.53885 19.9571 8.04265 19.5856 8.4142L7.00012 21L3 21Z" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span>Add Question to Review</span>
+            <span>{isEdit ? 'Edit Question' : 'Add Question to Review'}</span>
           </h3>
           <button className="modal-close-light" onClick={onClose} aria-label="Close">✕</button>
         </div>
@@ -111,7 +128,7 @@ export default function AddQuestionModal({ open, onClose, defaultSubjectId, onSu
           <div className="modal-form-group">
             <label>Subject</label>
             <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
-              {SUBJECT_HEALTH.map((s) => (
+              {subjectChoices.map((s) => (
                 <option key={s.id} value={s.id}>{s.shortLabel ?? s.label}</option>
               ))}
             </select>
@@ -130,23 +147,25 @@ export default function AddQuestionModal({ open, onClose, defaultSubjectId, onSu
               ))}
             </div>
           </div>
-          <div className="modal-form-group">
-            <label>First review in</label>
-            <div className="modal-tags">
-              {REVIEW_OPTIONS.map((r) => (
-                <span
-                  key={r.days}
-                  className={`modal-tag${firstReview === r.days ? ' selected' : ''}`}
-                  onClick={() => setFirstReview(r.days)}
-                >
-                  {r.label}
-                </span>
-              ))}
+          {!isEdit && (
+            <div className="modal-form-group">
+              <label>First review in</label>
+              <div className="modal-tags">
+                {REVIEW_OPTIONS.map((r) => (
+                  <span
+                    key={r.days}
+                    className={`modal-tag${firstReview === r.days ? ' selected' : ''}`}
+                    onClick={() => setFirstReview(r.days)}
+                  >
+                    {r.label}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           {error && <div className="modal-error">{error}</div>}
           <button className="modal-submit primary" onClick={handleSubmit} disabled={saving || !question.trim()}>
-            {saving ? 'Adding…' : '+ Add Question'}
+            {submitLabel}
           </button>
         </div>
       </div>
