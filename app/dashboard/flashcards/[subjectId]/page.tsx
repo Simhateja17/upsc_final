@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import CreateFlashcardModal from '@/components/CreateFlashcardModal';
 import NewTopicModal from '@/components/NewTopicModal';
+import CreateContentUpgradeModal from '@/components/CreateContentUpgradeModal';
 import { flashcardService } from '@/lib/services';
 import { getTopicIcon } from '@/lib/topic-icons';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 type Topic = {
   id: string;
@@ -40,6 +42,9 @@ export default function FlashcardsSubjectPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showNewTopicModal, setShowNewTopicModal] = useState(false);
+  const [upgradeModal, setUpgradeModal] = useState<null | 'flashcard' | 'topic'>(null);
+  const entitlements = useEntitlements();
+  const hasFullAccess = entitlements.canAccess('flashcards', ['full']);
   const [arrowImgFailed, setArrowImgFailed] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; cards: number } | null>(null);
   const [deletingTopicId, setDeletingTopicId] = useState<string | null>(null);
@@ -114,51 +119,51 @@ export default function FlashcardsSubjectPage() {
 
           {/* Subject summary card */}
           {loading ? (
-            <div className="w-full rounded-[12px] h-[88px] animate-pulse mb-6" style={{ background: '#F0F2F5', border: '0.8px solid #E5E7EB' }} />
+            <div className="w-full rounded-[12px] h-[120px] animate-pulse mb-6" style={{ background: '#F0F2F5', border: '0.8px solid #E5E7EB' }} />
           ) : meta && (
             <div
-              className="w-full rounded-[12px] px-6 py-4 flex items-center gap-5 mb-6"
+              className="w-full rounded-[12px] px-6 py-4 mb-6"
               style={{ border: '0.8px solid #E2E5ED', background: '#FFFFFF', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}
             >
-              <span
-                className="flex items-center justify-center flex-shrink-0"
-                aria-hidden
-                style={{ width: 56, height: 56, borderRadius: 16, background: '#EFF6FF', fontSize: 30, lineHeight: 1 }}
-              >
-                {meta.icon}
-              </span>
-              <div className="flex-1 min-w-0">
-                <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828' }}>
-                  {displaySubjectName(meta.subject)}
-                </h1>
-                <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, color: '#6A7282', marginTop: 2 }}>
-                  {totalCards} cards · {topics.length} topics
-                </p>
-              </div>
-              {/* Stats */}
-              <div className="hidden sm:flex items-center gap-6 flex-shrink-0">
-                <div className="text-center">
-                  <div style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 20, color: '#16A34A' }}>{totalMastered}</div>
-                  <div style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: 2 }}>Mastered</div>
+              <div className="flex items-center gap-5">
+                <span
+                  className="flex items-center justify-center flex-shrink-0"
+                  aria-hidden
+                  style={{ width: 56, height: 56, borderRadius: 16, background: '#EFF6FF', fontSize: 30, lineHeight: 1 }}
+                >
+                  {meta.icon}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828' }}>
+                    {displaySubjectName(meta.subject)}
+                  </h1>
+                  <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, color: '#6A7282', marginTop: 2 }}>
+                    {totalCards} cards · {topics.length} topics
+                  </p>
                 </div>
-                <div className="text-center">
-                  <div style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 20, color: '#2563EB' }}>{coverage}%</div>
-                  <div style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: 2 }}>Coverage</div>
+                {/* Stats */}
+                <div className="hidden sm:flex items-center gap-6 flex-shrink-0">
+                  <div className="text-center">
+                    <div style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 20, color: '#16A34A' }}>{totalMastered}</div>
+                    <div style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: 2 }}>Mastered</div>
+                  </div>
+                  <div className="text-center">
+                    <div style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 20, color: '#2563EB' }}>{coverage}%</div>
+                    <div style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: 2 }}>Coverage</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Completion progress bar (mirrors the reference) */}
-          {!loading && meta && (
-            <div className="mb-6">
-              <div style={{ height: 8, borderRadius: 999, background: '#ECEEF2', overflow: 'hidden' }}>
-                <div style={{ width: `${coverage}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, #F0B429, #E8B84B)', transition: 'width .6s ease' }} />
-              </div>
-              <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
-                <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF' }}>0%</span>
-                <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, color: '#CA8A04' }}>{coverage}% complete</span>
-                <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF' }}>100%</span>
+              {/* Completion progress bar — inside the card */}
+              <div style={{ marginTop: 16 }}>
+                <div style={{ height: 8, borderRadius: 999, background: '#ECEEF2', overflow: 'hidden' }}>
+                  <div style={{ width: `${coverage}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, #F0B429, #E8B84B)', transition: 'width .6s ease' }} />
+                </div>
+                <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF' }}>0%</span>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, color: '#CA8A04' }}>{coverage}% complete</span>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF' }}>100%</span>
+                </div>
               </div>
             </div>
           )}
@@ -167,32 +172,32 @@ export default function FlashcardsSubjectPage() {
           <div className="flex items-center justify-between gap-3 mb-5">
             <div className="flex items-center gap-3">
               <div
-                className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: '#101828', fontFamily: 'Inter', fontWeight: 700, fontSize: 13, color: '#FFFFFF' }}
+                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: '#101828', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}
               >
                 2
               </div>
-              <h2 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828' }}>
-                Choose a <span style={{ fontStyle: 'italic', color: '#E89A2B' }}>Topic</span>
+              <h2 style={{ fontFamily: 'Georgia', fontWeight: 700, fontSize: 36, lineHeight: '40px', color: '#101828' }}>
+                Choose a <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Topic</span>
               </h2>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 type="button"
-                onClick={() => setShowAddModal(true)}
+                onClick={() => hasFullAccess ? setShowAddModal(true) : setUpgradeModal('flashcard')}
                 className="flex items-center gap-1.5 rounded-[8px] px-4 py-2"
                 style={{
-                  background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
+                  background: 'linear-gradient(180deg, #ffd24a, #f5b400)',
                   border: 'none',
-                  boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
-                  fontFamily: 'Inter', fontWeight: 700, fontSize: 13, lineHeight: '20px', letterSpacing: 0, color: '#17223E',
+                  boxShadow: '0 4px 16px rgba(245,180,0,.35)',
+                  fontFamily: 'Inter', fontWeight: 700, fontSize: 13, lineHeight: '20px', letterSpacing: 0, color: '#1a1407',
                 }}
               >
                 + Add Card
               </button>
               <button
                 type="button"
-                onClick={() => setShowNewTopicModal(true)}
+                onClick={() => hasFullAccess ? setShowNewTopicModal(true) : setUpgradeModal('topic')}
                 className="flex items-center gap-1.5 rounded-[8px] px-4 py-2"
                 style={{
                   background: '#FFFFFF',
@@ -229,8 +234,8 @@ export default function FlashcardsSubjectPage() {
                     onClick={() => router.push(`/dashboard/flashcards/${subjectId}/${topic.id}`)}
                     onMouseEnter={() => setHoveredCard(topic.id)}
                     onMouseLeave={() => { setHoveredCard(null); setHoveredBin(null); }}
-                    className="flex items-center rounded-[8px] overflow-hidden transition-all hover:shadow-md hover:-translate-y-px cursor-pointer"
-                    style={{ border: '0.8px solid #E2E5ED', background: '#FFFFFF', minHeight: 68 }}
+                    className="flex items-center rounded-[8px] overflow-hidden border border-gray-200 transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:border-indigo-200 hover:bg-indigo-50/30"
+                    style={{ background: '#FFFFFF', minHeight: 68 }}
                   >
                     {/* Icon */}
                     <div className="flex-shrink-0 flex items-center justify-center mx-4" style={{ width: 40, height: 40, borderRadius: 12, background: '#EFF6FF', fontSize: 20 }}>
@@ -281,7 +286,7 @@ export default function FlashcardsSubjectPage() {
 
           {/* Add Custom Flashcard */}
           <div
-            onClick={() => setShowAddModal(true)}
+            onClick={() => hasFullAccess ? setShowAddModal(true) : setUpgradeModal('flashcard')}
             className="group rounded-xl border-2 border-dashed border-[#f5b400]/40 bg-gradient-to-br from-[#fffdf5] to-[#fff9e6] p-[clamp(0.75rem,1vw,1.25rem)] flex items-center justify-between cursor-pointer transition-all duration-200 ease-out hover:border-[#f5b400]/70 hover:shadow-md hover:-translate-y-0.5"
           >
             <div className="flex items-center gap-3">
@@ -301,7 +306,7 @@ export default function FlashcardsSubjectPage() {
             </div>
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); setShowAddModal(true); }}
+              onClick={(e) => { e.stopPropagation(); hasFullAccess ? setShowAddModal(true) : setUpgradeModal('flashcard'); }}
               className="px-[clamp(1rem,1.25vw,1.5rem)] py-[clamp(0.4rem,0.52vw,0.6rem)] bg-gradient-to-b from-[#ffd24a] to-[#f5b400] text-[#1a1407] rounded-[0.7rem] font-inter font-bold text-[clamp(12px,0.68vw,13px)] group-hover:shadow-lg transition-shadow flex items-center gap-1.5 flex-shrink-0"
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
@@ -325,6 +330,31 @@ export default function FlashcardsSubjectPage() {
         subjectName={meta ? displaySubjectName(meta.subject) : 'this subject'}
         onClose={() => setShowNewTopicModal(false)}
         onCreate={handleCreateTopic}
+      />
+
+      <CreateContentUpgradeModal
+        open={upgradeModal !== null}
+        onClose={() => setUpgradeModal(null)}
+        icon={upgradeModal === 'topic' ? (
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#F5C542" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="18" x2="12" y2="12" />
+            <line x1="9" y1="15" x2="15" y2="15" />
+          </svg>
+        ) : (
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#F5C542" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M7 9h10" opacity="0.5" />
+            <path d="M7 13h7" opacity="0.5" />
+            <path d="M7 17h4" opacity="0.5" />
+          </svg>
+        )}
+        title={upgradeModal === 'topic' ? 'Create Custom Topics' : 'Create Personalized Flashcards'}
+        subtitle={upgradeModal === 'topic'
+          ? 'Organize your flashcards into structured topics for efficient revision.'
+          : 'Build your own flashcards and revise smarter with active recall.'}
+        requiredTier="rise"
       />
 
       {deleteTarget && (

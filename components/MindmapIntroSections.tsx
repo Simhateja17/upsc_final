@@ -541,14 +541,14 @@ export default function MindmapIntroSections() {
             <p className="cta-body">Unlock unlimited mindmap creation, smart auto-layouts, and beautifully structured visual learning. Transform complex topics into clear, memorable maps that stick.</p>
             <div className="cta-action-row">
               <button className="cta-btn"><span>⭐</span> Unlock Mindmaps Pro</button>
-              <div className="cta-social" aria-label="18,000 plus aspirants learning smarter">
+              <div className="cta-social" aria-label="15,000 plus aspirants learning smarter">
                 <div className="avatar-stack">
                   <div className="badge" style={{ background: '#f59e0b' }}>UP</div>
                   <div className="badge" style={{ background: '#ef4444' }}>CS</div>
                   <div className="badge" style={{ background: '#14b8a6' }}>NE</div>
                   <div className="badge" style={{ background: '#3b82f6' }}>AG</div>
                 </div>
-                <span>18,000+ aspirants learning smarter</span>
+                <span>15,000+ aspirants learning smarter</span>
               </div>
             </div>
           </div>

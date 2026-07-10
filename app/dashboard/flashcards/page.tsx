@@ -4,10 +4,10 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import CreateFlashcardModal from '@/components/CreateFlashcardModal';
 import AddSubjectModal, { NewSubject } from '@/components/AddSubjectModal';
+import CreateContentUpgradeModal from '@/components/CreateContentUpgradeModal';
 import { flashcardService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import FlashcardScienceSections from '@/components/FlashcardScienceSections';
-import { UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
 import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
@@ -42,6 +42,10 @@ const SUBJECT_CATALOG: SubjectCatalogItem[] = [
   { id: 'current-affairs', subject: 'Current Affairs', icon: '📰', viewsLabel: '2.6L views', card: { bg: 'linear-gradient(139deg, #FFF1E8 0%, #FFE6D5 100%)', border: '#FFD1AA', bar: '#F39A3C' } },
 ];
 
+// Subjects fully available on Free / Aspire plans. Everything else is shown
+// blurred + locked for those tiers (Rise / Ascent get everything unlocked).
+const FREE_SUBJECT_IDS = new Set(['polity', 'economy']);
+
 function displaySubjectName(subject: string) {
   if (subject === 'Modern History') return 'History';
   return subject;
@@ -51,6 +55,7 @@ export default function FlashcardsPage() {
   const entitlements = useEntitlements();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
+  const [upgradeModal, setUpgradeModal] = useState<null | 'subject' | 'flashcard' | 'locked'>(null);
   const [customSubjects, setCustomSubjects] = useState<SubjectCatalogItem[]>([]);
   const [prefillSubject, setPrefillSubject] = useState('');
   const [decks, setDecks] = useState<Deck[]>([]);
@@ -115,10 +120,11 @@ export default function FlashcardsPage() {
   const customSubjectCards = Array.from(customCatalogItems.values()).map(withDeck);
 
   const hasFullAccess = entitlements.canAccess('flashcards', ['full']);
-  const previewCount = entitlements.preview.flashcard_subjects ?? subjectCards.length;
+  // Free/Aspire users see ALL subjects; the ones that aren't in FREE_SUBJECT_IDS
+  // are shown blurred + locked (clicking opens the upgrade popup) instead of hidden.
   const visibleSubjectCards = hasFullAccess
     ? [...subjectCards, ...customSubjectCards]
-    : subjectCards.slice(0, previewCount || 0);
+    : subjectCards;
 
   function slugifySubject(name: string) {
     return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -160,17 +166,6 @@ export default function FlashcardsPage() {
         />
 
         <div className="w-full max-w-[1120px] mx-auto px-4 py-6 sm:px-8 sm:py-8">
-          {!hasFullAccess && (
-            <div className="mb-6">
-              <UpgradePrompt
-                title="Flashcards preview"
-                currentTier={entitlements.tier}
-                requiredTier="rise"
-                message={`Your plan includes ${previewCount || 0} preview subjects. Upgrade to Rise to create flashcards and unlock the full subject vault.`}
-              />
-            </div>
-          )}
-
           <SubjectChoiceCardStyles />
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3">
@@ -193,14 +188,13 @@ export default function FlashcardsPage() {
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
-                onClick={() => hasFullAccess ? setShowAddModal(true) : undefined}
-                disabled={!hasFullAccess}
+                onClick={() => hasFullAccess ? setShowAddModal(true) : setUpgradeModal('flashcard')}
                 className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
                 style={{
                   background: '#FFFFFF',
                   border: '1px solid #E5E7EB',
                   boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
-                  opacity: hasFullAccess ? 1 : 0.55,
+                  opacity: 1,
                   fontFamily: 'Inter',
                   fontWeight: 600,
                   fontSize: 14,
@@ -214,20 +208,19 @@ export default function FlashcardsPage() {
 
               <button
                 type="button"
-                onClick={() => hasFullAccess ? setShowAddSubjectModal(true) : undefined}
-                disabled={!hasFullAccess}
+                onClick={() => hasFullAccess ? setShowAddSubjectModal(true) : setUpgradeModal('subject')}
                 className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
                 style={{
-                  background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
+                  background: 'linear-gradient(180deg, #ffd24a, #f5b400)',
                   border: 'none',
-                  boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
-                  opacity: hasFullAccess ? 1 : 0.55,
+                  boxShadow: '0 4px 16px rgba(245,180,0,.35)',
+                  opacity: 1,
                   fontFamily: 'Inter',
                   fontWeight: 700,
                   fontSize: 14,
                   lineHeight: '20px',
                   letterSpacing: 0,
-                  color: '#17223E',
+                  color: '#1a1407',
                 }}
               >
                 <span className="text-lg leading-none">+</span> Add Subject
@@ -248,6 +241,7 @@ export default function FlashcardsPage() {
           ) : (
             <div className="subject-card-grid">
               {visibleSubjectCards.map((item) => {
+                const isLocked = !hasFullAccess && !FREE_SUBJECT_IDS.has(item.id);
                 const hasDeck = Boolean(item.deck);
                 const due = item.totalCards - item.masteredCards;
                 const progressWidth = hasDeck ? Math.max(item.mastery, 10) : 0;
@@ -302,12 +296,14 @@ export default function FlashcardsPage() {
                 return (
                   <SubjectChoiceCard
                     key={item.id}
-                    href={hasDeck ? `/dashboard/flashcards/${item.id}` : undefined}
-                    onClick={hasDeck ? undefined : () => {
+                    locked={isLocked}
+                    lockLabel="Premium"
+                    href={isLocked ? undefined : (hasDeck ? `/dashboard/flashcards/${item.id}` : undefined)}
+                    onClick={isLocked ? () => setUpgradeModal('locked') : (hasDeck ? undefined : () => {
                       if (!hasFullAccess) return;
                       setPrefillSubject(item.subject);
                       setShowAddModal(true);
-                    }}
+                    })}
                     icon={paletteMeta.icon}
                     iconBg={paletteMeta.bg}
                     accentColor={paletteCard.bar}
@@ -367,6 +363,32 @@ export default function FlashcardsPage() {
         }}
         initialSubject={prefillSubject}
         initialDeck={prefillSubject}
+      />
+
+      <CreateContentUpgradeModal
+        open={upgradeModal !== null}
+        onClose={() => setUpgradeModal(null)}
+        icon={upgradeModal === 'flashcard' ? (
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#F5C542" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M7 9h10" opacity="0.5" />
+            <path d="M7 13h7" opacity="0.5" />
+            <path d="M7 17h4" opacity="0.5" />
+          </svg>
+        ) : undefined}
+        title={
+          upgradeModal === 'flashcard' ? 'Create Personalized Flashcards'
+            : upgradeModal === 'locked' ? 'Unlock Premium Subjects'
+            : 'Create Your Own Subjects'
+        }
+        subtitle={
+          upgradeModal === 'flashcard'
+            ? 'Build your own flashcards and revise smarter with active recall.'
+            : upgradeModal === 'locked'
+            ? 'Get full access to every subject deck curated by toppers and revise the entire vault.'
+            : 'Organize your preparation by creating custom subjects for your personal revision.'
+        }
+        requiredTier="rise"
       />
 
       {deleteTarget && (
