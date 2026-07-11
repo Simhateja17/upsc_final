@@ -27,7 +27,7 @@ const SUBJECT_META_STYLES: Array<{
   { label: 'Environment', icon: '🌿', bg: '#E1F5E1', accent: '#529B59', aliases: ['environment', 'environment & ecology', 'environment ecology', 'ecology'] },
   { label: 'Disaster Management', icon: '🚨', bg: '#FAD2A7', accent: '#BC7224', aliases: ['disaster management', 'disaster mgmt'] },
   { label: 'Internal Security', icon: '🛡️', bg: '#EFEFE1', accent: '#7F806B', aliases: ['internal security', 'security'] },
-  { label: 'Ethics', icon: '🧭', bg: '#E1D5F5', accent: '#7760B4', aliases: ['ethics', 'ethics integrity aptitude', 'ethics gs4', 'gs-iv ethics'] },
+  { label: 'Ethics', icon: '🧭', bg: '#F5E8EC', accent: '#B3708A', aliases: ['ethics', 'ethics integrity aptitude', 'ethics gs4', 'gs-iv ethics'] },
   { label: 'Current Affairs', icon: '📰', bg: '#E3F0F7', accent: '#4E6A8F', aliases: ['current affairs', 'current-affairs'] },
   { label: 'Agriculture', icon: '🌾', bg: '#E8F5D8', accent: '#6E9C3F', aliases: ['agriculture', 'agri'] },
   { label: 'Essay', icon: '✍️', bg: '#F9F3D9', accent: '#B89516', aliases: ['essay', 'essay writing'] },
@@ -143,8 +143,8 @@ export function getSubjectMetaStyle(subjectName: string): SubjectMetaStyle {
     return {
       bg: '#EFF6FF',
       color: DARK_TEXT,
-      border: '#D8E2F3',
-      accent: '#4D6FA9',
+      border: withAlpha('#5A6B8C', '55'),
+      accent: '#5A6B8C',
       icon: '📚',
       label: subjectName || 'Subject',
     };

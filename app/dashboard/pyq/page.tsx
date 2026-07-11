@@ -7,6 +7,7 @@ import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import CuratedModelAnswer from '@/components/mains-results/CuratedModelAnswer';
 import { bookmarkService, flashcardService, pyqService, spacedRepService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
 import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
@@ -2320,10 +2321,8 @@ export default function PyqPage() {
                           <span>Model Answer</span>
                         </div>
 
-                        <EssayModelAnswerRenderer
-                          question={q}
-                          essayPartOrder={essayPartOrder}
-                          onToggleOrder={() => setEssayPartOrder((current) => current === 'decode-first' ? 'essay-first' : 'decode-first')}
+                        <CuratedModelAnswer
+                          markdown={q.modelAnswer || q.answer || q.explanation || 'Model answer is being prepared for this question.'}
                         />
 
                         <div className="flex flex-wrap items-center gap-3 pt-4 mt-2" style={{ borderTop: '1px solid rgba(212,175,55,0.15)' }}>
