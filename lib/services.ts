@@ -719,8 +719,8 @@ export const syllabusService = {
 // ==================== Leaderboard ====================
 
 export const leaderboardService = {
-  getLeaderboard: (tab: string = 'overall', range: string = 'all') =>
-    api.get<any>(`/leaderboard?tab=${encodeURIComponent(tab)}&range=${encodeURIComponent(range)}`, authConfig()),
+  getLeaderboard: (tab: string = 'overall', range: string = 'all', realOnly = false) =>
+    api.get<any>(`/leaderboard?tab=${encodeURIComponent(tab)}&range=${encodeURIComponent(range)}${realOnly ? '&realOnly=true' : ''}`, authConfig()),
   getMyRank: (range: string = 'all') =>
     api.get<any>(`/leaderboard/me?range=${encodeURIComponent(range)}`, authConfig()),
 };

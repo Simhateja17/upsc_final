@@ -313,11 +313,12 @@ export default function DailyEditorialPage() {
             { icon: '/dark.png', label: 'Editorials read', value: `${d.totalRead || 0}`, color: '#047857' },
             { icon: '/tatal.png', label: 'Total saved', value: `${d.totalSaved || 0}`, color: '#1D4ED8' },
           ]);
-          // Derive 7-day checklist: fill from the left for each day read in current streak
-          const streakLen = d.streak || 0;
-          const weekChecks = Array.from({ length: 7 }, (_, i) => i < streakLen);
+          // Real per-day activity for the current week, supplied by the backend.
+          const weekChecks = Array.isArray(d.weekChecks) && d.weekChecks.length === 7
+            ? d.weekChecks.map(Boolean)
+            : [false, false, false, false, false, false, false];
           setStreakData({
-            streak: streakLen,
+            streak: d.streak || 0,
             weekChecks,
             readToday: d.readToday || 0,
             targetToday: d.dailyTarget || 7,

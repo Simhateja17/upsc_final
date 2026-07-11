@@ -139,6 +139,7 @@ export default function PerformancePage() {
   const [badgesData, setBadgesData] = useState<any>(null);
   const [streakCalendar, setStreakCalendar] = useState<any>(null);
   const [weeklyLeaderboard, setWeeklyLeaderboard] = useState<any[] | null>(null);
+  const [failedSections, setFailedSections] = useState<string[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -152,10 +153,14 @@ export default function PerformancePage() {
       dashboardService.getTestAnalytics(),
       dashboardService.getBadges(),
       dashboardService.getStreakCalendar(),
-      leaderboardService.getLeaderboard('overall', 'week'),
+      leaderboardService.getLeaderboard('overall', 'week', true),
     ])
       .then(([performanceResult, analyticsResult, badgesResult, streakCalendarResult, leaderboardResult]) => {
         if (!mounted) return;
+
+        const results = [performanceResult, analyticsResult, badgesResult, streakCalendarResult, leaderboardResult];
+        const sectionNames = ['summary', 'analytics', 'badges', 'streak calendar', 'leaderboard'];
+        setFailedSections(sectionNames.filter((_, index) => results[index].status === 'rejected'));
 
         if (performanceResult.status === 'fulfilled') {
           setData(performanceResult.value.data);
@@ -174,7 +179,13 @@ export default function PerformancePage() {
         }
 
         if (leaderboardResult.status === 'fulfilled') {
-          setWeeklyLeaderboard(leaderboardResult.value.data);
+          // The community leaderboard may contain cultivated profiles to keep
+          // its public ranking populated. Performance analytics must only show
+          // actual aspirants, including while an older API deployment ignores
+          // the `realOnly` request parameter.
+          setWeeklyLeaderboard(
+            (leaderboardResult.value.data ?? []).filter((entry: any) => entry.isSynthetic !== true),
+          );
         }
       })
       .finally(() => {
@@ -188,21 +199,17 @@ export default function PerformancePage() {
 
   const mcq = data?.mcq ?? {};
   const mockTests = data?.mockTests ?? {};
-  const mains = data?.mains ?? {};
   const streak = data?.streak ?? {};
   const dailyActivity = analyticsData?.dailyActivity ?? [];
 
   const totalMcqCorrect = mcq.totalCorrect ?? analyticsData?.summary?.mcqCorrect ?? 0;
   const totalMcqWrong = mcq.totalWrong ?? analyticsData?.summary?.mcqWrong ?? 0;
   const totalMcqSkipped = mcq.totalSkipped ?? analyticsData?.summary?.mcqSkipped ?? 0;
-  const totalMcqAnswered = totalMcqCorrect + totalMcqWrong;
   const totalQuestions =
     analyticsData?.summary?.totalQuestions ??
     data?.questionsAttempted ??
     (totalMcqCorrect + totalMcqWrong + totalMcqSkipped);
-  const overallAccuracy = totalMcqAnswered > 0
-    ? Math.round(((totalMcqCorrect - totalMcqWrong * 0.33) / totalMcqAnswered) * 100)
-    : Math.round(analyticsData?.summary?.avgAccuracy ?? mcq.avgAccuracy ?? 0);
+  const overallAccuracy = clamp(Math.round(analyticsData?.summary?.avgAccuracy ?? mcq.avgAccuracy ?? 0));
   const currentStreak = streak.currentStreak ?? analyticsData?.summary?.currentStreak ?? 0;
 
   const activityMap = new Map<string, DayActivity>(
@@ -248,18 +255,17 @@ export default function PerformancePage() {
     color: ['#E02424', '#F2742F', '#111827', '#E8B84B'][index % 4],
   }));
 
-  const strongAreas: SubjectRow[] = apiStrongTopics.length > 0
-    ? apiStrongTopics
-    : subjectAccuracy.slice(0, 5).map((subject: any, index: number) => ({
+  const strongAreas: SubjectRow[] = subjectAccuracy.length > 0
+    ? subjectAccuracy.slice(0, 5).map((subject: any, index: number) => ({
       name: subject.subject,
       accuracy: Number(subject.accuracy ?? 0),
       questions: Number((subject.correct ?? 0) + (subject.wrong ?? 0)),
       color: subjectColors[index % subjectColors.length],
-    }));
+    }))
+    : apiStrongTopics;
 
-  const weakAreas: SubjectRow[] = apiWeakTopics.length > 0
-    ? apiWeakTopics
-    : [...subjectAccuracy]
+  const weakAreas: SubjectRow[] = subjectAccuracy.length > 0
+    ? [...subjectAccuracy]
       .sort((a: any, b: any) => Number(a.accuracy ?? 0) - Number(b.accuracy ?? 0))
       .slice(0, 4)
       .map((subject: any, index: number) => ({
@@ -268,7 +274,8 @@ export default function PerformancePage() {
         questions: Number((subject.correct ?? 0) + (subject.wrong ?? 0)),
         tag: index === 0 ? 'Needs Revision' : undefined,
         color: ['#E02424', '#F2742F', '#111827', '#E8B84B'][index % 4],
-      }));
+      }))
+    : apiWeakTopics;
 
   const distribution: DistributionItem[] = (analyticsData?.studyTypeDistribution?.length
     ? analyticsData.studyTypeDistribution
@@ -370,6 +377,16 @@ export default function PerformancePage() {
           stats={summaryCards.slice(0, 4).map(c => ({ value: c.value, label: c.title.toUpperCase(), color: c.valueColor }))}
         />
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+          {loading && (
+            <div className="mb-6 rounded-[10px] border border-[#DDE8FF] bg-[#F7F9FF] px-4 py-3 text-[13px] text-[#245CEB]">
+              Loading your latest performance data…
+            </div>
+          )}
+          {!loading && failedSections.length > 0 && (
+            <div role="alert" className="mb-6 rounded-[10px] border border-[#F5C2C0] bg-[#FFF5F5] px-4 py-3 text-[13px] text-[#B42318]">
+              Some live data could not be loaded: {failedSections.join(', ')}. Refresh the page to try again.
+            </div>
+          )}
           {entitlements.isLimited('analytics') && (
             <div className="mb-6">
               <UpgradePrompt
@@ -615,13 +632,14 @@ export default function PerformancePage() {
               </h2>
 
               {[
-                { icon: '📚', title: 'Daily MCQ Challenge', subtitle: 'Polity, Economy, Geography', value: Math.min(activeStudyDays, 7), color: '#58BE87' },
-                { icon: '✍️', title: 'Daily Mains Challenge', subtitle: 'Answer Writing, AI Evaluated', value: Math.min(mains.totalAttempts ?? 0, 7), color: '#0E1830' },
-                { icon: '📰', title: 'Daily News Analysis', subtitle: 'The Hindu, Indian Express', value: Math.min(analyticsData?.editorialDaysThisWeek ?? 0, 7), color: '#E8B84B' },
+                { icon: '📚', title: 'Daily MCQ Challenge', subtitle: 'Polity, Economy, Geography', value: Math.min(analyticsData?.dailyTrio?.mcqDays ?? 0, 7), color: '#58BE87', href: '/dashboard/daily-mcq' },
+                { icon: '✍️', title: 'Daily Mains Challenge', subtitle: 'Answer Writing, AI Evaluated', value: Math.min(analyticsData?.dailyTrio?.mainsDays ?? 0, 7), color: '#0E1830', href: '/dashboard/daily-answer' },
+                { icon: '📰', title: 'Daily News Analysis', subtitle: 'The Hindu, Indian Express', value: Math.min(analyticsData?.dailyTrio?.editorialDays ?? 0, 7), color: '#E8B84B', href: '/dashboard/daily-editorial' },
               ].map((item) => (
-                <div
+                <Link
                   key={item.title}
-                  className="mb-8 rounded-[10px] border border-[#E5E7EB] bg-white px-5 py-4 shadow-sm last:mb-0"
+                  href={item.href}
+                  className="mb-8 block rounded-[10px] border border-[#E5E7EB] bg-white px-5 py-4 shadow-sm transition-colors hover:border-[#CBD5E1] last:mb-0"
                   style={{ boxShadow: '0px 2px 4px rgba(0,0,0,0.12)' }}
                 >
                   <div className="mb-4 flex items-center justify-between gap-4">
@@ -632,13 +650,13 @@ export default function PerformancePage() {
                         <div className="mt-1 text-[12px] text-[#6A7282]">{item.subtitle}</div>
                       </div>
                     </div>
-                    <span className="text-[18px] text-[#99A1AF]">→</span>
+                    <span className="text-[18px] text-[#99A1AF]" aria-hidden>→</span>
                   </div>
                   <div className="grid grid-cols-[1fr_auto] items-center gap-6">
                     <ProgressBar value={(item.value / 7) * 100} color={item.color} />
                     <span className="text-[14px] font-bold text-[#101828]">{item.value}/7 days</span>
                   </div>
-                </div>
+                </Link>
               ))}
             </AnalyticsCard>
           </div>
