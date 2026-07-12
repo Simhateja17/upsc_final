@@ -638,17 +638,22 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
     badge: 'Aspire Plan',
     description: 'Daily structured prep with AI evaluation and core tools.',
     features: [
-      '5 Mains Answer Evaluation / day',
-      'Daily MCQ & Mains Challenge',
+      'Daily MCQ Challenge',
+      'Daily Answer Writing Challenge',
       'Daily News Analysis – The Hindu & IE',
       '10,000+ Previous Year Questions',
+      '5 Mains Answer Evaluation / day',
       'Simplified Video Lectures',
-      'Jeet AI Mentor – 5 Messages / day',
+      'Jeet AI Mentor – 10 Queries / day',
       'Study Planner & Time Tracker',
+      'Smart Syllabus Tracker',
       'Daily Leaderboard',
-      'Discussion Forum – Limited access',
+      'Live Study Room',
+      'Discussion Forum',
+      'Mental Health Buddy',
       'Mock Tests – Limited access',
       'Revision Suite – Limited access',
+      'Test Analytics – Limited view',
       'Performance Analytics – Limited view',
     ],
     cycles: {
@@ -664,12 +669,13 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
     features: [
       '25 Mains Answer Evaluation / day',
       '50 Prelims Mock Test attempts / day',
-      'Jeet AI Mentor – 100 Messages / day',
+      'Jeet AI Mentor – 100 Queries / day',
       'Full Performance Analytics Dashboard',
       'Comprehensive Test Analytics',
-      'Full Revision Suite – Flashcards, Mindmaps, Spaced Repetition, Smart Notes',
-      'Smart Syllabus Tracker',
-      'Live Study Room 24×7',
+      'Flashcards',
+      'Mindmaps',
+      'Spaced Repetition',
+      'Smart Notes',
     ],
     cycles: {
       monthly:   { label: 'Monthly',   total: '499.00',  perMonth: '499', save: '',         duration: '1 month',   gstStrike: '89.82'  },
@@ -684,7 +690,7 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
     features: [
       'Unlimited Mains Answer Evaluations',
       'Unlimited Prelims Mock Test practice',
-      'Jeet AI Mentor – Unlimited messages',
+      'Jeet AI – Unlimited Queries',
       'Bi-Weekly 1-on-1 Mentorship Sessions',
       'Interview (Personality Test) prep module',
       'Personalised Study Roadmap',
@@ -1382,7 +1388,7 @@ export default function ExplorePlansPage() {
                 Daily structured prep with AI evaluation &amp; core tools.
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹299' : cycle === 'quarterly' ? '₹249/month' : '₹299/month'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '50%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
+                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹299' : cycle === 'quarterly' ? '₹249' : '₹299'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '58%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
                   <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>₹{cycle === 'monthly' ? '199' : cycle === 'quarterly' ? '159' : '119'}</span>
                   <span style={{ fontSize: 13, color: '#9AA3B8', fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
@@ -1393,17 +1399,21 @@ export default function ExplorePlansPage() {
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {[
                   { text: 'Daily MCQ Challenge', limited: false },
-                  { text: 'Daily Mains Challenge', limited: false },
+                  { text: 'Daily Answer Writing Challenge', limited: false },
                   { text: 'Daily News Analysis – The Hindu & IE', limited: false },
                   { text: '10,000+ Previous Year Questions', limited: false },
                   { text: '5 Mains Answer Evaluation / day', limited: false },
                   { text: 'Simplified Video Lectures', limited: false },
-                  { text: 'Jeet AI Mentor Mentor – 5 Messages / day', limited: false },
+                  { text: 'Jeet AI Mentor – 10 Queries / day', limited: false },
                   { text: 'Study Planner & Time Tracker', limited: false },
+                  { text: 'Smart Syllabus Tracker', limited: false },
                   { text: 'Daily Leaderboard', limited: false },
-                  { text: 'Discussion Forum – Limited access', limited: false },
+                  { text: 'Live Study Room', limited: false },
+                  { text: 'Discussion Forum', limited: false },
+                  { text: 'Mental Health Buddy', limited: false },
                   { text: 'Mock Tests – Limited access', limited: false },
                   { text: 'Revision Suite – Limited access', limited: false },
+                  { text: 'Test Analytics – Limited view', limited: false },
                   { text: 'Performance Analytics – Limited view', limited: false },
                 ].map((item) => (
                   <li key={item.text} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#374151', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -1433,7 +1443,7 @@ export default function ExplorePlansPage() {
                 Everything in Aspire, plus:
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: 'rgba(255,255,255,0.4)' }}>{cycle === 'monthly' ? '₹699' : cycle === 'quarterly' ? '₹599/month' : '₹699/month'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '50%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
+                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: 'rgba(255,255,255,0.4)' }}>{cycle === 'monthly' ? '₹699' : cycle === 'quarterly' ? '₹599' : '₹699'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '58%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
                   <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>
                     ₹{cycle === 'monthly' ? '499' : cycle === 'quarterly' ? '399' : '299'}
@@ -1450,9 +1460,9 @@ export default function ExplorePlansPage() {
                 <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>Everything in Aspire, plus:</span>
               </div>
               {[
-                { title: 'EVALUATION', items: ['25 Mains Answer Evaluation / day', '50 Prelims Mock Tests attempts / day', 'Jeet AI Mentor Mentor – 100 Messages / day'] },
+                { title: 'EVALUATION', items: ['25 Mains Answer Evaluation / day', '50 Prelims Mock Tests attempts / day', 'Jeet AI Mentor – 100 Queries / day'] },
                 { title: 'ANALYTICS', items: ['Full Performance Analytics Dashboard', 'Comprehensive Test Analytics'] },
-                { title: 'REVISION & AI TOOLS', items: ['Full Revision Suite – Flashcards, Mindmaps, Spaced Repetition, Smart Notes', 'Smart Syllabus Tracker', 'Live Study Room'] },
+                { title: 'REVISION & AI TOOLS', items: ['Flashcards', 'Mindmaps', 'Spaced Repetition', 'Smart Notes'] },
               ].map((section) => (
                 <div key={section.title} style={{ marginBottom: 12 }}>
                   <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 800, letterSpacing: '1.6px', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>{section.title}</p>
@@ -1486,7 +1496,7 @@ export default function ExplorePlansPage() {
                 Everything in Rise, plus:
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹2,499' : cycle === 'quarterly' ? '₹2,249/month' : '₹2,499/month'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '50%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
+                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹2,499' : cycle === 'quarterly' ? '₹2,249' : '₹2,499'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '58%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
                   <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>
                     ₹{cycle === 'monthly' ? '1,999' : cycle === 'quarterly' ? '1,599' : '1,199'}
@@ -1503,7 +1513,7 @@ export default function ExplorePlansPage() {
                 <span style={{ fontSize: 13, color: '#0C1424', fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>Everything in Rise, plus:</span>
               </div>
               {[
-                { title: 'EVALUATION', items: ['Unlimited Mains Answer Evaluations', 'Unlimited Prelims Mock Test practice', 'Jeet AI Mentor – Unlimited messages'] },
+                { title: 'EVALUATION', items: ['Unlimited Mains Answer Evaluations', 'Unlimited Prelims Mock Test practice', 'Jeet AI – Unlimited Queries'] },
                 { title: 'MENTOR-LED GROWTH', items: ['Bi-Weekly 1-on-1 mentorship sessions', 'Interview (Personality Test) prep module', 'Personalised Study Roadmap', 'Dedicated Support with Quick Responses', 'Monthly Performance Review Call', 'Early Access to New Features'] },
               ].map((section) => (
                 <div key={section.title} style={{ marginBottom: 12 }}>
@@ -1596,7 +1606,7 @@ export default function ExplorePlansPage() {
                   const sections: { icon: string; title: string; rows: { feature: string; free: string; aspire: string; rise: string; ascent: string }[] }[] = [
                     { icon: '📝', title: 'DAILY PRACTICE', rows: [
                       { feature: 'Daily MCQ Challenge', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
-                      { feature: 'Daily Mains Challenge', free: '3 Evaluations / Lifetime', aspire: '✓', rise: '✓', ascent: '✓' },
+                      { feature: 'Daily Answer Writing Challenge', free: '3 Evaluations / Lifetime', aspire: '✓', rise: '✓', ascent: '✓' },
                       { feature: 'Daily News Analysis – The Hindu & IE', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
                       { feature: '10,000+ Previous Year Questions', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
                       { feature: 'Study Planner & Time Tracker', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
@@ -1607,7 +1617,7 @@ export default function ExplorePlansPage() {
                       { feature: 'Prelims Mock Test', free: '1 Test / Lifetime', aspire: '5 Tests / day', rise: '50 / day, 5 / hour', ascent: 'Unlimited / day, 15 / hour' },
                     ] },
                     { icon: '💬', title: '24*7 DOUBT RESOLUTION', rows: [
-                      { feature: 'Jeet AI Mentor Mentor', free: '20 lifetime, 10 / hour', aspire: '5 Messages / day', rise: '25 / hour, 100 / day', ascent: '50 / hour, unlimited / day' },
+                      { feature: 'Jeet AI Mentor', free: '20 lifetime, 10 / hour', aspire: '10 Queries / day', rise: '25 / hour, 100 / day', ascent: '50 / hour, unlimited / day' },
                     ] },
                     { icon: '📊', title: 'ANALYTICS & TRACKER', rows: [
                       { feature: 'Performance Analytics Dashboard', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },

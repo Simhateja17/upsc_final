@@ -9,17 +9,6 @@ import { MindmapUpgradeModal, LockedSubjectCard, LockedCardStyles } from '@/comp
 import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
 import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
 
-const SUBJECT_NAMES: Record<string, string> = {
-  'indian-polity': 'Polity',
-  'modern-history': 'History',
-  geography: 'Geography',
-  'indian-economy': 'Economy',
-  environment: 'Environment',
-  'science-and-tech': 'Science & Tech',
-  'current-affairs': 'Current Affairs',
-  'gs-iv-ethics': 'Ethics',
-};
-
 type SubjectData = {
   id: string;
   name: string;
@@ -54,7 +43,7 @@ export default function MindmapPage() {
   const hasFullAccess = entitlements.canAccess('mindmaps', ['full']);
   // Free & Aspire: Polity and Economy stay open and are listed first; every
   // other subject remains visible but blurred + locked, per the approved design.
-  const FREE_SUBJECT_SLUGS = ['indian-polity', 'indian-economy'];
+  const FREE_SUBJECT_SLUGS = ['polity', 'economy'];
   const isSubjectLocked = (slug: string) => !hasFullAccess && !FREE_SUBJECT_SLUGS.includes(slug);
   const visibleSubjects = hasFullAccess
     ? subjects
@@ -123,7 +112,7 @@ export default function MindmapPage() {
         ) : (
           <div className="subject-card-grid">
             {visibleSubjects.map((subject) => {
-              const subjectName = SUBJECT_NAMES[subject.slug] ?? subject.name;
+              const subjectName = subject.name;
               const cardStyle = getSubjectCardStyle(subjectName);
               const subjectMeta = getSubjectMetaStyle(subjectName);
               const toGo = Math.max(0, subject.total - subject.explored);
