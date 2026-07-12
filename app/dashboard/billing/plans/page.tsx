@@ -636,7 +636,7 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
   aspire: {
     name: 'Aspire',
     badge: 'Aspire Plan',
-    description: 'Daily structured prep with AI evaluation and core tools.',
+    description: 'Build strong UPSC fundamentals with daily practice, proper guidance, and consistent preparation.',
     features: [
       'Daily MCQ Challenge',
       'Daily Answer Writing Challenge',
@@ -1385,7 +1385,7 @@ export default function ExplorePlansPage() {
               <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}>Foundation</p>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Aspire</h3>
               <p style={{ margin: '8px 0 20px', fontSize: 13, lineHeight: 1.6, color: '#6B7A99', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                Daily structured prep with AI evaluation &amp; core tools.
+                Build strong UPSC fundamentals with daily practice, proper guidance &amp; consistent preparation.
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
                 <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹299' : cycle === 'quarterly' ? '₹249' : '₹299'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '58%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
@@ -1433,7 +1433,7 @@ export default function ExplorePlansPage() {
             onMouseEnter={() => setHoveredPlan('rise')}
             onMouseLeave={() => setHoveredPlan(null)}
             style={{ borderRadius: 20, border: '2px solid #E8B84B', background: '#0B1525', overflow: 'hidden', position: 'relative', display: canShowPlan('rise') ? 'flex' : 'none', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'rise' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'rise' ? '0 16px 40px rgba(232,184,75,0.25)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
-            <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', background: '#E8B84B', color: '#090E1C', padding: '5px 20px', borderRadius: '0 0 12px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
+            <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', background: '#E8B84B', color: '#FFFFFF', padding: '5px 20px', borderRadius: '0 0 12px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
               Most Popular
             </div>
             <div style={{ padding: '44px 24px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -1547,7 +1547,7 @@ export default function ExplorePlansPage() {
               <span style={{ display: 'block', width: 36, height: 1, background: 'linear-gradient(to left, transparent, #C8972A)' }} />
             </div>
             <h2 style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 44, fontStyle: 'normal', fontWeight: 400, lineHeight: '51.92px', color: '#1A1A2E', textAlign: 'center', margin: 0 }}>
-              Everything, Side by Side
+              Compare All Features & Pricing
             </h2>
           </div>
 
@@ -1728,7 +1728,8 @@ export default function ExplorePlansPage() {
               { icon: '🧠', iconBg: '#FFF0F3', title: 'Smart Revision', desc: 'Flashcards, mindmaps, spaced repetition – study once, remember forever.' },
               { icon: '📚', iconBg: '#F8FAFC', title: 'Previous Year Questions', desc: '30 years of PYQs with trend analysis, topic clustering, and examiner insights.' },
             ].map((card) => (
-              <div key={card.title} style={{ background: '#fff', borderRadius: 14, border: '1px solid #F0EDE8', padding: '20px 18px', boxShadow: '0 1px 4px rgba(11,22,40,0.05)' }}>
+              <div key={card.title} className="ecosystem-card" style={{ background: '#fff', borderRadius: 14, border: '1px solid #F0EDE8', padding: '20px 18px', boxShadow: '0 1px 4px rgba(11,22,40,0.05)' }}>
+                <span className="ecosystem-card-accent" style={{ background: '#E8B84B' }} />
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 14 }}>
                   {card.icon}
                 </div>
@@ -1737,6 +1738,30 @@ export default function ExplorePlansPage() {
               </div>
             ))}
           </div>
+          <style jsx>{`
+            .ecosystem-card {
+              position: relative;
+              overflow: hidden;
+              transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .ecosystem-card:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+              border-color: transparent;
+            }
+            .ecosystem-card-accent {
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              height: 3px;
+              opacity: 0;
+              transition: opacity 0.3s;
+            }
+            .ecosystem-card:hover .ecosystem-card-accent {
+              opacity: 1;
+            }
+          `}</style>
         </section>
 
         {/* ── What Our Learners Are Saying ── */}
