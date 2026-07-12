@@ -10,6 +10,7 @@ import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
 import { MAINS_PATTERN, mainsWordLimit, mainsTimeLimit } from '@/lib/mainsPattern';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { MainsEvaluationLimitModal, MockTestLimitModal } from '@/components/upgrade/UpgradeModals';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 /* ─── Static Config (UI structure only, not data) ─── */
@@ -304,6 +305,7 @@ function MockTestsPageInner() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatedTestId, setGeneratedTestId] = useState<string | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generateBtnHovered, setGenerateBtnHovered] = useState(false);
   const [pricingPlans, setPricingPlans] = useState<any[]>([]);
@@ -485,7 +487,7 @@ function MockTestsPageInner() {
     const featureKey = selectedExamMode === 'mains' ? 'mains_evaluation' : 'prelims_mock_attempt';
     const quota = entitlements.featureStatus(featureKey);
     if (quota?.allowed === false) {
-      setError(quota.message || 'You have used your current plan limit.');
+      setShowLimitModal(true);
       return;
     }
 
@@ -518,7 +520,12 @@ function MockTestsPageInner() {
       setGeneratedTestId(testId);
     } catch (err: any) {
       console.error('Failed to generate test:', err);
-      setError(handleEntitlementError(err).message || 'Failed to generate test. Please try again.');
+      const parsed = handleEntitlementError(err);
+      if (parsed.title === 'Limit reached' || parsed.title === 'Upgrade required') {
+        setShowLimitModal(true);
+      } else {
+        setError(parsed.message || 'Failed to generate test. Please try again.');
+      }
       setGenerating(false);
       setGeneratedTestId(null);
     }
@@ -552,6 +559,25 @@ function MockTestsPageInner() {
 
   return (
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
+      {selectedExamMode === 'mains' ? (
+        <MainsEvaluationLimitModal
+          open={showLimitModal}
+          onClose={() => setShowLimitModal(false)}
+          tier={entitlements.tier}
+          used={activeQuota?.used}
+          limit={activeQuota?.limit}
+          backLabel="Back to Mock Tests"
+        />
+      ) : (
+        <MockTestLimitModal
+          open={showLimitModal}
+          onClose={() => setShowLimitModal(false)}
+          tier={entitlements.tier}
+          used={activeQuota?.used}
+          limit={activeQuota?.limit}
+          backLabel="Back to Mock Tests"
+        />
+      )}
       <style>{`
         .question-count-slider::-webkit-slider-thumb {
           appearance: none;
@@ -1371,7 +1397,7 @@ function MockTestsPageInner() {
               {/* Generate Test Button */}
               <button
                 onClick={handleGenerateTest}
-                disabled={generating || loading || quotaExhausted}
+                disabled={generating || loading}
                 onMouseEnter={() => setGenerateBtnHovered(true)}
                 onMouseLeave={() => setGenerateBtnHovered(false)}
                 style={{
@@ -1391,7 +1417,7 @@ function MockTestsPageInner() {
                 fontWeight: 800,
                 fontSize: 'clamp(14px, 0.95vw, 17px)',
                 color: '#FFF',
-                cursor: generating || loading || quotaExhausted ? 'not-allowed' : 'pointer',
+                cursor: generating || loading ? 'not-allowed' : 'pointer',
                 letterSpacing: '0.02em',
                 marginBottom: 'clamp(14px, 1.1vw, 20px)',
                 opacity: generating || loading ? 0.7 : 1,

@@ -357,6 +357,10 @@ export default function MainsResultsView({
   const marks = data.question?.marks ?? data.maxScore ?? 15;
   const questionText = data.question?.questionText?.trim() || '';
   const questionTitle = data.question?.title?.trim() || questionText;
+  // The model-answer modal shows the actual QUESTION it answers (not the topic
+  // title). Prefer the real question text; fall back to the title only when the
+  // question text isn't available.
+  const modalQuestion = questionText || questionTitle;
   // Word-limit verdict is derived, not stored: it's a pure function of the
   // student's word count and the question's marks, so it can never drift from
   // the limit the evaluator graded against.
@@ -912,8 +916,10 @@ export default function MainsResultsView({
               <div style={{ fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, color: '#C47B00', textTransform: 'uppercase', marginBottom: 8 }}>
                 Model Answer · {marks} Marks{multi ? ` · Question ${selectedQ + 1}` : ''}
               </div>
-              {questionTitle && (
-                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 20, lineHeight: 1.4, color: 'var(--ink)' }}>{questionTitle}</div>
+              {modalQuestion && (
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 17, lineHeight: 1.5, color: 'var(--ink)', fontStyle: 'italic' }}>
+                  &ldquo;{modalQuestion}&rdquo;
+                </div>
               )}
             </div>
             {/* Body */}
@@ -921,24 +927,7 @@ export default function MainsResultsView({
               {data.curatedModelAnswer ? (
                 <CuratedModelAnswer markdown={data.curatedModelAnswer} keyPoints={data.curatedModelAnswerKeyPoints} />
               ) : data.modelAnswerContent ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {data.modelAnswerKeyPoints && data.modelAnswerKeyPoints.length > 0 && (
-                    <div style={{ background: 'linear-gradient(135deg,#EEF0FF 0%,#F5F3FF 100%)', borderRadius: 16, padding: 20, marginBottom: 10, border: '1px solid rgba(99,102,241,0.15)' }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><span>📌</span> KEY POINTS CHECKLIST</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
-                        {data.modelAnswerKeyPoints.map((pt) => (
-                          <div key={pt} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                            <span style={{ color: '#16A34A', fontSize: 14, marginTop: 2 }}>✓</span>
-                            <span style={{ fontSize: 13, color: 'var(--ink)', lineHeight: 1.5 }}>{pt}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {data.modelAnswerContent.split(/\n+/).map((p) => p.trim()).filter(Boolean).map((para, i) => (
-                    <p key={i} style={{ fontSize: 14, color: '#1F2937', lineHeight: 1.8 }}>{para}</p>
-                  ))}
-                </div>
+                <CuratedModelAnswer markdown={data.modelAnswerContent} keyPoints={data.modelAnswerKeyPoints} />
               ) : (
                 <p style={{ fontSize: 14, color: 'var(--muted)', fontStyle: 'italic' }}>The model answer for this question is not available yet.</p>
               )}

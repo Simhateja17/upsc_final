@@ -249,10 +249,11 @@ export const mainsEvaluatorService = {
 // ==================== Editorials ====================
 
 export const editorialService = {
-  getToday: (source?: string, date?: string) => {
+  getToday: (source?: string, date?: string, limit?: number) => {
     const qs: string[] = [];
     if (source && source !== 'all') qs.push(`source=${encodeURIComponent(source)}`);
     if (date) qs.push(`date=${encodeURIComponent(date)}`);
+    if (limit) qs.push(`limit=${limit}`);
     const suffix = qs.length ? `?${qs.join('&')}` : '';
     return api.get<any>(`/editorials/today${suffix}`, authConfig());
   },

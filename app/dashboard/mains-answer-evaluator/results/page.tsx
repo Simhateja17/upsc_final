@@ -2,46 +2,42 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { dailyAnswerService } from '@/lib/services';
+import { mainsEvaluatorService } from '@/lib/services';
 import MainsResultsView, { MainsQuestionResultData } from '@/components/mains-results/MainsResultsView';
 
 /**
- * Daily Mains Challenge results — thin wrapper around the shared
- * MainsResultsView (also used by PYQ Mains and Mock Test Mains). Handles the
- * Daily-specific data loading: attemptId from sessionStorage and optional
- * ?date= history lookups. The standalone Mains Answer Evaluator now has its
- * own results route and no longer routes through here.
+ * Standalone Mains Answer Evaluator results — thin wrapper around the shared
+ * MainsResultsView. Loads the attempt from sessionStorage and hits the
+ * dedicated /mains-evaluator/results endpoint. Runs on its own route instead
+ * of the old /daily-answer/challenge/attempt/results?source=custom.
  */
-function ResultsPageInner() {
-  const searchParams = useSearchParams();
-  const dateParam = searchParams.get('date');
-
+function MainsEvaluatorResultsInner() {
   const [data, setData] = useState<MainsQuestionResultData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (dateParam) return;
     if (typeof window !== 'undefined') {
-      const storedAttemptId = sessionStorage.getItem('dailyAnswerAttemptId');
-      if (storedAttemptId) setAttemptId(storedAttemptId);
+      const stored = sessionStorage.getItem('mainsEvaluatorAttemptId');
+      if (stored) setAttemptId(stored);
+      else setError('No standalone Mains evaluation session found. Please submit again.');
     }
-  }, [dateParam]);
+  }, []);
 
   useEffect(() => {
+    if (!attemptId) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    dailyAnswerService
-      .getResults(dateParam ? undefined : attemptId || undefined, dateParam || undefined)
+    mainsEvaluatorService
+      .getResults(attemptId)
       .then((res) => {
         if (cancelled) return;
         setData(res.data);
-        if (!dateParam && typeof window !== 'undefined') {
-          sessionStorage.removeItem('dailyAnswerAttemptId');
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('mainsEvaluatorAttemptId');
         }
       })
       .catch((err) => {
@@ -53,7 +49,7 @@ function ResultsPageInner() {
       });
 
     return () => { cancelled = true; };
-  }, [attemptId, dateParam]);
+  }, [attemptId]);
 
   if (loading) {
     return (
@@ -69,7 +65,7 @@ function ResultsPageInner() {
         <div className="text-center px-6">
           <h2 className="text-xl font-bold text-gray-800 mb-2">Could not load results</h2>
           <p className="text-gray-500 mb-4">{error || 'Please try again in a moment.'}</p>
-          <Link href="/dashboard/daily-answer" className="text-blue-600 hover:underline">Back to Daily Answer</Link>
+          <Link href="/dashboard/mains-answer-evaluator" className="text-blue-600 hover:underline">Back to Mains Answer Evaluator</Link>
         </div>
       </div>
     );
@@ -78,21 +74,21 @@ function ResultsPageInner() {
   return (
     <MainsResultsView
       results={[data]}
-      shareHeading="DAILY MAINS CHALLENGE"
-      rewriteRoute="/dashboard/daily-answer/challenge"
-      backRoute="/dashboard/daily-answer"
+      shareHeading="MAINS ANSWER EVALUATION"
+      rewriteRoute="/dashboard/mains-answer-evaluator"
+      backRoute="/dashboard/mains-answer-evaluator"
     />
   );
 }
 
-export default function ResultsPage() {
+export default function MainsEvaluatorResultsPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5F6F8' }}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
       </div>
     }>
-      <ResultsPageInner />
+      <MainsEvaluatorResultsInner />
     </Suspense>
   );
 }

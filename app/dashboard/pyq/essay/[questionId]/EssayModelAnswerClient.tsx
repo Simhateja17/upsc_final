@@ -11,6 +11,7 @@ import { pyqService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { handleEntitlementError } from '@/components/entitlements';
+import { MainsEvaluationLimitModal } from '@/components/upgrade/UpgradeModals';
 import {
   essayQuestionNumber,
   essaySection,
@@ -195,6 +196,7 @@ export default function EssayModelAnswerClient() {
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Timer (cosmetic, matches source design)
@@ -297,6 +299,11 @@ export default function EssayModelAnswerClient() {
 
   const submit = async () => {
     if (!question || !canSubmit) return;
+    const quota = entitlements.featureStatus?.('mains_evaluation');
+    if (quota?.allowed === false) {
+      setShowQuotaModal(true);
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -317,7 +324,11 @@ export default function EssayModelAnswerClient() {
       }
     } catch (err: any) {
       const entitlementError = handleEntitlementError(err);
-      setSubmitError(entitlementError.message || err?.message || 'Failed to submit. Please try again.');
+      if (entitlementError.title === 'Limit reached' || entitlementError.title === 'Upgrade required') {
+        setShowQuotaModal(true);
+      } else {
+        setSubmitError(entitlementError.message || err?.message || 'Failed to submit. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -400,6 +411,14 @@ export default function EssayModelAnswerClient() {
   return (
     <div className="essay-pyq-page min-h-[100dvh]">
       {styles}
+      <MainsEvaluationLimitModal
+        open={showQuotaModal}
+        onClose={() => setShowQuotaModal(false)}
+        tier={entitlements.tier}
+        used={entitlements.featureStatus?.('mains_evaluation')?.used}
+        limit={entitlements.featureStatus?.('mains_evaluation')?.limit}
+        backLabel="Back to Dashboard"
+      />
       <EssayPageHeader />
 
       {/* Breadcrumbs */}

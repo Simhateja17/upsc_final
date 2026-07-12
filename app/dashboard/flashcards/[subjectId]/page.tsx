@@ -7,6 +7,8 @@ import CreateFlashcardModal from '@/components/CreateFlashcardModal';
 import NewTopicModal from '@/components/NewTopicModal';
 import { flashcardService } from '@/lib/services';
 import { getTopicIcon } from '@/lib/topic-icons';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { FlashcardAddFlashcardModal, FlashcardAddTopicModal } from '@/components/upgrade/UpgradeModals';
 
 type Topic = {
   id: string;
@@ -45,6 +47,10 @@ export default function FlashcardsSubjectPage() {
   const [deletingTopicId, setDeletingTopicId] = useState<string | null>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [hoveredBin, setHoveredBin] = useState<string | null>(null);
+  const [showAddCardUpgradeModal, setShowAddCardUpgradeModal] = useState(false);
+  const [showAddTopicUpgradeModal, setShowAddTopicUpgradeModal] = useState(false);
+  const entitlements = useEntitlements();
+  const hasFullAccess = entitlements.canAccess('flashcards', ['full']);
 
   useEffect(() => {
     if (!subjectId) return;
@@ -179,7 +185,7 @@ export default function FlashcardsSubjectPage() {
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 type="button"
-                onClick={() => setShowAddModal(true)}
+                onClick={() => hasFullAccess ? setShowAddModal(true) : setShowAddCardUpgradeModal(true)}
                 className="flex items-center gap-1.5 rounded-[8px] px-4 py-2"
                 style={{
                   background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
@@ -192,7 +198,7 @@ export default function FlashcardsSubjectPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setShowNewTopicModal(true)}
+                onClick={() => hasFullAccess ? setShowNewTopicModal(true) : setShowAddTopicUpgradeModal(true)}
                 className="flex items-center gap-1.5 rounded-[8px] px-4 py-2"
                 style={{
                   background: '#FFFFFF',
@@ -325,6 +331,15 @@ export default function FlashcardsSubjectPage() {
         subjectName={meta ? displaySubjectName(meta.subject) : 'this subject'}
         onClose={() => setShowNewTopicModal(false)}
         onCreate={handleCreateTopic}
+      />
+
+      <FlashcardAddFlashcardModal
+        open={showAddCardUpgradeModal}
+        onClose={() => setShowAddCardUpgradeModal(false)}
+      />
+      <FlashcardAddTopicModal
+        open={showAddTopicUpgradeModal}
+        onClose={() => setShowAddTopicUpgradeModal(false)}
       />
 
       {deleteTarget && (
