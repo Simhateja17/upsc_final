@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService, bookmarkService, flagService } from '@/lib/services';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { MainsEvaluationLimitModal } from '@/components/upgrade/UpgradeModals';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import ExamInstructions from '@/components/ExamInstructions';
 import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
@@ -173,6 +174,7 @@ function MockTestAttemptInner() {
 
   /* ─── Mains State ─── */
   const [mainsSubmitting, setMainsSubmitting] = useState(false);
+  const [showMainsQuotaModal, setShowMainsQuotaModal] = useState(false);
   const [mainsAnswers, setMainsAnswers] = useState<Record<number, MainsAnswer>>({});
   const [openEditors, setOpenEditors] = useState<Record<number, boolean>>({}); // which answer editors are expanded
   const answerModeKey = testId ? `mockTestAnswerMode:${testId}` : null;
@@ -415,7 +417,7 @@ function MockTestAttemptInner() {
 
       const quota = entitlements.featureStatus('mains_evaluation');
       if (quota?.allowed === false) {
-        setError(quota.message || 'You have used your Mains evaluation quota for this period.');
+        setShowMainsQuotaModal(true);
         setMainsSubmitting(false);
         return;
       }
@@ -464,7 +466,11 @@ function MockTestAttemptInner() {
       console.error('Mains submit failed:', err);
       entitlements.refreshEntitlements().catch(() => {});
       const parsed = handleEntitlementError(err);
-      setError(parsed.message || err.message || 'Failed to submit answers. Please try again.');
+      if (parsed.title === 'Limit reached' || parsed.title === 'Upgrade required') {
+        setShowMainsQuotaModal(true);
+      } else {
+        setError(parsed.message || err.message || 'Failed to submit answers. Please try again.');
+      }
       setMainsSubmitting(false);
     }
   };
@@ -1515,6 +1521,14 @@ function MockTestAttemptInner() {
 
   return (
     <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : undefined, background: '#FAFBFE', fontFamily: 'Inter, sans-serif', padding: isMobile ? '10px' : '12px 20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: isMobile ? 'auto' : 'hidden' }}>
+      <MainsEvaluationLimitModal
+        open={showMainsQuotaModal}
+        onClose={() => setShowMainsQuotaModal(false)}
+        tier={entitlements.tier}
+        used={entitlements.featureStatus('mains_evaluation')?.used}
+        limit={entitlements.featureStatus('mains_evaluation')?.limit}
+        backLabel="Back to Mock Tests"
+      />
       <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0 }}>
 
         {error && (

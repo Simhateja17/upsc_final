@@ -14,6 +14,7 @@ import SubTopicsList from './components/SubTopicsList';
 import RightPanel from './components/RightPanel';
 import StatusModal from './components/StatusModal';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { SyllabusTrackerLimitModal } from '@/components/upgrade/UpgradeModals';
 
 export type Mode = 'prelims' | 'mains' | 'optional';
 export type Status = 'none' | 'done' | 'in-progress' | 'needs-revision' | 'weak';
@@ -118,6 +119,7 @@ export default function SyllabusTrackerPage() {
     topicIndex: number;
     subTopicIndex: number;
   } | null>(null);
+  const [showTrackerLimitModal, setShowTrackerLimitModal] = useState(false);
 
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -301,6 +303,7 @@ export default function SyllabusTrackerPage() {
       nextStatus !== 'none' &&
       Object.values(states).filter((state) => state.status && state.status !== 'none').length >= 5
     ) {
+      setShowTrackerLimitModal(true);
       return;
     }
 
@@ -450,6 +453,10 @@ export default function SyllabusTrackerPage() {
 
   return (
     <div className="flex flex-col h-full bg-[#F9FAFB] font-arimo">
+      <SyllabusTrackerLimitModal
+        open={showTrackerLimitModal}
+        onClose={() => setShowTrackerLimitModal(false)}
+      />
       {/* Page Content - scrollable */}
       <div className="flex-1 overflow-y-auto">
         {/* Hero Section */}

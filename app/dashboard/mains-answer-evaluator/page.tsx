@@ -6,6 +6,9 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
 import { mainsEvaluatorService } from '@/lib/services';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { ApiRequestError } from '@/lib/api';
+import { MainsEvaluationLimitModal } from '@/components/upgrade/UpgradeModals';
 
 /* ─── Static config ─── */
 
@@ -186,8 +189,11 @@ export default function MainsAnswerEvaluatorPage() {
   const [dropHover, setDropHover] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const entitlements = useEntitlements();
+  const mainsQuota = entitlements.featureStatus('mains_evaluation');
 
   const paperLabel = PAPERS.find(p => p.id === selectedPaper)?.label ?? 'GS Paper 1';
 
@@ -258,6 +264,10 @@ export default function MainsAnswerEvaluatorPage() {
 
   async function handleSubmit() {
     if (!canEvaluate || submitting) return;
+    if (!entitlements.loading && mainsQuota?.allowed === false) {
+      setShowQuotaModal(true);
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -276,15 +286,29 @@ export default function MainsAnswerEvaluatorPage() {
       if (attemptId && typeof window !== 'undefined') {
         sessionStorage.setItem('mainsEvaluatorAttemptId', attemptId);
       }
-      router.push('/dashboard/daily-answer/challenge/attempt/evaluating?source=custom');
+      entitlements.refreshEntitlements();
+      router.push('/dashboard/mains-answer-evaluator/evaluating');
     } catch (err: any) {
-      setError(err?.message || 'Failed to submit answer. Please try again.');
+      const code = err instanceof ApiRequestError ? err.payload?.code : null;
+      if (code === 'FEATURE_LIMIT_REACHED' || code === 'FEATURE_ACCESS_REQUIRED') {
+        setShowQuotaModal(true);
+      } else {
+        setError(err?.message || 'Failed to submit answer. Please try again.');
+      }
       setSubmitting(false);
     }
   }
 
   return (
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
+      <MainsEvaluationLimitModal
+        open={showQuotaModal}
+        onClose={() => setShowQuotaModal(false)}
+        tier={entitlements.tier}
+        used={mainsQuota?.used}
+        limit={mainsQuota?.limit}
+        backLabel="Back to Dashboard"
+      />
       <main className="flex-1 overflow-y-auto font-arimo" style={{ background: '#F9FAFB' }}>
 
         <DashboardPageHero

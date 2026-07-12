@@ -13,6 +13,7 @@ import QuestionTextRenderer from '@/components/QuestionTextRenderer';
 import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
 import { handleEntitlementError, formatPeriod } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { MainsEvaluationLimitModal } from '@/components/upgrade/UpgradeModals';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 import { isEssayQuestion } from '@/lib/essayModelAnswer';
 
@@ -334,6 +335,13 @@ const getEssayModelAnswerParts = (question: any): Array<{ key: EssayPartKey; lab
     .filter((part) => part.text.length > 0);
 };
 
+const DEFAULT_MAINS_TIME_LIMIT = 20 * 60;
+const ESSAY_MAINS_TIME_LIMIT = 90 * 60;
+
+function getMainsTimeLimit(question: any | null): number {
+  return isEssayQuestion(question) ? ESSAY_MAINS_TIME_LIMIT : DEFAULT_MAINS_TIME_LIMIT;
+}
+
 function EssayModelAnswerRenderer({
   question,
   essayPartOrder,
@@ -533,6 +541,7 @@ export default function PyqPage() {
   const [showAttemptModal, setShowAttemptModal] = useState(false);
   const [prelimsSubmitError, setPrelimsSubmitError] = useState<string | null>(null);
   const [showMainsWriteModal, setShowMainsWriteModal] = useState(false);
+  const [showMainsQuotaModal, setShowMainsQuotaModal] = useState(false);
   const [expandedModelAnswerIds, setExpandedModelAnswerIds] = useState<Set<string>>(new Set());
   const [essayPartOrder, setEssayPartOrder] = useState<'decode-first' | 'essay-first'>('decode-first');
   const router = useRouter();
@@ -556,8 +565,7 @@ export default function PyqPage() {
   const [mainsSubmitError, setMainsSubmitError] = useState<string | null>(null);
   const pageRootRef = useRef<HTMLDivElement>(null);
   const mainsFileInputRef = useRef<HTMLInputElement>(null);
-  const MAINS_TIME_LIMIT = 20 * 60; // 20 minutes in seconds
-  const [mainsTimeLeft, setMainsTimeLeft] = useState(MAINS_TIME_LIMIT);
+  const [mainsTimeLeft, setMainsTimeLeft] = useState(DEFAULT_MAINS_TIME_LIMIT);
   const [mainsTimerPaused, setMainsTimerPaused] = useState(false);
   const [mainsReadTimeLeft, setMainsReadTimeLeft] = useState<number | null>(null);
   const [textAnswerExpanded, setTextAnswerExpanded] = useState(false);
@@ -1684,6 +1692,14 @@ export default function PyqPage() {
       className="flex min-h-full flex-col items-stretch font-arimo"
       style={{ background: '#F9FAFB' }}
     >
+      <MainsEvaluationLimitModal
+        open={showMainsQuotaModal}
+        onClose={() => setShowMainsQuotaModal(false)}
+        tier={entitlements.tier}
+        used={mainsQuota?.used}
+        limit={mainsQuota?.limit}
+        backLabel="Back to Dashboard"
+      />
       {navigatingQuestionHref ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#F8F9FB]/85 backdrop-blur-sm">
           <div className="rounded-[18px] border border-[#E5E7EB] bg-white px-8 py-7 text-center shadow-[0_16px_50px_rgba(15,23,42,0.16)]">
@@ -2275,7 +2291,7 @@ export default function PyqPage() {
                     <div className="flex items-center gap-3 mb-4">
                       <button
                         type="button"
-                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsSubmitError(null); setMainsTimeLeft(MAINS_TIME_LIMIT); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsSubmitError(null); setMainsTimeLeft(getMainsTimeLimit(q)); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
                         className="flex items-center justify-center"
                         style={{ height: '59px', borderRadius: '14px', background: '#101828', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
@@ -2328,7 +2344,7 @@ export default function PyqPage() {
                         <div className="flex flex-wrap items-center gap-3 pt-4 mt-2" style={{ borderTop: '1px solid rgba(212,175,55,0.15)' }}>
                           <button
                             type="button"
-                            onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsSubmitError(null); setMainsTimeLeft(MAINS_TIME_LIMIT); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                            onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsSubmitError(null); setMainsTimeLeft(getMainsTimeLimit(q)); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
                             className="flex items-center gap-2"
                             style={{ padding: '10px 20px', borderRadius: '10px', background: '#101828', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', border: 'none' }}
                           >
@@ -2618,7 +2634,7 @@ export default function PyqPage() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] font-semibold text-[#6A7282]">
-                  <span>◷ 20 min</span>
+                  <span>◷ {Math.floor(getMainsTimeLimit(selectedQuestion) / 60)} min</span>
                   <span>✍️ 250 words</span>
                   <span>☆ {selectedQuestion?.marks || selectedQuestion?.maxMarks || 15} marks</span>
                 </div>
@@ -2744,6 +2760,10 @@ export default function PyqPage() {
                   disabled={mainsSubmitting || (!mainsAnswerText.trim() && mainsFiles.length === 0)}
                   onClick={async () => {
                     if (!selectedQuestion) return;
+                    if (!entitlements.loading && mainsQuota?.allowed === false) {
+                      setShowMainsQuotaModal(true);
+                      return;
+                    }
                     setMainsSubmitting(true);
                     try {
                       const res = await pyqService.submitMainsAnswer(selectedQuestion.id, {
@@ -2758,11 +2778,15 @@ export default function PyqPage() {
                       }
                     } catch (err: any) {
                       const entitlementError = handleEntitlementError(err);
-                      const resetAt = formatResetAt(entitlementError.resetAt);
-                      const message = resetAt
-                        ? `${entitlementError.message} Try again after ${resetAt}.`
-                        : entitlementError.message;
-                      setMainsSubmitError(message || err.message || 'Failed to submit. Please try again.');
+                      if (entitlementError.title === 'Limit reached' || entitlementError.title === 'Upgrade required') {
+                        setShowMainsQuotaModal(true);
+                      } else {
+                        const resetAt = formatResetAt(entitlementError.resetAt);
+                        const message = resetAt
+                          ? `${entitlementError.message} Try again after ${resetAt}.`
+                          : entitlementError.message;
+                        setMainsSubmitError(message || err.message || 'Failed to submit. Please try again.');
+                      }
                     } finally {
                       setMainsSubmitting(false);
                     }
@@ -2790,7 +2814,7 @@ export default function PyqPage() {
                   {(() => {
                     const radius = 82;
                     const circumference = 2 * Math.PI * radius;
-                    const pct = Math.max(0, Math.min(1, mainsTimeLeft / MAINS_TIME_LIMIT));
+                    const pct = Math.max(0, Math.min(1, mainsTimeLeft / getMainsTimeLimit(selectedQuestion)));
                     return (
                       <div className="relative mx-auto mb-3 flex h-[180px] w-[180px] items-center justify-center">
                         <svg width="180" height="180" viewBox="0 0 180 180" style={{ transform: 'rotate(-90deg)' }}>
@@ -2836,7 +2860,7 @@ export default function PyqPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setMainsTimeLeft(MAINS_TIME_LIMIT);
+                        setMainsTimeLeft(getMainsTimeLimit(selectedQuestion));
                         setMainsTimerPaused(true);
                         setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS);
                       }}

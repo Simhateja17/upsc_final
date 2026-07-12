@@ -6,6 +6,7 @@ import { dashboardService, leaderboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { PerformanceAnalyticsUpgradeModal } from '@/components/upgrade/UpgradeModals';
 
 type DayActivity = { questionsAttempted: number; hours: number };
 type SubjectRow = { name: string; accuracy: number; questions: number; tag?: string; color?: string };
@@ -74,23 +75,30 @@ function LockedAnalyticsCard({
   children,
   locked,
   className = '',
+  onUpgradeClick,
 }: {
   heading: React.ReactNode;
   children: React.ReactNode;
   locked: boolean;
   className?: string;
+  onUpgradeClick?: () => void;
 }) {
   return (
     <div
       className={`group relative overflow-hidden rounded-[14px] border border-[#E5E7EB] bg-white shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_rgba(0,0,0,0.1)] transition-all duration-300 ${locked ? 'cursor-pointer hover:-translate-y-1 hover:border-[#D8D8DE] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)]' : ''} ${className}`}
+      onClick={locked ? onUpgradeClick : undefined}
     >
       <div className="pointer-events-none relative z-[6]">{heading}</div>
       <div className={locked ? 'pointer-events-none select-none blur-[4px] transition-[filter] duration-300 group-hover:blur-[5px]' : ''}>
         {children}
       </div>
       {locked && (
-        <Link
-          href="/dashboard/billing/plans?plan=rise"
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onUpgradeClick?.();
+          }}
           aria-label="Upgrade to unlock analytics"
           className="absolute inset-0 z-[5] flex flex-col items-center justify-center bg-white/60 opacity-0 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-hover:bg-white/35 group-hover:backdrop-blur-[4px]"
         >
@@ -103,7 +111,7 @@ function LockedAnalyticsCard({
           <span className="text-[11.5px] font-bold tracking-[0.2px] text-[#1E293B] opacity-0 transition-opacity duration-300 group-hover:opacity-100">
             UPGRADE TO UNLOCK
           </span>
-        </Link>
+        </button>
       )}
     </div>
   );
@@ -181,6 +189,7 @@ export default function PerformancePage() {
   const [failedSections, setFailedSections] = useState<string[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { user } = useAuth();
   const entitlements = useEntitlements();
 
@@ -393,6 +402,11 @@ export default function PerformancePage() {
       className="flex overflow-hidden font-arimo"
       style={{ background: '#F9FAFB', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
     >
+      <PerformanceAnalyticsUpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        tier={entitlements.tier}
+      />
       <div className="flex-1 overflow-y-auto">
         <DashboardPageHero
           badgeIcon={
@@ -438,6 +452,7 @@ export default function PerformancePage() {
           <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
+              onUpgradeClick={() => setShowUpgradeModal(true)}
               className="px-6 py-7"
               heading={<h2 className="mb-8 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
                 <span className="h-2 w-2 rounded-full bg-[#8B35F6]" />
@@ -478,6 +493,7 @@ export default function PerformancePage() {
 
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
+              onUpgradeClick={() => setShowUpgradeModal(true)}
               className="px-6 py-7"
               heading={<h2 className="mb-9 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
                 <span className="h-2 w-2 rounded-full bg-[#F28C32]" />
@@ -508,6 +524,7 @@ export default function PerformancePage() {
           <div className="mb-9 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
+              onUpgradeClick={() => setShowUpgradeModal(true)}
               className="px-6 py-7"
               heading={<div className="mb-8 flex items-center justify-between gap-4">
                 <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
@@ -525,6 +542,7 @@ export default function PerformancePage() {
 
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
+              onUpgradeClick={() => setShowUpgradeModal(true)}
               className="px-6 py-7"
               heading={<div className="mb-8 flex items-center justify-between gap-4">
                 <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
@@ -544,6 +562,7 @@ export default function PerformancePage() {
           <div className="mb-9 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
+              onUpgradeClick={() => setShowUpgradeModal(true)}
               className="px-6 py-7"
               heading={<div className="mb-7 flex items-center justify-between gap-4">
                 <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
@@ -659,6 +678,7 @@ export default function PerformancePage() {
 
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
+              onUpgradeClick={() => setShowUpgradeModal(true)}
               className="px-6 py-7"
               heading={<h2 className="mb-7 flex items-center gap-3 text-[20px] font-bold text-[#101828]">
                 <span aria-hidden>⚡</span>

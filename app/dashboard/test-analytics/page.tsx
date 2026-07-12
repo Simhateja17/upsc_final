@@ -5,8 +5,8 @@ import { dashboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import Toast from '@/components/Toast';
-import { EntitlementGate, UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { LockedWidget, LockedWidgetStyles, TestAnalyticsUpgradeModal } from '@/components/upgrade/UpgradeModals';
 import { getSubjectAccentColor } from '@/lib/subjectPalette';
 
 
@@ -100,8 +100,13 @@ export default function TestAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<any | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const entitlements = useEntitlements();
+  // Free & Aspire see the page with detailed widgets blurred + locked;
+  // clicking a locked widget opens the tier-specific upgrade modal.
+  const analyticsLocked = !entitlements.canAccess('test_analytics', ['full']);
+  const openUpgradeModal = () => setShowUpgradeModal(true);
 
   useEffect(() => {
     if (authLoading) return;
@@ -178,17 +183,16 @@ export default function TestAnalyticsPage() {
   const maxQuestions = Math.max(...dailyActivity.map(d => d.questionsAttempted), 1);
 
   return (
-    <EntitlementGate
-      accessKey="test_analytics"
-      allowed={['full', 'limited']}
-      requiredTier="aspire"
-      title="Test Analytics are available on Aspire+"
-      message="Upgrade to Aspire for limited test insights, or Rise for full analytics."
-    >
     <div
       className="flex overflow-hidden font-arimo"
       style={{ background: '#F9FAFB', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
     >
+      <LockedWidgetStyles />
+      <TestAnalyticsUpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        tier={entitlements.tier}
+      />
       <div className="flex-1 overflow-y-auto">
         <div className="w-full relative">
           {loading && !error && (
@@ -220,17 +224,7 @@ export default function TestAnalyticsPage() {
           />
         </div>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          {entitlements.isLimited('test_analytics') && (
-            <div className="mb-6">
-              <UpgradePrompt
-                title="You are viewing limited test analytics"
-                currentTier={entitlements.tier}
-                requiredTier="rise"
-                message="Rise unlocks full score trends, subject breakdowns, and mock-test history insights."
-              />
-            </div>
-          )}
-          {/* ── 5 Summary Cards ── */}
+          {/* ── 5 Summary Cards (open on every plan) ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             {summaryCards.map((card) => (
               <div
@@ -267,12 +261,20 @@ export default function TestAnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
             {/* MCQ Performance Trend */}
-            <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
-              <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-6 flex items-center gap-2" style={{ color: '#1A1F36' }}>
-                  <span aria-hidden>📊</span> MCQ Performance Trend
-                </h2>
-
+            <LockedWidget
+              locked={analyticsLocked}
+              onClick={openUpgradeModal}
+              className="rounded-[18px] bg-white"
+              style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}
+              heading={
+                <div className="px-8 pt-8">
+                  <h2 className="text-[18px] leading-[26px] font-bold mb-6 flex items-center gap-2" style={{ color: '#1A1F36' }}>
+                    <span aria-hidden>📊</span> MCQ Performance Trend
+                  </h2>
+                </div>
+              }
+            >
+              <div className="px-8 pb-6">
                 <div className="flex flex-wrap gap-5 mb-6">
                   {[
                     { label: 'Correct', value: mcqCorrect, color: '#101828' },
@@ -327,16 +329,24 @@ export default function TestAnalyticsPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </LockedWidget>
 
             {/* Subject Accuracy */}
-            <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
-              <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
-                  <span aria-hidden>🎯</span> Subject Accuracy
-                </h2>
-                <div className="mb-6 text-[12px] text-[#99A1AF]">Across all attempted MCQs</div>
-
+            <LockedWidget
+              locked={analyticsLocked}
+              onClick={openUpgradeModal}
+              className="rounded-[18px] bg-white"
+              style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}
+              heading={
+                <div className="px-8 pt-8">
+                  <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
+                    <span aria-hidden>🎯</span> Subject Accuracy
+                  </h2>
+                  <div className="mb-6 text-[12px] text-[#99A1AF]">Across all attempted MCQs</div>
+                </div>
+              }
+            >
+              <div className="px-8 pb-6">
                 {subjectAccuracy.length === 0 ? (
                   <div className="flex items-center justify-center h-[200px] text-[13px] text-[#6A7282]">
                     No mock test data yet
@@ -370,20 +380,28 @@ export default function TestAnalyticsPage() {
                   </div>
                 )}
               </div>
-            </div>
+            </LockedWidget>
           </div>
 
           {/* ── Row 2: Mains Trend + Time Per Question ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
             {/* Mains Answer Writing Trend */}
-            <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
-              <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
-                  <span aria-hidden>📝</span> Mains Answer Writing Trend
-                </h2>
-                <div className="mb-5 text-[12px] text-[#99A1AF]">Answer scoring performance</div>
-
+            <LockedWidget
+              locked={analyticsLocked}
+              onClick={openUpgradeModal}
+              className="rounded-[18px] bg-white"
+              style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}
+              heading={
+                <div className="px-8 pt-8">
+                  <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
+                    <span aria-hidden>📝</span> Mains Answer Writing Trend
+                  </h2>
+                  <div className="mb-5 text-[12px] text-[#99A1AF]">Answer scoring performance</div>
+                </div>
+              }
+            >
+              <div className="px-8 pb-6">
                 <div className="flex flex-wrap gap-5 mb-5">
                   {[
                     { label: 'Answers Written', value: mainsStats.totalAnswers ?? 0, color: '#101828' },
@@ -415,16 +433,24 @@ export default function TestAnalyticsPage() {
                   <LineChart data={mainsChartData} color="#FB923C" height={140} />
                 </div>
               </div>
-            </div>
+            </LockedWidget>
 
             {/* Time Spent per Question – Daily */}
-            <div className="rounded-[18px] bg-white" style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}>
-              <div className="px-8 pt-8 pb-6">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
-                  <span aria-hidden>⏱️</span> Time Spent per Question - Daily
-                </h2>
-                <div className="mb-5 text-[12px] text-[#99A1AF]">Average seconds per question</div>
-
+            <LockedWidget
+              locked={analyticsLocked}
+              onClick={openUpgradeModal}
+              className="rounded-[18px] bg-white"
+              style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}
+              heading={
+                <div className="px-8 pt-8">
+                  <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
+                    <span aria-hidden>⏱️</span> Time Spent per Question - Daily
+                  </h2>
+                  <div className="mb-5 text-[12px] text-[#99A1AF]">Average seconds per question</div>
+                </div>
+              }
+            >
+              <div className="px-8 pb-6">
                 <div className="grid grid-cols-7 gap-2 mb-6">
                   {timePerQuestion.map((d) => (
                     <div key={d.day} className="flex flex-col items-center gap-2">
@@ -475,17 +501,23 @@ export default function TestAnalyticsPage() {
                   </div>
                 )}
               </div>
-            </div>
+            </LockedWidget>
           </div>
 
           {/* ── Complete Test History ── */}
-          <div className="rounded-[14px] bg-white mb-8" style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}>
-            <div className="px-8 pt-8 pb-2">
-              <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ color: '#1A1F36' }}>
-                Complete Test History
-              </h2>
-            </div>
-
+          <LockedWidget
+            locked={analyticsLocked}
+            onClick={openUpgradeModal}
+            className="rounded-[14px] bg-white mb-8"
+            style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}
+            heading={
+              <div className="px-8 pt-8 pb-2">
+                <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ color: '#1A1F36' }}>
+                  Complete Test History
+                </h2>
+              </div>
+            }
+          >
             {testHistory.length === 0 ? (
               <div className="px-8 pb-10 text-center">
                 <p className="text-[14px] text-[#6A7282]">No tests attempted yet</p>
@@ -556,7 +588,7 @@ export default function TestAnalyticsPage() {
                 </div>
               </>
             )}
-          </div>
+          </LockedWidget>
 
         </div>
       </div>
@@ -633,6 +665,5 @@ export default function TestAnalyticsPage() {
         </div>
       )}
     </div>
-    </EntitlementGate>
   );
 }
