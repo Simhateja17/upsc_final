@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { dashboardService, testSeriesService, leaderboardService } from '@/lib/services';
+import { BADGE_DISPLAY } from '@/lib/badgeDisplay';
 
 interface PerformanceData {
   studyTimeToday?: string;
@@ -27,61 +28,16 @@ type BadgeState = 'earned' | 'in-progress' | 'locked';
 interface AchievementBadge {
   key: string;
   title: string;
-  note: string;
-  accent: string;
-  tint: string;
   status: BadgeState;
-  icon?: string;
-  iconNode?: React.ReactNode;
-  emoji?: string;
+  emoji: string;
 }
 
+// Shape returned by GET /user/achievements (real 54-badge engine).
 interface BadgeData {
   key: string;
-  title: string;
-  note: string;
-  status: BadgeState;
+  status: 'earned' | 'locked';
+  supported: boolean;
 }
-
-const BADGE_META: Record<string, { emoji?: string; icon?: string; iconNode?: React.ReactNode; accent: string; tint: string }> = {
-  streak: { emoji: '🔥', icon: '/icons/dashboard/badge-streak.png', accent: '#F59E0B', tint: '#FFF7E8' },
-  learner: { emoji: '🧠', icon: '/icons/dashboard/badge-learner.png', accent: '#F59E0B', tint: '#FFF9EB' },
-  accuracy: { emoji: '🎖️', icon: '/icons/dashboard/badge-accuracy.png', accent: '#4F7CFF', tint: '#EEF4FF' },
-  polity: {
-    accent: '#7C3AED',
-    tint: '#F5F3FF',
-    iconNode: (
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-        <path d="M3 9L12 4L21 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M9 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M15 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M19 10V18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M4 20H20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  'all-rounder': {
-    accent: '#2563EB',
-    tint: '#EFF6FF',
-    iconNode: (
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-        <path d="M12 3L13.9 9.1L20 12L13.9 14.9L12 21L10.1 14.9L4 12L10.1 9.1L12 3Z" fill="currentColor" />
-      </svg>
-    ),
-  },
-  centurion: {
-    accent: '#0EA5A4',
-    tint: '#ECFEFF',
-    iconNode: (
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-        <path d="M6 4.5H16C17.1 4.5 18 5.4 18 6.5V19.5L12 16.5L6 19.5V4.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-        <path d="M9 8H15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M9 11H15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-};
 
 // Activities shown in the "How streak works?" drawer — completing any one keeps the streak alive.
 const STREAK_ACTIVITIES: { emoji: string; title: string; desc: string; tint: string; tone: string }[] = [
@@ -128,7 +84,7 @@ const PerformanceStatsWidget = () => {
           dashboardService.getStreak(),
           testSeriesService.getEnrolled(),
           leaderboardService.getMyRank('week'),
-          dashboardService.getBadges(),
+          dashboardService.getAchievements(),
         ]);
         if (mounted) {
           if (perfRes.status === 'fulfilled' && perfRes.value?.data) {
@@ -171,19 +127,26 @@ const PerformanceStatsWidget = () => {
 
   const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const showOnFire = (currentStreak ?? 0) > 7;
-  const achievementBadges: AchievementBadge[] = (badges ?? []).map((b) => ({
-    key: b.key,
-    title: b.title,
-    note: b.note,
-    status: b.status,
-    ...BADGE_META[b.key],
-  })) as AchievementBadge[];
-  // Show unlocked badges first (earned, then in-progress), locked ones last.
-  // Array.prototype.sort is stable, so original order is preserved within each group.
-  const badgeOrderRank = (status: AchievementBadge['status']) =>
-    status === 'earned' ? 0 : status === 'in-progress' ? 1 : 2;
+  // Map the real badge engine's response onto display metadata; drop any key we
+  // don't have display metadata for (keeps the widget resilient to catalog drift).
+  const achievementBadges: AchievementBadge[] = (badges ?? [])
+    .filter((b) => BADGE_DISPLAY[b.key])
+    .map((b) => ({
+      key: b.key,
+      title: BADGE_DISPLAY[b.key].title,
+      emoji: BADGE_DISPLAY[b.key].emoji,
+      status: b.status,
+    }));
+  // Showcase: earned badges first (in catalog order), then still-earnable
+  // (supported) locked badges as aspirational targets. Array.prototype.sort is
+  // stable, so catalog order is preserved within each group.
+  const supportedByKey = new Map((badges ?? []).map((b) => [b.key, b.supported]));
+  const badgeOrderRank = (badge: AchievementBadge) => {
+    if (badge.status === 'earned') return 0;
+    return supportedByKey.get(badge.key) ? 1 : 2;
+  };
   const orderedBadges = [...achievementBadges].sort(
-    (a, b) => badgeOrderRank(a.status) - badgeOrderRank(b.status)
+    (a, b) => badgeOrderRank(a) - badgeOrderRank(b)
   );
   const sectionTitleStyle: React.CSSProperties = {
     fontWeight: 700,

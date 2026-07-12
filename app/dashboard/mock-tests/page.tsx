@@ -10,6 +10,7 @@ import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
 import { mainsTimeLimit } from '@/lib/mainsPattern';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { MainsEvaluationLimitModal, MockTestLimitModal } from '@/components/upgrade/UpgradeModals';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 /* ─── Static Config (UI structure only, not data) ─── */
@@ -371,6 +372,7 @@ function MockTestsPageInner() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatedTestId, setGeneratedTestId] = useState<string | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generateBtnHovered, setGenerateBtnHovered] = useState(false);
   const [hoveredPaperType, setHoveredPaperType] = useState<string | null>(null);
@@ -577,6 +579,8 @@ function MockTestsPageInner() {
     if (quota?.allowed === false) {
       if (featureKey === 'prelims_mock_attempt' && entitlements.tier === 'free') {
         setUpgradeModalOpen(true);
+      } else {
+        setShowLimitModal(true);
       }
       setError(quota.message || 'You have used your current plan limit.');
       return;
@@ -614,8 +618,12 @@ function MockTestsPageInner() {
       const parsed = handleEntitlementError(err);
       if (parsed.action === 'Upgrade plan' && selectedExamMode === 'prelims' && entitlements.tier === 'free') {
         setUpgradeModalOpen(true);
+        setError(parsed.message || 'Failed to generate test. Please try again.');
+      } else if (parsed.title === 'Limit reached' || parsed.title === 'Upgrade required') {
+        setShowLimitModal(true);
+      } else {
+        setError(parsed.message || 'Failed to generate test. Please try again.');
       }
-      setError(parsed.message || 'Failed to generate test. Please try again.');
       setGenerating(false);
       setGeneratedTestId(null);
     }
@@ -646,6 +654,8 @@ function MockTestsPageInner() {
   const subjectLabel = availableSubjects.find(s => s.name === selectedSubject)?.name ?? selectedSubject ?? 'All Topics';
   const difficultyLabel = difficulties.find(d => d.id === selectedDifficulty)?.label ?? 'Medium';
   const prelimsQuota = entitlements.featureStatus('prelims_mock_attempt');
+  const activeQuota = entitlements.featureStatus(selectedExamMode === 'mains' ? 'mains_evaluation' : 'prelims_mock_attempt');
+  const quotaExhausted = activeQuota?.allowed === false;
   const isPrelimsAttemptsExhausted = selectedExamMode === 'prelims' && entitlements.tier === 'free' && !!prelimsQuota && (
     prelimsQuota.code === 'FEATURE_LIMIT_REACHED' ||
     (prelimsQuota.limit !== null && prelimsQuota.remaining !== null && prelimsQuota.remaining <= 0)
@@ -674,6 +684,25 @@ function MockTestsPageInner() {
 
   return (
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
+      {selectedExamMode === 'mains' ? (
+        <MainsEvaluationLimitModal
+          open={showLimitModal}
+          onClose={() => setShowLimitModal(false)}
+          tier={entitlements.tier}
+          used={activeQuota?.used}
+          limit={activeQuota?.limit}
+          backLabel="Back to Mock Tests"
+        />
+      ) : (
+        <MockTestLimitModal
+          open={showLimitModal}
+          onClose={() => setShowLimitModal(false)}
+          tier={entitlements.tier}
+          used={activeQuota?.used}
+          limit={activeQuota?.limit}
+          backLabel="Back to Mock Tests"
+        />
+      )}
       <style>{`
         .question-count-slider::-webkit-slider-thumb {
           appearance: none;

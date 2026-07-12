@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import { dashboardService } from '@/lib/services';
 
 type BadgeStatus = 'earned' | 'locked';
 
@@ -757,8 +758,8 @@ function CheckIcon() {
   );
 }
 
-function BadgeCard({ badge }: { badge: Badge }) {
-  const isLocked = badge.status === 'locked';
+function BadgeCard({ badge, status }: { badge: Badge; status: BadgeStatus }) {
+  const isLocked = status === 'locked';
   const pill = PILL_COLORS[badge.tag] ?? PILL_COLORS.STREAK;
 
   return (
@@ -816,7 +817,18 @@ function BadgeCard({ badge }: { badge: Badge }) {
   );
 }
 
-function CategorySection({ category }: { category: BadgeCategory }) {
+function CategorySection({
+  category,
+  statusByKey,
+}: {
+  category: BadgeCategory;
+  statusByKey: Map<string, BadgeStatus>;
+}) {
+  const earned = category.badges.reduce(
+    (n, b) => n + ((statusByKey.get(b.key) ?? 'locked') === 'earned' ? 1 : 0),
+    0,
+  );
+
   return (
     <section className="mt-10 first:mt-0">
       <div className="mb-5 flex items-center justify-center gap-3">
@@ -825,7 +837,7 @@ function CategorySection({ category }: { category: BadgeCategory }) {
           <CategoryIcon iconKey={category.iconKey} title={category.title} />
           <span className="font-arimo text-[13.5px] font-bold text-[#1E2875]">{category.title}</span>
           <span className="ml-1 rounded-full bg-[#F4F5F8] px-[10px] py-[2px] text-[11px] font-semibold text-[#4B5563]">
-            {category.earned} / {category.total} earned
+            {earned} / {category.badges.length} earned
           </span>
         </div>
         <div className="h-[1px] flex-1 bg-[rgba(0,0,0,0.08)]" />
@@ -833,7 +845,7 @@ function CategorySection({ category }: { category: BadgeCategory }) {
 
       <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2 lg:grid-cols-4">
         {category.badges.map((b) => (
-          <BadgeCard key={b.key} badge={b} />
+          <BadgeCard key={b.key} badge={b} status={statusByKey.get(b.key) ?? 'locked'} />
         ))}
       </div>
     </section>
@@ -850,14 +862,103 @@ const FILTER_OPTIONS = [
   { key: 'community', label: 'Community' },
 ];
 
+/** key -> display metadata, so the award toast can name the badge. */
+const BADGE_META_BY_KEY: Record<string, { title: string; emoji: string }> = Object.fromEntries(
+  CATEGORIES.flatMap((c) => c.badges.map((b) => [b.key, { title: b.title, emoji: b.emoji }])),
+);
+
+const TOTAL_BADGE_COUNT = CATEGORIES.reduce((s, c) => s + c.badges.length, 0);
+
+interface AchievementBadgeDTO {
+  key: string;
+  status: BadgeStatus;
+}
+
+interface AchievementsData {
+  badges: AchievementBadgeDTO[];
+  earnedTotal: number;
+  totalBadges: number;
+  newlyAwarded: string[];
+  heroStats: { dayStreak: number; syllabusDone: number };
+}
+
+/** Celebration toast shown once when a badge is freshly earned. */
+function BadgeAwardToast({ keys, onDone }: { keys: string[]; onDone: () => void }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (index >= keys.length) return;
+    const timer = setTimeout(() => setIndex((i) => i + 1), 4200);
+    return () => clearTimeout(timer);
+  }, [index, keys.length]);
+
+  useEffect(() => {
+    if (index >= keys.length) onDone();
+  }, [index, keys.length, onDone]);
+
+  if (index >= keys.length) return null;
+  const key = keys[index];
+  const meta = BADGE_META_BY_KEY[key] ?? { title: key, emoji: '🏅' };
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-[#F5A623] bg-[#0F172B] px-5 py-4 text-white shadow-[0_10px_40px_rgba(15,23,42,0.35)]">
+      <span className="text-2xl">{meta.emoji}</span>
+      <div>
+        <div className="text-[11px] font-bold uppercase tracking-[1px] text-[#FDC700]">Badge Unlocked</div>
+        <div className="text-sm font-extrabold">{meta.title}</div>
+      </div>
+      {keys.length > 1 && (
+        <span className="ml-2 rounded-full bg-white/10 px-2 py-[2px] text-[10px] font-semibold">
+          {index + 1}/{keys.length}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function AchievementBadgesPage() {
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [data, setData] = useState<AchievementsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [toastKeys, setToastKeys] = useState<string[]>([]);
 
-  const totals = useMemo(() => {
-    const totalBadges = CATEGORIES.reduce((s, c) => s + c.total, 0);
-    const earned = CATEGORIES.reduce((s, c) => s + c.earned, 0);
-    return { totalBadges, earned };
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await dashboardService.getAchievements();
+        const payload: AchievementsData | undefined = res?.data;
+        if (cancelled || !payload) return;
+
+        setData(payload);
+
+        if (payload.newlyAwarded?.length) {
+          setToastKeys(payload.newlyAwarded);
+          // Fire-and-forget: mark them seen so a reload won't re-toast.
+          dashboardService.markBadgesSeen(payload.newlyAwarded).catch(() => {});
+        }
+      } catch {
+        // Graceful fallback: leave data null so everything renders as locked.
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const statusByKey = useMemo(() => {
+    const map = new Map<string, BadgeStatus>();
+    for (const b of data?.badges ?? []) map.set(b.key, b.status);
+    return map;
+  }, [data]);
+
+  const earnedTotal = data?.earnedTotal ?? 0;
+  const dayStreak = data?.heroStats?.dayStreak ?? 0;
+  const syllabusDone = data?.heroStats?.syllabusDone ?? 0;
 
   const filteredCategories = selectedFilter === 'all'
     ? CATEGORIES
@@ -877,10 +978,10 @@ export default function AchievementBadgesPage() {
         }
         subtitle="A complete achievement system for UPSC aspirants, designed to motivate, retain and recognise every kind of effort on the RiseWithJeet platform."
         stats={[
-          { value: String(totals.earned), label: 'Badges Earned', color: '#FDC700' },
-          { value: String(totals.totalBadges), label: 'Total Badges', color: '#F87171' },
-          { value: '4', label: 'Day Streak', color: '#4ADE80' },
-          { value: '60%', label: 'Syllabus Done', color: '#FFFFFF' },
+          { value: loading ? '—' : String(earnedTotal), label: 'Badges Earned', color: '#FDC700' },
+          { value: String(TOTAL_BADGE_COUNT), label: 'Total Badges', color: '#F87171' },
+          { value: loading ? '—' : String(dayStreak), label: 'Day Streak', color: '#4ADE80' },
+          { value: loading ? '—' : `${syllabusDone}%`, label: 'Syllabus Done', color: '#FFFFFF' },
         ]}
       />
 
@@ -907,9 +1008,13 @@ export default function AchievementBadgesPage() {
         </div>
 
         {filteredCategories.map((category) => (
-          <CategorySection key={category.key} category={category} />
+          <CategorySection key={category.key} category={category} statusByKey={statusByKey} />
         ))}
       </main>
+
+      {toastKeys.length > 0 && (
+        <BadgeAwardToast keys={toastKeys} onDone={() => setToastKeys([])} />
+      )}
     </div>
   );
 }

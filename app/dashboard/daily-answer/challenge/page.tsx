@@ -6,6 +6,7 @@ import { dailyAnswerService, leaderboardService, bookmarkService } from '@/lib/s
 import Link from 'next/link';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { MainsEvaluationLimitModal } from '@/components/upgrade/UpgradeModals';
 import { useAuth } from '@/contexts/AuthContext';
 import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
@@ -292,11 +293,6 @@ function DailyMainsChallengeInner() {
     };
   }, []);
 
-  useEffect(() => {
-    if (entitlements.loading) return;
-    const quota = entitlements.featureStatus('mains_evaluation');
-    if (quota?.allowed === false) setShowQuotaModal(true);
-  }, [entitlements]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -327,61 +323,22 @@ function DailyMainsChallengeInner() {
 
   const mainsQuota = entitlements.featureStatus('mains_evaluation');
 
-  const quotaModal = showQuotaModal && (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ background: 'rgba(16,24,40,0.45)', backdropFilter: 'blur(4px)' }}
-      onClick={() => setShowQuotaModal(false)}
-    >
-      <div
-        className="relative w-full max-w-[420px] bg-white"
-        style={{ borderRadius: '20px', padding: '32px 28px', boxShadow: '0 8px 40px rgba(0,0,0,0.15)' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={() => setShowQuotaModal(false)}
-          aria-label="Close popup"
-          className="absolute flex items-center justify-center"
-          style={{ top: '14px', right: '14px', width: '28px', height: '28px', borderRadius: '50%', background: '#F3F4F6', color: '#6A7282' }}
-        >
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 2l10 10M12 2L2 12" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </button>
-
-        <div className="mx-auto flex items-center justify-center" style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(232, 184, 75, 0.16)', marginBottom: '16px' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/Icon%20(13).png" alt="" style={{ width: '28px', height: '28px' }} />
-        </div>
-
-        <h2 className="text-center text-[#101828]" style={{ fontSize: '20px', fontWeight: 700, lineHeight: '28px', margin: '0 0 8px' }}>
-          You&apos;ve used all your Mains evaluations
-        </h2>
-        <p className="text-center text-[#4A5565]" style={{ fontSize: '13px', lineHeight: '20px', margin: '0 0 20px' }}>
-          {mainsQuota?.message || 'You have used your Mains evaluation quota for this period. Upgrade your plan to get more evaluations.'}
-        </p>
-
-        <Link href="/dashboard/billing/plans" className="block">
-          <button
-            type="button"
-            className="w-full flex items-center justify-center"
-            style={{ height: '48px', background: '#17223E', borderRadius: '12px', fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '10px' }}
-          >
-            View upgrade options
-          </button>
-        </Link>
-        <button
-          type="button"
-          onClick={() => setShowQuotaModal(false)}
-          className="w-full"
-          style={{ height: '46px', background: 'transparent', border: '1px solid #E5E7EB', borderRadius: '12px', fontSize: '13px', fontWeight: 500, color: '#6A7282' }}
-        >
-          Maybe later
-        </button>
-      </div>
-    </div>
+  const quotaModal = (
+    <MainsEvaluationLimitModal
+      open={showQuotaModal}
+      onClose={() => setShowQuotaModal(false)}
+      tier={entitlements.tier}
+      used={mainsQuota?.used}
+      limit={mainsQuota?.limit}
+      backLabel="Back to Dashboard"
+    />
   );
 
   const handleBeginChallenge = () => {
+    if (!entitlements.loading && mainsQuota?.allowed === false) {
+      setShowQuotaModal(true);
+      return;
+    }
     setChallengeStarted(true);
     setIsActive(false);
     setReadTimeLeft(READING_WINDOW_SECONDS);

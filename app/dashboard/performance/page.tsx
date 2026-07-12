@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { dashboardService, leaderboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import { EntitlementGate, UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { PerformanceAnalyticsUpgradeModal } from '@/components/upgrade/UpgradeModals';
 
 type DayActivity = { questionsAttempted: number; hours: number };
 type SubjectRow = { name: string; accuracy: number; questions: number; tag?: string; color?: string };
@@ -66,6 +66,53 @@ function AnalyticsCard({ children, className = '' }: { children: React.ReactNode
       style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}
     >
       {children}
+    </div>
+  );
+}
+
+function LockedAnalyticsCard({
+  heading,
+  children,
+  locked,
+  className = '',
+  onUpgradeClick,
+}: {
+  heading: React.ReactNode;
+  children: React.ReactNode;
+  locked: boolean;
+  className?: string;
+  onUpgradeClick?: () => void;
+}) {
+  return (
+    <div
+      className={`group relative overflow-hidden rounded-[14px] border border-[#E5E7EB] bg-white shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_rgba(0,0,0,0.1)] transition-all duration-300 ${locked ? 'cursor-pointer hover:-translate-y-1 hover:border-[#D8D8DE] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)]' : ''} ${className}`}
+      onClick={locked ? onUpgradeClick : undefined}
+    >
+      <div className="pointer-events-none relative z-[6]">{heading}</div>
+      <div className={locked ? 'pointer-events-none select-none blur-[4px] transition-[filter] duration-300 group-hover:blur-[5px]' : ''}>
+        {children}
+      </div>
+      {locked && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onUpgradeClick?.();
+          }}
+          aria-label="Upgrade to unlock analytics"
+          className="absolute inset-0 z-[5] flex flex-col items-center justify-center bg-white/60 opacity-0 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-hover:bg-white/35 group-hover:backdrop-blur-[4px]"
+        >
+          <span className="mb-2 flex h-[42px] w-[42px] scale-75 items-center justify-center rounded-full bg-[#1E2028] opacity-0 shadow-[0_4px_14px_rgba(30,32,40,0.25)] transition-all duration-300 group-hover:scale-100 group-hover:opacity-100">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5C542" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </span>
+          <span className="text-[11.5px] font-bold tracking-[0.2px] text-[#1E293B] opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            UPGRADE TO UNLOCK
+          </span>
+        </button>
+      )}
     </div>
   );
 }
@@ -142,6 +189,7 @@ export default function PerformancePage() {
   const [failedSections, setFailedSections] = useState<string[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { user } = useAuth();
   const entitlements = useEntitlements();
 
@@ -153,7 +201,7 @@ export default function PerformancePage() {
       dashboardService.getTestAnalytics(),
       dashboardService.getBadges(),
       dashboardService.getStreakCalendar(),
-      leaderboardService.getLeaderboard('overall', 'week', true),
+      leaderboardService.getLeaderboard('overall', 'week'),
     ])
       .then(([performanceResult, analyticsResult, badgesResult, streakCalendarResult, leaderboardResult]) => {
         if (!mounted) return;
@@ -179,13 +227,7 @@ export default function PerformancePage() {
         }
 
         if (leaderboardResult.status === 'fulfilled') {
-          // The community leaderboard may contain cultivated profiles to keep
-          // its public ranking populated. Performance analytics must only show
-          // actual aspirants, including while an older API deployment ignores
-          // the `realOnly` request parameter.
-          setWeeklyLeaderboard(
-            (leaderboardResult.value.data ?? []).filter((entry: any) => entry.isSynthetic !== true),
-          );
+          setWeeklyLeaderboard(leaderboardResult.value.data ?? []);
         }
       })
       .finally(() => {
@@ -352,19 +394,19 @@ export default function PerformancePage() {
   ];
 
   const userFirstName = user?.firstName || 'Arjun';
+  const hasFullAnalytics = entitlements.canAccess('analytics', ['full']);
+  const showAdvancedAnalyticsPreview = !hasFullAnalytics;
 
   return (
-    <EntitlementGate
-      accessKey="analytics"
-      allowed={['full', 'limited']}
-      requiredTier="aspire"
-      title="Performance analytics are available on Aspire+"
-      message="Upgrade to Aspire for a preview, or Rise for full analytics."
-    >
     <div
       className="flex overflow-hidden font-arimo"
       style={{ background: '#F9FAFB', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
     >
+      <PerformanceAnalyticsUpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        tier={entitlements.tier}
+      />
       <div className="flex-1 overflow-y-auto">
         <DashboardPageHero
           badgeIcon={
@@ -387,17 +429,6 @@ export default function PerformancePage() {
               Some live data could not be loaded: {failedSections.join(', ')}. Refresh the page to try again.
             </div>
           )}
-          {entitlements.isLimited('analytics') && (
-            <div className="mb-6">
-              <UpgradePrompt
-                title="You are viewing limited analytics"
-                currentTier={entitlements.tier}
-                requiredTier="rise"
-                message="Rise unlocks full subject, trend, and weak-area analytics across tests and study activity."
-              />
-            </div>
-          )}
-
           <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {summaryCards.map((card) => (
               <AnalyticsCard key={card.title} className="min-h-[142px] px-5 py-6">
@@ -419,11 +450,15 @@ export default function PerformancePage() {
           </div>
 
           <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <AnalyticsCard className="px-6 py-7">
-              <h2 className="mb-8 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
+            <LockedAnalyticsCard
+              locked={showAdvancedAnalyticsPreview}
+              onUpgradeClick={() => setShowUpgradeModal(true)}
+              className="px-6 py-7"
+              heading={<h2 className="mb-8 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
                 <span className="h-2 w-2 rounded-full bg-[#8B35F6]" />
                 Study Time – This Week
-              </h2>
+              </h2>}
+            >
 
               <div className="mb-16 grid grid-cols-2 gap-5 sm:grid-cols-4">
                 {[
@@ -454,13 +489,17 @@ export default function PerformancePage() {
                   );
                 })}
               </div>
-            </AnalyticsCard>
+            </LockedAnalyticsCard>
 
-            <AnalyticsCard className="px-6 py-7">
-              <h2 className="mb-9 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
+            <LockedAnalyticsCard
+              locked={showAdvancedAnalyticsPreview}
+              onUpgradeClick={() => setShowUpgradeModal(true)}
+              className="px-6 py-7"
+              heading={<h2 className="mb-9 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
                 <span className="h-2 w-2 rounded-full bg-[#F28C32]" />
                 Time Distribution – This Week
-              </h2>
+              </h2>}
+            >
 
               <div className="grid items-center gap-8 sm:grid-cols-[220px_1fr]">
                 <div className="flex justify-center">
@@ -478,13 +517,16 @@ export default function PerformancePage() {
                   ))}
                 </div>
               </div>
-            </AnalyticsCard>
+            </LockedAnalyticsCard>
           </div>
 
           <SectionLabel>Strong &amp; Weak Areas</SectionLabel>
           <div className="mb-9 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <AnalyticsCard className="px-6 py-7">
-              <div className="mb-8 flex items-center justify-between gap-4">
+            <LockedAnalyticsCard
+              locked={showAdvancedAnalyticsPreview}
+              onUpgradeClick={() => setShowUpgradeModal(true)}
+              className="px-6 py-7"
+              heading={<div className="mb-8 flex items-center justify-between gap-4">
                 <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
                   <span className="text-[24px]" aria-hidden>💪</span>
                   Strong Areas
@@ -493,12 +535,16 @@ export default function PerformancePage() {
                   <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#4A7DFF]" />Accuracy</span>
                   <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#D1D5DB]" />Qs attempted</span>
                 </div>
-              </div>
+              </div>}
+            >
               <SubjectList rows={strongAreas} />
-            </AnalyticsCard>
+            </LockedAnalyticsCard>
 
-            <AnalyticsCard className="px-6 py-7">
-              <div className="mb-8 flex items-center justify-between gap-4">
+            <LockedAnalyticsCard
+              locked={showAdvancedAnalyticsPreview}
+              onUpgradeClick={() => setShowUpgradeModal(true)}
+              className="px-6 py-7"
+              heading={<div className="mb-8 flex items-center justify-between gap-4">
                 <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
                   <span className="text-[24px]" aria-hidden>⚠</span>
                   Weak Areas
@@ -506,21 +552,26 @@ export default function PerformancePage() {
                 <Link href="/dashboard/spaced-repetition" className="text-[16px] font-medium text-[#155DFC]">
                   View Tracker +
                 </Link>
-              </div>
+              </div>}
+            >
               <SubjectList rows={weakAreas} weak />
-            </AnalyticsCard>
+            </LockedAnalyticsCard>
           </div>
 
           <SectionLabel>Study Streak &amp; Daily Trio Progress</SectionLabel>
           <div className="mb-9 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <AnalyticsCard className="px-6 py-7">
-              <div className="mb-7 flex items-center justify-between gap-4">
+            <LockedAnalyticsCard
+              locked={showAdvancedAnalyticsPreview}
+              onUpgradeClick={() => setShowUpgradeModal(true)}
+              className="px-6 py-7"
+              heading={<div className="mb-7 flex items-center justify-between gap-4">
                 <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
                   <span aria-hidden>📅</span>
                   Study Streak – {streakCalendar?.monthLabel ?? new Date().toLocaleString('en-US', { month: 'long' })} {streakCalendar?.year ?? new Date().getFullYear()}
                 </h2>
                 <span className="font-bold text-[#F2742F]">🔥 {currentStreak} Days!</span>
-              </div>
+              </div>}
+            >
 
               <div className="mb-5 flex flex-wrap items-center gap-2 text-[10px] uppercase text-[#6A7282]">
                 <span>Intensity</span>
@@ -553,13 +604,13 @@ export default function PerformancePage() {
                       onClick={() => setSelectedDay(entry.day)}
                       className="flex aspect-square items-center justify-center rounded-[8px] text-[14px] font-semibold transition-shadow"
                       style={{
-                        background: isSelected ? '#0F1626' : intensityColor,
+                        background: isSelected ? '#0F1626' : isToday ? '#0A1172' : intensityColor,
                         border: isSelected
                           ? '2px solid #0F1626'
                           : isToday
-                            ? '1px solid #0F1626'
+                            ? '2px solid #0A1172'
                             : '1px solid transparent',
-                        color: isSelected ? '#F4B740' : entry.intensity >= 2 ? '#FFFFFF' : '#101828',
+                        color: isSelected ? '#F4B740' : isToday ? '#FFFFFF' : entry.intensity >= 2 ? '#FFFFFF' : '#101828',
                       }}
                     >
                       {entry.day}
@@ -623,13 +674,17 @@ export default function PerformancePage() {
                   <div className="mt-1 text-[10px] uppercase text-[#6A7282]">Total Week Hours</div>
                 </div>
               </div>
-            </AnalyticsCard>
+            </LockedAnalyticsCard>
 
-            <AnalyticsCard className="px-6 py-7">
-              <h2 className="mb-7 flex items-center gap-3 text-[20px] font-bold text-[#101828]">
+            <LockedAnalyticsCard
+              locked={showAdvancedAnalyticsPreview}
+              onUpgradeClick={() => setShowUpgradeModal(true)}
+              className="px-6 py-7"
+              heading={<h2 className="mb-7 flex items-center gap-3 text-[20px] font-bold text-[#101828]">
                 <span aria-hidden>⚡</span>
                 Daily Trio – This Week
-              </h2>
+              </h2>}
+            >
 
               {[
                 { icon: '📚', title: 'Daily MCQ Challenge', subtitle: 'Polity, Economy, Geography', value: Math.min(analyticsData?.dailyTrio?.mcqDays ?? 0, 7), color: '#58BE87', href: '/dashboard/daily-mcq' },
@@ -658,7 +713,7 @@ export default function PerformancePage() {
                   </div>
                 </Link>
               ))}
-            </AnalyticsCard>
+            </LockedAnalyticsCard>
           </div>
 
           <SectionLabel>Recent Tests &amp; Achievements</SectionLabel>
@@ -705,7 +760,7 @@ export default function PerformancePage() {
                   <span aria-hidden>🏅</span>
                   Weekly Leaderboard
                 </h2>
-                <Link href="/dashboard/leaderboard" className="text-[13px] font-semibold text-[#258F7D] hover:underline">View All →</Link>
+                <Link href="/dashboard/leaderboard?range=week" className="text-[13px] font-semibold text-[#258F7D] hover:underline">View All →</Link>
               </div>
 
               {weeklyLeaderboard?.length ? (
@@ -735,6 +790,5 @@ export default function PerformancePage() {
         </div>
       </div>
     </div>
-    </EntitlementGate>
   );
 }

@@ -236,12 +236,18 @@ function getDateKeyParts(dateKey: string) {
   return { year, monthIndex: month - 1, day };
 }
 
+function shiftDateKey(dateKey: string, dayOffset: number): string {
+  const { year, monthIndex, day } = getDateKeyParts(dateKey);
+  const shifted = new Date(Date.UTC(year, monthIndex, day + dayOffset));
+  return shifted.toISOString().slice(0, 10);
+}
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 export default function DailyEditorialPage() {
   const router = useRouter();
-  const latestEditionDate = getIstDateKey(-1);
+  const latestEditionDate = getIstDateKey();
   const initialEdition = getDateKeyParts(latestEditionDate);
   const [activeNewspaper, setActiveNewspaper] = useState<'hindu' | 'express'>('hindu');
   const [calMonth, setCalMonth] = useState(initialEdition.monthIndex);
@@ -288,20 +294,33 @@ export default function DailyEditorialPage() {
   }, [activeNewspaper, calMonth, calYear]);
 
   useEffect(() => {
-    const source = activeNewspaper === 'hindu' ? 'The Hindu' : 'Indian Express';
+    const activeSource = activeNewspaper === 'hindu' ? 'The Hindu' : 'Indian Express';
+    const editionContentDate = shiftDateKey(selectedDate, -1);
+    let cancelled = false;
     setLoading(true);
     setCurrentPage(1);
-    editorialService.getToday(source, selectedDate)
-      .then(res => {
-        const articles = res.data && Array.isArray(res.data) ? res.data : [];
-        if (articles.length > 0) {
-          setEditorials(articles);
-        } else {
-          setEditorials([]);
-        }
+    // The newspaper is dated today, but its edition contains yesterday's news.
+    Promise.allSettled([
+      editorialService.getToday('The Hindu', editionContentDate, 60),
+      editorialService.getToday('Indian Express', editionContentDate, 60),
+    ])
+      .then(([hinduResult, expressResult]) => {
+        if (cancelled) return;
+        const getArticles = (result: PromiseSettledResult<any>): EditorialCard[] =>
+          result.status === 'fulfilled' && Array.isArray(result.value?.data) ? result.value.data : [];
+        const hinduArticles = getArticles(hinduResult);
+        const expressArticles = getArticles(expressResult);
+        setGlanceStats(prev => ({ ...prev, hindu: hinduArticles.length, express: expressArticles.length }));
+        setEditorials(activeSource === 'The Hindu' ? hinduArticles : expressArticles);
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) setEditorials([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, [activeNewspaper, selectedDate]);
 
   useEffect(() => {

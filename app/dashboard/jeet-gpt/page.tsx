@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { jeetAIService } from '@/lib/services';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { JeetAiLimitModal } from '@/components/upgrade/UpgradeModals';
 
 /* ── Spinner ── */
 const Spinner = () => (
@@ -532,8 +533,14 @@ export default function JeetGPTPage() {
       }
     } catch (err: any) {
       const parsed = handleEntitlementError(err);
-      setError(parsed.message || 'Failed to get response. Please try again.');
-      if (parsed.title === 'Limit reached' || parsed.title === 'Slow down for a bit') setShowUpgradeModal(true);
+      if (parsed.title === 'Limit reached') {
+        setShowUpgradeModal(true);
+      } else if (parsed.title === 'Slow down for a bit') {
+        // Internal hourly throttle — keep the wording generic, never surface the hourly cap.
+        setError('Jeet AI Mentor is handling heavy queries right now. Please try again in a little while.');
+      } else {
+        setError(parsed.message || 'Failed to get response. Please try again.');
+      }
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
     } finally {
       setIsLoading(false);
@@ -833,99 +840,14 @@ export default function JeetGPTPage() {
       </div>
 
       {/* ── Daily-limit Upgrade Modal ── */}
-      {showUpgradeModal && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 jeet-upgrade-overlay"
-          style={{ background: 'rgba(224, 231, 255, 0.55)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
-          onClick={() => setShowUpgradeModal(false)}
-        >
-          <div
-            className="relative w-full max-w-[400px] jeet-upgrade-pop"
-            style={{
-              background: '#fff',
-              borderRadius: '24px',
-              padding: '36px 32px 28px',
-              border: '1.5px solid rgba(201, 168, 76, 0.22)',
-              boxShadow: '0 8px 40px rgba(27, 46, 107, 0.13), 0 1.5px 6px rgba(27,46,107,0.07)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setShowUpgradeModal(false)}
-              aria-label="Close popup"
-              className="absolute flex items-center justify-center transition-colors"
-              style={{ top: '14px', right: '14px', width: '28px', height: '28px', borderRadius: '50%', background: '#F1F4FB', color: '#8A96B4' }}
-            >
-              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 2l10 10M12 2L2 12" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            </button>
-
-            <div className="relative mx-auto flex items-center justify-center" style={{ width: '60px', height: '60px', borderRadius: '18px', background: 'linear-gradient(135deg, #1B2E6B 0%, #2E4499 100%)', boxShadow: '0 4px 18px rgba(27,46,107,0.22)', marginBottom: '18px' }}>
-              <div className="jeet-crown-glow" style={{ position: 'absolute', inset: '-3px', borderRadius: '21px', border: '1.5px solid rgba(245, 206, 110, 0.35)', pointerEvents: 'none' }} />
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="#F5CE6E" aria-hidden="true"><path d="M3 7.5l3.8 3 3.4-5.2a1 1 0 011.6 0l3.4 5.2 3.8-3a1 1 0 011.6.95l-1.7 9.3a1 1 0 01-1 .82H5.1a1 1 0 01-1-.82L2.4 8.45A1 1 0 013 7.5z" /></svg>
-            </div>
-
-            <div className="flex justify-center" style={{ marginBottom: '14px' }}>
-              <div className="inline-flex items-center uppercase" style={{ gap: '5px', background: '#FEF4D8', border: '1px solid rgba(201,168,76,0.4)', borderRadius: '99px', padding: '4px 12px', fontSize: '11px', fontWeight: 600, color: '#9A7020', letterSpacing: '0.05em' }}>
-                <span className="jeet-badge-dot" style={{ width: '5px', height: '5px', background: '#C9A84C', borderRadius: '50%' }} /> Limit reached
-              </div>
-            </div>
-
-            <h2 className="text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '22px', fontWeight: 700, color: '#0E1D54', lineHeight: 1.3, margin: '0 0 8px' }}>
-              {quotaLimit === null
-                ? <>Jeet AI Mentor access paused<br />for your current plan</>
-                : <>You&apos;ve hit <span style={{ color: '#C9A84C' }}>{quotaUsed} / {quotaLimit}</span><br />queries today!</>}
-            </h2>
-            <p className="text-center" style={{ fontSize: '13px', color: '#6B7899', lineHeight: 1.6, margin: '0 0 22px' }}>
-              {aiQuota?.message || <>Your free quota is up. Upgrade to <strong>Jeet Pro</strong> and prep without limits — every day, all day.</>}
-            </p>
-
-            <div className="flex justify-between items-center" style={{ marginBottom: '7px' }}>
-              <span style={{ fontSize: '12px', color: '#8A96B4', fontWeight: 500 }}>Daily queries</span>
-              <strong style={{ fontSize: '12px', fontWeight: 700, color: '#C05A2A' }}>{quotaLimit === null ? 'Unlimited' : `${quotaUsed} / ${quotaLimit} used`}</strong>
-            </div>
-            <div style={{ height: '7px', background: '#EEF2FF', borderRadius: '99px', overflow: 'hidden', marginBottom: '22px' }}>
-              <div className="jeet-prog-fill" style={{ height: '100%', background: 'linear-gradient(90deg, #E05A28 0%, #C9A84C 100%)', borderRadius: '99px', width: '100%' }} />
-            </div>
-
-            <div className="grid grid-cols-2" style={{ gap: '9px', marginBottom: '22px' }}>
-              {[
-                { bg: '#E8EEFF', color: '#1B2E6B', title: 'Unlimited queries', sub: 'Zero daily cap', icon: <path d="M5 12a3 3 0 013-3c1.6 0 2.7 1.1 4 2.5s2.4 2.5 4 2.5a3 3 0 100-6c-1.6 0-2.7 1.1-4 2.5s-2.4 2.5-4 2.5a3 3 0 100 6c1.6 0 2.7-1.1 4-2.5" /> },
-                { bg: '#FEF4D8', color: '#B8860B', title: 'Saved notes', sub: 'Revisit anytime', icon: <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 3v18M5 8h4M5 12h4M5 16h4" /></> },
-                { bg: '#E2F4F1', color: '#0E7A6A', title: 'Priority answers', sub: 'Faster & richer', icon: <path d="M13 2L5 13h5l-1 9 9-12h-6l1-8z" strokeLinejoin="round" /> },
-                { bg: '#FDE8EE', color: '#BE2B57', title: 'Answer grading', sub: 'Score your Mains', icon: <><rect x="6" y="4" width="12" height="17" rx="2" /><path d="M9 4a2 2 0 012-2h2a2 2 0 012 2" /><path d="M8.5 12.5l1.5 1.5 3-3" /></> },
-              ].map((p) => (
-                <div key={p.title} className="flex items-start" style={{ gap: '9px', background: '#F7F9FF', border: '1px solid #E4E9F7', borderRadius: '14px', padding: '12px 11px' }}>
-                  <div className="flex items-center justify-center flex-shrink-0" style={{ width: '30px', height: '30px', borderRadius: '9px', background: p.bg, color: p.color }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">{p.icon}</svg>
-                  </div>
-                  <div>
-                    <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: '#1B2E6B', lineHeight: 1.3 }}>{p.title}</p>
-                    <span style={{ fontSize: '11px', color: '#8A96B4' }}>{p.sub}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ height: '1px', background: '#EEF2FF', margin: '0 0 18px' }} />
-
-            <Link href="/dashboard/billing/plans" className="block">
-              <button type="button" className="w-full jeet-btn-pro flex items-center justify-center" style={{ padding: '14px', background: 'linear-gradient(135deg, #1B2E6B 0%, #2E4499 100%)', border: 'none', borderRadius: '14px', fontSize: '14px', fontWeight: 700, color: '#fff', gap: '8px', letterSpacing: '0.02em', marginBottom: '9px', boxShadow: '0 4px 16px rgba(27,46,107,0.25)' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="#F5CE6E" aria-hidden="true"><path d="M3 7.5l3.8 3 3.4-5.2a1 1 0 011.6 0l3.4 5.2 3.8-3a1 1 0 011.6.95l-1.7 9.3a1 1 0 01-1 .82H5.1a1 1 0 01-1-.82L2.4 8.45A1 1 0 013 7.5z" /></svg>
-                Upgrade to Pro &nbsp;→
-              </button>
-            </Link>
-            <button type="button" onClick={() => setShowUpgradeModal(false)} className="w-full transition-colors" style={{ padding: '11px', background: 'transparent', border: '1px solid #E4E9F7', borderRadius: '14px', fontSize: '13px', fontWeight: 500, color: '#8A96B4' }}>
-              Maybe tomorrow
-            </button>
-
-            <p className="flex items-center justify-center" style={{ textAlign: 'center', fontSize: '10.5px', color: '#B0BCDA', marginTop: '12px', gap: '4px' }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
-              Secure payment &nbsp;·&nbsp; Cancel anytime
-            </p>
-          </div>
-        </div>
-      )}
+      <JeetAiLimitModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        tier={entitlements.tier}
+        used={quotaLimit !== null ? quotaUsed : undefined}
+        limit={quotaLimit ?? undefined}
+        backLabel="Back to Dashboard"
+      />
 
       <style jsx global>{`
         .jai-layout{display:flex;height:100%;overflow:hidden;font-family:var(--font-dm-sans),sans-serif;background:#0d1117;color:#e6edf3;position:relative;}

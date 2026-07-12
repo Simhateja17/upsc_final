@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService, bookmarkService, flagService } from '@/lib/services';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { MainsEvaluationLimitModal } from '@/components/upgrade/UpgradeModals';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import ExamInstructions from '@/components/ExamInstructions';
 import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
@@ -37,6 +38,31 @@ function normalizeQuestionText(text: string): string {
     .replace(/[–—]/g, '-')
     .replace(/\s+(\d+\.)\s+/g, '\n$1 ')
     .replace(/\s+-\s+/g, ' ');
+}
+
+function normalizeDurationToSeconds(rawDuration: unknown, questionCount: number, isMains: boolean): number {
+  const fallbackMinutes = isMains
+    ? Math.max(8, questionCount * 8)
+    : Math.max(1, Math.round(questionCount * 1.2));
+  const fallbackSeconds = fallbackMinutes * 60;
+
+  const parsed =
+    typeof rawDuration === 'number'
+      ? rawDuration
+      : typeof rawDuration === 'string'
+        ? Number(rawDuration)
+        : NaN;
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallbackSeconds;
+  }
+
+  // DB records may store duration in minutes; normalize to seconds for countdown.
+  if (parsed <= 240) {
+    return Math.round(parsed * 60);
+  }
+
+  return Math.round(parsed);
 }
 
 const SAMPLE_QUESTIONS: Question[] = [
@@ -151,6 +177,7 @@ function MockTestAttemptInner() {
   /* ─── Mains State ─── */
   const [mainsSubmitting, setMainsSubmitting] = useState(false);
   const [mainsConfirmOpen, setMainsConfirmOpen] = useState(false);
+  const [showMainsQuotaModal, setShowMainsQuotaModal] = useState(false);
   const [mainsAnswers, setMainsAnswers] = useState<Record<number, MainsAnswer>>({});
   // Questions the user has explicitly marked as "didn't attempt" — these are
   // allowed through submission without an answer upload and are not evaluated.
@@ -462,7 +489,7 @@ function MockTestAttemptInner() {
 
       const quota = entitlements.featureStatus('mains_evaluation');
       if (quota?.allowed === false) {
-        setError(quota.message || 'You have used your Mains evaluation quota for this period.');
+        setShowMainsQuotaModal(true);
         setMainsSubmitting(false);
         return;
       }
@@ -513,7 +540,11 @@ function MockTestAttemptInner() {
       console.error('Mains submit failed:', err);
       entitlements.refreshEntitlements().catch(() => {});
       const parsed = handleEntitlementError(err);
-      setError(parsed.message || err.message || 'Failed to submit answers. Please try again.');
+      if (parsed.title === 'Limit reached' || parsed.title === 'Upgrade required') {
+        setShowMainsQuotaModal(true);
+      } else {
+        setError(parsed.message || err.message || 'Failed to submit answers. Please try again.');
+      }
       setMainsSubmitting(false);
     }
   };
@@ -1988,6 +2019,14 @@ function MockTestAttemptInner() {
 
   return (
     <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : undefined, background: '#FAFBFE', fontFamily: 'Inter, sans-serif', padding: isMobile ? '10px' : '12px 20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: isMobile ? 'auto' : 'hidden' }}>
+      <MainsEvaluationLimitModal
+        open={showMainsQuotaModal}
+        onClose={() => setShowMainsQuotaModal(false)}
+        tier={entitlements.tier}
+        used={entitlements.featureStatus('mains_evaluation')?.used}
+        limit={entitlements.featureStatus('mains_evaluation')?.limit}
+        backLabel="Back to Mock Tests"
+      />
       <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0 }}>
 
         {error && (

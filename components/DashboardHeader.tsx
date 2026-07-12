@@ -21,8 +21,6 @@ interface NotificationItem {
   created_at: string;
 }
 
-type NotificationTab = 'all' | 'unread' | 'alerts';
-
 function getNotificationIcon(type: string): string {
   switch (type) {
     case 'mcq_reminder': return '\u{1F4DD}';
@@ -74,10 +72,6 @@ function getNotificationIconStyle(type: string): { background: string; color: st
   }
 }
 
-function isAlertNotification(type: string): boolean {
-  return ['streak_alert', 'streak_milestone', 'streak_daily', 'mock_test_available', 'answer_evaluated'].includes(type);
-}
-
 function formatRelativeTime(dateStr: string): string {
   const now = new Date();
   const date = new Date(dateStr);
@@ -105,7 +99,6 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const { openAuthModal } = useAuthModal();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notificationTab, setNotificationTab] = useState<NotificationTab>('all');
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [toasts, setToasts] = useState<NotificationItem[]>([]);
   const [mounted, setMounted] = useState(false);
@@ -159,11 +152,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const notificationModalRef = useRef<HTMLDivElement>(null);
   const isUpgradeActive = pathname === '/dashboard/billing/plans' || pathname.startsWith('/dashboard/billing/plans/');
   const unreadCount = notifications.filter((n) => !n.read).length;
-  const visibleNotifications = notifications.filter((item) => {
-    if (notificationTab === 'unread') return !item.read;
-    if (notificationTab === 'alerts') return isAlertNotification(item.type);
-    return true;
-  });
+  const visibleNotifications = notifications;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -193,6 +182,15 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
     try {
       await userService.markAllNotificationsRead();
       setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+    } catch {
+      // Silent fail
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await userService.clearAllNotifications();
+      setNotifications([]);
     } catch {
       // Silent fail
     }
@@ -479,24 +477,6 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
             </button>
           </div>
 
-          <div className="flex gap-1.5 px-5 pb-1.5 pt-3">
-            {([
-              ['all', 'All'],
-              ['unread', 'Unread'],
-              ['alerts', 'Alerts'],
-            ] as Array<[NotificationTab, string]>).map(([tab, label]) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setNotificationTab(tab)}
-                className="rounded-full px-3 py-1.5 text-[12px] font-black transition-colors"
-                style={{ background: notificationTab === tab ? '#111933' : '#F0F3FA', color: notificationTab === tab ? '#FFFFFF' : '#626C80' }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
           <div className="max-h-[380px] overflow-y-auto px-3 pb-3 pt-2 [scrollbar-width:thin] [scrollbar-color:#D5DAE6_transparent]">
             {visibleNotifications.length === 0 ? (
               <p className="px-5 py-10 text-center text-[13px] font-bold text-[#A0A8B9]">You&apos;re all caught up.</p>
@@ -526,8 +506,18 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
           </div>
 
           <div className="border-t border-[#EEF1F8] px-5 py-3 text-center">
-            <button type="button" onClick={() => setShowNotifications(false)} className="text-[13px] font-black text-[#27337A] transition-colors hover:text-[#4F63D9]">
-              View all notifications →
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="inline-flex items-center gap-1.5 text-[13px] font-black text-[#27337A] transition-colors hover:text-[#4F63D9]"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" y1="11" x2="10" y2="17" />
+                <line x1="14" y1="11" x2="14" y2="17" />
+              </svg>
+              Clear All
             </button>
           </div>
         </aside>,

@@ -4,21 +4,10 @@ import React, { useEffect, useState } from 'react';
 import { mindmapService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import MindmapIntroSections from '@/components/MindmapIntroSections';
-import { UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { MindmapUpgradeModal, LockedSubjectCard, LockedCardStyles } from '@/components/upgrade/UpgradeModals';
 import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
 import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
-
-const SUBJECT_NAMES: Record<string, string> = {
-  'indian-polity': 'Polity',
-  'modern-history': 'History',
-  geography: 'Geography',
-  'indian-economy': 'Economy',
-  environment: 'Environment',
-  'science-and-tech': 'Science & Tech',
-  'current-affairs': 'Current Affairs',
-  'gs-iv-ethics': 'Ethics',
-};
 
 type SubjectData = {
   id: string;
@@ -34,6 +23,7 @@ export default function MindmapPage() {
   const entitlements = useEntitlements();
   const [subjects, setSubjects] = useState<SubjectData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     mindmapService.getSubjects()
@@ -51,8 +41,16 @@ export default function MindmapPage() {
   const coverage = totalMaps > 0 ? Math.round((totalExplored / totalMaps) * 100) : 0;
   const needReview = Math.max(0, totalMaps - totalExplored);
   const hasFullAccess = entitlements.canAccess('mindmaps', ['full']);
-  const previewCount = entitlements.preview.mindmaps ?? subjects.length;
-  const visibleSubjects = hasFullAccess ? subjects : subjects.slice(0, previewCount || 0);
+  // Free & Aspire: Polity and Economy stay open and are listed first; every
+  // other subject remains visible but blurred + locked, per the approved design.
+  const FREE_SUBJECT_SLUGS = ['polity', 'economy'];
+  const isSubjectLocked = (slug: string) => !hasFullAccess && !FREE_SUBJECT_SLUGS.includes(slug);
+  const visibleSubjects = hasFullAccess
+    ? subjects
+    : [
+        ...subjects.filter((s) => FREE_SUBJECT_SLUGS.includes(s.slug)),
+        ...subjects.filter((s) => !FREE_SUBJECT_SLUGS.includes(s.slug)),
+      ];
 
   return (
     <div className="min-h-screen font-arimo" style={{ background: '#F9FAFB' }}>
@@ -90,16 +88,6 @@ export default function MindmapPage() {
         }}
       >
       <div className="w-full max-w-[1120px] mx-auto px-4 sm:px-8 pb-12">
-        {!hasFullAccess && (
-          <div className="mb-6">
-            <UpgradePrompt
-              title="Mindmaps preview"
-              currentTier={entitlements.tier}
-              requiredTier="rise"
-              message={`Your plan includes ${previewCount || 0} preview mindmap. Upgrade to Rise to unlock the full visual learning library.`}
-            />
-          </div>
-        )}
         <div className="flex items-center gap-3 mb-2">
           <div className="w-8 h-8 rounded-full bg-[#10182D] text-white flex items-center justify-center font-semibold text-[14px]">1</div>
           <h2 className="text-[36px] font-bold text-[#10182D] font-serif">
@@ -108,6 +96,7 @@ export default function MindmapPage() {
         </div>
         <p className="text-[#6A7282] text-[14px] mb-6 ml-11">Select the subject whose mindmaps you want to study today</p>
         <SubjectChoiceCardStyles />
+        <LockedCardStyles />
 
         {loading ? (
           <div className="subject-card-grid">
@@ -123,11 +112,28 @@ export default function MindmapPage() {
         ) : (
           <div className="subject-card-grid">
             {visibleSubjects.map((subject) => {
-              const subjectName = SUBJECT_NAMES[subject.slug] ?? subject.name;
+              const subjectName = subject.name;
               const cardStyle = getSubjectCardStyle(subjectName);
               const subjectMeta = getSubjectMetaStyle(subjectName);
               const toGo = Math.max(0, subject.total - subject.explored);
               const progressWidth = subject.total > 0 ? Math.max(subject.progress, 10) : 0;
+              if (isSubjectLocked(subject.slug)) {
+                return (
+                  <LockedSubjectCard key={subject.slug} onClick={() => setShowUpgradeModal(true)}>
+                    <SubjectChoiceCard
+                      icon={subjectMeta.icon}
+                      iconBg={subjectMeta.bg}
+                      accentColor={cardStyle.bar}
+                      title={subjectName}
+                      meta={`${subject.total} cards · ${subject.total} topics`}
+                      progressPercent={progressWidth}
+                      footerLeft={`✓ ${subject.explored} mastered`}
+                      footerRight={toGo === 0 ? '✓ All done' : `${toGo} to go`}
+                      footerRightColor={toGo === 0 ? '#16A34A' : '#EF4444'}
+                    />
+                  </LockedSubjectCard>
+                );
+              }
               return (
                 <SubjectChoiceCard
                   key={subject.slug}
@@ -158,6 +164,8 @@ export default function MindmapPage() {
 
       <MindmapIntroSections />
       </div>
+
+      <MindmapUpgradeModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
     </div>
   );
 }

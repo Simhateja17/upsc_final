@@ -50,7 +50,7 @@ function getInitial(name: string) {
 export default function LeaderboardPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('overall');
-  const [range, setRange] = useState<Range>('all');
+  const [range, setRange] = useState<Range>('week');
   const [showRangeMenu, setShowRangeMenu] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [communityStats, setCommunityStats] = useState<CommunityStats | null>(null);
@@ -64,8 +64,12 @@ export default function LeaderboardPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
+    const rangeParam = params.get('range');
     if (tabParam === 'overall' || tabParam === 'mcq' || tabParam === 'mains') {
       setTab(tabParam);
+    }
+    if (rangeParam === 'all' || rangeParam === 'week' || rangeParam === 'month') {
+      setRange(rangeParam);
     }
   }, []);
 

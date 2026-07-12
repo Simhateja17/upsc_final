@@ -14,6 +14,8 @@ import QuestionTextRenderer from '@/components/QuestionTextRenderer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
 import { bookmarkService, flashcardService, pyqService, spacedRepService } from '@/lib/services';
+import { isEssayQuestion } from '@/lib/essayModelAnswer';
+import CuratedModelAnswer from '@/components/mains-results/CuratedModelAnswer';
 
 type PublicQuestion = {
   id: string;
@@ -343,7 +345,11 @@ function ModelAnswerBox({ question }: { question: PublicQuestion }) {
         </svg>
         <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#9a8347]">Model Answer</span>
       </div>
-      <ModelAnswerMarkdown text={answer} />
+      {/* GS-I/II/III/IV papers use the structured exam layout; essays keep their
+          own dedicated format. */}
+      {isEssayQuestion(question)
+        ? <ModelAnswerMarkdown text={answer} />
+        : <CuratedModelAnswer markdown={answer} />}
     </div>
   );
 }

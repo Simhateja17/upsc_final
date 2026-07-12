@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 interface SidebarProps {
   forceShow?: boolean;
@@ -19,7 +18,6 @@ interface SidebarProps {
 
 const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp, onToggle }: SidebarProps) => {
   const pathname = usePathname();
-  const entitlements = useEntitlements();
   const isControlled = collapsedProp !== undefined;
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const collapsed = isControlled ? collapsedProp : internalCollapsed;
@@ -189,7 +187,6 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
 
               <ul className="space-y-0.5">
                 {section.items.map((item) => {
-                  const locked = item.accessKey ? !entitlements.canAccess(item.accessKey, item.allowed as any) : false;
                   return (
                   <li key={item.id}>
                     <Link
@@ -228,11 +225,6 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
                           <span className="font-inter font-medium text-[13px] leading-none whitespace-nowrap">
                             {item.label}
                           </span>
-                          {locked && (
-                            <span className="ml-auto rounded-full bg-[#FFF7E0] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-[#9A7020]">
-                              Lock
-                            </span>
-                          )}
                         </>
                       )}
                     </Link>

@@ -22,7 +22,6 @@ const STUDY_TASK_SUBJECTS = [
   'Governance',
   'International Relations',
   'Social Justice',
-  'Agriculture',
   'Internal Security',
   'Disaster Management',
   'Ethics',
@@ -34,6 +33,13 @@ const STUDY_TASK_SUBJECTS = [
   'Optional Paper 1',
   'Optional Paper 2',
 ];
+
+// Short display label for a subject value. Subject values sent to/from the
+// backend stay canonical (e.g. "Environment & Ecology"); this only shortens
+// what's shown in the UI, kept in sync with displaySubjectLabel in the Study Planner page.
+function displaySubjectLabel(subject: string): string {
+  return subject === 'Environment & Ecology' ? 'Environment' : subject;
+}
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -254,7 +260,7 @@ const AddTaskModal = ({
               <option value="">Select Subject</option>
               {STUDY_TASK_SUBJECTS.map((s) => (
                 <option key={s} value={s}>
-                  {getSubjectEmoji(s)} {s}
+                  {getSubjectEmoji(s)} {displaySubjectLabel(s)}
                 </option>
               ))}
             </select>
@@ -1021,7 +1027,7 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
                           {(() => { const t = task.type || 'Reading'; return t.charAt(0).toUpperCase() + t.slice(1); })()}
                         </span>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[clamp(12px,0.68vw,13px)] font-medium text-purple-700" style={{ background: '#F3E8FF' }}>
-                          {task.subject ? `${getSubjectEmoji(task.subject)} ${task.subject}` : '📚 General'}
+                          {task.subject ? `${getSubjectEmoji(task.subject)} ${displaySubjectLabel(task.subject)}` : '📚 General'}
                         </span>
                         {timeLabel && (
                           <span className="inline-flex items-center gap-1 text-gray-600 text-[clamp(12px,0.68vw,13px)]">
