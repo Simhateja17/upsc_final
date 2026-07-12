@@ -17,9 +17,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { wordCountChip } from '@/lib/mainsPattern';
+import { wordCountChip, mainsWordLimit, mainsTimeLimit } from '@/lib/mainsPattern';
+import CuratedModelAnswer from './CuratedModelAnswer';
 
 export interface MainsParameterScore {
   parameter: string;
@@ -77,68 +76,6 @@ type TabKey = 'feedback' | 'markup' | 'breakdown' | 'next';
 
 const BETA_DISCLAIMER =
   'Jeet AI Mentor is currently in beta and evolving every day alongside you. Our evaluation engine is built to deliver meaningful, structured, and exam-relevant feedback, but it can still make mistakes. Use it as a smart companion alongside your mentors, notes, and judgment.';
-
-/* Renders a curated model answer (markdown) with exam-style formatting:
-   gold-accented section headings, bold lead-ins, bullets and tables. */
-function CuratedModelAnswer({ markdown }: { markdown: string }) {
-  return (
-    <div style={{ color: 'var(--ink)' }}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          h1: ({ children }) => (
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', margin: '18px 0 10px', paddingLeft: 12, borderLeft: '3px solid var(--gold)' }}>{children}</div>
-          ),
-          h2: ({ children }) => (
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', margin: '18px 0 10px', paddingLeft: 12, borderLeft: '3px solid var(--gold)' }}>{children}</div>
-          ),
-          h3: ({ children }) => (
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', margin: '16px 0 8px', paddingLeft: 12, borderLeft: '3px solid var(--gold)' }}>{children}</div>
-          ),
-          h4: ({ children }) => (
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', margin: '12px 0 6px' }}>{children}</div>
-          ),
-          p: ({ children }) => (
-            <p style={{ fontSize: 13.5, lineHeight: 1.8, color: '#1F2937', margin: '0 0 12px' }}>{children}</p>
-          ),
-          ul: ({ children }) => (
-            <ul style={{ fontSize: 13.5, lineHeight: 1.8, color: '#1F2937', margin: '0 0 12px', paddingLeft: 20, listStyleType: 'disc' }}>{children}</ul>
-          ),
-          ol: ({ children }) => (
-            <ol style={{ fontSize: 13.5, lineHeight: 1.8, color: '#1F2937', margin: '0 0 12px', paddingLeft: 20, listStyleType: 'decimal' }}>{children}</ol>
-          ),
-          li: ({ children }) => (
-            <li style={{ marginBottom: 4 }}>{children}</li>
-          ),
-          strong: ({ children }) => (
-            <strong style={{ fontWeight: 700, color: 'var(--ink)' }}>{children}</strong>
-          ),
-          em: ({ children }) => <em>{children}</em>,
-          a: ({ href, children }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: '#4F46E5', textDecoration: 'underline' }}>{children}</a>
-          ),
-          hr: () => <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '16px 0' }} />,
-          blockquote: ({ children }) => (
-            <blockquote style={{ borderLeft: '3px solid var(--gold)', paddingLeft: 12, margin: '0 0 12px', color: '#4A5565', fontStyle: 'italic' }}>{children}</blockquote>
-          ),
-          table: ({ children }) => (
-            <div style={{ overflowX: 'auto', margin: '0 0 14px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, border: '1px solid var(--line)' }}>{children}</table>
-            </div>
-          ),
-          th: ({ children }) => (
-            <th style={{ textAlign: 'left', fontWeight: 700, padding: '8px 10px', background: '#F9FAFB', color: 'var(--ink)', border: '1px solid var(--line)' }}>{children}</th>
-          ),
-          td: ({ children }) => (
-            <td style={{ padding: '8px 10px', color: '#374151', border: '1px solid var(--line)', verticalAlign: 'top' }}>{children}</td>
-          ),
-        }}
-      >
-        {markdown}
-      </ReactMarkdown>
-    </div>
-  );
-}
 
 /* Scoped CSS — every selector is prefixed with #dmcResults so the generic class
    names (.card, .chip, .btn-primary, …) cannot leak into the dashboard chrome. */
@@ -982,22 +919,7 @@ export default function MainsResultsView({
             {/* Body */}
             <div style={{ padding: '24px 28px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
               {data.curatedModelAnswer ? (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {data.curatedModelAnswerKeyPoints && data.curatedModelAnswerKeyPoints.length > 0 && (
-                    <div style={{ background: 'linear-gradient(135deg,#EEF0FF 0%,#F5F3FF 100%)', borderRadius: 16, padding: 20, marginBottom: 18, border: '1px solid rgba(99,102,241,0.15)' }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><span>📌</span> KEY POINTS CHECKLIST</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
-                        {data.curatedModelAnswerKeyPoints.map((pt) => (
-                          <div key={pt} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                            <span style={{ color: '#16A34A', fontSize: 14, marginTop: 2 }}>✓</span>
-                            <span style={{ fontSize: 13, color: 'var(--ink)', lineHeight: 1.5 }}>{pt}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <CuratedModelAnswer markdown={data.curatedModelAnswer} />
-                </div>
+                <CuratedModelAnswer markdown={data.curatedModelAnswer} keyPoints={data.curatedModelAnswerKeyPoints} />
               ) : data.modelAnswerContent ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {data.modelAnswerKeyPoints && data.modelAnswerKeyPoints.length > 0 && (
@@ -1023,7 +945,7 @@ export default function MainsResultsView({
             </div>
             {/* Footer */}
             <div style={{ padding: '16px 28px', borderTop: '1px solid var(--line)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-              <div style={{ fontSize: 11, color: 'var(--muted)' }}>Reference answer · Read after your attempt</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)' }}>Your target · ~{mainsWordLimit(marks)} words · {mainsTimeLimit(marks)} min</div>
               <button className="btn-primary" onClick={() => { setModelAnswerOpen(false); router.push(rewriteRoute); }} style={{ padding: '10px 20px', fontSize: 13 }}>✍️ Rewrite with this knowledge</button>
             </div>
           </div>
