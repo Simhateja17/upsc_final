@@ -533,7 +533,7 @@ function MockTestsPageInner() {
 
   const estimatedMinutes = selectedExamMode === 'mains'
     ? mainsMarksPattern.reduce((total, marks) => total + mainsTimeLimit(marks), 0)
-    : questionCount;
+    : Math.round(questionCount * 1.2);
   const upgradePlans = (pricingPlans.length > 0 ? pricingPlans : fallbackUpgradePlans).slice(0, 3);
 
   /* Derive display labels for summary */

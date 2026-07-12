@@ -5,6 +5,13 @@ import Image from 'next/image';
 import { dashboardService, studyPlannerService, syllabusService, userService } from '@/lib/services';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
+// Short display label for a subject value. Subject values sent to/from the
+// backend stay canonical (e.g. "Environment & Ecology"); this only shortens
+// what's shown in the UI, kept in sync with the Dashboard's quick-add subject list.
+function displaySubjectLabel(subject: string): string {
+  return subject === 'Environment & Ecology' ? 'Environment' : subject;
+}
+
 function fmtTimer(secs: number): string {
   const s = Math.max(0, secs);
   const m = Math.floor(s / 60).toString().padStart(2, '0');
@@ -177,7 +184,6 @@ const SUBJECT_OPTIONS = [
   'Governance',
   'International Relations',
   'Social Justice',
-  'Agriculture',
   'Internal Security',
   'Disaster Management',
   'Ethics',
@@ -212,7 +218,6 @@ const SYLLABUS_SUBJECT_ALIASES: Record<string, string> = {
   IR: 'International Relations',
   'International Relations': 'International Relations',
   'Social Justice': 'Social Justice',
-  Agriculture: 'Agriculture',
   'Int. Security': 'Internal Security',
   'Internal Security': 'Internal Security',
   'Disaster Mgmt': 'Disaster Management',
@@ -314,7 +319,13 @@ export default function StudyPlannerPage() {
           if (saved) { try { states = JSON.parse(saved); } catch {} }
         }
         const stateMap = states ?? {};
-        const stages: ('prelims' | 'mains' | 'optional')[] = ['prelims', 'mains', 'optional'];
+        // Only prelims/mains — the "optional" stage lists all 25 UPSC optional
+        // papers (Agriculture, Philosophy, Sociology, ...), not just the one the
+        // user picked, and some optional papers share a name with a core subject
+        // (Geography, History), which would silently merge unrelated syllabuses.
+        // Syllabus Tracker only ever shows the user's own optional separately, so
+        // Study Planner's coverage mirrors that by sticking to core GS subjects.
+        const stages: ('prelims' | 'mains')[] = ['prelims', 'mains'];
         const subjectMap = new Map<string, { subject: string; done: number; total: number }>();
         stages.forEach((stage) => {
           const subjects = Array.isArray(data[stage]) ? data[stage] : [];
@@ -748,7 +759,7 @@ export default function StudyPlannerPage() {
   const timeByType = Array.from(subjectSecondsMap.entries())
     .map(([subj, secs], idx) => ({
       id: subj,
-      label: subj,
+      label: displaySubjectLabel(subj),
       color: subjectColorPalette[idx % subjectColorPalette.length],
       seconds: secs,
     }))
@@ -1057,7 +1068,7 @@ export default function StudyPlannerPage() {
                       >
                         <option value="" disabled>Select Subject</option>
                         {SUBJECT_OPTIONS.map((subject) => (
-                          <option key={subject} value={subject}>{subject}</option>
+                          <option key={subject} value={subject}>{displaySubjectLabel(subject)}</option>
                         ))}
                       </select>
                       <svg className="absolute pointer-events-none" style={{ right: '14px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none">
@@ -1491,7 +1502,7 @@ export default function StudyPlannerPage() {
                       return (
                         <div key={item.subject}>
                           <div className="flex justify-between items-center mb-1">
-                            <span className="font-arimo text-[#101828]" style={{ fontSize: '13px' }}>{item.subject}</span>
+                            <span className="font-arimo text-[#101828]" style={{ fontSize: '13px' }}>{displaySubjectLabel(item.subject)}</span>
                             <span className="font-arimo font-bold" style={{ fontSize: '13px', color }}>{item.percentage}%</span>
                           </div>
                           <div className="w-full bg-[#E5E7EB] rounded-full h-2">
@@ -1990,7 +2001,7 @@ export default function StudyPlannerPage() {
                         const meta = getSubjectMetaStyle(task.subject);
                         return (
                           <span className="inline-flex items-center gap-1 font-arimo mt-1" style={{ fontSize: '12px', background: meta.bg, color: meta.color, border: `1px solid ${meta.border}`, borderRadius: '999px', padding: '3px 9px', fontWeight: 700 }}>
-                            <span aria-hidden>{meta.icon}</span> {task.subject}
+                            <span aria-hidden>{meta.icon}</span> {displaySubjectLabel(task.subject)}
                           </span>
                         );
                       })()}

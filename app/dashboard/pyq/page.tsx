@@ -338,8 +338,25 @@ const getEssayModelAnswerParts = (question: any): Array<{ key: EssayPartKey; lab
 const DEFAULT_MAINS_TIME_LIMIT = 20 * 60;
 const ESSAY_MAINS_TIME_LIMIT = 90 * 60;
 
+const MAINS_MARKS_PRESETS: Record<number, { minutes: number; words: number }> = {
+  10: { minutes: 7, words: 150 },
+  15: { minutes: 11, words: 200 },
+  20: { minutes: 14, words: 250 },
+};
+
+function getMainsMarks(question: any | null): number {
+  return question?.marks || question?.maxMarks || 15;
+}
+
 function getMainsTimeLimit(question: any | null): number {
-  return isEssayQuestion(question) ? ESSAY_MAINS_TIME_LIMIT : DEFAULT_MAINS_TIME_LIMIT;
+  if (isEssayQuestion(question)) return ESSAY_MAINS_TIME_LIMIT;
+  const preset = MAINS_MARKS_PRESETS[getMainsMarks(question)];
+  return preset ? preset.minutes * 60 : DEFAULT_MAINS_TIME_LIMIT;
+}
+
+function getMainsWordLimit(question: any | null): number {
+  const preset = MAINS_MARKS_PRESETS[getMainsMarks(question)];
+  return preset ? preset.words : 250;
 }
 
 function EssayModelAnswerRenderer({
@@ -2443,6 +2460,29 @@ export default function PyqPage() {
                     No mains questions found for the selected filters.
                   </div>
                 )}
+
+                {/* Pagination */}
+                {!loading && totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-4 mt-6">
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                      className="px-5 py-2.5 rounded-[12px] bg-white shadow text-[15px] font-semibold text-[#0F172B] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-[15px] text-[#6A7282]">
+                      Page {page} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                      className="px-5 py-2.5 rounded-[12px] bg-white shadow text-[15px] font-semibold text-[#0F172B] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </section>
@@ -2623,8 +2663,8 @@ export default function PyqPage() {
             </div>
 
             <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_300px]">
-              <div className="min-h-0 px-8 py-5">
-                <div className="rounded-[12px] bg-[#F9FAFB] p-4" style={{ borderLeft: '4px solid #D4AF37' }}>
+              <div className="flex min-h-0 flex-col overflow-hidden px-8 py-5">
+                <div className="flex-shrink-0 rounded-[12px] bg-[#F9FAFB] p-4" style={{ borderLeft: '4px solid #D4AF37' }}>
                   <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Question</div>
                   <QuestionTextRenderer
                     text={selectedQuestion?.questionText || 'Loading question...'}
@@ -2633,10 +2673,10 @@ export default function PyqPage() {
                   />
                 </div>
 
-                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] font-semibold text-[#6A7282]">
+                <div className="mt-3 flex flex-shrink-0 flex-wrap items-center gap-x-6 gap-y-2 text-[13px] font-semibold text-[#6A7282]">
                   <span>◷ {Math.floor(getMainsTimeLimit(selectedQuestion) / 60)} min</span>
-                  <span>✍️ 250 words</span>
-                  <span>☆ {selectedQuestion?.marks || selectedQuestion?.maxMarks || 15} marks</span>
+                  <span>✍️ {getMainsWordLimit(selectedQuestion)} words</span>
+                  <span>☆ {getMainsMarks(selectedQuestion)} marks</span>
                 </div>
 
               <input
@@ -2661,33 +2701,32 @@ export default function PyqPage() {
 
                 {!textAnswerExpanded && (
                   <>
-                    <div className="mt-4 flex items-center gap-2 text-[16px] font-bold text-[#0F172B]">
+                    <div className="mt-4 flex flex-shrink-0 items-center gap-2 text-[16px] font-bold text-[#0F172B]">
                       <span className="text-[#D4AF37]">⇧</span>
                       Upload your answer
                     </div>
 
                     <div
-                      className="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-[14px] px-6 py-9 text-center"
+                      className="mt-3 flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[14px] px-6 py-4 text-center"
                       style={{
-                        minHeight: 270,
                         border: mainsFiles.length > 0 ? '1.5px dashed #17223E' : '1px dashed #CBD5E1',
                         background: mainsFiles.length > 0 ? '#EFF6FF' : '#F9FAFB',
                       }}
                       onClick={() => mainsFileInputRef.current?.click()}
                     >
-                      <div className="mb-5 grid h-12 w-12 place-items-center rounded-[12px] bg-[#0F1424] text-[#D4AF37]">⇧</div>
+                      <div className="mb-3 grid h-12 w-12 flex-shrink-0 place-items-center rounded-[12px] bg-[#0F1424] text-[#D4AF37]">⇧</div>
                       <p className="mb-2 text-[16px] font-bold text-[#0F172B]">
                         {mainsFiles.length > 1 ? `${mainsFiles.length} pages selected` : mainsFile ? mainsFile.name : 'Drop your answer script here'}
                       </p>
-                      <p className="mb-5 text-[14px] text-[#9AA3B2]">Upload handwritten answers for AI evaluation</p>
+                      <p className="mb-3 text-[14px] text-[#9AA3B2]">Upload handwritten answers for AI evaluation</p>
                       {mainsFiles.length > 1 && (
-                        <div className="mb-5 max-w-full px-6 text-left text-[12px] text-[#4B5563]">
+                        <div className="mb-3 max-w-full px-6 text-left text-[12px] text-[#4B5563]">
                           {mainsFiles.map((file, index) => (
                             <div key={`${file.name}-${index}`} className="truncate">Page {index + 1}: {file.name}</div>
                           ))}
                         </div>
                       )}
-                      <div className="mb-5 flex flex-wrap justify-center gap-2">
+                      <div className="mb-3 flex flex-wrap justify-center gap-2">
                         {['JPG', 'PNG', 'PDF', 'Max 10MB'].map((fmt) => (
                           <span key={fmt} className="rounded bg-[#E5E7EB] px-2.5 py-1 text-[12px] text-[#374151]">{fmt}</span>
                         ))}
@@ -2698,13 +2737,13 @@ export default function PyqPage() {
                           e.stopPropagation();
                           mainsFileInputRef.current?.click();
                         }}
-                        className="rounded-[8px] border border-[#D1D5DB] bg-white px-6 py-2 text-[14px] font-bold text-[#111827]"
+                        className="flex-shrink-0 rounded-[8px] border border-[#D1D5DB] bg-white px-6 py-2 text-[14px] font-bold text-[#111827]"
                       >
                         Browse Files
                       </button>
                     </div>
 
-                    <button type="button" onClick={() => setTextAnswerExpanded(true)} className="mt-4 flex w-full items-center gap-3">
+                    <button type="button" onClick={() => setTextAnswerExpanded(true)} className="mt-4 flex w-full flex-shrink-0 items-center gap-3">
                       <div className="h-px flex-1 bg-[#E5E7EB]" />
                       <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">
                         <span
@@ -2721,7 +2760,7 @@ export default function PyqPage() {
 
                 {textAnswerExpanded && (
                   <>
-                    <button type="button" onClick={() => setTextAnswerExpanded(false)} className="mt-4 flex w-full items-center gap-3">
+                    <button type="button" onClick={() => setTextAnswerExpanded(false)} className="mt-4 flex w-full flex-shrink-0 items-center gap-3">
                       <div className="h-px flex-1 bg-[#E5E7EB]" />
                       <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">
                         <span
@@ -2734,22 +2773,22 @@ export default function PyqPage() {
                       <div className="h-px flex-1 bg-[#E5E7EB]" />
                     </button>
 
-                    <div className="mt-4">
+                    <div className="mt-4 flex min-h-0 flex-1 flex-col">
                       <textarea
                         value={mainsAnswerText}
                         onChange={(e) => setMainsAnswerText(e.target.value)}
                         placeholder="Write your answer here..."
                         autoFocus
-                        className="w-full resize-y rounded-[10px] border border-[#D1D5DB] bg-[#F9FAFB] p-4 text-[#101828] outline-none"
-                        style={{ minHeight: 160, fontSize: 15, lineHeight: '24px' }}
+                        className="w-full min-h-0 flex-1 resize-none rounded-[10px] border border-[#D1D5DB] bg-[#F9FAFB] p-4 text-[#101828] outline-none"
+                        style={{ fontSize: 15, lineHeight: '24px', overflowY: 'auto' }}
                       />
-                      <p className="mt-1 text-right text-[12px] text-[#6A7282]">{mainsAnswerText.trim().split(/\s+/).filter(Boolean).length} words</p>
+                      <p className="mt-1 flex-shrink-0 text-right text-[12px] text-[#6A7282]">{mainsAnswerText.trim().split(/\s+/).filter(Boolean).length} words</p>
                     </div>
                   </>
                 )}
 
                 {mainsSubmitError && (
-                  <div className="mt-4 rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[13px] text-[#B91C1C]">
+                  <div className="mt-4 flex-shrink-0 rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[13px] text-[#B91C1C]">
                     {mainsSubmitError}
                   </div>
                 )}
@@ -2791,7 +2830,7 @@ export default function PyqPage() {
                       setMainsSubmitting(false);
                     }
                   }}
-                  className="mt-4 flex h-[48px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#0F1424] text-[15px] font-bold text-white disabled:opacity-45"
+                  className="mt-4 flex h-[48px] w-full flex-shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[#0F1424] text-[15px] font-bold text-white disabled:opacity-45"
                 >
                   {mainsSubmitting ? (
                     <>
@@ -2808,7 +2847,7 @@ export default function PyqPage() {
                 </button>
               </div>
 
-              <aside className="flex min-h-0 flex-col gap-4 bg-[#F8F9FB] p-5">
+              <aside className="flex min-h-0 flex-col gap-4 overflow-hidden bg-[#F8F9FB] p-5">
                 <div className="rounded-[18px] bg-white p-4 text-center shadow-sm">
                   <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Writing Timer</div>
                   {(() => {

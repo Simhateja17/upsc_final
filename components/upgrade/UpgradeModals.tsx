@@ -169,7 +169,7 @@ const SHARED_CSS = `
   text-transform: uppercase;
   letter-spacing: 0.6px;
 }
-.upm-plan-items { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+.upm-plan-items { display: flex; column-gap: 24px; row-gap: 8px; flex-wrap: wrap; justify-content: center; }
 .upm-plan-item {
   display: flex;
   align-items: center;
