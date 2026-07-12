@@ -41,7 +41,7 @@ function normalizeQuestionText(text: string): string {
 function normalizeDurationToSeconds(rawDuration: unknown, questionCount: number, isMains: boolean): number {
   const fallbackMinutes = isMains
     ? Math.max(8, questionCount * 8)
-    : Math.max(1, questionCount);
+    : Math.max(1, Math.round(questionCount * 1.2));
   const fallbackSeconds = fallbackMinutes * 60;
 
   const parsed =

@@ -97,6 +97,9 @@ export const dashboardService = {
   getPerformance: () => api.get<any>('/user/performance', authConfig()),
   getPracticeStats: () => api.get<any>('/user/practice-stats', authConfig()),
   getBadges: () => api.get<any>('/user/badges', authConfig()),
+  getAchievements: () => api.get<any>('/user/achievements', authConfig()),
+  markBadgesSeen: (keys: string[]) =>
+    api.post<any>('/user/achievements/seen', { keys }, authConfig()),
   getStreakCalendar: () => api.get<any>('/user/streak-calendar', authConfig()),
   getTestAnalytics: async () => {
     const config = { ...(await freshAuthConfig()), timeout: 5000 };
@@ -709,6 +712,7 @@ export const userService = {
     api.post<any>('/user/notifications', data, authConfig()),
   markNotificationRead: (id: string) => api.patch<any>(`/user/notifications/${id}/read`, {}, authConfig()),
   markAllNotificationsRead: () => api.patch<any>('/user/notifications/read-all', {}, authConfig()),
+  clearAllNotifications: () => api.delete<any>('/user/notifications', authConfig()),
 };
 
 // ==================== Syllabus Data ====================
