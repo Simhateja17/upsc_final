@@ -9,6 +9,7 @@ import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
+import WritingTimer from '@/components/WritingTimer';
 
 interface QuestionData {
   id: string;
@@ -323,11 +324,6 @@ function DailyMainsChallengeInner() {
 
     return () => clearTimeout(timer);
   }, [challengeStarted, readTimeLeft]);
-
-  const formatTime = (s: number) =>
-    `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
-
-  const timerPct = data?.timeLimit ? (timeLeft / (data.timeLimit * 60)) * 100 : (timeLeft / 900) * 100;
 
   const mainsQuota = entitlements.featureStatus('mains_evaluation');
 
@@ -1225,76 +1221,42 @@ function DailyMainsChallengeInner() {
         <div className="w-full lg:w-[280px] flex-shrink-0 flex flex-col gap-5">
 
           {/* Timer Card */}
-          <div
-            className="bg-white rounded-[24px] flex flex-col items-center"
-            style={{ padding: '24px', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE' }}
+          <WritingTimer
+            timeLeft={timeLeft}
+            totalSeconds={data?.timeLimit ? data.timeLimit * 60 : 900}
+            statusLabel={readTimeLeft !== null ? `auto-start ${readTimeLeft}s` : isActive ? 'in progress' : timeLeft === 0 ? 'time up' : 'minutes left'}
           >
-            <div className="uppercase text-[#6B7280] mb-3" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em' }}>
-              Writing Timer
-            </div>
-
-            {(() => {
-              const R = 82;
-              const C = 2 * Math.PI * R;
-              return (
-                <div className="relative flex items-center justify-center mb-4" style={{ width: '180px', height: '180px' }}>
-                  <svg width="180" height="180" viewBox="0 0 180 180" style={{ transform: 'rotate(-90deg)' }}>
-                    <circle cx="90" cy="90" r={R} fill="none" stroke="#E6E8EE" strokeWidth="5" />
-                    <circle
-                      cx="90" cy="90" r={R} fill="none"
-                      stroke={timeLeft === 0 ? '#EF4444' : '#F5B800'}
-                      strokeWidth="5"
-                      strokeLinecap="round"
-                      strokeDasharray={C}
-                      strokeDashoffset={C * (1 - timerPct / 100)}
-                      style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }}
-                    />
-                  </svg>
-                  <div className="absolute flex flex-col items-center">
-                    <span className="font-bold" style={{ fontSize: '32px', color: '#0B1020', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontVariantNumeric: 'tabular-nums' }}>
-                      {formatTime(timeLeft)}
-                    </span>
-                    <span className="uppercase text-[#6B7280]" style={{ fontSize: '9px', marginTop: '2px', letterSpacing: '0.1em' }}>
-                      {readTimeLeft !== null ? `auto-start ${readTimeLeft}s` : isActive ? 'in progress' : timeLeft === 0 ? 'time up' : 'minutes left'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })()}
-
-            <div className="flex gap-2 w-full">
-              <button
-                onClick={() => {
-                  if (readTimeLeft !== null) {
-                    setReadTimeLeft(null);
-                    setIsActive(true);
-                    return;
-                  }
-                  setIsActive((active) => !active);
-                }}
-                className="dms-btn-primary flex-1"
-                style={{ padding: '10px', fontSize: '13px', borderRadius: '12px' }}
-              >
-                {isActive && readTimeLeft === null ? (
-                  <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 5v14M16 5v14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>Pause</>
-                ) : (
-                  <><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5-10-6.5Z" /></svg>{readTimeLeft !== null ? 'Start now' : timeLeft === 0 ? 'Start' : 'Resume'}</>
-                )}
-              </button>
-              <button
-                onClick={() => {
-                  setIsActive(false);
-                  setReadTimeLeft(READING_WINDOW_SECONDS);
-                  setTimeLeft(data.timeLimit * 60);
-                }}
-                className="dms-btn-secondary flex-1"
-                style={{ padding: '10px', fontSize: '13px', borderRadius: '12px' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                Reset
-              </button>
-            </div>
-          </div>
+            <button
+              onClick={() => {
+                if (readTimeLeft !== null) {
+                  setReadTimeLeft(null);
+                  setIsActive(true);
+                  return;
+                }
+                setIsActive((active) => !active);
+              }}
+              className="dms-btn-primary flex-1"
+              style={{ padding: '10px', fontSize: '13px', borderRadius: '12px' }}
+            >
+              {isActive && readTimeLeft === null ? (
+                <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 5v14M16 5v14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>Pause</>
+              ) : (
+                <><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5-10-6.5Z" /></svg>{readTimeLeft !== null ? 'Start now' : timeLeft === 0 ? 'Start' : 'Resume'}</>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setIsActive(false);
+                setReadTimeLeft(READING_WINDOW_SECONDS);
+                setTimeLeft(data.timeLimit * 60);
+              }}
+              className="dms-btn-secondary flex-1"
+              style={{ padding: '10px', fontSize: '13px', borderRadius: '12px' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              Reset
+            </button>
+          </WritingTimer>
 
           {/* Quick Tips for Best Evaluation */}
           <div

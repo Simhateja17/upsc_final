@@ -29,12 +29,12 @@ const MAINS_GUIDELINES: { title: string; body: string }[] = [
 ];
 
 const PRELIMS_GUIDELINES: { title: string; body: string }[] = [
-  { title: 'Single best answer.', body: 'Each question has exactly one correct option. Pick the best fit before moving on.' },
-  { title: 'One timer for the whole paper.', body: 'The clock starts when you begin and submits automatically when it reaches zero.' },
-  { title: 'Mark & review.', body: 'Flag tricky questions and revisit them any time before final submission.' },
-  { title: 'No external help.', body: 'Treat it like the real exam. No notes, books or searches while attempting.' },
-  { title: 'AI explains every answer.', body: 'After submission you get the correct option plus a clear explanation.' },
-  { title: 'Stay honest.', body: 'This is a self-paced rehearsal. Closing the tab will auto-submit your attempt.' },
+  { title: 'Attempt all questions carefully', body: 'Each question carries equal marks. There is negative marking for incorrect answers.' },
+  { title: 'Negative marking applies', body: 'One-third (⅓) of the marks assigned to a question will be deducted for every wrong answer.' },
+  { title: 'No Penalty for Skipping', body: 'Questions left unanswered will not be penalized.' },
+  { title: 'Choose the Best Answer', body: 'Each question has exactly one correct option. Pick the best fit before moving on.' },
+  { title: 'Follow Exam Discipline', body: 'Maintain an exam-like environment and avoid external assistance during the test.' },
+  { title: 'Performance Analysis', body: 'Detailed score analysis and insights will be available after test completion.' },
 ];
 
 const SERIF = "var(--font-playfair), 'Palatino Linotype', Georgia, serif";
@@ -258,8 +258,7 @@ export default function ExamInstructions({
               )}
             </span>
             <span style={{ fontSize: 'clamp(13px, 1.05vw, 15px)', color: '#15803D', fontWeight: 500, lineHeight: 1.5 }}>
-              <strong style={{ fontWeight: 700, color: '#166534' }}>I have read and understood the instructions.</strong>{' '}
-              I will write my responses honestly without external help, and I consent to AI evaluation of my submissions.
+              <strong style={{ fontWeight: 700, color: '#166534' }}>I have read and understood the instructions above and agree to proceed.</strong>
             </span>
           </button>
 
