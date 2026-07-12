@@ -217,7 +217,9 @@ export default function FlashcardReviewPage() {
               className="flex items-center gap-1.5"
               style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 13, color: '#101828' }}
             >
-              🧠 Flashcards
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/flashcard-icon.png" alt="" aria-hidden className="w-4 h-4 object-contain flex-shrink-0" />
+              Flashcards
               <span
                 className="inline-flex items-center justify-center rounded-full"
                 style={{ background: '#101828', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: 10, width: 20, height: 20, flexShrink: 0 }}

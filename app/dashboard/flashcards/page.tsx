@@ -219,15 +219,15 @@ export default function FlashcardsPage() {
                 onClick={() => hasFullAccess ? setShowAddSubjectModal(true) : setShowAddSubjectUpgradeModal(true)}
                 className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
                 style={{
-                  background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
+                  background: 'linear-gradient(180deg, #ffd24a, #f5b400)',
                   border: 'none',
-                  boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
+                  boxShadow: '0 4px 16px rgba(245,180,0,.35)',
                   fontFamily: 'Inter',
                   fontWeight: 700,
                   fontSize: 14,
                   lineHeight: '20px',
                   letterSpacing: 0,
-                  color: '#17223E',
+                  color: '#1a1407',
                 }}
               >
                 <span className="text-lg leading-none">+</span> Add Subject

@@ -7,6 +7,8 @@ export type SubjectChoiceCardProps = {
   href?: string;
   onClick?: () => void;
   disabled?: boolean;
+  locked?: boolean;
+  lockLabel?: string;
   selected?: boolean;
   icon: React.ReactNode;
   iconBg: string;
@@ -37,6 +39,8 @@ export default function SubjectChoiceCard({
   href,
   onClick,
   disabled,
+  locked,
+  lockLabel = 'Premium',
   selected,
   icon,
   iconBg,
@@ -111,6 +115,35 @@ export default function SubjectChoiceCard({
     height: 190,
     ...(selected ? { boxShadow: `0 4px 24px ${accentColor}30` } : {}),
   } as React.CSSProperties;
+
+  if (locked) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={className}
+        style={style}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        aria-label={`${title} — ${lockLabel}, upgrade to unlock`}
+      >
+        <div className="flex flex-1 flex-col w-full" style={{ filter: 'blur(4px)', pointerEvents: 'none', userSelect: 'none' }} aria-hidden>
+          {content}
+        </div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2" style={{ background: 'rgba(255,255,255,0.45)' }}>
+          <span className="flex items-center justify-center rounded-full" style={{ width: 44, height: 44, background: '#131826', boxShadow: '0 6px 16px rgba(19,24,38,0.25)' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F5B400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </span>
+          <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 11, letterSpacing: '0.5px', textTransform: 'uppercase', color: '#374151' }}>
+            {lockLabel}
+          </span>
+        </div>
+      </button>
+    );
+  }
 
   if (href) {
     return (
