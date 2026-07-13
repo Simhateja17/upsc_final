@@ -42,7 +42,7 @@ interface BadgeData {
 // Activities shown in the "How streak works?" drawer — completing any one keeps the streak alive.
 const STREAK_ACTIVITIES: { emoji: string; title: string; desc: string; tint: string; tone: string }[] = [
   { emoji: '🎯', title: 'Daily 10 MCQs', desc: 'Attempt the daily objective quiz.', tint: '#FFF1DC', tone: '#E48A00' },
-  { emoji: '✍️', title: 'Daily Mains Challenge', desc: 'Submit one structured answer.', tint: '#EAF2FF', tone: '#3459E6' },
+  { emoji: '✍️', title: 'Daily Answer Writing', desc: 'Submit one structured answer.', tint: '#EAF2FF', tone: '#3459E6' },
   { emoji: '📰', title: 'Daily News Analysis', desc: 'Read and complete the current affairs analysis.', tint: '#FFF0F0', tone: '#C83333' },
   { emoji: '🗓️', title: 'Finish today’s study tasks', desc: 'Complete the tasks planned for today.', tint: '#EAFFF3', tone: '#0DA95E' },
   { emoji: '⏱️', title: 'Study Minimum 3 hours a day', desc: 'Log at least three focused study hours.', tint: '#F3EFFF', tone: '#7447DB' },

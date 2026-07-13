@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 /**
  * Shared "Evaluating your answer" progress screen for all mains flows.
  *
- * Both the Daily Mains Challenge and the standalone Mains Answer Evaluator
+ * Both the Daily Answer Writing and the standalone Mains Answer Evaluator
  * render this component; each passes its own sessionStorage keys, polling
  * service and destination routes so the two flows stay on their own URLs
  * (the evaluator no longer piggybacks on /daily-answer/challenge).

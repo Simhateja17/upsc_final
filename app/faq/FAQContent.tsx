@@ -234,8 +234,8 @@ const faqData: FAQSection[] = [
     iconBg: 'rgba(29,164,92,0.1)',
     items: [
       {
-        question: 'What is the Daily Mains Challenge?',
-        answer: '<p>The Daily Mains Challenge helps you build the most important skill in UPSC Mains - answer writing. Every day, you get: One UPSC-style question, Time-bound writing practice, Structured evaluation, Detailed feedback, Improvement suggestions, Model-answer direction.</p><p>The goal is steady improvement through consistency and to make answer writing less intimidating.</p>',
+        question: 'What is the Daily Answer Writing?',
+        answer: '<p>The Daily Answer Writing helps you build the most important skill in UPSC Mains - answer writing. Every day, you get: One UPSC-style question, Time-bound writing practice, Structured evaluation, Detailed feedback, Improvement suggestions, Model-answer direction.</p><p>The goal is steady improvement through consistency and to make answer writing less intimidating.</p>',
       },
       {
         question: 'How does the AI answer evaluation work?',

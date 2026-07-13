@@ -13,7 +13,7 @@ type Props = {
 /**
  * Uploaded-answer file list with visible thumbnails, in-page preview and a
  * remove action — extracted from the Mains Answer Evaluation module so the
- * Daily Mains Challenge (and any other upload area) reuse the exact same UI.
+ * Daily Answer Writing (and any other upload area) reuse the exact same UI.
  */
 export default function UploadedAnswerFiles({ files, onRemove }: Props) {
   const [previewFile, setPreviewFile] = useState<File | null>(null);
