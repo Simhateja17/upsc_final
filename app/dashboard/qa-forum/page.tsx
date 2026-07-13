@@ -276,7 +276,7 @@ export default function QAForumPage() {
             </button>
             <button
               type="button"
-              onClick={() => router.push('/dashboard/study-groups')}
+              onClick={() => router.push('/dashboard')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -508,7 +508,7 @@ export default function QAForumPage() {
               ))}
             </div>
             <button
-              onClick={() => window.location.href = '/dashboard/study-groups'}
+              onClick={() => window.location.href = '/dashboard'}
               className="mt-3 w-full rounded-[8px] border border-[#E8B84B] py-2 text-[12px] font-bold text-[#C99730] hover:bg-[#FFF8E7] transition-colors"
             >
               View All Rooms →
