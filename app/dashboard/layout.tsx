@@ -11,6 +11,7 @@ import MilestonePopup from '@/components/MilestonePopup';
 import OnboardingFlow from '@/components/OnboardingFlow';
 import PhoneLinkPrompt from '@/components/PhoneLinkPrompt';
 import { EntitlementsProvider } from '@/contexts/EntitlementsContext';
+import { isDisabledDashboardRoute } from '@/lib/featureAvailability';
 
 const HIDE_SIDEBAR_ROUTES = ['/dashboard/profile', '/dashboard/settings', '/dashboard/billing', '/dashboard/feedback'];
 const PUBLIC_DASHBOARD_ROUTES: string[] = [];
@@ -57,6 +58,14 @@ export default function DashboardLayout({
   const [milestoneTitle, setMilestoneTitle] = useState<string | undefined>(undefined);
   const [milestoneDescription, setMilestoneDescription] = useState<string | undefined>(undefined);
   const [authTimedOut, setAuthTimedOut] = useState(false);
+
+  // Keep temporarily disabled community features inaccessible even when a user
+  // follows an old bookmark or an internal link.
+  useEffect(() => {
+    if (isDisabledDashboardRoute(pathname)) {
+      router.replace('/dashboard');
+    }
+  }, [pathname, router]);
 
   // Show a streak milestone when the current streak crosses one of the supported thresholds.
   useEffect(() => {

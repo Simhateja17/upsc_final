@@ -61,7 +61,7 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 })
 
-// DM Serif Display — the Daily Mains Challenge reference's heading font.
+// DM Serif Display — the Daily Answer Writing reference's heading font.
 const dmSerif = DM_Serif_Display({
   subsets: ['latin'],
   weight: ['400'],

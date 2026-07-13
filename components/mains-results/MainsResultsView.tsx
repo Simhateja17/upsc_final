@@ -3,7 +3,7 @@
 /**
  * MainsResultsView — shared results UI for AI-evaluated mains answers.
  *
- * Extracted from the Daily Mains Challenge results page so Daily Answer,
+ * Extracted from the Daily Answer Writing results page so Daily Answer,
  * PYQ Mains and Mock Test Mains all render the exact same experience:
  *   - Score banner (aggregated when a test has multiple questions)
  *   - Question selector chips (only when more than one question)
@@ -62,7 +62,7 @@ export interface MainsQuestionResultData {
 export interface MainsResultsViewProps {
   /** One entry per mains question (Daily/PYQ pass one; Mock passes many). */
   results: MainsQuestionResultData[];
-  /** Kicker inside the share modal, e.g. "DAILY MAINS CHALLENGE". */
+  /** Kicker inside the share modal, e.g. "Daily Answer Writing". */
   shareHeading: string;
   /** Route for "Rewrite Answer" / rewrite CTA. */
   rewriteRoute: string;
@@ -415,7 +415,6 @@ export default function MainsResultsView({
     { tone: 'blue', icon: '✍️', title: 'Rewrite with Feedback', desc: 'Rewrite your answer using the examiner comments and missed-demand checklist.', pill: '~15 min', action: 'Rewrite', route: rewriteRoute },
     { tone: 'rose', icon: '✒️', title: 'Practice Answer Writing', desc: 'Write with your own question — create a fresh prompt and get targeted feedback.', pill: '10 marks · 150 words', action: 'Write', route: '/dashboard/mains-answer-evaluator' },
     { tone: 'green', icon: '🧾', title: 'Read & Practice MCQs', desc: 'Read a short concept note, then solve targeted MCQs from the areas you missed.', pill: '5 min · 10 MCQs', action: 'Practice', route: '/dashboard/daily-mcq' },
-    { tone: 'amber', icon: '🎧', title: 'Enter Study Room', desc: 'Join a focused, distraction-free session with peers working on answer writing.', pill: '● 1,284 studying now', action: 'Enter', route: '/dashboard/discussion' },
   ] as const;
 
   return (

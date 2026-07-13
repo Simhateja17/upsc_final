@@ -1122,7 +1122,7 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
 
           {/* Start Focus Session Button */}
           <button
-            onClick={() => router.push('/dashboard/study-groups?tab=solo&autostart=1')}
+            onClick={() => router.push('/dashboard')}
             className="w-full bg-[#0e1430] text-white rounded-[0.6rem] py-[clamp(0.75rem,1vw,1rem)] font-inter font-semibold text-[clamp(14px,0.94vw,16px)] hover:bg-[#1a2150] transition-colors flex items-center justify-center gap-2"
           >
             <span aria-hidden="true">▶️</span>
