@@ -29,7 +29,7 @@ const fallbackQuestionSources = [
 ];
 
 const mainsQuestionSources = [
-  { id: 'daily-mains', icon: '🌅', label: 'Daily Mains Challenge', description: 'Fresh questions every day' },
+  { id: 'daily-mains', icon: '🌅', label: 'Daily Answer Writing', description: 'Fresh questions every day' },
   { id: 'practice-pyq', icon: '/script.png', label: 'Previous Year Questions', badge: 'PYQ', description: 'UPSC PYQs (2011–2025)' },
   { id: 'question-bank', icon: '🗃️', label: 'Question Bank', description: 'Curated expert questions' },
   { id: 'mixed-bag', icon: '🎲', label: 'Mixed Bag', description: 'Variety from all sources' },
