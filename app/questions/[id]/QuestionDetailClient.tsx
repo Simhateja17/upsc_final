@@ -260,7 +260,7 @@ function TodaysTrioCard() {
       <div className="space-y-3">
         {[
           ['mcq', 'Daily MCQ Challenge', '10 Questions • All Subjects', 'bg-emerald-500/20', '#10B981'],
-          ['pen', 'Daily Mains Challenge', 'Answer Writing • Evaluated', 'bg-blue-500/20', '#3B82F6'],
+          ['pen', 'Daily Answer Writing', 'Answer Writing • Evaluated', 'bg-blue-500/20', '#3B82F6'],
           ['doc', 'Daily Editorial Analysis', 'The Hindu • Key Insights', 'bg-orange-500/20', '#F97316'],
         ].map(([icon, title, subtitle, bg, color]) => (
           <Link key={title} href="/dashboard" className="flex items-start gap-3 rounded-[10px] px-2 py-1.5 transition hover:bg-white/5">

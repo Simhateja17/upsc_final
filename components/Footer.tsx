@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 
 const platformLinks = [
   ['Daily MCQ', '/dashboard/daily-mcq'],
-  ['Daily Mains Challenge', '/dashboard/daily-answer'],
+  ['Daily Answer Writing', '/dashboard/daily-answer'],
   ['Mock Tests', '/dashboard/mock-tests'],
   ['Current Affairs', '/dashboard/current-affairs'],
 ];

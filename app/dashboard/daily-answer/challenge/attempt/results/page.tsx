@@ -7,7 +7,7 @@ import { dailyAnswerService } from '@/lib/services';
 import MainsResultsView, { MainsQuestionResultData } from '@/components/mains-results/MainsResultsView';
 
 /**
- * Daily Mains Challenge results — thin wrapper around the shared
+ * Daily Answer Writing results — thin wrapper around the shared
  * MainsResultsView (also used by PYQ Mains and Mock Test Mains). Handles the
  * Daily-specific data loading: attemptId from sessionStorage and optional
  * ?date= history lookups. The standalone Mains Answer Evaluator now has its
@@ -78,7 +78,7 @@ function ResultsPageInner() {
   return (
     <MainsResultsView
       results={[data]}
-      shareHeading="DAILY MAINS CHALLENGE"
+      shareHeading="Daily Answer Writing"
       rewriteRoute="/dashboard/daily-answer/challenge"
       backRoute="/dashboard/daily-answer"
     />

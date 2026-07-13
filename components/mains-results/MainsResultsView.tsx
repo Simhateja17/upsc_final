@@ -3,7 +3,7 @@
 /**
  * MainsResultsView — shared results UI for AI-evaluated mains answers.
  *
- * Extracted from the Daily Mains Challenge results page so Daily Answer,
+ * Extracted from the Daily Answer Writing results page so Daily Answer,
  * PYQ Mains and Mock Test Mains all render the exact same experience:
  *   - Score banner (aggregated when a test has multiple questions)
  *   - Question selector chips (only when more than one question)
@@ -62,7 +62,7 @@ export interface MainsQuestionResultData {
 export interface MainsResultsViewProps {
   /** One entry per mains question (Daily/PYQ pass one; Mock passes many). */
   results: MainsQuestionResultData[];
-  /** Kicker inside the share modal, e.g. "DAILY MAINS CHALLENGE". */
+  /** Kicker inside the share modal, e.g. "Daily Answer Writing". */
   shareHeading: string;
   /** Route for "Rewrite Answer" / rewrite CTA. */
   rewriteRoute: string;

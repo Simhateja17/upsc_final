@@ -158,12 +158,12 @@ const Header = () => {
           Jeet AI Mentor
         </Link>
 
-        {/* Daily Mains Challenge - Simple link */}
+        {/* Daily Answer Writing - Simple link */}
         <Link
           href="/dashboard/daily-answer/challenge"
           className="text-white text-sm lg:text-lg font-serif font-semibold hover:text-[#E8B84B] transition-colors whitespace-nowrap"
         >
-          Daily Mains Challenge
+          Daily Answer Writing
         </Link>
 
         {/* Prepare Dropdown */}
@@ -345,7 +345,7 @@ const Header = () => {
             onClick={() => setMobileMenuOpen(false)}
             className="text-white text-base font-serif font-semibold hover:text-[#E8B84B] hover:bg-white/5 transition-colors px-6 py-3 border-b border-white/5"
           >
-            Daily Mains Challenge
+            Daily Answer Writing
           </Link>
 
           {/* Prepare Section */}

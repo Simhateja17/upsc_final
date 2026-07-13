@@ -142,13 +142,13 @@ export default function DailyMainsChallengePage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/pen-circle.png"
-                alt="Daily Mains Challenge"
+                alt="Daily Answer Writing"
                 style={{ position: 'relative', width: '84px', height: '84px', borderRadius: '50%', objectFit: 'cover', boxShadow: '0 8px 32px rgba(11,16,32,0.18),0 2px 8px rgba(11,16,32,0.08)', border: '4px solid #fff' }}
               />
             </div>
 
             <h1 style={{ fontFamily: 'var(--font-dm-serif), serif', fontSize: '25px', letterSpacing: '-0.02em', marginBottom: '6px', lineHeight: 1.15 }}>
-              Daily Mains Challenge
+              Daily Answer Writing
             </h1>
             <p style={{ color: '#6B7280', fontSize: '13px', lineHeight: 1.45, maxWidth: '340px', margin: '0 auto' }}>
               Sharpen your answer writing with today&apos;s carefully crafted question — build structure, clarity, and depth, one day at a time.

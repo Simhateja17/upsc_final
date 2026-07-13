@@ -90,7 +90,6 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
       title: 'COMMUNITY',
       items: [
         { id: 'leaderboard', label: 'Leaderboard', icon: '/sidebar-study-groups.png', path: '/dashboard/leaderboard' },
-        { id: 'mental-health', label: 'Mental Health Buddy', icon: '/sidebar-mental-health-new.png', path: '/dashboard/mental-health', accessKey: 'mental_health_buddy', allowed: ['full'] },
       ],
     },
   ];
