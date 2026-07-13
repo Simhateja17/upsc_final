@@ -124,7 +124,7 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
         <div
           className={`
             hidden lg:flex flex-shrink-0 border-b border-[#F0F2F5] gap-2
-            ${collapsed ? 'flex-col items-center px-0 py-3' : 'flex-row items-center justify-center px-3 py-3'}
+            ${collapsed ? 'flex-col items-end px-3 py-3' : 'flex-row items-center justify-end px-3 py-3'}
           `}
         >
           {/* Hamburger toggle */}
