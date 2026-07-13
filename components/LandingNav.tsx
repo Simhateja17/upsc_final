@@ -89,7 +89,7 @@ export default function LandingNav() {
         {/* Desktop nav links */}
         <div className="hidden md:flex items-center" style={{ gap: 28 }}>
           <Link href="/dashboard/jeet-gpt" onClick={(event) => guardDashboardLink(event, '/dashboard/jeet-gpt')} style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Jeet AI Mentor</Link>
-          <Link href="/dashboard/daily-answer/challenge" onClick={(event) => guardDashboardLink(event, '/dashboard/daily-answer/challenge')} style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Daily Mains Challenge</Link>
+          <Link href="/dashboard/daily-answer/challenge" onClick={(event) => guardDashboardLink(event, '/dashboard/daily-answer/challenge')} style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Daily Answer Writing</Link>
 
           {(['prepare', 'practice', 'revision'] as const).map((key) => {
             const labels: Record<string, string> = { prepare: 'Prepare', practice: 'Practice', revision: 'Revision Tools' };
@@ -151,7 +151,7 @@ export default function LandingNav() {
       {/* Mobile nav */}
       <div className={`mobile-nav${mobileNavOpen ? ' open' : ''}`}>
         <a href="/dashboard/jeet-gpt" onClick={(event) => guardDashboardLink(event, '/dashboard/jeet-gpt')}>Jeet AI Mentor</a>
-        <a href="/dashboard/daily-answer/challenge" onClick={(event) => guardDashboardLink(event, '/dashboard/daily-answer/challenge')}>Daily Mains Challenge</a>
+        <a href="/dashboard/daily-answer/challenge" onClick={(event) => guardDashboardLink(event, '/dashboard/daily-answer/challenge')}>Daily Answer Writing</a>
         <div style={{ padding: '10px 0 4px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Prepare</div>
           {NAV_DROPDOWNS.prepare.map(i => <a key={i.href} href={i.href} onClick={(event) => guardDashboardLink(event, i.href)} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}

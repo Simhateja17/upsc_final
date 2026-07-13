@@ -140,7 +140,7 @@ export default function LeaderboardPage() {
   }, [leaderboard]);
 
   const rows = useMemo(() => {
-    return leaderboard.slice(3).map((item) => ({
+    return leaderboard.slice(3, 10).map((item) => ({
       rank: String(item.rank),
       initial: item.initial || getInitial(item.name),
       name: item.name,

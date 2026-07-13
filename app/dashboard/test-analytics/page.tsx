@@ -7,6 +7,7 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import Toast from '@/components/Toast';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { LockedWidget, LockedWidgetStyles, TestAnalyticsUpgradeModal } from '@/components/upgrade/UpgradeModals';
+import { AnalyticsUiStyles, SectionDivider, StatCard } from '@/components/analytics/analyticsUi';
 import { getSubjectAccentColor } from '@/lib/subjectPalette';
 
 
@@ -94,6 +95,19 @@ function timeColor(s: number): string {
 
 const WEEK_BAR_COLORS = ['#111827', '#111827', '#111827', '#111827', '#FDC700', '#D1D5DB', '#D1D5DB'];
 
+// Chart heading with the reference's coloured dot marker.
+function ChartHeading({ dotColor, title, subtitle }: { dotColor: string; title: React.ReactNode; subtitle?: string }) {
+  return (
+    <div className="px-8 pt-8">
+      <h2 className="mb-1 flex items-center gap-2.5 text-[18px] leading-[26px] font-bold" style={{ color: '#1A1F36' }}>
+        <span className="h-2.5 w-2.5 rounded-full" style={{ background: dotColor }} />
+        {title}
+      </h2>
+      <div className="mb-6 text-[12px] text-[#99A1AF]">{subtitle ?? ' '}</div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function TestAnalyticsPage() {
   const [data, setData] = useState<any>(null);
@@ -107,6 +121,10 @@ export default function TestAnalyticsPage() {
   // clicking a locked widget opens the tier-specific upgrade modal.
   const analyticsLocked = !entitlements.canAccess('test_analytics', ['full']);
   const openUpgradeModal = () => setShowUpgradeModal(true);
+  // Unlocked (Rise/Ascent) widgets get the reference 3D hover lift; locked
+  // widgets get their own hover from LockedWidget, so we don't double it up.
+  const widgetClass = `pa-card ${analyticsLocked ? '' : 'pa-card-3d'} overflow-hidden`;
+  const widgetRadius = { borderRadius: 18 } as React.CSSProperties;
 
   useEffect(() => {
     if (authLoading) return;
@@ -156,7 +174,6 @@ export default function TestAnalyticsPage() {
   const bestPercentile = summary.bestPercentile ?? 0;
   const currentStreak = summary.currentStreak ?? 0;
   const totalQuestions = summary.totalQuestions ?? 0;
-  const mcqAttempts = summary.mcqAttempts ?? 0;
 
   const mcqCorrect = summary.mcqCorrect ?? 0;
   const mcqWrong = summary.mcqWrong ?? 0;
@@ -169,12 +186,14 @@ export default function TestAnalyticsPage() {
     { label: 'DAY STREAK', value: String(currentStreak), valueColor: '#0e8a56' },
   ];
 
-  const summaryCards = [
-    { title: 'Overall Percentile', value: bestPercentile > 0 ? String(bestPercentile) : 'N/A', accent: '#00BBA7', icon: '📊', sub: 'Best percentile achieved' },
-    { title: 'Tests Attempted', value: String(totalTests), accent: '#FF6900', icon: '📝', sub: 'Full length & sectional mocks' },
-    { title: 'Questions Attempted', value: totalQuestions.toLocaleString('en-IN'), accent: '#155DFC', icon: '✍️', sub: 'MCQs, PYQs and mock tests' },
-    { title: 'Overall Accuracy', value: `${avgAccuracy}%`, accent: '#22C55E', icon: '🎯', sub: 'Net accuracy after negatives' },
-    { title: 'Best Rank', value: 'N/A', accent: '#8B5CF6', icon: '🏆', sub: 'Across all mock test series' },
+  // Icon-left stat cards (reference stats row), driven by real analytics data.
+  const summaryCards: { title: string; value: React.ReactNode; color: string; icon: string; sub: string }[] = [
+    { title: 'Overall Percentile', value: bestPercentile > 0 ? String(bestPercentile) : 'N/A', color: '#14b8a6', icon: '📊', sub: 'Best percentile achieved' },
+    { title: 'Tests Attempted', value: String(totalTests), color: '#ff9933', icon: '✏️', sub: 'Full length & sectional mocks' },
+    { title: 'Questions Attempted', value: totalQuestions.toLocaleString('en-IN'), color: '#cc5de8', icon: '📝', sub: 'MCQs, PYQs and mock tests' },
+    { title: 'Overall Accuracy', value: `${avgAccuracy}%`, color: '#51cf66', icon: '🎯', sub: 'Net accuracy after negatives' },
+    { title: 'Best Rank', value: 'N/A', color: '#d4a843', icon: '🏆', sub: 'Across all mock test series' },
+    { title: 'Avg Score', value: String(summary.avgScore ?? 0), color: '#4dabf7', icon: '📈', sub: 'Average across attempts' },
   ];
 
   const weeklyChartData = weeklyMcqTrend.map(w => ({ label: w.week, value: w.score }));
@@ -187,6 +206,7 @@ export default function TestAnalyticsPage() {
       className="flex overflow-hidden font-arimo"
       style={{ background: '#F9FAFB', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
     >
+      <AnalyticsUiStyles />
       <LockedWidgetStyles />
       <TestAnalyticsUpgradeModal
         open={showUpgradeModal}
@@ -223,56 +243,33 @@ export default function TestAnalyticsPage() {
             stats={topStripCards.map(c => ({ value: c.value, label: c.label, color: c.valueColor }))}
           />
         </div>
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          {/* ── 5 Summary Cards (open on every plan) ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="mx-auto w-full max-w-[1100px] px-4 sm:px-6 lg:px-8 py-8">
+          {/* ── Stat cards (open on every plan) ── */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {summaryCards.map((card) => (
-              <div
+              <StatCard
                 key={card.title}
-                className="rounded-[14px] bg-white flex flex-col justify-between"
-                style={{
-                  borderTop: `4px solid ${card.accent}`,
-                  boxShadow: '0px 10px 24px -16px rgba(15,23,42,0.35), 0px 1px 3px rgba(0,0,0,0.1)',
-                  minHeight: 148,
-                }}
-              >
-                <div className="px-5 pt-6 pb-5">
-                  <div
-                    className="mb-4 flex h-11 w-11 items-center justify-center rounded-[12px] text-[22px]"
-                    style={{ background: `${card.accent}18`, border: `1px solid ${card.accent}2E` }}
-                  >
-                    {card.icon}
-                  </div>
-                  <div className="mb-2 text-[32px] leading-[38px] font-bold" style={{ color: '#101828' }}>
-                    {card.value}
-                  </div>
-                  <div className="uppercase text-[11px] tracking-[0.6px] mb-1" style={{ fontWeight: 600, color: '#6A7282' }}>
-                    {card.title}
-                  </div>
-                  <p className="text-[11px]" style={{ fontWeight: 400, color: '#6A7282' }}>
-                    {card.sub}
-                  </p>
-                </div>
-              </div>
+                label={card.title}
+                value={card.value}
+                icon={<span aria-hidden>{card.icon}</span>}
+                color={card.color}
+                sub={card.sub}
+                trend="none"
+              />
             ))}
           </div>
 
-          {/* ── Row 1: MCQ Trend + Subject Accuracy ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* ── MCQ & Subject Analytics ── */}
+          <SectionDivider label="MCQ &amp; Subject Analytics" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             {/* MCQ Performance Trend */}
             <LockedWidget
               locked={analyticsLocked}
               onClick={openUpgradeModal}
-              className="rounded-[18px] bg-white"
-              style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}
-              heading={
-                <div className="px-8 pt-8">
-                  <h2 className="text-[18px] leading-[26px] font-bold mb-6 flex items-center gap-2" style={{ color: '#1A1F36' }}>
-                    <span aria-hidden>📊</span> MCQ Performance Trend
-                  </h2>
-                </div>
-              }
+              className={widgetClass}
+              style={widgetRadius}
+              heading={<ChartHeading dotColor="#A855F7" title="MCQ Performance Trend" />}
             >
               <div className="px-8 pb-6">
                 <div className="flex flex-wrap gap-5 mb-6">
@@ -335,16 +332,9 @@ export default function TestAnalyticsPage() {
             <LockedWidget
               locked={analyticsLocked}
               onClick={openUpgradeModal}
-              className="rounded-[18px] bg-white"
-              style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}
-              heading={
-                <div className="px-8 pt-8">
-                  <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
-                    <span aria-hidden>🎯</span> Subject Accuracy
-                  </h2>
-                  <div className="mb-6 text-[12px] text-[#99A1AF]">Across all attempted MCQs</div>
-                </div>
-              }
+              className={widgetClass}
+              style={widgetRadius}
+              heading={<ChartHeading dotColor="#22C55E" title="Subject Accuracy" subtitle="Across all attempted MCQs" />}
             >
               <div className="px-8 pb-6">
                 {subjectAccuracy.length === 0 ? (
@@ -383,23 +373,17 @@ export default function TestAnalyticsPage() {
             </LockedWidget>
           </div>
 
-          {/* ── Row 2: Mains Trend + Time Per Question ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* ── Writing & Time Analysis ── */}
+          <SectionDivider label="Writing &amp; Time Analysis" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             {/* Mains Answer Writing Trend */}
             <LockedWidget
               locked={analyticsLocked}
               onClick={openUpgradeModal}
-              className="rounded-[18px] bg-white"
-              style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}
-              heading={
-                <div className="px-8 pt-8">
-                  <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
-                    <span aria-hidden>📝</span> Mains Answer Writing Trend
-                  </h2>
-                  <div className="mb-5 text-[12px] text-[#99A1AF]">Answer scoring performance</div>
-                </div>
-              }
+              className={widgetClass}
+              style={widgetRadius}
+              heading={<ChartHeading dotColor="#FB923C" title="Mains Answer Writing Trend" subtitle="Answer scoring performance" />}
             >
               <div className="px-8 pb-6">
                 <div className="flex flex-wrap gap-5 mb-5">
@@ -439,16 +423,9 @@ export default function TestAnalyticsPage() {
             <LockedWidget
               locked={analyticsLocked}
               onClick={openUpgradeModal}
-              className="rounded-[18px] bg-white"
-              style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}
-              heading={
-                <div className="px-8 pt-8">
-                  <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
-                    <span aria-hidden>⏱️</span> Time Spent per Question - Daily
-                  </h2>
-                  <div className="mb-5 text-[12px] text-[#99A1AF]">Average seconds per question</div>
-                </div>
-              }
+              className={widgetClass}
+              style={widgetRadius}
+              heading={<ChartHeading dotColor="#F59E0B" title="Time Spent per Question - Daily" subtitle="Average seconds per question" />}
             >
               <div className="px-8 pb-6">
                 <div className="grid grid-cols-7 gap-2 mb-6">
@@ -505,14 +482,15 @@ export default function TestAnalyticsPage() {
           </div>
 
           {/* ── Complete Test History ── */}
+          <SectionDivider label="Test History" />
           <LockedWidget
             locked={analyticsLocked}
             onClick={openUpgradeModal}
-            className="rounded-[14px] bg-white mb-8"
-            style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}
+            className={`pa-card ${analyticsLocked ? '' : 'pa-card-3d'} overflow-hidden`}
             heading={
               <div className="px-8 pt-8 pb-2">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ color: '#1A1F36' }}>
+                <h2 className="mb-6 flex items-center gap-2.5 text-[18px] leading-[26px] font-bold" style={{ color: '#1A1F36' }}>
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: '#155DFC' }} />
                   Complete Test History
                 </h2>
               </div>
@@ -570,7 +548,7 @@ export default function TestAnalyticsPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedReport(row)}
-                              className="text-[13px] font-medium hover:underline"
+                              className="pa-link-gold text-[13px] font-medium hover:underline"
                               style={{ color: '#155DFC' }}
                             >
                               View report →

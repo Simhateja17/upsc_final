@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { PerformanceAnalyticsUpgradeModal } from '@/components/upgrade/UpgradeModals';
+import { AnalyticsUiStyles, SectionDivider, StatCard } from '@/components/analytics/analyticsUi';
 
 type DayActivity = { questionsAttempted: number; hours: number };
 type SubjectRow = { name: string; accuracy: number; questions: number; tag?: string; color?: string };
@@ -51,25 +52,19 @@ function ProgressBar({ value, color }: { value: number; color: string }) {
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-5 text-center text-[12px] font-semibold uppercase tracking-[1.4px] text-[#6A7282]">
-      {children}
-    </div>
-  );
-}
-
+/* Non-lockable card (matches reference card + 3D hover). */
 function AnalyticsCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div
-      className={`rounded-[14px] border border-[#E5E7EB] bg-white shadow-sm ${className}`}
-      style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}
-    >
+    <div className={`pa-card pa-card-3d ${className}`}>
+      <span className="pa-glow" />
       {children}
     </div>
   );
 }
 
+/* Lockable analytics card — reference card treatment with the existing
+   entitlement blur/lock overlay (navy lock circle + gold lock + UPGRADE TO
+   UNLOCK on hover). Locked cards open the tier-specific upgrade modal. */
 function LockedAnalyticsCard({
   heading,
   children,
@@ -85,9 +80,10 @@ function LockedAnalyticsCard({
 }) {
   return (
     <div
-      className={`group relative overflow-hidden rounded-[14px] border border-[#E5E7EB] bg-white shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_rgba(0,0,0,0.1)] transition-all duration-300 ${locked ? 'cursor-pointer hover:-translate-y-1 hover:border-[#D8D8DE] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)]' : ''} ${className}`}
+      className={`group pa-card ${locked ? 'cursor-pointer hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)]' : 'pa-card-3d'} ${className}`}
       onClick={locked ? onUpgradeClick : undefined}
     >
+      {!locked && <span className="pa-glow" />}
       <div className="pointer-events-none relative z-[6]">{heading}</div>
       <div className={locked ? 'pointer-events-none select-none blur-[4px] transition-[filter] duration-300 group-hover:blur-[5px]' : ''}>
         {children}
@@ -176,6 +172,19 @@ function DonutChart({ items, centerLabel }: { items: DistributionItem[]; centerL
         <span className="text-[26px] font-bold leading-none text-[#101828]">{centerLabel}</span>
         <span className="mt-1 text-[12px] uppercase text-[#6A7282]">Total</span>
       </div>
+    </div>
+  );
+}
+
+/* Chart/area heading with the reference's coloured dot marker. */
+function CardHeading({ dotColor, children, right }: { dotColor?: string; children: React.ReactNode; right?: React.ReactNode }) {
+  return (
+    <div className="mb-6 flex items-center justify-between gap-4">
+      <h2 className="flex items-center gap-2.5 text-[18px] font-bold text-[#101828]">
+        {dotColor && <span className="h-2.5 w-2.5 rounded-full" style={{ background: dotColor }} />}
+        {children}
+      </h2>
+      {right}
     </div>
   );
 }
@@ -348,49 +357,14 @@ export default function PerformancePage() {
   }));
   const earnedBadgeCount = earnedBadges.filter((badge: any) => badge.earned).length;
 
-  const summaryCards = [
-    {
-      title: 'Day Streak',
-      icon: '🔥',
-      value: String(currentStreak),
-      valueColor: '#F2742F',
-      subtitle: `${activeStudyDays} days this week`,
-    },
-    {
-      title: 'Qs Attempted',
-      icon: '📝',
-      value: totalQuestions.toLocaleString('en-IN'),
-      valueColor: '#4A7DFF',
-      subtitle: `${weeklyQuestions.toLocaleString('en-IN')} this week`,
-    },
-    {
-      title: 'Avg Accuracy',
-      icon: '🎯',
-      value: `${overallAccuracy}%`,
-      valueColor: '#55C96D',
-      subtitle: `${Math.round(analyticsData?.summary?.avgAccuracy ?? overallAccuracy)}% current avg`,
-    },
-    {
-      title: 'Study Time',
-      icon: '⏱️',
-      value: formatHours(totalStudyHours),
-      valueColor: '#9B51E0',
-      subtitle: `${formatHours(totalStudyHours)} this week`,
-    },
-    {
-      title: 'Mock Tests',
-      icon: '📊',
-      value: String(mockTests.totalAttempts ?? analyticsData?.summary?.totalTests ?? 0),
-      valueColor: '#5B5CF6',
-      subtitle: 'Full length + sectional',
-    },
-    {
-      title: 'Badges Earned',
-      icon: '🏆',
-      value: String(earnedBadgeCount),
-      valueColor: '#C9821F',
-      subtitle: `${earnedBadges.length - earnedBadgeCount} still locked`,
-    },
+  // Icon-left stat cards (reference stats row). Colours use the reference palette.
+  const summaryCards: { title: string; icon: string; value: string; color: string; subtitle: string; trend: 'up' | 'down' | 'none' }[] = [
+    { title: 'Day Streak', icon: '🔥', value: String(currentStreak), color: '#ff9933', subtitle: `${activeStudyDays} days this week`, trend: 'up' },
+    { title: 'Qs Attempted', icon: '✏️', value: totalQuestions.toLocaleString('en-IN'), color: '#4dabf7', subtitle: `${weeklyQuestions.toLocaleString('en-IN')} this week`, trend: 'up' },
+    { title: 'Avg Accuracy', icon: '🎯', value: `${overallAccuracy}%`, color: '#51cf66', subtitle: `${Math.round(analyticsData?.summary?.avgAccuracy ?? overallAccuracy)}% current avg`, trend: 'up' },
+    { title: 'Study Time', icon: '⏱️', value: formatHours(totalStudyHours), color: '#cc5de8', subtitle: `${formatHours(totalStudyHours)} this week`, trend: 'up' },
+    { title: 'Mock Tests', icon: '📊', value: String(mockTests.totalAttempts ?? analyticsData?.summary?.totalTests ?? 0), color: '#4dabf7', subtitle: 'Full length + sectional', trend: 'none' },
+    { title: 'Badges Earned', icon: '🏆', value: String(earnedBadgeCount), color: '#d4a843', subtitle: `${Math.max(0, earnedBadges.length - earnedBadgeCount)} still locked`, trend: 'none' },
   ];
 
   const userFirstName = user?.firstName || 'Arjun';
@@ -402,6 +376,7 @@ export default function PerformancePage() {
       className="flex overflow-hidden font-arimo"
       style={{ background: '#F9FAFB', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
     >
+      <AnalyticsUiStyles />
       <PerformanceAnalyticsUpgradeModal
         open={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
@@ -416,9 +391,9 @@ export default function PerformancePage() {
           badgeText="Analytics - Performance Dashboard"
           title={<>{userFirstName}&apos;s <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Progress.</span></>}
           subtitle="Your complete UPSC preparation analytics streaks, subject mastery, weak areas, spaced repetition & smart notes."
-          stats={summaryCards.slice(0, 4).map(c => ({ value: c.value, label: c.title.toUpperCase(), color: c.valueColor }))}
+          stats={summaryCards.slice(0, 4).map(c => ({ value: c.value, label: c.title.toUpperCase(), color: c.color }))}
         />
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mx-auto w-full max-w-[1100px] px-4 sm:px-6 lg:px-8 py-8">
           {loading && (
             <div className="mb-6 rounded-[10px] border border-[#DDE8FF] bg-[#F7F9FF] px-4 py-3 text-[13px] text-[#245CEB]">
               Loading your latest performance data…
@@ -429,37 +404,31 @@ export default function PerformancePage() {
               Some live data could not be loaded: {failedSections.join(', ')}. Refresh the page to try again.
             </div>
           )}
-          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+
+          {/* Stat cards — open on every plan */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {summaryCards.map((card) => (
-              <AnalyticsCard key={card.title} className="min-h-[142px] px-5 py-6">
-                <div className="mb-5 flex items-center justify-between gap-4">
-                  <span className="text-[12px] font-semibold uppercase tracking-[0.9px] text-[#99A1AF]">
-                    {card.title}
-                  </span>
-                  <span className="text-[20px]" aria-hidden>{card.icon}</span>
-                </div>
-                <div className="text-[36px] font-bold leading-[40px]" style={{ color: card.valueColor }}>
-                  {card.value}
-                </div>
-                <div className="mt-3 flex items-center gap-2 text-[13px] text-[#4B5563]">
-                  <span className="text-[#22C55E]">↗</span>
-                  <span>{card.subtitle}</span>
-                </div>
-              </AnalyticsCard>
+              <StatCard
+                key={card.title}
+                label={card.title}
+                value={card.value}
+                icon={<span aria-hidden>{card.icon}</span>}
+                color={card.color}
+                sub={card.subtitle}
+                trend={card.trend}
+              />
             ))}
           </div>
 
-          <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Weekly Analytics — Study Time + Time Distribution */}
+          <SectionDivider label="Weekly Analytics" />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
               className="px-6 py-7"
-              heading={<h2 className="mb-8 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
-                <span className="h-2 w-2 rounded-full bg-[#8B35F6]" />
-                Study Time – This Week
-              </h2>}
+              heading={<CardHeading dotColor="#cc5de8">Study Time – This Week</CardHeading>}
             >
-
               <div className="mb-16 grid grid-cols-2 gap-5 sm:grid-cols-4">
                 {[
                   ['Today', formatHours(todayHours), '#101828'],
@@ -495,12 +464,8 @@ export default function PerformancePage() {
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
               className="px-6 py-7"
-              heading={<h2 className="mb-9 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
-                <span className="h-2 w-2 rounded-full bg-[#F28C32]" />
-                Time Distribution – This Week
-              </h2>}
+              heading={<CardHeading dotColor="#F28C32">Time Distribution – This Week</CardHeading>}
             >
-
               <div className="grid items-center gap-8 sm:grid-cols-[220px_1fr]">
                 <div className="flex justify-center">
                   <DonutChart items={distribution} centerLabel={formatHours(totalStudyHours)} />
@@ -520,22 +485,21 @@ export default function PerformancePage() {
             </LockedAnalyticsCard>
           </div>
 
-          <SectionLabel>Strong &amp; Weak Areas</SectionLabel>
-          <div className="mb-9 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Strong & Weak Areas */}
+          <SectionDivider label="Strong &amp; Weak Areas" />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
               className="px-6 py-7"
-              heading={<div className="mb-8 flex items-center justify-between gap-4">
-                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
-                  <span className="text-[24px]" aria-hidden>💪</span>
-                  Strong Areas
-                </h2>
+              heading={<CardHeading right={
                 <div className="hidden items-center gap-3 text-[13px] text-[#6A7282] sm:flex">
                   <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#4A7DFF]" />Accuracy</span>
                   <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#D1D5DB]" />Qs attempted</span>
                 </div>
-              </div>}
+              }>
+                <span className="text-[24px]" aria-hidden>💪</span> Strong Areas
+              </CardHeading>}
             >
               <SubjectList rows={strongAreas} />
             </LockedAnalyticsCard>
@@ -544,35 +508,30 @@ export default function PerformancePage() {
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
               className="px-6 py-7"
-              heading={<div className="mb-8 flex items-center justify-between gap-4">
-                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
-                  <span className="text-[24px]" aria-hidden>⚠</span>
-                  Weak Areas
-                </h2>
-                <Link href="/dashboard/spaced-repetition" className="text-[16px] font-medium text-[#155DFC]">
+              heading={<CardHeading right={
+                <Link href="/dashboard/spaced-repetition" className="pa-link-gold text-[15px] font-semibold text-[#155DFC]">
                   View Tracker +
                 </Link>
-              </div>}
+              }>
+                <span className="text-[24px]" aria-hidden>⚠</span> Weak Areas
+              </CardHeading>}
             >
               <SubjectList rows={weakAreas} weak />
             </LockedAnalyticsCard>
           </div>
 
-          <SectionLabel>Study Streak &amp; Daily Trio Progress</SectionLabel>
-          <div className="mb-9 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Study Streak & Daily Trio Progress */}
+          <SectionDivider label="Study Streak &amp; Daily Trio Progress" />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
               className="px-6 py-7"
-              heading={<div className="mb-7 flex items-center justify-between gap-4">
-                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
-                  <span aria-hidden>📅</span>
-                  Study Streak – {streakCalendar?.monthLabel ?? new Date().toLocaleString('en-US', { month: 'long' })} {streakCalendar?.year ?? new Date().getFullYear()}
-                </h2>
-                <span className="font-bold text-[#F2742F]">🔥 {currentStreak} Days!</span>
-              </div>}
+              heading={<CardHeading right={<span className="font-bold text-[#F2742F]">🔥 {currentStreak} Days!</span>}>
+                <span aria-hidden>📅</span>
+                Study Streak – {streakCalendar?.monthLabel ?? new Date().toLocaleString('en-US', { month: 'long' })} {streakCalendar?.year ?? new Date().getFullYear()}
+              </CardHeading>}
             >
-
               <div className="mb-5 flex flex-wrap items-center gap-2 text-[10px] uppercase text-[#6A7282]">
                 <span>Intensity</span>
                 {['None', 'Light', 'Medium', 'Intense'].map((label, index) => (
@@ -602,7 +561,7 @@ export default function PerformancePage() {
                       key={entry.day}
                       type="button"
                       onClick={() => setSelectedDay(entry.day)}
-                      className="flex aspect-square items-center justify-center rounded-[8px] text-[14px] font-semibold transition-shadow"
+                      className="pa-cal-day flex aspect-square items-center justify-center rounded-[8px] text-[14px] font-semibold"
                       style={{
                         background: isSelected ? '#0F1626' : isToday ? '#0A1172' : intensityColor,
                         border: isSelected
@@ -680,22 +639,17 @@ export default function PerformancePage() {
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
               className="px-6 py-7"
-              heading={<h2 className="mb-7 flex items-center gap-3 text-[20px] font-bold text-[#101828]">
-                <span aria-hidden>⚡</span>
-                Daily Trio – This Week
-              </h2>}
+              heading={<CardHeading><span aria-hidden>⚡</span> Daily Trio – This Week</CardHeading>}
             >
-
               {[
                 { icon: '📚', title: 'Daily MCQ Challenge', subtitle: 'Polity, Economy, Geography', value: Math.min(analyticsData?.dailyTrio?.mcqDays ?? 0, 7), color: '#58BE87', href: '/dashboard/daily-mcq' },
-                { icon: '✍️', title: 'Daily Mains Challenge', subtitle: 'Answer Writing, AI Evaluated', value: Math.min(analyticsData?.dailyTrio?.mainsDays ?? 0, 7), color: '#0E1830', href: '/dashboard/daily-answer' },
+                { icon: '✍️', title: 'Daily Answer Writing', subtitle: 'Answer Writing, AI Evaluated', value: Math.min(analyticsData?.dailyTrio?.mainsDays ?? 0, 7), color: '#0E1830', href: '/dashboard/daily-answer' },
                 { icon: '📰', title: 'Daily News Analysis', subtitle: 'The Hindu, Indian Express', value: Math.min(analyticsData?.dailyTrio?.editorialDays ?? 0, 7), color: '#E8B84B', href: '/dashboard/daily-editorial' },
               ].map((item) => (
                 <Link
                   key={item.title}
                   href={item.href}
-                  className="mb-8 block rounded-[10px] border border-[#E5E7EB] bg-white px-5 py-4 shadow-sm transition-colors hover:border-[#CBD5E1] last:mb-0"
-                  style={{ boxShadow: '0px 2px 4px rgba(0,0,0,0.12)' }}
+                  className="pa-trio mb-4 block rounded-[10px] border border-[#E5E7EB] bg-[#F8FAFC] px-5 py-4 last:mb-0"
                 >
                   <div className="mb-4 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -716,21 +670,20 @@ export default function PerformancePage() {
             </LockedAnalyticsCard>
           </div>
 
-          <SectionLabel>Recent Tests &amp; Achievements</SectionLabel>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Achievements & Rankings */}
+          <SectionDivider label="Achievements &amp; Rankings" />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <AnalyticsCard className="px-6 py-7">
-              <div className="mb-7 flex items-center justify-between gap-4">
-                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
-                  <span aria-hidden>🏆</span>
-                  Achievement Badges
-                </h2>
+              <CardHeading right={
                 <div className="flex items-center gap-3">
                   <span className="rounded-[4px] bg-[#E8B84B] px-2 py-1 text-[12px] font-semibold text-white">
                     {earnedBadgeCount} Earned
                   </span>
-                  <Link href="/dashboard/achievement-badges" className="text-[14px] text-[#4B5563] hover:underline">All →</Link>
+                  <Link href="/dashboard/achievement-badges" className="pa-link-gold text-[14px] text-[#4B5563]">All →</Link>
                 </div>
-              </div>
+              }>
+                <span aria-hidden>🏆</span> Achievement Badges
+              </CardHeading>
 
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {earnedBadges.map((badge: any) => (
@@ -755,13 +708,11 @@ export default function PerformancePage() {
             </AnalyticsCard>
 
             <AnalyticsCard className="px-6 py-7">
-              <div className="mb-7 flex items-center justify-between gap-4">
-                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
-                  <span aria-hidden>🏅</span>
-                  Weekly Leaderboard
-                </h2>
-                <Link href="/dashboard/leaderboard?range=week" className="text-[13px] font-semibold text-[#258F7D] hover:underline">View All →</Link>
-              </div>
+              <CardHeading right={
+                <Link href="/dashboard/leaderboard?range=week" className="pa-link-gold text-[13px] font-semibold text-[#258F7D]">View All →</Link>
+              }>
+                <span aria-hidden>🏅</span> Weekly Leaderboard
+              </CardHeading>
 
               {weeklyLeaderboard?.length ? (
                 <div className="space-y-3">

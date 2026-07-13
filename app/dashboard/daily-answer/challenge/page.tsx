@@ -575,20 +575,11 @@ function DailyMainsChallengeInner() {
               <span className="flex items-center gap-2">⭐ <strong>Marks:</strong> {data.marks}</span>
             </div>
 
-            {/* Actions + aspirants */}
+            {/* Actions */}
             <div className="flex flex-wrap items-center justify-between gap-4" style={{ marginTop: '24px' }}>
               <div className="flex flex-wrap items-center gap-3">
                 <button onClick={handleBeginChallenge} className="dms-btn-primary" style={{ padding: '14px 28px' }}>🚀 Begin Challenge</button>
                 <button type="button" className="dms-btn-secondary" style={{ padding: '14px 28px', background: '#FFFFFF' }}>📱 Attempt on App</button>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex">
-                  <span className="dms-av" style={{ background: '#3B82F6', zIndex: 4 }}>A</span>
-                  <span className="dms-av" style={{ background: '#10B981', marginLeft: '-8px', zIndex: 3 }}>M</span>
-                  <span className="dms-av" style={{ background: '#8B5CF6', marginLeft: '-8px', zIndex: 2 }}>K</span>
-                  <span className="dms-av" style={{ background: '#F59E0B', marginLeft: '-8px', zIndex: 1 }}>+</span>
-                </div>
-                <div className="dms-live-copy" style={{ fontSize: '14px', color: '#6B7280' }}><strong style={{ color: '#0B1020' }}>{data.attemptCount.toLocaleString('en-US')}</strong> aspirants already attempted</div>
               </div>
             </div>
           </div>

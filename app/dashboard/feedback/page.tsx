@@ -19,7 +19,7 @@ const CATEGORIES = [
 ];
 const FEATURES = [
   'Daily MCQ',
-  'Daily Mains Challenge',
+  'Daily Answer Writing',
   'Daily Editorial',
   'Mock Tests',
   'PYQ',

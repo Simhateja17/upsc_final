@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { dashboardService, studyPlannerService } from '@/lib/services';
 import { getSubjectEmoji } from '@/lib/subjectEmojis';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 // Complete study-planner subject list — mirrors SUBJECT_OPTIONS in the Study
 // Planner page and VALID_STUDY_PLANNER_SUBJECTS on the backend so custom tasks
@@ -1004,6 +1005,9 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
                 const completed = isTaskCompleted(task);
                 // Green left border only for completed tasks; incomplete tasks use a normal grey border.
                 const taskId = task._id || task.id || '';
+                // Per-subject colour so each subject pill (Polity, Current Affairs,
+                // Society…) reads as a distinct colour instead of all being purple.
+                const subjectStyle = getSubjectMetaStyle(task.subject || '');
                 const durationLabel = formatDurationLabel(taskDurationMinutes(task));
                 const timeLabel = task.startTime
                   ? `${task.startTime}${task.endTime ? ` - ${task.endTime}` : ''} ${durationLabel}`.trim()
@@ -1026,7 +1030,7 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
                           <img src="/b.png" alt="Type" className="w-3.5 h-3.5" />
                           {(() => { const t = task.type || 'Reading'; return t.charAt(0).toUpperCase() + t.slice(1); })()}
                         </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[clamp(12px,0.68vw,13px)] font-medium text-purple-700" style={{ background: '#F3E8FF' }}>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[clamp(12px,0.68vw,13px)] font-medium" style={{ background: subjectStyle.bg, color: subjectStyle.accent }}>
                           {task.subject ? `${getSubjectEmoji(task.subject)} ${displaySubjectLabel(task.subject)}` : '📚 General'}
                         </span>
                         {timeLabel && (
