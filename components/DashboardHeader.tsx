@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
 import { userService } from '@/lib/services';
+import { useOptionalEntitlements } from '@/contexts/EntitlementsContext';
 
 interface DashboardHeaderProps {
   onMenuClick?: () => void;
@@ -96,6 +97,9 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading } = useAuth();
+  const entitlements = useOptionalEntitlements();
+  const tier = entitlements?.tier;
+  const entitlementSummary = entitlements?.summary;
   const { openAuthModal } = useAuthModal();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -239,6 +243,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
         {isLoggedIn ? (
           <>
             {/* Upgrade Button */}
+            {entitlementSummary && tier !== 'ascent' && (
             <Link href="/dashboard/billing/plans#upgrade-plans" className="hidden sm:block">
               <button
                 className="inline-flex items-center gap-1.5 group"
@@ -270,6 +275,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 <span style={{ fontSize: 'clamp(14px, 1.2vw, 20px)' }}>✨</span>
               </button>
             </Link>
+            )}
 
             {/* Notification Bell */}
             <button
