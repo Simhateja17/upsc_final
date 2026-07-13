@@ -2,8 +2,11 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { mockTestService, flashcardService, spacedRepService, leaderboardService } from '@/lib/services';
+import { mockTestService, leaderboardService } from '@/lib/services';
 import MainsResultsView from '@/components/mains-results/MainsResultsView';
+import SmartNextStepsModal from '@/components/SmartNextStepsModal';
+import ShareScoreModal from '@/components/mcq-review/ShareScoreModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Question {
   id: number;
@@ -248,6 +251,7 @@ const fallbackCards: CardItem[] = [
 
 function MockTestResultsInner() {
   const router = useRouter();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const testId = searchParams.get('testId');
   const mode = searchParams.get('mode');
@@ -256,80 +260,20 @@ function MockTestResultsInner() {
   const title = searchParams.get('title') || 'Test Series';
 
   const [results, setResults] = useState<ResultsData | null>(null);
-  const [reviewQuestions, setReviewQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(1);
   const [mainsData, setMainsData] = useState<MainsPerQuestion[] | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   // Real leaderboard rank (prelims/MCQ bucket) — powers the Rank stat tile.
   const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank: number; realRankedCount: number } | null>(null);
 
-  /* ─── Next-steps tab state ─── */
-  // Both modes open on the review/answers view; "Next" reveals the recommendations.
-  const [activeTab, setActiveTab] = useState<'next-steps' | 'review'>('review');
+  // Score-screen popups — mirror the Daily MCQ Challenge flow: Smart Next Steps
+  // and Share Score open as modals (never inline sections below the score card).
+  const [showNextSteps, setShowNextSteps] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [cards, setCards] = useState<CardItem[]>(fallbackCards);
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [heroTitle, setHeroTitle] = useState('Great session!');
   const [heroSubtitle, setHeroSubtitle] = useState("You've completed today's practice. Here's what the best aspirants do next to keep climbing.");
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
-  };
-
-  const handleAddToFlashcards = async (q: any) => {
-    setActionLoading(`flashcard-${q.idx}`);
-    try {
-      const correctOpt = q.options?.find((o: any) => o.label === q.correct);
-      await flashcardService.createCard({
-        subjectId: '',
-        subject: q.subject || 'General',
-        topic: q.subject || 'General',
-        question: q.text || q.questionText || '',
-        answer: correctOpt?.text || q.correct || '',
-        difficulty: q.difficulty || 'Medium',
-      });
-      showToast('Added to flashcards!');
-    } catch {
-      showToast('Failed to add to flashcards', 'error');
-    }
-    setActionLoading(null);
-  };
-
-  const handleNeedToRevise = async (q: any) => {
-    setActionLoading(`revise-${q.idx}`);
-    try {
-      await spacedRepService.addItem({
-        questionText: q.text || q.questionText || '',
-        subject: q.subject || 'General',
-        source: 'mock-test',
-        sourceType: 'mcq',
-        scheduleDay: 1,
-        scheduleDays: [1, 3, 7, 14, 30],
-        remindEnabled: true,
-      });
-      showToast('Added to spaced repetition!');
-    } catch {
-      showToast('Failed to add to revision', 'error');
-    }
-    setActionLoading(null);
-  };
-
-  const handleStudyNotes = (q: any) => {
-    if (typeof window !== 'undefined') {
-      const notes = JSON.parse(sessionStorage.getItem('studyNotes') || '[]');
-      notes.push({
-        questionId: q.idx,
-        question: q.text || q.questionText || '',
-        subject: q.subject || 'General',
-        addedAt: new Date().toISOString(),
-      });
-      sessionStorage.setItem('studyNotes', JSON.stringify(notes));
-    }
-    showToast('Saved to study notes!');
-  };
 
   /* ─── Mains results loader ─── */
   useEffect(() => {
@@ -492,22 +436,6 @@ function MockTestResultsInner() {
           ];
         }
 
-        if (data.questions && Array.isArray(data.questions)) {
-          setReviewQuestions(data.questions.map((q: any, i: number) => ({
-            idx: i + 1,
-            text: q.questionText || q.text || '',
-            subject: q.subject || '',
-            options: (q.options || []).map((o: any) => ({ label: o.id || o.label, text: o.text })),
-            correct: q.correctOption || q.correct || '',
-            selected: q.selectedOption || q.selected || null,
-            isCorrect: q.isCorrect ?? false,
-            explanation: q.explanation || '',
-            status: !q.selectedOption && !q.selected ? 'skipped' : (q.isCorrect ? 'correct' : 'wrong'),
-            delta: !q.selectedOption && !q.selected ? 0 : (q.isCorrect ? 2 : -0.67),
-            timeSec: '-',
-          })));
-        }
-
         setResults({
           total,
           correct,
@@ -628,116 +556,6 @@ function MockTestResultsInner() {
       : card
   );
 
-  /* ─── Shared: next steps content ─── */
-  const nextStepsContent = (
-    <div style={{ width: '100%', maxWidth: '988px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Header */}
-      <div className="text-center">
-        <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6A7282', marginBottom: '6px' }}>
-          🎯 SMART NEXT STEPS
-        </p>
-        <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#101828' }}>
-          Personalised recommendations based on your evaluation
-        </h2>
-      </div>
-
-      {/* 2x2 action cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Retake this test */}
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="flex items-start justify-between">
-            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🔄</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#FFFFFF', background: '#4338CA', borderRadius: '99px', padding: '3px 10px' }}>Recommended</span>
-          </div>
-          <div>
-            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Retake this Test</p>
-            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Same config, fresh attempt. Ideal for reinforcing weak areas.</p>
-          </div>
-          <button
-            onClick={() => router.push(`/dashboard/mock-tests/attempt?testId=${testId}`)}
-            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#17223E', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-          >
-            Retake Test →
-          </button>
-        </div>
-
-        {/* Build a new test */}
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="flex items-start justify-between">
-            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>➕</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#166534', background: '#DCFCE7', borderRadius: '99px', padding: '3px 10px' }}>Popular</span>
-          </div>
-          <div>
-            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Build a New Test</p>
-            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Change subject, difficulty or source. Keep the variety going.</p>
-          </div>
-          <button
-            onClick={() => router.push('/dashboard/mock-tests')}
-            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#16A34A', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-          >
-            Create New Test →
-          </button>
-        </div>
-
-        {/* Try Mains Writing */}
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="flex items-start justify-between">
-            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>✍️</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#1447E6', background: '#DBEAFE', borderRadius: '99px', padding: '3px 10px' }}>Mains prep</span>
-          </div>
-          <div>
-            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Try Mains Writing</p>
-            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Practice answer writing with AI markup feedback. Build answer skills.</p>
-          </div>
-          <button
-            onClick={() => router.push('/dashboard/daily-answer')}
-            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#FFFBEB', color: '#B45309', fontSize: '14px', fontWeight: 700, border: '1px solid #FDE68A', cursor: 'pointer' }}
-          >
-            Start Writing →
-          </button>
-        </div>
-
-        {/* Practice PYQs */}
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="flex items-start justify-between">
-            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>📚</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#5B21B6', background: '#EDE9FE', borderRadius: '99px', padding: '3px 10px' }}>PYQ bank</span>
-          </div>
-          <div>
-            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Practice Previous Years</p>
-            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Solve real UPSC questions from past years to build exam temperament.</p>
-          </div>
-          <button
-            onClick={() => router.push('/dashboard/pyq')}
-            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#7C3AED', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-          >
-            Browse PYQs →
-          </button>
-        </div>
-      </div>
-
-      {/* Other Actions */}
-      <div style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #E5E7EB', padding: '20px 24px' }}>
-        <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6A7282', marginBottom: '12px' }}>
-          OTHER ACTIONS
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => router.push('/dashboard')}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '99px', border: '1px solid #E5E7EB', background: '#FFFFFF', fontSize: '13px', fontWeight: 600, color: '#374151', cursor: 'pointer' }}
-          >
-            🏠 Back to Dashboard
-          </button>
-          <button
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '99px', border: '1px solid #FDE68A', background: '#FFFBEB', fontSize: '13px', fontWeight: 600, color: '#B45309', cursor: 'pointer' }}
-          >
-            🔗 Share Result
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   /* ─── Mains Results View ─── */
   // Rendered by the shared MainsResultsView — identical to the Daily Mains
   // Challenge results page (Feedback / Examiner's Markup / Score Breakdown /
@@ -784,7 +602,6 @@ function MockTestResultsInner() {
 
   /* ─── Prelims Results View ─── */
   const { total, correct, wrong, scorePct } = results!;
-  const sample = (results as any)._sample as any | undefined;
   const showConfetti = scorePct > 50;
 
   /* ─── Daily-MCQ-style completion card derivations ─── */
@@ -809,51 +626,24 @@ function MockTestResultsInner() {
   const rankBarPct = rankUnlocked && rankedTotal > 0
     ? Math.max(4, Math.min(100, Math.round((1 - ((myRank!.mcqRank as number) - 1) / rankedTotal) * 100)))
     : 0;
-  // Share Score: native share sheet with a clipboard fallback.
-  const handleShareScore = async () => {
-    const shareText = `I scored ${correct}/${total} (${scorePct}%) on a ${title} prelims mock on RiseWithJeet!`;
-    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-    try {
-      if (typeof navigator !== 'undefined' && (navigator as any).share) {
-        await (navigator as any).share({ title: 'My Mock Test Score', text: shareText, url: shareUrl });
-        return;
-      }
-      if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        await navigator.clipboard.writeText(`${shareText} ${shareUrl}`.trim());
-        setToast({ show: true, message: 'Score copied to clipboard!', type: 'success' });
-        setTimeout(() => setToast(t => ({ ...t, show: false })), 2000);
-      }
-    } catch {
-      /* user dismissed the share sheet — no-op */
-    }
-  };
+  // Share Score: reuse the Daily MCQ Challenge share modal — build the same
+  // shareable slug URL (initials + date) so the popup behaves identically.
+  const reportName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Aspirant';
+  const reportInitials = (reportName.split(' ').map((w) => w[0]).join('').slice(0, 2) || 'AS').toUpperCase();
+  const shareDate = new Date();
+  const shareSlug = `${reportInitials}-${shareDate.getDate()}${shareDate.toLocaleString('en-US', { month: 'short' }).toLowerCase()}${String(shareDate.getFullYear()).slice(-2)}`;
+  const shareScoreUrl = `risewithjeet.com/share/mock-test/${shareSlug}`;
   const retakeHref = mode === 'sample'
     ? `/dashboard/mock-tests/attempt?mode=sample&title=${encodeURIComponent(title)}`
     : `/dashboard/mock-tests/attempt?testId=${testId}`;
+  // Question-wise Review opens as its OWN screen (exactly like Daily MCQ) —
+  // never expanded inline below the score card.
+  const reviewHref = mode === 'sample'
+    ? `/dashboard/mock-tests/attempt/results/review?mode=sample&title=${encodeURIComponent(title)}`
+    : `/dashboard/mock-tests/attempt/results/review?testId=${testId}`;
 
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif' }}>
-      {/* Toast Notification */}
-      {toast.show && (
-        <div style={{
-          position: 'fixed',
-          top: '16px',
-          right: '16px',
-          zIndex: 9999,
-          padding: '12px 20px',
-          borderRadius: '10px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          background: toast.type === 'success' ? '#F0FDF4' : '#FEF2F2',
-          border: toast.type === 'success' ? '1px solid #86EFAC' : '1px solid #FCA5A5',
-          color: toast.type === 'success' ? '#166534' : '#991B1B',
-          fontSize: '14px',
-          fontWeight: 600,
-          fontFamily: 'Inter, sans-serif',
-          animation: 'slideDown 0.2s ease',
-        }}>
-          {toast.type === 'success' ? '✓' : '✕'} {toast.message}
-        </div>
-      )}
       {showConfetti && (
         <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 10 }}>
           {Array.from({ length: 36 }, (_, i) => (
@@ -892,14 +682,6 @@ function MockTestResultsInner() {
           paddingRight: 24,
         }}
       >
-        <button
-          type="button"
-          onClick={() => router.push('/dashboard')}
-          style={{ background: 'transparent', border: 'none', color: '#374151', fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}
-        >
-          ← Back to Dashboard
-        </button>
-
         {/* Completion card — mirrors Daily MCQ Challenge results (same narrow, centered width) */}
         <div
           style={{
@@ -960,7 +742,7 @@ function MockTestResultsInner() {
           {/* Heading */}
           <div style={{ textAlign: 'center', marginBottom: 'clamp(0.9rem,1.2vw,1.25rem)' }}>
             <h1 style={{ fontWeight: 800, letterSpacing: '-0.02em', color: '#17223E', fontSize: 28, lineHeight: '34px', margin: '0 0 6px' }}>
-              Prelims Mock Test Completed!
+              Prelims Mock Test Evaluation Completed!
             </h1>
             <p style={{ fontWeight: 500, color: '#475467', fontSize: 14, lineHeight: '20px', margin: 0 }}>
               Great effort! Here{'\''}s your performance analysis
@@ -1016,12 +798,7 @@ function MockTestResultsInner() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.65rem,0.85vw,0.9rem)' }}>
             <button
               type="button"
-              onClick={() => {
-                setActiveTab('review');
-                setTimeout(() => {
-                  document.getElementById('mt-full-analysis')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 50);
-              }}
+              onClick={() => router.push(reviewHref)}
               className="qw-review-btn"
               style={{ position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(8px,0.9vw,12px)', borderRadius: 14, padding: 'clamp(12px,1vw,16px)', fontSize: 'clamp(13px,0.8vw,15px)', fontWeight: 700, cursor: 'pointer' }}
             >
@@ -1036,7 +813,7 @@ function MockTestResultsInner() {
             </button>
 
             <div className="grid grid-cols-3" style={{ gap: 'clamp(0.5rem,0.65vw,0.75rem)' }}>
-              <button type="button" onClick={handleShareScore} className="mcq-act mcq-act-share" style={{ justifyContent: 'center', textAlign: 'center' }}>
+              <button type="button" onClick={() => setShowShareModal(true)} className="mcq-act mcq-act-share" style={{ justifyContent: 'center', textAlign: 'center' }}>
                 <span className="ic">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <path d="M6.5 5.5L10 3.5M6.5 10.5L10 12.5M6.5 8A2 2 0 1 1 2.5 8A2 2 0 0 1 6.5 8ZM13.5 3A2 2 0 1 1 9.5 3A2 2 0 0 1 13.5 3ZM13.5 13A2 2 0 1 1 9.5 13A2 2 0 0 1 13.5 13Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -1063,7 +840,7 @@ function MockTestResultsInner() {
             </div>
 
             <div className="grid grid-cols-2" style={{ gap: 'clamp(0.5rem,0.8vw,1rem)' }}>
-              <button type="button" onClick={() => setActiveTab('next-steps')} className="mcq-act mcq-act-next" style={{ justifyContent: 'center', textAlign: 'center' }}>
+              <button type="button" onClick={() => setShowNextSteps(true)} className="mcq-act mcq-act-next" style={{ justifyContent: 'center', textAlign: 'center' }}>
                 <span className="ic">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <path d="M8 2.5L9.15 6.85L13.5 8L9.15 9.15L8 13.5L6.85 9.15L2.5 8L6.85 6.85L8 2.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
@@ -1082,233 +859,23 @@ function MockTestResultsInner() {
           </div>
         </div>
 
-        {/* Next steps view */}
-        {activeTab === 'next-steps' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <button
-              type="button"
-              onClick={() => setActiveTab('review')}
-              style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#374151', fontWeight: 700, fontSize: 14, cursor: 'pointer', padding: 0 }}
-            >
-              ← Back to answers
-            </button>
-            {nextStepsContent}
-          </div>
-        )}
+        {/* Smart Next Steps + Share Score open as modals — the exact Daily MCQ
+            Challenge flow (never inline sections below the score card). */}
+        <SmartNextStepsModal open={showNextSteps} onClose={() => setShowNextSteps(false)} />
+        <ShareScoreModal
+          open={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          brandLabel="RISEWITHJEET · PRELIMS MOCK TEST"
+          challengeName="Prelims Mock Test"
+          todayPrefix={false}
+          correctCount={correct}
+          totalCount={total}
+          accuracyPct={scorePct}
+          rankLabel={rankLabel}
+          streak={streak?.days ?? null}
+          shareUrl={shareScoreUrl}
+        />
 
-        {/* Review view */}
-        {activeTab === 'review' && (
-          <div id="mt-full-analysis" style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800, color: '#101828', marginBottom: 12 }}>
-              <span style={{ width: 18, height: 18, borderRadius: 4, border: '2px solid #00C950', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#00C950' }}>✓</span>
-              Answer Review
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {(sample?.review ?? reviewQuestions).map((row: any) => {
-                const questions: Question[] = (sample?.questions as Question[] | undefined) ?? SAMPLE_QUESTIONS;
-                const selectedOptions: Record<number, string> = (sample?.selectedOptions as Record<number, string> | undefined) ?? {};
-                const isSample = !!sample;
-                const q = isSample ? questions[(row.idx ?? 1) - 1] : {
-                  text: row.text,
-                  subject: row.subject,
-                  options: row.options || [],
-                  correct: row.correct,
-                  explanation: row.explanation,
-                  difficulty: 'Medium' as const,
-                  id: row.idx,
-                };
-                const selected = isSample ? selectedOptions[(row.idx ?? 1) - 1] : row.selected;
-                const isExpanded = expandedIdx === row.idx;
-                const borderColor = row.status === 'wrong' ? '#FB2C36' : row.status === 'correct' ? '#00C950' : '#E5E7EB';
-                const bg = row.status === 'wrong' ? '#FEF2F24D' : row.status === 'correct' ? '#F0FDF44D' : '#FFFFFF';
-                const height = row.status === 'wrong' ? 73.5999984741211 : 65.5999984741211;
-                const rightText = row.status === 'skipped' ? 'Skipped' : (row.delta < 0 ? row.delta.toFixed(2) : `+${row.delta}`);
-                const rightColor = row.status === 'wrong' ? '#FB2C36' : row.status === 'correct' ? '#00C950' : '#6B7280';
-                return (
-                  <div key={row.idx} style={{ width: '100%' }}>
-                    <button
-                      type="button"
-                      onClick={() => setExpandedIdx(prev => (prev === row.idx ? null : row.idx))}
-                      style={{
-                        width: '100%',
-                        height,
-                        borderRadius: 10,
-                        background: bg,
-                        borderStyle: 'solid',
-                        borderTopWidth: 0.8,
-                        borderRightWidth: 0.8,
-                        borderBottomWidth: 0.8,
-                        borderLeftWidth: 4,
-                        borderColor,
-                        boxSizing: 'border-box',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0 16px',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                        <div style={{ width: 28, height: 28, borderRadius: 999, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#6B7280', flexShrink: 0 }}>
-                          {row.idx}
-                        </div>
-                        <div style={{ fontSize: 13, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 720 }}>
-                          {row.text}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexShrink: 0 }}>
-                        <div style={{ fontSize: 12, color: '#6B7280' }}>🕒 {row.timeSec}s</div>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: rightColor, minWidth: 52, textAlign: 'right' }}>{rightText}</div>
-                        <div style={{ color: '#6B7280', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease' }}>⌄</div>
-                      </div>
-                    </button>
-
-                    {isExpanded && q ? (
-                      <div
-                        style={{
-                          width: '100%',
-                          marginTop: 10,
-                          borderRadius: 12,
-                          border: '1px solid #E5E7EB',
-                          background: '#FFFFFF',
-                          padding: 18,
-                          boxSizing: 'border-box',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                            <div style={{ width: 28, height: 28, borderRadius: 999, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#6B7280', flexShrink: 0 }}>
-                              {row.idx}
-                            </div>
-                            <div style={{ fontWeight: 700, fontSize: 14, color: '#111827', lineHeight: '20px', minWidth: 0 }}>
-                              {q.text.split('\n').slice(0, 1).join(' ')}
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-                            <div style={{ fontSize: 12, color: '#6B7280' }}>🕒 {row.timeSec}s</div>
-                            <div style={{ fontSize: 12, fontWeight: 800, color: rightColor, minWidth: 52, textAlign: 'right' }}>{rightText}</div>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', background: '#F3F4F6', borderRadius: 8, padding: '4px 8px' }}>
-                            {q.subject}
-                          </span>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#854D0E', background: '#FEF08A', borderRadius: 8, padding: '4px 8px' }}>
-                            PYQ 2019
-                          </span>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          {q.options.map((opt: any) => {
-                            const isCorrect = opt.label === q.correct;
-                            const isSelected = selected === opt.label;
-                            const isWrongSelected = isSelected && !isCorrect;
-                            const rowBg = isCorrect ? '#F0FDF4' : isWrongSelected ? '#FEF2F2' : '#FFFFFF';
-                            const rowBorder = isCorrect ? '1px solid #86EFAC' : isWrongSelected ? '1px solid #FCA5A5' : '1px solid #E5E7EB';
-                            const right = isCorrect ? '✓ Correct' : isWrongSelected ? '✕ Your Answer' : '';
-                            const rightCol = isCorrect ? '#16A34A' : isWrongSelected ? '#DC2626' : '#6B7280';
-                            return (
-                              <div
-                                key={opt.label}
-                                style={{
-                                  borderRadius: 10,
-                                  border: rowBorder,
-                                  background: rowBg,
-                                  padding: '12px 14px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  gap: 12,
-                                }}
-                              >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                                  <div style={{ width: 26, height: 26, borderRadius: 8, border: '1px solid #E5E7EB', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#111827', flexShrink: 0 }}>
-                                    {opt.label}
-                                  </div>
-                                  <div style={{ fontSize: 13, color: '#111827', minWidth: 0 }}>
-                                    {opt.text}
-                                  </div>
-                                </div>
-                                {right ? <div style={{ fontSize: 12, fontWeight: 700, color: rightCol, flexShrink: 0 }}>{right}</div> : <div />}
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {selected ? (
-                          <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>
-                            You picked:{' '}
-                            <span style={{ fontWeight: 800, color: row.status === 'wrong' ? '#DC2626' : '#16A34A' }}>
-                              {selected} — {(q.options.find((o: any) => o.label === selected)?.text ?? '')}
-                            </span>
-                          </div>
-                        ) : (
-                          <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>You picked: <span style={{ fontWeight: 800, color: '#6B7280' }}>Skipped</span></div>
-                        )}
-
-                        <div
-                          style={{
-                            marginTop: 12,
-                            background: '#EFF6FF',
-                            borderRadius: 10,
-                            padding: '14px 14px',
-                            border: '1px solid #BFDBFE',
-                          }}
-                        >
-                          <div style={{ fontSize: 12, fontWeight: 800, color: '#155DFC', marginBottom: 6 }}>
-                            Explanation:
-                          </div>
-                          <div style={{ fontSize: 13, color: '#1D4ED8', lineHeight: '18px' }}>
-                            {q.explanation}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14, fontSize: 12 }}>
-                          <button
-                            type="button"
-                            onClick={() => handleAddToFlashcards(row)}
-                            disabled={actionLoading === `flashcard-${row.idx}`}
-                            style={{ background: 'transparent', border: 'none', color: '#7C3AED', fontWeight: 700, cursor: actionLoading === `flashcard-${row.idx}` ? 'not-allowed' : 'pointer', padding: 0, opacity: actionLoading === `flashcard-${row.idx}` ? 0.5 : 1 }}>
-                            {actionLoading === `flashcard-${row.idx}` ? 'Adding...' : 'Add to Flashcards'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleNeedToRevise(row)}
-                            disabled={actionLoading === `revise-${row.idx}`}
-                            style={{ background: 'transparent', border: 'none', color: '#DC2626', fontWeight: 700, cursor: actionLoading === `revise-${row.idx}` ? 'not-allowed' : 'pointer', padding: 0, opacity: actionLoading === `revise-${row.idx}` ? 0.5 : 1 }}>
-                            {actionLoading === `revise-${row.idx}` ? 'Adding...' : 'Need to Revise'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleStudyNotes(row)}
-                            style={{ background: 'transparent', border: 'none', color: '#2563EB', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
-                            Study Notes
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-            {/* Next → reveals the recommendations */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('next-steps');
-                  if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 28px', borderRadius: 12, border: 'none', background: '#17223E', color: '#FFFFFF', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
-              >
-                Next →
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -112,6 +112,23 @@ const SCOPED_CSS = `
 #dmcResults .qchip .qchip-score{font-size:11px;font-weight:800;}
 #dmcResults .qchip.active .qchip-score{color:var(--gold);}
 
+/* ---- Question-wise breakdown list (clickable rows → detail) ---- */
+#dmcResults .qbd-card{background:var(--card);border-radius:20px;border:1px solid var(--line);box-shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px rgba(15,23,42,.06);padding:24px;}
+#dmcResults .qbd-head h3{font-size:17px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px;}
+#dmcResults .qbd-head p{font-size:13px;color:var(--muted);margin-top:4px;}
+#dmcResults .qbd-list{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
+#dmcResults .qbd-row{display:flex;align-items:center;gap:16px;width:100%;text-align:left;padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:#fff;cursor:pointer;transition:transform .18s,box-shadow .18s,border-color .18s,background .18s;font-family:var(--font-body);}
+#dmcResults .qbd-row:hover{background:var(--bg);border-color:#D5D9E2;transform:translateY(-1px);box-shadow:0 10px 24px -16px rgba(11,16,32,.28);}
+#dmcResults .qbd-qn{flex-shrink:0;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--ink);color:#fff;font-weight:800;font-size:14px;font-family:var(--font-body);}
+#dmcResults .qbd-qt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+#dmcResults .qbd-qt-text{font-size:14px;font-weight:700;color:var(--ink);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+#dmcResults .qbd-qt small{font-size:12px;color:var(--muted);font-weight:600;}
+#dmcResults .qbd-score{flex-shrink:0;font-size:20px;font-weight:800;font-family:var(--font-heading);line-height:1;}
+#dmcResults .qbd-score small{font-size:13px;color:var(--muted);font-weight:600;}
+#dmcResults .qbd-arrow{flex-shrink:0;color:#9AA2B1;}
+#dmcResults .qbd-back{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);margin-bottom:14px;transition:color .2s;padding:0;}
+#dmcResults .qbd-back:hover{color:var(--ink);}
+
 #dmcResults .question-card{background:var(--card);border-radius:20px;border:1px solid var(--line);box-shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px rgba(15,23,42,.06);padding:20px 24px;}
 #dmcResults .question-text{font-family:var(--font-heading);font-size:16px;line-height:1.7;color:#101828;font-style:italic;padding:16px 18px;border-radius:12px;background:#F9FAFB;border-left:4px solid var(--gold);margin:0;white-space:pre-line;}
 
@@ -269,6 +286,10 @@ export default function MainsResultsView({
 
   const [selectedQ, setSelectedQ] = useState(0);
   const [tab, setTab] = useState<TabKey>('feedback');
+  // Master → detail navigation. Multi-question tests (Mock) open on the
+  // question-wise breakdown list; picking a row drills into its detail. Single
+  // question results (Daily / PYQ) skip the list and render the detail directly.
+  const [view, setView] = useState<'list' | 'detail'>(results.length > 1 ? 'list' : 'detail');
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
   const [modelAnswerOpen, setModelAnswerOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -283,6 +304,15 @@ export default function MainsResultsView({
 
   const multi = results.length > 1;
   const data = results[Math.min(selectedQ, results.length - 1)];
+
+  // Open a question's detailed evaluation from the breakdown list.
+  const openQuestion = (i: number) => {
+    setSelectedQ(i);
+    setMarkupPage(1);
+    setTab('feedback');
+    setView('detail');
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Aggregate score across all questions (equals the single question's score
   // for Daily/PYQ).
@@ -507,6 +537,51 @@ export default function MainsResultsView({
             </div>
           </div>
         </div>
+
+        {/* Question-wise breakdown — clickable rows that open each question's
+            detailed evaluation. Mirrors the live reference's question navigation
+            concept; data comes straight from the real evaluation results. */}
+        {multi && view === 'list' && (
+          <div className="qbd-card" style={{ marginBottom: 16 }}>
+            <div className="qbd-head">
+              <h3>📊 Question-wise breakdown</h3>
+              <p>Select a question to open its detailed evaluation.</p>
+            </div>
+            <div className="qbd-list">
+              {results.map((mq, i) => {
+                const mPct = mq.maxScore > 0 ? Math.round((mq.score / mq.maxScore) * 100) : 0;
+                const tone = mPct >= 60 ? '#16A34A' : mPct >= 40 ? '#D97706' : '#DC2626';
+                const qText = mq.question?.questionText?.trim() || mq.question?.title?.trim() || `Question ${i + 1}`;
+                const qPaper = mq.question?.paper?.trim() || '';
+                const qSubject = mq.question?.subject?.trim() || '';
+                const qMarks = mq.question?.marks ?? mq.maxScore ?? 15;
+                const meta = [`${qMarks} marks`, qPaper, qSubject].filter(Boolean).join(' · ');
+                return (
+                  <button key={i} type="button" className="qbd-row" onClick={() => openQuestion(i)}>
+                    <span className="qbd-qn">Q{i + 1}</span>
+                    <span className="qbd-qt">
+                      <span className="qbd-qt-text">{qText}</span>
+                      <small>{meta}</small>
+                    </span>
+                    <span className="qbd-score" style={{ color: tone }}>
+                      {mq.score}<small> / {mq.maxScore}</small>
+                    </span>
+                    <svg className="qbd-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {(!multi || view === 'detail') && (
+        <>
+        {multi && (
+          <button type="button" className="qbd-back" onClick={() => setView('list')}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+            Back to all questions
+          </button>
+        )}
 
         {/* Question selector chips (multi-question tests only) */}
         {multi && (
@@ -801,6 +876,8 @@ export default function MainsResultsView({
             </div>
             <button className="btn-view-now" onClick={() => setModelAnswerOpen(true)}>View Now →</button>
           </div>
+        )}
+        </>
         )}
 
         {/* Action bar (global) */}

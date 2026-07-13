@@ -10,6 +10,8 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import ExamInstructions from '@/components/ExamInstructions';
 import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
 import FilePreviewThumb from '@/components/FilePreviewThumb';
+import FilePreviewModal from '@/components/FilePreviewModal';
+import WritingTimer from '@/components/WritingTimer';
 import { mainsWordLimit, mainsTimeLimit } from '@/lib/mainsPattern';
 
 interface Question {
@@ -174,9 +176,16 @@ function MockTestAttemptInner() {
 
   /* ─── Mains State ─── */
   const [mainsSubmitting, setMainsSubmitting] = useState(false);
+  const [mainsConfirmOpen, setMainsConfirmOpen] = useState(false);
   const [showMainsQuotaModal, setShowMainsQuotaModal] = useState(false);
   const [mainsAnswers, setMainsAnswers] = useState<Record<number, MainsAnswer>>({});
+  // Questions the user has explicitly marked as "didn't attempt" — these are
+  // allowed through submission without an answer upload and are not evaluated.
+  const [unattemptedQuestions, setUnattemptedQuestions] = useState<Record<number, boolean>>({});
+  // Index of the question whose missing-answer popup is open (null = closed).
+  const [missingAnswerIdx, setMissingAnswerIdx] = useState<number | null>(null);
   const [openEditors, setOpenEditors] = useState<Record<number, boolean>>({}); // which answer editors are expanded
+  const [previewFile, setPreviewFile] = useState<File | null>(null); // in-page uploaded-answer preview (no new tab / no navigation)
   const answerModeKey = testId ? `mockTestAnswerMode:${testId}` : null;
   const [answerMode, setAnswerMode] = useState<'type' | 'handwrite' | null>(null);
   const [doneWriting, setDoneWriting] = useState(false); // handwrite mode: user finished writing → show upload step
@@ -248,8 +257,14 @@ function MockTestAttemptInner() {
           statuses[i] = i === 0 ? 'current' : 'unattempted';
         });
         setQuestionStatuses(statuses);
-        // Set timer based on API duration (minutes or seconds) with a safe fallback.
-        const durationSeconds = normalizeDurationToSeconds(res.data?.duration, qs.length, isMains);
+        // Both modes derive total time deterministically from the question count
+        // so the timer always matches the setup summary and instructions — never a
+        // stale/random API duration.
+        //   Mains:   7 min per 10-mark question (numberOfQuestions × 7).
+        //   Prelims: 100 questions = 120 minutes, scaled proportionally (× 1.2).
+        const durationSeconds = isMains
+          ? qs.length * 7 * 60
+          : Math.round(qs.length * 1.2) * 60;
         setTimeLeft(durationSeconds);
         setExamTotalSeconds(durationSeconds);
       } catch (err: any) {
@@ -366,28 +381,85 @@ function MockTestAttemptInner() {
   };
 
   /* ─── Mains handlers ─── */
+  // Clicking "Submit … for Evaluation" validates answers, then opens the
+  // confirmation popup. The real submission only runs after "Yes, submit".
+  // First question that has no answer and hasn't been explicitly marked as
+  // "didn't attempt". `override` lets callers factor in a just-made decision
+  // before React state has flushed. Returns -1 when nothing is missing.
+  const firstMissingAnswer = (override?: Record<number, boolean>) => {
+    const skip = override || unattemptedQuestions;
+    return questions.findIndex((_, i) => {
+      if (skip[i]) return false;
+      const a = mainsAnswers[i];
+      if (answerMode === 'handwrite') return !a || !a.files.length;
+      return !a || !a.text.trim();
+    });
+  };
+
+  const requestMainsSubmit = () => {
+    if (!testId) {
+      setError('Cannot submit without a test session. Please regenerate the test.');
+      return;
+    }
+    const missing = firstMissingAnswer();
+    if (missing !== -1) {
+      // Prompt the user: upload the answer, or mark the question unattempted.
+      setError(null);
+      setMissingAnswerIdx(missing);
+      return;
+    }
+    setError(null);
+    setMainsConfirmOpen(true);
+  };
+
+  // Popup action: jump to the flagged question's answer section so the user can upload.
+  const handleUploadMissingAnswer = () => {
+    const idx = missingAnswerIdx;
+    setMissingAnswerIdx(null);
+    if (idx === null) return;
+    setCurrentIdx(idx);
+    if (typeof window !== 'undefined') {
+      // Wait a frame so the popup is gone and the target is laid out.
+      requestAnimationFrame(() => {
+        document.getElementById(`mains-q-${idx}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+  };
+
+  // Popup action: mark the question unattempted, then move on to the next
+  // missing question (if any) or straight to the submit confirmation.
+  const handleMarkUnattempted = () => {
+    const idx = missingAnswerIdx;
+    if (idx === null) return;
+    const nextUnattempted = { ...unattemptedQuestions, [idx]: true };
+    setUnattemptedQuestions(nextUnattempted);
+    const nextMissing = firstMissingAnswer(nextUnattempted);
+    if (nextMissing !== -1) {
+      setMissingAnswerIdx(nextMissing);
+    } else {
+      setMissingAnswerIdx(null);
+      setError(null);
+      setMainsConfirmOpen(true);
+    }
+  };
+
   const handleMainsSubmitAll = async () => {
     if (!testId) {
       setError('Cannot submit without a test session. Please regenerate the test.');
       return;
     }
 
-    const missing = questions.findIndex((_, i) => {
-      const a = mainsAnswers[i];
-      if (answerMode === 'handwrite') return !a || !a.files.length;
-      return !a || !a.text.trim();
-    });
+    const missing = firstMissingAnswer();
     if (missing !== -1) {
-      setCurrentIdx(missing);
-      setError(
-        answerMode === 'handwrite'
-          ? `Please upload your answer page for Question ${missing + 1} before submitting.`
-          : `Please provide an answer for Question ${missing + 1} before submitting.`
-      );
+      // A question is still missing an answer and hasn't been marked
+      // unattempted — re-open the prompt instead of blocking silently.
+      setMainsConfirmOpen(false);
+      setMissingAnswerIdx(missing);
       return;
     }
 
     setError(null);
+    setMainsConfirmOpen(false);
     setMainsSubmitting(true);
 
     try {
@@ -405,8 +477,8 @@ function MockTestAttemptInner() {
       }
 
       const pendingQuestions = questions
-        .map((q) => ({ q }))
-        .filter(({ q }) => !byQuestion[String(q.id)]);
+        .map((q, i) => ({ q, i }))
+        .filter(({ q, i }) => !byQuestion[String(q.id)] && !unattemptedQuestions[i]);
 
       if (pendingQuestions.length === 0) {
         router.push(
@@ -432,6 +504,8 @@ function MockTestAttemptInner() {
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
         if (byQuestion[String(q.id)]) continue;
+        // Intentionally unattempted questions are not sent for evaluation.
+        if (unattemptedQuestions[i]) continue;
         const a = mainsAnswers[i];
         const resp = await mockTestService.submitMainsAnswer(testId, String(q.id), {
           answerText: a?.text?.trim() || undefined,
@@ -534,10 +608,12 @@ function MockTestAttemptInner() {
         }
       });
       await mockTestService.submit(testId, answersMap, timeTaken);
+      entitlements.refreshEntitlements().catch(() => {});
       router.push(`/dashboard/mock-tests/attempt/results?testId=${testId}`);
     } catch (err: any) {
       console.error('Failed to submit test:', err);
-      setError(err.message || 'Failed to submit test. Please try again.');
+      const parsed = handleEntitlementError(err);
+      setError(parsed.message || 'Failed to submit test. Please try again.');
       setSubmitting(false);
     }
   };
@@ -624,18 +700,11 @@ function MockTestAttemptInner() {
     const paperLabel = [paperParam, subjectParam].filter(Boolean).join(' · ')
       || (currentQ as any).paper
       || (isMains ? 'GS Paper I' : 'GS Paper I');
-    let totalTimeMinutes: number;
-    if (isMains) {
-      // Sum each question's own UPSC time budget — a Full Length paper mixes
-      // 10- and 15-markers, so a single averaged figure would misstate it.
-      const fallbackMarks = totalMarks && totalQuestions ? Math.round(totalMarks / totalQuestions) : 15;
-      totalTimeMinutes = questions.reduce(
-        (total, q) => total + mainsTimeLimit(q.marks ?? fallbackMarks),
-        0
-      );
-    } else {
-      totalTimeMinutes = Math.max(1, Math.round(timeLeft / 60));
-    }
+    // Show the same exam-wide timer everywhere: setup summary, instructions and
+    // the countdown ring all read one value (mains = numberOfQuestions × 7 min).
+    const totalTimeMinutes = examTotalSeconds > 0
+      ? Math.round(examTotalSeconds / 60)
+      : (isMains ? Math.max(7, totalQuestions * 7) : Math.max(1, Math.round(timeLeft / 60)));
     return (
       <ExamInstructions
         isMains={isMains}
@@ -653,142 +722,333 @@ function MockTestAttemptInner() {
 
   /* ─────────────── MAINS: choose how to answer (type vs handwrite) ─────────────── */
   if (isMains && !answerMode) {
-    const SERIF = "var(--font-playfair), 'Palatino Linotype', Georgia, serif";
-    const SANS = 'var(--font-inter), Inter, system-ui, sans-serif';
-    const totalMinutes = examTotalSeconds > 0 ? Math.round(examTotalSeconds / 60) : 0;
-
-    const TypeIcon = (
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-        <rect x="2" y="5" width="20" height="14" rx="2.5" stroke="#155DFC" strokeWidth="1.8" />
-        <path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 12.5h.01M10 12.5h.01M14 12.5h.01M18 12.5h.01M8 15.5h8" stroke="#155DFC" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    );
-    const HandIcon = (
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-        <path d="M12 20h7" stroke="#B45309" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M14.5 5.5l2.5 2.5L8 17l-3.2.7L5.5 14.5 14.5 5.5z" stroke="#B45309" strokeWidth="1.8" strokeLinejoin="round" />
-        <path d="M13 7l3 3" stroke="#B45309" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    );
-
-    const modeCard = (
-      mode: 'type' | 'handwrite',
-      icon: React.ReactNode,
-      iconTint: string,
-      accent: string,
-      tag: string,
-      tagBg: string,
-      tagColor: string,
-      heading: string,
-      blurb: string,
-      points: string[],
-    ) => (
-      <button
-        type="button"
-        onClick={() => {
-          setAnswerMode(mode);
-          if (answerModeKey) sessionStorage.setItem(answerModeKey, mode);
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 24px 48px -28px rgba(15,23,42,0.4)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#EEF1F5'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px -8px rgba(15,23,42,0.18)'; }}
-        className="flex flex-col text-left"
-        style={{
-          flex: 1,
-          minWidth: isMobile ? '100%' : 260,
-          background: '#FFFFFF',
-          border: '1.5px solid #EEF1F5',
-          borderRadius: 20,
-          padding: 'clamp(20px, 2.4vw, 28px)',
-          cursor: 'pointer',
-          gap: 14,
-          boxShadow: '0 4px 14px -8px rgba(15,23,42,0.18)',
-          transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ width: 52, height: 52, borderRadius: 14, background: iconTint, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {icon}
-          </span>
-          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: tagColor, background: tagBg, padding: '5px 11px', borderRadius: 999 }}>
-            {tag}
-          </span>
-        </div>
-        <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 'clamp(19px, 1.7vw, 23px)', color: '#0F172B', lineHeight: 1.1 }}>{heading}</span>
-        <span style={{ fontSize: 13.5, color: '#64748B', lineHeight: 1.5 }}>{blurb}</span>
-        <div style={{ height: 1, background: '#F1F5F9', margin: '2px 0' }} />
-        <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9 }}>
-          {points.map((p) => (
-            <li key={p} style={{ fontSize: 13, color: '#475569', display: 'flex', gap: 10, alignItems: 'flex-start', lineHeight: 1.4 }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
-                <circle cx="8" cy="8" r="8" fill={iconTint} />
-                <path d="M4.5 8.2L6.8 10.5L11.5 5.5" stroke={accent} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {p}
-            </li>
-          ))}
-        </ul>
-        <span
-          style={{
-            marginTop: 6,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            height: 44, borderRadius: 12,
-            background: '#0F172B', color: '#FCD34D',
-            fontWeight: 800, fontSize: 14.5,
-          }}
-        >
-          Choose this →
-        </span>
-      </button>
-    );
+    const chooseMode = (mode: 'type' | 'handwrite') => {
+      setAnswerMode(mode);
+      if (answerModeKey) sessionStorage.setItem(answerModeKey, mode);
+    };
 
     return (
-      <div
-        style={{ minHeight: '100vh', background: '#FAFBFE', fontFamily: SANS, display: 'flex', flexDirection: 'column', animation: 'mode-fade 0.3s ease' }}
-      >
-        {/* ── Navy hero ── */}
-        <div style={{ background: 'linear-gradient(135deg, #1D293D 0%, #0F172B 55%, #162456 100%)', padding: 'clamp(26px, 3vw, 44px) clamp(20px, 3vw, 40px)' }}>
-          <div style={{ maxWidth: 820, margin: '0 auto', textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 16px', borderRadius: 999, border: '1px solid rgba(250,204,21,0.35)', background: 'rgba(250,204,21,0.06)', marginBottom: 18 }}>
-              <span style={{ color: '#FCD34D', fontSize: 12 }}>✦</span>
-              <span style={{ color: '#FCD34D', fontWeight: 800, fontSize: 11.5, letterSpacing: '0.12em' }}>MAINS MOCK TEST · CHOOSE YOUR MODE</span>
-            </div>
-            <h1 style={{ margin: 0, fontFamily: SERIF, fontWeight: 600, color: '#FFFFFF', fontSize: 'clamp(26px, 3vw, 40px)', lineHeight: 1.08, letterSpacing: '-0.01em' }}>
-              How will you answer this test?
-            </h1>
-            <p style={{ margin: '14px auto 0', maxWidth: 560, color: '#94A3B8', fontSize: 'clamp(13px, 1.15vw, 15.5px)', lineHeight: 1.5 }}>
-              The timer (<strong style={{ color: '#E2E8F0', fontWeight: 700 }}>{totalMinutes} min</strong>) starts once you choose. Pick how you'll actually write — you can't switch midway.
-            </p>
-          </div>
-        </div>
+      <div className="ams-page" aria-label="Choose answer mode">
+        <section className="ams-shell">
+          <div className="ams-cards">
+            {/* ── Type Your Answers (blue) ── */}
+            <article className="ams-card ams-type" aria-labelledby="ams-type-title">
+              <div className="ams-top">
+                <div className="ams-icon" aria-hidden="true">
+                  <svg className="ams-keyboard-svg" viewBox="0 0 48 48" fill="none">
+                    <rect x="8" y="12" width="32" height="24" rx="4" stroke="#2367ff" strokeWidth="3" />
+                    <path d="M14 20h3M21 20h3M28 20h3M35 20h1M14 27h3M21 27h3M28 27h3M35 27h1M17 32h14" stroke="#2367ff" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div className="ams-pill"><svg viewBox="0 0 24 24" fill="none"><path d="M13.4 2 5 13h6l-1 9 9-12h-6l.4-8Z" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" /></svg>Fastest</div>
+              </div>
 
-        {/* ── Cards ── */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(20px, 3vw, 44px)' }}>
-          <div style={{ width: '100%', maxWidth: 820, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(18px, 2.4vw, 28px)', marginTop: 'clamp(-44px, -4vw, -68px)' }}>
-            <div className={isMobile ? 'flex flex-col' : 'flex flex-row'} style={{ gap: 'clamp(16px, 1.8vw, 22px)', width: '100%', alignItems: 'stretch' }}>
-              {modeCard(
-                'type', TypeIcon, '#E6EEFF', '#155DFC', 'Fastest', '#EFF6FF', '#155DFC',
-                'Type my answers',
-                'Write each answer in the app while the clock runs.',
-                ['One clean text box per question', 'Submit the moment you finish', 'Live word count as you write'],
-              )}
-              {modeCard(
-                'handwrite', HandIcon, '#FEF3C7', '#D97706', 'Real exam feel', '#FFFBEB', '#B45309',
-                'Write by hand',
-                'Write on paper now — scan and upload after the test ends.',
-                ['No typing — just your booklet & pen', "Upload your scans when time's up", 'Closest to the real UPSC Mains'],
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard/mock-tests')}
-              style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', padding: 8 }}
-            >
-              ← Back to tests
-            </button>
-          </div>
-        </div>
+              <div className="ams-hero">
+                <h2 className="ams-title" id="ams-type-title">Type Your Answers</h2>
+                <p className="ams-intro">Ideal for brainstorming, quick practice and learning on the go.</p>
 
-        <style>{`@keyframes mode-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+                <div className="ams-art ams-type-art" aria-hidden="true">
+                  <svg className="ams-spark" viewBox="0 0 340 240">
+                    <g className="ams-burst" stroke="#8fb0ff" strokeWidth="4" strokeLinecap="round">
+                      <path d="M36 98h-18"/><path d="M51 76 39 62"/><path d="M50 120 36 132"/>
+                    </g>
+                    <g className="ams-burst" stroke="#8fb0ff" strokeWidth="4" strokeLinecap="round">
+                      <path d="M266 16 269 2"/><path d="M286 32 300 22"/>
+                    </g>
+                  </svg>
+                  <div className="ams-laptop">
+                    <div className="ams-screen">
+                      <div className="ams-toolbar"><span>B</span><em>I</em><u>U</u><span>•</span><span className="ams-bars"><i></i><i></i><i></i></span><span className="ams-bars"><i></i><i></i><i></i></span></div>
+                      <div className="ams-typing"><span className="ams-cursor"></span><span className="ams-linestack"><i></i><i></i><i></i></span></div>
+                    </div>
+                    <div className="ams-base"></div>
+                    <div className="ams-wordcount">Words: <b>156</b><span className="ams-dot"></span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ams-divider"></div>
+
+              <ul className="ams-features">
+                <li className="ams-feature">
+                  <span className="ams-feat-icon"><svg viewBox="0 0 36 36" fill="none"><rect x="7" y="7" width="22" height="22" rx="3" stroke="currentColor" strokeWidth="2.8"/><path d="M12 14h12M12 19h7M13 25l3-4 4 4" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                  <span><strong>One clean text box per question</strong><span>Distraction-free writing space</span></span>
+                </li>
+                <li className="ams-feature">
+                  <span className="ams-feat-icon"><svg viewBox="0 0 36 36" fill="none"><path d="M29 7 6 18l9 4 4 8L29 7Z" stroke="currentColor" strokeWidth="2.8" strokeLinejoin="round"/><path d="m15 22 5-5" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round"/></svg></span>
+                  <span><strong>Submit the moment you finish</strong><span>Instant submission, no extra steps</span></span>
+                </li>
+                <li className="ams-feature">
+                  <span className="ams-feat-icon"><svg viewBox="0 0 36 36" fill="none" aria-hidden="true"><rect x="8" y="5" width="20" height="26" rx="4" stroke="currentColor" strokeWidth="2.6"/><path d="M13 12h10M13 17h7M13 22h6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/><circle cx="26" cy="26" r="6" fill="#fff" stroke="currentColor" strokeWidth="2.2"/><path d="M23.8 26h4.4M26 23.8v4.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
+                  <span><strong>Live word count as you write</strong><span>Track your progress in real-time</span></span>
+                </li>
+              </ul>
+
+              <button type="button" className="ams-choose" onClick={() => chooseMode('type')}>Choose this <span className="ams-arrow">→</span></button>
+            </article>
+
+            {/* ── Write on Paper (gold) ── */}
+            <article className="ams-card ams-hand" aria-labelledby="ams-hand-title">
+              <div className="ams-top">
+                <div className="ams-icon" aria-hidden="true">
+                  <svg viewBox="0 0 48 48" fill="none">
+                    <path d="m14 31-2 6 6-2 18-18-4-4-18 18Z" stroke="#cc5b05" strokeWidth="3" strokeLinejoin="round" />
+                    <path d="m28 17 4 4M12 38h22" stroke="#cc5b05" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div className="ams-pill"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3 2.7 5.47 6.03.88-4.36 4.25 1.03 6-5.4-2.84L6.6 19.6l1.03-6-4.36-4.25 6.03-.88L12 3Z" stroke="currentColor" strokeWidth="2.1" strokeLinejoin="round" /></svg>Real exam feel</div>
+              </div>
+
+              <div className="ams-hero">
+                <h2 className="ams-title" id="ams-hand-title">Write on Paper</h2>
+                <p className="ams-intro">Write on paper now, then scan and upload after the test ends.</p>
+
+                <div className="ams-art ams-hand-art" aria-hidden="true">
+                  <svg className="ams-spark" viewBox="0 0 360 260">
+                    <g className="ams-burst" stroke="#ffd15b" strokeWidth="4" strokeLinecap="round">
+                      <path d="M86 19 76 0"/><path d="M111 24 118 7"/><path d="M63 38 47 29"/>
+                    </g>
+                    <g className="ams-burst" stroke="#ffd15b" strokeWidth="4" strokeLinecap="round">
+                      <path d="M315 28 329 12"/><path d="M335 58 352 52"/>
+                    </g>
+                  </svg>
+                  <div className="ams-notebook">
+                    <div className="ams-notelines">
+                      <span className="ams-noteline"><b>1.</b><i></i></span>
+                      <span className="ams-noteline"><b>2.</b><i></i></span>
+                      <span className="ams-noteline"><b>3.</b><i></i></span>
+                    </div>
+                    <svg className="ams-writing" viewBox="0 0 90 24" aria-hidden="true">
+                      <path d="M4 17c8-8 12 6 20-2s12 5 21-3 11 4 20-3 13 2 20-5" />
+                    </svg>
+                    <div className="ams-pen"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ams-divider"></div>
+
+              <ul className="ams-features">
+                <li className="ams-feature">
+                  <span className="ams-feat-icon"><svg viewBox="0 0 36 36" fill="none"><path d="M7 12h21v15H7V12Z" stroke="currentColor" strokeWidth="2.6"/><path d="M12 18h2M18 18h2M24 18h2M12 23h8" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/><path d="M6 7 30 30" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round"/></svg></span>
+                  <span><strong>No typing, just your booklet &amp; pen</strong><span>Answer just like the real exam</span></span>
+                </li>
+                <li className="ams-feature">
+                  <span className="ams-feat-icon"><svg viewBox="0 0 36 36" fill="none"><path d="M23.8 25.5h2.4a5.3 5.3 0 0 0 .8-10.5A9 9 0 0 0 9.5 17.8 4.4 4.4 0 0 0 10 26h2.2" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round"/><path d="M18 28V16m0 0-4.5 4.5M18 16l4.5 4.5" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                  <span><strong>Upload your scans when time&apos;s up</strong><span>Scan and upload after the test</span></span>
+                </li>
+                <li className="ams-feature">
+                  <span className="ams-feat-icon"><svg viewBox="0 0 36 36" fill="none"><circle cx="18" cy="16" r="9" stroke="currentColor" strokeWidth="2.7"/><path d="m14 24-2 7 6-3 6 3-2-7" stroke="currentColor" strokeWidth="2.7" strokeLinejoin="round"/><path d="m18 10 1.6 3.2 3.5.5-2.5 2.5.6 3.5-3.2-1.7-3.2 1.7.6-3.5-2.5-2.5 3.5-.5L18 10Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></span>
+                  <span><strong>Closest to the real UPSC Mains</strong><span>Practice the real exam experience</span></span>
+                </li>
+              </ul>
+
+              <button type="button" className="ams-choose" onClick={() => chooseMode('handwrite')}>Choose this <span className="ams-arrow">→</span></button>
+            </article>
+          </div>
+
+          <button type="button" className="ams-back" onClick={() => router.push('/dashboard/mock-tests')} aria-label="Back to tests">← Back to tests</button>
+        </section>
+
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+          .ams-page {
+            --ams-ink:#0a1328; --ams-muted:#4f5d7b; --ams-navy:#071127; --ams-yellow:#ffe037;
+            --ams-blue:#2367ff; --ams-orange:#cc5b05; --ams-card:rgba(255,255,255,0.92);
+            --ams-shadow:0 28px 70px rgba(31,43,77,0.12), 0 4px 16px rgba(31,43,77,0.07);
+            position:relative; min-height:100vh; display:grid; place-items:center;
+            padding: clamp(18px,3.2vw,36px) clamp(16px,2.5vw,30px) 24px;
+            font-family:'Plus Jakarta Sans', var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+            color:var(--ams-ink); overflow-x:hidden;
+            background:
+              radial-gradient(circle at 14% 14%, rgba(35,103,255,0.08), transparent 28%),
+              radial-gradient(circle at 86% 18%, rgba(255,210,69,0.14), transparent 31%),
+              linear-gradient(180deg,#fbfcff 0%,#f4f7fb 100%);
+            animation: ams-fadeIn 260ms ease both;
+          }
+          .ams-page * { box-sizing:border-box; }
+          .ams-page::before {
+            content:''; position:absolute; inset:0; pointer-events:none; opacity:0.35;
+            background-image:
+              linear-gradient(rgba(10,19,40,0.025) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(10,19,40,0.025) 1px, transparent 1px);
+            background-size:44px 44px;
+            -webkit-mask-image: radial-gradient(circle at center, black, transparent 78%);
+            mask-image: radial-gradient(circle at center, black, transparent 78%);
+          }
+          .ams-shell { position:relative; z-index:1; width:min(1120px,100%); animation: ams-riseIn 700ms cubic-bezier(.2,.75,.2,1) both; }
+          .ams-cards { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:clamp(18px,2.4vw,26px); align-items:stretch; }
+
+          .ams-card {
+            position:relative; overflow:hidden; isolation:isolate; display:flex; flex-direction:column;
+            min-height:560px; border:1px solid rgba(216,225,240,0.86); border-radius:22px;
+            background:var(--ams-card); box-shadow:var(--ams-shadow); backdrop-filter:blur(16px);
+            padding:clamp(22px,2.1vw,26px);
+            transition: transform 240ms cubic-bezier(.2,.75,.2,1), box-shadow 240ms ease, border-color 240ms ease;
+          }
+          .ams-card::before { content:''; position:absolute; inset:-1px; z-index:-2; background:linear-gradient(140deg, rgba(255,255,255,0.95), rgba(255,255,255,0.72)); }
+          .ams-card::after {
+            content:''; position:absolute; width:410px; height:410px; right:-120px; top:48px; z-index:-1;
+            border-radius:50%; background:radial-gradient(circle, rgba(45,112,255,0.13), rgba(45,112,255,0.02) 62%, transparent 72%);
+            filter:blur(2px); transition:transform 240ms ease;
+          }
+          .ams-card.ams-hand::after { width:450px; height:450px; right:-125px; top:54px; background:radial-gradient(circle, rgba(255,215,105,0.36), rgba(255,226,145,0.12) 58%, transparent 74%); }
+          .ams-card.ams-hand { order:1; }
+          .ams-card.ams-type { order:2; }
+
+          /* Card hover — proper hover on BOTH cards */
+          .ams-card:hover { transform:translateY(-8px); }
+          .ams-card.ams-type:hover { border-color:rgba(35,103,255,0.55); box-shadow:0 44px 90px rgba(35,103,255,0.16), 0 10px 26px rgba(31,43,77,0.10); }
+          .ams-card.ams-hand:hover { border-color:rgba(255,176,32,0.62); box-shadow:0 44px 90px rgba(204,91,5,0.15), 0 10px 26px rgba(31,43,77,0.10); }
+          .ams-card:hover::after { transform:scale(1.06); }
+
+          .ams-top { display:flex; align-items:center; justify-content:space-between; min-height:60px; margin-bottom:18px; }
+          .ams-icon { width:62px; height:62px; border-radius:16px; display:grid; place-items:center; overflow:hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.75); }
+          .ams-type .ams-icon { background:linear-gradient(145deg,#e4ebff,#dce6ff); }
+          .ams-hand .ams-icon { background:linear-gradient(145deg,#fff2c7,#ffe8a3); }
+          .ams-icon svg { display:block; width:38px; height:38px; max-width:64%; max-height:64%; }
+
+          .ams-pill { display:inline-flex; align-items:center; gap:10px; min-height:32px; padding:0 15px; border-radius:999px; font-size:13px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; white-space:nowrap; }
+          .ams-pill svg { width:18px; height:18px; }
+          .ams-type .ams-pill { color:var(--ams-blue); background:#edf3ff; }
+          .ams-hand .ams-pill { color:var(--ams-orange); background:#fff3d8; }
+
+          .ams-hero { position:relative; min-height:154px; margin-bottom:18px; }
+          .ams-type .ams-hero { margin-bottom:44px; }
+          .ams-title { max-width:290px; margin:0 0 12px; font-size:clamp(26px,2.3vw,32px); line-height:1.08; letter-spacing:-0.045em; font-weight:800; color:var(--ams-ink); }
+          .ams-intro { max-width:290px; margin:0; color:var(--ams-muted); font-size:clamp(15px,1.25vw,18px); line-height:1.58; font-weight:500; }
+          .ams-hand .ams-title, .ams-hand .ams-intro { max-width:245px; }
+
+          .ams-art { position:absolute; right:0; bottom:-8px; width:min(40%,260px); height:184px; transform:scale(0.92); transform-origin:right bottom; overflow:hidden; }
+          .ams-type-art { overflow:visible; }
+
+          .ams-divider { height:1px; background:linear-gradient(90deg, rgba(220,227,239,0.2), rgba(220,227,239,1), rgba(220,227,239,0.2)); margin:0 0 18px; }
+
+          .ams-features { display:grid; gap:14px; margin:0; padding:0; list-style:none; }
+          .ams-feature { display:grid; grid-template-columns:44px 1fr; gap:12px; align-items:center; }
+          .ams-feat-icon { width:44px; height:44px; display:grid; place-items:center; border-radius:50%; flex:0 0 auto; overflow:hidden; }
+          .ams-type .ams-feat-icon { color:var(--ams-blue); background:linear-gradient(145deg,#e6eeff,#dbe7ff); }
+          .ams-hand .ams-feat-icon { color:var(--ams-orange); background:linear-gradient(145deg,#fff0c0,#ffe3a5); }
+          .ams-feat-icon svg { display:block; width:26px; height:26px; max-width:58%; max-height:58%; }
+          .ams-feature strong { display:block; margin-bottom:4px; color:#111a31; font-size:15px; line-height:1.2; font-weight:800; letter-spacing:-0.02em; }
+          .ams-feature > span:not(.ams-feat-icon) { display:block; min-width:0; }
+          .ams-feature > span:not(.ams-feat-icon) > span { display:block; color:#4d5d7b; font-size:13.8px; line-height:1.35; font-weight:500; }
+
+          .ams-choose {
+            width:100%; height:52px; margin-top:auto; border:0; border-radius:14px; color:var(--ams-yellow);
+            background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0)), var(--ams-navy);
+            box-shadow:0 16px 30px rgba(7,17,39,0.18), inset 0 1px 0 rgba(255,255,255,0.08);
+            font: inherit; font-size:16px; font-weight:800; cursor:pointer;
+            transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+            display:inline-flex; align-items:center; justify-content:center; gap:8px; line-height:1; text-align:center;
+          }
+          .ams-choose:hover { transform:translateY(-2px); box-shadow:0 22px 38px rgba(7,17,39,0.22), inset 0 1px 0 rgba(255,255,255,0.1); background:#091734; }
+          .ams-choose:active { transform:translateY(0); }
+          .ams-arrow { margin-left:0; font-size:25px; line-height:1; }
+
+          .ams-back { display:flex; align-items:center; justify-content:center; gap:6px; margin:26px auto 0; background:none; border:0; color:#8390a9; font:inherit; font-size:17px; font-weight:700; cursor:pointer; }
+          .ams-back:hover { color:#61708c; }
+
+          .ams-type-art .ams-burst, .ams-hand-art .ams-burst { opacity:0; animation: ams-blinkBurst 2.2s ease-in-out infinite; }
+          .ams-type-art .ams-burst:nth-child(2) { animation-delay:220ms; }
+          .ams-hand-art .ams-burst:nth-child(2) { animation-delay:320ms; }
+
+          .ams-laptop { position:absolute; inset:18px 40px 0 -26px; transform:rotate(-4deg) scale(0.88); transform-origin:right bottom; }
+          .ams-screen { position:absolute; left:48px; top:8px; width:214px; height:146px; border:10px solid #172c68; border-bottom-width:14px; border-radius:10px 10px 8px 8px; background:#fdfefe; box-shadow: inset 0 0 0 1px #e8edfb; }
+          .ams-toolbar { height:38px; display:flex; align-items:center; gap:15px; padding:0 18px; color:#5270b9; font-weight:800; font-size:15px; border-bottom:1px solid #edf1fb; }
+          .ams-toolbar .ams-bars { display:grid; gap:4px; }
+          .ams-toolbar .ams-bars i { display:block; width:16px; height:2px; background:#5f77bd; border-radius:4px; }
+          .ams-typing { padding:18px 24px 0; display:flex; align-items:flex-start; gap:10px; }
+          .ams-cursor { width:3px; height:14px; flex:0 0 auto; margin-top:2px; border-radius:99px; background:#6a89d8; animation: ams-cursorBlink 1.1s step-end infinite; }
+          .ams-linestack { display:grid; gap:10px; width:138px; }
+          .ams-linestack i { display:block; height:6px; width:0; border-radius:99px; background:linear-gradient(90deg,#6a89d8,#aac0ee); animation: ams-typeLine 4s ease-in-out infinite; }
+          .ams-linestack i:nth-child(1) { --ams-target:100%; animation-delay:0.1s; }
+          .ams-linestack i:nth-child(2) { --ams-target:86%; animation-delay:1.2s; }
+          .ams-linestack i:nth-child(3) { --ams-target:60%; animation-delay:2.3s; }
+          .ams-base { display:none; }
+          .ams-wordcount { position:absolute; right:-6px; bottom:-30px; display:flex; align-items:center; gap:10px; min-width:126px; height:42px; padding:0 14px; border:4px solid #e3eaff; border-radius:10px; background:white; box-shadow:0 13px 24px rgba(31,49,105,0.14); color:#3e5a9c; font-size:14px; font-weight:800; white-space:nowrap; z-index:5; }
+          .ams-wordcount b { color:#314f9e; }
+          .ams-dot { width:9px; height:9px; border-radius:50%; background:#43d86b; box-shadow:0 0 0 5px rgba(67,216,107,0.13); }
+
+          .ams-hand-art { width:min(42%,295px); height:228px; right:2px; bottom:-12px; }
+          .ams-notebook { position:absolute; left:6px; top:18px; width:194px; height:188px; border:2px solid #b7834e; border-radius:8px; background:#fffdfa; transform:rotate(-8deg); box-shadow:16px 18px 0 rgba(198,132,43,0.13); overflow:visible; }
+          .ams-notebook::before { content:''; position:absolute; left:18px; top:-5px; bottom:-5px; width:11px; border-radius:12px; background:repeating-linear-gradient(180deg,#2f3340 0 8px, transparent 8px 18px); box-shadow:-13px 0 0 rgba(41,48,62,0.18); }
+          .ams-notelines { position:absolute; left:54px; right:20px; top:34px; display:grid; gap:19px; color:#263043; font-size:16px; font-weight:800; }
+          .ams-noteline { display:grid; grid-template-columns:20px 1fr; gap:9px; align-items:center; }
+          .ams-noteline i { display:block; height:3px; border-radius:99px; background:#d9d4ca; transform-origin:left center; animation: ams-lineWrite 3.1s ease-in-out infinite; }
+          .ams-noteline:nth-child(2) i { width:90%; animation-delay:340ms; }
+          .ams-noteline:nth-child(3) i { width:74%; animation-delay:680ms; }
+          .ams-writing { position:absolute; left:74px; top:116px; width:88px; height:18px; fill:none; stroke:#2f3340; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:140; stroke-dashoffset:140; filter:drop-shadow(0 1px 0 rgba(255,255,255,0.6)); animation: ams-handwriting 3.1s ease-in-out infinite; }
+          .ams-pen { position:absolute; left:132px; top:-2px; z-index:4; width:20px; height:112px; border-radius:14px; background:linear-gradient(90deg,#141820 0 36%,#2b2f38 36% 64%,#070a10 64% 100%); transform:translate(-58px,6px) rotate(24deg); transform-origin:50% 118%; box-shadow:10px 10px 13px rgba(77,50,16,0.15); animation: ams-penWrite 3.1s ease-in-out infinite; }
+          .ams-pen::before { content:''; position:absolute; top:28px; left:-2px; right:-2px; height:13px; border-radius:10px; background:linear-gradient(90deg,#ffb621,#ffdf78,#ce7809); }
+          .ams-pen::after { content:''; position:absolute; bottom:-20px; left:2px; width:16px; height:24px; clip-path:polygon(50% 100%, 0 0, 100% 0); background:linear-gradient(90deg,#e59b17,#ffd46d,#b46605); }
+          .ams-spark { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; }
+
+          @keyframes ams-fadeIn { from { opacity:0; } to { opacity:1; } }
+          @keyframes ams-riseIn { from { opacity:0; transform:translateY(18px) scale(0.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+          @keyframes ams-cursorBlink { 50% { opacity:0; } }
+          @keyframes ams-blinkBurst { 0%,35%,100% { opacity:0; transform:scale(.92); } 50%,70% { opacity:1; transform:scale(1); } }
+          @keyframes ams-typeLine {
+            0%,5% { width:0; opacity:0.9; }
+            30%,85% { width:var(--ams-target); opacity:1; }
+            100% { width:var(--ams-target); opacity:0.6; }
+          }
+          @keyframes ams-penWrite {
+            0%,12% { transform:translate(-58px,6px) rotate(24deg); }
+            30% { transform:translate(-39px,-2px) rotate(31deg); }
+            48% { transform:translate(-20px,8px) rotate(25deg); }
+            66% { transform:translate(2px,-3px) rotate(32deg); }
+            82% { transform:translate(10px,4px) rotate(27deg); }
+            100% { transform:translate(-58px,6px) rotate(24deg); }
+          }
+          @keyframes ams-handwriting {
+            0%,12% { stroke-dashoffset:140; opacity:0; }
+            32%,74% { stroke-dashoffset:0; opacity:1; }
+            100% { stroke-dashoffset:0; opacity:0; }
+          }
+          @keyframes ams-lineWrite {
+            0%,10% { transform:scaleX(0.18); opacity:0.38; }
+            45%,100% { transform:scaleX(1); opacity:1; }
+          }
+
+          @media (max-width:1180px) {
+            .ams-card { min-height:550px; }
+            .ams-art { opacity:0.92; transform:scale(0.82); transform-origin:right bottom; }
+            .ams-title, .ams-intro { max-width:270px; }
+            .ams-hand .ams-title, .ams-hand .ams-intro { max-width:225px; }
+          }
+          @media (max-width:760px) {
+            .ams-cards { grid-template-columns:1fr; max-width:720px; margin-inline:auto; }
+            .ams-card { min-height:560px; }
+            .ams-art { width:315px; opacity:1; }
+            .ams-hand .ams-title, .ams-hand .ams-intro { max-width:340px; }
+            .ams-hand-art { width:300px; }
+          }
+          @media (max-width:580px) {
+            .ams-page { padding:16px 12px 24px; }
+            .ams-card { min-height:auto; padding:24px 20px; border-radius:20px; }
+            .ams-top { min-height:64px; margin-bottom:20px; }
+            .ams-icon { width:58px; height:58px; }
+            .ams-icon svg { width:30px; height:30px; }
+            .ams-pill { min-height:32px; padding:0 14px; font-size:11px; gap:6px; }
+            .ams-hero { min-height:310px; margin-bottom:12px; }
+            .ams-title { font-size:30px; max-width:none; }
+            .ams-intro { font-size:16px; max-width:none; }
+            .ams-hand .ams-title, .ams-hand .ams-intro { max-width:none; }
+            .ams-art { width:100%; max-width:315px; right:50%; transform:translateX(50%) scale(0.86); bottom:0; }
+            .ams-features { gap:20px; }
+            .ams-feature { grid-template-columns:48px 1fr; }
+            .ams-feat-icon { width:48px; height:48px; }
+            .ams-feat-icon svg { width:25px; height:25px; }
+            .ams-choose { height:62px; font-size:18px; }
+            .ams-back { font-size:16px; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .ams-page, .ams-shell, .ams-card, .ams-card:hover, .ams-cursor, .ams-linestack i,
+            .ams-burst, .ams-pen, .ams-writing, .ams-noteline i { animation:none !important; }
+          }
+        `}</style>
       </div>
     );
   }
@@ -797,11 +1057,9 @@ function MockTestAttemptInner() {
   if (isMains) {
     const marksPerQ = totalMarks && totalQuestions ? Math.round(totalMarks / totalQuestions) : 15;
     const isHandwrite = answerMode === 'handwrite';
-    const answeredCount = questions.reduce((acc, _, i) => {
-      const a = mainsAnswers[i];
-      if (isHandwrite) return acc + (a && a.files.length > 0 ? 1 : 0);
-      return acc + (a && a.text.trim() ? 1 : 0);
-    }, 0);
+    // Completion is driven by the "Done" capsule on each question card, so the
+    // answered progress reflects the real, user-confirmed completion state.
+    const answeredCount = questions.reduce((acc, _, i) => acc + (tickedQuestions[i] ? 1 : 0), 0);
     const timeUp = timeLeft <= 0;
     // Handwrite mode reveals the upload step once the user finishes writing or time runs out.
     const showUpload = isHandwrite && (doneWriting || timeUp);
@@ -823,6 +1081,8 @@ function MockTestAttemptInner() {
         const combined = [...existing.files, ...newFiles];
         return { ...prev, [i]: { ...existing, files: combined, file: combined[0] || null } };
       });
+      // Uploading an answer un-marks any earlier "didn't attempt" decision.
+      setUnattemptedQuestions(prev => (prev[i] ? { ...prev, [i]: false } : prev));
     };
 
     // Per-question: remove a single file by index
@@ -843,11 +1103,6 @@ function MockTestAttemptInner() {
         return { ...prev, [i]: { ...existing, files: updated, file: updated[0] || null } };
       });
     };
-
-    /* ── Single exam-wide timer ring ── */
-    const examCircumference = 2 * Math.PI * 44;
-    const examTimerPct = examTotalSeconds > 0 ? timeLeft / examTotalSeconds : 0;
-    const ringColor = timeUp ? '#EF4444' : examRunning ? '#00BC7D' : '#101828';
 
     return (
       <div
@@ -881,11 +1136,13 @@ function MockTestAttemptInner() {
                   {questions.map((_, idx) => (
                     <div
                       key={idx}
+                      // Chip is dynamically tied to real completion: green once the
+                      // question is marked "Done", back to the incomplete state otherwise.
                       style={{
                         width: 24,
                         height: 5,
                         borderRadius: 999,
-                        background: tickedQuestions[idx] ? '#0F172B' : '#FDC700',
+                        background: tickedQuestions[idx] ? '#22C55E' : '#FDC700',
                         transition: 'background 0.15s ease',
                       }}
                     />
@@ -956,7 +1213,7 @@ function MockTestAttemptInner() {
               </div>
             )}
             {isHandwrite && showUpload && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: '#F0F5FF', border: '1px solid #BFDBFE', borderRadius: 16, padding: isMobile ? '16px' : '18px 24px' }}>
+              <div id="mains-upload-section" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: '#F0F5FF', border: '1px solid #BFDBFE', borderRadius: 16, padding: isMobile ? '16px' : '18px 24px', scrollMarginTop: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{ position: 'relative', width: 60, height: 60, flexShrink: 0 }}>
                     <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1001,21 +1258,32 @@ function MockTestAttemptInner() {
             {questions.map((q, i) => {
               const answer = mainsAnswers[i] || { text: '', file: null, files: [] };
               const wordCount = answer.text.trim() ? answer.text.trim().split(/\s+/).filter(Boolean).length : 0;
+              const isDone = !!tickedQuestions[i];
+              // Real upload state for this question — driven by the actual files
+              // attached, never hardcoded. Powers the green "Uploaded" capsule.
+              const isUploaded = answer.files.length > 0;
+              const isUnattempted = !!unattemptedQuestions[i];
               return (
                 <div
                   key={q.id ?? i}
+                  id={`mains-q-${i}`}
                   style={{
-                    background: '#FFFFFF',
+                    scrollMarginTop: 24,
+                    background: isDone ? '#F6FEF9' : '#FFFFFF',
                     borderRadius: '16px',
                     padding: '20px 24px',
-                    boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
+                    border: `1.5px solid ${isDone ? '#22C55E' : 'transparent'}`,
+                    boxShadow: isDone
+                      ? '0 0 0 1px #22C55E22, 0px 1px 3px 0px #16A34A22'
+                      : '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
+                    transition: 'border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease',
                   }}
                   className="flex flex-col gap-3"
                 >
                   {/* Chips row */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center flex-wrap gap-2">
-                      <span style={{ background: '#EFF6FF', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: '#155DFC' }}>
+                      <span style={{ background: isDone ? '#DCFCE7' : '#EFF6FF', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: isDone ? '#15803D' : '#155DFC', transition: 'all 0.15s ease' }}>
                         {(q as any).paper || paperParam || 'GS Paper I'}
                       </span>
                       {q.subject && (
@@ -1028,27 +1296,65 @@ function MockTestAttemptInner() {
                       <button
                         type="button"
                         onClick={() => setTickedQuestions(prev => ({ ...prev, [i]: !prev[i] }))}
+                        aria-pressed={isDone}
                         style={{
-                          width: 30,
-                          height: 30,
-                          borderRadius: 10,
-                          border: `2px solid ${tickedQuestions[i] ? '#0F172B' : '#D1D5DB'}`,
-                          background: tickedQuestions[i] ? '#0F172B' : '#FFFFFF',
-                          cursor: 'pointer',
-                          display: 'flex',
+                          display: 'inline-flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
+                          gap: 6,
+                          height: 30,
+                          padding: '0 14px',
+                          borderRadius: 999,
+                          border: `1.5px solid ${isDone ? '#22C55E' : '#D1D5DB'}`,
+                          background: isDone ? '#DCFCE7' : '#FFFFFF',
+                          color: isDone ? '#15803D' : '#6B7280',
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          cursor: 'pointer',
                           flexShrink: 0,
                           transition: 'all 0.15s ease',
-                          padding: 0,
                         }}
                       >
-                        {tickedQuestions[i] && (
-                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <path d="M3 7.5L5.5 10L11 4" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        {isDone ? (
+                          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                            <path d="M3 7.5L5.5 10L11 4" stroke="#15803D" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
+                        ) : (
+                          <span style={{ width: 13, height: 13, borderRadius: '50%', border: '1.5px solid #CBD5E1', flexShrink: 0 }} />
                         )}
+                        Done
                       </button>
+                    )}
+                    {/* Upload screen: the completion capsule reflects the real
+                        upload state — green "Uploaded" once files are attached,
+                        neutral "Not uploaded" until then. Never hardcoded. */}
+                    {showUpload && (
+                      <span
+                        aria-label={isUploaded ? 'Answer uploaded' : isUnattempted ? 'Marked not attempted' : 'Answer not uploaded yet'}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          height: 30,
+                          padding: '0 14px',
+                          borderRadius: 999,
+                          border: `1.5px solid ${isUploaded ? '#22C55E' : isUnattempted ? '#FCD34D' : '#E5E7EB'}`,
+                          background: isUploaded ? '#DCFCE7' : isUnattempted ? '#FEF3C7' : '#F3F4F6',
+                          color: isUploaded ? '#15803D' : isUnattempted ? '#B45309' : '#9CA3AF',
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {isUploaded ? (
+                          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                            <path d="M3 7.5L5.5 10L11 4" stroke="#15803D" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        ) : (
+                          <span style={{ width: 13, height: 13, borderRadius: '50%', border: `1.5px solid ${isUnattempted ? '#D97706' : '#CBD5E1'}`, flexShrink: 0 }} />
+                        )}
+                        {isUploaded ? 'Uploaded' : isUnattempted ? 'Not attempted' : 'Not uploaded'}
+                      </span>
                     )}
                   </div>
 
@@ -1110,10 +1416,7 @@ function MockTestAttemptInner() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
                             <button
                               type="button"
-                              onClick={() => {
-                                const url = URL.createObjectURL(f);
-                                window.open(url, '_blank');
-                              }}
+                              onClick={() => setPreviewFile(f)}
                               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '8px 12px', background: 'none', border: '1px solid #E5E7EB', borderRadius: 10, cursor: 'pointer' }}
                             >
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="#6B7280" strokeWidth="2"/></svg>
@@ -1172,17 +1475,19 @@ function MockTestAttemptInner() {
                           e.target.value = '';
                         }}
                       />
-                      <p style={{ fontSize: 11.5, color: '#9CA3AF', margin: '2px 0 0' }}>JPG · PNG · PDF · Max 10MB per file · Multiple files allowed</p>
                     </div>
                   )}
 
                   {!isHandwrite && (() => {
-                    const isOpen = !!openEditors[i];
+                    // Type-answer editors are expanded by default so the writing
+                    // area is visible the moment the user enters Type Answer mode.
+                    // Only an explicit `false` (user collapsed it) hides it.
+                    const isOpen = openEditors[i] !== false;
                     return (
                       <div>
                         <button
                           type="button"
-                          onClick={() => setOpenEditors(prev => ({ ...prev, [i]: !prev[i] }))}
+                          onClick={() => setOpenEditors(prev => ({ ...prev, [i]: prev[i] === false }))}
                           className="w-full flex items-center justify-between"
                           style={{
                             padding: '12px 16px',
@@ -1213,7 +1518,7 @@ function MockTestAttemptInner() {
                               onChange={(e) => setAnswerText(i, e.target.value)}
                               placeholder="Write your answer here..."
                               rows={8}
-                              autoFocus
+                              autoFocus={i === 0}
                               disabled={timeUp}
                               style={{ width: '100%', padding: '14px 16px', border: '1.5px solid #E5E7EB', borderTop: 'none', borderRadius: '0 0 12px 12px', fontSize: 14, lineHeight: '24px', color: '#0F172B', fontFamily: 'Arimo, sans-serif', resize: 'vertical', boxSizing: 'border-box', background: timeUp ? '#F3F4F6' : '#FAFAFA', outline: 'none' }}
                             />
@@ -1245,7 +1550,7 @@ function MockTestAttemptInner() {
                 <button
                   type="button"
                   disabled={mainsSubmitting}
-                  onClick={handleMainsSubmitAll}
+                  onClick={requestMainsSubmit}
                   className="w-full flex items-center justify-center gap-2 text-white font-bold transition-transform hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                   style={{ height: '52px', background: '#17223E', borderRadius: '14px', fontSize: '16px', border: 'none', cursor: mainsSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)' }}
                 >
@@ -1268,38 +1573,11 @@ function MockTestAttemptInner() {
           <div style={{ width: isMobile ? '100%' : '280px', flexShrink: 0, order: isMobile ? -1 : 0, position: isMobile ? 'static' : 'sticky', top: 20, alignSelf: 'flex-start' }}>
             {!showUpload ? (
               <>
-                <div
-                  style={{
-                    background: '#FFFFFF',
-                    borderRadius: '20px',
-                    padding: '20px',
-                    boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
-                  }}
-                  className="flex flex-col items-center"
+                <WritingTimer
+                  timeLeft={timeLeft}
+                  totalSeconds={examTotalSeconds}
+                  statusLabel={timeUp ? 'time up' : examRunning ? 'in progress' : 'paused'}
                 >
-                  <p style={{ fontWeight: 600, fontSize: 11, letterSpacing: '0.08em', color: '#6A7282', textTransform: 'uppercase', marginBottom: 14, textAlign: 'center' }}>
-                    Exam Timer
-                  </p>
-                  <div style={{ position: 'relative', width: 110, height: 110, marginBottom: 12 }}>
-                    <svg width="110" height="110" style={{ transform: 'rotate(-90deg)' }}>
-                      <circle cx="55" cy="55" r="44" fill="none" stroke="#F3F4F6" strokeWidth="6" />
-                      <circle
-                        cx="55" cy="55" r="44" fill="none"
-                        stroke={ringColor}
-                        strokeWidth="6"
-                        strokeLinecap="round"
-                        strokeDasharray={examCircumference}
-                        strokeDashoffset={examCircumference - examTimerPct * examCircumference}
-                        style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }}
-                      />
-                    </svg>
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontWeight: 700, fontSize: 22, color: '#101828' }}>{formatTime(timeLeft)}</span>
-                    </div>
-                  </div>
-                  <p style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.07em', color: timeUp ? '#EF4444' : examRunning ? '#00BC7D' : '#9CA3AF', textTransform: 'uppercase', marginBottom: 16, textAlign: 'center' }}>
-                    {timeUp ? "TIME'S UP" : examRunning ? 'IN PROGRESS' : 'PAUSED'}
-                  </p>
                   <button
                     type="button"
                     disabled={timeUp}
@@ -1309,7 +1587,55 @@ function MockTestAttemptInner() {
                   >
                     {examRunning ? '⏸ Pause' : '▶ Resume'}
                   </button>
+                </WritingTimer>
+
+                {/* Progress — reflects the questions marked "Done" */}
+                <div
+                  className="bg-white flex flex-col items-center"
+                  style={{ borderRadius: 20, marginTop: 16, padding: 20, boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}
+                >
+                  <p style={{ fontWeight: 600, fontSize: 11, letterSpacing: '0.08em', color: '#6A7282', textTransform: 'uppercase', margin: '0 0 12px' }}>Progress</p>
+                  <div style={{ position: 'relative', width: 92, height: 92, marginBottom: 8 }}>
+                    <svg width="92" height="92" style={{ transform: 'rotate(-90deg)' }}>
+                      <circle cx="46" cy="46" r="38" fill="none" stroke="#F3F4F6" strokeWidth="7" />
+                      <circle
+                        cx="46" cy="46" r="38" fill="none"
+                        stroke="#16A34A"
+                        strokeWidth="7"
+                        strokeLinecap="round"
+                        strokeDasharray={2 * Math.PI * 38}
+                        strokeDashoffset={2 * Math.PI * 38 - (answeredCount / Math.max(1, totalQuestions)) * 2 * Math.PI * 38}
+                        style={{ transition: 'stroke-dashoffset 0.4s ease' }}
+                      />
+                    </svg>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontWeight: 800, fontSize: 20, color: '#101828', lineHeight: 1 }}>{answeredCount}</span>
+                      <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>of {totalQuestions}</span>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 12, color: '#6B7280', fontWeight: 500, margin: 0 }}>answered</p>
                 </div>
+
+                {/* Quick nav: jump straight to the answer upload section on this same page */}
+                {isHandwrite && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDoneWriting(true); // reveal the upload step if still writing
+                      // Wait for the upload section to render, then smoothly bring it into view.
+                      setTimeout(() => {
+                        document.getElementById('mains-upload-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 120);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 hover:underline"
+                    style={{ marginTop: 12, background: 'transparent', border: 'none', color: '#155DFC', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                      <path d="M12 16V4m0 0L8 8m4-4l4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Upload My Answers
+                  </button>
+                )}
 
                 {/* Quick Tips (writing mode only) */}
                 {isHandwrite && (
@@ -1439,6 +1765,178 @@ function MockTestAttemptInner() {
             )}
           </div>
         </div>
+      {/* ── Missing-answer popup: a question has no upload at submit time ── */}
+      {missingAnswerIdx !== null && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mains-missing-title"
+          onClick={() => setMissingAnswerIdx(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 70,
+            display: 'grid', placeItems: 'center', padding: 20,
+            background: 'rgba(8,15,31,0.34)', backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            animation: 'mains-confirm-fade 160ms ease both',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(440px, 100%)',
+              background: '#FFFFFF',
+              border: '1px solid rgba(226,232,240,0.9)',
+              borderRadius: 24,
+              padding: 30,
+              boxShadow: '0 35px 90px rgba(5,12,29,0.28)',
+              animation: 'mains-confirm-pop 220ms cubic-bezier(.2,.75,.2,1) both',
+            }}
+          >
+            <div style={{
+              width: 56, height: 56, borderRadius: 16,
+              background: '#FEF3C7', display: 'grid', placeItems: 'center', marginBottom: 18,
+            }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3.2 1.8 20.5h20.4L12 3.2Z" stroke="#B45309" strokeWidth="1.8" strokeLinejoin="round" />
+                <path d="M12 9.5v4.6" stroke="#B45309" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx="12" cy="17.4" r="0.9" fill="#B45309" />
+              </svg>
+            </div>
+            <h2 id="mains-missing-title" style={{
+              margin: '0 0 10px', fontSize: 22, lineHeight: 1.2, letterSpacing: '-0.01em',
+              fontWeight: 700, color: '#0F172B',
+              fontFamily: "var(--font-playfair), Georgia, 'Times New Roman', serif",
+            }}>
+              ⚠️ Please upload your answer page for Question {missingAnswerIdx + 1} before submitting.
+            </h2>
+            <p style={{ margin: '0 0 24px', color: '#4F5D7B', fontSize: 15, lineHeight: 1.55, fontWeight: 500 }}>
+              If you didn&apos;t attempt this question, you can mark it as unattempted and continue — it won&apos;t be sent for evaluation.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <button
+                type="button"
+                onClick={handleUploadMissingAnswer}
+                style={{
+                  border: 'none', borderRadius: 12, padding: '14px 20px',
+                  fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  background: '#17223E', color: '#FFFFFF',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 16V4M12 4l-5 5M12 4l5 5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Upload
+              </button>
+              <button
+                type="button"
+                onClick={handleMarkUnattempted}
+                style={{
+                  border: '1px solid #E2E8F0', borderRadius: 12, padding: '14px 20px',
+                  fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  background: '#FFFFFF', color: '#475875',
+                }}
+              >
+                I didn&apos;t attempt this question
+              </button>
+            </div>
+          </div>
+          <style>{`
+            @keyframes mains-confirm-fade { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes mains-confirm-pop { from { opacity: 0; transform: translateY(12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+          `}</style>
+        </div>
+      )}
+
+      {/* ── Submit-all confirmation popup (blocks direct submit) ── */}
+      {mainsConfirmOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mains-confirm-title"
+          onClick={() => { if (!mainsSubmitting) setMainsConfirmOpen(false); }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 60,
+            display: 'grid', placeItems: 'center', padding: 20,
+            background: 'rgba(8,15,31,0.34)', backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            animation: 'mains-confirm-fade 160ms ease both',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(460px, 100%)',
+              background: '#FFFFFF',
+              border: '1px solid rgba(226,232,240,0.9)',
+              borderRadius: 24,
+              padding: 30,
+              boxShadow: '0 35px 90px rgba(5,12,29,0.28)',
+              animation: 'mains-confirm-pop 220ms cubic-bezier(.2,.75,.2,1) both',
+            }}
+          >
+            <div style={{
+              width: 56, height: 56, borderRadius: 16,
+              background: '#FEF3C7', display: 'grid', placeItems: 'center', marginBottom: 18,
+            }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3.2 1.8 20.5h20.4L12 3.2Z" stroke="#B45309" strokeWidth="1.8" strokeLinejoin="round" />
+                <path d="M12 9.5v4.6" stroke="#B45309" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx="12" cy="17.4" r="0.9" fill="#B45309" />
+              </svg>
+            </div>
+            <h2 id="mains-confirm-title" style={{
+              margin: '0 0 10px', fontSize: 26, lineHeight: 1.15, letterSpacing: '-0.02em',
+              fontWeight: 700, color: '#0F172B',
+              fontFamily: "var(--font-playfair), Georgia, 'Times New Roman', serif",
+            }}>
+              Submit all answers for evaluation?
+            </h2>
+            <p style={{ margin: '0 0 24px', color: '#4F5D7B', fontSize: 15, lineHeight: 1.55, fontWeight: 500 }}>
+              Once submitted, our AI evaluator will score each answer on content, structure, and presentation. This usually takes under a minute.
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setMainsConfirmOpen(false)}
+                disabled={mainsSubmitting}
+                style={{
+                  border: 'none', borderRadius: 12, padding: '13px 20px',
+                  fontSize: 15, fontWeight: 700,
+                  cursor: mainsSubmitting ? 'not-allowed' : 'pointer',
+                  background: '#EEF3FB', color: '#475875',
+                }}
+              >
+                Review again
+              </button>
+              <button
+                type="button"
+                disabled={mainsSubmitting}
+                onClick={handleMainsSubmitAll}
+                style={{
+                  border: 'none', borderRadius: 12, padding: '13px 20px',
+                  fontSize: 15, fontWeight: 700,
+                  cursor: mainsSubmitting ? 'not-allowed' : 'pointer',
+                  background: '#17223E', color: '#FFFFFF', opacity: mainsSubmitting ? 0.6 : 1,
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                }}
+              >
+                {mainsSubmitting ? (
+                  <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Submitting…</>
+                ) : 'Yes, submit'}
+              </button>
+            </div>
+          </div>
+          <style>{`
+            @keyframes mains-confirm-fade { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes mains-confirm-pop { from { opacity: 0; transform: translateY(12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+          `}</style>
+        </div>
+      )}
+
+      {/* In-page uploaded-answer preview — stays inside the upload flow (no new tab / no navigation) */}
+      <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
       </div>
     );
   }
