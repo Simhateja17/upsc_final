@@ -120,3 +120,7 @@ export function useEntitlements() {
   if (!ctx) throw new Error('useEntitlements must be used inside EntitlementsProvider');
   return ctx;
 }
+
+export function useOptionalEntitlements() {
+  return useContext(EntitlementsContext);
+}
