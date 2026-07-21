@@ -406,16 +406,13 @@ export default function DailyMcqChallengePage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 22px 0', flexShrink: 0 }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {(() => {
-                    const keys = [`category:${q.category}`, `difficulty:${q.difficulty}`, `pyq:${q.pyqYear ?? ''}`];
-                    const [categoryStyle, difficultyStyle, pyqStyle] = getDistinctChipStyles(q.category, keys);
+                    const keys = [`category:${q.category}`, `pyq:${q.pyqYear ?? ''}`];
+                    const [categoryStyle, pyqStyle] = getDistinctChipStyles(q.category, keys);
                     return (
                       <>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: categoryStyle.bg, border: `1px solid ${categoryStyle.color}33`, borderRadius: 999, padding: '5px 12px' }}>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={categoryStyle.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
                           <span style={{ fontSize: 12, fontWeight: 600, color: categoryStyle.color }}>{q.category}</span>
-                        </div>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', background: difficultyStyle.bg, border: `1px solid ${difficultyStyle.color}33`, borderRadius: 999, padding: '5px 12px' }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: difficultyStyle.color }}>{q.difficulty}</span>
                         </div>
                         <button
                           type="button"
