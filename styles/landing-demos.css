@@ -1,0 +1,1251 @@
+/* ─────────────────────────────────────────────────────────────
+   Landing page AI-section demo animations.
+
+   Client-supplied HTML/CSS animations, integrated into the AI
+   section's device frame. Every rule is scoped under a `.jd-*`
+   root so the assets' generic class names (.card, .screen, .tag,
+   .section, .divider …) cannot leak into or collide with
+   landing.css — or with each other.
+
+   Source assets:
+     mains-evaluator-app-website.html   → .jd-mains
+     mock-test-animation-website.html   → .jd-mock
+     daily-current-affairs-app-*.html   → .jd-ca
+
+   Deviations from the raw assets, all deliberate:
+   - The assets' own window chrome / dark page background is
+     dropped; the site's existing .demo-device supplies it.
+   - Fonts map to the landing page's Outfit instead of DM Sans so
+     typography matches the rest of the page (near-identical
+     metrics, so no layout shift). Caveat is kept for the
+     handwritten red-pen marks, JetBrains Mono for numerics.
+   - Inline base64 images were extracted to /public.
+   - The CA asset's ambient particles are dropped: they were tuned
+     for that file's dark standalone background and are invisible
+     against the white device frame.
+   ───────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap');
+
+/* ═══ Shared stage ═══
+   Assets are authored at a fixed 380x660. The stage scales that
+   box down to fit narrow columns (--jd-scale is set from a
+   ResizeObserver) while keeping the authored proportions. */
+.jd-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+.jd-card {
+  position: relative;
+  width: 380px;
+  height: 660px;
+  flex: 0 0 auto;
+  background: #fff;
+  overflow: hidden;
+  transform: scale(var(--jd-scale, 1));
+  transform-origin: top center;
+  font-family: 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.jd-card *,
+.jd-card *::before,
+.jd-card *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+.jd-card button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+}
+/* The demos scroll their own inner panes (the CA modal auto-scroll
+   tweens scrollTop, so those panes must stay scrollable) but they are
+   non-interactive showcases — hide the scrollbars rather than letting
+   them read as controls. */
+.jd-card .jd-scroll {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.jd-card .jd-scroll::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+/* Demos are decorative: honour a user's reduced-motion setting by
+   freezing them on their end state rather than looping. */
+@media (prefers-reduced-motion: reduce) {
+  .jd-card *,
+  .jd-card *::before,
+  .jd-card *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════
+   1. MAINS ANSWER EVALUATOR              (.jd-mains)
+   Pure-CSS 8s loop: upload → scan → AI analysis → red-pen markup.
+   ═════════════════════════════════════════════════════════════ */
+
+.jd-mains .content {
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Phase 1: upload ── */
+.jd-mains .upload-zone {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 30px;
+  padding-top: 14%;
+  opacity: 0;
+  animation: jdMainsShowUpload 8s ease infinite;
+}
+.jd-mains .daily-challenge-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  width: 100%;
+}
+.jd-mains .daily-challenge-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: 0.2px;
+}
+.jd-mains .live-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+  animation: jdMainsLivePulse 2s ease-in-out infinite;
+}
+.jd-mains .live-dot {
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  border-radius: 50%;
+  animation: jdMainsLiveDot 1.2s ease-in-out infinite;
+}
+@keyframes jdMainsLivePulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35); }
+  50%      { box-shadow: 0 2px 16px rgba(220, 38, 38, 0.6); }
+}
+@keyframes jdMainsLiveDot {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+.jd-mains .upload-box {
+  width: 100%;
+  border: 2px dashed #d0d5dd;
+  border-radius: 14px;
+  background: #fafafa;
+  padding: 30px 20px;
+  text-align: center;
+}
+.jd-mains .upload-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #d4af37, #c49b2a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.3);
+}
+.jd-mains .upload-icon svg { width: 24px; height: 24px; fill: #fff; }
+.jd-mains .upload-text { font-size: 14px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px; }
+.jd-mains .upload-sub { font-size: 10.5px; color: #888; margin-bottom: 16px; }
+.jd-mains .upload-btn {
+  display: inline-block;
+  padding: 8px 24px;
+  background: #d4af37;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  letter-spacing: 0.2px;
+}
+@keyframes jdMainsShowUpload {
+  0%   { opacity: 0; transform: scale(0.96); }
+  3%   { opacity: 1; transform: scale(1); }
+  14%  { opacity: 1; transform: scale(1); }
+  18%  { opacity: 0; transform: scale(0.97); }
+  100% { opacity: 0; }
+}
+
+/* ── Phase 2: scanning ── */
+.jd-mains .scan-phase {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  animation: jdMainsShowScan 8s ease infinite;
+  display: flex;
+  flex-direction: column;
+}
+.jd-mains .img-container { flex: 1; position: relative; overflow: hidden; }
+.jd-mains .img-container img,
+.jd-mains .eval-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.jd-mains .scan-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.4) 15%, #d4af37 35%, #d4af37 65%, rgba(212,175,55,0.4) 85%, transparent 100%);
+  box-shadow:
+    0 0 30px 10px rgba(212, 175, 55, 0.35),
+    0 0 60px 20px rgba(212, 175, 55, 0.15),
+    inset 0 0 10px rgba(255, 255, 255, 0.3);
+  z-index: 5;
+  opacity: 0;
+  will-change: top, opacity;
+  animation: jdMainsBeam 8s ease infinite;
+}
+.jd-mains .scan-bar {
+  padding: 10px 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+  opacity: 0;
+  animation: jdMainsShowScanBar 8s ease infinite;
+}
+.jd-mains .scan-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ede8d8;
+  border-top-color: #d4af37;
+  border-radius: 50%;
+  animation: jdMainsSpin 0.6s linear infinite;
+}
+.jd-mains .scan-label { font-size: 11px; font-weight: 500; color: #8b7e3c; }
+.jd-mains .scan-progress {
+  flex: 1;
+  height: 3px;
+  background: #ede8d8;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-left: 6px;
+}
+.jd-mains .scan-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d4af37, #e8c84a);
+  border-radius: 3px;
+  animation: jdMainsFillBar 8s ease infinite;
+}
+/* The asset referenced `spin` and `fillBar` but never defined either,
+   so its spinner sat still and its progress bar never filled. Both are
+   defined here, timed to the window where the scan bar is visible. */
+@keyframes jdMainsSpin { to { transform: rotate(360deg); } }
+@keyframes jdMainsFillBar {
+  0%, 19% { width: 0%; }
+  40%     { width: 100%; }
+  100%    { width: 100%; }
+}
+@keyframes jdMainsBeam {
+  0%    { top: 0; opacity: 0; }
+  19%   { top: 0; opacity: 0; }
+  20%   { opacity: 1; top: 0; }
+  27%   { opacity: 1; top: 100%; }
+  27.5% { opacity: 1; top: 100%; }
+  34%   { opacity: 1; top: 0; }
+  34.5% { opacity: 1; top: 0; }
+  41%   { opacity: 1; top: 100%; }
+  41.5% { opacity: 1; top: 100%; }
+  44%   { opacity: 0; top: 0; }
+  100%  { opacity: 0; top: 0; }
+}
+@keyframes jdMainsShowScan {
+  0%, 17%   { opacity: 0; }
+  21%       { opacity: 1; }
+  46%       { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@keyframes jdMainsShowScanBar {
+  0%, 19%   { opacity: 0; }
+  23%       { opacity: 1; }
+  36%       { opacity: 1; }
+  40%, 100% { opacity: 0; }
+}
+
+/* ── Phase 2.5: Jeet AI analysing ──
+   NOTE: the source asset ships this CSS but has no matching markup —
+   its <body> only contains the upload, scan and eval phases. Kept
+   here verbatim (delays converted from the asset's invalid percentage
+   animation-delay values to seconds) so the screen drops straight in
+   if the client sends the missing markup. Nothing renders it today. */
+.jd-mains .jeet-analyze-phase {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  animation: jdMainsShowAnalyze 8s ease infinite;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+}
+.jd-mains .jeet-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.jd-mains .jeet-logo {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #d4af37, #c49b2a);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+}
+.jd-mains .jeet-title { font-size: 15px; font-weight: 600; color: #1f2937; }
+.jd-mains .jeet-subtitle { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.jd-mains .jeet-content {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+.jd-mains .analyze-item {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  opacity: 0;
+  transform: translateX(-10px);
+  animation: jdMainsSlideItem 8s ease infinite;
+}
+.jd-mains .analyze-item-1 { animation-delay: 3.04s; }
+.jd-mains .analyze-item-2 { animation-delay: 3.20s; }
+.jd-mains .analyze-item-3 { animation-delay: 3.36s; }
+.jd-mains .analyze-item-4 { animation-delay: 3.52s; }
+.jd-mains .analyze-item-5 { animation-delay: 3.68s; }
+.jd-mains .analyze-label {
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.jd-mains .analyze-value { font-size: 13px; color: #1f2937; font-weight: 500; }
+.jd-mains .analyze-keywords { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.jd-mains .keyword-tag {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.jd-mains .jeet-loader {
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+}
+.jd-mains .loader-dots { display: flex; gap: 4px; }
+.jd-mains .loader-dot {
+  width: 6px;
+  height: 6px;
+  background: #d4af37;
+  border-radius: 50%;
+  animation: jdMainsDotPulse 1.4s ease-in-out infinite;
+}
+.jd-mains .loader-dot:nth-child(2) { animation-delay: 0.2s; }
+.jd-mains .loader-dot:nth-child(3) { animation-delay: 0.4s; }
+.jd-mains .loader-text { font-size: 12px; color: #6b7280; font-weight: 500; }
+@keyframes jdMainsShowAnalyze {
+  0%, 36%   { opacity: 0; }
+  38%       { opacity: 1; }
+  48%       { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@keyframes jdMainsSlideItem {
+  0%   { opacity: 0; transform: translateX(-10px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes jdMainsDotPulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%           { transform: scale(1); opacity: 1; }
+}
+
+/* ── Phase 3: red-pen markup ── */
+.jd-mains .eval-phase {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  animation: jdMainsShowEval 8s ease infinite;
+  display: flex;
+  flex-direction: column;
+}
+.jd-mains .eval-img-wrap { flex: 1; position: relative; overflow: hidden; }
+.jd-mains .rp {
+  position: absolute;
+  color: #dc2626;
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  opacity: 0;
+  z-index: 3;
+}
+.jd-mains .rp.tick { width: 18px; height: 18px; }
+.jd-mains .rp.cross { width: 16px; height: 16px; }
+.jd-mains .rp.tick::before,
+.jd-mains .rp.cross::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+}
+.jd-mains .rp.tick.t1::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M 3 10 Q 5 13 7 15 L 17 2' stroke='%23dc2626' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.jd-mains .rp.tick.t2::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M 2 11 L 6 16 L 18 3' stroke='%23dc2626' stroke-width='2.3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.jd-mains .rp.tick.t3::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M 4 9 C 5 12 6 15 7 16 L 16 4' stroke='%23dc2626' stroke-width='2.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.jd-mains .rp.tick.t4::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M 3 12 Q 6 15 8 16 L 17 2' stroke='%23dc2626' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.jd-mains .rp.tick.t5::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M 2 10 L 7 15 L 18 4' stroke='%23dc2626' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.jd-mains .rp.cross.c1::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M 3 3 L 17 17 M 17 3 L 3 17' stroke='%23dc2626' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.jd-mains .rp.cross.c2::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M 4 4 Q 10 10 16 16 M 4 16 Q 10 10 16 4' stroke='%23dc2626' stroke-width='2.3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.jd-mains .rp.cross.c3::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M 3 4 L 16 17 M 17 3 L 4 16' stroke='%23dc2626' stroke-width='2.7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.jd-mains .rp.note {
+  font-size: 15px;
+  font-family: 'Caveat', cursive;
+  color: #dc2626;
+  font-weight: 700;
+  transform: rotate(-2deg);
+}
+.jd-mains .rp-score {
+  position: absolute;
+  top: 4%;
+  right: 4%;
+  font-family: 'Caveat', cursive;
+  font-size: 34px;
+  font-weight: 700;
+  color: #dc2626;
+  opacity: 0;
+  z-index: 5;
+  transform: rotate(-4deg);
+  text-shadow: 0 0 1px rgba(220, 38, 38, 0.3);
+  animation: jdMainsScorePop 8s ease infinite;
+}
+.jd-mains .rp-circle { position: absolute; opacity: 0; z-index: 2; overflow: visible; }
+.jd-mains .rp-circle::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'%3E%3Cellipse cx='50' cy='30' rx='48' ry='28' stroke='%23dc2626' stroke-width='2.8' fill='none' stroke-dasharray='3 0' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center;
+  background-size: 100% 100%;
+}
+.jd-mains .rp-under {
+  position: absolute;
+  height: 4px;
+  opacity: 0;
+  z-index: 2;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 6'%3E%3Cpath d='M 2 3 Q 50 1 100 3 Q 150 5 198 3' stroke='%23dc2626' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center;
+  background-size: 100% 100%;
+}
+.jd-mains .rp-wavy {
+  position: absolute;
+  height: 8px;
+  opacity: 0;
+  z-index: 2;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8'%3E%3Cpath d='M 2 4 Q 8 1 14 4 Q 20 7 26 4 Q 32 1 38 4' stroke='%23dc2626' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x;
+  background-size: 40px 8px;
+}
+.jd-mains .a1,  .jd-mains .a2,  .jd-mains .a3,  .jd-mains .a4,  .jd-mains .a5,
+.jd-mains .a6,  .jd-mains .a7,  .jd-mains .a8,  .jd-mains .a9,  .jd-mains .a10,
+.jd-mains .a11, .jd-mains .a12, .jd-mains .a13, .jd-mains .a14, .jd-mains .a15 {
+  animation: jdMainsMark 8s ease infinite;
+}
+.jd-mains .a1  { animation-delay: 0s; }
+.jd-mains .a2  { animation-delay: 0.15s; }
+.jd-mains .a3  { animation-delay: 0.3s; }
+.jd-mains .a4  { animation-delay: 0.45s; }
+.jd-mains .a5  { animation-delay: 0.6s; }
+.jd-mains .a6  { animation-delay: 0.75s; }
+.jd-mains .a7  { animation-delay: 0.9s; }
+.jd-mains .a8  { animation-delay: 1.05s; }
+.jd-mains .a9  { animation-delay: 1.2s; }
+.jd-mains .a10 { animation-delay: 1.35s; }
+.jd-mains .a11 { animation-delay: 1.5s; }
+.jd-mains .a12 { animation-delay: 1.65s; }
+.jd-mains .a13 { animation-delay: 1.8s; }
+.jd-mains .a14 { animation-delay: 1.95s; }
+.jd-mains .a15 { animation-delay: 2.1s; }
+@keyframes jdMainsMark {
+  0%, 55%  { opacity: 0; }
+  62%      { opacity: 1; }
+  88%      { opacity: 1; }
+  94%, 100% { opacity: 0; }
+}
+@keyframes jdMainsShowEval {
+  0%, 48%   { opacity: 0; }
+  53%       { opacity: 1; }
+  90%       { opacity: 1; }
+  95%, 100% { opacity: 0; }
+}
+@keyframes jdMainsScorePop {
+  0%, 56%   { opacity: 0; transform: scale(1.5) rotate(-4deg); }
+  60%       { opacity: 1; transform: scale(1) rotate(-4deg); }
+  62%       { transform: scale(1.08) rotate(-4deg); }
+  64%       { transform: scale(1) rotate(-4deg); }
+  88%       { opacity: 1; }
+  93%, 100% { opacity: 0; }
+}
+
+/* ═════════════════════════════════════════════════════════════
+   2. MOCK TEST                            (.jd-mock)
+   20s loop: two MCQs answered by a hand cursor, then a submit
+   that slides the explanation screen in. Cursor is JS-driven.
+   ═════════════════════════════════════════════════════════════ */
+
+.jd-mock .content { height: 100%; position: relative; overflow: hidden; background: #f0f1f3; }
+.jd-mock .screen { position: absolute; inset: 0; background: #f0f1f3; display: flex; flex-direction: column; }
+.jd-mock .main-card {
+  margin: 10px 12px 0;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+}
+.jd-mock .header-section {
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #fff 0%, #f7f8fb 100%);
+  border-bottom: 1.5px solid #e5e7ef;
+  position: relative;
+}
+.jd-mock .header-section::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 16px;
+  right: 16px;
+  height: 5px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, transparent 100%);
+  border-radius: 0 0 4px 4px;
+  pointer-events: none;
+}
+.jd-mock .card-header { padding: 16px 16px 10px; display: flex; align-items: flex-start; gap: 12px; flex-shrink: 0; }
+.jd-mock .q-number {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.jd-mock .q-number img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.jd-mock .q-meta { flex: 1; }
+.jd-mock .q-title { font-size: 13px; font-weight: 700; color: #1a1d29; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px; }
+.jd-mock .q-date { font-size: 10px; color: #6b7280; font-weight: 500; }
+.jd-mock .q-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-top: 2px;
+  box-shadow: 0 1px 4px rgba(220, 38, 38, 0.15);
+}
+.jd-mock .q-live-dot { width: 5px; height: 5px; background: #dc2626; border-radius: 50%; animation: jdMockLivePulse 1.5s ease infinite; }
+.jd-mock .q-tags { display: flex; gap: 6px; padding: 0 16px 12px; align-items: center; flex-shrink: 0; }
+.jd-mock .tag { padding: 3px 10px; border-radius: 5px; font-size: 10px; font-weight: 600; }
+.jd-mock .tag-polity  { background: #ede9fe; color: #7c3aed; }
+.jd-mock .tag-easy    { background: #fef3c7; color: #92400e; }
+.jd-mock .tag-economy { background: #dbeafe; color: #1d4ed8; }
+.jd-mock .tag-medium  { background: #fed7aa; color: #9a3412; }
+.jd-mock .tag-timer { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500; color: #1a1d29; }
+.jd-mock .tag-timer small { font-size: 7px; color: #888; font-family: 'Outfit', sans-serif; display: block; text-align: center; margin-top: -1px; }
+.jd-mock .scroll-container { flex: 1; padding-top: 10px; padding-bottom: 8px; }
+.jd-mock .q-body { padding: 0 16px; }
+.jd-mock .q-label { font-size: 11px; font-weight: 700; color: #1a1d29; margin-bottom: 4px; }
+.jd-mock .q-text { font-size: 11.5px; color: #374151; line-height: 1.5; margin-bottom: 6px; font-weight: 400; }
+.jd-mock .q-statement { display: flex; align-items: flex-start; gap: 7px; margin-bottom: 4px; font-size: 11px; color: #374151; line-height: 1.4; }
+.jd-mock .q-statement-num {
+  width: 16px;
+  height: 16px;
+  background: #1a1d29;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.jd-mock .q-instruction { font-size: 11px; font-weight: 600; color: #1a1d29; margin-top: 6px; margin-bottom: 2px; }
+.jd-mock .q-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  padding: 0 16px 10px;
+  margin-top: 8px;
+  position: relative;
+}
+.jd-mock .q-option {
+  padding: 9px 10px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #374151;
+}
+.jd-mock .q-option-letter {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+.jd-mock .result-badge {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-left: auto;
+}
+.jd-mock .badge-wrong   { background: #fee2e2; color: #dc2626; }
+.jd-mock .badge-correct { background: #dcfce7; color: #16a34a; }
+.jd-mock .question-separator { height: 1px; background: #ededef; margin: 4px 16px 10px; }
+.jd-mock .q-divider { height: 1px; background: #ededef; }
+.jd-mock .q-footer { padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; background: #fff; }
+.jd-mock .q-btn { padding: 8px 20px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+.jd-mock .q-btn-prev { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+.jd-mock .q-btn-submit { background: #1a1d29; color: #fff; }
+
+/* left/top pin the transform origin to the card's top-left; the JS
+   loop then drives position purely through translate3d. Without them
+   the element would fall back to its static in-flow position. */
+.jd-mock .hand-cursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 26px;
+  opacity: 0;
+  z-index: 30;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  line-height: 1;
+  will-change: transform, opacity;
+}
+.jd-mock .click-ripple {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(26, 29, 41, 0.3);
+  opacity: 0;
+  z-index: 25;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.jd-mock .q1-opt-a        { animation: jdMockQ1OptA 20s ease infinite; }
+.jd-mock .q1-opt-a-letter { animation: jdMockQ1LetterA 20s ease infinite; }
+.jd-mock .q1-opt-c        { animation: jdMockQ1OptC 20s ease infinite; }
+.jd-mock .q1-opt-c-letter { animation: jdMockQ1LetterC 20s ease infinite; }
+.jd-mock .q2-opt-a        { animation: jdMockQ2OptA 20s ease infinite; }
+.jd-mock .q2-opt-a-letter { animation: jdMockQ2LetterA 20s ease infinite; }
+.jd-mock .q2-opt-b        { animation: jdMockQ2OptB 20s ease infinite; }
+.jd-mock .q2-opt-b-letter { animation: jdMockQ2LetterB 20s ease infinite; }
+.jd-mock .badge-slot { opacity: 0; }
+.jd-mock .q1-badge, .jd-mock .q2-badge { animation: jdMockBadgeFade 20s ease infinite; }
+
+.jd-mock .explain-screen {
+  position: absolute;
+  inset: 0;
+  background: #f0f1f3;
+  z-index: 20;
+  opacity: 0;
+  transform: translateX(100%);
+  animation: jdMockScreenSlide 20s ease infinite;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.jd-mock .explain-card-wrapper {
+  margin: 10px 12px 0;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.jd-mock .explain-header { padding: 12px 16px 10px; border-bottom: 1px solid #f3f4f6; flex-shrink: 0; }
+.jd-mock .explain-header-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.jd-mock .explain-header-row:last-child { margin-bottom: 0; }
+.jd-mock .explain-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+.jd-mock .explain-icon-red   { background: #dc2626; }
+.jd-mock .explain-icon-green { background: #16a34a; }
+.jd-mock .explain-title { font-size: 12px; font-weight: 700; color: #1a1d29; }
+.jd-mock .explain-sub { font-size: 9px; color: #888; margin-top: 1px; }
+.jd-mock .explain-compare { margin-left: auto; text-align: right; font-size: 10px; color: #64748b; line-height: 1.5; }
+.jd-mock .explain-compare .your-ans    { color: #dc2626; font-weight: 600; }
+.jd-mock .explain-compare .correct-ans { color: #16a34a; font-weight: 600; }
+.jd-mock .explain-body { padding: 10px 16px; flex: 1; }
+.jd-mock .explain-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #1a1d29;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.jd-mock .explain-section-label .icon { font-size: 12px; }
+.jd-mock .explain-card {
+  margin-bottom: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.jd-mock .explain-card-body { font-size: 10.5px; color: #475569; line-height: 1.55; }
+.jd-mock .explain-card-body strong { color: #1a1d29; }
+.jd-mock .explain-sep { height: 1px; background: #ededef; margin: 8px 0; }
+.jd-mock .explain-actions { display: flex; gap: 8px; padding: 10px 16px; border-top: 1px solid #f3f4f6; flex-shrink: 0; }
+.jd-mock .explain-action-btn {
+  flex: 1;
+  padding: 8px 4px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+@keyframes jdMockLivePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@keyframes jdMockQ1OptA {
+  0%, 5%    { background: #fff; border-color: #e5e7eb; color: #374151; }
+  7%        { background: #1a1d29; border-color: #1a1d29; color: #fff; }
+  15%       { background: #1a1d29; border-color: #1a1d29; color: #fff; }
+  17%       { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+  22%, 100% { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+}
+@keyframes jdMockQ1LetterA {
+  0%, 5%    { background: #f3f4f6; color: #6b7280; }
+  7%        { background: #d4af37; color: #1a1d29; }
+  15%       { background: #d4af37; color: #1a1d29; }
+  17%       { background: #dc2626; color: #fff; }
+  22%, 100% { background: #dc2626; color: #fff; }
+}
+@keyframes jdMockQ1OptC {
+  0%, 15%   { background: #fff; border-color: #e5e7eb; color: #374151; }
+  17%       { background: #f0fdf4; border-color: #86efac; color: #166534; }
+  22%, 100% { background: #f0fdf4; border-color: #86efac; color: #166534; }
+}
+@keyframes jdMockQ1LetterC {
+  0%, 15%   { background: #f3f4f6; color: #6b7280; }
+  17%       { background: #16a34a; color: #fff; }
+  22%, 100% { background: #16a34a; color: #fff; }
+}
+@keyframes jdMockQ2OptA {
+  0%, 9%    { background: #fff; border-color: #e5e7eb; color: #374151; }
+  11%       { background: #1a1d29; border-color: #1a1d29; color: #fff; }
+  15%       { background: #1a1d29; border-color: #1a1d29; color: #fff; }
+  17%       { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+  22%, 100% { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+}
+@keyframes jdMockQ2LetterA {
+  0%, 9%    { background: #f3f4f6; color: #6b7280; }
+  11%       { background: #d4af37; color: #1a1d29; }
+  15%       { background: #d4af37; color: #1a1d29; }
+  17%       { background: #dc2626; color: #fff; }
+  22%, 100% { background: #dc2626; color: #fff; }
+}
+@keyframes jdMockQ2OptB {
+  0%, 15%   { background: #fff; border-color: #e5e7eb; color: #374151; }
+  17%       { background: #f0fdf4; border-color: #86efac; color: #166534; }
+  22%, 100% { background: #f0fdf4; border-color: #86efac; color: #166534; }
+}
+@keyframes jdMockQ2LetterB {
+  0%, 15%   { background: #f3f4f6; color: #6b7280; }
+  17%       { background: #16a34a; color: #fff; }
+  22%, 100% { background: #16a34a; color: #fff; }
+}
+@keyframes jdMockBadgeFade {
+  0%, 16%   { opacity: 0; transform: scale(0.5); }
+  18%       { opacity: 1; transform: scale(1); }
+  22%, 100% { opacity: 1; transform: scale(1); }
+}
+/* The source asset used `forwards` so the explanation screen stayed
+   put; as a looping slide it has to reset, hence the tail keyframes. */
+@keyframes jdMockScreenSlide {
+  0%, 20%  { opacity: 0; transform: translateX(100%); }
+  25%      { opacity: 1; transform: translateX(0); }
+  96%      { opacity: 1; transform: translateX(0); }
+  99%,100% { opacity: 0; transform: translateX(100%); }
+}
+
+/* ═════════════════════════════════════════════════════════════
+   3. DAILY CURRENT AFFAIRS                (.jd-ca)
+   Cinematic one-shot: phone in → cards stagger → cursor glides
+   to "Jeet AI Summary" → click → modal → auto-scroll.
+   Originally GSAP-driven; re-implemented on rAF in the component.
+   ═════════════════════════════════════════════════════════════ */
+
+.jd-ca {
+  --ink: #101827;
+  --muted: #647089;
+  --line: #e7eaf1;
+  --navy: #10193f;
+  --gold: #d8a52c;
+  --gold-2: #ffcf68;
+  --blue: #3f67e8;
+}
+.jd-ca .screen {
+  height: 100%;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(247,249,253,0.98)),
+    radial-gradient(circle at top left, rgba(216,165,44,0.12), transparent 42%);
+  position: relative;
+  overflow: hidden;
+  color: var(--ink);
+}
+.jd-ca .top-ribbon {
+  padding: 16px 16px 10px;
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(14px);
+  position: relative;
+  z-index: 3;
+}
+.jd-ca .brand-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.jd-ca .source-switch {
+  display: flex;
+  gap: 6px;
+  background: #f0f3fa;
+  border: 1px solid #dfe5f0;
+  padding: 4px;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 2px rgba(13, 20, 38, 0.06);
+}
+.jd-ca .source-tab {
+  color: #536079;
+  padding: 7px 11px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  transition: 0.25s ease;
+}
+.jd-ca .source-tab.active { color: #fff; background: var(--navy); box-shadow: 0 8px 18px rgba(16, 25, 63, 0.24); }
+.jd-ca .masthead-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  background: #fff;
+  color: var(--navy);
+  border: 1px solid rgba(16, 25, 63, 0.12);
+}
+.jd-ca .date-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #fff4d8;
+  color: #8a5a00;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+.jd-ca .edition-line { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
+.jd-ca .edition-line h1 { font-size: 24px; line-height: 1.02; font-weight: 700; color: var(--ink); letter-spacing: -0.03em; }
+.jd-ca .edition-line p { margin-top: 4px; color: var(--muted); font-size: 11.5px; font-weight: 700; }
+.jd-ca .edition-meta {
+  text-align: right;
+  flex: 0 0 auto;
+  color: #758097;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.jd-ca .feed { height: calc(100% - 137px); padding: 13px 13px 88px; }
+.jd-ca .news-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 10px 25px rgba(20, 31, 58, 0.07);
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.jd-ca .news-card.is-in { opacity: 1; transform: translateY(0); }
+.jd-ca .news-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), rgba(216, 165, 44, 0), var(--blue));
+  opacity: 0.9;
+}
+.jd-ca .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.jd-ca .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.jd-ca .tag { padding: 5px 8px; border-radius: 8px; background: #eaf0ff; color: #304470; font-size: 10.5px; font-weight: 700; }
+.jd-ca .tag:nth-child(2) { background: #f7eadc; }
+.jd-ca .tag:nth-child(3) { background: #eef1e6; }
+.jd-ca .source-note { color: #778297; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+.jd-ca .news-title { font-size: 16.2px; line-height: 1.25; letter-spacing: -0.02em; font-weight: 700; color: #121826; }
+.jd-ca .news-brief {
+  margin-top: 8px;
+  color: #667085;
+  font-size: 12.2px;
+  line-height: 1.55;
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.jd-ca .divider { height: 1px; background: var(--line); margin: 12px 0; }
+.jd-ca .card-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.jd-ca .soft-actions { display: flex; gap: 7px; }
+.jd-ca .soft-btn { padding: 8px 10px; border-radius: 999px; background: #f2f6ff; color: #36518d; font-size: 11px; font-weight: 700; }
+.jd-ca .summary-btn {
+  min-width: 130px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  color: #ffe39a;
+  background: linear-gradient(135deg, #121a48, #0d1434 58%, #1d2a68);
+  box-shadow: 0 9px 22px rgba(16, 25, 63, 0.25);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  position: relative;
+}
+.jd-ca .summary-btn::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--gold), var(--blue));
+  opacity: 0;
+  z-index: -1;
+  filter: blur(10px);
+  animation: jdCaBtnPulse 2s ease-in-out infinite;
+}
+@keyframes jdCaBtnPulse {
+  0%, 100% { opacity: 0; transform: scale(0.95); }
+  50%      { opacity: 0.4; transform: scale(1.05); }
+}
+.jd-ca .bottom-orbit {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 13px;
+  background: rgba(255, 255, 255, 0.87);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 30px rgba(16, 25, 63, 0.12);
+  border-radius: 18px;
+  padding: 9px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+  z-index: 5;
+  backdrop-filter: blur(16px);
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.jd-ca .bottom-orbit.is-in { opacity: 1; transform: translateY(0); }
+.jd-ca .orbit-item {
+  text-align: center;
+  padding: 7px 3px;
+  border-radius: 12px;
+  color: #59657b;
+  font-size: 9.5px;
+  font-weight: 700;
+  background: #fff;
+  border: 1px solid #edf0f6;
+}
+.jd-ca .orbit-icon {
+  width: 20px;
+  height: 20px;
+  margin: 0 auto 4px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #fff5d8, #eef3ff);
+  display: grid;
+  place-items: center;
+  color: var(--navy);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1;
+}
+.jd-ca .modal-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+  background: rgba(7, 11, 21, 0.55);
+  backdrop-filter: blur(7px);
+}
+.jd-ca .modal-layer.open { opacity: 1; }
+.jd-ca .summary-modal {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 16px;
+  bottom: 16px;
+  background: #fff;
+  border-radius: 21px;
+  overflow: hidden;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34);
+  transform: translateY(22px) scale(0.96);
+  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+}
+.jd-ca .modal-layer.open .summary-modal { transform: translateY(0) scale(1); }
+.jd-ca .modal-head {
+  padding: 16px 16px 12px;
+  background: radial-gradient(circle at 18% 0%, rgba(255, 207, 104, 0.24), transparent 35%), #fff;
+}
+.jd-ca .modal-topline { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.jd-ca .modal-kicker {
+  color: #a16c08;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-top: 11px;
+}
+.jd-ca .modal-title { margin-top: 8px; color: var(--ink); font-size: 18px; line-height: 1.18; letter-spacing: -0.03em; font-weight: 700; }
+.jd-ca .close-btn { width: 32px; height: 32px; border-radius: 11px; background: #fff; color: #667085; font-size: 17px; font-weight: 700; }
+.jd-ca .modal-body {
+  flex: 1;
+  padding: 14px 16px 112px;
+  background: linear-gradient(180deg, #fff 0%, #f7f9fd 100%);
+}
+.jd-ca .section { margin-bottom: 15px; }
+.jd-ca .section-title { display: flex; align-items: center; gap: 8px; color: #141b2c; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.jd-ca .section-title::before {
+  content: '';
+  width: 3px;
+  height: 22px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  background: linear-gradient(180deg, var(--gold-2), var(--gold));
+}
+.jd-ca .summary-copy,
+.jd-ca .argument-list li,
+.jd-ca .analysis-copy { color: #536079; font-size: 12px; line-height: 1.62; font-weight: 600; }
+.jd-ca .argument-list { padding-left: 18px; display: grid; gap: 7px; }
+.jd-ca .callout {
+  background: #f0f5ff;
+  border: 1px solid #d9e4ff;
+  color: #4b5e83;
+  padding: 10px 11px;
+  border-radius: 12px;
+  font-size: 11.7px;
+  line-height: 1.45;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+.jd-ca .terms { display: grid; gap: 7px; }
+.jd-ca .term {
+  background: #fff;
+  border: 1px solid #dde5f3;
+  border-radius: 12px;
+  padding: 9px 10px;
+  color: #536079;
+  font-size: 11.4px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+.jd-ca .term strong { color: #31446d; font-weight: 700; }
+.jd-ca .modal-actions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 14px 13px;
+  background: rgba(255, 255, 255, 0.94);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+  backdrop-filter: blur(16px);
+}
+.jd-ca .modal-action {
+  min-height: 60px;
+  border: 1px solid #e4e8f1;
+  border-radius: 13px;
+  background: #fff;
+  color: #5a6579;
+  font-size: 9.2px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.jd-ca .modal-action b {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 9px;
+  color: #152050;
+  background: #fff4d6;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+.jd-ca .locked-footer {
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #a4acba;
+  font-size: 9.5px;
+  font-weight: 700;
+  pointer-events: none;
+}
+/* Cursor + ripple are absolute to the card, not fixed to the
+   viewport as in the standalone asset. */
+.jd-ca .hand-cursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 40;
+  pointer-events: none;
+  font-size: 28px;
+  line-height: 1;
+  opacity: 0;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
+  transform-origin: center bottom;
+  will-change: transform, opacity;
+}
+/* The click "press" scales an inner glyph rather than .hand-cursor
+   itself: the cursor's own transform now carries its position, so a
+   keyframe writing `transform` there would snap it back to the origin. */
+.jd-ca .hand-glyph { display: block; transform-origin: center bottom; }
+.jd-ca .hand-cursor.clicking .hand-glyph { animation: jdCaCursorClick 0.25s ease; }
+@keyframes jdCaCursorClick {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(0.78) translateY(3px); }
+  100% { transform: scale(1); }
+}
+.jd-ca .cursor-glow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 39;
+  pointer-events: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(216, 165, 44, 0.22), transparent 70%);
+  opacity: 0;
+  filter: blur(8px);
+  will-change: transform, opacity;
+}
+.jd-ca .click-ripple {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  opacity: 0;
+  z-index: 38;
+  pointer-events: none;
+  will-change: transform, opacity;
+}

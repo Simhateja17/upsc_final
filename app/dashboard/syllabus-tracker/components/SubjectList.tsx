@@ -131,7 +131,7 @@ export default function SubjectList({
           const r = 15;
           const circ = 2 * Math.PI * r;
           const off = circ - (circ * stats.pct) / 100;
-          const ringColor = stats.pct === 100 ? '#16a34a' : stats.pct > 50 ? '#c9921a' : subject.color;
+          const ringColor = stats.pct === 100 ? '#15803d' : stats.pct > 50 ? '#c9921a' : subject.color;
 
           return (
             <div
@@ -141,28 +141,12 @@ export default function SubjectList({
                 flex items-center gap-[11px] p-[11px_13px] rounded-[12px] cursor-pointer border-[1.5px] mb-[6px] relative overflow-hidden transition-all duration-200
                 ${
                   isActive
-                    ? 'border-[rgba(201,146,26,.30)] shadow-md'
+                    ? 'border-[#e0e8f4] bg-[#EFF6FF]'
                     : 'border-[#e0e8f4] bg-white hover:border-[#d8e4f5] hover:bg-[#edf2fc] hover:-translate-y-[2px] hover:shadow-lg active:translate-y-0 active:shadow-sm'
                 }
               `}
-              style={
-                isActive
-                  ? {
-                      background: 'linear-gradient(135deg, rgba(232,168,32,.06), rgba(201,146,26,.03))',
-                      boxShadow: '0 4px 16px rgba(201,146,26,.16), 0 0 0 3px rgba(201,146,26,.08)',
-                    }
-                  : {
-                      boxShadow: '0 2px 8px rgba(15,31,61,.05)',
-                    }
-              }
+              style={{ boxShadow: '0 2px 8px rgba(15,31,61,.05)' }}
             >
-              {isActive && (
-                <div
-                  className="absolute left-0 top-0 bottom-0 w-[3.5px] rounded-r-[2px]"
-                  style={{ background: 'linear-gradient(180deg, #e8a820, #c9921a)' }}
-                />
-              )}
-
               <div
                 className="absolute inset-0 rounded-[12px] pointer-events-none"
                 style={{

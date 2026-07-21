@@ -12,6 +12,25 @@ function displaySubjectLabel(subject: string): string {
   return subject === 'Environment & Ecology' ? 'Environment' : subject;
 }
 
+// Roman-numeral display names for GS papers, shown only in the Add Task
+// subject dropdown. Underlying values (GS1..GS4) are unchanged.
+const GS_PAPER_ADD_TASK_LABELS: Record<string, string> = {
+  GS1: 'GS Paper I',
+  GS2: 'GS Paper II',
+  GS3: 'GS Paper III',
+  GS4: 'GS Paper IV',
+};
+
+// Label for an Add Task subject option. GS papers get the renamed label with
+// their respective paper icon prefixed; other subjects use the shared label.
+function addTaskSubjectOptionLabel(subject: string): string {
+  const renamed = GS_PAPER_ADD_TASK_LABELS[subject];
+  if (renamed) {
+    return `${getSubjectMetaStyle(subject).icon} ${renamed}`;
+  }
+  return displaySubjectLabel(subject);
+}
+
 function fmtTimer(secs: number): string {
   const s = Math.max(0, secs);
   const m = Math.floor(s / 60).toString().padStart(2, '0');
@@ -1068,7 +1087,7 @@ export default function StudyPlannerPage() {
                       >
                         <option value="" disabled>Select Subject</option>
                         {SUBJECT_OPTIONS.map((subject) => (
-                          <option key={subject} value={subject}>{displaySubjectLabel(subject)}</option>
+                          <option key={subject} value={subject}>{addTaskSubjectOptionLabel(subject)}</option>
                         ))}
                       </select>
                       <svg className="absolute pointer-events-none" style={{ right: '14px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none">

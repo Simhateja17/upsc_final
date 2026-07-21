@@ -122,7 +122,8 @@ function withAlpha(hex: string, alphaHex: string) {
 export function getSubjectMetaStyle(subjectName: string): SubjectMetaStyle {
   const n = normalizeSubjectName(subjectName || '');
   const tokens = n.split(' ');
-  const meta = SUBJECT_META_STYLES.find((entry) => {
+
+  const matchesAlias = (entry: (typeof SUBJECT_META_STYLES)[number]) => {
     if (normalizeSubjectName(entry.label) === n) return true;
     return entry.aliases.some((alias) => {
       const a = normalizeSubjectName(alias);
@@ -137,7 +138,28 @@ export function getSubjectMetaStyle(subjectName: string): SubjectMetaStyle {
         n.endsWith(` ${a}`)
       );
     });
-  });
+  };
+
+  // Second pass: stem match. Real task subjects arrive as morphological
+  // variants the word-boundary pass misses — "Economics" vs the `economic`
+  // alias, "Environmental" vs `environment`, "Geographical" vs `geog` — and
+  // those all fell through to the neutral default, so every such pill on the
+  // dashboard rendered the same grey-blue. Here a token matches a label/alias
+  // when one is a prefix of the other, guarded to length >= 4 so short stems
+  // ('ir', 'gs', 'eco') can't cause cross-subject false positives. Only runs
+  // when the strict pass finds nothing, so it never changes an existing match.
+  const matchesStem = (entry: (typeof SUBJECT_META_STYLES)[number]) =>
+    [entry.label, ...entry.aliases].some((candidate) => {
+      const a = normalizeSubjectName(candidate);
+      if (a.length < 4) return false;
+      return tokens.some(
+        (t) => t.length >= 4 && (t.startsWith(a) || a.startsWith(t)),
+      );
+    });
+
+  const meta =
+    SUBJECT_META_STYLES.find(matchesAlias) ??
+    SUBJECT_META_STYLES.find(matchesStem);
 
   if (!meta) {
     return {

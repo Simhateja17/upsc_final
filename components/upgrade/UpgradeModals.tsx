@@ -1336,3 +1336,49 @@ export function SpacedRepLimitModal({
     </UpgradeModalShell>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Study Material – download PDFs upgrade                              */
+/* Icon + copy ported 1:1 from study-material-upgrade-modal.html.      */
+/* ------------------------------------------------------------------ */
+
+const BookDownloadIcon = () => (
+  <svg width="38" height="38" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    {/* Open book base */}
+    <path d="M6 12C6 10.9 6.9 10 8 10H20C21.1 10 22 9.4 22 8.5V38C22 38 20 37 18 37H8C6.9 37 6 36.1 6 35V12Z" fill="#F5C542" opacity="0.85" />
+    <path d="M42 12C42 10.9 41.1 10 40 10H28C26.9 10 26 9.4 26 8.5V38C26 38 28 37 30 37H40C41.1 37 42 36.1 42 35V12Z" fill="#E8D48B" opacity="0.85" />
+    {/* Book spine */}
+    <rect x="22" y="8" width="4" height="30" rx="1" fill="#C9A227" />
+    {/* Page lines left */}
+    <line x1="10" y1="16" x2="19" y2="16" stroke="#1E2028" strokeWidth="1" opacity="0.2" />
+    <line x1="10" y1="20" x2="19" y2="20" stroke="#1E2028" strokeWidth="1" opacity="0.2" />
+    <line x1="10" y1="24" x2="17" y2="24" stroke="#1E2028" strokeWidth="1" opacity="0.2" />
+    {/* Page lines right */}
+    <line x1="29" y1="16" x2="38" y2="16" stroke="#1E2028" strokeWidth="1" opacity="0.15" />
+    <line x1="29" y1="20" x2="38" y2="20" stroke="#1E2028" strokeWidth="1" opacity="0.15" />
+    <line x1="29" y1="24" x2="36" y2="24" stroke="#1E2028" strokeWidth="1" opacity="0.15" />
+    {/* Download arrow overlay */}
+    <circle cx="36" cy="34" r="9" fill="#101827" stroke="#F5C542" strokeWidth="1.5" />
+    <path d="M36 29V37" stroke="#F5C542" strokeWidth="2" strokeLinecap="round" />
+    <path d="M32.5 34.5L36 38L39.5 34.5" stroke="#F5C542" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export function StudyMaterialDownloadUpgradeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <UpgradeModalShell open={open} onClose={onClose}>
+      <div className="upm-icon"><BookDownloadIcon /></div>
+      <h2 className="upm-title">Unlock Unlimited Study Material Downloads</h2>
+      <p className="upm-description">Upgrade to download unlimited notes, PDFs, handouts, and premium study resources to support every stage of your UPSC preparation.</p>
+      <BenefitsList
+        items={[
+          'Unlimited Study Material Downloads',
+          'Subject-wise Notes &amp; Resources',
+          'Current Affairs Compilations',
+          'Revision Notes &amp; Handouts',
+        ]}
+      />
+      <UpgradeActions onClose={onClose} backLabel="Back to Study Material" />
+    </UpgradeModalShell>
+  );
+}

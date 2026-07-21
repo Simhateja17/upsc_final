@@ -147,7 +147,7 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
   const totalDone = stats.reduce((sum, s) => sum + s.done, 0);
   const totalSubs = stats.reduce((sum, s) => sum + s.total, 0);
   const overallPct = totalSubs > 0 ? Math.round((totalDone / totalSubs) * 100) : 0;
-  const progressColor = overallPct === 100 ? '#16a34a' : overallPct > 50 ? '#c9921a' : subject.color;
+  const progressColor = overallPct === 100 ? '#15803d' : overallPct > 50 ? '#c9921a' : subject.color;
 
   return (
     <div className="w-full min-w-0 flex-1 bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm">
@@ -186,7 +186,7 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
           const isSelected = selectedTopic?.subjectId === subject.id && selectedTopic?.topicIndex === ti;
           const topicStats = stats[ti];
           const topicPalette = TOPIC_PALETTE[topic.name];
-          const fillColor = topicStats.pct === 100 ? '#16a34a' : topicStats.pct > 0 ? (topicPalette?.color ?? subject.color) : '#d8e4f5';
+          const fillColor = topicStats.pct === 100 ? '#15803d' : topicStats.pct > 0 ? (topicPalette?.color ?? subject.color) : '#d8e4f5';
           
           // Status icon based on completion
           const statusIcon = topicStats.pct === 100 
@@ -242,10 +242,12 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
             <div
               key={ti}
               className={`
-                relative bg-white border-[1.5px] rounded-[12px] mb-[4px] overflow-hidden transition-all duration-200 shadow-sm
-                ${isOpen ? 'border-[#0f1f3d]' : isSelected ? 'border-[#c9921a]' : 'border-[#e0e8f4] hover:border-[rgba(15,31,61,.12)] hover:shadow-md'}
+                relative border-[1.5px] rounded-[12px] mb-[4px] overflow-hidden transition-all duration-200 shadow-sm
+                ${isOpen || isSelected
+                  ? 'border-[#e0e8f4] bg-[#EFF6FF]'
+                  : 'border-[#e0e8f4] bg-white hover:border-[rgba(15,31,61,.12)] hover:shadow-md'}
               `}
-              style={isSelected ? { boxShadow: '0 0 0 2px rgba(201,146,26,.12)' } : {}}
+              style={isOpen || isSelected ? { boxShadow: '0 2px 8px rgba(15,31,61,.05)' } : {}}
             >
               {/* Palette left accent strip */}
               {topicPalette && (

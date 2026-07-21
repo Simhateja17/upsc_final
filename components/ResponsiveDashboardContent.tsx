@@ -42,6 +42,16 @@ function displaySubjectLabel(subject: string): string {
   return subject === 'Environment & Ecology' ? 'Environment' : subject;
 }
 
+// Display-only labels for the GS Paper subjects in the Add Task picker. The
+// stored subject values (GS1..GS4) are kept unchanged so task creation logic
+// is unaffected — only how they read in the dropdown changes.
+const GS_PAPER_LABELS: Record<string, string> = {
+  GS1: 'GS Paper I',
+  GS2: 'GS Paper II',
+  GS3: 'GS Paper III',
+  GS4: 'GS Paper IV',
+};
+
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good morning';
@@ -261,7 +271,7 @@ const AddTaskModal = ({
               <option value="">Select Subject</option>
               {STUDY_TASK_SUBJECTS.map((s) => (
                 <option key={s} value={s}>
-                  {getSubjectEmoji(s)} {displaySubjectLabel(s)}
+                  {getSubjectEmoji(s)} {GS_PAPER_LABELS[s] ?? displaySubjectLabel(s)}
                 </option>
               ))}
             </select>
@@ -1129,6 +1139,68 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
             Start Focus Session
           </button>
         </div>
+
+        {/* Your Complete Test History Section — links to Tests History (Test Analytics) */}
+        <Link
+          href="/dashboard/test-analytics"
+          className="group block mb-[clamp(2rem,2.5vw,3rem)]"
+          style={{ textDecoration: 'none' }}
+        >
+          <div
+            className="relative overflow-hidden rounded-2xl p-[clamp(1rem,1.5vw,1.5rem)] transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1"
+            style={{
+              background: 'linear-gradient(135deg,#0e1430 0%,#1a2550 50%,#0e1430 100%)',
+              color: '#fff',
+              border: '1px solid rgba(245,180,0,0.15)',
+            }}
+          >
+            {/* Decorative glow */}
+            <div className="absolute top-0 right-0 w-40 h-40 opacity-10" style={{ background: 'radial-gradient(circle,#f5b400 0%,transparent 70%)' }} />
+            <div className="absolute bottom-0 left-0 w-24 h-24 opacity-5" style={{ background: 'radial-gradient(circle,#f5b400 0%,transparent 70%)' }} />
+            <div className="relative z-10 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-[clamp(0.75rem,1vw,1rem)] min-w-0">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{
+                    background: 'linear-gradient(135deg,rgba(245,180,0,0.2),rgba(245,180,0,0.05))',
+                    border: '1px solid rgba(245,180,0,0.25)',
+                  }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f5b400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <path d="M9 15l2 2 4-4" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-inter font-extrabold text-[clamp(15px,1vw,16px)] flex items-center gap-2 flex-wrap">
+                    Your Complete Test History
+                    <span
+                      className="inline-flex items-center px-2.5 py-1 rounded-lg text-[clamp(11px,0.68vw,12px)] font-semibold tracking-wide"
+                      style={{ background: 'rgba(245,180,0,0.1)', color: '#f5b400', border: '1px solid rgba(245,180,0,0.2)' }}
+                    >
+                      All Tests
+                    </span>
+                  </h3>
+                  <p className="font-inter text-[clamp(12px,0.85vw,14px)] mt-1" style={{ color: '#9ca3be' }}>
+                    View detailed analytics, performance trends, and subject-wise breakdowns across all your attempts.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center flex-shrink-0">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:translate-x-1"
+                  style={{ background: 'linear-gradient(135deg,#f5b400,#ffcb3a)' }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1407" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14" />
+                    <path d="M12 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Link>
 
       </div>
     </div>
