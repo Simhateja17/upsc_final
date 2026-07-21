@@ -643,6 +643,9 @@ function MockTestsPageInner() {
     { label: 'Difficulty', done: difficultyTouched },
   ];
   const progressPct = setupNodes.filter(n => n.done).length * 25;
+  // Same validation as the Daily Answer Writing Evaluator (canEvaluate):
+  // enable only once all four required selections are completed.
+  const canGenerate = setupNodes.every(n => n.done);
 
   /* Derive display labels for summary */
   const sourceLabel = selectedExamMode === 'mains'
@@ -1316,11 +1319,13 @@ function MockTestsPageInner() {
                     onMouseLeave={() => setHoveredDifficulty(null)}
                     style={{
                       background: isSelected ? '#EFF6FF' : isHovered ? '#F5F8FF' : '#FFF',
+                      // Border matches the Mains Answer Evaluator "Maximum Question Marks"
+                      // selector (theme navy #17223E) in Mains mode; Prelims keeps its blue.
                       border: isSelected
-                        ? '2px solid #155DFC'
+                        ? (selectedExamMode === 'mains' ? '1.8px solid #17223E' : '2px solid #155DFC')
                         : isHovered
-                        ? '1.5px solid #155DFC'
-                        : '1.5px solid #E5E7EB',
+                        ? (selectedExamMode === 'mains' ? '1.6px solid #17223E' : '1.5px solid #155DFC')
+                        : (selectedExamMode === 'mains' ? '1.6px solid #E5E7EB' : '1.5px solid #E5E7EB'),
                       borderRadius: '14px',
                       minHeight: '120px',
                       padding: '16px 14px',
@@ -1328,7 +1333,11 @@ function MockTestsPageInner() {
                       textAlign: 'center',
                       transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
                       transition: 'all 0.18s ease',
-                      boxShadow: isSelected
+                      // Mains keeps a flat neutral shadow (no sky-blue glow) to match the
+                      // Evaluator's theme-navy selectors; Prelims keeps its blue glow.
+                      boxShadow: selectedExamMode === 'mains'
+                        ? '0 1px 2px rgba(15, 23, 42, 0.04)'
+                        : isSelected
                         ? '0 8px 20px -18px rgba(21, 93, 252, 0.9)'
                         : isHovered
                         ? '0 6px 18px 0 rgba(21,93,252,0.13), 0 1.5px 5px 0 rgba(16,24,40,0.06)'
@@ -1371,7 +1380,7 @@ function MockTestsPageInner() {
                 minHeight: 0,
                 display: 'flex',
                 flexDirection: 'column',
-                overflowY: 'auto',
+                overflow: 'visible',
               }}>
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'clamp(16px, 1.3vw, 24px)' }}>
@@ -1407,8 +1416,13 @@ function MockTestsPageInner() {
                     background: 'rgba(255,255,255,0.06)',
                     borderRadius: '10px',
                     padding: 'clamp(10px, 0.8vw, 14px)',
+                    minHeight: 'clamp(86px, 6.4vw, 100px)',
+                    minWidth: 0,
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    flexDirection: 'column',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', flexShrink: 0 }}>
                       <span style={{ fontSize: 'clamp(13px, 0.9vw, 16px)', lineHeight: 1, flexShrink: 0 }}>{item.emoji}</span>
                       <span style={{
                         fontFamily: 'var(--font-inter), Inter, sans-serif',
@@ -1422,13 +1436,17 @@ function MockTestsPageInner() {
                       </span>
                     </div>
                     <div style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
                       fontFamily: 'var(--font-inter), Inter, sans-serif',
                       fontWeight: 700,
                       fontSize: 'clamp(13px, 0.85vw, 15px)',
+                      lineHeight: 1.25,
                       color: '#FFF',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
+                      minWidth: 0,
+                      wordBreak: 'break-word',
+                      overflowWrap: 'anywhere',
                     }}>
                       {item.value}
                     </div>
@@ -1458,7 +1476,7 @@ function MockTestsPageInner() {
                 onClick={isPrelimsAttemptsExhausted
                   ? () => setUpgradeModalOpen(true)
                   : handleGenerateTest}
-                disabled={generating || loading}
+                disabled={generating || loading || (!isPrelimsAttemptsExhausted && !canGenerate)}
                 onMouseEnter={() => setGenerateBtnHovered(true)}
                 onMouseLeave={() => setGenerateBtnHovered(false)}
                 style={{
@@ -1468,6 +1486,8 @@ function MockTestsPageInner() {
                   ? '#9CA3AF'
                   : isPrelimsAttemptsExhausted
                   ? 'linear-gradient(90deg, #FDC700, #FF8904, #FF6900)'
+                  : !canGenerate
+                  ? '#9CA3AF'
                   : generateBtnHovered
                   ? 'linear-gradient(90deg, #E6B000, #E87200, #E05800)'
                   : 'linear-gradient(90deg, #FDC700, #FF8904, #FF6900)',
@@ -1478,10 +1498,10 @@ function MockTestsPageInner() {
                 fontWeight: 800,
                 fontSize: 'clamp(14px, 0.95vw, 17px)',
                 color: '#FFF',
-                cursor: generating || loading ? 'not-allowed' : 'pointer',
+                cursor: (generating || loading || (!isPrelimsAttemptsExhausted && !canGenerate)) ? 'not-allowed' : 'pointer',
                 letterSpacing: '0.02em',
                 marginBottom: 'clamp(14px, 1.1vw, 20px)',
-                opacity: generating || loading ? 0.7 : 1,
+                opacity: (generating || loading || (!isPrelimsAttemptsExhausted && !canGenerate)) ? 0.7 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

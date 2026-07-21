@@ -61,8 +61,21 @@ export default function DashboardLayout({
 
   // Keep temporarily disabled community features inaccessible even when a user
   // follows an old bookmark or an internal link.
+  //
+  // Exception: Solo Focus lives inside the otherwise-disabled Live Study Room
+  // (/dashboard/study-groups). The Study Planner's "Start Focus Session" reuses
+  // it via the ?tab=solo deep-link, so we let that one entry through while every
+  // other way into a disabled route (incl. the Rooms/My tabs) still redirects
+  // home. The query is read from window inside this client-only effect on
+  // purpose: useSearchParams() here would force a Suspense boundary on every
+  // statically-prerendered dashboard page.
   useEffect(() => {
-    if (isDisabledDashboardRoute(pathname)) {
+    if (!isDisabledDashboardRoute(pathname)) return;
+    const search = typeof window !== 'undefined' ? window.location.search : '';
+    const isSoloFocusDeepLink =
+      pathname === '/dashboard/study-groups' &&
+      new URLSearchParams(search).get('tab') === 'solo';
+    if (!isSoloFocusDeepLink) {
       router.replace('/dashboard');
     }
   }, [pathname, router]);

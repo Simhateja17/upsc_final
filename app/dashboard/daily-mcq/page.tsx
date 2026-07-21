@@ -147,7 +147,7 @@ export default function DailyMcqIntroPage() {
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-          padding: 4px 0 4px;
+          padding: 4px 0 8px;
           animation: dmcw-fadeInUp 0.5s ease both;
         }
         .dmcw-pill {
@@ -543,7 +543,6 @@ export default function DailyMcqIntroPage() {
 
         {/* Title */}
         <h1 className="dmcw-title">Daily MCQ Challenge</h1>
-        <p className="dmcw-description">Sharpen your knowledge with focused practice questions</p>
 
         {/* Subjects */}
         <div className="dmcw-subjects-section">

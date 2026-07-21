@@ -10,6 +10,7 @@ import { MainsEvaluationLimitModal } from '@/components/upgrade/UpgradeModals';
 import { useAuth } from '@/contexts/AuthContext';
 import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
+import Toast from '@/components/Toast';
 import WritingTimer from '@/components/WritingTimer';
 
 interface QuestionData {
@@ -216,6 +217,8 @@ function DailyMainsChallengeInner() {
   // Bookmark ("Save Question") state → stored in the Bookmarks Vault under Answer Writing
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkSaving, setBookmarkSaving] = useState(false);
+  // Non-interrupting acknowledgement shown after saving to the Bookmarks Vault.
+  const [savedToast, setSavedToast] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -366,6 +369,8 @@ function DailyMainsChallengeInner() {
           status: data.attempted ? 'Submitted' : 'Not Attempted',
         },
       });
+      // Acknowledge only a new save; un-saving stays silent.
+      if (!wasBookmarked) setSavedToast('Saved to Bookmarks');
     } catch {
       setIsBookmarked(wasBookmarked); // revert on failure
     } finally {
@@ -466,6 +471,14 @@ function DailyMainsChallengeInner() {
     return (
       <div className="flex flex-col bg-[#F5F6F8] font-jakarta" style={{ minHeight: '100%', overflowY: 'auto' }}>
         {quotaModal}
+        {savedToast && (
+          <Toast
+            message={savedToast}
+            type="success"
+            onClose={() => setSavedToast(null)}
+            autoCloseDuration={2500}
+          />
+        )}
         <div className="flex-1 flex flex-col items-center px-4 sm:px-6 py-8 w-full max-w-[1240px] mx-auto">
 
           <style>{`
@@ -596,12 +609,12 @@ function DailyMainsChallengeInner() {
                   <h2 className="font-bold text-[#0B1020]" style={{ fontSize: '18px' }}>Past Challenges</h2>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center" style={{ gap: '4px', padding: '4px', borderRadius: '12px', background: '#F5F6F8', border: '1px solid #E6E8EE' }}>
-                    {['All', 'GS I', 'GS II', 'GS III', 'GS IV'].map((t, i) => (
+                  <div className="flex items-center" style={{ gap: '2px', padding: '3px', borderRadius: '12px', background: '#F5F6F8', border: '1px solid #E6E8EE' }}>
+                    {['All', 'GS Paper I', 'GS Paper II', 'GS Paper III', 'GS Paper IV'].map((t, i) => (
                       <span
                         key={t}
                         style={{
-                          padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap',
+                          padding: '6px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap',
                           color: i === 0 ? '#0B1020' : '#6B7280',
                           background: i === 0 ? '#FFFFFF' : 'transparent',
                           boxShadow: i === 0 ? '0 1px 2px rgba(15,23,42,.06)' : 'none',
@@ -839,7 +852,6 @@ function DailyMainsChallengeInner() {
                     <div className="font-semibold text-[#0B1020] truncate" style={{ fontSize: '14px' }}>You · {myMainsRank?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You'}</div>
                     <div style={{ fontSize: '11px', color: '#6B7280' }}>Rank #{myMainsRank?.mainsRank ?? '—'}</div>
                   </div>
-                  <Link href="/dashboard/leaderboard?tab=mains" className="font-semibold text-[#0B1020] hover:underline" style={{ fontSize: '12px' }}>Climb →</Link>
                 </div>
               </div>
             </div>
@@ -1101,42 +1113,27 @@ function DailyMainsChallengeInner() {
             </>
           )}
 
-          {/* Evaluation quota status banner */}
-          {!entitlements.loading && mainsQuota && (
-            mainsQuota.allowed === false ? (
-              <div
-                className="mt-4 flex items-center justify-between gap-3 px-4 py-3 rounded-[12px]"
-                style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}
-              >
-                <div className="flex items-center gap-3">
-                  <span style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '16px' }}>⚠️</span>
-                  <div>
-                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#B91C1C' }}>🔒 Evaluation limit reached</p>
-                    <p style={{ fontSize: '12px', color: '#6A7282', marginTop: '1px' }}>
-                      {mainsQuota.message || 'You have used your 1 free lifetime evaluation. Upgrade to continue.'}
-                    </p>
-                  </div>
-                </div>
-                <Link href="/dashboard/billing/plans">
-                  <button style={{ flexShrink: 0, padding: '8px 18px', borderRadius: '10px', background: '#17223E', color: '#FFFFFF', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    Upgrade
-                  </button>
-                </Link>
-              </div>
-            ) : mainsQuota.remaining !== null ? (
-              <div
-                className="mt-4 flex items-center gap-3 px-4 py-3 rounded-[12px]"
-                style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}
-              >
-                <span style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '16px' }}>✅</span>
+          {/* Evaluation quota status banner — limit reached */}
+          {!entitlements.loading && mainsQuota && mainsQuota.allowed === false && (
+            <div
+              className="mt-4 flex items-center justify-between gap-3 px-4 py-3 rounded-[12px]"
+              style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}
+            >
+              <div className="flex items-center gap-3">
+                <span style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '16px' }}>⚠️</span>
                 <div>
-                  <p style={{ fontSize: '13px', fontWeight: 700, color: '#166534' }}>✅ Free evaluation available</p>
-                  <p style={{ fontSize: '12px', color: '#4A5565', marginTop: '1px' }}>
-                    {mainsQuota.remaining} of {mainsQuota.limit ?? mainsQuota.remaining} free evaluation{(mainsQuota.limit ?? mainsQuota.remaining) !== 1 ? 's' : ''} remaining
+                  <p style={{ fontSize: '13px', fontWeight: 700, color: '#B91C1C' }}>🔒 Evaluation limit reached</p>
+                  <p style={{ fontSize: '12px', color: '#6A7282', marginTop: '1px' }}>
+                    {mainsQuota.message || 'You have used your 1 free lifetime evaluation. Upgrade to continue.'}
                   </p>
                 </div>
               </div>
-            ) : null
+              <Link href="/dashboard/billing/plans">
+                <button style={{ flexShrink: 0, padding: '8px 18px', borderRadius: '10px', background: '#17223E', color: '#FFFFFF', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  Upgrade
+                </button>
+              </Link>
+            </div>
           )}
 
           {submitError && (
@@ -1161,6 +1158,18 @@ function DailyMainsChallengeInner() {
               </>
             )}
           </button>
+
+          {/* Free evaluation indicator — pill sits below the Submit button (per PRD reference) */}
+          {!entitlements.loading && mainsQuota && mainsQuota.allowed !== false && mainsQuota.remaining !== null && (
+            <div className="flex justify-center">
+              <span
+                className="inline-flex items-center gap-2"
+                style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', color: '#166534', borderRadius: '100px', padding: '6px 14px', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}
+              >
+                ✅ {mainsQuota.remaining} Free Evaluation{mainsQuota.remaining !== 1 ? 's' : ''} Remaining
+              </span>
+            </div>
+          )}
 
           </div>
         </div>

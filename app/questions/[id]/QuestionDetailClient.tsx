@@ -933,6 +933,17 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
             linear-gradient(180deg, #ffffff 0%, #fdfcf8 100%);
           border: 1px solid rgba(212, 175, 55, 0.14);
           overflow: hidden;
+          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+          will-change: transform;
+        }
+        .model-answer-parchment:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 30px rgba(184, 148, 30, 0.10);
+          border-color: rgba(212, 175, 55, 0.34);
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .model-answer-parchment { transition: none; }
+          .model-answer-parchment:hover { transform: none; }
         }
         .eval-card {
           background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);

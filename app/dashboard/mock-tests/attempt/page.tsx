@@ -149,6 +149,7 @@ function MockTestAttemptInner() {
   const title = searchParams.get('title') || (isMains ? 'Mains Practice' : 'Prelims Practice');
   const paperParam = searchParams.get('paper') || '';
   const subjectParam = searchParams.get('subject') || '';
+  const difficultyParam = searchParams.get('difficulty') || 'Medium';
 
   /* ─── Pre-test instructions gate ─── */
   const startedKey = testId ? `mockTestStarted:${testId}` : null;
@@ -711,6 +712,7 @@ function MockTestAttemptInner() {
         questionCount={totalQuestions}
         totalTimeMinutes={totalTimeMinutes}
         paperLabel={paperLabel}
+        difficultyLabel={difficultyParam}
         onBack={() => router.push('/dashboard/mock-tests')}
         onStart={() => {
           setStarted(true);
@@ -1263,17 +1265,21 @@ function MockTestAttemptInner() {
               // attached, never hardcoded. Powers the green "Uploaded" capsule.
               const isUploaded = answer.files.length > 0;
               const isUnattempted = !!unattemptedQuestions[i];
+              // The card's green "success" styling reflects the Done tick while writing,
+              // but during the upload phase it must reflect a REAL upload — so the box
+              // stays neutral/default until the answer is actually uploaded, then turns green.
+              const isBoxComplete = showUpload ? isUploaded : isDone;
               return (
                 <div
                   key={q.id ?? i}
                   id={`mains-q-${i}`}
                   style={{
                     scrollMarginTop: 24,
-                    background: isDone ? '#F6FEF9' : '#FFFFFF',
+                    background: isBoxComplete ? '#F6FEF9' : '#FFFFFF',
                     borderRadius: '16px',
                     padding: '20px 24px',
-                    border: `1.5px solid ${isDone ? '#22C55E' : 'transparent'}`,
-                    boxShadow: isDone
+                    border: `1.5px solid ${isBoxComplete ? '#22C55E' : 'transparent'}`,
+                    boxShadow: isBoxComplete
                       ? '0 0 0 1px #22C55E22, 0px 1px 3px 0px #16A34A22'
                       : '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
                     transition: 'border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease',
@@ -1283,7 +1289,7 @@ function MockTestAttemptInner() {
                   {/* Chips row */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center flex-wrap gap-2">
-                      <span style={{ background: isDone ? '#DCFCE7' : '#EFF6FF', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: isDone ? '#15803D' : '#155DFC', transition: 'all 0.15s ease' }}>
+                      <span style={{ background: isBoxComplete ? '#DCFCE7' : '#EFF6FF', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: isBoxComplete ? '#15803D' : '#155DFC', transition: 'all 0.15s ease' }}>
                         {(q as any).paper || paperParam || 'GS Paper I'}
                       </span>
                       {q.subject && (
@@ -1578,15 +1584,45 @@ function MockTestAttemptInner() {
                   totalSeconds={examTotalSeconds}
                   statusLabel={timeUp ? 'time up' : examRunning ? 'in progress' : 'paused'}
                 >
-                  <button
-                    type="button"
-                    disabled={timeUp}
-                    onClick={() => setExamRunning(r => !r)}
-                    className="w-full flex items-center justify-center gap-2 font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ height: 44, background: examRunning ? '#EF4444' : '#00BC7D', border: 'none', borderRadius: '12px', fontSize: 14, cursor: timeUp ? 'not-allowed' : 'pointer' }}
-                  >
-                    {examRunning ? '⏸ Pause' : '▶ Resume'}
-                  </button>
+                  {/* Timer controls stack vertically so the descriptive "Upload My Answer"
+                      option sits directly below the Pause/Resume button (see reference). */}
+                  <div className="flex flex-col gap-2 w-full">
+                    <button
+                      type="button"
+                      disabled={timeUp}
+                      onClick={() => setExamRunning(r => !r)}
+                      className="w-full flex items-center justify-center gap-2 font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ height: 44, background: examRunning ? '#EF4444' : '#00BC7D', border: 'none', borderRadius: '12px', fontSize: 14, cursor: timeUp ? 'not-allowed' : 'pointer' }}
+                    >
+                      {examRunning ? '⏸ Pause' : '▶ Resume'}
+                    </button>
+
+                    {/* Upload My Answer — descriptive (Write on Paper) only; reveals the
+                        upload step and scrolls to it. Never shown for objective/prelims. */}
+                    {isHandwrite && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDoneWriting(true);
+                            setTimeout(() => {
+                              document.getElementById('mains-upload-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }, 120);
+                          }}
+                          className="w-full flex items-center justify-center gap-2 font-bold text-white transition-transform hover:scale-[1.01]"
+                          style={{ height: 44, background: '#17223E', border: 'none', borderRadius: '12px', fontSize: 14, cursor: 'pointer' }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                            <path d="M12 16V4m0 0L8 8m4-4l4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          Upload My Answer
+                        </button>
+                        <p style={{ textAlign: 'center', fontSize: 12, color: '#6B7280', margin: 0 }}>
+                          Upload your scans to submit
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </WritingTimer>
 
                 {/* Progress — reflects the questions marked "Done" */}
@@ -2060,8 +2096,8 @@ function MockTestAttemptInner() {
               <div style={{ height: 1, background: '#F1F3F5' }} />
 
               {/* Chips + timer */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 22px 0', flexShrink: 0 }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 22px 0', flexShrink: 0, flexWrap: 'nowrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', flex: '1 1 auto', minWidth: 0 }}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#EFF6FF', border: '1px solid #155DFC33', borderRadius: 999, padding: '5px 12px' }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#155DFC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#155DFC' }}>{currentQ.subject || 'General'}</span>
@@ -2092,7 +2128,7 @@ function MockTestAttemptInner() {
                     </svg>
                   </button>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/timer-icon.png" alt="Timer" style={{ width: 28, height: 28, objectFit: 'contain' }} />
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>

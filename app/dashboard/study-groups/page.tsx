@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { studyGroupService, dashboardService, studyPlannerService } from '@/lib/services';
+import { isDisabledDashboardRoute } from '@/lib/featureAvailability';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 
@@ -327,6 +328,12 @@ interface Message {
 
 export default function StudyGroupsPage() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  // This route is otherwise disabled (see DISABLED_DASHBOARD_ROUTES); the only
+  // way to be here is the Solo Focus deep-link the dashboard layout lets
+  // through. In that mode we expose Solo Focus ONLY — the Rooms and My Study
+  // Group tabs stay hidden so the not-yet-ready room features remain disabled.
+  const soloFocusOnly = isDisabledDashboardRoute(pathname);
   const { user } = useAuth();
   const { canAccess } = useEntitlements();
   const userInitials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
@@ -351,7 +358,7 @@ export default function StudyGroupsPage() {
   const [previewGroup, setPreviewGroup] = useState<Group | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'rooms' | 'solo' | 'my'>('rooms');
+  const [activeTab, setActiveTab] = useState<'rooms' | 'solo' | 'my'>(soloFocusOnly ? 'solo' : 'rooms');
   const [roomFilter, setRoomFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [messageInput, setMessageInput] = useState('');
@@ -1255,13 +1262,15 @@ export default function StudyGroupsPage() {
       <main className="mx-auto max-w-[1244px] px-4 pb-16">
         {/* Tabs */}
         <div className="flex flex-col gap-3 border-b border-[#E1E6EF] bg-white px-3 py-3 sm:px-5 md:h-14 md:flex-row md:items-center md:justify-between md:px-8 md:py-0">
-          <div className="grid w-full grid-cols-3 gap-1 md:flex md:w-auto">
-            <button
-              onClick={() => setActiveTab('rooms')}
-              className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'rooms' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
-            >
-              ️ Study Rooms
-            </button>
+          <div className={`grid w-full gap-1 md:flex md:w-auto ${soloFocusOnly ? 'grid-cols-1' : 'grid-cols-3'}`}>
+            {!soloFocusOnly && (
+              <button
+                onClick={() => setActiveTab('rooms')}
+                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'rooms' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
+              >
+                ️ Study Rooms
+              </button>
+            )}
             <button
               onClick={() => guard({ kind: 'solo' }, () => setActiveTab('solo'))}
               className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'solo' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
@@ -1272,12 +1281,14 @@ export default function StudyGroupsPage() {
               </svg>
               Solo Focus
             </button>
-            <button
-              onClick={() => guard({ kind: 'mygroup' }, () => setActiveTab('my'))}
-              className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'my' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
-            >
-               My Study Group {myGroups.length > 0 ? `(${myGroups.length})` : ''}
-            </button>
+            {!soloFocusOnly && (
+              <button
+                onClick={() => guard({ kind: 'mygroup' }, () => setActiveTab('my'))}
+                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'my' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
+              >
+                 My Study Group {myGroups.length > 0 ? `(${myGroups.length})` : ''}
+              </button>
+            )}
           </div>
           <div className="grid w-full grid-cols-2 gap-2 md:flex md:w-auto md:gap-3">
             <button
@@ -1290,7 +1301,7 @@ export default function StudyGroupsPage() {
               </svg>
               Solo Session
             </button>
-            {joinRequests.length > 0 && (
+            {!soloFocusOnly && joinRequests.length > 0 && (
               <button
                 onClick={() => setShowRequests(true)}
                 className="relative col-span-2 flex min-w-0 items-center justify-center gap-2 rounded-[8px] border border-[#E8B84B] bg-[#FFFBEF] px-3 py-2 text-[12px] font-semibold text-[#C99730] md:col-span-1 md:px-4 md:text-[13px]"
@@ -1303,12 +1314,14 @@ export default function StudyGroupsPage() {
                 </span>
               </button>
             )}
-            <button
-              onClick={() => guard({ kind: 'create' }, () => setShowCreate(true))}
-              className="min-w-0 rounded-[8px] bg-[#E8B84B] px-3 py-2 text-[12px] font-semibold text-[#090E1C] md:px-5 md:text-[13px]"
-            >
-              + Create Room
-            </button>
+            {!soloFocusOnly && (
+              <button
+                onClick={() => guard({ kind: 'create' }, () => setShowCreate(true))}
+                className="min-w-0 rounded-[8px] bg-[#E8B84B] px-3 py-2 text-[12px] font-semibold text-[#090E1C] md:px-5 md:text-[13px]"
+              >
+                + Create Room
+              </button>
+            )}
           </div>
         </div>
 
@@ -1690,16 +1703,19 @@ export default function StudyGroupsPage() {
                     </button>
                   </div>
 
-                  {/* Back to Study Rooms */}
-                  <div className="mt-5 mb-2 flex justify-center">
-                    <button
-                      onClick={() => setActiveTab('rooms')}
-                      className="text-[12px] font-semibold underline underline-offset-2"
-                      style={{ color: '#6B7A99', background: 'none', border: 'none', cursor: 'pointer' }}
-                    >
-                      ← Back to Study Rooms
-                    </button>
-                  </div>
+                  {/* Back to Study Rooms — hidden when the Live Study Room is
+                      disabled and only Solo Focus is exposed (nowhere to go back to). */}
+                  {!soloFocusOnly && (
+                    <div className="mt-5 mb-2 flex justify-center">
+                      <button
+                        onClick={() => setActiveTab('rooms')}
+                        className="text-[12px] font-semibold underline underline-offset-2"
+                        style={{ color: '#6B7A99', background: 'none', border: 'none', cursor: 'pointer' }}
+                      >
+                        ← Back to Study Rooms
+                      </button>
+                    </div>
+                  )}
                 </>
               );
             })()}

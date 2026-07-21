@@ -7,50 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { dashboardService, studyPlannerService } from '@/lib/services';
 import { getSubjectEmoji } from '@/lib/subjectEmojis';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
-
-// Complete study-planner subject list — mirrors SUBJECT_OPTIONS in the Study
-// Planner page and VALID_STUDY_PLANNER_SUBJECTS on the backend so custom tasks
-// offer every subject (not just the 6 core ones).
-const STUDY_TASK_SUBJECTS = [
-  'Polity',
-  'History',
-  'Geography',
-  'Economy',
-  'Environment & Ecology',
-  'Science & Technology',
-  'Current Affairs',
-  'Society',
-  'Governance',
-  'International Relations',
-  'Social Justice',
-  'Internal Security',
-  'Disaster Management',
-  'Ethics',
-  'GS1',
-  'GS2',
-  'GS3',
-  'GS4',
-  'Essay',
-  'Optional Paper 1',
-  'Optional Paper 2',
-];
-
-// Short display label for a subject value. Subject values sent to/from the
-// backend stay canonical (e.g. "Environment & Ecology"); this only shortens
-// what's shown in the UI, kept in sync with displaySubjectLabel in the Study Planner page.
-function displaySubjectLabel(subject: string): string {
-  return subject === 'Environment & Ecology' ? 'Environment' : subject;
-}
-
-// Display-only labels for the GS Paper subjects in the Add Task picker. The
-// stored subject values (GS1..GS4) are kept unchanged so task creation logic
-// is unaffected — only how they read in the dropdown changes.
-const GS_PAPER_LABELS: Record<string, string> = {
-  GS1: 'GS Paper I',
-  GS2: 'GS Paper II',
-  GS3: 'GS Paper III',
-  GS4: 'GS Paper IV',
-};
+import SubjectSelect, { displaySubjectLabel } from '@/components/SubjectSelect';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -263,18 +220,7 @@ const AddTaskModal = ({
           {/* Subject */}
           <div>
             <label className="block text-sm font-semibold text-[#0e1430] mb-2">Subject</label>
-            <select
-              value={subject}
-              onChange={e => setSubject(e.target.value)}
-              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#f5b400] focus:outline-none transition-colors text-sm bg-white"
-            >
-              <option value="">Select Subject</option>
-              {STUDY_TASK_SUBJECTS.map((s) => (
-                <option key={s} value={s}>
-                  {getSubjectEmoji(s)} {GS_PAPER_LABELS[s] ?? displaySubjectLabel(s)}
-                </option>
-              ))}
-            </select>
+            <SubjectSelect value={subject} onChange={setSubject} aria-label="Subject" />
             <input
               type="text"
               value={customSubject}

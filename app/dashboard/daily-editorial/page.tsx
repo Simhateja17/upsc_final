@@ -465,6 +465,14 @@ export default function DailyEditorialPage() {
     else setCalMonth(calMonth + 1);
   };
 
+  // Jump the calendar back to today's edition (the latest available date) and
+  // snap the visible month/year to match.
+  const goToToday = () => {
+    setSelectedDate(latestEditionDate);
+    setCalMonth(initialEdition.monthIndex);
+    setCalYear(initialEdition.year);
+  };
+
   // eslint-disable-next-line @next/next/no-img-element
   const newspaperIcon = <img src="/icon-newspaper.png" alt="newspaper" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />;
 
@@ -488,7 +496,7 @@ export default function DailyEditorialPage() {
           { value: String(glanceStats.hindu || 0),   label: 'The Hindu',      color: '#F87171' },
           { value: String(glanceStats.express || 0), label: 'Indian Express', color: '#FDC700' },
           { value: String(glanceStats.read || 0),    label: 'Read So Far',    color: '#4ADE80' },
-          { value: String(glanceStats.ai || 0),      label: 'AI Summaries',   color: '#FFFFFF' },
+          { value: String(glanceStats.ai || 0),      label: 'Jeet AI Summaries',   color: '#FFFFFF' },
         ]}
       />
       {/* ============================================================ */}
@@ -637,12 +645,15 @@ export default function DailyEditorialPage() {
               return (
               <div
                 key={card.id}
+                className={`ca-news-card${card.isRead ? ' ca-news-card--read' : ''}`}
                 style={{
-                  background: '#FFFFFF',
+                  background: card.isRead ? '#F4F5F7' : '#FFFFFF',
                   borderRadius: '14px',
                   padding: 'clamp(18px, 2vw, 28px)',
-                  boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1)',
-                  opacity: card.isRead ? 0.7 : 1,
+                  // Read cards are softened (slight blur + desaturation) and dimmed
+                  // so they read as "already done" while staying fully legible.
+                  opacity: card.isRead ? 0.82 : 1,
+                  filter: card.isRead ? 'saturate(0.9) blur(0.5px)' : 'none',
                 }}
               >
                 {/* Tags row + source */}
@@ -830,7 +841,7 @@ export default function DailyEditorialPage() {
         {/*  RIGHT COLUMN – Sidebar Widgets                             */}
         {/* ========================================================== */}
         <div
-          className="flex flex-col xl:sticky xl:self-start xl:top-6 xl:max-h-[calc(100dvh-120px)] xl:overflow-y-auto"
+          className="flex flex-col xl:sticky xl:self-start xl:top-6"
           style={{ gap: 'clamp(14px, 1.5vw, 20px)' }}
         >
           {/* -------------------------------------------------------- */}
@@ -853,7 +864,11 @@ export default function DailyEditorialPage() {
                   {monthNames[calMonth]} {calYear}
                 </span>
               </div>
-              <span
+              <button
+                type="button"
+                onClick={goToToday}
+                title="Jump to today"
+                aria-label="Jump to today's date"
                 className="font-arimo font-bold"
                 style={{
                   fontSize: '12px',
@@ -861,13 +876,15 @@ export default function DailyEditorialPage() {
                   color: '#162456',
                   padding: '4px 12px',
                   borderRadius: '26843500px',
+                  border: 'none',
+                  cursor: 'pointer',
                 }}
               >
                 {(() => {
                   const { monthIndex, day } = getDateKeyParts(selectedDate);
                   return `${day} ${monthNames[monthIndex]}`;
                 })()}
-              </span>
+              </button>
             </div>
 
             {/* Month navigation */}
@@ -1580,6 +1597,13 @@ export default function DailyEditorialPage() {
         .jeetSummary-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:100px;font-size:12px;font-weight:600;letter-spacing:.02em;}
         .jeetSummary-chip-purple{background:#EEF0FF;color:#4338CA;}
         .jeetSummary-chip-blue{background:#E8F0FF;color:#1d4ed8;}
+        /* Subtle, GPU-accelerated hover lift for news cards — no layout shift. */
+        .ca-news-card{box-shadow:0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1);transition:transform .18s ease, box-shadow .18s ease, filter .25s ease, opacity .25s ease, background-color .25s ease;will-change:transform;}
+        .ca-news-card:hover{transform:translateY(-3px);box-shadow:0px 12px 24px -6px rgba(16,24,40,0.12), 0px 4px 8px -4px rgba(16,24,40,0.08);}
+        /* Read cards sit flatter (inset ring instead of a lifted drop shadow) to look "settled". */
+        .ca-news-card--read{box-shadow:inset 0 0 0 1px #E3E6EB;}
+        .ca-news-card--read:hover{filter:saturate(1) blur(0)!important;opacity:1!important;box-shadow:0px 12px 24px -6px rgba(16,24,40,0.12), 0px 4px 8px -4px rgba(16,24,40,0.08);}
+        @media (prefers-reduced-motion: reduce){.ca-news-card{transition:none;}.ca-news-card:hover{transform:none;}}
       `}</style>
     </div>
   );
