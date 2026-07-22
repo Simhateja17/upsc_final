@@ -49,6 +49,8 @@ interface QuestionReviewViewProps {
   spacedRepSource?: string;
   spacedRepSourceType?: string;
   initialFilter?: ReviewFilter;
+  /** Difficulty is intentionally reserved for PYQ attempt surfaces. */
+  showDifficulty?: boolean;
 }
 
 const VALID_FILTERS: ReviewFilter[] = ['all', 'correct', 'wrong', 'skipped'];
@@ -82,6 +84,7 @@ export default function QuestionReviewView({
   spacedRepSource = 'Daily MCQ Review',
   spacedRepSourceType = 'daily-mcq',
   initialFilter = 'all',
+  showDifficulty = false,
 }: QuestionReviewViewProps) {
   const [filter, setFilter] = useState<ReviewFilter>(initialFilter);
   const [savingAllWeak, setSavingAllWeak] = useState(false);
@@ -398,7 +401,7 @@ export default function QuestionReviewView({
                             </span>
                           );
                         })()}
-                        {question.difficulty && (
+                        {showDifficulty && question.difficulty && (
                           <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 font-arimo text-xs text-[#6B7280]">
                             {question.difficulty}
                           </span>

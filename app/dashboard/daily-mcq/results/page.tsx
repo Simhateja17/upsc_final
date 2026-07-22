@@ -49,6 +49,26 @@ interface Particle {
   shape: 'circle' | 'rect' | 'star';
 }
 
+const PDF_PAGE = { width: 595.28, height: 841.89, left: 42, right: 553 };
+
+function pdfText(value: string | null | undefined): string {
+  return (value || '')
+    // Explanations are authored in Markdown; jsPDF receives plain text, so
+    // remove formatting syntax instead of leaking **bold** markers into reports.
+    .replace(/(\*{1,3}|_{1,3}|`)/g, '')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/[^\x20-\x7E\n]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function pdfOptionLabel(option: { id: string; text: string }, index: number): string {
+  const labels = ['A', 'B', 'C', 'D'];
+  return option.id || labels[index] || String(index + 1);
+}
+
 function getOptionKey(option: { id: string; text: string }, idx: number): string {
   const labels = ['A', 'B', 'C', 'D'];
   return option.id || labels[idx] || String(idx);
@@ -175,11 +195,12 @@ export default function DailyMcqResultsPage() {
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showNextSteps, setShowNextSteps] = useState(false);
   const [streak, setStreak] = useState<number | null>(null);
   // Real leaderboard rank (prelims/MCQ bucket) — replaces the old "Top X%" percentile bucket.
-  const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank: number; realRankedCount: number } | null>(null);
+  const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank: number; mcqRankedCount?: number; realRankedCount: number } | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -254,7 +275,9 @@ export default function DailyMcqResultsPage() {
   // Real leaderboard rank (prelims/MCQ bucket). Falls back to an unlock hint until
   // the aspirant has enough attempts, then to a neutral "updating" message.
   const rankUnlocked = !!myRank?.isRankUnlocked && !!myRank?.mcqRank;
-  const rankedTotal = myRank?.realRankedCount ?? 0;
+  // The API provides this from the exact list used to calculate `mcqRank`.
+  // Do not use `realRankedCount` here: it excludes fallback community rows.
+  const rankedTotal = myRank?.mcqRankedCount ?? myRank?.realRankedCount ?? 0;
   const rankLabel = rankUnlocked
     ? `#${(myRank!.mcqRank as number).toLocaleString('en-IN')}`
     : myRank && myRank.attemptsToUnlockRank > 0
@@ -280,32 +303,414 @@ export default function DailyMcqResultsPage() {
   const shareSlug = `${reportInitials}-${reportDate.getDate()}${monAbbrev}${String(reportDate.getFullYear()).slice(-2)}`;
   const shareUrl = `risewithjeet.com/share/daily-mcq/${shareSlug}`;
 
-  const performDownload = () => {
-    if (typeof window === 'undefined') return;
+  const performDownload = async () => {
+    if (typeof window === 'undefined' || isDownloading) return;
 
-    const lines = [
-      'Daily MCQs Challenge Report',
-      `Score: ${r.correctCount}/${r.questionCount}`,
-      `Accuracy: ${Math.round(r.accuracy)}%`,
-      `Time Taken: ${minutes}m ${seconds}s`,
-      `Speed: ${speed} min/Q`,
-      `Rank: ${rankLabel}`,
-      '',
-      'Question-wise Review',
-      ...reviewQuestions.map((q, idx) => {
-        const correct = q.options.find((option, optionIdx) => getOptionKey(option, optionIdx) === q.correctOption);
-        const selected = q.options.find((option, optionIdx) => getOptionKey(option, optionIdx) === q.selectedOption);
-        return `${idx + 1}. ${q.isCorrect ? 'Correct' : 'Needs revision'} - ${q.questionText}\n   Your answer: ${selected?.text || q.selectedOption || 'Skipped'}\n   Correct answer: ${correct?.text || q.correctOption}`;
-      }),
-    ];
+    setIsDownloading(true);
+    try {
+      // Loaded only after the user requests a report, so this fairly large library
+      // never affects the Daily MCQ result screen's initial load.
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const { width, height, left, right } = PDF_PAGE;
+      const contentWidth = right - left;
+      const scorePercent = r.questionCount > 0 ? Math.round((r.correctCount / r.questionCount) * 100) : 0;
+      let pageNumber = 1;
+      let y = 0;
+      let brandMark: string | null = null;
 
-    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = 'daily-mcq-report.txt';
-    anchor.click();
-    URL.revokeObjectURL(url);
+      try {
+        const response = await fetch('/risewithjeet_favicon.jpg');
+        const blob = await response.blob();
+        brandMark = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        // Branding is decorative; the text treatment remains usable if the image is unavailable.
+      }
+
+      const footer = () => {
+        doc.setDrawColor(226, 232, 240);
+        doc.line(left, height - 37, right, height - 37);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text(`MCQ Challenge Report | ${reportDateLabel}`, left, height - 22);
+        doc.text(`Page ${pageNumber}`, right, height - 22, { align: 'right' });
+      };
+
+      const header = (section = 'Performance Report') => {
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, width, 5, 'F');
+        doc.setFillColor(13, 148, 136);
+        doc.rect(width * 0.45, 0, width * 0.32, 5, 'F');
+        doc.setFillColor(217, 119, 6);
+        doc.rect(width * 0.77, 0, width * 0.23, 5, 'F');
+        if (brandMark) doc.addImage(brandMark, 'JPEG', left, 18, 28, 28);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(15);
+        doc.setTextColor(15, 23, 42);
+        doc.text('RiseWithJeet', left + (brandMark ? 36 : 0), 34);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text('DAILY MCQS CHALLENGE', left + (brandMark ? 36 : 0), 47);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(15, 23, 42);
+        doc.text(section.toUpperCase(), right, 34, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 116, 139);
+        doc.text(reportDateLabel, right, 47, { align: 'right' });
+        doc.setDrawColor(15, 23, 42);
+        doc.setLineWidth(1.3);
+        doc.line(left, 59, right, 59);
+        y = 82;
+      };
+
+      const addPage = (section?: string) => {
+        footer();
+        doc.addPage();
+        pageNumber += 1;
+        header(section);
+      };
+
+      const ensure = (space: number, section?: string) => {
+        if (y + space > height - 55) addPage(section);
+      };
+
+      const wrappedText = (text: string, x: number, maxWidth: number, lineHeight = 12) => {
+        const lines = doc.splitTextToSize(pdfText(text), maxWidth) as string[];
+        for (const line of lines) {
+          ensure(lineHeight + 2, 'Question-wise Review');
+          doc.text(line, x, y);
+          y += lineHeight;
+        }
+      };
+
+      const roundedCard = (x: number, top: number, cardWidth: number, cardHeight: number, fill: [number, number, number]) => {
+        doc.setFillColor(...fill);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(x, top, cardWidth, cardHeight, 8, 8, 'FD');
+      };
+
+      const softCard = (
+        x: number,
+        top: number,
+        cardWidth: number,
+        cardHeight: number,
+        fill: [number, number, number],
+        border?: [number, number, number],
+      ) => {
+        doc.setFillColor(...fill);
+        if (border) {
+          doc.setDrawColor(...border);
+          doc.setLineWidth(0.75);
+          doc.roundedRect(x, top, cardWidth, cardHeight, 8, 8, 'FD');
+        } else {
+          doc.roundedRect(x, top, cardWidth, cardHeight, 8, 8, 'F');
+        }
+      };
+
+      header();
+      const drawProgressRing = (cx: number, cy: number, radius: number, progress: number) => {
+        const ctx = doc.context2d;
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 14;
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2, false);
+        ctx.stroke();
+        ctx.strokeStyle = '#3F9B91';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, Math.min(1, progress)), false);
+        ctx.stroke();
+      };
+
+      // Student banner and challenge metadata mirror the stronger hierarchy in the reference report.
+      doc.setFillColor(19, 30, 55);
+      doc.roundedRect(left, y, contentWidth, 68, 10, 10, 'F');
+      doc.setFillColor(251, 191, 36);
+      doc.circle(left + 33, y + 34, 19, 'F');
+      doc.setFillColor(38, 49, 71);
+      doc.circle(left + 33, y + 34, 15, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(251, 191, 36);
+      doc.text(reportInitials, left + 33, y + 38, { align: 'center' });
+      doc.setFontSize(15);
+      doc.setTextColor(255, 255, 255);
+      doc.text(reportName, left + 61, y + 29);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(203, 213, 225);
+      doc.text(`${rankLabel} | Daily MCQ attempt`, left + 61, y + 46);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(251, 191, 36);
+      doc.text(`${r.correctCount}/${r.questionCount}`, right - 65, y + 31, { align: 'right' });
+      doc.text(`${scorePercent}%`, right - 18, y + 31, { align: 'right' });
+      doc.setFontSize(8);
+      doc.setTextColor(203, 213, 225);
+      doc.text('SCORE', right - 65, y + 47, { align: 'right' });
+      doc.text('ACCURACY', right - 18, y + 47, { align: 'right' });
+      y += 87;
+
+      const metadata = [`${r.questionCount} Questions`, 'Multiple Subjects', '10 min Time Limit', `${minutes}m ${seconds}s Time Taken`];
+      const metaWidth = 97;
+      metadata.forEach((label, index) => {
+        const x = left + index * metaWidth;
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(x, y, metaWidth + 1, 23, index === 0 || index === metadata.length - 1 ? 6 : 0, index === 0 || index === metadata.length - 1 ? 6 : 0, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.8);
+        doc.setTextColor(51, 65, 85);
+        doc.text(label, x + metaWidth / 2, y + 15, { align: 'center' });
+      });
+      y += 47;
+
+      const scoreX = left + 96;
+      drawProgressRing(scoreX, y + 74, 54, scorePercent / 100);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`${r.correctCount}/${r.questionCount}`, scoreX, y + 68, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text('QUESTIONS', scoreX, y + 84, { align: 'center' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(63, 155, 145);
+      doc.text(`SCORE - ${scorePercent}%`, scoreX, y + 105, { align: 'center' });
+
+      const metrics = [
+        { label: 'ACCURACY', value: `${Math.round(r.accuracy)}%`, sub: 'this attempt', fill: [240, 253, 244] as [number, number, number], valueColor: [76, 175, 80] as [number, number, number] },
+        { label: 'TIME TAKEN', value: `${minutes}m ${seconds}s`, sub: 'of 10 min', fill: [239, 246, 255] as [number, number, number], valueColor: [59, 100, 222] as [number, number, number] },
+        { label: 'SPEED', value: `${speed} min/Q`, sub: 'Avg per question', fill: [255, 248, 217] as [number, number, number], valueColor: [204, 124, 35] as [number, number, number] },
+        { label: 'RANK', value: rankLabel, sub: rankSubLabel, fill: [247, 243, 255] as [number, number, number], valueColor: [124, 58, 237] as [number, number, number] },
+      ];
+      const cardWidth = 166;
+      metrics.forEach((metric, index) => {
+        const x = left + 212 + (index % 2) * 176;
+        const top = y + Math.floor(index / 2) * 78;
+        // The reference uses a clean colour block here, without a heavy grey frame.
+        softCard(x, top, cardWidth, 68, metric.fill);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text(metric.label, x + 13, top + 19);
+        doc.setFontSize(16);
+        doc.setTextColor(...metric.valueColor);
+        doc.text(metric.value, x + 13, top + 43);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text(pdfText(metric.sub), x + 13, top + 57);
+      });
+      y += 174;
+
+      const summary = [
+        { label: `+  ${r.correctCount} Correct`, fill: [240, 253, 244] as [number, number, number], text: [76, 175, 80] as [number, number, number] },
+        { label: `x  ${r.wrongCount} Wrong`, fill: [254, 242, 242] as [number, number, number], text: [220, 62, 52] as [number, number, number] },
+        { label: `-  ${r.skippedCount} Skipped`, fill: [248, 250, 252] as [number, number, number], text: [100, 116, 139] as [number, number, number] },
+      ];
+      summary.forEach((item, index) => {
+        const x = left + index * 128;
+        doc.setFillColor(...item.fill);
+        doc.roundedRect(x, y, 116, 26, 13, 13, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(...item.text);
+        doc.text(item.label, x + 58, y + 17, { align: 'center' });
+      });
+      y += 48;
+
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.75);
+      doc.setLineCap('butt');
+      doc.line(left, y, right, y);
+      y += 24;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(49, 98, 222);
+      doc.text('PERFORMANCE INSIGHTS', left, y);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text('Key takeaways from your attempt', left, y + 16);
+      y += 34;
+
+      const strongText = r.strongTopics.length ? `You performed well in ${r.strongTopics.join(' and ')}. Keep revising these areas to make them dependable strengths.` : 'Review the explanations for the answers you got right and turn them into reliable strengths.';
+      const weakText = r.weakTopics.length ? `Questions on ${r.weakTopics.join(', ')} need attention. Revisit the concepts and their current-affairs linkages.` : 'Review the explanations for the questions you missed before your next Daily MCQ.';
+      const insightCards = [
+        { title: 'STRONG AREAS', body: strongText, fill: [240, 253, 244] as [number, number, number], color: [76, 175, 80] as [number, number, number] },
+        { title: 'NEEDS IMPROVEMENT', body: weakText, fill: [254, 246, 246] as [number, number, number], color: [220, 62, 52] as [number, number, number] },
+      ];
+      insightCards.forEach((card, index) => {
+        const x = left + index * 258;
+        softCard(
+          x,
+          y,
+          246,
+          79,
+          card.fill,
+          index === 0 ? [207, 237, 216] : [248, 215, 215],
+        );
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(...card.color);
+        doc.text(card.title, x + 14, y + 18);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.6);
+        doc.setTextColor(51, 65, 85);
+        doc.text(doc.splitTextToSize(pdfText(card.body), 214), x + 14, y + 39);
+      });
+      y += 94;
+
+      softCard(left, y, contentWidth, 58, [239, 246, 255], [207, 224, 248]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(49, 98, 222);
+      doc.text('RECOMMENDATION', left + 14, y + 18);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(51, 65, 85);
+      const recommendation = r.wrongCount > 0
+        ? 'Read every explanation for the questions you missed. Revisit topics where you guessed or felt unsure; spaced revision will help retention.'
+        : 'Excellent accuracy. Re-read the explanations once and return tomorrow to build a consistent practice streak.';
+      doc.text(doc.splitTextToSize(recommendation, contentWidth - 28), left + 14, y + 37);
+
+      addPage('Question-wise Review');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(15, 23, 42);
+      doc.text('Question-wise Review', left, y);
+      y += 18;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text('Use this section to understand every answer and revise the concepts behind it.', left, y);
+      y += 22;
+
+      reviewQuestions.forEach((question, questionIndex) => {
+        const correctOption = question.options.find((option, optionIndex) => getOptionKey(option, optionIndex) === question.correctOption);
+        const selectedOption = question.options.find((option, optionIndex) => getOptionKey(option, optionIndex) === question.selectedOption);
+        const questionLines = doc.splitTextToSize(pdfText(question.questionText), contentWidth - 34) as string[];
+        const estimatedHeight = 72 + questionLines.length * 12 + question.options.length * 25;
+        ensure(Math.min(estimatedHeight, 260), 'Question-wise Review');
+
+        doc.setFillColor(250, 250, 250);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(left, y, contentWidth, 36, 8, 8, 'FD');
+        doc.setFillColor(15, 23, 42);
+        doc.circle(left + 18, y + 18, 11, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(255, 255, 255);
+        doc.text(String(question.questionNum || questionIndex + 1), left + 18, y + 21, { align: 'center' });
+        doc.setTextColor(15, 23, 42);
+        doc.setFontSize(10);
+        doc.text(`Question ${question.questionNum || questionIndex + 1}`, left + 38, y + 21);
+        const status = question.selectedOption ? (question.isCorrect ? 'CORRECT' : 'WRONG') : 'SKIPPED';
+        const statusColor: [number, number, number] = status === 'CORRECT' ? [22, 163, 74] : status === 'WRONG' ? [220, 38, 38] : [100, 116, 139];
+        doc.setTextColor(...statusColor);
+        doc.setFontSize(8);
+        doc.text(status, right - 14, y + 21, { align: 'right' });
+        y += 52;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(15, 23, 42);
+        wrappedText(question.questionText, left, contentWidth, 13);
+        y += 7;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(30, 64, 175);
+        doc.text(`${pdfText(question.category || 'General Studies')}  |  ${pdfText(question.difficulty || 'Practice')}`, left, y);
+        y += 15;
+
+        question.options.forEach((option, optionIndex) => {
+          const optionLabel = pdfOptionLabel(option, optionIndex);
+          const isCorrectOption = getOptionKey(option, optionIndex) === question.correctOption;
+          const isSelectedOption = getOptionKey(option, optionIndex) === question.selectedOption;
+          const optionLines = doc.splitTextToSize(pdfText(option.text), contentWidth - 66) as string[];
+          const optionHeight = Math.max(24, optionLines.length * 10 + 14);
+          ensure(optionHeight + 5, 'Question-wise Review');
+          if (isCorrectOption) doc.setFillColor(240, 253, 244);
+          else if (isSelectedOption) doc.setFillColor(254, 242, 242);
+          else doc.setFillColor(255, 255, 255);
+          doc.setDrawColor(...(isCorrectOption ? [22, 163, 74] as [number, number, number] : isSelectedOption ? [220, 38, 38] as [number, number, number] : [226, 232, 240] as [number, number, number]));
+          doc.roundedRect(left, y, contentWidth, optionHeight, 6, 6, 'FD');
+          doc.setFillColor(...(isCorrectOption ? [22, 163, 74] as [number, number, number] : isSelectedOption ? [220, 38, 38] as [number, number, number] : [241, 245, 249] as [number, number, number]));
+          doc.circle(left + 16, y + optionHeight / 2, 8, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(...(isCorrectOption || isSelectedOption ? [255, 255, 255] as [number, number, number] : [15, 23, 42] as [number, number, number]));
+          doc.text(optionLabel, left + 16, y + optionHeight / 2 + 3, { align: 'center' });
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(30, 41, 59);
+          doc.text(optionLines, left + 32, y + 14);
+          y += optionHeight + 5;
+        });
+
+        const picked = selectedOption ? `Your answer: ${pdfOptionLabel(selectedOption, question.options.indexOf(selectedOption))}` : 'Your answer: Skipped';
+        const correct = correctOption ? `Correct answer: ${pdfOptionLabel(correctOption, question.options.indexOf(correctOption))}` : `Correct answer: ${question.correctOption}`;
+        ensure(27, 'Question-wise Review');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(question.isCorrect ? 22 : 220, question.isCorrect ? 163 : 38, question.isCorrect ? 74 : 38);
+        doc.text(`${picked}   |   ${correct}`, left + 4, y + 10);
+        y += 20;
+
+        if (question.explanation) {
+          const explanationLines = doc.splitTextToSize(pdfText(question.explanation), contentWidth - 28) as string[];
+          let explanationIndex = 0;
+
+          // Keep both the label and every explanation line inside the same warm
+          // yellow panel, including when an explanation flows onto another page.
+          while (explanationIndex < explanationLines.length) {
+            ensure(58, 'Question-wise Review');
+            const maxLines = Math.max(1, Math.floor((height - 55 - y - 32) / 12));
+            const pageLines = explanationLines.slice(explanationIndex, explanationIndex + maxLines);
+            const panelHeight = 32 + pageLines.length * 12 + 12;
+            doc.setFillColor(255, 251, 235);
+            doc.setDrawColor(253, 230, 138);
+            doc.setLineWidth(0.75);
+            doc.roundedRect(left, y, contentWidth, panelHeight, 7, 7, 'FD');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(180, 83, 9);
+            doc.text(explanationIndex === 0 ? 'EXPLANATION' : 'EXPLANATION (CONTINUED)', left + 12, y + 16);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(51, 65, 85);
+            doc.text(pageLines, left + 12, y + 34);
+            y += panelHeight;
+            explanationIndex += pageLines.length;
+
+            if (explanationIndex < explanationLines.length) addPage('Question-wise Review');
+          }
+        }
+        y += 18;
+      });
+
+      footer();
+      doc.save(`daily-mcq-report-${reportDate.toISOString().slice(0, 10)}.pdf`);
+      setShowDownloadModal(false);
+      showToast('Your PDF report has been downloaded.');
+    } catch (error) {
+      console.error('Unable to generate Daily MCQ PDF report', error);
+      showToast('Unable to generate the PDF report. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -524,7 +929,7 @@ export default function DailyMcqResultsPage() {
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                   <div style={{ width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 20, flexShrink: 0, background: 'linear-gradient(135deg,#2E3C5C,#1A2848)', boxShadow: '0 8px 18px -10px rgba(46,60,92,.55)' }}>📄</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 10.5, letterSpacing: '0.18em', fontWeight: 700, color: '#2E3C5C' }}>PDF · 4 PAGES · A4</div>
+                    <div style={{ fontSize: 10.5, letterSpacing: '0.18em', fontWeight: 700, color: '#2E3C5C' }}>PDF · A4 · QUESTION-WISE REVIEW</div>
                     <div className="font-jakarta font-extrabold" style={{ fontSize: 15.5, marginTop: 2, lineHeight: 1.25, color: '#17223E' }}>Your detailed performance dossier — ready to download</div>
                     <p style={{ fontSize: 12.5, color: '#6B7689', marginTop: 4, lineHeight: 1.45 }}>A printable companion you can revise on the go and share with mentors.</p>
                   </div>
@@ -556,14 +961,15 @@ export default function DailyMcqResultsPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 20 }}>
                 <button
                   type="button"
-                  onClick={() => { performDownload(); setShowDownloadModal(false); }}
+                  onClick={performDownload}
+                  disabled={isDownloading}
                   className="mcq-act mcq-act-download"
-                  style={{ justifyContent: 'center' }}
+                  style={{ justifyContent: 'center', opacity: isDownloading ? 0.7 : 1, cursor: isDownloading ? 'wait' : 'pointer' }}
                 >
                   <span className="ic">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M6 11l6 6 6-6M5 21h14" /></svg>
                   </span>
-                  Download Report
+                  {isDownloading ? 'Generating PDF...' : 'Download PDF'}
                 </button>
                 <button
                   type="button"
