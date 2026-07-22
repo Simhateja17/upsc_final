@@ -53,6 +53,9 @@ const PDF_PAGE = { width: 595.28, height: 841.89, left: 42, right: 553 };
 
 function pdfText(value: string | null | undefined): string {
   return (value || '')
+    // Explanations are authored in Markdown; jsPDF receives plain text, so
+    // remove formatting syntax instead of leaking **bold** markers into reports.
+    .replace(/(\*{1,3}|_{1,3}|`)/g, '')
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, '-')
@@ -197,7 +200,7 @@ export default function DailyMcqResultsPage() {
   const [showNextSteps, setShowNextSteps] = useState(false);
   const [streak, setStreak] = useState<number | null>(null);
   // Real leaderboard rank (prelims/MCQ bucket) — replaces the old "Top X%" percentile bucket.
-  const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank: number; realRankedCount: number } | null>(null);
+  const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank: number; mcqRankedCount?: number; realRankedCount: number } | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -272,7 +275,9 @@ export default function DailyMcqResultsPage() {
   // Real leaderboard rank (prelims/MCQ bucket). Falls back to an unlock hint until
   // the aspirant has enough attempts, then to a neutral "updating" message.
   const rankUnlocked = !!myRank?.isRankUnlocked && !!myRank?.mcqRank;
-  const rankedTotal = myRank?.realRankedCount ?? 0;
+  // The API provides this from the exact list used to calculate `mcqRank`.
+  // Do not use `realRankedCount` here: it excludes fallback community rows.
+  const rankedTotal = myRank?.mcqRankedCount ?? myRank?.realRankedCount ?? 0;
   const rankLabel = rankUnlocked
     ? `#${(myRank!.mcqRank as number).toLocaleString('en-IN')}`
     : myRank && myRank.attemptsToUnlockRank > 0
@@ -312,6 +317,20 @@ export default function DailyMcqResultsPage() {
       const scorePercent = r.questionCount > 0 ? Math.round((r.correctCount / r.questionCount) * 100) : 0;
       let pageNumber = 1;
       let y = 0;
+      let brandMark: string | null = null;
+
+      try {
+        const response = await fetch('/risewithjeet_favicon.jpg');
+        const blob = await response.blob();
+        brandMark = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        // Branding is decorative; the text treatment remains usable if the image is unavailable.
+      }
 
       const footer = () => {
         doc.setDrawColor(226, 232, 240);
@@ -330,14 +349,15 @@ export default function DailyMcqResultsPage() {
         doc.rect(width * 0.45, 0, width * 0.32, 5, 'F');
         doc.setFillColor(217, 119, 6);
         doc.rect(width * 0.77, 0, width * 0.23, 5, 'F');
+        if (brandMark) doc.addImage(brandMark, 'JPEG', left, 18, 28, 28);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(15);
         doc.setTextColor(15, 23, 42);
-        doc.text('RiseWithJeet', left, 34);
+        doc.text('RiseWithJeet', left + (brandMark ? 36 : 0), 34);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         doc.setTextColor(100, 116, 139);
-        doc.text('DAILY MCQS CHALLENGE', left, 47);
+        doc.text('DAILY MCQS CHALLENGE', left + (brandMark ? 36 : 0), 47);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.setTextColor(15, 23, 42);
@@ -377,133 +397,193 @@ export default function DailyMcqResultsPage() {
         doc.roundedRect(x, top, cardWidth, cardHeight, 8, 8, 'FD');
       };
 
-      header();
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(23);
-      doc.setTextColor(15, 23, 42);
-      doc.text('Daily MCQ Challenge Report', left, y);
-      y += 18;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(100, 116, 139);
-      doc.text('Your complete performance analysis and question-wise revision guide.', left, y);
-      y += 20;
+      const softCard = (
+        x: number,
+        top: number,
+        cardWidth: number,
+        cardHeight: number,
+        fill: [number, number, number],
+        border?: [number, number, number],
+      ) => {
+        doc.setFillColor(...fill);
+        if (border) {
+          doc.setDrawColor(...border);
+          doc.setLineWidth(0.75);
+          doc.roundedRect(x, top, cardWidth, cardHeight, 8, 8, 'FD');
+        } else {
+          doc.roundedRect(x, top, cardWidth, cardHeight, 8, 8, 'F');
+        }
+      };
 
-      doc.setFillColor(15, 23, 42);
-      doc.roundedRect(left, y, contentWidth, 63, 9, 9, 'F');
+      header();
+      const drawProgressRing = (cx: number, cy: number, radius: number, progress: number) => {
+        const ctx = doc.context2d;
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 14;
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2, false);
+        ctx.stroke();
+        ctx.strokeStyle = '#3F9B91';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, Math.min(1, progress)), false);
+        ctx.stroke();
+      };
+
+      // Student banner and challenge metadata mirror the stronger hierarchy in the reference report.
+      doc.setFillColor(19, 30, 55);
+      doc.roundedRect(left, y, contentWidth, 68, 10, 10, 'F');
+      doc.setFillColor(251, 191, 36);
+      doc.circle(left + 33, y + 34, 19, 'F');
+      doc.setFillColor(38, 49, 71);
+      doc.circle(left + 33, y + 34, 15, 'F');
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
+      doc.setFontSize(12);
+      doc.setTextColor(251, 191, 36);
+      doc.text(reportInitials, left + 33, y + 38, { align: 'center' });
+      doc.setFontSize(15);
       doc.setTextColor(255, 255, 255);
-      doc.text(reportName, left + 18, y + 27);
+      doc.text(reportName, left + 61, y + 29);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(203, 213, 225);
-      doc.text(`Report ID: ${reportId}`, left + 18, y + 43);
+      doc.text(`${rankLabel} | Daily MCQ attempt`, left + 61, y + 46);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
       doc.setTextColor(251, 191, 36);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(16);
-      doc.text(`${r.correctCount}/${r.questionCount}`, right - 18, y + 28, { align: 'right' });
+      doc.text(`${r.correctCount}/${r.questionCount}`, right - 65, y + 31, { align: 'right' });
+      doc.text(`${scorePercent}%`, right - 18, y + 31, { align: 'right' });
       doc.setFontSize(8);
-      doc.text('QUESTIONS CORRECT', right - 18, y + 43, { align: 'right' });
-      y += 84;
+      doc.setTextColor(203, 213, 225);
+      doc.text('SCORE', right - 65, y + 47, { align: 'right' });
+      doc.text('ACCURACY', right - 18, y + 47, { align: 'right' });
+      y += 87;
 
-      const scoreX = left + 45;
-      doc.setDrawColor(16, 185, 129);
-      doc.setLineWidth(11);
-      doc.circle(scoreX, y + 53, 35, 'S');
-      doc.setDrawColor(226, 232, 240);
-      doc.setLineWidth(6);
-      doc.circle(scoreX, y + 53, 35, 'S');
+      const metadata = [`${r.questionCount} Questions`, 'Multiple Subjects', '10 min Time Limit', `${minutes}m ${seconds}s Time Taken`];
+      const metaWidth = 97;
+      metadata.forEach((label, index) => {
+        const x = left + index * metaWidth;
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(x, y, metaWidth + 1, 23, index === 0 || index === metadata.length - 1 ? 6 : 0, index === 0 || index === metadata.length - 1 ? 6 : 0, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.8);
+        doc.setTextColor(51, 65, 85);
+        doc.text(label, x + metaWidth / 2, y + 15, { align: 'center' });
+      });
+      y += 47;
+
+      const scoreX = left + 96;
+      drawProgressRing(scoreX, y + 74, 54, scorePercent / 100);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(20);
+      doc.setFontSize(22);
       doc.setTextColor(15, 23, 42);
-      doc.text(`${r.correctCount}`, scoreX, y + 52, { align: 'center' });
+      doc.text(`${r.correctCount}/${r.questionCount}`, scoreX, y + 68, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(100, 116, 139);
-      doc.text(`of ${r.questionCount}`, scoreX, y + 66, { align: 'center' });
+      doc.text('QUESTIONS', scoreX, y + 84, { align: 'center' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(63, 155, 145);
+      doc.text(`SCORE - ${scorePercent}%`, scoreX, y + 105, { align: 'center' });
 
       const metrics = [
-        { label: 'Accuracy', value: `${Math.round(r.accuracy)}%`, sub: 'this attempt', fill: [240, 253, 244] as [number, number, number], valueColor: [22, 163, 74] as [number, number, number] },
-        { label: 'Time taken', value: `${minutes}m ${seconds}s`, sub: 'of 10 min', fill: [239, 246, 255] as [number, number, number], valueColor: [37, 99, 235] as [number, number, number] },
-        { label: 'Speed', value: `${speed} min/Q`, sub: 'average per question', fill: [255, 247, 237] as [number, number, number], valueColor: [217, 119, 6] as [number, number, number] },
-        { label: 'Rank', value: rankLabel, sub: rankSubLabel, fill: [245, 243, 255] as [number, number, number], valueColor: [124, 58, 237] as [number, number, number] },
+        { label: 'ACCURACY', value: `${Math.round(r.accuracy)}%`, sub: 'this attempt', fill: [240, 253, 244] as [number, number, number], valueColor: [76, 175, 80] as [number, number, number] },
+        { label: 'TIME TAKEN', value: `${minutes}m ${seconds}s`, sub: 'of 10 min', fill: [239, 246, 255] as [number, number, number], valueColor: [59, 100, 222] as [number, number, number] },
+        { label: 'SPEED', value: `${speed} min/Q`, sub: 'Avg per question', fill: [255, 248, 217] as [number, number, number], valueColor: [204, 124, 35] as [number, number, number] },
+        { label: 'RANK', value: rankLabel, sub: rankSubLabel, fill: [247, 243, 255] as [number, number, number], valueColor: [124, 58, 237] as [number, number, number] },
       ];
-      const cardWidth = 100;
+      const cardWidth = 166;
       metrics.forEach((metric, index) => {
-        const x = left + 104 + (index % 2) * 112;
-        const top = y + Math.floor(index / 2) * 58;
-        roundedCard(x, top, cardWidth, 50, metric.fill);
+        const x = left + 212 + (index % 2) * 176;
+        const top = y + Math.floor(index / 2) * 78;
+        // The reference uses a clean colour block here, without a heavy grey frame.
+        softCard(x, top, cardWidth, 68, metric.fill);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
+        doc.setFontSize(8);
         doc.setTextColor(100, 116, 139);
-        doc.text(metric.label.toUpperCase(), x + 10, top + 16);
-        doc.setFontSize(13);
+        doc.text(metric.label, x + 13, top + 19);
+        doc.setFontSize(16);
         doc.setTextColor(...metric.valueColor);
-        doc.text(metric.value, x + 10, top + 31);
+        doc.text(metric.value, x + 13, top + 43);
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
+        doc.setFontSize(8);
         doc.setTextColor(100, 116, 139);
-        doc.text(pdfText(metric.sub), x + 10, top + 43);
+        doc.text(pdfText(metric.sub), x + 13, top + 57);
       });
-      y += 126;
+      y += 174;
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(15, 23, 42);
-      doc.text('Attempt Summary', left, y);
-      y += 12;
       const summary = [
-        { label: `${r.correctCount} Correct`, fill: [240, 253, 244] as [number, number, number], text: [22, 163, 74] as [number, number, number] },
-        { label: `${r.wrongCount} Wrong`, fill: [254, 242, 242] as [number, number, number], text: [220, 38, 38] as [number, number, number] },
-        { label: `${r.skippedCount} Skipped`, fill: [248, 250, 252] as [number, number, number], text: [100, 116, 139] as [number, number, number] },
+        { label: `+  ${r.correctCount} Correct`, fill: [240, 253, 244] as [number, number, number], text: [76, 175, 80] as [number, number, number] },
+        { label: `x  ${r.wrongCount} Wrong`, fill: [254, 242, 242] as [number, number, number], text: [220, 62, 52] as [number, number, number] },
+        { label: `-  ${r.skippedCount} Skipped`, fill: [248, 250, 252] as [number, number, number], text: [100, 116, 139] as [number, number, number] },
       ];
       summary.forEach((item, index) => {
-        const x = left + index * 120;
+        const x = left + index * 128;
         doc.setFillColor(...item.fill);
-        doc.roundedRect(x, y, 108, 24, 12, 12, 'F');
+        doc.roundedRect(x, y, 116, 26, 13, 13, 'F');
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.setTextColor(...item.text);
-        doc.text(item.label, x + 54, y + 16, { align: 'center' });
+        doc.text(item.label, x + 58, y + 17, { align: 'center' });
       });
       y += 48;
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(15, 23, 42);
-      doc.text('Topic Insights', left, y);
-      y += 14;
-      const topicColumns = [
-        { title: 'Strengths to maintain', topics: r.strongTopics, fill: [240, 253, 244] as [number, number, number], color: [22, 163, 74] as [number, number, number], empty: 'Keep practising consistently to build strengths.' },
-        { title: 'Focus areas', topics: r.weakTopics, fill: [255, 247, 237] as [number, number, number], color: [194, 65, 12] as [number, number, number], empty: 'Review the explanations for questions you missed.' },
-      ];
-      topicColumns.forEach((column, index) => {
-        const x = left + index * 258;
-        roundedCard(x, y, 246, 69, column.fill);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.setTextColor(...column.color);
-        doc.text(column.title.toUpperCase(), x + 13, y + 17);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.setTextColor(51, 65, 85);
-        const body = column.topics.length ? column.topics.join(' | ') : column.empty;
-        doc.text(doc.splitTextToSize(pdfText(body), 218), x + 13, y + 35);
-      });
-      y += 93;
-
-      doc.setFillColor(15, 23, 42);
-      doc.roundedRect(left, y, contentWidth, 76, 10, 10, 'F');
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.75);
+      doc.setLineCap('butt');
+      doc.line(left, y, right, y);
+      y += 24;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(13);
-      doc.setTextColor(255, 255, 255);
-      doc.text('Make the next attempt count.', left + 18, y + 23);
+      doc.setTextColor(49, 98, 222);
+      doc.text('PERFORMANCE INSIGHTS', left, y);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.setTextColor(203, 213, 225);
-      doc.text('1. Review every explanation, including correct guesses.', left + 18, y + 42);
-      doc.text('2. Revisit your focus areas before tomorrow\'s challenge.', left + 18, y + 56);
-      doc.text(`Good effort, ${reportName.split(' ')[0]}. Consistency makes you sharper.`, left + 18, y + 70);
+      doc.setTextColor(100, 116, 139);
+      doc.text('Key takeaways from your attempt', left, y + 16);
+      y += 34;
+
+      const strongText = r.strongTopics.length ? `You performed well in ${r.strongTopics.join(' and ')}. Keep revising these areas to make them dependable strengths.` : 'Review the explanations for the answers you got right and turn them into reliable strengths.';
+      const weakText = r.weakTopics.length ? `Questions on ${r.weakTopics.join(', ')} need attention. Revisit the concepts and their current-affairs linkages.` : 'Review the explanations for the questions you missed before your next Daily MCQ.';
+      const insightCards = [
+        { title: 'STRONG AREAS', body: strongText, fill: [240, 253, 244] as [number, number, number], color: [76, 175, 80] as [number, number, number] },
+        { title: 'NEEDS IMPROVEMENT', body: weakText, fill: [254, 246, 246] as [number, number, number], color: [220, 62, 52] as [number, number, number] },
+      ];
+      insightCards.forEach((card, index) => {
+        const x = left + index * 258;
+        softCard(
+          x,
+          y,
+          246,
+          79,
+          card.fill,
+          index === 0 ? [207, 237, 216] : [248, 215, 215],
+        );
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(...card.color);
+        doc.text(card.title, x + 14, y + 18);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.6);
+        doc.setTextColor(51, 65, 85);
+        doc.text(doc.splitTextToSize(pdfText(card.body), 214), x + 14, y + 39);
+      });
+      y += 94;
+
+      softCard(left, y, contentWidth, 58, [239, 246, 255], [207, 224, 248]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(49, 98, 222);
+      doc.text('RECOMMENDATION', left + 14, y + 18);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(51, 65, 85);
+      const recommendation = r.wrongCount > 0
+        ? 'Read every explanation for the questions you missed. Revisit topics where you guessed or felt unsure; spaced revision will help retention.'
+        : 'Excellent accuracy. Re-read the explanations once and return tomorrow to build a consistent practice streak.';
+      doc.text(doc.splitTextToSize(recommendation, contentWidth - 28), left + 14, y + 37);
 
       addPage('Question-wise Review');
       doc.setFont('helvetica', 'bold');
@@ -590,18 +670,33 @@ export default function DailyMcqResultsPage() {
         y += 20;
 
         if (question.explanation) {
-          ensure(35, 'Question-wise Review');
-          doc.setFillColor(255, 251, 235);
-          doc.roundedRect(left, y, contentWidth, 22, 6, 6, 'F');
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(8);
-          doc.setTextColor(180, 83, 9);
-          doc.text('EXPLANATION', left + 11, y + 14);
-          y += 32;
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(9);
-          doc.setTextColor(51, 65, 85);
-          wrappedText(question.explanation, left + 4, contentWidth - 8, 12);
+          const explanationLines = doc.splitTextToSize(pdfText(question.explanation), contentWidth - 28) as string[];
+          let explanationIndex = 0;
+
+          // Keep both the label and every explanation line inside the same warm
+          // yellow panel, including when an explanation flows onto another page.
+          while (explanationIndex < explanationLines.length) {
+            ensure(58, 'Question-wise Review');
+            const maxLines = Math.max(1, Math.floor((height - 55 - y - 32) / 12));
+            const pageLines = explanationLines.slice(explanationIndex, explanationIndex + maxLines);
+            const panelHeight = 32 + pageLines.length * 12 + 12;
+            doc.setFillColor(255, 251, 235);
+            doc.setDrawColor(253, 230, 138);
+            doc.setLineWidth(0.75);
+            doc.roundedRect(left, y, contentWidth, panelHeight, 7, 7, 'FD');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(180, 83, 9);
+            doc.text(explanationIndex === 0 ? 'EXPLANATION' : 'EXPLANATION (CONTINUED)', left + 12, y + 16);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(51, 65, 85);
+            doc.text(pageLines, left + 12, y + 34);
+            y += panelHeight;
+            explanationIndex += pageLines.length;
+
+            if (explanationIndex < explanationLines.length) addPage('Question-wise Review');
+          }
         }
         y += 18;
       });

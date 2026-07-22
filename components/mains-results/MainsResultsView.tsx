@@ -294,6 +294,7 @@ export default function MainsResultsView({
   const [modelAnswerOpen, setModelAnswerOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
 
   // Markup viewer state
   const [markupPage, setMarkupPage] = useState(1);
@@ -409,6 +410,119 @@ export default function MainsResultsView({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const downloadEvaluationReport = async () => {
+    if (isDownloadingReport || typeof window === 'undefined') return;
+    setIsDownloadingReport(true);
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const left = 42, right = 553, width = 595.28, height = 841.89, contentWidth = right - left;
+      const reportDate = new Date(data.question?.date || data.submittedAt || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      const plain = (value?: string | null) => (value || '')
+        // Model answers are authored as Markdown. jsPDF renders plain text, so
+        // remove the syntax while retaining the readable heading/link text.
+        .replace(/(^|\n)\s{0,3}#{1,6}\s+/g, '$1')
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+        .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+        .replace(/(\*{1,3}|_{1,3}|`)/g, '')
+        .replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-')
+        .replace(/[^\x20-\x7E\n]/g, ' ').replace(/\s+/g, ' ').trim();
+      let page = 1;
+      let y = 0;
+      const footer = () => {
+        doc.setDrawColor(226, 232, 240); doc.setLineWidth(.75); doc.line(left, height - 37, right, height - 37);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(100, 116, 139);
+        doc.text(`Evaluation Report | ${reportDate}`, left, height - 22); doc.text(`Page ${page}`, right, height - 22, { align: 'right' });
+      };
+      const header = (section = 'Performance Report') => {
+        doc.setFillColor(15, 23, 42); doc.rect(0, 0, width, 4, 'F'); doc.setFillColor(217, 119, 6); doc.rect(width * .65, 0, width * .35, 4, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(15, 23, 42); doc.text('RiseWithJeet', left, 34);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(100, 116, 139); doc.text('MAINS ANSWER EVALUATION', left, 47);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(15, 23, 42); doc.text(section.toUpperCase(), right, 34, { align: 'right' });
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 116, 139); doc.text(reportDate, right, 47, { align: 'right' });
+        doc.setDrawColor(15, 23, 42); doc.setLineWidth(1.3); doc.line(left, 59, right, 59); y = 82;
+      };
+      const newPage = (section?: string) => { footer(); doc.addPage(); page += 1; header(section); };
+      const ensure = (space: number, section?: string) => { if (y + space > height - 55) newPage(section); };
+      const text = (value: string, x: number, maxWidth: number, lineHeight = 12, section = 'Evaluation Report') => {
+        const lines = doc.splitTextToSize(plain(value), maxWidth) as string[];
+        lines.forEach((line) => { ensure(lineHeight + 2, section); doc.text(line, x, y); y += lineHeight; });
+      };
+      const card = (x: number, top: number, w: number, h: number, fill: [number, number, number], border: [number, number, number] = [226, 232, 240]) => {
+        doc.setFillColor(...fill); doc.setDrawColor(...border); doc.setLineWidth(.75); doc.roundedRect(x, top, w, h, 8, 8, 'FD');
+      };
+
+      header();
+      doc.setFillColor(15, 23, 42); doc.roundedRect(left, y, contentWidth, 72, 10, 10, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(255, 255, 255); doc.text('Your answer has been evaluated.', left + 18, y + 27);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(203, 213, 225); doc.text(`${shareHeading} | ${paperLabel}${subjectLabel ? ` | ${subjectLabel}` : ''}`, left + 18, y + 45);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.setTextColor(251, 191, 36); doc.text(`${totalScore}/${totalMax}`, right - 18, y + 32, { align: 'right' });
+      doc.setFontSize(8); doc.text(`${scorePercent}% SCORE`, right - 18, y + 47, { align: 'right' }); y += 92;
+
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(15, 23, 42); doc.text('Question', left, y); y += 10;
+      card(left, y, contentWidth, 58, [255, 249, 230], [253, 230, 138]); doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(51, 65, 85);
+      const questionLines = doc.splitTextToSize(plain(questionText || questionTitle), contentWidth - 28) as string[]; doc.text(questionLines.slice(0, 3), left + 14, y + 17); y += 76;
+
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(37, 99, 235); doc.text('EVALUATION SNAPSHOT', left, y); y += 14;
+      const snapshot = [
+        { label: 'Score', value: `${data.score}/${data.maxScore}`, fill: [245, 243, 255] as [number, number, number], color: [124, 58, 237] as [number, number, number] },
+        { label: 'Word count', value: wordCount ? `${wordCount} words` : 'Not recorded', fill: [239, 246, 255] as [number, number, number], color: [37, 99, 235] as [number, number, number] },
+        { label: 'Focus', value: nextFocus ? 'Set' : 'Review feedback', fill: [240, 253, 244] as [number, number, number], color: [22, 163, 74] as [number, number, number] },
+      ];
+      snapshot.forEach((item, i) => { const x = left + i * 172; card(x, y, 160, 55, item.fill); doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(100, 116, 139); doc.text(item.label.toUpperCase(), x + 12, y + 17); doc.setFontSize(14); doc.setTextColor(...item.color); doc.text(item.value, x + 12, y + 37); }); y += 78;
+
+      const twoColumn = [
+        { title: 'STRENGTHS', values: data.strengths || [], fill: [240, 253, 244] as [number, number, number], color: [22, 163, 74] as [number, number, number], empty: 'No strengths recorded for this submission.' },
+        { title: 'IMPROVEMENT AREAS', values: data.improvements || [], fill: [254, 242, 242] as [number, number, number], color: [220, 38, 38] as [number, number, number], empty: 'No improvement areas recorded.' },
+      ];
+      twoColumn.forEach((item, i) => { const x = left + i * 258; card(x, y, 246, 86, item.fill); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...item.color); doc.text(item.title, x + 13, y + 18); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.4); doc.setTextColor(51, 65, 85); const body = item.values.length ? item.values.map((v) => `• ${plain(v)}`).join('\n') : item.empty; doc.text(doc.splitTextToSize(body, 218).slice(0, 4), x + 13, y + 38); }); y += 105;
+
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(15, 23, 42); doc.text('Examiner Feedback', left, y); y += 12;
+      const feedback = detailedFeedback || suggestions.join(' ') || 'Review the strengths and improvement areas above before your next attempt.';
+      const feedbackLines = doc.splitTextToSize(plain(feedback), contentWidth - 28) as string[]; const feedbackHeight = Math.min(150, 32 + feedbackLines.length * 12);
+      card(left, y, contentWidth, feedbackHeight, [250, 250, 250]); doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(51, 65, 85); doc.text(feedbackLines, left + 14, y + 19); y += feedbackHeight + 18;
+
+      newPage('Detailed Evaluation');
+      results.forEach((result, index) => {
+        if (index > 0) newPage('Detailed Evaluation');
+        const q = result.question?.questionText || result.question?.title || `Question ${index + 1}`;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(15, 23, 42); doc.text(`Question ${index + 1} Evaluation`, left, y); y += 18;
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(51, 65, 85); text(q, left, contentWidth, 12, 'Detailed Evaluation'); y += 10;
+        const rows = result.parameterScores || [];
+        if (rows.length) {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(37, 99, 235); doc.text('RUBRIC BREAKDOWN', left, y); y += 14;
+          rows.forEach((row) => { ensure(40, 'Detailed Evaluation'); card(left, y, contentWidth, 32, [255, 255, 255]); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(15, 23, 42); doc.text(plain(row.parameter), left + 12, y + 14); doc.setTextColor(217, 119, 6); doc.text(`${row.score}/${row.maxScore}`, right - 12, y + 14, { align: 'right' }); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.8); doc.setTextColor(100, 116, 139); doc.text(doc.splitTextToSize(plain(row.comment || ''), contentWidth - 24).slice(0, 1), left + 12, y + 26); y += 40; });
+        }
+        const focus = result.nextAttemptFocus || result.evaluatorConclusion || '';
+        if (focus) { ensure(70, 'Detailed Evaluation'); doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(180, 83, 9); doc.text('NEXT ATTEMPT FOCUS', left, y); y += 14; card(left, y, contentWidth, 58, [255, 251, 235], [253, 230, 138]); doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(51, 65, 85); doc.text(doc.splitTextToSize(plain(focus), contentWidth - 28), left + 14, y + 19); y += 76; }
+        const modelAnswer = result.curatedModelAnswer || result.modelAnswerContent || result.modelAnswerKeyPoints?.join('\n') || '';
+        if (modelAnswer) {
+          ensure(90, 'Model Answer');
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(180, 83, 9); doc.text('MODEL ANSWER - REFERENCE ONLY', left, y); y += 14;
+          const modelLines = doc.splitTextToSize(plain(modelAnswer), contentWidth - 28) as string[];
+          let remainingModelLines = [...modelLines];
+          while (remainingModelLines.length) {
+            // Keep a small amount of space for the panel itself; subsequent
+            // pages carry on instead of discarding the unseen model-answer text.
+            if (y + 42 > height - 55) newPage('Model Answer');
+            const lineCapacity = Math.max(1, Math.floor((height - 55 - y - 24) / 12));
+            const pageLines = remainingModelLines.splice(0, lineCapacity);
+            const modelHeight = 30 + pageLines.length * 12;
+            card(left, y, contentWidth, modelHeight, [255, 251, 235], [253, 230, 138]);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(51, 65, 85);
+            doc.text(pageLines, left + 14, y + 18);
+            y += modelHeight + 12;
+            if (remainingModelLines.length) newPage('Model Answer');
+          }
+        }
+      });
+      footer();
+      doc.save(`mains-evaluation-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (error) {
+      console.error('Unable to generate mains evaluation report', error);
+    } finally { setIsDownloadingReport(false); }
+  };
+
   const ringCirc = 2 * Math.PI * 50;
 
   const NEXT_CARDS = [
@@ -499,12 +613,10 @@ export default function MainsResultsView({
               <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
               Share
             </button>
-            {hasMarkup && (
-              <a className="action-btn action-btn-copy" style={{ padding: '8px 14px', fontSize: 12 }} href={realImagePages[0]?.checkedCopyUrl || '#'} target="_blank" rel="noreferrer">
+            <button type="button" className="action-btn action-btn-copy" style={{ padding: '8px 14px', fontSize: 12 }} onClick={downloadEvaluationReport} disabled={isDownloadingReport}>
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                Download Copy
-              </a>
-            )}
+                {isDownloadingReport ? 'Generating Report...' : 'Download Copy'}
+            </button>
           </div>
         </div>
 
@@ -890,12 +1002,10 @@ export default function MainsResultsView({
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
               Share
             </button>
-            {hasMarkup && (
-              <a className="action-btn action-btn-copy" href={realImagePages[0]?.checkedCopyUrl || '#'} target="_blank" rel="noreferrer">
+            <button type="button" className="action-btn action-btn-copy" onClick={downloadEvaluationReport} disabled={isDownloadingReport}>
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                Download Copy
-              </a>
-            )}
+                {isDownloadingReport ? 'Generating Report...' : 'Download Copy'}
+            </button>
             <button className="action-btn action-btn-rewrite" onClick={() => router.push(rewriteRoute)}>
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
               Rewrite Answer
