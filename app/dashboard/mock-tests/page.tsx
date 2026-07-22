@@ -29,11 +29,11 @@ const fallbackQuestionSources = [
 ];
 
 const mainsQuestionSources = [
-  { id: 'daily-mains', icon: '🌅', label: 'Daily Answer Writing', description: 'Fresh questions every day' },
+  { id: 'daily-mains', icon: '🌅', label: 'Daily MCQ Challenge', description: 'Fresh curated questions' },
   { id: 'practice-pyq', icon: '/script.png', label: 'Previous Year Questions', badge: 'PYQ', description: 'UPSC PYQs (2011–2025)' },
   { id: 'question-bank', icon: '🗃️', label: 'Question Bank', description: 'Curated expert questions' },
   { id: 'mixed-bag', icon: '🎲', label: 'Mixed Bag', description: 'Variety from all sources' },
-  { id: 'full-length', icon: '📋', label: 'Full Length Test', description: '20 questions, full paper' },
+  { id: 'full-length', icon: '📋', label: 'Full Length Test', description: '100 questions, full paper simulation' },
 ];
 
 const PRELIMS_SUBJECTS = [
@@ -369,6 +369,7 @@ function MockTestsPageInner() {
   const [difficulties, setDifficulties] = useState(fallbackDifficulties);
   const [practiceStats, setPracticeStats] = useState<{ todayCount: number; streak: number } | null>(null);
   const [platformStats, setPlatformStats] = useState<{ questionsCount: number; testsCount: number; usersCount: number } | null>(null);
+  const [badgeCount, setBadgeCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatedTestId, setGeneratedTestId] = useState<string | null>(null);
@@ -529,6 +530,21 @@ function MockTestsPageInner() {
     return () => { cancelled = true; };
   }, []);
 
+  /* ─── Badges earned (independent, non-blocking — feeds the "Your Activity" card) ─── */
+  useEffect(() => {
+    let cancelled = false;
+    dashboardService.getAchievements()
+      .then((res) => {
+        if (cancelled) return;
+        const list = res?.data?.badges;
+        if (Array.isArray(list)) {
+          setBadgeCount(list.filter((b: any) => b.status === 'earned').length);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   /* ─── On entering the page, refresh the user's real entitlement + usage so the
      Custom Mock Test limit check reflects their current subscription usage,
      not whatever was cached earlier in the session. ─── */
@@ -642,15 +658,11 @@ function MockTestsPageInner() {
     { label: 'Number of Questions', done: countTouched },
     { label: 'Difficulty', done: difficultyTouched },
   ];
-  const progressPct = setupNodes.filter(n => n.done).length * 25;
   // Same validation as the Daily Answer Writing Evaluator (canEvaluate):
   // enable only once all four required selections are completed.
   const canGenerate = setupNodes.every(n => n.done);
 
   /* Derive display labels for summary */
-  const sourceLabel = selectedExamMode === 'mains'
-    ? (mainsQuestionSources.find(s => s.id === selectedSource)?.label ?? 'Daily Answer Writing')
-    : (questionSources.find(s => s.id === selectedSource)?.label ?? 'Daily MCQ');
   const paperLabel = selectedExamMode === 'mains'
     ? (mainsPaperTypes.find(p => p.id === selectedPaperType)?.label ?? 'GS I')
     : (prelimsPaperTypes.find(p => p.id === selectedPaperType)?.label ?? 'GS Paper I');
@@ -1187,11 +1199,11 @@ function MockTestsPageInner() {
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontWeight: 400, fontSize: '26px',
                     color: hoveredCounter === 'minus'
-                      ? (selectedExamMode === 'mains' ? '#17223E' : '#155DFC')
+                      ? '#17223E'
                       : (selectedExamMode === 'mains' ? '#17223E' : '#364153'),
                     transform: hoveredCounter === 'minus' ? 'scale(1.08)' : 'scale(1)',
                     boxShadow: hoveredCounter === 'minus'
-                      ? (selectedExamMode === 'mains' ? '0 4px 12px rgba(201,162,39,0.22)' : '0 4px 12px rgba(21,93,252,0.18)')
+                      ? (selectedExamMode === 'mains' ? '0 4px 12px rgba(201,162,39,0.22)' : '0 4px 12px rgba(23,34,62,0.18)')
                       : '0 0 0 0 rgba(0,0,0,0)',
                     transition: 'all 0.15s ease',
                   }}
@@ -1240,11 +1252,11 @@ function MockTestsPageInner() {
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontWeight: 400, fontSize: '26px',
                     color: hoveredCounter === 'plus'
-                      ? (selectedExamMode === 'mains' ? '#17223E' : '#155DFC')
+                      ? '#17223E'
                       : (selectedExamMode === 'mains' ? '#17223E' : '#364153'),
                     transform: hoveredCounter === 'plus' ? 'scale(1.08)' : 'scale(1)',
                     boxShadow: hoveredCounter === 'plus'
-                      ? (selectedExamMode === 'mains' ? '0 4px 12px rgba(201,162,39,0.22)' : '0 4px 12px rgba(21,93,252,0.18)')
+                      ? (selectedExamMode === 'mains' ? '0 4px 12px rgba(201,162,39,0.22)' : '0 4px 12px rgba(23,34,62,0.18)')
                       : '0 0 0 0 rgba(0,0,0,0)',
                     transition: 'all 0.15s ease',
                   }}
@@ -1320,12 +1332,12 @@ function MockTestsPageInner() {
                     style={{
                       background: isSelected ? '#EFF6FF' : isHovered ? '#F5F8FF' : '#FFF',
                       // Border matches the Mains Answer Evaluator "Maximum Question Marks"
-                      // selector (theme navy #17223E) in Mains mode; Prelims keeps its blue.
+                      // selector (theme navy #17223E) in both Mains and Prelims modes.
                       border: isSelected
-                        ? (selectedExamMode === 'mains' ? '1.8px solid #17223E' : '2px solid #155DFC')
+                        ? '1.8px solid #17223E'
                         : isHovered
-                        ? (selectedExamMode === 'mains' ? '1.6px solid #17223E' : '1.5px solid #155DFC')
-                        : (selectedExamMode === 'mains' ? '1.6px solid #E5E7EB' : '1.5px solid #E5E7EB'),
+                        ? '1.6px solid #17223E'
+                        : '1.6px solid #E5E7EB',
                       borderRadius: '14px',
                       minHeight: '120px',
                       padding: '16px 14px',
@@ -1333,15 +1345,9 @@ function MockTestsPageInner() {
                       textAlign: 'center',
                       transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
                       transition: 'all 0.18s ease',
-                      // Mains keeps a flat neutral shadow (no sky-blue glow) to match the
-                      // Evaluator's theme-navy selectors; Prelims keeps its blue glow.
-                      boxShadow: selectedExamMode === 'mains'
-                        ? '0 1px 2px rgba(15, 23, 42, 0.04)'
-                        : isSelected
-                        ? '0 8px 20px -18px rgba(21, 93, 252, 0.9)'
-                        : isHovered
-                        ? '0 6px 18px 0 rgba(21,93,252,0.13), 0 1.5px 5px 0 rgba(16,24,40,0.06)'
-                        : '0 1px 2px rgba(15, 23, 42, 0.04)',
+                      // Flat neutral shadow (no sky-blue glow) to match the Evaluator's
+                      // theme-navy selectors, in both Mains and Prelims modes.
+                      boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
                     }}
                   >
                     <div style={{ width: 36, height: 36, margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1383,92 +1389,65 @@ function MockTestsPageInner() {
                 overflow: 'visible',
               }}>
               {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'clamp(16px, 1.3vw, 24px)' }}>
-                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#FDC700' }} />
+              <div style={{ marginBottom: 'clamp(16px, 1.3vw, 24px)' }}>
                 <span style={{
                   fontFamily: 'var(--font-inter), Inter, sans-serif',
                   fontWeight: 800,
                   fontSize: 'clamp(11px, 0.75vw, 13px)',
                   letterSpacing: '0.08em',
-                  color: '#FDC700',
+                  color: '#94A3B8',
                   textTransform: 'uppercase' as const,
                 }}>
-                  Test Summary — Ready to Begin?
+                  Your Activity
                 </span>
               </div>
 
-              {/* 2x3 Info Grid */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 'clamp(10px, 0.8vw, 14px)',
-                marginBottom: 'clamp(18px, 1.4vw, 26px)',
-              }}>
+              {/* Activity Rows — streak, tests taken today, badges earned */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(14px, 1.1vw, 18px)', marginBottom: 'clamp(18px, 1.4vw, 26px)' }}>
                 {[
-                  { emoji: '📋', value: `${questionCount}`, label: 'Questions' },
-                  { emoji: '⏱', value: `${estimatedMinutes} min`, label: 'Duration' },
-                  { emoji: '🔥', value: sourceLabel, label: 'Source' },
-                  { emoji: '📘', value: paperLabel, label: 'Paper' },
-                  { emoji: '⚡', value: difficultyLabel, label: 'Difficulty' },
-                  { emoji: '🎯', value: subjectLabel, label: 'Focus Subject' },
-                ].map((item, i) => (
-                  <div key={i} style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    borderRadius: '10px',
-                    padding: 'clamp(10px, 0.8vw, 14px)',
-                    minHeight: 'clamp(86px, 6.4vw, 100px)',
-                    minWidth: 0,
-                    boxSizing: 'border-box',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', flexShrink: 0 }}>
-                      <span style={{ fontSize: 'clamp(13px, 0.9vw, 16px)', lineHeight: 1, flexShrink: 0 }}>{item.emoji}</span>
+                  {
+                    emoji: '🔥',
+                    text: practiceStats === null
+                      ? 'Loading...'
+                      : practiceStats.streak > 0
+                      ? `${practiceStats.streak} day streak`
+                      : 'No streak yet',
+                    bar: 'rgba(255,255,255,0.14)',
+                  },
+                  {
+                    emoji: '📝',
+                    text: practiceStats === null
+                      ? 'Loading...'
+                      : practiceStats.todayCount > 0
+                      ? `${practiceStats.todayCount} test${practiceStats.todayCount === 1 ? '' : 's'} today`
+                      : 'No tests today',
+                    bar: 'rgba(255,255,255,0.14)',
+                  },
+                  {
+                    emoji: '🎓',
+                    text: badgeCount === null
+                      ? 'Loading...'
+                      : badgeCount > 0
+                      ? `${badgeCount} badge${badgeCount === 1 ? '' : 's'} earned`
+                      : 'No badges yet',
+                    bar: 'linear-gradient(90deg, #22C55E, #16A34A)',
+                  },
+                ].map((row, i) => (
+                  <div key={i}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: 'clamp(14px, 0.95vw, 16px)', lineHeight: 1, flexShrink: 0 }}>{row.emoji}</span>
                       <span style={{
                         fontFamily: 'var(--font-inter), Inter, sans-serif',
                         fontWeight: 600,
-                        fontSize: 'clamp(9px, 0.6vw, 10px)',
-                        letterSpacing: '0.07em',
-                        color: '#94A3B8',
-                        textTransform: 'uppercase' as const,
+                        fontSize: 'clamp(12px, 0.8vw, 14px)',
+                        color: '#CBD5E1',
                       }}>
-                        {item.label}
+                        {row.text}
                       </span>
                     </div>
-                    <div style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontFamily: 'var(--font-inter), Inter, sans-serif',
-                      fontWeight: 700,
-                      fontSize: 'clamp(13px, 0.85vw, 15px)',
-                      lineHeight: 1.25,
-                      color: '#FFF',
-                      minWidth: 0,
-                      wordBreak: 'break-word',
-                      overflowWrap: 'anywhere',
-                    }}>
-                      {item.value}
-                    </div>
+                    <div style={{ background: row.bar, borderRadius: '6px', height: '6px', width: '100%' }} />
                   </div>
                 ))}
-              </div>
-
-              {/* Setup Progress — same behavior as Mains: climbs as each required step is configured */}
-              <div style={{ marginBottom: 'clamp(18px, 1.4vw, 26px)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <span style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 'clamp(11px, 0.72vw, 13px)', fontWeight: 600, color: '#94A3B8' }}>Setup Progress</span>
-                  <span style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 'clamp(11px, 0.72vw, 13px)', fontWeight: 800, color: '#F97316' }}>{progressPct}%</span>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '6px', height: '6px', overflow: 'hidden' }}>
-                  <div style={{
-                    background: 'linear-gradient(90deg, #FDC700, #FF8904)',
-                    width: `${progressPct}%`,
-                    height: '100%',
-                    borderRadius: '6px',
-                    transition: 'width 0.3s ease',
-                  }} />
-                </div>
               </div>
 
               {/* Generate Test Button */}
@@ -1531,7 +1510,7 @@ function MockTestsPageInner() {
                       </span>
                     </div>
                   </>
-                ) : '🚀 Generate My Mock Test'}
+                ) : '🚀 Generate Test'}
               </button>
 
               {/* Bottom info */}
@@ -1539,45 +1518,85 @@ function MockTestsPageInner() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px',
+                gap: '8px',
                 fontFamily: 'var(--font-inter), Inter, sans-serif',
                 fontSize: 'clamp(10px, 0.68vw, 12px)',
                 color: '#64748B',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                  {[
-                    { initials: 'A', bg: '#E8A838' },
-                    { initials: 'P', bg: '#4CAF7D' },
-                    { initials: 'R', bg: '#3DB87A' },
-                  ].map((a, i) => (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                  {['#22C55E', '#F97316', '#3B82F6'].map((color, i) => (
                     <span
-                      key={a.initials}
+                      key={i}
                       style={{
-                        width: '22px',
-                        height: '22px',
+                        width: '7px',
+                        height: '7px',
                         borderRadius: '50%',
-                        background: a.bg,
-                        border: '1.5px solid #0F172B',
-                        color: '#FFFFFF',
-                        fontSize: '9px',
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        background: color,
                         flexShrink: 0,
-                        marginLeft: i === 0 ? 0 : '-7px',
                       }}
-                    >
-                      {a.initials}
-                    </span>
+                    />
                   ))}
                 </div>
-                <span>{liveStudentCount('mock-tests')} students writing right now</span>
+                <span>{liveStudentCount('mock-tests')} students are taking tests right now</span>
               </div>
               </div>
             </div>
           </div>
 
+        </div>
+
+        {/* ── Social Proof Banner: Aspirants ── */}
+        <div style={{ padding: '0 clamp(12px, 1.2vw, 20px) clamp(24px, 2vw, 40px)', maxWidth: '1320px', margin: '0 auto' }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #162456 0%, #0F172B 50%, #030712 100%)',
+            borderRadius: '20px',
+            padding: 'clamp(18px, 1.6vw, 28px) clamp(20px, 2vw, 32px)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'clamp(16px, 1.5vw, 24px)',
+            flexWrap: 'wrap',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+              {[
+                { initials: 'AK', bg: '#3B82F6' },
+                { initials: 'PS', bg: '#A855F7' },
+                { initials: 'RV', bg: '#14B8A6' },
+                { initials: 'MH', bg: '#F97316' },
+                { initials: '+2k', bg: '#4B5563' },
+              ].map((a, i) => (
+                <span
+                  key={a.initials}
+                  style={{
+                    width: 'clamp(38px, 2.6vw, 46px)',
+                    height: 'clamp(38px, 2.6vw, 46px)',
+                    borderRadius: '50%',
+                    background: a.bg,
+                    border: '2.5px solid #0F172B',
+                    color: '#FFFFFF',
+                    fontFamily: 'var(--font-inter), Inter, sans-serif',
+                    fontWeight: 700,
+                    fontSize: 'clamp(11px, 0.75vw, 13px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginLeft: i === 0 ? 0 : 'clamp(-14px, -1vw, -10px)',
+                  }}
+                >
+                  {a.initials}
+                </span>
+              ))}
+            </div>
+            <div>
+              <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 800, fontSize: 'clamp(18px, 1.4vw, 24px)' }}>
+                <span style={{ color: '#FB923C' }}>{platformStats ? platformStats.usersCount.toLocaleString('en-IN') + '+' : '2,400+'}</span>
+                <span style={{ color: '#FFFFFF' }}> aspirants</span>
+              </div>
+              <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 500, fontSize: 'clamp(12px, 0.85vw, 14px)', color: '#94A3B8', marginTop: '4px' }}>
+                actively preparing on this platform
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>

@@ -20,16 +20,11 @@ import {
   type RepositorySection,
 } from '@/lib/essayModelAnswer';
 
-const AI_EVAL_STEPS = [
-  { emoji: '🔍', title: 'Uploading Answer Script' },
-  { emoji: '📝', title: 'Structural Analysis' },
-  { emoji: '📚', title: 'Content Depth Assessment' },
-  { emoji: '⚖️', title: 'Balance & Perspective Check' },
-  { emoji: '✍️', title: 'Presentation Review' },
-  { emoji: '🎯', title: 'Finalising Feedback' },
-];
-
 const MAINS_TIME_LIMIT = 20 * 60;
+
+/** sessionStorage key the evaluating screen reads {questionId, attemptId} from
+ *  — shared with /dashboard/pyq/results so a refresh there still resolves. */
+const PYQ_RESULTS_SESSION_KEY = 'pyqMainsResultsSession';
 
 type EssayQuestion = {
   id: string;
@@ -203,12 +198,6 @@ export default function EssayModelAnswerClient() {
   const [timeLeft, setTimeLeft] = useState(MAINS_TIME_LIMIT);
   const [timerRunning, setTimerRunning] = useState(false);
 
-  // AI evaluation progress
-  const [attemptId, setAttemptId] = useState<string | null>(null);
-  const [evalOpen, setEvalOpen] = useState(false);
-  const [evalProgress, setEvalProgress] = useState(0);
-  const [evalStep, setEvalStep] = useState(0);
-
   useEffect(() => {
     if (!questionId) return;
     let cancelled = false;
@@ -312,13 +301,21 @@ export default function EssayModelAnswerClient() {
         files: mode === 'upload' && files.length > 0 ? files : undefined,
       });
       if (res.data?.attemptId) {
-        setAttemptId(res.data.attemptId);
+        const newAttemptId = res.data.attemptId as string;
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('pyqEssayAttemptId', newAttemptId);
+          sessionStorage.setItem(
+            PYQ_RESULTS_SESSION_KEY,
+            JSON.stringify({ questionId: question.id, attemptId: newAttemptId }),
+          );
+        }
         setWriteOpen(false);
         setTimerRunning(false);
-        setEvalOpen(true);
-        setEvalProgress(0);
-        setEvalStep(0);
         void entitlements.refreshEntitlements?.();
+        // Same evaluation flow as the Mains Answer Evaluator / Daily Mains
+        // Challenge: hand off to the shared full-screen evaluating experience
+        // on its own route instead of a bespoke in-page progress modal.
+        router.push('/dashboard/pyq/essay/evaluating');
       } else {
         setSubmitError('Submission did not return an attempt. Please try again.');
       }
@@ -333,42 +330,6 @@ export default function EssayModelAnswerClient() {
       setSubmitting(false);
     }
   };
-
-  // Poll evaluation status, then hand off to the shared results page.
-  useEffect(() => {
-    if (!evalOpen || !attemptId || !question) return;
-    const start = Date.now();
-    const progressId = setInterval(() => {
-      const elapsed = Date.now() - start;
-      setEvalProgress(Math.min(95, (elapsed / 60000) * 100));
-      setEvalStep(Math.min(AI_EVAL_STEPS.length - 1, Math.floor((elapsed / 60000) * AI_EVAL_STEPS.length)));
-    }, 500);
-
-    const pollId = setInterval(async () => {
-      try {
-        const res = await pyqService.getMainsEvaluationStatus(question.id, attemptId);
-        if (res.data?.evaluationStatus === 'completed' || res.data?.isComplete) {
-          clearInterval(pollId);
-          clearInterval(progressId);
-          setEvalProgress(100);
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem(
-              'pyqMainsResultsSession',
-              JSON.stringify({ questionId: question.id, attemptId }),
-            );
-          }
-          router.push(`/dashboard/pyq/results?questionId=${encodeURIComponent(question.id)}&attemptId=${encodeURIComponent(attemptId)}`);
-        }
-      } catch {
-        // transient polling error — keep trying
-      }
-    }, 3000);
-
-    return () => {
-      clearInterval(progressId);
-      clearInterval(pollId);
-    };
-  }, [evalOpen, attemptId, question, router]);
 
   const styles = <EssayStyles />;
 
@@ -853,23 +814,49 @@ export default function EssayModelAnswerClient() {
         </div>
       ) : null}
 
-      {/* AI EVALUATION PROGRESS */}
-      {evalOpen ? (
-        <div className="write-modal-root fixed inset-0 z-[130] flex items-center justify-center">
-          <div className="write-modal-backdrop" />
-          <div className="relative w-[min(440px,calc(100vw-32px))] rounded-[22px] bg-white p-8 text-center shadow-[0_34px_90px_rgba(3,7,18,0.46)]">
-            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#F5D06E] to-[#D4AF37] text-[28px]">
-              {AI_EVAL_STEPS[evalStep]?.emoji || '🎯'}
+      {/* ── Your UPSC Journey Starts Today ── */}
+      <section className="px-6 py-24" style={{ background: 'linear-gradient(180deg, #EEF1F7 0%, #F8F9FB 100%)' }}>
+        <div className="mx-auto max-w-4xl">
+          <div className="relative overflow-hidden rounded-[28px]" style={{ background: 'linear-gradient(145deg, #0a1435 0%, #050d24 50%, #0b1538 100%)', boxShadow: '0 25px 60px rgba(0,0,0,0.2)' }}>
+            <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.03]" />
+            <div className="absolute left-1/2 top-1/2 h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.04]" />
+            <div className="absolute left-1/2 top-1/2 h-[260px] w-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.05]" />
+            <div className="absolute left-1/2 top-1/2 h-[140px] w-[140px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.02]" />
+            <div className="absolute right-0 top-0 h-80 w-80 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.15), transparent 60%)' }} />
+            <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, rgba(100,150,255,0.2), transparent 60%)' }} />
+
+            <div className="relative z-10 px-8 py-16 text-center md:px-16 md:py-20">
+              <div className="relative mx-auto mb-8 h-20 w-20">
+                <div className="gold-gradient absolute inset-0 rounded-2xl opacity-30" style={{ animation: 'essayCtaGlowPulse 2.5s ease-in-out infinite' }} />
+                <div className="gold-gradient absolute inset-2 flex items-center justify-center rounded-xl shadow-[0_0_30px_rgba(212,175,55,0.5)]">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2}><path d="M6 9l6 6 6-6" /><path d="M12 3v12" /></svg>
+                </div>
+              </div>
+
+              <h2 className="text-4xl font-bold leading-tight tracking-tight text-white md:text-5xl" style={{ fontFamily: 'var(--font-cormorant-garamond), Georgia, serif' }}>
+                Your UPSC Journey<br />Starts <span style={{ color: '#F5D06E' }}>Today</span>
+              </h2>
+              <p className="mx-auto mt-5 max-w-lg text-[16px] leading-relaxed text-white/60">
+                Smart preparation, structured planning, and AI-powered insights — everything serious aspirants need, in one place.
+              </p>
+
+              <div className="mt-10 flex items-center justify-center gap-4">
+                <Link
+                  href="/dashboard/pyq?mode=mains&paper=Essay"
+                  className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-[15px] font-bold text-[#0B1229] transition-all duration-200 hover:-translate-y-0.5"
+                  style={{ background: 'linear-gradient(135deg, #f0c14b, #d4af37)', boxShadow: '0 8px 24px rgba(212,175,55,0.35)' }}
+                >
+                  Explore More PYQs
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
+                </Link>
+                <Link href="/contact" className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-7 py-3.5 text-[15px] font-medium text-white transition-all duration-200 hover:bg-white/5">
+                  Connect Us
+                </Link>
+              </div>
             </div>
-            <h3 className="text-[20px] font-bold text-[#0B1229]" style={{ fontFamily: 'var(--font-cormorant-garamond), Georgia, serif' }}>Evaluating your essay…</h3>
-            <p className="mt-1 text-[13px] text-[#6B7690]">{AI_EVAL_STEPS[evalStep]?.title || 'Finalising Feedback'}</p>
-            <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-[#F1F3F7]">
-              <div className="h-full rounded-full bg-gradient-to-r from-[#F5D06E] to-[#D4AF37] transition-all duration-500" style={{ width: `${evalProgress}%` }} />
-            </div>
-            <p className="mt-3 text-[12px] font-semibold text-[#8B95A8]">Usually takes about 60 seconds</p>
           </div>
         </div>
-      ) : null}
+      </section>
 
       <Footer />
     </div>
@@ -901,6 +888,7 @@ function EssayStyles() {
       .essay-pyq-page .shine-btn:hover::before { animation: essayShineSweep 1.1s cubic-bezier(0.22, 0.61, 0.36, 1) forwards; }
       .essay-pyq-page .shine-btn > * { position: relative; z-index: 2; }
       @keyframes essayShineSweep { 0% { left: -75%; opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { left: 120%; opacity: 0; } }
+      @keyframes essayCtaGlowPulse { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.55; transform: scale(1.08); } }
 
       .essay-pyq-page .step-ribbon { display: inline-flex; align-items: center; gap: 10px; padding: 7px 16px; border-radius: 999px; background: linear-gradient(135deg, rgba(212,175,55,0.10), rgba(245,208,110,0.05)); border: 1px solid rgba(212,175,55,0.25); font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #9a8347; }
       .essay-pyq-page .step-ribbon .num { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #F5D06E, #D4AF37); color: #fff; font-weight: 700; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(212,175,55,0.35); }

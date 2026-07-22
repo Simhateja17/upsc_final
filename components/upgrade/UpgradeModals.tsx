@@ -82,6 +82,14 @@ const SHARED_CSS = `
 }
 .upm-icon svg { width: 42px; height: 42px; }
 .upm-icon img { width: 100%; height: 100%; object-fit: contain; display: block; }
+/* 3D card-flip icon reveal (Flashcard Vault modal only) */
+.upm-icon-flip { perspective: 500px; }
+.upm-icon-flip svg { animation: upmCardFlip 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both; }
+@keyframes upmCardFlip {
+  0% { transform: rotateY(0deg) scale(0.8); opacity: 0; }
+  50% { transform: rotateY(180deg) scale(1.1); }
+  100% { transform: rotateY(360deg) scale(1); opacity: 1; }
+}
 .upm-title {
   font-family: var(--font-cormorant-garamond), 'Cormorant Garamond', serif;
   font-size: 26px;
@@ -1019,7 +1027,7 @@ export function SyllabusTrackerLimitModal({
 export function FlashcardVaultUpgradeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <UpgradeModalShell open={open} onClose={onClose}>
-      <div className="upm-icon"><FlashcardIcon /></div>
+      <div className="upm-icon upm-icon-flip"><FlashcardIcon /></div>
       <h2 className="upm-title">Unlock Full Flashcard Vault</h2>
       <p className="upm-description">Continue your revision with all UPSC subjects and access thousands of expertly curated flashcards designed for smarter learning.</p>
       <div className="upm-plan-section">

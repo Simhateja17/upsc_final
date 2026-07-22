@@ -132,18 +132,18 @@ function SubjectList({ rows, weak = false }: { rows: SubjectRow[]; weak?: boolea
             <div className="mb-3 flex items-center justify-between gap-4">
               <div className="flex min-w-0 items-center gap-2">
                 <span className="h-2 w-2 flex-none rounded-full" style={{ background: color }} />
-                <span className="truncate text-[16px] font-medium text-[#101828]">{row.name}</span>
+                <span className="truncate text-[11.9px] font-medium text-[#101828]">{row.name}</span>
                 {row.tag ? (
-                  <span className="rounded-[4px] bg-[#FDECEC] px-2 py-1 text-[10px] font-semibold text-[#E02424]">
+                  <span className="rounded-[4px] bg-[#FDECEC] px-2 py-1 text-[9.1px] font-semibold text-[#E02424]">
                     {row.tag}
                   </span>
                 ) : null}
               </div>
               <div className="flex flex-none items-center gap-3">
-                <span className="text-[16px] font-bold" style={{ color: weak ? '#E02424' : color }}>
+                <span className="flex-none whitespace-nowrap text-right text-[10.5px] text-[#6A7282]" style={{ width: 46 }}>{row.questions} Qs</span>
+                <span className="flex-none whitespace-nowrap text-right text-[11.2px] font-bold" style={{ width: 38, color: weak ? '#E02424' : color }}>
                   {Math.round(row.accuracy)}%
                 </span>
-                <span className="text-[13px] text-[#6A7282]">{row.questions} Qs</span>
               </div>
             </div>
             <ProgressBar value={row.accuracy} color={color} />
@@ -169,18 +169,20 @@ function DonutChart({ items, centerLabel }: { items: DistributionItem[]; centerL
       style={{ background: hasData ? `conic-gradient(${stops.join(', ')})` : '#EEF0F3' }}
     >
       <div className="absolute inset-[42px] flex flex-col items-center justify-center rounded-full bg-white">
-        <span className="text-[26px] font-bold leading-none text-[#101828]">{centerLabel}</span>
-        <span className="mt-1 text-[12px] uppercase text-[#6A7282]">Total</span>
+        <span className="text-[21px] font-bold leading-none text-[#101828]">{centerLabel}</span>
+        <span className="mt-1 text-[9.8px] uppercase text-[#6A7282]">Total</span>
       </div>
     </div>
   );
 }
 
-/* Chart/area heading with the reference's coloured dot marker. */
-function CardHeading({ dotColor, children, right }: { dotColor?: string; children: React.ReactNode; right?: React.ReactNode }) {
+/* Chart/area heading with the reference's coloured dot marker.
+   Reference font sizes vary by section (chart/area titles 14px, streak/trio
+   18.7→15.4px, badges/leaderboard 16.8px) — pass `size`/`mb` to match. */
+function CardHeading({ dotColor, children, right, size = 14, mb = 16 }: { dotColor?: string; children: React.ReactNode; right?: React.ReactNode; size?: number; mb?: number }) {
   return (
-    <div className="mb-6 flex items-center justify-between gap-4">
-      <h2 className="flex items-center gap-2.5 text-[18px] font-bold text-[#101828]">
+    <div className="flex items-center justify-between gap-4" style={{ marginBottom: mb }}>
+      <h2 className="flex items-center gap-2 font-bold text-[#101828]" style={{ fontSize: size }}>
         {dotColor && <span className="h-2.5 w-2.5 rounded-full" style={{ background: dotColor }} />}
         {children}
       </h2>
@@ -406,7 +408,7 @@ export default function PerformancePage() {
           )}
 
           {/* Stat cards — open on every plan */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-[10px] sm:grid-cols-3 lg:grid-cols-6">
             {summaryCards.map((card) => (
               <StatCard
                 key={card.title}
@@ -426,19 +428,19 @@ export default function PerformancePage() {
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
-              className="px-6 py-7"
+              className="p-6"
               heading={<CardHeading dotColor="#cc5de8">Study Time – This Week</CardHeading>}
             >
-              <div className="mb-16 grid grid-cols-2 gap-5 sm:grid-cols-4">
+              <div className="mb-5 flex flex-wrap gap-6">
                 {[
                   ['Today', formatHours(todayHours), '#101828'],
                   ['Best Day', formatHours(bestDayHours), '#C9821F'],
                   ['Daily Avg', formatHours(dailyAvgHours), '#245CEB'],
                   ['Total Study Hours', formatHours(totalStudyHours), '#245CEB'],
                 ].map(([label, value, color]) => (
-                  <div key={label}>
-                    <div className="text-[26px] font-bold leading-8" style={{ color }}>{value}</div>
-                    <div className="mt-2 text-[11px] uppercase tracking-[0.8px] text-[#99A1AF]">{label}</div>
+                  <div key={label} className="text-center">
+                    <div className="text-[15.4px] font-bold" style={{ color }}>{value}</div>
+                    <div className="text-[9.1px] uppercase tracking-[0.6px] text-[#99A1AF]">{label}</div>
                   </div>
                 ))}
               </div>
@@ -463,7 +465,7 @@ export default function PerformancePage() {
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
-              className="px-6 py-7"
+              className="p-6"
               heading={<CardHeading dotColor="#F28C32">Time Distribution – This Week</CardHeading>}
             >
               <div className="grid items-center gap-8 sm:grid-cols-[220px_1fr]">
@@ -475,9 +477,9 @@ export default function PerformancePage() {
                     <div key={item.label} className="flex items-center justify-between gap-6">
                       <div className="flex items-center gap-3">
                         <span className="h-3 w-3 rounded-full" style={{ background: item.color }} />
-                        <span className="text-[16px] text-[#4B5563]">{item.label}</span>
+                        <span className="text-[11.9px] text-[#4B5563]">{item.label}</span>
                       </div>
-                      <span className="text-[16px] font-bold text-[#101828]">{formatHours(item.hours)}</span>
+                      <span className="text-[11.2px] font-bold text-[#101828]">{formatHours(item.hours)}</span>
                     </div>
                   ))}
                 </div>
@@ -491,14 +493,14 @@ export default function PerformancePage() {
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
-              className="px-6 py-7"
+              className="p-6"
               heading={<CardHeading right={
-                <div className="hidden items-center gap-3 text-[13px] text-[#6A7282] sm:flex">
+                <div className="hidden items-center gap-3 text-[9.8px] text-[#6A7282] sm:flex">
                   <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#4A7DFF]" />Accuracy</span>
                   <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#D1D5DB]" />Qs attempted</span>
                 </div>
               }>
-                <span className="text-[24px]" aria-hidden>💪</span> Strong Areas
+                <span className="text-[20px]" aria-hidden>💪</span> Strong Areas
               </CardHeading>}
             >
               <SubjectList rows={strongAreas} />
@@ -507,13 +509,13 @@ export default function PerformancePage() {
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
-              className="px-6 py-7"
+              className="p-6"
               heading={<CardHeading right={
-                <Link href="/dashboard/spaced-repetition" className="pa-link-gold text-[15px] font-semibold text-[#155DFC]">
+                <Link href="/dashboard/spaced-repetition" className="pa-link-gold text-[11.2px] font-semibold text-[#155DFC]">
                   View Tracker +
                 </Link>
               }>
-                <span className="text-[24px]" aria-hidden>⚠</span> Weak Areas
+                <span className="text-[20px]" aria-hidden>⚠</span> Weak Areas
               </CardHeading>}
             >
               <SubjectList rows={weakAreas} weak />
@@ -526,18 +528,18 @@ export default function PerformancePage() {
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
-              className="px-6 py-7"
-              heading={<CardHeading right={<span className="font-bold text-[#F2742F]">🔥 {currentStreak} Days!</span>}>
+              className="p-6"
+              heading={<CardHeading size={15.4} right={<span className="text-[13.3px] font-bold text-[#F2742F]">🔥 {currentStreak} Days!</span>}>
                 <span aria-hidden>📅</span>
                 Study Streak – {streakCalendar?.monthLabel ?? new Date().toLocaleString('en-US', { month: 'long' })} {streakCalendar?.year ?? new Date().getFullYear()}
               </CardHeading>}
             >
-              <div className="mb-5 flex flex-wrap items-center gap-2 text-[10px] uppercase text-[#6A7282]">
+              <div className="mb-5 flex flex-wrap items-center gap-2 text-[10.5px] uppercase text-[#6A7282]">
                 <span>Intensity</span>
                 {['None', 'Light', 'Medium', 'Intense'].map((label, index) => (
                   <span key={label} className="flex items-center gap-1">
                     <span
-                      className="h-3 w-3 rounded-[3px]"
+                      className="h-4 w-4 rounded-[3px]"
                       style={{ background: ['#EEF0F3', '#D7F8E4', '#A8EBC7', '#58BE87'][index] }}
                     />
                     {label}
@@ -545,7 +547,7 @@ export default function PerformancePage() {
                 ))}
               </div>
 
-              <div className="mb-4 grid grid-cols-7 gap-2 text-center text-[12px] text-[#6A7282]">
+              <div className="mb-4 grid grid-cols-7 gap-[6px] text-center text-[9.8px] text-[#6A7282]">
                 {orderedDays.map((day) => <span key={day}>{day}</span>)}
                 {streakCalendar && (() => {
                   const firstWeekday = (new Date(streakCalendar.year, streakCalendar.month - 1, 1).getDay() + 6) % 7;
@@ -561,7 +563,7 @@ export default function PerformancePage() {
                       key={entry.day}
                       type="button"
                       onClick={() => setSelectedDay(entry.day)}
-                      className="pa-cal-day flex aspect-square items-center justify-center rounded-[8px] text-[14px] font-semibold"
+                      className="pa-cal-day flex aspect-square items-center justify-center rounded-[6px] text-[11.9px] font-semibold"
                       style={{
                         background: isSelected ? '#0F1626' : isToday ? '#0A1172' : intensityColor,
                         border: isSelected
@@ -638,32 +640,32 @@ export default function PerformancePage() {
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
-              className="px-6 py-7"
-              heading={<CardHeading><span aria-hidden>⚡</span> Daily Trio – This Week</CardHeading>}
+              className="p-6"
+              heading={<CardHeading size={15.4} mb={20}><span aria-hidden>⚡</span> Daily Trio – This Week</CardHeading>}
             >
               {[
-                { icon: '📚', title: 'Daily MCQ Challenge', subtitle: 'Polity, Economy, Geography', value: Math.min(analyticsData?.dailyTrio?.mcqDays ?? 0, 7), color: '#58BE87', href: '/dashboard/daily-mcq' },
-                { icon: '✍️', title: 'Daily Answer Writing', subtitle: 'Answer Writing, AI Evaluated', value: Math.min(analyticsData?.dailyTrio?.mainsDays ?? 0, 7), color: '#0E1830', href: '/dashboard/daily-answer' },
-                { icon: '📰', title: 'Daily News Analysis', subtitle: 'The Hindu, Indian Express', value: Math.min(analyticsData?.dailyTrio?.editorialDays ?? 0, 7), color: '#E8B84B', href: '/dashboard/daily-editorial' },
+                { icon: '📚', title: 'Daily MCQ Challenge', subtitle: 'Polity, Economy, Geography', value: Math.min(analyticsData?.dailyTrio?.mcqDays ?? 0, 7), color: '#58BE87', iconBg: '#dcfce7', href: '/dashboard/daily-mcq' },
+                { icon: '✍️', title: 'Daily Answer Writing', subtitle: 'Answer Writing, AI Evaluated', value: Math.min(analyticsData?.dailyTrio?.mainsDays ?? 0, 7), color: '#0E1830', iconBg: '#fef3c7', href: '/dashboard/daily-answer' },
+                { icon: '📰', title: 'Daily News Analysis', subtitle: 'The Hindu, Indian Express', value: Math.min(analyticsData?.dailyTrio?.editorialDays ?? 0, 7), color: '#E8B84B', iconBg: '#e0e7ff', href: '/dashboard/daily-editorial' },
               ].map((item) => (
                 <Link
                   key={item.title}
                   href={item.href}
-                  className="pa-trio mb-4 block rounded-[10px] border border-[#E5E7EB] bg-[#F8FAFC] px-5 py-4 last:mb-0"
+                  className="pa-trio mb-4 block rounded-[10px] border border-[#E5E7EB] bg-[#F8FAFC] p-4 last:mb-0"
                 >
                   <div className="mb-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[20px]" aria-hidden>{item.icon}</span>
+                    <div className="flex items-center gap-4">
+                      <span className="flex h-12 w-12 flex-none items-center justify-center rounded-[10px] text-[21px]" style={{ background: item.iconBg }} aria-hidden>{item.icon}</span>
                       <div>
-                        <div className="text-[16px] font-bold text-[#101828]">{item.title}</div>
-                        <div className="mt-1 text-[12px] text-[#6A7282]">{item.subtitle}</div>
+                        <div className="text-[13.3px] font-bold text-[#101828]">{item.title}</div>
+                        <div className="mt-1 text-[11.2px] text-[#6A7282]">{item.subtitle}</div>
                       </div>
                     </div>
                     <span className="text-[18px] text-[#99A1AF]" aria-hidden>→</span>
                   </div>
                   <div className="grid grid-cols-[1fr_auto] items-center gap-6">
                     <ProgressBar value={(item.value / 7) * 100} color={item.color} />
-                    <span className="text-[14px] font-bold text-[#101828]">{item.value}/7 days</span>
+                    <span className="text-[12.6px] font-bold text-[#101828]">{item.value}/7 days</span>
                   </div>
                 </Link>
               ))}
@@ -673,43 +675,43 @@ export default function PerformancePage() {
           {/* Achievements & Rankings */}
           <SectionDivider label="Achievements &amp; Rankings" />
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <AnalyticsCard className="px-6 py-7">
-              <CardHeading right={
+            <AnalyticsCard className="p-6">
+              <CardHeading size={16.8} mb={20} right={
                 <div className="flex items-center gap-3">
-                  <span className="rounded-[4px] bg-[#E8B84B] px-2 py-1 text-[12px] font-semibold text-white">
+                  <span className="rounded-full bg-[#E8B84B] px-[14px] py-[6px] text-[11.2px] font-semibold text-white">
                     {earnedBadgeCount} Earned
                   </span>
-                  <Link href="/dashboard/achievement-badges" className="pa-link-gold text-[14px] text-[#4B5563]">All →</Link>
+                  <Link href="/dashboard/achievement-badges" className="pa-link-gold text-[11.2px] text-[#4B5563]">All →</Link>
                 </div>
               }>
                 <span aria-hidden>🏆</span> Achievement Badges
               </CardHeading>
 
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3">
                 {earnedBadges.map((badge: any) => (
                   <div
                     key={badge.title}
-                    className="rounded-[10px] border px-3 py-5 text-center"
+                    className="rounded-[12px] border px-3 py-4 text-center"
                     style={{
                       borderColor: badge.earned ? '#F4D85A' : '#DDE8FF',
                       background: badge.earned ? 'linear-gradient(180deg,#FFFCEA,#FFFFFF)' : '#F7F9FF',
                       opacity: badge.earned ? 1 : 0.72,
                     }}
                   >
-                    <div className="mb-4 text-[26px]" aria-hidden>{badge.icon}</div>
-                    <div className="text-[12px] font-bold text-[#101828]">{badge.title}</div>
-                    <div className="mt-3 text-[10px]" style={{ color: badge.earned ? '#C9821F' : '#6A7282' }}>
+                    <div className="mb-2 text-[28px]" aria-hidden>{badge.icon}</div>
+                    <div className="mb-[3px] text-[11.9px] font-bold text-[#101828]">{badge.title}</div>
+                    <div className="mb-[3px] text-[10.5px]" style={{ color: badge.earned ? '#C9821F' : '#6A7282' }}>
                       {badge.earned ? '✓ Earned' : 'Locked'}
                     </div>
-                    <div className="mt-2 text-[10px] text-[#99A1AF]">{badge.note}</div>
+                    <div className="text-[10.5px] text-[#99A1AF]">{badge.note}</div>
                   </div>
                 ))}
               </div>
             </AnalyticsCard>
 
-            <AnalyticsCard className="px-6 py-7">
-              <CardHeading right={
-                <Link href="/dashboard/leaderboard?range=week" className="pa-link-gold text-[13px] font-semibold text-[#258F7D]">View All →</Link>
+            <AnalyticsCard className="p-6">
+              <CardHeading size={16.8} right={
+                <Link href="/dashboard/leaderboard?range=week" className="pa-link-gold text-[11.9px] font-semibold text-[#258F7D]">View All →</Link>
               }>
                 <span aria-hidden>🏅</span> Weekly Leaderboard
               </CardHeading>
@@ -717,14 +719,14 @@ export default function PerformancePage() {
               {weeklyLeaderboard?.length ? (
                 <div className="space-y-3">
                   {weeklyLeaderboard.slice(0, 8).map((entry: any, index: number) => (
-                    <div key={entry.userId ?? entry.name ?? index} className="flex items-center justify-between rounded-[8px] bg-[#F8FAFC] px-4 py-3">
+                    <div key={entry.userId ?? entry.name ?? index} className="flex items-center justify-between rounded-[8px] bg-[#F8FAFC] px-4 py-[14px]">
                       <div className="flex items-center gap-4">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4A7DFF] font-bold text-white">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4A7DFF] text-[12.6px] font-bold text-white">
                           {entry.rank ?? index + 1}
                         </span>
-                        <span className="font-semibold text-[#101828]">{entry.name}</span>
+                        <span className="text-[13.3px] font-semibold text-[#101828]">{entry.name}</span>
                       </div>
-                      <span className="font-bold text-[#258F7D]">{entry.totalScore}</span>
+                      <span className="text-[14px] font-bold text-[#258F7D]">{entry.totalScore}</span>
                     </div>
                   ))}
                 </div>

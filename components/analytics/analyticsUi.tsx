@@ -43,31 +43,58 @@ const ANALYTICS_UI_CSS = `
 }
 .pa-card-3d:hover .pa-glow { opacity: 1; }
 
-/* Icon-left stat card */
-.pa-stat-card { display: flex; align-items: flex-start; gap: 10px; padding: 18px 16px; min-height: 96px; }
+/* Icon-left stat card (sizes ported 1:1 from the approved HTML reference, which
+   sets html{font-size:14px} — e.g. .stat-label 0.62rem = 8.7px, .stat-value
+   1.55rem = 21.7px, .stat-sub 0.65rem = 9.1px, .stat-icon 1.1rem = 15.4px). */
+.pa-stat-card { display: flex; align-items: flex-start; gap: 8px; padding: 18px 12px; }
 .pa-stat-icon {
-  width: 40px; height: 40px;
-  border-radius: 9px;
+  width: 36px; height: 36px;
+  border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 20px; line-height: 1;
+  font-size: 15.4px; line-height: 1;
   flex-shrink: 0;
 }
 .pa-stat-info { flex: 1; min-width: 0; }
 .pa-stat-label {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.5px; color: #64748b; margin-bottom: 4px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 8.7px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: #64748b; margin-bottom: 3px;
+  white-space: normal; line-height: 1.3; overflow-wrap: break-word;
 }
-.pa-stat-value { font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 5px; }
-.pa-stat-sub { font-size: 11.5px; color: #64748b; display: flex; align-items: center; gap: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pa-stat-value { font-size: 21.7px; font-weight: 700; line-height: 1; margin-bottom: 3px; }
+.pa-stat-sub { font-size: 9.1px; color: #64748b; display: flex; align-items: center; gap: 2px; white-space: normal; line-height: 1.3; overflow-wrap: break-word; margin-top: 0; }
 .pa-stat-sub .pa-up { color: #22C55E; font-weight: 700; }
 .pa-stat-sub .pa-down { color: #EF4444; font-weight: 700; }
+
+/* Chart filter toggle (Day / Week / Month) — ported 1:1 from the HTML
+   reference's .chart-filter-toggle / .chart-filter-btn (0.72rem = 10.08px). */
+.pa-filter-toggle { display: flex; gap: 2px; margin-left: auto; background: #f1f5f9; border-radius: 8px; padding: 2px; }
+.pa-filter-btn {
+  padding: 4px 12px; border-radius: 6px; border: none; background: transparent;
+  font-family: inherit; font-size: 10.08px; font-weight: 600; color: #64748b;
+  cursor: pointer; transition: all 0.15s;
+}
+.pa-filter-btn:hover { color: #1e293b; }
+.pa-filter-btn.pa-filter-btn-active {
+  background: #fff; color: #1e293b; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* Test History series/sort filter buttons — ported 1:1 from the HTML
+   reference's .filter-label / .history-filter-btn / .sort-btn (.72rem = 10.08px
+   label, .75rem = 10.5px buttons). */
+.pa-filter-label { font-size: 10.08px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+.pa-history-btn {
+  padding: 5px 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff;
+  font-family: inherit; font-size: 10.5px; font-weight: 600; color: #64748b;
+  cursor: pointer; transition: all 0.15s;
+}
+.pa-history-btn:hover { border-color: #cbd5e1; color: #1e293b; }
+.pa-history-btn.pa-history-btn-active { background: #1E2028; border-color: #1E2028; color: #fff; }
 
 /* Section divider (line — LABEL — line) */
 .pa-divider { display: flex; align-items: center; gap: 16px; margin: 32px 0 24px; }
 .pa-divider::before, .pa-divider::after { content: ''; flex: 1; height: 1px; background: #E2E8F0; }
 .pa-divider > span {
-  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  font-size: 10.9px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 1.5px; color: #64748b; white-space: nowrap;
 }
 

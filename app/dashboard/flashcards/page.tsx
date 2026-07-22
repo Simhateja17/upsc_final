@@ -153,10 +153,23 @@ export default function FlashcardsPage() {
 
   async function handleDeleteSubject() {
     if (!deleteTarget) return;
+    const target = deleteTarget;
+
+    // A subject added via "Add Subject" only exists in local state until the
+    // user creates its first flashcard — no deck was ever persisted, so
+    // there's nothing to delete on the backend, just drop it locally.
+    const hasPersistedDeck = decks.some((d) => d.id === target.id);
+    if (!hasPersistedDeck) {
+      setCustomSubjects((prev) => prev.filter((s) => s.id !== target.id));
+      setDeleteTarget(null);
+      return;
+    }
+
     setDeleting(true);
     try {
-      await flashcardService.deleteSubject(deleteTarget.id);
-      setDecks((prev) => prev.filter((d) => d.id !== deleteTarget.id));
+      await flashcardService.deleteSubject(target.id);
+      setDecks((prev) => prev.filter((d) => d.id !== target.id));
+      setCustomSubjects((prev) => prev.filter((s) => s.id !== target.id));
     } catch {}
     setDeleting(false);
     setDeleteTarget(null);
@@ -265,7 +278,12 @@ export default function FlashcardsPage() {
                         NEW
                       </span>
                     )}
-                    {hasDeck && (
+                    {/* Curated catalog subjects only offer delete once they actually
+                        have a deck (always true in practice — they're pre-seeded).
+                        Custom subjects can be deleted immediately, even before their
+                        first flashcard/deck exists, since that's exactly the state a
+                        freshly "Add Subject"-ed entry starts in. */}
+                    {(hasDeck || !catalogIds.has(item.id)) && (
                       <button
                         type="button"
                         onClick={(e) => {
@@ -371,7 +389,7 @@ export default function FlashcardsPage() {
           )}
         </div>
 
-        <FlashcardScienceSections />
+        <FlashcardScienceSections onUpgradeClick={() => setShowVaultUpgradeModal(true)} />
       </div>
 
       <AddSubjectModal

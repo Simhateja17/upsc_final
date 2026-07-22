@@ -37,6 +37,12 @@ const MARK_OPTIONS = [
   { value: 20, mins: 15, words: 250 },
 ];
 
+// Essay paper is scored out of 125 — a single fixed option, auto-selected
+// the moment "Essay" is chosen as the paper (no GS-style 10/15/20 tiers).
+const ESSAY_MARK_OPTIONS = [
+  { value: 125, mins: 90, words: 1200 },
+];
+
 const SAMPLE_QUESTION = 'Analyze the role of technology in transforming Indian agriculture. What are the key barriers to its adoption?';
 
 const QUICK_TIPS = [
@@ -207,6 +213,7 @@ export default function MainsAnswerEvaluatorPage() {
       if (prefill.paper) {
         setSelectedPaper(prefill.paper);
         setPaperTouched(true);
+        if (prefill.paper === 'essay') setSelectedMarks(125);
       }
       if (prefill.answer) {
         setAnswerText(prefill.answer);
@@ -326,7 +333,7 @@ export default function MainsAnswerEvaluatorPage() {
             { value: '10,230+', label: 'Answers Evaluated', color: '#FDC700' },
             { value: '98.2%', label: 'Accuracy Rate', color: '#F97316' },
             { value: '< 60s', label: 'Evaluation Time', color: '#22C55E' },
-            { value: <>4.8<span style={{ color: '#FDC700' }}>★</span></>, label: 'Average Rating', color: '#FFFFFF' },
+            { value: <>4.8<span style={{ color: '#FDC700' }}>★</span></>, label: 'Average Rating', color: '#FDC700' },
           ]}
         />
 
@@ -374,7 +381,16 @@ export default function MainsAnswerEvaluatorPage() {
                       return (
                         <button
                           key={paper.id}
-                          onClick={() => { setSelectedPaper(paper.id); setPaperTouched(true); setFocusSubject(''); }}
+                          onClick={() => {
+                            setSelectedPaper(paper.id);
+                            setPaperTouched(true);
+                            setFocusSubject('');
+                            if (paper.id === 'essay') {
+                              setSelectedMarks(125);
+                            } else if (selectedPaper === 'essay') {
+                              setSelectedMarks(null);
+                            }
+                          }}
                           style={{
                             background: isSelected ? paperStyle.bg : '#FAFAFA',
                             border: isSelected ? `1.8px solid ${paperStyle.accent}` : `1.6px solid ${paperStyle.border}`,
@@ -460,7 +476,7 @@ export default function MainsAnswerEvaluatorPage() {
                 <div style={cardStyle}>
                   <StepHeader step={2} title="Maximum Question Marks" subtitle="Select marks for the question" state={stepState(1)} />
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    {MARK_OPTIONS.map(m => {
+                    {(selectedPaper === 'essay' ? ESSAY_MARK_OPTIONS : MARK_OPTIONS).map(m => {
                       const isSelected = selectedMarks === m.value;
                       return (
                         <button

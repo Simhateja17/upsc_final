@@ -75,6 +75,7 @@ const PLATFORM_ITEMS = [
   { title: 'Performance Analytics', subtitle: 'Deep insights on your prep', href: '/dashboard/performance', icon: 'pulse', bg: 'from-emerald-500 to-teal-600' },
   { title: 'Flashcards & Revision', subtitle: 'Smart spaced repetition', href: '/dashboard/flashcards', icon: 'monitor', bg: 'from-indigo-500 to-blue-700' },
   { title: 'Syllabus Tracker', subtitle: 'Track every topic you cover', href: '/dashboard/syllabus-tracker', icon: 'book', bg: 'from-cyan-500 to-teal-600' },
+  { title: 'Study Groups', subtitle: 'Learn together, grow together', href: '/dashboard/study-groups', icon: 'users', bg: 'from-pink-500 to-rose-600' },
 ];
 
 function cleanText(value?: string | null) {
@@ -393,7 +394,7 @@ function MainsAnswerWorkspace({
         <button
           type="button"
           onClick={() => setWriteOpen(true)}
-          className="group inline-flex items-center gap-2.5 rounded-[12px] border-2 border-[#0B1229] bg-[#0B1229] px-5 py-3 text-[14px] font-semibold text-white transition hover:bg-[#141F42]"
+          className="shine-btn group inline-flex items-center gap-2.5 rounded-[12px] border-2 border-[#0B1229] bg-[#0B1229] px-5 py-3 text-[14px] font-semibold text-white transition hover:bg-[#141F42]"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ transform: 'scaleX(-1)' }}>
             <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
@@ -438,7 +439,7 @@ function MainsAnswerWorkspace({
   );
 }
 
-function MainsActionButtons({
+function QuestionActionButtons({
   question,
   subject,
   isLoggedIn,
@@ -659,28 +660,32 @@ function AuthQuestionHeader({ userName, initials }: { userName?: string; initial
 function PublicSidebar({
   onDashboardLinkClick,
   onSignupClick,
+  showTrustBadge = true,
 }: {
   onDashboardLinkClick: DashboardLinkGuard;
   onSignupClick: () => void;
+  showTrustBadge?: boolean;
 }) {
   return (
     <>
-      <div className="rounded-[18px] border border-[#D1FAE5] bg-white p-6 shadow-[0_1px_3px_rgba(15,23,42,0.06),0_8px_28px_rgba(15,23,42,0.06)]">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#10B981] px-3 py-1.5 text-[12px] font-bold text-white">
-          <span>★</span> Trusted by 15,000+ aspirants
+      {showTrustBadge ? (
+        <div className="rounded-[18px] border border-[#D1FAE5] bg-white p-6 shadow-[0_1px_3px_rgba(15,23,42,0.06),0_8px_28px_rgba(15,23,42,0.06)]">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#10B981] px-3 py-1.5 text-[12px] font-bold text-white">
+            <span>★</span> Trusted by 15,000+ aspirants
+          </div>
+          <h3 className="mb-3 text-[24px] font-bold leading-[1.15] text-[#111827]" style={{ fontFamily: 'var(--font-cormorant-garamond), Georgia, serif' }}>
+            Master UPSC with India&apos;s Smartest PYQ Platform
+          </h3>
+          <ul className="mb-5 space-y-2.5 text-[14px] leading-[1.5] text-[#4A5565]">
+            <li>✓ 6,500+ questions with detailed explanations</li>
+            <li>✓ AI-powered performance analytics</li>
+            <li>✓ Track weak areas and repeated themes</li>
+          </ul>
+          <button type="button" onClick={onSignupClick} className="block w-full rounded-[12px] bg-gradient-to-r from-[#F5D06E] to-[#D4AF37] px-5 py-3 text-center text-[15px] font-bold text-[#0B1229] shadow-[0_6px_18px_rgba(212,175,55,0.28)]">
+            Start Practicing Free →
+          </button>
         </div>
-        <h3 className="mb-3 text-[24px] font-bold leading-[1.15] text-[#111827]" style={{ fontFamily: 'var(--font-cormorant-garamond), Georgia, serif' }}>
-          Master UPSC with India&apos;s Smartest PYQ Platform
-        </h3>
-        <ul className="mb-5 space-y-2.5 text-[14px] leading-[1.5] text-[#4A5565]">
-          <li>✓ 6,500+ questions with detailed explanations</li>
-          <li>✓ AI-powered performance analytics</li>
-          <li>✓ Track weak areas and repeated themes</li>
-        </ul>
-        <button type="button" onClick={onSignupClick} className="block w-full rounded-[12px] bg-gradient-to-r from-[#F5D06E] to-[#D4AF37] px-5 py-3 text-center text-[15px] font-bold text-[#0B1229] shadow-[0_6px_18px_rgba(212,175,55,0.28)]">
-          Start Practicing Free →
-        </button>
-      </div>
+      ) : null}
 
       <div className="rounded-[18px] border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
         <h4 className="mb-4 text-[12px] font-bold uppercase tracking-[0.18em] text-[#8B95A8]">Explore Our Platform</h4>
@@ -921,6 +926,46 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
           box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
           border-color: rgba(212, 175, 55, 0.45);
         }
+        .shine-btn {
+          position: relative;
+          overflow: hidden;
+          isolation: isolate;
+        }
+        .shine-btn::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -80%;
+          width: 65%;
+          height: 100%;
+          background: linear-gradient(
+            120deg,
+            transparent 0%,
+            rgba(245, 208, 110, 0.00) 25%,
+            rgba(245, 208, 110, 0.22) 44%,
+            rgba(255, 255, 255, 0.42) 50%,
+            rgba(245, 208, 110, 0.22) 56%,
+            rgba(245, 208, 110, 0.00) 75%,
+            transparent 100%
+          );
+          transform: skewX(-22deg);
+          pointer-events: none;
+          opacity: 0;
+          z-index: 1;
+        }
+        .shine-btn:hover::before {
+          animation: shineSweep 1.1s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+        }
+        .shine-btn > * {
+          position: relative;
+          z-index: 2;
+        }
+        @keyframes shineSweep {
+          0%   { left: -75%; opacity: 0; }
+          20%  { opacity: 1; }
+          80%  { opacity: 1; }
+          100% { left: 120%; opacity: 0; }
+        }
         .model-answer-parchment {
           position: relative;
           isolation: isolate;
@@ -1089,8 +1134,22 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
                 <QuestionChip className={isPrelims ? 'bg-[#ECFDF5] text-[#047857]' : chipStyles.mains}>{mode}</QuestionChip>
               </div>
 
-              <div className="mb-5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
-                {mode} · Question #{questionNumber} · {paper}
+              <div className="mb-5 flex items-center justify-between">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
+                  {mode} · Question #{questionNumber} · {paper}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleBookmark}
+                  disabled={bookmarkStatus === 'saving'}
+                  title={bookmarked ? 'Bookmarked' : 'Bookmark'}
+                  aria-label={bookmarked ? 'Bookmarked' : 'Bookmark'}
+                  className={`shrink-0 transition hover:text-[#D4AF37] disabled:opacity-60 ${bookmarked ? 'text-[#D4AF37]' : 'text-[#C9CFDB]'}`}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill={bookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+                  </svg>
+                </button>
               </div>
 
               {isPrelims ? (
@@ -1111,7 +1170,7 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
               )}
 
               {options.length > 0 ? (
-                <div className="mb-5 grid grid-cols-1 gap-3">
+                <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {options.map((option) => {
                     const isCorrect = option.label === correctOption;
                     const isSelected = option.label === selectedOption;
@@ -1121,7 +1180,7 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
                       ? 'border-[#10B981] bg-[#F0FDF9] text-[#065F46]'
                       : showIncorrect
                         ? 'border-[#EF4444] bg-[#FEF2F2] text-[#991B1B]'
-                        : 'border-[#E2E6EE] bg-white text-[#1E293B] hover:border-[#D4AF37] hover:bg-[#FFFDF5]';
+                        : 'border-[#E2E6EE] bg-white text-[#1E293B] hover:translate-x-1 hover:border-[#D4AF37] hover:bg-[#FFFDF5]';
                     const letterClass = showCorrect
                       ? 'bg-[#10B981] text-white'
                       : showIncorrect
@@ -1155,6 +1214,15 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
                 <>
                   {(revealed || !options.length) ? <Explanation question={question} /> : null}
 
+                  {revealed ? (
+                    <QuestionActionButtons
+                      question={question}
+                      subject={subject}
+                      isLoggedIn={isLoggedIn}
+                      onRequireAuth={() => openAuthModal('signup')}
+                    />
+                  ) : null}
+
                   {!isLoggedIn && revealed ? (
                     <div className="mt-5 rounded-[16px] border border-[#F5D06E]/60 bg-[#FFFDF5] p-5">
                       <p className="text-[15px] font-bold text-[#0B1229]">Want to save this attempt?</p>
@@ -1173,7 +1241,7 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
                     isLoggedIn={isLoggedIn}
                     onRequireAuth={() => openAuthModal('signup')}
                   />
-                  <MainsActionButtons
+                  <QuestionActionButtons
                     question={question}
                     subject={subject}
                     isLoggedIn={isLoggedIn}
@@ -1236,25 +1304,41 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
               question={question}
             />
           ) : (
-            <PublicSidebar onDashboardLinkClick={guardPublicDashboardLink} onSignupClick={() => openAuthModal('signup')} />
+            <PublicSidebar onDashboardLinkClick={guardPublicDashboardLink} onSignupClick={() => openAuthModal('signup')} showTrustBadge={isPrelims} />
           )}
         </aside>
       </main>
 
-      {!isLoggedIn ? <section className="bg-gradient-to-b from-[#EEF1F7] to-[#F8F9FB] px-5 py-16">
-        <div className="mx-auto max-w-[920px] overflow-hidden rounded-[24px] bg-[#071126] px-8 py-12 text-center shadow-[0_25px_60px_rgba(15,23,42,0.22)] sm:px-14">
-          <h2 className="text-[38px] font-bold leading-[1.1] text-white sm:text-[48px]" style={{ fontFamily: 'var(--font-cormorant-garamond), Georgia, serif' }}>
-            Your UPSC Journey Starts <span className="text-[#F5D06E]">Today</span>
-          </h2>
-          <p className="mx-auto mt-4 max-w-[560px] text-[16px] leading-[1.65] text-white/65">
-            Smart preparation, structured planning, and AI-powered insights for serious aspirants.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <button type="button" onClick={() => openAuthModal('signup')} className="rounded-[12px] bg-[#D4AF37] px-6 py-3 text-[15px] font-bold text-[#0B1229]">Start Free Trial →</button>
-            <Link href="/contact" className="rounded-[12px] border border-white/20 px-6 py-3 text-[15px] font-semibold text-white">Contact Us</Link>
+      {!isLoggedIn ? (
+        <section className="pyq-cta-section">
+          <style jsx>{`
+            .pyq-cta-section { background: #F4F6FA; padding: 80px 20px; }
+            .pyq-cta-box { max-width: 700px; margin: 0 auto; background: linear-gradient(135deg,#0B1530 0%,#0F2050 100%); border-radius: 24px; padding: 60px 40px; text-align: center; position: relative; overflow: hidden; box-shadow: 0 40px 80px rgba(11,29,58,0.24); border: 1px solid rgba(255,255,255,0.07); }
+            .pyq-cta-box::before { content: ''; position: absolute; top: -80px; left: -80px; width: 320px; height: 320px; border-radius: 50%; background: rgba(232,184,75,0.06); pointer-events: none; }
+            .pyq-cta-box::after { content: ''; position: absolute; bottom: -60px; right: -60px; width: 250px; height: 250px; border-radius: 50%; background: rgba(46,93,179,0.08); pointer-events: none; }
+            .pyq-cta-box h2 { font-family: var(--font-cormorant-garamond), Georgia, serif; font-size: clamp(30px,4vw,50px); font-weight: 700; letter-spacing: -1.2px; color: #FFFFFF; margin-bottom: 14px; position: relative; z-index: 1; line-height: 1.08; }
+            .pyq-cta-box p { font-size: 16px; color: rgba(255,255,255,0.58); max-width: 420px; margin: 0 auto 36px; line-height: 1.65; position: relative; z-index: 1; }
+            .pyq-cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+            .pyq-cta-primary { padding: 15px 38px; background: linear-gradient(135deg,#E8B84B,#B8780A); color: #0B1530; border: none; border-radius: 12px; font-size: 15.5px; font-weight: 700; cursor: pointer; transition: all 0.25s; box-shadow: 0 8px 28px rgba(232,184,75,0.38); }
+            .pyq-cta-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 44px rgba(232,184,75,0.5); }
+            .pyq-cta-secondary { display: inline-block; padding: 15px 36px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #FFFFFF; border-radius: 12px; font-size: 15.5px; font-weight: 600; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.25s; }
+            .pyq-cta-secondary:hover { background: rgba(255,255,255,0.11); transform: translateY(-2px); border-color: rgba(255,255,255,0.28); }
+            @media (max-width: 640px) {
+              .pyq-cta-box { padding: 40px 20px; }
+              .pyq-cta-btns { flex-direction: column; align-items: center; }
+              .pyq-cta-primary, .pyq-cta-secondary { width: 100%; max-width: 300px; text-align: center; }
+            }
+          `}</style>
+          <div className="pyq-cta-box">
+            <h2>Your UPSC Journey<br />Starts <span style={{ color: '#E8B84B' }}>Today</span></h2>
+            <p>Smart preparation, structured planning, and AI-powered insights, everything serious aspirants need, in one place.</p>
+            <div className="pyq-cta-btns">
+              <button type="button" className="pyq-cta-primary" onClick={() => openAuthModal('signup')}>Start Free Trial →</button>
+              <Link href="/contact" className="pyq-cta-secondary">Connect Us</Link>
+            </div>
           </div>
-        </div>
-      </section> : null}
+        </section>
+      ) : null}
 
       <Footer />
     </div>
