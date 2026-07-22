@@ -8,6 +8,7 @@ import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 interface CalendarItem {
   date: string;
   title: string;
+  questionText: string;
   paper: string;
   subject: string;
   marks: number;
@@ -101,7 +102,7 @@ export default function DailyAnswerHistoryPage() {
                         </div>
                         <span className="text-[#6A7282]" style={{ fontSize: '12px' }}>{formatDateLabel(c.date, todayStr)}</span>
                       </div>
-                      <p className="text-[#101828] font-bold mb-2" style={{ fontSize: '14px', lineHeight: '20px' }}>{c.title}</p>
+                      <p className="text-[#101828] font-bold mb-2" style={{ fontSize: '14px', lineHeight: '20px' }}>{c.questionText || c.title}</p>
                       <p className="text-[#4A5565]" style={{ fontSize: '12px' }}>
                         {c.score != null
                           ? <>Score: <span className="font-bold text-[#101828]">{c.score}/{c.maxScore}</span></>

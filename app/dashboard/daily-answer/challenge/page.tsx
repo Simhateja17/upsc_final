@@ -33,6 +33,7 @@ interface QuestionData {
 interface CalendarItem {
   date: string;
   title: string;
+  questionText: string;
   paper: string;
   subject: string;
   marks: number;
@@ -661,7 +662,7 @@ function DailyMainsChallengeInner() {
                             })}
                             <span style={{ fontSize: '11px', color: '#6B7280' }}>· {formatDateLabel(c.date, todayStr)}</span>
                           </div>
-                          <div style={{ fontWeight: 500, fontSize: '14px', lineHeight: '1.6', color: '#374151', fontFamily: 'var(--font-merriweather), Inter, sans-serif' }}>{c.title}</div>
+                          <div style={{ fontWeight: 500, fontSize: '14px', lineHeight: '1.6', color: '#374151', fontFamily: 'var(--font-merriweather), Inter, sans-serif' }}>{c.questionText || c.title}</div>
                         </div>
                         <div className="flex-shrink-0 flex flex-col items-end" style={{ gap: '4px' }}>
                           <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: 500 }}>Your score</div>
