@@ -781,11 +781,11 @@ function MockTestsPageInner() {
         />
       )}
 
-      {/* ── Pro Upgrade Modal ── */}
+      {/* ── Pro Upgrade Modal — Prelims-only; must not linger over the Mains tab ── */}
 
       {/* Main scrollable content */}
       <MockTestUpgradeModal
-        open={upgradeModalOpen}
+        open={upgradeModalOpen && selectedExamMode === 'prelims'}
         onClose={() => setUpgradeModalOpen(false)}
         plans={upgradePlans}
         used={prelimsQuota?.used ?? 1}
