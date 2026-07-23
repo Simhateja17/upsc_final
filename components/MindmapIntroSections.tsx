@@ -12,7 +12,7 @@ import React, { useEffect, useRef } from 'react';
  * the scroll-reveal / cinematic preview-mindmap animations replicate the
  * original IntersectionObserver scripts.
  */
-export default function MindmapIntroSections() {
+export default function MindmapIntroSections({ onUpgradeClick }: { onUpgradeClick?: () => void } = {}) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -304,30 +304,32 @@ export default function MindmapIntroSections() {
 
       {/* === WHY MINDMAPS === */}
       <section className="why-section">
-        <div className="section-title reveal">
-          <h2>
-            Why <span className="italic-gold">Mindmaps</span> Matter
-          </h2>
-          <p>Research-backed visual learning that transforms how you study, retain, and recall complex topics.</p>
-        </div>
-        <div className="why-grid">
-          <div className="why-card reveal reveal-delay-1">
-            <div className="why-icon" style={{ background: 'rgba(212,175,55,0.1)' }}>🧠</div>
-            <h3>See the Big Picture</h3>
-            <p>Mindmaps reveal how concepts connect hierarchically. Instead of linear notes, see entire topics at a glance with all their branches and relationships.</p>
-            <div className="why-stat" style={{ background: 'rgba(212,175,55,0.08)', color: '#f5c563' }}>▲ 40% better concept linking</div>
+        <div className="why-banner reveal">
+          <div className="section-title">
+            <h2>
+              Why <span className="italic-gold">Mindmaps</span> Matter
+            </h2>
+            <p>Research-backed visual learning that transforms how you study, retain, and recall complex topics.</p>
           </div>
-          <div className="why-card reveal reveal-delay-2">
-            <div className="why-icon" style={{ background: 'rgba(124,58,237,0.1)' }}>🔴</div>
-            <h3>Revise 3x Faster</h3>
-            <p>Visual recall outperforms text-based revision. Our structured maps let you scan an entire subject in minutes, not hours, perfect for last-mile revision.</p>
-            <div className="why-stat" style={{ background: 'rgba(124,58,237,0.08)', color: '#c4b5fd' }}>▲ 3x faster revision cycles</div>
-          </div>
-          <div className="why-card reveal reveal-delay-3">
-            <div className="why-icon" style={{ background: 'rgba(16,185,129,0.1)' }}>🎯</div>
-            <h3>Structured for Retention</h3>
-            <p>Hierarchical organization mirrors how your brain naturally stores information. Better structure means stronger memory connections and faster recall during exams.</p>
-            <div className="why-stat" style={{ background: 'rgba(16,185,129,0.08)', color: '#6ee7b7' }}>▲ Optimized for long-term memory</div>
+          <div className="why-grid">
+            <div className="why-card reveal reveal-delay-1">
+              <div className="why-icon" style={{ background: 'rgba(212,175,55,0.1)' }}>🧠</div>
+              <h3>See the Big Picture</h3>
+              <p>Mindmaps reveal how concepts connect hierarchically. Instead of linear notes, see entire topics at a glance with all their branches and relationships.</p>
+              <div className="why-stat" style={{ background: 'rgba(212,175,55,0.08)', color: '#f5c563' }}>▲ 40% better concept linking</div>
+            </div>
+            <div className="why-card reveal reveal-delay-2">
+              <div className="why-icon" style={{ background: 'rgba(124,58,237,0.1)' }}>🔴</div>
+              <h3>Revise 3x Faster</h3>
+              <p>Visual recall outperforms text-based revision. Our structured maps let you scan an entire subject in minutes, not hours, perfect for last-mile revision.</p>
+              <div className="why-stat" style={{ background: 'rgba(124,58,237,0.08)', color: '#c4b5fd' }}>▲ 3x faster revision cycles</div>
+            </div>
+            <div className="why-card reveal reveal-delay-3">
+              <div className="why-icon" style={{ background: 'rgba(16,185,129,0.1)' }}>🎯</div>
+              <h3>Structured for Retention</h3>
+              <p>Hierarchical organization mirrors how your brain naturally stores information. Better structure means stronger memory connections and faster recall during exams.</p>
+              <div className="why-stat" style={{ background: 'rgba(16,185,129,0.08)', color: '#6ee7b7' }}>▲ Optimized for long-term memory</div>
+            </div>
           </div>
         </div>
       </section>
@@ -540,7 +542,7 @@ export default function MindmapIntroSections() {
             </h2>
             <p className="cta-body">Unlock unlimited mindmap creation, smart auto-layouts, and beautifully structured visual learning. Transform complex topics into clear, memorable maps that stick.</p>
             <div className="cta-action-row">
-              <button className="cta-btn"><span>⭐</span> Unlock Mindmaps Pro</button>
+              <button type="button" className="cta-btn" onClick={onUpgradeClick}><span>⭐</span> Upgrade</button>
               <div className="cta-social" aria-label="15,000 plus aspirants learning smarter">
                 <div className="avatar-stack">
                   <div className="badge" style={{ background: '#f59e0b' }}>UP</div>
@@ -709,11 +711,21 @@ export default function MindmapIntroSections() {
         /* === WHY MINDMAPS === */
         .why-section {
           padding: 80px 40px;
+          background: #f5f5fa;
+        }
+        /* Card treatment matches .cta-banner ("Map Your Way to Mastery") 1:1 —
+           same max-width, border-radius and padding — so it sits centered with
+           consistent side margins instead of bleeding to the container edges. */
+        .why-banner {
+          max-width: 1000px;
+          margin: 0 auto;
           background: linear-gradient(180deg, #0a0e17 0%, #111827 100%);
+          border-radius: 24px;
+          padding: 60px 64px;
           position: relative;
           overflow: hidden;
         }
-        .why-section::before {
+        .why-banner::before {
           content: '';
           position: absolute;
           inset: 0;
@@ -1279,6 +1291,9 @@ export default function MindmapIntroSections() {
           }
           .why-grid {
             grid-template-columns: 1fr;
+          }
+          .why-banner {
+            padding: 48px 32px;
           }
           .preview-container {
             grid-template-columns: 1fr;
