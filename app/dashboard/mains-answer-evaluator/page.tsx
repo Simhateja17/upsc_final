@@ -285,6 +285,8 @@ export default function MainsAnswerEvaluatorPage() {
         (res as any)?.data?.data?.attemptId;
       if (attemptId && typeof window !== 'undefined') {
         sessionStorage.setItem('mainsEvaluatorAttemptId', attemptId);
+        // Do not inherit the previous attempt's countdown when rewriting.
+        sessionStorage.setItem('mainsEvaluatorEvalStart', String(Date.now()));
       }
       entitlements.refreshEntitlements();
       router.push('/dashboard/mains-answer-evaluator/evaluating');
