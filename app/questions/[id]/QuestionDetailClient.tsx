@@ -1103,6 +1103,22 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
           70% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
           100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
+        .pyq-cta-section { background: #F4F6FA; padding: 80px 20px; }
+        .pyq-cta-box { max-width: 700px; margin: 0 auto; background: linear-gradient(135deg,#0B1530 0%,#0F2050 100%); border-radius: 24px; padding: 60px 40px; text-align: center; position: relative; overflow: hidden; box-shadow: 0 40px 80px rgba(11,29,58,0.24); border: 1px solid rgba(255,255,255,0.07); }
+        .pyq-cta-box::before { content: ''; position: absolute; top: -80px; left: -80px; width: 320px; height: 320px; border-radius: 50%; background: rgba(232,184,75,0.06); pointer-events: none; }
+        .pyq-cta-box::after { content: ''; position: absolute; bottom: -60px; right: -60px; width: 250px; height: 250px; border-radius: 50%; background: rgba(46,93,179,0.08); pointer-events: none; }
+        .pyq-cta-box h2 { font-family: var(--font-cormorant-garamond), Georgia, serif; font-size: clamp(30px,4vw,50px); font-weight: 700; letter-spacing: -1.2px; color: #FFFFFF; margin-bottom: 14px; position: relative; z-index: 1; line-height: 1.08; }
+        .pyq-cta-box p { font-size: 16px; color: rgba(255,255,255,0.58); max-width: 420px; margin: 0 auto 36px; line-height: 1.65; position: relative; z-index: 1; }
+        .pyq-cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+        .pyq-cta-primary { padding: 15px 38px; background: linear-gradient(135deg,#E8B84B,#B8780A); color: #0B1530; border: none; border-radius: 12px; font-size: 15.5px; font-weight: 700; cursor: pointer; transition: all 0.25s; box-shadow: 0 8px 28px rgba(232,184,75,0.38); }
+        .pyq-cta-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 44px rgba(232,184,75,0.5); }
+        .pyq-cta-secondary { display: inline-block; padding: 15px 36px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #FFFFFF; border-radius: 12px; font-size: 15.5px; font-weight: 600; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.25s; }
+        .pyq-cta-secondary:hover { background: rgba(255,255,255,0.11); transform: translateY(-2px); border-color: rgba(255,255,255,0.28); }
+        @media (max-width: 640px) {
+          .pyq-cta-box { padding: 40px 20px; }
+          .pyq-cta-btns { flex-direction: column; align-items: center; }
+          .pyq-cta-primary, .pyq-cta-secondary { width: 100%; max-width: 300px; text-align: center; }
+        }
       `}</style>
 
       {isLoggedIn ? <AuthQuestionHeader userName={displayName} initials={userInitials} /> : <PublicHeader />}
@@ -1311,24 +1327,6 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
 
       {!isLoggedIn ? (
         <section className="pyq-cta-section">
-          <style jsx>{`
-            .pyq-cta-section { background: #F4F6FA; padding: 80px 20px; }
-            .pyq-cta-box { max-width: 700px; margin: 0 auto; background: linear-gradient(135deg,#0B1530 0%,#0F2050 100%); border-radius: 24px; padding: 60px 40px; text-align: center; position: relative; overflow: hidden; box-shadow: 0 40px 80px rgba(11,29,58,0.24); border: 1px solid rgba(255,255,255,0.07); }
-            .pyq-cta-box::before { content: ''; position: absolute; top: -80px; left: -80px; width: 320px; height: 320px; border-radius: 50%; background: rgba(232,184,75,0.06); pointer-events: none; }
-            .pyq-cta-box::after { content: ''; position: absolute; bottom: -60px; right: -60px; width: 250px; height: 250px; border-radius: 50%; background: rgba(46,93,179,0.08); pointer-events: none; }
-            .pyq-cta-box h2 { font-family: var(--font-cormorant-garamond), Georgia, serif; font-size: clamp(30px,4vw,50px); font-weight: 700; letter-spacing: -1.2px; color: #FFFFFF; margin-bottom: 14px; position: relative; z-index: 1; line-height: 1.08; }
-            .pyq-cta-box p { font-size: 16px; color: rgba(255,255,255,0.58); max-width: 420px; margin: 0 auto 36px; line-height: 1.65; position: relative; z-index: 1; }
-            .pyq-cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
-            .pyq-cta-primary { padding: 15px 38px; background: linear-gradient(135deg,#E8B84B,#B8780A); color: #0B1530; border: none; border-radius: 12px; font-size: 15.5px; font-weight: 700; cursor: pointer; transition: all 0.25s; box-shadow: 0 8px 28px rgba(232,184,75,0.38); }
-            .pyq-cta-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 44px rgba(232,184,75,0.5); }
-            .pyq-cta-secondary { display: inline-block; padding: 15px 36px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #FFFFFF; border-radius: 12px; font-size: 15.5px; font-weight: 600; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.25s; }
-            .pyq-cta-secondary:hover { background: rgba(255,255,255,0.11); transform: translateY(-2px); border-color: rgba(255,255,255,0.28); }
-            @media (max-width: 640px) {
-              .pyq-cta-box { padding: 40px 20px; }
-              .pyq-cta-btns { flex-direction: column; align-items: center; }
-              .pyq-cta-primary, .pyq-cta-secondary { width: 100%; max-width: 300px; text-align: center; }
-            }
-          `}</style>
           <div className="pyq-cta-box">
             <h2>Your UPSC Journey<br />Starts <span style={{ color: '#E8B84B' }}>Today</span></h2>
             <p>Smart preparation, structured planning, and AI-powered insights, everything serious aspirants need, in one place.</p>
