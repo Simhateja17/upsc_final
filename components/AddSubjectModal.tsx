@@ -55,7 +55,7 @@ export default function AddSubjectModal({ open, onClose, onCreate }: Props) {
     >
       <div
         className="relative w-full max-w-[560px] rounded-3xl overflow-hidden bg-white"
-        style={{ border: '1px solid #E9EAEE', boxShadow: '0 40px 100px -30px rgba(11,18,38,0.6)' }}
+        style={{ boxShadow: '0 40px 100px -30px rgba(11,18,38,0.6)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -194,9 +194,9 @@ export default function AddSubjectModal({ open, onClose, onCreate }: Props) {
             disabled={!name.trim()}
             className="flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold disabled:opacity-50"
             style={{
-              background: 'linear-gradient(135deg, #F97316 0%, #F5B942 100%)',
-              color: '#0D1221',
-              boxShadow: '0 0 0 1px rgba(245,185,66,0.35), 0 10px 30px -10px rgba(245,185,66,0.35)',
+              background: 'linear-gradient(180deg, #ffd24a, #f5b400)',
+              color: '#1a1407',
+              boxShadow: '0 4px 16px rgba(245,180,0,.35)',
             }}
           >
             <span>+</span> Create Subject

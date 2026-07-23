@@ -31,7 +31,7 @@ const faqData: FAQSection[] = [
       },
       {
         question: 'Are the current prices a promotional offer?',
-        answer: '<p>Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, so lock in these rates while you can. Once you subscribe, your price remains locked for as long as you stay subscribed, even if prices increase for new users later.</p>',
+        answer: '<p>Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, and any updated pricing will apply to all users.</p>',
       },
       {
         question: 'Can I upgrade or cancel my subscription anytime?',
@@ -234,8 +234,8 @@ const faqData: FAQSection[] = [
     iconBg: 'rgba(29,164,92,0.1)',
     items: [
       {
-        question: 'What is the Daily Mains Challenge?',
-        answer: '<p>The Daily Mains Challenge helps you build the most important skill in UPSC Mains - answer writing. Every day, you get: One UPSC-style question, Time-bound writing practice, Structured evaluation, Detailed feedback, Improvement suggestions, Model-answer direction.</p><p>The goal is steady improvement through consistency and to make answer writing less intimidating.</p>',
+        question: 'What is Daily Answer Writing?',
+        answer: '<p>Daily Answer Writing helps you build the most important skill in UPSC Mains - answer writing. Every day, you get: One UPSC-style question, Time-bound writing practice, Structured evaluation, Detailed feedback, Improvement suggestions, Model-answer direction.</p><p>The goal is steady improvement through consistency and to make answer writing less intimidating.</p>',
       },
       {
         question: 'How does the AI answer evaluation work?',

@@ -6,6 +6,9 @@ import { useParams, useRouter } from 'next/navigation';
 import CreateFlashcardModal from '@/components/CreateFlashcardModal';
 import NewTopicModal from '@/components/NewTopicModal';
 import { flashcardService } from '@/lib/services';
+import { getTopicIcon } from '@/lib/topic-icons';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { FlashcardAddFlashcardModal, FlashcardAddTopicModal } from '@/components/upgrade/UpgradeModals';
 
 type Topic = {
   id: string;
@@ -24,64 +27,10 @@ function displaySubjectName(subject: string) {
   return subject;
 }
 
-function getMasteryColor(mastery: number): { barColor: string; textColor: string; accentColor: string } {
-  if (mastery === 100) return { barColor: '#16A34A', textColor: '#16A34A', accentColor: '#16A34A' };
-  if (mastery > 0)    return { barColor: '#F59E0B', textColor: '#D97706', accentColor: '#F59E0B' };
-  return               { barColor: '#EF4444', textColor: '#EF4444', accentColor: '#EF4444' };
-}
-
-const TOPIC_ICONS: Record<string, string> = {
-  // Polity
-  'Constitutional Amendments': '📜', 'Amendment': '📜',
-  'Fundamental Rights': '⚖️', 'Fundamental Rights & DPSPs': '⚖️', 'DPSP': '📖',
-  'Judiciary': '🏛️', 'Supreme Court': '🏛️', 'Judiciary & Supreme Court': '🏛️',
-  'Centre-State': '🗺️', 'Centre-State Relations': '🗺️', 'Federalism': '🗺️',
-  'Election Commission': '🗳️', 'Election': '🗳️',
-  'Parliament': '🏛️', 'Lok Sabha': '🏛️', 'Rajya Sabha': '🏛️',
-  'President': '👑', 'Governor': '🏛️', 'Prime Minister': '👔',
-  'Emergency': '🚨', 'Emergency Provisions': '🚨',
-  'Panchayati Raj': '🏘️', 'Local Government': '🏘️', 'Municipalities': '🏘️',
-  'Constitutional Bodies': '📋', 'Statutory Bodies': '📋',
-  'UPSC': '📋', 'CAG': '📋', 'Finance Commission': '💹',
-  'Directive Principles': '📖', 'Fundamental Duties': '✊',
-  'Citizenship': '🪪', 'Preamble': '📜', 'Schedules': '📋',
-  // History
-  'Ancient India': '🏺', 'Vedic': '📿', 'Harappan': '🏺', 'Indus Valley': '🏺',
-  'Maurya': '🦁', 'Gupta': '🌟', 'Buddhism': '☸️', 'Jainism': '🕯️',
-  'Medieval India': '🏰', 'Mughal': '🕌', 'Maratha': '⚔️', 'Delhi Sultanate': '🕌',
-  'Modern India': '🇮🇳', 'British': '🗺️', 'Freedom Movement': '🇮🇳',
-  'Independence': '🇮🇳', 'Revolt': '⚔️', 'Partition': '🗓️',
-  'Art & Culture': '🎨', 'Architecture': '🕌', 'Literature': '📚',
-  'Post-Independence': '📜', 'Post Independence': '📜',
-  // Geography
-  'Physical Geography': '🌍', 'Climate': '☁️', 'Rivers': '🌊', 'Mountains': '⛰️',
-  'Soil': '🌱', 'Agriculture': '🌾', 'Industry': '🏭',
-  'Transport': '🚆', 'Natural Disasters': '🌪️', 'Ocean': '🌊',
-  'World Geography': '🌐', 'Indian Geography': '🗺️', 'Atmosphere': '🌤️',
-  // Economy
-  'National Income': '💹', 'GDP': '💹', 'Money': '💰', 'Banking': '🏦',
-  'Inflation': '📈', 'Budget': '💼', 'Fiscal': '💼', 'Poverty': '🤝',
-  'Agriculture Sector': '🌾', 'Industry Sector': '🏭', 'Services': '🏢',
-  'External Sector': '🌐', 'Trade': '🌐', 'Balance of Payments': '⚖️',
-  'Infrastructure': '🏗️', 'Human Development': '👥',
-  // Environment
-  'Ecosystem': '🌿', 'Ecology': '🌿', 'Biodiversity': '🦋',
-  'Pollution': '🏭', 'Climate Change': '🌡️', 'Wildlife': '🐘',
-  'Conservation': '🌳', 'Wetlands': '💧', 'Protected Areas': '🌳',
-  // Science
-  'Physics': '⚛️', 'Chemistry': '🧪', 'Biology': '🧬',
-  'Space': '🚀', 'Nuclear': '☢️', 'Computer': '💻', 'IT': '💻',
-  'Biotechnology': '🧬', 'Nanotechnology': '🔬', 'Defence': '🛡️',
-  'Health': '🏥', 'Disease': '🦠',
-};
-
-function getTopicIcon(name: string): string {
-  if (TOPIC_ICONS[name]) return TOPIC_ICONS[name];
-  const lower = name.toLowerCase();
-  for (const [key, icon] of Object.entries(TOPIC_ICONS)) {
-    if (lower.includes(key.toLowerCase())) return icon;
-  }
-  return '📄';
+function getMasteryColor(mastery: number): { barColor: string; textColor: string } {
+  if (mastery === 100) return { barColor: '#16A34A', textColor: '#16A34A' };
+  if (mastery > 0)    return { barColor: '#F59E0B', textColor: '#D97706' };
+  return               { barColor: '#EF4444', textColor: '#EF4444' };
 }
 
 export default function FlashcardsSubjectPage() {
@@ -98,6 +47,10 @@ export default function FlashcardsSubjectPage() {
   const [deletingTopicId, setDeletingTopicId] = useState<string | null>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [hoveredBin, setHoveredBin] = useState<string | null>(null);
+  const [showAddCardUpgradeModal, setShowAddCardUpgradeModal] = useState(false);
+  const [showAddTopicUpgradeModal, setShowAddTopicUpgradeModal] = useState(false);
+  const entitlements = useEntitlements();
+  const hasFullAccess = entitlements.canAccess('flashcards', ['full']);
 
   useEffect(() => {
     if (!subjectId) return;
@@ -202,6 +155,20 @@ export default function FlashcardsSubjectPage() {
             </div>
           )}
 
+          {/* Completion progress bar (mirrors the reference) */}
+          {!loading && meta && (
+            <div className="mb-6">
+              <div style={{ height: 8, borderRadius: 999, background: '#ECEEF2', overflow: 'hidden' }}>
+                <div style={{ width: `${coverage}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, #F0B429, #E8B84B)', transition: 'width .6s ease' }} />
+              </div>
+              <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
+                <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF' }}>0%</span>
+                <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, color: '#CA8A04' }}>{coverage}% complete</span>
+                <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF' }}>100%</span>
+              </div>
+            </div>
+          )}
+
           {/* Step heading — just "2. Choose a Topic", no green tick */}
           <div className="flex items-center justify-between gap-3 mb-5">
             <div className="flex items-center gap-3">
@@ -212,26 +179,26 @@ export default function FlashcardsSubjectPage() {
                 2
               </div>
               <h2 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828' }}>
-                Choose a Topic
+                Choose a <span style={{ fontStyle: 'italic', color: '#E89A2B' }}>Topic</span>
               </h2>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 type="button"
-                onClick={() => setShowAddModal(true)}
+                onClick={() => hasFullAccess ? setShowAddModal(true) : setShowAddCardUpgradeModal(true)}
                 className="flex items-center gap-1.5 rounded-[8px] px-4 py-2"
                 style={{
-                  background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
+                  background: 'linear-gradient(180deg, #ffd24a, #f5b400)',
                   border: 'none',
-                  boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
-                  fontFamily: 'Inter', fontWeight: 700, fontSize: 13, lineHeight: '20px', letterSpacing: 0, color: '#17223E',
+                  boxShadow: '0 4px 16px rgba(245,180,0,.35)',
+                  fontFamily: 'Inter', fontWeight: 700, fontSize: 13, lineHeight: '20px', letterSpacing: 0, color: '#1a1407',
                 }}
               >
                 + Add Card
               </button>
               <button
                 type="button"
-                onClick={() => setShowNewTopicModal(true)}
+                onClick={() => hasFullAccess ? setShowNewTopicModal(true) : setShowAddTopicUpgradeModal(true)}
                 className="flex items-center gap-1.5 rounded-[8px] px-4 py-2"
                 style={{
                   background: '#FFFFFF',
@@ -248,7 +215,7 @@ export default function FlashcardsSubjectPage() {
           {loading ? (
             <div className="space-y-2 mb-6">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="rounded-[28px] h-[68px] animate-pulse" style={{ background: '#F0F2F5', border: '0.8px solid #E5E7EB' }} />
+                <div key={i} className="rounded-[8px] h-[68px] animate-pulse" style={{ background: '#F0F2F5', border: '0.8px solid #E5E7EB' }} />
               ))}
             </div>
           ) : topics.length === 0 ? (
@@ -258,7 +225,7 @@ export default function FlashcardsSubjectPage() {
           ) : (
             <div className="space-y-2 mb-6">
               {topics.map((topic) => {
-                const { barColor, textColor, accentColor } = getMasteryColor(topic.mastery);
+                const { barColor, textColor } = getMasteryColor(topic.mastery);
                 const readMin = Math.max(1, Math.ceil(topic.cards * 0.5));
                 const topicIcon = getTopicIcon(topic.name);
                 const isDeleting = deletingTopicId === topic.id;
@@ -268,12 +235,9 @@ export default function FlashcardsSubjectPage() {
                     onClick={() => router.push(`/dashboard/flashcards/${subjectId}/${topic.id}`)}
                     onMouseEnter={() => setHoveredCard(topic.id)}
                     onMouseLeave={() => { setHoveredCard(null); setHoveredBin(null); }}
-                    className="flex items-center rounded-[28px] overflow-hidden transition-all hover:shadow-md hover:-translate-y-px cursor-pointer"
+                    className="flex items-center rounded-[8px] overflow-hidden transition-all hover:shadow-md hover:-translate-y-px cursor-pointer"
                     style={{ border: '0.8px solid #E2E5ED', background: '#FFFFFF', minHeight: 68 }}
                   >
-                    {/* Left color accent strip */}
-                    <div className="flex-shrink-0 self-stretch w-[4px]" style={{ background: accentColor }} />
-
                     {/* Icon */}
                     <div className="flex-shrink-0 flex items-center justify-center mx-4" style={{ width: 40, height: 40, borderRadius: 12, background: '#EFF6FF', fontSize: 20 }}>
                       {topicIcon}
@@ -313,7 +277,7 @@ export default function FlashcardsSubjectPage() {
                           </svg>
                         </button>
                       )}
-                      <span style={{ color: '#6B7280', fontSize: 16 }} aria-hidden>›</span>
+                      <span style={{ color: '#000000', fontSize: 17, fontWeight: 800 }} aria-hidden>›</span>
                     </div>
                   </div>
                 );
@@ -367,6 +331,15 @@ export default function FlashcardsSubjectPage() {
         subjectName={meta ? displaySubjectName(meta.subject) : 'this subject'}
         onClose={() => setShowNewTopicModal(false)}
         onCreate={handleCreateTopic}
+      />
+
+      <FlashcardAddFlashcardModal
+        open={showAddCardUpgradeModal}
+        onClose={() => setShowAddCardUpgradeModal(false)}
+      />
+      <FlashcardAddTopicModal
+        open={showAddTopicUpgradeModal}
+        onClose={() => setShowAddTopicUpgradeModal(false)}
       />
 
       {deleteTarget && (

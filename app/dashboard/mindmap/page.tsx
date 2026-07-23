@@ -1,33 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { mindmapService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import { UpgradePrompt } from '@/components/entitlements';
+import MindmapIntroSections from '@/components/MindmapIntroSections';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
-
-const SUBJECT_CARD_STYLES: Record<string, { bg: string; border: string; bar: string }> = {
-  'indian-polity': { bg: '#FDF0DE', border: '#C0D9F5', bar: '#E9A12D' },
-  'modern-history': { bg: '#FFF8EE', border: '#FFD5A8', bar: '#E8B164' },
-  geography: { bg: 'rgba(201, 168, 76, 0.19)', border: '#B2EDD0', bar: '#D5A53C' },
-  'indian-economy': { bg: 'linear-gradient(139deg, #F3EFFD 0%, #EDE7FB 100%)', border: '#E8E1FD', bar: '#F16CB0' },
-  environment: { bg: 'linear-gradient(139deg, #EDF9F3 0%, #E0F5EA 100%)', border: '#B2EDD0', bar: '#D6A437' },
-  'science-and-tech': { bg: 'linear-gradient(139deg, #E0EBF9 0%, #D4E4F7 100%)', border: '#C0D9F5', bar: '#E0A446' },
-  'current-affairs': { bg: 'linear-gradient(139deg, #FFF1E8 0%, #FFE6D5 100%)', border: '#FFD1AA', bar: '#F39A3C' },
-  'gs-iv-ethics': { bg: 'linear-gradient(139deg, #EEF0FF 0%, #E0E3FF 100%)', border: '#C4C9F8', bar: '#4F46E5' },
-};
-
-const SUBJECT_NAMES: Record<string, string> = {
-  'indian-polity': 'Polity',
-  'modern-history': 'History',
-  geography: 'Geography',
-  'indian-economy': 'Economy',
-  environment: 'Environment',
-  'science-and-tech': 'Science & Tech',
-  'current-affairs': 'Current Affairs',
-  'gs-iv-ethics': 'Ethics',
-};
+import { MindmapUpgradeModal, LockedSubjectCard, LockedCardStyles } from '@/components/upgrade/UpgradeModals';
+import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
+import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
 
 type SubjectData = {
   id: string;
@@ -43,6 +23,7 @@ export default function MindmapPage() {
   const entitlements = useEntitlements();
   const [subjects, setSubjects] = useState<SubjectData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     mindmapService.getSubjects()
@@ -60,8 +41,16 @@ export default function MindmapPage() {
   const coverage = totalMaps > 0 ? Math.round((totalExplored / totalMaps) * 100) : 0;
   const needReview = Math.max(0, totalMaps - totalExplored);
   const hasFullAccess = entitlements.canAccess('mindmaps', ['full']);
-  const previewCount = entitlements.preview.mindmaps ?? subjects.length;
-  const visibleSubjects = hasFullAccess ? subjects : subjects.slice(0, previewCount || 0);
+  // Free & Aspire: Polity and Economy stay open and are listed first; every
+  // other subject remains visible but blurred + locked, per the approved design.
+  const FREE_SUBJECT_SLUGS = ['polity', 'economy'];
+  const isSubjectLocked = (slug: string) => !hasFullAccess && !FREE_SUBJECT_SLUGS.includes(slug);
+  const visibleSubjects = hasFullAccess
+    ? subjects
+    : [
+        ...subjects.filter((s) => FREE_SUBJECT_SLUGS.includes(s.slug)),
+        ...subjects.filter((s) => !FREE_SUBJECT_SLUGS.includes(s.slug)),
+      ];
 
   return (
     <div className="min-h-screen font-arimo" style={{ background: '#F9FAFB' }}>
@@ -98,17 +87,7 @@ export default function MindmapPage() {
           paddingTop: 'clamp(24px, 3vw, 40px)',
         }}
       >
-      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 pb-12">
-        {!hasFullAccess && (
-          <div className="mb-6 ml-0 sm:ml-11">
-            <UpgradePrompt
-              title="Mindmaps preview"
-              currentTier={entitlements.tier}
-              requiredTier="rise"
-              message={`Your plan includes ${previewCount || 0} preview mindmap. Upgrade to Rise to unlock the full visual learning library.`}
-            />
-          </div>
-        )}
+      <div className="w-full max-w-[1120px] mx-auto px-4 sm:px-8 pb-12">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-8 h-8 rounded-full bg-[#10182D] text-white flex items-center justify-center font-semibold text-[14px]">1</div>
           <h2 className="text-[36px] font-bold text-[#10182D] font-serif">
@@ -116,9 +95,11 @@ export default function MindmapPage() {
           </h2>
         </div>
         <p className="text-[#6A7282] text-[14px] mb-6 ml-11">Select the subject whose mindmaps you want to study today</p>
+        <SubjectChoiceCardStyles />
+        <LockedCardStyles />
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
+          <div className="subject-card-grid">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="h-[190px] animate-pulse rounded-[16px] border border-[#E5E7EB] bg-white" />
             ))}
@@ -129,61 +110,62 @@ export default function MindmapPage() {
             <p className="text-sm">Ask an admin to seed some mindmaps to get started.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 ml-0 sm:ml-11">
+          <div className="subject-card-grid">
             {visibleSubjects.map((subject) => {
-              const cardStyle = SUBJECT_CARD_STYLES[subject.slug] ?? { bg: '#FFFFFF', border: '#E5E7EB', bar: '#16A34A' };
-              const subjectName = SUBJECT_NAMES[subject.slug] ?? subject.name;
+              const subjectName = subject.name;
+              const cardStyle = getSubjectCardStyle(subjectName);
+              const subjectMeta = getSubjectMetaStyle(subjectName);
               const toGo = Math.max(0, subject.total - subject.explored);
               const progressWidth = subject.total > 0 ? Math.max(subject.progress, 10) : 0;
+              if (isSubjectLocked(subject.slug)) {
+                return (
+                  <LockedSubjectCard key={subject.slug} onClick={() => setShowUpgradeModal(true)}>
+                    <SubjectChoiceCard
+                      icon={subjectMeta.icon}
+                      iconBg={subjectMeta.bg}
+                      accentColor={cardStyle.bar}
+                      title={subjectName}
+                      meta={`${subject.total} cards · ${subject.total} topics`}
+                      progressPercent={progressWidth}
+                      footerLeft={`✓ ${subject.explored} mastered`}
+                      footerRight={toGo === 0 ? '✓ All done' : `${toGo} to go`}
+                      footerRightColor={toGo === 0 ? '#16A34A' : '#EF4444'}
+                    />
+                  </LockedSubjectCard>
+                );
+              }
               return (
-                <Link
+                <SubjectChoiceCard
                   key={subject.slug}
                   href={`/dashboard/mindmap/${subject.slug}`}
-                  className="block h-[190px] rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
-                  style={{ border: `1px solid ${cardStyle.border}`, background: cardStyle.bg }}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <span aria-hidden style={{ fontSize: 24, lineHeight: '24px' }}>{subject.icon}</span>
-                    {toGo > 0 && (
-                      <span
-                        className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
-                        style={{ background: '#EF4444', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
-                      >
-                        {toGo} due
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="mt-3" style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 17, lineHeight: '22px', color: '#22304D' }}>
-                    {subjectName}
-                  </h3>
-
-                  <p className="mt-1" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, lineHeight: '15px', color: '#8A94A6' }}>
-                    {subject.total} cards · {subject.total} topics
-                  </p>
-
-                  <div className="mt-4 h-[4px] w-full rounded-full" style={{ background: 'rgba(0,0,0,0.08)' }}>
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${progressWidth}%`, background: '#16A34A' }}
-                    />
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#16A34A' }}>
-                      ✓ {subject.explored} mastered
+                  icon={subjectMeta.icon}
+                  iconBg={subjectMeta.bg}
+                  accentColor={cardStyle.bar}
+                  title={subjectName}
+                  meta={`${subject.total} cards · ${subject.total} topics`}
+                  topRight={toGo > 0 && (
+                    <span
+                      className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
+                      style={{ background: '#EF4444', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
+                    >
+                      {toGo} due
                     </span>
-                    <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '18px', color: toGo === 0 ? '#16A34A' : '#EF4444' }}>
-                      {toGo === 0 ? '✓ All done' : `${toGo} to go`}
-                    </span>
-                  </div>
-                </Link>
+                  )}
+                  progressPercent={progressWidth}
+                  footerLeft={`✓ ${subject.explored} mastered`}
+                  footerRight={toGo === 0 ? '✓ All done' : `${toGo} to go`}
+                  footerRightColor={toGo === 0 ? '#16A34A' : '#EF4444'}
+                />
               );
             })}
           </div>
         )}
       </div>
+
+      <MindmapIntroSections />
       </div>
+
+      <MindmapUpgradeModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
     </div>
   );
 }

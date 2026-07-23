@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useEntitlements } from '@/contexts/EntitlementsContext';
 
 interface SidebarProps {
   forceShow?: boolean;
@@ -19,7 +18,6 @@ interface SidebarProps {
 
 const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp, onToggle }: SidebarProps) => {
   const pathname = usePathname();
-  const entitlements = useEntitlements();
   const isControlled = collapsedProp !== undefined;
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const collapsed = isControlled ? collapsedProp : internalCollapsed;
@@ -77,7 +75,7 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
       title: 'ANALYTICS',
       items: [
         { id: 'performance', label: 'Performance Analytics', icon: '/sidebar-performance-new.png', path: '/dashboard/performance', accessKey: 'analytics', allowed: ['full', 'limited'] },
-        { id: 'test-analytics', label: 'Test Analytics', icon: '/sidebar-analytics-new.png', path: '/dashboard/test-analytics', accessKey: 'test_analytics', allowed: ['full', 'limited'] },
+        { id: 'test-analytics', label: 'Tests History', icon: '/sidebar-analytics-new.png', path: '/dashboard/test-analytics', accessKey: 'test_analytics', allowed: ['full', 'limited'] },
       ],
     },
     {
@@ -91,10 +89,7 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
     {
       title: 'COMMUNITY',
       items: [
-        { id: 'study-groups', label: 'Study Groups', icon: '/sidebar-mindmap.png', path: '/dashboard/study-groups', accessKey: 'live_study_room', allowed: ['full'] },
         { id: 'leaderboard', label: 'Leaderboard', icon: '/sidebar-study-groups.png', path: '/dashboard/leaderboard' },
-        { id: 'discussion', label: 'Discussion Forum', icon: '/sidebar-discussion.png', path: '/dashboard/discussion' },
-        { id: 'mental-health', label: 'Mental Health Buddy', icon: '/sidebar-mental-health-new.png', path: '/dashboard/mental-health', accessKey: 'mental_health_buddy', allowed: ['full'] },
       ],
     },
   ];
@@ -128,41 +123,9 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
         <div
           className={`
             hidden lg:flex flex-shrink-0 border-b border-[#F0F2F5] gap-2
-            ${collapsed ? 'flex-col items-center px-0 py-3' : 'flex-row items-center justify-center px-3 py-3'}
+            ${collapsed ? 'flex-col items-end px-3 py-3' : 'flex-row items-center justify-end px-3 py-3'}
           `}
         >
-          {/* Focus Mode button */}
-          <Link
-            href="/dashboard/study-groups?tab=solo"
-            title="Focus Mode"
-            onClick={onClose}
-            style={{
-              boxShadow:
-                '0 1px 0 rgba(255,255,255,.7) inset, 0 1px 2px rgba(14,20,48,.06)',
-            }}
-            className={`
-              relative flex items-center select-none overflow-hidden
-              bg-white border border-[#E5E7EB]
-              hover:border-[#D9D2FF] transition-all
-              ${collapsed ? 'justify-center w-9 h-9 rounded-[0.6rem]' : 'gap-[0.55rem] px-[0.8rem] py-2 rounded-full'}
-            `}
-          >
-            {/* Pulsing indigo dot */}
-            {!collapsed && (
-              <span className="focus-pulse-dot h-[9px] w-[9px] flex-shrink-0" aria-hidden="true" />
-            )}
-            {/* Focus icon (person) */}
-            <svg className="w-[17px] h-[17px] flex-shrink-0 text-[#4F46E5]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <circle cx="12" cy="5.4" r="2.4" />
-              <path d="M12 9.2c-3.4 0-6 2.4-7 5.6-.4 1.2-1.3 1.5-2 1.7-.7.2-1 .7-1 1.3 0 .7.5 1.2 1.2 1.2h17.6c.7 0 1.2-.5 1.2-1.2 0-.6-.3-1.1-1-1.3-.7-.2-1.6-.5-2-1.7-1-3.2-3.6-5.6-7-5.6z" />
-            </svg>
-            {!collapsed && (
-              <span className="font-inter font-semibold text-[0.9rem] leading-none whitespace-nowrap tracking-[0.1px] text-[#0E1430]">
-                Focus Mode
-              </span>
-            )}
-          </Link>
-
           {/* Hamburger toggle */}
           <button
             onClick={toggle}
@@ -189,7 +152,6 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
 
               <ul className="space-y-0.5">
                 {section.items.map((item) => {
-                  const locked = item.accessKey ? !entitlements.canAccess(item.accessKey, item.allowed as any) : false;
                   return (
                   <li key={item.id}>
                     <Link
@@ -228,11 +190,6 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
                           <span className="font-inter font-medium text-[13px] leading-none whitespace-nowrap">
                             {item.label}
                           </span>
-                          {locked && (
-                            <span className="ml-auto rounded-full bg-[#FFF7E0] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-[#9A7020]">
-                              Lock
-                            </span>
-                          )}
                         </>
                       )}
                     </Link>

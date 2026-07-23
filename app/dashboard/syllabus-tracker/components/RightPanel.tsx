@@ -17,6 +17,7 @@ interface RightPanelProps {
 interface SubjectProgress extends Subject {
   total: number;
   done: number;
+  tracked: number;
   pct: number;
 }
 
@@ -33,18 +34,22 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
   const getSubjectStats = useCallback((subject: Subject) => {
     let total = 0;
     let done = 0;
+    let tracked = 0;
 
     subject.topics.forEach((topic, ti) => {
       topic.subs.forEach((_, si) => {
         total++;
         const key = `${subject.id}__${ti}__${si}`;
-        if (states[key]?.status === 'done') done++;
+        const status = states[key]?.status;
+        if (status && status !== 'none') tracked++;
+        if (status === 'done') done++;
       });
     });
 
     return {
       total,
       done,
+      tracked,
       pct: total > 0 ? Math.round((done / total) * 100) : 0,
     };
   }, [states]);
@@ -87,6 +92,11 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
     ] as Array<SubjectProgress & { stage: string }>;
   }, [getSubjectStats, syllabusData]);
 
+  const subjectsWithProgress = useMemo(
+    () => allSubjects.filter((subject) => subject.tracked > 0),
+    [allSubjects]
+  );
+
   return (
     <>
       <div className="w-full xl:w-[250px] xl:min-w-[250px] flex flex-col gap-[11px] overflow-y-auto flex-shrink-0">
@@ -117,7 +127,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
                     if (states[`${optionalSubject.id}__${ti}__${si}`]?.status === 'done') done++;
                   });
                   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-                  const progressColor = pct === 100 ? '#16a34a' : optionalSubject.color;
+                  const progressColor = pct === 100 ? '#15803d' : optionalSubject.color;
 
                   return (
                     <button
@@ -148,7 +158,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
             ) : (
               subjects.map((subject) => {
               const stats = getSubjectStats(subject);
-              const progressColor = stats.pct === 100 ? '#16a34a' : subject.color;
+              const progressColor = stats.pct === 100 ? '#15803d' : subject.color;
 
               return (
                 <div key={subject.id} className="flex items-center gap-[5px] mb-[8px] last:mb-0">
@@ -186,16 +196,16 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
           className="border-[1.5px] border-dashed rounded-[13px] p-[16px_14px] text-center cursor-pointer transition-all duration-200"
           style={{
             borderColor: 'rgba(201,146,26,.30)',
-            background: 'linear-gradient(135deg, rgba(201,146,26,.04), rgba(201,146,26,.09))',
+            background: '#FFFFFF',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = '#c9921a';
-            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(201,146,26,.09), rgba(201,146,26,.16))';
+            e.currentTarget.style.background = '#FFFFFF';
             e.currentTarget.style.transform = 'translateY(-1px)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = 'rgba(201,146,26,.30)';
-            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(201,146,26,.04), rgba(201,146,26,.09))';
+            e.currentTarget.style.background = '#FFFFFF';
             e.currentTarget.style.transform = 'translateY(0)';
           }}
           onClick={() => router.push('/dashboard/study-planner')}
@@ -272,7 +282,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
             </div>
 
             <div className="space-y-2">
-              {allSubjects.map((subject) => (
+              {subjectsWithProgress.map((subject) => (
                 <div key={subject.id} className="rounded-[10px] border border-[#E5E7EB] p-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -294,9 +304,15 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
                   </div>
                   <div className="text-[11px] text-[#64748B] mt-1">
                     {subject.done} of {subject.total} topics done
+                    {subject.tracked > subject.done && ` · ${subject.tracked - subject.done} active`}
                   </div>
                 </div>
               ))}
+              {subjectsWithProgress.length === 0 && (
+                <div className="rounded-[10px] border border-dashed border-[#CBD5E1] bg-[#F8FAFC] px-4 py-8 text-center text-[13px] text-[#64748B]">
+                  No subject progress yet. Update a topic status to see it here.
+                </div>
+              )}
             </div>
           </div>
         </div>

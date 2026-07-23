@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { jeetAIService } from '@/lib/services';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { JeetAiLimitModal } from '@/components/upgrade/UpgradeModals';
 
 /* ── Spinner ── */
 const Spinner = () => (
@@ -419,6 +420,7 @@ export default function JeetGPTPage() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeAutoShown, setUpgradeAutoShown] = useState(false);
   const [proBannerDismissed, setProBannerDismissed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -531,8 +533,14 @@ export default function JeetGPTPage() {
       }
     } catch (err: any) {
       const parsed = handleEntitlementError(err);
-      setError(parsed.message || 'Failed to get response. Please try again.');
-      if (parsed.title === 'Limit reached' || parsed.title === 'Slow down for a bit') setShowUpgradeModal(true);
+      if (parsed.title === 'Limit reached') {
+        setShowUpgradeModal(true);
+      } else if (parsed.title === 'Slow down for a bit') {
+        // Internal hourly throttle — keep the wording generic, never surface the hourly cap.
+        setError('Jeet AI Mentor is handling heavy queries right now. Please try again in a little while.');
+      } else {
+        setError(parsed.message || 'Failed to get response. Please try again.');
+      }
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
     } finally {
       setIsLoading(false);
@@ -548,6 +556,17 @@ export default function JeetGPTPage() {
 
   const aiQuota = entitlements.featureStatus('jeet_ai_message');
   const queriesExhausted = aiQuota?.allowed === false;
+  // When the user is out of quota (e.g. lands on the page already exhausted, or
+  // hits the cap after a reply), surface the upgrade popup once. It stays closed
+  // after the user dismisses it, and re-arms only once they regain quota.
+  useEffect(() => {
+    if (queriesExhausted && !upgradeAutoShown) {
+      setShowUpgradeModal(true);
+      setUpgradeAutoShown(true);
+    } else if (!queriesExhausted && upgradeAutoShown) {
+      setUpgradeAutoShown(false);
+    }
+  }, [queriesExhausted, upgradeAutoShown]);
   const showChat = messages.length > 0;
   const displayName = user
     ? ((user.firstName ?? '') + (user.firstName && user.lastName ? ' ' : '') + (user.lastName ?? '')).trim() || user.email
@@ -558,13 +577,11 @@ export default function JeetGPTPage() {
   const quotaLimit = aiQuota?.limit ?? null;
   const quotaUsed = aiQuota?.used ?? 0;
   const fillPct = quotaLimit ? Math.min(100, Math.round((quotaUsed / quotaLimit) * 100)) : 0;
-  const quotaRemaining = quotaLimit !== null ? Math.max(0, quotaLimit - quotaUsed) : null;
   // Proactive "Explore Pro" nudge: shown once usage gets high (>= 50% of the daily
   // cap) but before the cap is hit. The at-limit case is handled by the upgrade modal.
   // NOTE: 50% threshold is a business choice — adjust HIGH_USAGE_THRESHOLD as needed.
   const HIGH_USAGE_THRESHOLD = 0.5;
   const showProBanner =
-    user?.role !== 'admin' &&
     quotaLimit !== null &&
     quotaLimit > 0 &&
     !queriesExhausted &&
@@ -774,20 +791,22 @@ export default function JeetGPTPage() {
         <div className="jai-input-wrap">
           {showProBanner && (
             <div className="jai-pro-banner">
-              <div className="jai-pro-banner-text">
-                <strong>You&apos;re making great progress!</strong>
-                <span>
-                  Pro members get unlimited queries
-                  {quotaRemaining !== null ? ` — you have ${quotaRemaining} of ${quotaLimit} left today.` : '.'}
-                </span>
+              <div className="jai-pro-banner-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2l1.9 5.1L19 9l-5.1 1.9L12 16l-1.9-5.1L5 9l5.1-1.9L12 2z" fill="#fff" />
+                  <path d="M18.5 14l.8 2.2L21.5 17l-2.2.8-.8 2.2-.8-2.2L15.5 17l2.2-.8.8-2.2z" fill="#fff" fillOpacity="0.85" />
+                </svg>
               </div>
+              <p className="jai-pro-banner-text">
+                You&apos;re making great progress! <strong>Pro members</strong> get unlimited queries, saved notes, and priority answer evaluation.
+              </p>
               <div className="jai-pro-banner-actions">
                 <button
                   type="button"
                   className="jai-pro-banner-cta"
                   onClick={() => router.push('/dashboard/billing/plans')}
                 >
-                  Explore Pro
+                  Explore Pro <span aria-hidden="true">→</span>
                 </button>
                 <button
                   type="button"
@@ -821,97 +840,14 @@ export default function JeetGPTPage() {
       </div>
 
       {/* ── Daily-limit Upgrade Modal ── */}
-      {showUpgradeModal && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 jeet-upgrade-overlay"
-          style={{ background: 'rgba(224, 231, 255, 0.55)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
-          onClick={() => setShowUpgradeModal(false)}
-        >
-          <div
-            className="relative w-full max-w-[400px] jeet-upgrade-pop"
-            style={{
-              background: '#fff',
-              borderRadius: '24px',
-              padding: '36px 32px 28px',
-              border: '1.5px solid rgba(201, 168, 76, 0.22)',
-              boxShadow: '0 8px 40px rgba(27, 46, 107, 0.13), 0 1.5px 6px rgba(27,46,107,0.07)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setShowUpgradeModal(false)}
-              aria-label="Close popup"
-              className="absolute flex items-center justify-center transition-colors"
-              style={{ top: '14px', right: '14px', width: '28px', height: '28px', borderRadius: '50%', background: '#F1F4FB', color: '#8A96B4' }}
-            >
-              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 2l10 10M12 2L2 12" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            </button>
-
-            <div className="relative mx-auto flex items-center justify-center" style={{ width: '60px', height: '60px', borderRadius: '18px', background: 'linear-gradient(135deg, #1B2E6B 0%, #2E4499 100%)', boxShadow: '0 4px 18px rgba(27,46,107,0.22)', marginBottom: '18px' }}>
-              <div className="jeet-crown-glow" style={{ position: 'absolute', inset: '-3px', borderRadius: '21px', border: '1.5px solid rgba(245, 206, 110, 0.35)', pointerEvents: 'none' }} />
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="#F5CE6E" aria-hidden="true"><path d="M3 7.5l3.8 3 3.4-5.2a1 1 0 011.6 0l3.4 5.2 3.8-3a1 1 0 011.6.95l-1.7 9.3a1 1 0 01-1 .82H5.1a1 1 0 01-1-.82L2.4 8.45A1 1 0 013 7.5z" /></svg>
-            </div>
-
-            <div className="flex justify-center" style={{ marginBottom: '14px' }}>
-              <div className="inline-flex items-center uppercase" style={{ gap: '5px', background: '#FEF4D8', border: '1px solid rgba(201,168,76,0.4)', borderRadius: '99px', padding: '4px 12px', fontSize: '11px', fontWeight: 600, color: '#9A7020', letterSpacing: '0.05em' }}>
-                <span className="jeet-badge-dot" style={{ width: '5px', height: '5px', background: '#C9A84C', borderRadius: '50%' }} /> Limit reached
-              </div>
-            </div>
-
-            <h2 className="text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '22px', fontWeight: 700, color: '#0E1D54', lineHeight: 1.3, margin: '0 0 8px' }}>
-              Jeet AI Mentor access paused<br />for your current plan
-            </h2>
-            <p className="text-center" style={{ fontSize: '13px', color: '#6B7899', lineHeight: 1.6, margin: '0 0 22px' }}>
-              {aiQuota?.message || 'Your current quota is up. Upgrade for higher Jeet AI Mentor access and priority answers.'}
-            </p>
-
-            <div className="flex justify-between items-center" style={{ marginBottom: '7px' }}>
-              <span style={{ fontSize: '12px', color: '#8A96B4', fontWeight: 500 }}>Jeet AI Mentor quota</span>
-              <strong style={{ fontSize: '12px', fontWeight: 700, color: '#C05A2A' }}>{quotaLimit === null ? 'Unlimited' : `${quotaUsed} / ${quotaLimit} used`}</strong>
-            </div>
-            <div style={{ height: '7px', background: '#EEF2FF', borderRadius: '99px', overflow: 'hidden', marginBottom: '22px' }}>
-              <div className="jeet-prog-fill" style={{ height: '100%', background: 'linear-gradient(90deg, #E05A28 0%, #C9A84C 100%)', borderRadius: '99px', width: '100%' }} />
-            </div>
-
-            <div className="grid grid-cols-2" style={{ gap: '9px', marginBottom: '22px' }}>
-              {[
-                { bg: '#E8EEFF', color: '#1B2E6B', title: 'Unlimited queries', sub: 'Zero daily cap', icon: <path d="M5 12a3 3 0 013-3c1.6 0 2.7 1.1 4 2.5s2.4 2.5 4 2.5a3 3 0 100-6c-1.6 0-2.7 1.1-4 2.5s-2.4 2.5-4 2.5a3 3 0 100 6c1.6 0 2.7-1.1 4-2.5" /> },
-                { bg: '#FEF4D8', color: '#B8860B', title: 'Saved notes', sub: 'Revisit anytime', icon: <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 3v18M5 8h4M5 12h4M5 16h4" /></> },
-                { bg: '#E2F4F1', color: '#0E7A6A', title: 'Priority answers', sub: 'Faster & richer', icon: <path d="M13 2L5 13h5l-1 9 9-12h-6l1-8z" strokeLinejoin="round" /> },
-                { bg: '#FDE8EE', color: '#BE2B57', title: 'Answer grading', sub: 'Score your Mains', icon: <><rect x="6" y="4" width="12" height="17" rx="2" /><path d="M9 4a2 2 0 012-2h2a2 2 0 012 2" /><path d="M8.5 12.5l1.5 1.5 3-3" /></> },
-              ].map((p) => (
-                <div key={p.title} className="flex items-start" style={{ gap: '9px', background: '#F7F9FF', border: '1px solid #E4E9F7', borderRadius: '14px', padding: '12px 11px' }}>
-                  <div className="flex items-center justify-center flex-shrink-0" style={{ width: '30px', height: '30px', borderRadius: '9px', background: p.bg, color: p.color }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">{p.icon}</svg>
-                  </div>
-                  <div>
-                    <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: '#1B2E6B', lineHeight: 1.3 }}>{p.title}</p>
-                    <span style={{ fontSize: '11px', color: '#8A96B4' }}>{p.sub}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ height: '1px', background: '#EEF2FF', margin: '0 0 18px' }} />
-
-            <Link href="/dashboard/billing/plans" className="block">
-              <button type="button" className="w-full jeet-btn-pro flex items-center justify-center" style={{ padding: '14px', background: 'linear-gradient(135deg, #1B2E6B 0%, #2E4499 100%)', border: 'none', borderRadius: '14px', fontSize: '14px', fontWeight: 700, color: '#fff', gap: '8px', letterSpacing: '0.02em', marginBottom: '9px', boxShadow: '0 4px 16px rgba(27,46,107,0.25)' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="#F5CE6E" aria-hidden="true"><path d="M3 7.5l3.8 3 3.4-5.2a1 1 0 011.6 0l3.4 5.2 3.8-3a1 1 0 011.6.95l-1.7 9.3a1 1 0 01-1 .82H5.1a1 1 0 01-1-.82L2.4 8.45A1 1 0 013 7.5z" /></svg>
-                Upgrade to Pro &nbsp;→
-              </button>
-            </Link>
-            <button type="button" onClick={() => setShowUpgradeModal(false)} className="w-full transition-colors" style={{ padding: '11px', background: 'transparent', border: '1px solid #E4E9F7', borderRadius: '14px', fontSize: '13px', fontWeight: 500, color: '#8A96B4' }}>
-              Maybe tomorrow
-            </button>
-
-            <p className="flex items-center justify-center" style={{ textAlign: 'center', fontSize: '10.5px', color: '#B0BCDA', marginTop: '12px', gap: '4px' }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
-              Secure payment &nbsp;·&nbsp; Cancel anytime
-            </p>
-          </div>
-        </div>
-      )}
+      <JeetAiLimitModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        tier={entitlements.tier}
+        used={quotaLimit !== null ? quotaUsed : undefined}
+        limit={quotaLimit ?? undefined}
+        backLabel="Back to Dashboard"
+      />
 
       <style jsx global>{`
         .jai-layout{display:flex;height:100%;overflow:hidden;font-family:var(--font-dm-sans),sans-serif;background:#0d1117;color:#e6edf3;position:relative;}
@@ -1010,15 +946,15 @@ export default function JeetGPTPage() {
         .jai-chip:hover{border-color:#f0a500;color:#b07a00;background:#fffbf0;}
 
         .jai-input-wrap{padding:14px 20px;border-top:0.5px solid #f1f3f5;background:#fff;flex-shrink:0;}
-        .jai-pro-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;padding:10px 14px;border-radius:12px;background:#FFFBEB;border:1px solid #FDE68A;}
-        .jai-pro-banner-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
-        .jai-pro-banner-text strong{font-size:13px;color:#92400E;font-weight:700;}
-        .jai-pro-banner-text span{font-size:12px;color:#B45309;}
-        .jai-pro-banner-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-        .jai-pro-banner-cta{background:#FDC700;color:#101828;font-size:12px;font-weight:700;border:none;border-radius:9px;padding:8px 14px;cursor:pointer;white-space:nowrap;transition:background .2s;}
-        .jai-pro-banner-cta:hover{background:#F5C200;}
-        .jai-pro-banner-close{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border:none;background:transparent;color:#B45309;cursor:pointer;border-radius:7px;transition:background .2s;}
-        .jai-pro-banner-close:hover{background:#FDE68A;}
+        .jai-pro-banner{display:flex;align-items:center;gap:16px;margin-bottom:10px;padding:14px 16px;border-radius:16px;background:#FFF7ED;border:1px solid #FCE3C6;}
+        .jai-pro-banner-icon{display:flex;align-items:center;justify-content:center;width:40px;height:40px;flex-shrink:0;border-radius:11px;background:linear-gradient(135deg,#FB923C 0%,#F97316 100%);box-shadow:0 4px 10px rgba(249,115,22,0.28);}
+        .jai-pro-banner-text{flex:1;min-width:0;margin:0;font-size:14px;line-height:1.4;color:#334155;}
+        .jai-pro-banner-text strong{font-weight:700;color:#1E293B;}
+        .jai-pro-banner-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+        .jai-pro-banner-cta{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#FB923C 0%,#EA580C 100%);color:#fff;font-size:13px;font-weight:700;border:none;border-radius:11px;padding:10px 18px;cursor:pointer;white-space:nowrap;box-shadow:0 4px 12px rgba(234,88,12,0.25);transition:filter .2s;}
+        .jai-pro-banner-cta:hover{filter:brightness(1.05);}
+        .jai-pro-banner-close{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:none;background:#E9EDF2;color:#334155;cursor:pointer;border-radius:9px;transition:background .2s;}
+        .jai-pro-banner-close:hover{background:#DCE2E9;}
         .jai-input-row{display:flex;align-items:center;gap:10px;background:#f8f9fa;border:1px solid #e2e5ed;border-radius:14px;padding:10px 14px;transition:border .2s,background .2s;}
         .jai-input-row:focus-within{border-color:#f0a500;background:#fff;}
         .jai-input{flex:1;border:none;background:transparent;font-size:13px;font-family:var(--font-dm-sans),sans-serif;color:#1a1d23;resize:none;outline:none;line-height:1.5;max-height:80px;text-align:left;}

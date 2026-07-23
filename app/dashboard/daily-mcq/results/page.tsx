@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { dailyMcqService, dashboardService } from '@/lib/services';
+import { dailyMcqService, dashboardService, leaderboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import SmartNextStepsModal from '@/components/SmartNextStepsModal';
+import ShareScoreModal from '@/components/mcq-review/ShareScoreModal';
 
 interface ResultsData {
   score: number;
@@ -46,6 +47,26 @@ interface Particle {
   life: number;
   maxLife: number;
   shape: 'circle' | 'rect' | 'star';
+}
+
+const PDF_PAGE = { width: 595.28, height: 841.89, left: 42, right: 553 };
+
+function pdfText(value: string | null | undefined): string {
+  return (value || '')
+    // Explanations are authored in Markdown; jsPDF receives plain text, so
+    // remove formatting syntax instead of leaking **bold** markers into reports.
+    .replace(/(\*{1,3}|_{1,3}|`)/g, '')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/[^\x20-\x7E\n]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function pdfOptionLabel(option: { id: string; text: string }, index: number): string {
+  const labels = ['A', 'B', 'C', 'D'];
+  return option.id || labels[index] || String(index + 1);
 }
 
 function getOptionKey(option: { id: string; text: string }, idx: number): string {
@@ -174,10 +195,12 @@ export default function DailyMcqResultsPage() {
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showNextSteps, setShowNextSteps] = useState(false);
-  const [includeRankStreak, setIncludeRankStreak] = useState(true);
   const [streak, setStreak] = useState<number | null>(null);
+  // Real leaderboard rank (prelims/MCQ bucket) — replaces the old "Top X%" percentile bucket.
+  const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank: number; mcqRankedCount?: number; realRankedCount: number } | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -193,6 +216,13 @@ export default function DailyMcqResultsPage() {
     dashboardService.getStreak()
       .then(res => setStreak(Number(res.data?.currentStreak ?? 0)))
       .catch(() => setStreak(null));
+  }, []);
+
+  // Real leaderboard rank for this aspirant (all-time, MCQ/prelims bucket).
+  useEffect(() => {
+    leaderboardService.getMyRank('all')
+      .then(res => setMyRank(res.data || null))
+      .catch(() => setMyRank(null));
   }, []);
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
@@ -242,11 +272,24 @@ export default function DailyMcqResultsPage() {
   const effectiveTimeSeconds = Math.min(r.timeTaken, 10 * 60);
   const speed = attemptedCount > 0 ? (effectiveTimeSeconds / 60 / attemptedCount).toFixed(2) : '0';
 
-  // Fix ranking display: show meaningful rank even with low participation
-  const displayPercentile = Math.min(Math.max(r.percentile, 0), 99);
-  const rankLabel = r.rank > 0 && r.questionCount > 1
-    ? displayPercentile >= 95 ? `Top 5%` : displayPercentile >= 90 ? `Top 10%` : displayPercentile >= 75 ? `Top 25%` : displayPercentile >= 50 ? `Top 50%` : `Keep practicing!`
-    : r.rank === 0 && r.questionCount > 0 ? 'First to attempt!' : 'Rankings updating...';
+  // Real leaderboard rank (prelims/MCQ bucket). Falls back to an unlock hint until
+  // the aspirant has enough attempts, then to a neutral "updating" message.
+  const rankUnlocked = !!myRank?.isRankUnlocked && !!myRank?.mcqRank;
+  // The API provides this from the exact list used to calculate `mcqRank`.
+  // Do not use `realRankedCount` here: it excludes fallback community rows.
+  const rankedTotal = myRank?.mcqRankedCount ?? myRank?.realRankedCount ?? 0;
+  const rankLabel = rankUnlocked
+    ? `#${(myRank!.mcqRank as number).toLocaleString('en-IN')}`
+    : myRank && myRank.attemptsToUnlockRank > 0
+      ? `${myRank.attemptsToUnlockRank} more to unlock`
+      : 'Rankings updating...';
+  const rankSubLabel = rankUnlocked && rankedTotal > 0
+    ? `of ${rankedTotal.toLocaleString('en-IN')} ranked`
+    : 'among aspirants today';
+  // Bar fills more the higher you rank (rank #1 ≈ full bar).
+  const rankBarPct = rankUnlocked && rankedTotal > 0
+    ? Math.max(4, Math.min(100, Math.round((1 - ((myRank!.mcqRank as number) - 1) / rankedTotal) * 100)))
+    : 0;
 
   // Report metadata shown in the download/share popups (matches the reference: date · name · report id).
   const reportName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Aspirant';
@@ -259,73 +302,415 @@ export default function DailyMcqResultsPage() {
   const monAbbrev = reportDate.toLocaleString('en-US', { month: 'short' }).toLowerCase();
   const shareSlug = `${reportInitials}-${reportDate.getDate()}${monAbbrev}${String(reportDate.getFullYear()).slice(-2)}`;
   const shareUrl = `risewithjeet.com/share/daily-mcq/${shareSlug}`;
-  const shareUrlFull = `https://${shareUrl}`;
-  const shareText = [
-    `I scored ${r.correctCount}/${r.questionCount} in today's Daily MCQ Challenge!`,
-    includeRankStreak
-      ? `${Math.round(r.accuracy)}% accuracy · ${rankLabel}${streak ? ` · ${streak}-day streak 🔥` : ''}`
-      : `${Math.round(r.accuracy)}% accuracy`,
-  ].join(' ');
 
-  const copyShareLink = async () => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+  const performDownload = async () => {
+    if (typeof window === 'undefined' || isDownloading) return;
+
+    setIsDownloading(true);
+    try {
+      // Loaded only after the user requests a report, so this fairly large library
+      // never affects the Daily MCQ result screen's initial load.
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const { width, height, left, right } = PDF_PAGE;
+      const contentWidth = right - left;
+      const scorePercent = r.questionCount > 0 ? Math.round((r.correctCount / r.questionCount) * 100) : 0;
+      let pageNumber = 1;
+      let y = 0;
+      let brandMark: string | null = null;
+
       try {
-        await navigator.clipboard.writeText(shareUrlFull);
-        showToast('Link copied');
-        return;
+        const response = await fetch('/risewithjeet_favicon.jpg');
+        const blob = await response.blob();
+        brandMark = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
       } catch {
-        // fall through to toast below
+        // Branding is decorative; the text treatment remains usable if the image is unavailable.
       }
+
+      const footer = () => {
+        doc.setDrawColor(226, 232, 240);
+        doc.line(left, height - 37, right, height - 37);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text(`MCQ Challenge Report | ${reportDateLabel}`, left, height - 22);
+        doc.text(`Page ${pageNumber}`, right, height - 22, { align: 'right' });
+      };
+
+      const header = (section = 'Performance Report') => {
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, width, 5, 'F');
+        doc.setFillColor(13, 148, 136);
+        doc.rect(width * 0.45, 0, width * 0.32, 5, 'F');
+        doc.setFillColor(217, 119, 6);
+        doc.rect(width * 0.77, 0, width * 0.23, 5, 'F');
+        if (brandMark) doc.addImage(brandMark, 'JPEG', left, 18, 28, 28);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(15);
+        doc.setTextColor(15, 23, 42);
+        doc.text('RiseWithJeet', left + (brandMark ? 36 : 0), 34);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text('DAILY MCQS CHALLENGE', left + (brandMark ? 36 : 0), 47);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(15, 23, 42);
+        doc.text(section.toUpperCase(), right, 34, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 116, 139);
+        doc.text(reportDateLabel, right, 47, { align: 'right' });
+        doc.setDrawColor(15, 23, 42);
+        doc.setLineWidth(1.3);
+        doc.line(left, 59, right, 59);
+        y = 82;
+      };
+
+      const addPage = (section?: string) => {
+        footer();
+        doc.addPage();
+        pageNumber += 1;
+        header(section);
+      };
+
+      const ensure = (space: number, section?: string) => {
+        if (y + space > height - 55) addPage(section);
+      };
+
+      const wrappedText = (text: string, x: number, maxWidth: number, lineHeight = 12) => {
+        const lines = doc.splitTextToSize(pdfText(text), maxWidth) as string[];
+        for (const line of lines) {
+          ensure(lineHeight + 2, 'Question-wise Review');
+          doc.text(line, x, y);
+          y += lineHeight;
+        }
+      };
+
+      const roundedCard = (x: number, top: number, cardWidth: number, cardHeight: number, fill: [number, number, number]) => {
+        doc.setFillColor(...fill);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(x, top, cardWidth, cardHeight, 8, 8, 'FD');
+      };
+
+      const softCard = (
+        x: number,
+        top: number,
+        cardWidth: number,
+        cardHeight: number,
+        fill: [number, number, number],
+        border?: [number, number, number],
+      ) => {
+        doc.setFillColor(...fill);
+        if (border) {
+          doc.setDrawColor(...border);
+          doc.setLineWidth(0.75);
+          doc.roundedRect(x, top, cardWidth, cardHeight, 8, 8, 'FD');
+        } else {
+          doc.roundedRect(x, top, cardWidth, cardHeight, 8, 8, 'F');
+        }
+      };
+
+      header();
+      const drawProgressRing = (cx: number, cy: number, radius: number, progress: number) => {
+        const ctx = doc.context2d;
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 14;
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2, false);
+        ctx.stroke();
+        ctx.strokeStyle = '#3F9B91';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, Math.min(1, progress)), false);
+        ctx.stroke();
+      };
+
+      // Student banner and challenge metadata mirror the stronger hierarchy in the reference report.
+      doc.setFillColor(19, 30, 55);
+      doc.roundedRect(left, y, contentWidth, 68, 10, 10, 'F');
+      doc.setFillColor(251, 191, 36);
+      doc.circle(left + 33, y + 34, 19, 'F');
+      doc.setFillColor(38, 49, 71);
+      doc.circle(left + 33, y + 34, 15, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(251, 191, 36);
+      doc.text(reportInitials, left + 33, y + 38, { align: 'center' });
+      doc.setFontSize(15);
+      doc.setTextColor(255, 255, 255);
+      doc.text(reportName, left + 61, y + 29);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(203, 213, 225);
+      doc.text(`${rankLabel} | Daily MCQ attempt`, left + 61, y + 46);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(251, 191, 36);
+      doc.text(`${r.correctCount}/${r.questionCount}`, right - 65, y + 31, { align: 'right' });
+      doc.text(`${scorePercent}%`, right - 18, y + 31, { align: 'right' });
+      doc.setFontSize(8);
+      doc.setTextColor(203, 213, 225);
+      doc.text('SCORE', right - 65, y + 47, { align: 'right' });
+      doc.text('ACCURACY', right - 18, y + 47, { align: 'right' });
+      y += 87;
+
+      const metadata = [`${r.questionCount} Questions`, 'Multiple Subjects', '10 min Time Limit', `${minutes}m ${seconds}s Time Taken`];
+      const metaWidth = 97;
+      metadata.forEach((label, index) => {
+        const x = left + index * metaWidth;
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(x, y, metaWidth + 1, 23, index === 0 || index === metadata.length - 1 ? 6 : 0, index === 0 || index === metadata.length - 1 ? 6 : 0, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.8);
+        doc.setTextColor(51, 65, 85);
+        doc.text(label, x + metaWidth / 2, y + 15, { align: 'center' });
+      });
+      y += 47;
+
+      const scoreX = left + 96;
+      drawProgressRing(scoreX, y + 74, 54, scorePercent / 100);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`${r.correctCount}/${r.questionCount}`, scoreX, y + 68, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text('QUESTIONS', scoreX, y + 84, { align: 'center' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(63, 155, 145);
+      doc.text(`SCORE - ${scorePercent}%`, scoreX, y + 105, { align: 'center' });
+
+      const metrics = [
+        { label: 'ACCURACY', value: `${Math.round(r.accuracy)}%`, sub: 'this attempt', fill: [240, 253, 244] as [number, number, number], valueColor: [76, 175, 80] as [number, number, number] },
+        { label: 'TIME TAKEN', value: `${minutes}m ${seconds}s`, sub: 'of 10 min', fill: [239, 246, 255] as [number, number, number], valueColor: [59, 100, 222] as [number, number, number] },
+        { label: 'SPEED', value: `${speed} min/Q`, sub: 'Avg per question', fill: [255, 248, 217] as [number, number, number], valueColor: [204, 124, 35] as [number, number, number] },
+        { label: 'RANK', value: rankLabel, sub: rankSubLabel, fill: [247, 243, 255] as [number, number, number], valueColor: [124, 58, 237] as [number, number, number] },
+      ];
+      const cardWidth = 166;
+      metrics.forEach((metric, index) => {
+        const x = left + 212 + (index % 2) * 176;
+        const top = y + Math.floor(index / 2) * 78;
+        // The reference uses a clean colour block here, without a heavy grey frame.
+        softCard(x, top, cardWidth, 68, metric.fill);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text(metric.label, x + 13, top + 19);
+        doc.setFontSize(16);
+        doc.setTextColor(...metric.valueColor);
+        doc.text(metric.value, x + 13, top + 43);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text(pdfText(metric.sub), x + 13, top + 57);
+      });
+      y += 174;
+
+      const summary = [
+        { label: `+  ${r.correctCount} Correct`, fill: [240, 253, 244] as [number, number, number], text: [76, 175, 80] as [number, number, number] },
+        { label: `x  ${r.wrongCount} Wrong`, fill: [254, 242, 242] as [number, number, number], text: [220, 62, 52] as [number, number, number] },
+        { label: `-  ${r.skippedCount} Skipped`, fill: [248, 250, 252] as [number, number, number], text: [100, 116, 139] as [number, number, number] },
+      ];
+      summary.forEach((item, index) => {
+        const x = left + index * 128;
+        doc.setFillColor(...item.fill);
+        doc.roundedRect(x, y, 116, 26, 13, 13, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(...item.text);
+        doc.text(item.label, x + 58, y + 17, { align: 'center' });
+      });
+      y += 48;
+
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.75);
+      doc.setLineCap('butt');
+      doc.line(left, y, right, y);
+      y += 24;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(49, 98, 222);
+      doc.text('PERFORMANCE INSIGHTS', left, y);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text('Key takeaways from your attempt', left, y + 16);
+      y += 34;
+
+      const strongText = r.strongTopics.length ? `You performed well in ${r.strongTopics.join(' and ')}. Keep revising these areas to make them dependable strengths.` : 'Review the explanations for the answers you got right and turn them into reliable strengths.';
+      const weakText = r.weakTopics.length ? `Questions on ${r.weakTopics.join(', ')} need attention. Revisit the concepts and their current-affairs linkages.` : 'Review the explanations for the questions you missed before your next Daily MCQ.';
+      const insightCards = [
+        { title: 'STRONG AREAS', body: strongText, fill: [240, 253, 244] as [number, number, number], color: [76, 175, 80] as [number, number, number] },
+        { title: 'NEEDS IMPROVEMENT', body: weakText, fill: [254, 246, 246] as [number, number, number], color: [220, 62, 52] as [number, number, number] },
+      ];
+      insightCards.forEach((card, index) => {
+        const x = left + index * 258;
+        softCard(
+          x,
+          y,
+          246,
+          79,
+          card.fill,
+          index === 0 ? [207, 237, 216] : [248, 215, 215],
+        );
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(...card.color);
+        doc.text(card.title, x + 14, y + 18);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.6);
+        doc.setTextColor(51, 65, 85);
+        doc.text(doc.splitTextToSize(pdfText(card.body), 214), x + 14, y + 39);
+      });
+      y += 94;
+
+      softCard(left, y, contentWidth, 58, [239, 246, 255], [207, 224, 248]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(49, 98, 222);
+      doc.text('RECOMMENDATION', left + 14, y + 18);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(51, 65, 85);
+      const recommendation = r.wrongCount > 0
+        ? 'Read every explanation for the questions you missed. Revisit topics where you guessed or felt unsure; spaced revision will help retention.'
+        : 'Excellent accuracy. Re-read the explanations once and return tomorrow to build a consistent practice streak.';
+      doc.text(doc.splitTextToSize(recommendation, contentWidth - 28), left + 14, y + 37);
+
+      addPage('Question-wise Review');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(15, 23, 42);
+      doc.text('Question-wise Review', left, y);
+      y += 18;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text('Use this section to understand every answer and revise the concepts behind it.', left, y);
+      y += 22;
+
+      reviewQuestions.forEach((question, questionIndex) => {
+        const correctOption = question.options.find((option, optionIndex) => getOptionKey(option, optionIndex) === question.correctOption);
+        const selectedOption = question.options.find((option, optionIndex) => getOptionKey(option, optionIndex) === question.selectedOption);
+        const questionLines = doc.splitTextToSize(pdfText(question.questionText), contentWidth - 34) as string[];
+        const estimatedHeight = 72 + questionLines.length * 12 + question.options.length * 25;
+        ensure(Math.min(estimatedHeight, 260), 'Question-wise Review');
+
+        doc.setFillColor(250, 250, 250);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(left, y, contentWidth, 36, 8, 8, 'FD');
+        doc.setFillColor(15, 23, 42);
+        doc.circle(left + 18, y + 18, 11, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(255, 255, 255);
+        doc.text(String(question.questionNum || questionIndex + 1), left + 18, y + 21, { align: 'center' });
+        doc.setTextColor(15, 23, 42);
+        doc.setFontSize(10);
+        doc.text(`Question ${question.questionNum || questionIndex + 1}`, left + 38, y + 21);
+        const status = question.selectedOption ? (question.isCorrect ? 'CORRECT' : 'WRONG') : 'SKIPPED';
+        const statusColor: [number, number, number] = status === 'CORRECT' ? [22, 163, 74] : status === 'WRONG' ? [220, 38, 38] : [100, 116, 139];
+        doc.setTextColor(...statusColor);
+        doc.setFontSize(8);
+        doc.text(status, right - 14, y + 21, { align: 'right' });
+        y += 52;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(15, 23, 42);
+        wrappedText(question.questionText, left, contentWidth, 13);
+        y += 7;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(30, 64, 175);
+        doc.text(`${pdfText(question.category || 'General Studies')}  |  ${pdfText(question.difficulty || 'Practice')}`, left, y);
+        y += 15;
+
+        question.options.forEach((option, optionIndex) => {
+          const optionLabel = pdfOptionLabel(option, optionIndex);
+          const isCorrectOption = getOptionKey(option, optionIndex) === question.correctOption;
+          const isSelectedOption = getOptionKey(option, optionIndex) === question.selectedOption;
+          const optionLines = doc.splitTextToSize(pdfText(option.text), contentWidth - 66) as string[];
+          const optionHeight = Math.max(24, optionLines.length * 10 + 14);
+          ensure(optionHeight + 5, 'Question-wise Review');
+          if (isCorrectOption) doc.setFillColor(240, 253, 244);
+          else if (isSelectedOption) doc.setFillColor(254, 242, 242);
+          else doc.setFillColor(255, 255, 255);
+          doc.setDrawColor(...(isCorrectOption ? [22, 163, 74] as [number, number, number] : isSelectedOption ? [220, 38, 38] as [number, number, number] : [226, 232, 240] as [number, number, number]));
+          doc.roundedRect(left, y, contentWidth, optionHeight, 6, 6, 'FD');
+          doc.setFillColor(...(isCorrectOption ? [22, 163, 74] as [number, number, number] : isSelectedOption ? [220, 38, 38] as [number, number, number] : [241, 245, 249] as [number, number, number]));
+          doc.circle(left + 16, y + optionHeight / 2, 8, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(...(isCorrectOption || isSelectedOption ? [255, 255, 255] as [number, number, number] : [15, 23, 42] as [number, number, number]));
+          doc.text(optionLabel, left + 16, y + optionHeight / 2 + 3, { align: 'center' });
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(30, 41, 59);
+          doc.text(optionLines, left + 32, y + 14);
+          y += optionHeight + 5;
+        });
+
+        const picked = selectedOption ? `Your answer: ${pdfOptionLabel(selectedOption, question.options.indexOf(selectedOption))}` : 'Your answer: Skipped';
+        const correct = correctOption ? `Correct answer: ${pdfOptionLabel(correctOption, question.options.indexOf(correctOption))}` : `Correct answer: ${question.correctOption}`;
+        ensure(27, 'Question-wise Review');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(question.isCorrect ? 22 : 220, question.isCorrect ? 163 : 38, question.isCorrect ? 74 : 38);
+        doc.text(`${picked}   |   ${correct}`, left + 4, y + 10);
+        y += 20;
+
+        if (question.explanation) {
+          const explanationLines = doc.splitTextToSize(pdfText(question.explanation), contentWidth - 28) as string[];
+          let explanationIndex = 0;
+
+          // Keep both the label and every explanation line inside the same warm
+          // yellow panel, including when an explanation flows onto another page.
+          while (explanationIndex < explanationLines.length) {
+            ensure(58, 'Question-wise Review');
+            const maxLines = Math.max(1, Math.floor((height - 55 - y - 32) / 12));
+            const pageLines = explanationLines.slice(explanationIndex, explanationIndex + maxLines);
+            const panelHeight = 32 + pageLines.length * 12 + 12;
+            doc.setFillColor(255, 251, 235);
+            doc.setDrawColor(253, 230, 138);
+            doc.setLineWidth(0.75);
+            doc.roundedRect(left, y, contentWidth, panelHeight, 7, 7, 'FD');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(180, 83, 9);
+            doc.text(explanationIndex === 0 ? 'EXPLANATION' : 'EXPLANATION (CONTINUED)', left + 12, y + 16);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(51, 65, 85);
+            doc.text(pageLines, left + 12, y + 34);
+            y += panelHeight;
+            explanationIndex += pageLines.length;
+
+            if (explanationIndex < explanationLines.length) addPage('Question-wise Review');
+          }
+        }
+        y += 18;
+      });
+
+      footer();
+      doc.save(`daily-mcq-report-${reportDate.toISOString().slice(0, 10)}.pdf`);
+      setShowDownloadModal(false);
+      showToast('Your PDF report has been downloaded.');
+    } catch (error) {
+      console.error('Unable to generate Daily MCQ PDF report', error);
+      showToast('Unable to generate the PDF report. Please try again.');
+    } finally {
+      setIsDownloading(false);
     }
-    showToast('Copy not supported');
-  };
-
-  const openShareWindow = (network: 'whatsapp' | 'x' | 'linkedin' | 'instagram' | 'telegram') => {
-    const text = encodeURIComponent(shareText);
-    const url = encodeURIComponent(shareUrlFull);
-    const links: Record<string, string> = {
-      whatsapp: `https://wa.me/?text=${text}%20${url}`,
-      x: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
-      telegram: `https://t.me/share/url?url=${url}&text=${text}`,
-    };
-    // Instagram has no web share intent — copy the link so the user can paste it into the app.
-    if (network === 'instagram') {
-      copyShareLink();
-      showToast('Link copied — paste it into Instagram');
-      return;
-    }
-    if (typeof window !== 'undefined') {
-      window.open(links[network], '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const performDownload = () => {
-    if (typeof window === 'undefined') return;
-
-    const lines = [
-      'Daily MCQs Challenge Report',
-      `Score: ${r.correctCount}/${r.questionCount}`,
-      `Accuracy: ${Math.round(r.accuracy)}%`,
-      `Time Taken: ${minutes}m ${seconds}s`,
-      `Speed: ${speed} min/Q`,
-      `Rank: ${rankLabel}`,
-      '',
-      'Question-wise Review',
-      ...reviewQuestions.map((q, idx) => {
-        const correct = q.options.find((option, optionIdx) => getOptionKey(option, optionIdx) === q.correctOption);
-        const selected = q.options.find((option, optionIdx) => getOptionKey(option, optionIdx) === q.selectedOption);
-        return `${idx + 1}. ${q.isCorrect ? 'Correct' : 'Needs revision'} - ${q.questionText}\n   Your answer: ${selected?.text || q.selectedOption || 'Skipped'}\n   Correct answer: ${correct?.text || q.correctOption}`;
-      }),
-    ];
-
-    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = 'daily-mcq-report.txt';
-    anchor.click();
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -380,19 +765,35 @@ export default function DailyMcqResultsPage() {
               })()}
             </div>
 
+            <style>{`
+              .dmscore-card{position:relative;border-radius:16px;padding:clamp(12px,1vw,18px);overflow:hidden;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;border:1px solid #E5E7EB;box-shadow:0 1px 2px rgba(16,24,40,.04),0 6px 18px -10px rgba(16,24,40,.08);}
+              .dmscore-card:hover{transform:translateY(-2px);border-color:#D1D5DB;box-shadow:0 1px 2px rgba(16,24,40,.05),0 14px 28px -14px rgba(16,24,40,.15);}
+              .dmscore-card::after{content:"";position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.55),rgba(255,255,255,0));pointer-events:none;}
+              .dmscore-accuracy{border-color:#DCE8E1;background:linear-gradient(160deg,#FBFDFC 0%,#F1F7F4 100%);}
+              .dmscore-time{border-color:#DCE2EC;background:linear-gradient(160deg,#FBFCFE 0%,#F1F4F9 100%);}
+              .dmscore-speed{border-color:#E8DFCE;background:linear-gradient(160deg,#FDFCFA 0%,#F8F4EE 100%);}
+              .dmscore-rank{border-color:#E2DAEC;background:linear-gradient(160deg,#FCFBFD 0%,#F4F1F8 100%);}
+              .dmscore-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;}
+              .dmscore-icon-accuracy{background:#ECF5F0;color:#3F8C6E;}
+              .dmscore-icon-time{background:#EEF2F8;color:#4A6B96;}
+              .dmscore-icon-speed{background:#F6F0E6;color:#9C7A3F;}
+              .dmscore-icon-rank{background:#F1EDF6;color:#7A6699;}
+              .dmscore-bar{height:5px;border-radius:999px;background:rgba(255,255,255,.6);overflow:hidden;position:relative;z-index:1;}
+              .dmscore-bar>span{display:block;height:100%;border-radius:999px;transition:width .4s ease;}
+            `}</style>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-[clamp(0.65rem,0.9vw,1rem)] mb-[clamp(0.85rem,1.2vw,1.15rem)]">
               {[
-                { label: 'Accuracy', value: `${Math.round(r.accuracy)}%`, sub: 'this attempt', valueSize: 'clamp(18px,1.15vw,24px)' },
-                { label: 'Time Taken', value: `${minutes}m ${seconds}s`, sub: 'of 10 min', valueSize: 'clamp(18px,1.15vw,24px)' },
-                { label: 'Speed', value: `${speed} min/Q`, sub: 'Avg per question', valueSize: 'clamp(14px,0.95vw,20px)' },
-                { label: 'Rank', value: rankLabel, sub: 'among aspirants today', valueSize: 'clamp(16px,1.05vw,22px)' },
+                { label: 'Accuracy', value: `${Math.round(r.accuracy)}%`, sub: 'this attempt', valueSize: 'clamp(18px,1.35vw,26px)', cls: 'dmscore-accuracy', iconCls: 'dmscore-icon-accuracy', barColor: '#7FB29A', barPct: Math.max(0, Math.min(100, Math.round(r.accuracy))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>) },
+                { label: 'Time Taken', value: `${minutes}m ${seconds}s`, sub: 'of 10 min', valueSize: 'clamp(18px,1.35vw,26px)', cls: 'dmscore-time', iconCls: 'dmscore-icon-time', barColor: '#8AA3C4', barPct: Math.max(0, Math.min(100, Math.round((effectiveTimeSeconds / 600) * 100))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg>) },
+                { label: 'Speed', value: `${speed} min/Q`, sub: 'Avg per question', valueSize: 'clamp(14px,1.1vw,22px)', cls: 'dmscore-speed', iconCls: 'dmscore-icon-speed', barColor: '#C9A876', barPct: Math.max(0, Math.min(100, Math.round(parseFloat(speed) * 100))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="currentColor" stroke="none"/></svg>) },
+                { label: 'Rank', value: rankLabel, sub: rankSubLabel, valueSize: 'clamp(15px,1.15vw,22px)', cls: 'dmscore-rank', iconCls: 'dmscore-icon-rank', barColor: '#A99BC4', barPct: rankBarPct, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4H3v2a3 3 0 0 0 3 3"/><path d="M19 4h2v2a3 3 0 0 1-3 3"/><path d="M12 13v4"/><path d="M8 21h8"/><path d="M9 17h6l1 4H8z" fill="currentColor" stroke="none"/></svg>) },
               ].map((s) => (
-                <div key={s.label} className="bg-white border border-[#E5E7EB] rounded-[clamp(10px,0.73vw,14px)]"
-                  style={{ padding: 'clamp(0.65rem,0.85vw,1rem)' }}>
-                  <div className="font-arimo font-bold"
-                    style={{ fontSize: 'clamp(10px,0.6vw,11px)', letterSpacing: '0.06em', color: '#8892A4', textTransform: 'uppercase', marginBottom: 6 }}>{s.label}</div>
-                  <div className="font-arimo font-extrabold tracking-tight text-[#17223E]" style={{ fontSize: s.valueSize, lineHeight: 1.1 }}>{s.value}</div>
-                  <div className="font-arimo" style={{ fontSize: 'clamp(10px,0.62vw,12px)', color: '#9CA3AF', marginTop: 4 }}>{s.sub}</div>
+                <div key={s.label} className={`dmscore-card ${s.cls}`}>
+                  <div className={`dmscore-icon ${s.iconCls}`}>{s.icon}</div>
+                  <div className="font-arimo font-bold" style={{ fontSize: 'clamp(10px,0.62vw,11px)', letterSpacing: '0.08em', color: '#64748B', textTransform: 'uppercase', marginTop: 10, position: 'relative', zIndex: 1 }}>{s.label}</div>
+                  <div className="font-arimo font-extrabold tracking-tight" style={{ color: '#0F172A', fontSize: s.valueSize, lineHeight: 1.1, marginTop: 4, position: 'relative', zIndex: 1 }}>{s.value}</div>
+                  <div className="dmscore-bar" style={{ marginTop: 8 }}><span style={{ width: `${s.barPct}%`, background: s.barColor }} /></div>
+                  <div className="font-arimo" style={{ fontSize: 'clamp(10px,0.66vw,12px)', color: '#64748B', marginTop: 8, position: 'relative', zIndex: 1 }}>{s.sub}</div>
                 </div>
               ))}
             </div>
@@ -423,6 +824,10 @@ export default function DailyMcqResultsPage() {
                 .qw-shimmer{position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-100%);animation:qwShine 4s ease-in-out infinite;pointer-events:none;}
                 @keyframes qwShine{0%{transform:translateX(-100%)}60%{transform:translateX(100%)}100%{transform:translateX(100%)}}
                 .qw-badge{position:relative;z-index:1;background:#0B1426;color:#F5C518;font-size:10.5px;font-weight:800;letter-spacing:.14em;padding:3px 8px;border-radius:999px;border:1px solid #0B1426;}
+                .weak-review-btn{color:#8A4A39;background:linear-gradient(135deg,#FEF3F2 0%,#FDE7E3 55%,#FAD9D2 100%);box-shadow:0 10px 22px -14px rgba(138,74,57,.45), inset 0 1px 0 rgba(255,255,255,.6);border:1px solid #F2CFC7;letter-spacing:.01em;}
+                .weak-review-btn::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#F97362,#B23A28);border-radius:12px 0 0 12px;}
+                .weak-review-btn:hover{filter:brightness(1.02);transform:translateY(-1px);box-shadow:0 16px 30px -16px rgba(138,74,57,.55);}
+                .weak-badge{position:relative;z-index:1;background:#8A4A39;color:#FDE7E3;font-size:10.5px;font-weight:800;letter-spacing:.1em;padding:3px 8px;border-radius:999px;border:1px solid #8A4A39;}
                 .mcq-act{display:flex;align-items:center;gap:clamp(8px,0.8vw,12px);padding:clamp(10px,0.85vw,14px) clamp(12px,1vw,16px);border-radius:14px;font-weight:700;font-size:clamp(12px,0.78vw,14px);border:1px solid transparent;cursor:pointer;transition:all .18s;background:#fff;width:100%;text-align:left;}
                 .mcq-act:hover{transform:translateY(-1px);box-shadow:0 10px 24px -16px rgba(11,20,38,.18);}
                 .mcq-act .ic{width:clamp(28px,2.2vw,34px);height:clamp(28px,2.2vw,34px);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -466,18 +871,6 @@ export default function DailyMcqResultsPage() {
                   </button>
                 </Link>
               </div>
-
-              {results && results.wrongCount > 0 && (
-                <Link href="/dashboard/daily-mcq/review">
-                  <button className="w-full bg-[#FEF2F2] border border-[#FECACA] text-[#DC2626] rounded-[clamp(8px,0.52vw,10px)] hover:bg-[#FEE2E2] transition-colors font-arimo font-bold flex items-center justify-center gap-2"
-                    style={{ padding: 'clamp(11px,0.83vw,14px)', fontSize: 'clamp(12px,0.78vw,15px)' }}>
-                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <path d="M8 2C4.686 2 2 4.686 2 8s2.686 6 6 6 6-2.686 6-6-2.686-6-6-6zm0 2.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm0 7.25a4.5 4.5 0 0 1-3.75-2.012C4.266 9.088 6.133 8.5 8 8.5s3.734.588 3.75.238A4.5 4.5 0 0 1 8 11.75z" fill="currentColor"/>
-                    </svg>
-                    Review Weak Areas ({results.wrongCount})
-                  </button>
-                </Link>
-              )}
 
               <div className="grid grid-cols-2 gap-[clamp(0.5rem,0.8vw,1rem)]">
                 <button type="button" onClick={() => setShowNextSteps(true)} className="mcq-act mcq-act-next font-arimo min-w-0" style={{ justifyContent: 'center', textAlign: 'center' }}>
@@ -536,7 +929,7 @@ export default function DailyMcqResultsPage() {
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                   <div style={{ width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 20, flexShrink: 0, background: 'linear-gradient(135deg,#2E3C5C,#1A2848)', boxShadow: '0 8px 18px -10px rgba(46,60,92,.55)' }}>📄</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 10.5, letterSpacing: '0.18em', fontWeight: 700, color: '#2E3C5C' }}>PDF · 4 PAGES · A4</div>
+                    <div style={{ fontSize: 10.5, letterSpacing: '0.18em', fontWeight: 700, color: '#2E3C5C' }}>PDF · A4 · QUESTION-WISE REVIEW</div>
                     <div className="font-jakarta font-extrabold" style={{ fontSize: 15.5, marginTop: 2, lineHeight: 1.25, color: '#17223E' }}>Your detailed performance dossier — ready to download</div>
                     <p style={{ fontSize: 12.5, color: '#6B7689', marginTop: 4, lineHeight: 1.45 }}>A printable companion you can revise on the go and share with mentors.</p>
                   </div>
@@ -568,14 +961,15 @@ export default function DailyMcqResultsPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 20 }}>
                 <button
                   type="button"
-                  onClick={() => { performDownload(); setShowDownloadModal(false); }}
+                  onClick={performDownload}
+                  disabled={isDownloading}
                   className="mcq-act mcq-act-download"
-                  style={{ justifyContent: 'center' }}
+                  style={{ justifyContent: 'center', opacity: isDownloading ? 0.7 : 1, cursor: isDownloading ? 'wait' : 'pointer' }}
                 >
                   <span className="ic">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M6 11l6 6 6-6M5 21h14" /></svg>
                   </span>
-                  Download Report
+                  {isDownloading ? 'Generating PDF...' : 'Download PDF'}
                 </button>
                 <button
                   type="button"
@@ -594,104 +988,19 @@ export default function DailyMcqResultsPage() {
         </div>
       )}
 
-      {/* Share Score modal — mirrors the reference popup */}
-      {showShareModal && (
-        <div
-          onClick={() => setShowShareModal(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(11,20,38,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="font-arimo"
-            style={{ width: '100%', maxWidth: 520, background: '#FFFFFF', borderRadius: 20, boxShadow: '0 30px 70px -25px rgba(11,20,38,0.55)', overflow: 'hidden' }}
-          >
-            {/* Preview hero */}
-            <div style={{ position: 'relative', padding: '28px 28px 24px', color: '#fff', background: 'radial-gradient(120% 80% at 0% 0%, #1A2848 0%, #0B1426 60%)' }}>
-              <button
-                type="button"
-                onClick={() => setShowShareModal(false)}
-                aria-label="Close"
-                style={{ position: 'absolute', right: 16, top: 16, width: 32, height: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, border: 'none', background: 'rgba(255,255,255,0.10)', color: '#fff', cursor: 'pointer' }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.20)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.10)'; }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M18 6L6 18M6 6l12 12" /></svg>
-              </button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, letterSpacing: '0.18em', fontWeight: 700, color: '#F5C518' }}>
-                <svg width="12" height="12" viewBox="0 0 32 32" fill="none"><path d="M6 6l10 18L26 6l-5 4-5-3-5 3L6 6z" fill="#F5C518" /></svg>
-                RISEWITHJEET · DAILY MCQ
-              </div>
-              <h3 className="font-jakarta font-extrabold tracking-tight" style={{ fontSize: 22, marginTop: 12, lineHeight: 1.2 }}>
-                I scored {r.correctCount}/{r.questionCount} in today&apos;s<br />Daily MCQ Challenge!
-              </h3>
-              <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 20, fontSize: 12.5, color: 'rgba(255,255,255,0.8)' }}>
-                <div><span style={{ fontWeight: 700, color: '#fff', fontSize: 15 }}>{Math.round(r.accuracy)}%</span> Accuracy</div>
-                {includeRankStreak && (
-                  <>
-                    <span style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)' }} />
-                    <div><span style={{ fontWeight: 700, color: '#fff', fontSize: 15 }}>{rankLabel}</span> Rank</div>
-                    {streak !== null && streak > 0 && (
-                      <>
-                        <span style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)' }} />
-                        <div><span style={{ fontWeight: 700, color: '#fff', fontSize: 15 }}>{streak}-day</span> Streak 🔥</div>
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div style={{ padding: 24 }}>
-              <div style={{ fontSize: 12, letterSpacing: '0.14em', fontWeight: 700, color: '#8892A4', marginBottom: 12 }}>SHARE TO</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 20 }}>
-                {[
-                  { id: 'whatsapp' as const, label: 'WhatsApp', bg: '#25D366', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.2-1.4A10 10 0 1 0 12 2zm5.2 14.3c-.2.6-1.2 1.2-1.7 1.3-.4 0-1 .1-1.6-.1-2.8-.9-4.7-3.8-4.8-4-.2-.2-1.2-1.6-1.2-3 0-1.5.8-2.2 1-2.5.3-.3.6-.4.8-.4h.6c.2 0 .5-.1.7.5l1 2.4c.1.2.1.4 0 .6L11.6 12c-.1.2-.2.4 0 .6.1.3.7 1.1 1.5 1.8 1 .9 1.8 1.2 2 1.3.2.1.4.1.5-.1l.7-.9c.2-.2.3-.2.5-.1l2 .9c.2.1.4.2.4.4.1.2.1 1.2-.1 1.4z" /></svg> },
-                  { id: 'x' as const, label: 'X', bg: '#000000', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 3h3l-7.5 8.6L22 21h-6l-5-6.3L5 21H2l8-9.2L2 3h6l4.5 5.8z" /></svg> },
-                  { id: 'linkedin' as const, label: 'LinkedIn', bg: '#0A66C2', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h4v4H4zM4 10h4v10H4zM10 10h4v1.5c.7-1.2 2.2-1.8 3.5-1.8 3 0 4.5 1.8 4.5 5V20h-4v-4.5c0-1.5-.5-2.5-2-2.5s-2 1-2 2.5V20h-4z" /></svg> },
-                  { id: 'instagram' as const, label: 'Instagram', bg: 'linear-gradient(to top right, #FF7A00, #E1306C, #7d2ae8)', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="4" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" /></svg> },
-                  { id: 'telegram' as const, label: 'Telegram', bg: '#0088CC', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 5L3 12l5 2 2 6 3-4 5 4 3-15z" /></svg> },
-                ].map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => openShareWindow(s.id)}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: 12, borderRadius: 12, border: 'none', background: 'transparent', cursor: 'pointer', transition: 'background .15s' }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#F4F6FA'; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-                  >
-                    <span style={{ width: 40, height: 40, borderRadius: '50%', background: s.bg, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{s.icon}</span>
-                    <span style={{ fontSize: 10.5, color: '#1F2937' }}>{s.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ fontSize: 12, letterSpacing: '0.14em', fontWeight: 700, color: '#8892A4', marginBottom: 8 }}>OR COPY LINK</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 12, border: '1px solid #E6EAF1', background: '#F8FAFD', padding: '4px 4px 4px 12px' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8892A4" strokeWidth="2" style={{ flexShrink: 0 }}><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg>
-                <input value={shareUrl} readOnly style={{ flex: 1, minWidth: 0, background: 'transparent', fontSize: 12.5, color: '#475067', outline: 'none', border: 'none', textOverflow: 'ellipsis' }} />
-                <button
-                  type="button"
-                  onClick={copyShareLink}
-                  className="font-arimo"
-                  style={{ display: 'inline-flex', alignItems: 'center', fontWeight: 600, borderRadius: 10, padding: '8px 14px', fontSize: 12.5, background: '#0B1426', color: '#fff', border: 'none', cursor: 'pointer', flexShrink: 0 }}
-                >
-                  Copy
-                </button>
-              </div>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, fontSize: 12.5, color: '#6B7689', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={includeRankStreak}
-                  onChange={(e) => setIncludeRankStreak(e.target.checked)}
-                  style={{ borderRadius: 4 }}
-                />
-                Include rank &amp; streak in shared card
-              </label>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Share Score modal — shared component (also used by the Prelims Mock Test score screen) */}
+      <ShareScoreModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        brandLabel="RISEWITHJEET · DAILY MCQ"
+        challengeName="Daily MCQ Challenge"
+        correctCount={r.correctCount}
+        totalCount={r.questionCount}
+        accuracyPct={Math.round(r.accuracy)}
+        rankLabel={rankLabel}
+        streak={streak}
+        shareUrl={shareUrl}
+      />
 
       {/* Toast */}
       {toastMsg && (

@@ -43,13 +43,6 @@ export const NEXT_STEP_CARDS: NextStepCard[] = [
     chip: '5 min · The Hindu', chipBg: '#ECFDF5', chipColor: '#047857', chipBorder: '#A7F3D0',
     cta: 'Read', href: '/dashboard/daily-editorial',
   },
-  {
-    icon: '🎧', accent: '#F5C518', iconBg: '#FFFBEB', iconColor: '#B45309',
-    title: 'Enter Study Room',
-    desc: 'Join a focused, distraction-free session with the Pomodoro timer & live peers.',
-    chip: '1,284 studying now', chipBg: '#FFFBEB', chipColor: '#92400E', chipBorder: '#FDE68A',
-    cta: 'Enter', href: '/dashboard/study-groups', pulse: true,
-  },
 ];
 
 const ArrowRight = () => (

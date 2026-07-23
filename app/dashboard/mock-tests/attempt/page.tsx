@@ -2,13 +2,17 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { mockTestService, bookmarkService } from '@/lib/services';
+import { mockTestService, bookmarkService, flagService } from '@/lib/services';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { MainsEvaluationLimitModal } from '@/components/upgrade/UpgradeModals';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import ExamInstructions from '@/components/ExamInstructions';
 import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
 import FilePreviewThumb from '@/components/FilePreviewThumb';
+import FilePreviewModal from '@/components/FilePreviewModal';
+import WritingTimer from '@/components/WritingTimer';
+import { mainsWordLimit, mainsTimeLimit } from '@/lib/mainsPattern';
 
 interface Question {
   id: number;
@@ -18,6 +22,7 @@ interface Question {
   options: { label: string; text: string }[];
   correct: string;
   explanation: string;
+  marks?: number | null;
 }
 
 interface MainsAnswer {
@@ -38,7 +43,7 @@ function normalizeQuestionText(text: string): string {
 function normalizeDurationToSeconds(rawDuration: unknown, questionCount: number, isMains: boolean): number {
   const fallbackMinutes = isMains
     ? Math.max(8, questionCount * 8)
-    : Math.max(1, questionCount);
+    : Math.max(1, Math.round(questionCount * 1.2));
   const fallbackSeconds = fallbackMinutes * 60;
 
   const parsed =
@@ -137,7 +142,6 @@ function MockTestAttemptInner() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const entitlements = useEntitlements();
-  const [navOpen, setNavOpen] = useState(false);
   const searchParams = useSearchParams();
   const testId = searchParams.get('testId');
   const examMode = searchParams.get('examMode') || 'prelims';
@@ -156,8 +160,6 @@ function MockTestAttemptInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [submitFlowStep, setSubmitFlowStep] = useState(0);
-  const [submitFlowProgress, setSubmitFlowProgress] = useState(40);
   const [totalMarks, setTotalMarks] = useState(0);
 
   /* ─── Quiz State ─── */
@@ -165,6 +167,9 @@ function MockTestAttemptInner() {
   const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
   const [questionStatuses, setQuestionStatuses] = useState<Record<number, QuestionStatus>>({});
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Record<string, boolean>>({});
+  const [skipped, setSkipped] = useState<Record<number, boolean>>({});
+  const [flagged, setFlagged] = useState<Record<string, boolean>>({});
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [examTotalSeconds, setExamTotalSeconds] = useState(0); // full exam duration (for the single timer ring)
   const [examRunning, setExamRunning] = useState(true);        // single exam-wide timer running/paused
@@ -172,8 +177,16 @@ function MockTestAttemptInner() {
 
   /* ─── Mains State ─── */
   const [mainsSubmitting, setMainsSubmitting] = useState(false);
+  const [mainsConfirmOpen, setMainsConfirmOpen] = useState(false);
+  const [showMainsQuotaModal, setShowMainsQuotaModal] = useState(false);
   const [mainsAnswers, setMainsAnswers] = useState<Record<number, MainsAnswer>>({});
+  // Questions the user has explicitly marked as "didn't attempt" — these are
+  // allowed through submission without an answer upload and are not evaluated.
+  const [unattemptedQuestions, setUnattemptedQuestions] = useState<Record<number, boolean>>({});
+  // Index of the question whose missing-answer popup is open (null = closed).
+  const [missingAnswerIdx, setMissingAnswerIdx] = useState<number | null>(null);
   const [openEditors, setOpenEditors] = useState<Record<number, boolean>>({}); // which answer editors are expanded
+  const [previewFile, setPreviewFile] = useState<File | null>(null); // in-page uploaded-answer preview (no new tab / no navigation)
   const answerModeKey = testId ? `mockTestAnswerMode:${testId}` : null;
   const [answerMode, setAnswerMode] = useState<'type' | 'handwrite' | null>(null);
   const [doneWriting, setDoneWriting] = useState(false); // handwrite mode: user finished writing → show upload step
@@ -235,14 +248,24 @@ function MockTestAttemptInner() {
           qs.forEach(q => { if (ids.has(String(q.id))) map[String(q.id)] = true; });
           setBookmarkedQuestions(prev => ({ ...map, ...prev }));
         }).catch(() => {});
+        flagService.check('mcq', qs.map(q => String(q.id))).then((fRes: any) => {
+          if (cancelled) return;
+          setFlagged(fRes.data?.flagged || {});
+        }).catch(() => {});
         // Initialize statuses
         const statuses: Record<number, QuestionStatus> = {};
         qs.forEach((_, i) => {
           statuses[i] = i === 0 ? 'current' : 'unattempted';
         });
         setQuestionStatuses(statuses);
-        // Set timer based on API duration (minutes or seconds) with a safe fallback.
-        const durationSeconds = normalizeDurationToSeconds(res.data?.duration, qs.length, isMains);
+        // Both modes derive total time deterministically from the question count
+        // so the timer always matches the setup summary and instructions — never a
+        // stale/random API duration.
+        //   Mains:   7 min per 10-mark question (numberOfQuestions × 7).
+        //   Prelims: 100 questions = 120 minutes, scaled proportionally (× 1.2).
+        const durationSeconds = isMains
+          ? qs.length * 7 * 60
+          : Math.round(qs.length * 1.2) * 60;
         setTimeLeft(durationSeconds);
         setExamTotalSeconds(durationSeconds);
       } catch (err: any) {
@@ -295,11 +318,33 @@ function MockTestAttemptInner() {
   const handleSelectOption = (label: string) => {
     setSelectedOptions(prev => ({ ...prev, [currentIdx]: label }));
     setQuestionStatuses(prev => ({ ...prev, [currentIdx]: 'answered' }));
+    // Selecting an answer clears any prior "skipped" flag on this question.
+    setSkipped(prev => {
+      if (!prev[currentIdx]) return prev;
+      const next = { ...prev };
+      delete next[currentIdx];
+      return next;
+    });
   };
 
-  const handleMark = () => {
-    setQuestionStatuses(prev => ({ ...prev, [currentIdx]: 'marked' }));
-    handleNext();
+  // Flag = "Mark for Review" (mirrors Daily MCQ Challenge).
+  const handleToggleFlag = async (q: Question) => {
+    const id = String(q.id);
+    const wasFlagged = !!flagged[id];
+    setFlagged(prev => ({ ...prev, [id]: !wasFlagged }));
+    try {
+      await flagService.toggle({ questionType: 'mcq', questionId: id, questionText: q.text });
+    } catch {
+      setFlagged(prev => ({ ...prev, [id]: wasFlagged }));
+    }
+  };
+
+  // Skip = advance, marking the current question skipped if still unanswered.
+  const handleSkip = () => {
+    if (!selectedOptions[currentIdx]) {
+      setSkipped(prev => ({ ...prev, [currentIdx]: true }));
+    }
+    if (currentIdx < totalQuestions - 1) goToQuestion(currentIdx + 1);
   };
 
   const handleToggleBookmark = async (q: Question) => {
@@ -328,14 +373,6 @@ function MockTestAttemptInner() {
     }
   };
 
-  const handleClear = () => {
-    setSelectedOptions(prev => { const n = { ...prev }; delete n[currentIdx]; return n; });
-    setQuestionStatuses(prev => ({
-      ...prev,
-      [currentIdx]: prev[currentIdx] === 'marked' ? 'unattempted' : prev[currentIdx] === 'answered' ? 'unattempted' : prev[currentIdx],
-    }));
-  };
-
   const handleNext = () => {
     if (currentIdx < totalQuestions - 1) goToQuestion(currentIdx + 1);
   };
@@ -345,28 +382,85 @@ function MockTestAttemptInner() {
   };
 
   /* ─── Mains handlers ─── */
+  // Clicking "Submit … for Evaluation" validates answers, then opens the
+  // confirmation popup. The real submission only runs after "Yes, submit".
+  // First question that has no answer and hasn't been explicitly marked as
+  // "didn't attempt". `override` lets callers factor in a just-made decision
+  // before React state has flushed. Returns -1 when nothing is missing.
+  const firstMissingAnswer = (override?: Record<number, boolean>) => {
+    const skip = override || unattemptedQuestions;
+    return questions.findIndex((_, i) => {
+      if (skip[i]) return false;
+      const a = mainsAnswers[i];
+      if (answerMode === 'handwrite') return !a || !a.files.length;
+      return !a || !a.text.trim();
+    });
+  };
+
+  const requestMainsSubmit = () => {
+    if (!testId) {
+      setError('Cannot submit without a test session. Please regenerate the test.');
+      return;
+    }
+    const missing = firstMissingAnswer();
+    if (missing !== -1) {
+      // Prompt the user: upload the answer, or mark the question unattempted.
+      setError(null);
+      setMissingAnswerIdx(missing);
+      return;
+    }
+    setError(null);
+    setMainsConfirmOpen(true);
+  };
+
+  // Popup action: jump to the flagged question's answer section so the user can upload.
+  const handleUploadMissingAnswer = () => {
+    const idx = missingAnswerIdx;
+    setMissingAnswerIdx(null);
+    if (idx === null) return;
+    setCurrentIdx(idx);
+    if (typeof window !== 'undefined') {
+      // Wait a frame so the popup is gone and the target is laid out.
+      requestAnimationFrame(() => {
+        document.getElementById(`mains-q-${idx}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+  };
+
+  // Popup action: mark the question unattempted, then move on to the next
+  // missing question (if any) or straight to the submit confirmation.
+  const handleMarkUnattempted = () => {
+    const idx = missingAnswerIdx;
+    if (idx === null) return;
+    const nextUnattempted = { ...unattemptedQuestions, [idx]: true };
+    setUnattemptedQuestions(nextUnattempted);
+    const nextMissing = firstMissingAnswer(nextUnattempted);
+    if (nextMissing !== -1) {
+      setMissingAnswerIdx(nextMissing);
+    } else {
+      setMissingAnswerIdx(null);
+      setError(null);
+      setMainsConfirmOpen(true);
+    }
+  };
+
   const handleMainsSubmitAll = async () => {
     if (!testId) {
       setError('Cannot submit without a test session. Please regenerate the test.');
       return;
     }
 
-    const missing = questions.findIndex((_, i) => {
-      const a = mainsAnswers[i];
-      if (answerMode === 'handwrite') return !a || !a.files.length;
-      return !a || !a.text.trim();
-    });
+    const missing = firstMissingAnswer();
     if (missing !== -1) {
-      setCurrentIdx(missing);
-      setError(
-        answerMode === 'handwrite'
-          ? `Please upload your answer page for Question ${missing + 1} before submitting.`
-          : `Please provide an answer for Question ${missing + 1} before submitting.`
-      );
+      // A question is still missing an answer and hasn't been marked
+      // unattempted — re-open the prompt instead of blocking silently.
+      setMainsConfirmOpen(false);
+      setMissingAnswerIdx(missing);
       return;
     }
 
     setError(null);
+    setMainsConfirmOpen(false);
     setMainsSubmitting(true);
 
     try {
@@ -384,8 +478,8 @@ function MockTestAttemptInner() {
       }
 
       const pendingQuestions = questions
-        .map((q) => ({ q }))
-        .filter(({ q }) => !byQuestion[String(q.id)]);
+        .map((q, i) => ({ q, i }))
+        .filter(({ q, i }) => !byQuestion[String(q.id)] && !unattemptedQuestions[i]);
 
       if (pendingQuestions.length === 0) {
         router.push(
@@ -396,7 +490,7 @@ function MockTestAttemptInner() {
 
       const quota = entitlements.featureStatus('mains_evaluation');
       if (quota?.allowed === false) {
-        setError(quota.message || 'You have used your Mains evaluation quota for this period.');
+        setShowMainsQuotaModal(true);
         setMainsSubmitting(false);
         return;
       }
@@ -411,6 +505,8 @@ function MockTestAttemptInner() {
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
         if (byQuestion[String(q.id)]) continue;
+        // Intentionally unattempted questions are not sent for evaluation.
+        if (unattemptedQuestions[i]) continue;
         const a = mainsAnswers[i];
         const resp = await mockTestService.submitMainsAnswer(testId, String(q.id), {
           answerText: a?.text?.trim() || undefined,
@@ -445,20 +541,22 @@ function MockTestAttemptInner() {
       console.error('Mains submit failed:', err);
       entitlements.refreshEntitlements().catch(() => {});
       const parsed = handleEntitlementError(err);
-      setError(parsed.message || err.message || 'Failed to submit answers. Please try again.');
+      if (parsed.title === 'Limit reached' || parsed.title === 'Upgrade required') {
+        setShowMainsQuotaModal(true);
+      } else {
+        setError(parsed.message || err.message || 'Failed to submit answers. Please try again.');
+      }
       setMainsSubmitting(false);
     }
   };
 
   const handleSubmit = async () => {
-    const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
     // Sample mode (no testId): store local results and open results screen
     if (!testId) {
       const total = questions.length;
       const correctCount = correct;
       const wrongCount = wrong;
-      const skippedCount = Math.max(0, total - Object.keys(selectedOptions).length);
+      const skippedTotal = Math.max(0, total - Object.keys(selectedOptions).length);
       const accuracyPct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
       const review = questions.map((q, idx) => {
         const selected = selectedOptions[idx];
@@ -484,7 +582,7 @@ function MockTestAttemptInner() {
             total,
             correct: correctCount,
             wrong: wrongCount,
-            skipped: skippedCount,
+            skipped: skippedTotal,
             accuracyPct,
             scoreText: `${correctCount}/${total}`,
             review,
@@ -495,45 +593,12 @@ function MockTestAttemptInner() {
       }
 
       setSubmitting(true);
-      setSubmitFlowStep(0);
-      setSubmitFlowProgress(40);
-      await wait(650);
-      setSubmitFlowStep(1);
-      setSubmitFlowProgress(58);
-      await wait(650);
-      setSubmitFlowStep(2);
-      setSubmitFlowProgress(76);
-      await wait(650);
-      setSubmitFlowStep(3);
-      setSubmitFlowProgress(90);
-      await wait(550);
-      setSubmitFlowStep(4);
-      setSubmitFlowProgress(100);
-      await wait(450);
       router.push(`/dashboard/mock-tests/attempt/results?mode=sample&title=${encodeURIComponent(title)}`);
       return;
     }
     setSubmitting(true);
-    setSubmitFlowStep(0);
-    setSubmitFlowProgress(40);
     setError(null);
     try {
-      const flow = (async () => {
-        await wait(650);
-        setSubmitFlowStep(1);
-        setSubmitFlowProgress(58);
-        await wait(650);
-        setSubmitFlowStep(2);
-        setSubmitFlowProgress(76);
-        await wait(650);
-        setSubmitFlowStep(3);
-        setSubmitFlowProgress(90);
-        await wait(550);
-        setSubmitFlowStep(4);
-        setSubmitFlowProgress(100);
-        await wait(450);
-      })();
-
       const timeTaken = Math.floor((Date.now() - startTime) / 1000);
       // Build answers map: questionId -> selected option label
       const answersMap: Record<string, string> = {};
@@ -543,95 +608,29 @@ function MockTestAttemptInner() {
           answersMap[String(q.id)] = opt;
         }
       });
-      await Promise.all([mockTestService.submit(testId, answersMap, timeTaken), flow]);
+      await mockTestService.submit(testId, answersMap, timeTaken);
+      entitlements.refreshEntitlements().catch(() => {});
       router.push(`/dashboard/mock-tests/attempt/results?testId=${testId}`);
     } catch (err: any) {
       console.error('Failed to submit test:', err);
-      setError(err.message || 'Failed to submit test. Please try again.');
+      const parsed = handleEntitlementError(err);
+      setError(parsed.message || 'Failed to submit test. Please try again.');
       setSubmitting(false);
-      setSubmitFlowStep(0);
-      setSubmitFlowProgress(40);
     }
   };
 
-  // Stats
-  const answered = Object.values(questionStatuses).filter(s => s === 'answered').length;
-  const marked = Object.values(questionStatuses).filter(s => s === 'marked').length;
+  // Stats — Daily MCQ Challenge semantics: a flagged question counts as
+  // "Mark for Review"; answered/skipped/not-visited are mutually exclusive.
+  const answeredCount = questions.filter((q, i) => selectedOptions[i] && !flagged[String(q.id)]).length;
+  const skippedCount = questions.filter((q, i) => skipped[i] && !selectedOptions[i] && !flagged[String(q.id)]).length;
+  const markedCount = questions.filter((q) => flagged[String(q.id)]).length;
+  const bookmarkedCount = questions.filter((q) => bookmarkedQuestions[String(q.id)]).length;
+  const notVisitedCount = Math.max(0, questions.length - answeredCount - skippedCount - markedCount);
+  // Correct / wrong drive the sample-mode results payload (net score w/ negative marking).
   const correct = Object.entries(selectedOptions).filter(([idx, opt]) => questions[Number(idx)]?.correct === opt).length;
   const wrong = Object.keys(selectedOptions).length - correct;
-  const netScore = correct * 2 - wrong * 0.67;
 
   const currentQ = questions[currentIdx];
-
-  const renderSubmitEvaluationCard = (progressPct = 40, activeStep = 0) => {
-    const evalSteps = [
-      'Reading your handwritten answers',
-      'Identifying key points & arguments',
-      'Comparing with model answers',
-      'Preparing detailed markup & feedback',
-      "Generating Jeet Sir's analysis",
-    ];
-
-    return (
-      <div
-        style={{
-          width: 'min(960px, calc(100vw - 40px))',
-          minHeight: 472,
-          borderRadius: 32,
-          background: 'linear-gradient(154deg, #1D293D 0%, #0F172B 50%, #162456 100%)',
-          boxShadow: '0 20px 12.5px rgba(0,0,0,0.10), 0 8px 5px rgba(0,0,0,0.10), 0 22px 44px rgba(15,23,42,0.18)',
-          padding: '40px clamp(28px, 5vw, 48px) 44px',
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          fontFamily: 'Inter, sans-serif',
-        }}
-      >
-        <div style={{ fontSize: 56, lineHeight: '60px', marginBottom: 24 }}>🧠</div>
-        <h2 style={{ margin: 0, color: '#FFFFFF', fontSize: 'clamp(24px, 3vw, 30px)', lineHeight: '36px', fontWeight: 800, textAlign: 'center' }}>
-          AI is evaluating your answers...
-        </h2>
-        <p style={{ margin: '12px 0 38px', color: '#BEDBFF', fontSize: 16, lineHeight: '24px', textAlign: 'center' }}>
-          This usually takes about 30 seconds
-        </p>
-
-        <div style={{ width: 'min(448px, 100%)', height: 8, borderRadius: 999, background: '#314158', overflow: 'hidden', marginBottom: 32 }}>
-          <div style={{ width: `${Math.min(100, Math.max(8, progressPct))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, #FDC700 0%, #FF6900 100%)', transition: 'width 0.35s ease' }} />
-        </div>
-
-        <div style={{ width: 'min(448px, 100%)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {evalSteps.map((label, index) => {
-            const isDone = index < activeStep || activeStep >= evalSteps.length - 1;
-            const isActive = index === activeStep && activeStep < evalSteps.length - 1;
-            const isHighlighted = isDone || isActive;
-
-            return (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, height: 20 }}>
-                <div style={{ width: 20, height: 20, borderRadius: '50%', background: isHighlighted ? '#FDC700' : '#314158', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {isHighlighted && (
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                      <path d="M3 6.1L5.05 8.15L9 4.2" stroke="#162033" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </div>
-                <span style={{ color: isHighlighted ? '#FDC700' : '#6A7282', fontSize: 14, lineHeight: '20px', fontWeight: isHighlighted ? 600 : 400 }}>
-                  {label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const statusColor: Record<QuestionStatus, string> = {
-    answered: '#00C950',
-    current: '#2B7FFF',
-    marked: '#FDC700',
-    unattempted: '#314158',
-  };
 
   /* ─── Loading State ─── */
   if (loading) {
@@ -702,14 +701,11 @@ function MockTestAttemptInner() {
     const paperLabel = [paperParam, subjectParam].filter(Boolean).join(' · ')
       || (currentQ as any).paper
       || (isMains ? 'GS Paper I' : 'GS Paper I');
-    let totalTimeMinutes: number;
-    if (isMains) {
-      const marksPerQ = totalMarks && totalQuestions ? Math.round(totalMarks / totalQuestions) : 15;
-      const minPerQ = Math.max(8, Math.round(marksPerQ * 0.8));
-      totalTimeMinutes = minPerQ * totalQuestions;
-    } else {
-      totalTimeMinutes = Math.max(1, Math.round(timeLeft / 60));
-    }
+    // Show the same exam-wide timer everywhere: setup summary, instructions and
+    // the countdown ring all read one value (mains = numberOfQuestions × 7 min).
+    const totalTimeMinutes = examTotalSeconds > 0
+      ? Math.round(examTotalSeconds / 60)
+      : (isMains ? Math.max(7, totalQuestions * 7) : Math.max(1, Math.round(timeLeft / 60)));
     return (
       <ExamInstructions
         isMains={isMains}
@@ -728,142 +724,333 @@ function MockTestAttemptInner() {
 
   /* ─────────────── MAINS: choose how to answer (type vs handwrite) ─────────────── */
   if (isMains && !answerMode) {
-    const SERIF = "var(--font-playfair), 'Palatino Linotype', Georgia, serif";
-    const SANS = 'var(--font-inter), Inter, system-ui, sans-serif';
-    const totalMinutes = examTotalSeconds > 0 ? Math.round(examTotalSeconds / 60) : 0;
-
-    const TypeIcon = (
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-        <rect x="2" y="5" width="20" height="14" rx="2.5" stroke="#155DFC" strokeWidth="1.8" />
-        <path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 12.5h.01M10 12.5h.01M14 12.5h.01M18 12.5h.01M8 15.5h8" stroke="#155DFC" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    );
-    const HandIcon = (
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-        <path d="M12 20h7" stroke="#B45309" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M14.5 5.5l2.5 2.5L8 17l-3.2.7L5.5 14.5 14.5 5.5z" stroke="#B45309" strokeWidth="1.8" strokeLinejoin="round" />
-        <path d="M13 7l3 3" stroke="#B45309" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    );
-
-    const modeCard = (
-      mode: 'type' | 'handwrite',
-      icon: React.ReactNode,
-      iconTint: string,
-      accent: string,
-      tag: string,
-      tagBg: string,
-      tagColor: string,
-      heading: string,
-      blurb: string,
-      points: string[],
-    ) => (
-      <button
-        type="button"
-        onClick={() => {
-          setAnswerMode(mode);
-          if (answerModeKey) sessionStorage.setItem(answerModeKey, mode);
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 24px 48px -28px rgba(15,23,42,0.4)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#EEF1F5'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px -8px rgba(15,23,42,0.18)'; }}
-        className="flex flex-col text-left"
-        style={{
-          flex: 1,
-          minWidth: isMobile ? '100%' : 260,
-          background: '#FFFFFF',
-          border: '1.5px solid #EEF1F5',
-          borderRadius: 20,
-          padding: 'clamp(20px, 2.4vw, 28px)',
-          cursor: 'pointer',
-          gap: 14,
-          boxShadow: '0 4px 14px -8px rgba(15,23,42,0.18)',
-          transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ width: 52, height: 52, borderRadius: 14, background: iconTint, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {icon}
-          </span>
-          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: tagColor, background: tagBg, padding: '5px 11px', borderRadius: 999 }}>
-            {tag}
-          </span>
-        </div>
-        <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 'clamp(19px, 1.7vw, 23px)', color: '#0F172B', lineHeight: 1.1 }}>{heading}</span>
-        <span style={{ fontSize: 13.5, color: '#64748B', lineHeight: 1.5 }}>{blurb}</span>
-        <div style={{ height: 1, background: '#F1F5F9', margin: '2px 0' }} />
-        <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9 }}>
-          {points.map((p) => (
-            <li key={p} style={{ fontSize: 13, color: '#475569', display: 'flex', gap: 10, alignItems: 'flex-start', lineHeight: 1.4 }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
-                <circle cx="8" cy="8" r="8" fill={iconTint} />
-                <path d="M4.5 8.2L6.8 10.5L11.5 5.5" stroke={accent} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {p}
-            </li>
-          ))}
-        </ul>
-        <span
-          style={{
-            marginTop: 6,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            height: 44, borderRadius: 12,
-            background: '#0F172B', color: '#FCD34D',
-            fontWeight: 800, fontSize: 14.5,
-          }}
-        >
-          Choose this →
-        </span>
-      </button>
-    );
+    const chooseMode = (mode: 'type' | 'handwrite') => {
+      setAnswerMode(mode);
+      if (answerModeKey) sessionStorage.setItem(answerModeKey, mode);
+    };
 
     return (
-      <div
-        style={{ minHeight: '100vh', background: '#FAFBFE', fontFamily: SANS, display: 'flex', flexDirection: 'column', animation: 'mode-fade 0.3s ease' }}
-      >
-        {/* ── Navy hero ── */}
-        <div style={{ background: 'linear-gradient(135deg, #1D293D 0%, #0F172B 55%, #162456 100%)', padding: 'clamp(26px, 3vw, 44px) clamp(20px, 3vw, 40px)' }}>
-          <div style={{ maxWidth: 820, margin: '0 auto', textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 16px', borderRadius: 999, border: '1px solid rgba(250,204,21,0.35)', background: 'rgba(250,204,21,0.06)', marginBottom: 18 }}>
-              <span style={{ color: '#FCD34D', fontSize: 12 }}>✦</span>
-              <span style={{ color: '#FCD34D', fontWeight: 800, fontSize: 11.5, letterSpacing: '0.12em' }}>MAINS MOCK TEST · CHOOSE YOUR MODE</span>
-            </div>
-            <h1 style={{ margin: 0, fontFamily: SERIF, fontWeight: 600, color: '#FFFFFF', fontSize: 'clamp(26px, 3vw, 40px)', lineHeight: 1.08, letterSpacing: '-0.01em' }}>
-              How will you answer this test?
-            </h1>
-            <p style={{ margin: '14px auto 0', maxWidth: 560, color: '#94A3B8', fontSize: 'clamp(13px, 1.15vw, 15.5px)', lineHeight: 1.5 }}>
-              The timer (<strong style={{ color: '#E2E8F0', fontWeight: 700 }}>{totalMinutes} min</strong>) starts once you choose. Pick how you'll actually write — you can't switch midway.
-            </p>
-          </div>
-        </div>
+      <div className="ams-page" aria-label="Choose answer mode">
+        <section className="ams-shell">
+          <div className="ams-cards">
+            {/* ── Type Your Answers (blue) ── */}
+            <article className="ams-card ams-type" aria-labelledby="ams-type-title">
+              <div className="ams-top">
+                <div className="ams-icon" aria-hidden="true">
+                  <svg className="ams-keyboard-svg" viewBox="0 0 48 48" fill="none">
+                    <rect x="8" y="12" width="32" height="24" rx="4" stroke="#2367ff" strokeWidth="3" />
+                    <path d="M14 20h3M21 20h3M28 20h3M35 20h1M14 27h3M21 27h3M28 27h3M35 27h1M17 32h14" stroke="#2367ff" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div className="ams-pill"><svg viewBox="0 0 24 24" fill="none"><path d="M13.4 2 5 13h6l-1 9 9-12h-6l.4-8Z" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" /></svg>Fastest</div>
+              </div>
 
-        {/* ── Cards ── */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(20px, 3vw, 44px)' }}>
-          <div style={{ width: '100%', maxWidth: 820, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(18px, 2.4vw, 28px)', marginTop: 'clamp(-44px, -4vw, -68px)' }}>
-            <div className={isMobile ? 'flex flex-col' : 'flex flex-row'} style={{ gap: 'clamp(16px, 1.8vw, 22px)', width: '100%', alignItems: 'stretch' }}>
-              {modeCard(
-                'type', TypeIcon, '#E6EEFF', '#155DFC', 'Fastest', '#EFF6FF', '#155DFC',
-                'Type my answers',
-                'Write each answer in the app while the clock runs.',
-                ['One clean text box per question', 'Submit the moment you finish', 'Live word count as you write'],
-              )}
-              {modeCard(
-                'handwrite', HandIcon, '#FEF3C7', '#D97706', 'Real exam feel', '#FFFBEB', '#B45309',
-                'Write by hand',
-                'Write on paper now — scan and upload after the test ends.',
-                ['No typing — just your booklet & pen', "Upload your scans when time's up", 'Closest to the real UPSC Mains'],
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard/mock-tests')}
-              style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', padding: 8 }}
-            >
-              ← Back to tests
-            </button>
-          </div>
-        </div>
+              <div className="ams-hero">
+                <h2 className="ams-title" id="ams-type-title">Type Your Answers</h2>
+                <p className="ams-intro">Ideal for brainstorming, quick practice and learning on the go.</p>
 
-        <style>{`@keyframes mode-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+                <div className="ams-art ams-type-art" aria-hidden="true">
+                  <svg className="ams-spark" viewBox="0 0 340 240">
+                    <g className="ams-burst" stroke="#8fb0ff" strokeWidth="4" strokeLinecap="round">
+                      <path d="M36 98h-18"/><path d="M51 76 39 62"/><path d="M50 120 36 132"/>
+                    </g>
+                    <g className="ams-burst" stroke="#8fb0ff" strokeWidth="4" strokeLinecap="round">
+                      <path d="M266 16 269 2"/><path d="M286 32 300 22"/>
+                    </g>
+                  </svg>
+                  <div className="ams-laptop">
+                    <div className="ams-screen">
+                      <div className="ams-toolbar"><span>B</span><em>I</em><u>U</u><span>•</span><span className="ams-bars"><i></i><i></i><i></i></span><span className="ams-bars"><i></i><i></i><i></i></span></div>
+                      <div className="ams-typing"><span className="ams-cursor"></span><span className="ams-linestack"><i></i><i></i><i></i></span></div>
+                    </div>
+                    <div className="ams-base"></div>
+                    <div className="ams-wordcount">Words: <b>156</b><span className="ams-dot"></span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ams-divider"></div>
+
+              <ul className="ams-features">
+                <li className="ams-feature">
+                  <span className="ams-feat-icon"><svg viewBox="0 0 36 36" fill="none"><rect x="7" y="7" width="22" height="22" rx="3" stroke="currentColor" strokeWidth="2.8"/><path d="M12 14h12M12 19h7M13 25l3-4 4 4" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                  <span><strong>One clean text box per question</strong><span>Distraction-free writing space</span></span>
+                </li>
+                <li className="ams-feature">
+                  <span className="ams-feat-icon"><svg viewBox="0 0 36 36" fill="none"><path d="M29 7 6 18l9 4 4 8L29 7Z" stroke="currentColor" strokeWidth="2.8" strokeLinejoin="round"/><path d="m15 22 5-5" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round"/></svg></span>
+                  <span><strong>Submit the moment you finish</strong><span>Instant submission, no extra steps</span></span>
+                </li>
+                <li className="ams-feature">
+                  <span className="ams-feat-icon"><svg viewBox="0 0 36 36" fill="none" aria-hidden="true"><rect x="8" y="5" width="20" height="26" rx="4" stroke="currentColor" strokeWidth="2.6"/><path d="M13 12h10M13 17h7M13 22h6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/><circle cx="26" cy="26" r="6" fill="#fff" stroke="currentColor" strokeWidth="2.2"/><path d="M23.8 26h4.4M26 23.8v4.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></span>
+                  <span><strong>Live word count as you write</strong><span>Track your progress in real-time</span></span>
+                </li>
+              </ul>
+
+              <button type="button" className="ams-choose" onClick={() => chooseMode('type')}>Choose this <span className="ams-arrow">→</span></button>
+            </article>
+
+            {/* ── Write on Paper (gold) ── */}
+            <article className="ams-card ams-hand" aria-labelledby="ams-hand-title">
+              <div className="ams-top">
+                <div className="ams-icon" aria-hidden="true">
+                  <svg viewBox="0 0 48 48" fill="none">
+                    <path d="m14 31-2 6 6-2 18-18-4-4-18 18Z" stroke="#cc5b05" strokeWidth="3" strokeLinejoin="round" />
+                    <path d="m28 17 4 4M12 38h22" stroke="#cc5b05" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div className="ams-pill"><svg viewBox="0 0 24 24" fill="none"><path d="m12 3 2.7 5.47 6.03.88-4.36 4.25 1.03 6-5.4-2.84L6.6 19.6l1.03-6-4.36-4.25 6.03-.88L12 3Z" stroke="currentColor" strokeWidth="2.1" strokeLinejoin="round" /></svg>Real exam feel</div>
+              </div>
+
+              <div className="ams-hero">
+                <h2 className="ams-title" id="ams-hand-title">Write on Paper</h2>
+                <p className="ams-intro">Write on paper now, then scan and upload after the test ends.</p>
+
+                <div className="ams-art ams-hand-art" aria-hidden="true">
+                  <svg className="ams-spark" viewBox="0 0 360 260">
+                    <g className="ams-burst" stroke="#ffd15b" strokeWidth="4" strokeLinecap="round">
+                      <path d="M86 19 76 0"/><path d="M111 24 118 7"/><path d="M63 38 47 29"/>
+                    </g>
+                    <g className="ams-burst" stroke="#ffd15b" strokeWidth="4" strokeLinecap="round">
+                      <path d="M315 28 329 12"/><path d="M335 58 352 52"/>
+                    </g>
+                  </svg>
+                  <div className="ams-notebook">
+                    <div className="ams-notelines">
+                      <span className="ams-noteline"><b>1.</b><i></i></span>
+                      <span className="ams-noteline"><b>2.</b><i></i></span>
+                      <span className="ams-noteline"><b>3.</b><i></i></span>
+                    </div>
+                    <svg className="ams-writing" viewBox="0 0 90 24" aria-hidden="true">
+                      <path d="M4 17c8-8 12 6 20-2s12 5 21-3 11 4 20-3 13 2 20-5" />
+                    </svg>
+                    <div className="ams-pen"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ams-divider"></div>
+
+              <ul className="ams-features">
+                <li className="ams-feature">
+                  <span className="ams-feat-icon"><svg viewBox="0 0 36 36" fill="none"><path d="M7 12h21v15H7V12Z" stroke="currentColor" strokeWidth="2.6"/><path d="M12 18h2M18 18h2M24 18h2M12 23h8" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/><path d="M6 7 30 30" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round"/></svg></span>
+                  <span><strong>No typing, just your booklet &amp; pen</strong><span>Answer just like the real exam</span></span>
+                </li>
+                <li className="ams-feature">
+                  <span className="ams-feat-icon"><svg viewBox="0 0 36 36" fill="none"><path d="M23.8 25.5h2.4a5.3 5.3 0 0 0 .8-10.5A9 9 0 0 0 9.5 17.8 4.4 4.4 0 0 0 10 26h2.2" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round"/><path d="M18 28V16m0 0-4.5 4.5M18 16l4.5 4.5" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                  <span><strong>Upload your scans when time&apos;s up</strong><span>Scan and upload after the test</span></span>
+                </li>
+                <li className="ams-feature">
+                  <span className="ams-feat-icon"><svg viewBox="0 0 36 36" fill="none"><circle cx="18" cy="16" r="9" stroke="currentColor" strokeWidth="2.7"/><path d="m14 24-2 7 6-3 6 3-2-7" stroke="currentColor" strokeWidth="2.7" strokeLinejoin="round"/><path d="m18 10 1.6 3.2 3.5.5-2.5 2.5.6 3.5-3.2-1.7-3.2 1.7.6-3.5-2.5-2.5 3.5-.5L18 10Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg></span>
+                  <span><strong>Closest to the real UPSC Mains</strong><span>Practice the real exam experience</span></span>
+                </li>
+              </ul>
+
+              <button type="button" className="ams-choose" onClick={() => chooseMode('handwrite')}>Choose this <span className="ams-arrow">→</span></button>
+            </article>
+          </div>
+
+          <button type="button" className="ams-back" onClick={() => router.push('/dashboard/mock-tests')} aria-label="Back to tests">← Back to tests</button>
+        </section>
+
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+          .ams-page {
+            --ams-ink:#0a1328; --ams-muted:#4f5d7b; --ams-navy:#071127; --ams-yellow:#ffe037;
+            --ams-blue:#2367ff; --ams-orange:#cc5b05; --ams-card:rgba(255,255,255,0.92);
+            --ams-shadow:0 28px 70px rgba(31,43,77,0.12), 0 4px 16px rgba(31,43,77,0.07);
+            position:relative; min-height:100vh; display:grid; place-items:center;
+            padding: clamp(18px,3.2vw,36px) clamp(16px,2.5vw,30px) 24px;
+            font-family:'Plus Jakarta Sans', var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+            color:var(--ams-ink); overflow-x:hidden;
+            background:
+              radial-gradient(circle at 14% 14%, rgba(35,103,255,0.08), transparent 28%),
+              radial-gradient(circle at 86% 18%, rgba(255,210,69,0.14), transparent 31%),
+              linear-gradient(180deg,#fbfcff 0%,#f4f7fb 100%);
+            animation: ams-fadeIn 260ms ease both;
+          }
+          .ams-page * { box-sizing:border-box; }
+          .ams-page::before {
+            content:''; position:absolute; inset:0; pointer-events:none; opacity:0.35;
+            background-image:
+              linear-gradient(rgba(10,19,40,0.025) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(10,19,40,0.025) 1px, transparent 1px);
+            background-size:44px 44px;
+            -webkit-mask-image: radial-gradient(circle at center, black, transparent 78%);
+            mask-image: radial-gradient(circle at center, black, transparent 78%);
+          }
+          .ams-shell { position:relative; z-index:1; width:min(1120px,100%); animation: ams-riseIn 700ms cubic-bezier(.2,.75,.2,1) both; }
+          .ams-cards { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:clamp(18px,2.4vw,26px); align-items:stretch; }
+
+          .ams-card {
+            position:relative; overflow:hidden; isolation:isolate; display:flex; flex-direction:column;
+            min-height:560px; border:1px solid rgba(216,225,240,0.86); border-radius:22px;
+            background:var(--ams-card); box-shadow:var(--ams-shadow); backdrop-filter:blur(16px);
+            padding:clamp(22px,2.1vw,26px);
+            transition: transform 240ms cubic-bezier(.2,.75,.2,1), box-shadow 240ms ease, border-color 240ms ease;
+          }
+          .ams-card::before { content:''; position:absolute; inset:-1px; z-index:-2; background:linear-gradient(140deg, rgba(255,255,255,0.95), rgba(255,255,255,0.72)); }
+          .ams-card::after {
+            content:''; position:absolute; width:410px; height:410px; right:-120px; top:48px; z-index:-1;
+            border-radius:50%; background:radial-gradient(circle, rgba(45,112,255,0.13), rgba(45,112,255,0.02) 62%, transparent 72%);
+            filter:blur(2px); transition:transform 240ms ease;
+          }
+          .ams-card.ams-hand::after { width:450px; height:450px; right:-125px; top:54px; background:radial-gradient(circle, rgba(255,215,105,0.36), rgba(255,226,145,0.12) 58%, transparent 74%); }
+          .ams-card.ams-hand { order:1; }
+          .ams-card.ams-type { order:2; }
+
+          /* Card hover — proper hover on BOTH cards */
+          .ams-card:hover { transform:translateY(-8px); }
+          .ams-card.ams-type:hover { border-color:rgba(35,103,255,0.55); box-shadow:0 44px 90px rgba(35,103,255,0.16), 0 10px 26px rgba(31,43,77,0.10); }
+          .ams-card.ams-hand:hover { border-color:rgba(255,176,32,0.62); box-shadow:0 44px 90px rgba(204,91,5,0.15), 0 10px 26px rgba(31,43,77,0.10); }
+          .ams-card:hover::after { transform:scale(1.06); }
+
+          .ams-top { display:flex; align-items:center; justify-content:space-between; min-height:60px; margin-bottom:18px; }
+          .ams-icon { width:62px; height:62px; border-radius:16px; display:grid; place-items:center; overflow:hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.75); }
+          .ams-type .ams-icon { background:linear-gradient(145deg,#e4ebff,#dce6ff); }
+          .ams-hand .ams-icon { background:linear-gradient(145deg,#fff2c7,#ffe8a3); }
+          .ams-icon svg { display:block; width:38px; height:38px; max-width:64%; max-height:64%; }
+
+          .ams-pill { display:inline-flex; align-items:center; gap:10px; min-height:32px; padding:0 15px; border-radius:999px; font-size:13px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; white-space:nowrap; }
+          .ams-pill svg { width:18px; height:18px; }
+          .ams-type .ams-pill { color:var(--ams-blue); background:#edf3ff; }
+          .ams-hand .ams-pill { color:var(--ams-orange); background:#fff3d8; }
+
+          .ams-hero { position:relative; min-height:154px; margin-bottom:18px; }
+          .ams-type .ams-hero { margin-bottom:44px; }
+          .ams-title { max-width:290px; margin:0 0 12px; font-size:clamp(26px,2.3vw,32px); line-height:1.08; letter-spacing:-0.045em; font-weight:800; color:var(--ams-ink); }
+          .ams-intro { max-width:290px; margin:0; color:var(--ams-muted); font-size:clamp(15px,1.25vw,18px); line-height:1.58; font-weight:500; }
+          .ams-hand .ams-title, .ams-hand .ams-intro { max-width:245px; }
+
+          .ams-art { position:absolute; right:0; bottom:-8px; width:min(40%,260px); height:184px; transform:scale(0.92); transform-origin:right bottom; overflow:hidden; }
+          .ams-type-art { overflow:visible; }
+
+          .ams-divider { height:1px; background:linear-gradient(90deg, rgba(220,227,239,0.2), rgba(220,227,239,1), rgba(220,227,239,0.2)); margin:0 0 18px; }
+
+          .ams-features { display:grid; gap:14px; margin:0; padding:0; list-style:none; }
+          .ams-feature { display:grid; grid-template-columns:44px 1fr; gap:12px; align-items:center; }
+          .ams-feat-icon { width:44px; height:44px; display:grid; place-items:center; border-radius:50%; flex:0 0 auto; overflow:hidden; }
+          .ams-type .ams-feat-icon { color:var(--ams-blue); background:linear-gradient(145deg,#e6eeff,#dbe7ff); }
+          .ams-hand .ams-feat-icon { color:var(--ams-orange); background:linear-gradient(145deg,#fff0c0,#ffe3a5); }
+          .ams-feat-icon svg { display:block; width:26px; height:26px; max-width:58%; max-height:58%; }
+          .ams-feature strong { display:block; margin-bottom:4px; color:#111a31; font-size:15px; line-height:1.2; font-weight:800; letter-spacing:-0.02em; }
+          .ams-feature > span:not(.ams-feat-icon) { display:block; min-width:0; }
+          .ams-feature > span:not(.ams-feat-icon) > span { display:block; color:#4d5d7b; font-size:13.8px; line-height:1.35; font-weight:500; }
+
+          .ams-choose {
+            width:100%; height:52px; margin-top:auto; border:0; border-radius:14px; color:var(--ams-yellow);
+            background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0)), var(--ams-navy);
+            box-shadow:0 16px 30px rgba(7,17,39,0.18), inset 0 1px 0 rgba(255,255,255,0.08);
+            font: inherit; font-size:16px; font-weight:800; cursor:pointer;
+            transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+            display:inline-flex; align-items:center; justify-content:center; gap:8px; line-height:1; text-align:center;
+          }
+          .ams-choose:hover { transform:translateY(-2px); box-shadow:0 22px 38px rgba(7,17,39,0.22), inset 0 1px 0 rgba(255,255,255,0.1); background:#091734; }
+          .ams-choose:active { transform:translateY(0); }
+          .ams-arrow { margin-left:0; font-size:25px; line-height:1; }
+
+          .ams-back { display:flex; align-items:center; justify-content:center; gap:6px; margin:26px auto 0; background:none; border:0; color:#8390a9; font:inherit; font-size:17px; font-weight:700; cursor:pointer; }
+          .ams-back:hover { color:#61708c; }
+
+          .ams-type-art .ams-burst, .ams-hand-art .ams-burst { opacity:0; animation: ams-blinkBurst 2.2s ease-in-out infinite; }
+          .ams-type-art .ams-burst:nth-child(2) { animation-delay:220ms; }
+          .ams-hand-art .ams-burst:nth-child(2) { animation-delay:320ms; }
+
+          .ams-laptop { position:absolute; inset:18px 40px 0 -26px; transform:rotate(-4deg) scale(0.88); transform-origin:right bottom; }
+          .ams-screen { position:absolute; left:48px; top:8px; width:214px; height:146px; border:10px solid #172c68; border-bottom-width:14px; border-radius:10px 10px 8px 8px; background:#fdfefe; box-shadow: inset 0 0 0 1px #e8edfb; }
+          .ams-toolbar { height:38px; display:flex; align-items:center; gap:15px; padding:0 18px; color:#5270b9; font-weight:800; font-size:15px; border-bottom:1px solid #edf1fb; }
+          .ams-toolbar .ams-bars { display:grid; gap:4px; }
+          .ams-toolbar .ams-bars i { display:block; width:16px; height:2px; background:#5f77bd; border-radius:4px; }
+          .ams-typing { padding:18px 24px 0; display:flex; align-items:flex-start; gap:10px; }
+          .ams-cursor { width:3px; height:14px; flex:0 0 auto; margin-top:2px; border-radius:99px; background:#6a89d8; animation: ams-cursorBlink 1.1s step-end infinite; }
+          .ams-linestack { display:grid; gap:10px; width:138px; }
+          .ams-linestack i { display:block; height:6px; width:0; border-radius:99px; background:linear-gradient(90deg,#6a89d8,#aac0ee); animation: ams-typeLine 4s ease-in-out infinite; }
+          .ams-linestack i:nth-child(1) { --ams-target:100%; animation-delay:0.1s; }
+          .ams-linestack i:nth-child(2) { --ams-target:86%; animation-delay:1.2s; }
+          .ams-linestack i:nth-child(3) { --ams-target:60%; animation-delay:2.3s; }
+          .ams-base { display:none; }
+          .ams-wordcount { position:absolute; right:-6px; bottom:-30px; display:flex; align-items:center; gap:10px; min-width:126px; height:42px; padding:0 14px; border:4px solid #e3eaff; border-radius:10px; background:white; box-shadow:0 13px 24px rgba(31,49,105,0.14); color:#3e5a9c; font-size:14px; font-weight:800; white-space:nowrap; z-index:5; }
+          .ams-wordcount b { color:#314f9e; }
+          .ams-dot { width:9px; height:9px; border-radius:50%; background:#43d86b; box-shadow:0 0 0 5px rgba(67,216,107,0.13); }
+
+          .ams-hand-art { width:min(42%,295px); height:228px; right:2px; bottom:-12px; }
+          .ams-notebook { position:absolute; left:6px; top:18px; width:194px; height:188px; border:2px solid #b7834e; border-radius:8px; background:#fffdfa; transform:rotate(-8deg); box-shadow:16px 18px 0 rgba(198,132,43,0.13); overflow:visible; }
+          .ams-notebook::before { content:''; position:absolute; left:18px; top:-5px; bottom:-5px; width:11px; border-radius:12px; background:repeating-linear-gradient(180deg,#2f3340 0 8px, transparent 8px 18px); box-shadow:-13px 0 0 rgba(41,48,62,0.18); }
+          .ams-notelines { position:absolute; left:54px; right:20px; top:34px; display:grid; gap:19px; color:#263043; font-size:16px; font-weight:800; }
+          .ams-noteline { display:grid; grid-template-columns:20px 1fr; gap:9px; align-items:center; }
+          .ams-noteline i { display:block; height:3px; border-radius:99px; background:#d9d4ca; transform-origin:left center; animation: ams-lineWrite 3.1s ease-in-out infinite; }
+          .ams-noteline:nth-child(2) i { width:90%; animation-delay:340ms; }
+          .ams-noteline:nth-child(3) i { width:74%; animation-delay:680ms; }
+          .ams-writing { position:absolute; left:74px; top:116px; width:88px; height:18px; fill:none; stroke:#2f3340; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:140; stroke-dashoffset:140; filter:drop-shadow(0 1px 0 rgba(255,255,255,0.6)); animation: ams-handwriting 3.1s ease-in-out infinite; }
+          .ams-pen { position:absolute; left:132px; top:-2px; z-index:4; width:20px; height:112px; border-radius:14px; background:linear-gradient(90deg,#141820 0 36%,#2b2f38 36% 64%,#070a10 64% 100%); transform:translate(-58px,6px) rotate(24deg); transform-origin:50% 118%; box-shadow:10px 10px 13px rgba(77,50,16,0.15); animation: ams-penWrite 3.1s ease-in-out infinite; }
+          .ams-pen::before { content:''; position:absolute; top:28px; left:-2px; right:-2px; height:13px; border-radius:10px; background:linear-gradient(90deg,#ffb621,#ffdf78,#ce7809); }
+          .ams-pen::after { content:''; position:absolute; bottom:-20px; left:2px; width:16px; height:24px; clip-path:polygon(50% 100%, 0 0, 100% 0); background:linear-gradient(90deg,#e59b17,#ffd46d,#b46605); }
+          .ams-spark { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; }
+
+          @keyframes ams-fadeIn { from { opacity:0; } to { opacity:1; } }
+          @keyframes ams-riseIn { from { opacity:0; transform:translateY(18px) scale(0.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+          @keyframes ams-cursorBlink { 50% { opacity:0; } }
+          @keyframes ams-blinkBurst { 0%,35%,100% { opacity:0; transform:scale(.92); } 50%,70% { opacity:1; transform:scale(1); } }
+          @keyframes ams-typeLine {
+            0%,5% { width:0; opacity:0.9; }
+            30%,85% { width:var(--ams-target); opacity:1; }
+            100% { width:var(--ams-target); opacity:0.6; }
+          }
+          @keyframes ams-penWrite {
+            0%,12% { transform:translate(-58px,6px) rotate(24deg); }
+            30% { transform:translate(-39px,-2px) rotate(31deg); }
+            48% { transform:translate(-20px,8px) rotate(25deg); }
+            66% { transform:translate(2px,-3px) rotate(32deg); }
+            82% { transform:translate(10px,4px) rotate(27deg); }
+            100% { transform:translate(-58px,6px) rotate(24deg); }
+          }
+          @keyframes ams-handwriting {
+            0%,12% { stroke-dashoffset:140; opacity:0; }
+            32%,74% { stroke-dashoffset:0; opacity:1; }
+            100% { stroke-dashoffset:0; opacity:0; }
+          }
+          @keyframes ams-lineWrite {
+            0%,10% { transform:scaleX(0.18); opacity:0.38; }
+            45%,100% { transform:scaleX(1); opacity:1; }
+          }
+
+          @media (max-width:1180px) {
+            .ams-card { min-height:550px; }
+            .ams-art { opacity:0.92; transform:scale(0.82); transform-origin:right bottom; }
+            .ams-title, .ams-intro { max-width:270px; }
+            .ams-hand .ams-title, .ams-hand .ams-intro { max-width:225px; }
+          }
+          @media (max-width:760px) {
+            .ams-cards { grid-template-columns:1fr; max-width:720px; margin-inline:auto; }
+            .ams-card { min-height:560px; }
+            .ams-art { width:315px; opacity:1; }
+            .ams-hand .ams-title, .ams-hand .ams-intro { max-width:340px; }
+            .ams-hand-art { width:300px; }
+          }
+          @media (max-width:580px) {
+            .ams-page { padding:16px 12px 24px; }
+            .ams-card { min-height:auto; padding:24px 20px; border-radius:20px; }
+            .ams-top { min-height:64px; margin-bottom:20px; }
+            .ams-icon { width:58px; height:58px; }
+            .ams-icon svg { width:30px; height:30px; }
+            .ams-pill { min-height:32px; padding:0 14px; font-size:11px; gap:6px; }
+            .ams-hero { min-height:310px; margin-bottom:12px; }
+            .ams-title { font-size:30px; max-width:none; }
+            .ams-intro { font-size:16px; max-width:none; }
+            .ams-hand .ams-title, .ams-hand .ams-intro { max-width:none; }
+            .ams-art { width:100%; max-width:315px; right:50%; transform:translateX(50%) scale(0.86); bottom:0; }
+            .ams-features { gap:20px; }
+            .ams-feature { grid-template-columns:48px 1fr; }
+            .ams-feat-icon { width:48px; height:48px; }
+            .ams-feat-icon svg { width:25px; height:25px; }
+            .ams-choose { height:62px; font-size:18px; }
+            .ams-back { font-size:16px; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .ams-page, .ams-shell, .ams-card, .ams-card:hover, .ams-cursor, .ams-linestack i,
+            .ams-burst, .ams-pen, .ams-writing, .ams-noteline i { animation:none !important; }
+          }
+        `}</style>
       </div>
     );
   }
@@ -871,13 +1058,10 @@ function MockTestAttemptInner() {
   /* ──────────────────────────── MAINS UI ──────────────────────────── */
   if (isMains) {
     const marksPerQ = totalMarks && totalQuestions ? Math.round(totalMarks / totalQuestions) : 15;
-    const minPerQ = Math.max(1, Math.round(marksPerQ * 0.5));
     const isHandwrite = answerMode === 'handwrite';
-    const answeredCount = questions.reduce((acc, _, i) => {
-      const a = mainsAnswers[i];
-      if (isHandwrite) return acc + (a && a.files.length > 0 ? 1 : 0);
-      return acc + (a && a.text.trim() ? 1 : 0);
-    }, 0);
+    // Completion is driven by the "Done" capsule on each question card, so the
+    // answered progress reflects the real, user-confirmed completion state.
+    const answeredCount = questions.reduce((acc, _, i) => acc + (tickedQuestions[i] ? 1 : 0), 0);
     const timeUp = timeLeft <= 0;
     // Handwrite mode reveals the upload step once the user finishes writing or time runs out.
     const showUpload = isHandwrite && (doneWriting || timeUp);
@@ -899,6 +1083,8 @@ function MockTestAttemptInner() {
         const combined = [...existing.files, ...newFiles];
         return { ...prev, [i]: { ...existing, files: combined, file: combined[0] || null } };
       });
+      // Uploading an answer un-marks any earlier "didn't attempt" decision.
+      setUnattemptedQuestions(prev => (prev[i] ? { ...prev, [i]: false } : prev));
     };
 
     // Per-question: remove a single file by index
@@ -919,11 +1105,6 @@ function MockTestAttemptInner() {
         return { ...prev, [i]: { ...existing, files: updated, file: updated[0] || null } };
       });
     };
-
-    /* ── Single exam-wide timer ring ── */
-    const examCircumference = 2 * Math.PI * 44;
-    const examTimerPct = examTotalSeconds > 0 ? timeLeft / examTotalSeconds : 0;
-    const ringColor = timeUp ? '#EF4444' : examRunning ? '#00BC7D' : '#101828';
 
     return (
       <div
@@ -951,17 +1132,19 @@ function MockTestAttemptInner() {
               <span style={{ fontSize: 18 }}>✍️</span>
               <div>
                 <span style={{ fontWeight: 700, fontSize: 14, color: '#101828' }}>
-                  Mains Mock Test – {paperParam || 'Paper'}, {subjectParam || 'Subject'}, {difficultyParam}
+                  Mains Mock Test – {paperParam || 'Paper'}, {subjectParam || 'Subject'}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                   {questions.map((_, idx) => (
                     <div
                       key={idx}
+                      // Chip is dynamically tied to real completion: green once the
+                      // question is marked "Done", back to the incomplete state otherwise.
                       style={{
                         width: 24,
                         height: 5,
                         borderRadius: 999,
-                        background: tickedQuestions[idx] ? '#0F172B' : '#FDC700',
+                        background: tickedQuestions[idx] ? '#22C55E' : '#FDC700',
                         transition: 'background 0.15s ease',
                       }}
                     />
@@ -1032,7 +1215,7 @@ function MockTestAttemptInner() {
               </div>
             )}
             {isHandwrite && showUpload && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: '#F0F5FF', border: '1px solid #BFDBFE', borderRadius: 16, padding: isMobile ? '16px' : '18px 24px' }}>
+              <div id="mains-upload-section" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: '#F0F5FF', border: '1px solid #BFDBFE', borderRadius: 16, padding: isMobile ? '16px' : '18px 24px', scrollMarginTop: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{ position: 'relative', width: 60, height: 60, flexShrink: 0 }}>
                     <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1077,21 +1260,36 @@ function MockTestAttemptInner() {
             {questions.map((q, i) => {
               const answer = mainsAnswers[i] || { text: '', file: null, files: [] };
               const wordCount = answer.text.trim() ? answer.text.trim().split(/\s+/).filter(Boolean).length : 0;
+              const isDone = !!tickedQuestions[i];
+              // Real upload state for this question — driven by the actual files
+              // attached, never hardcoded. Powers the green "Uploaded" capsule.
+              const isUploaded = answer.files.length > 0;
+              const isUnattempted = !!unattemptedQuestions[i];
+              // The card's green "success" styling reflects the Done tick while writing,
+              // but during the upload phase it must reflect a REAL upload — so the box
+              // stays neutral/default until the answer is actually uploaded, then turns green.
+              const isBoxComplete = showUpload ? isUploaded : isDone;
               return (
                 <div
                   key={q.id ?? i}
+                  id={`mains-q-${i}`}
                   style={{
-                    background: '#FFFFFF',
+                    scrollMarginTop: 24,
+                    background: isBoxComplete ? '#F6FEF9' : '#FFFFFF',
                     borderRadius: '16px',
                     padding: '20px 24px',
-                    boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
+                    border: `1.5px solid ${isBoxComplete ? '#22C55E' : 'transparent'}`,
+                    boxShadow: isBoxComplete
+                      ? '0 0 0 1px #22C55E22, 0px 1px 3px 0px #16A34A22'
+                      : '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
+                    transition: 'border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease',
                   }}
                   className="flex flex-col gap-3"
                 >
                   {/* Chips row */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center flex-wrap gap-2">
-                      <span style={{ background: '#EFF6FF', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: '#155DFC' }}>
+                      <span style={{ background: isBoxComplete ? '#DCFCE7' : '#EFF6FF', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 700, color: isBoxComplete ? '#15803D' : '#155DFC', transition: 'all 0.15s ease' }}>
                         {(q as any).paper || paperParam || 'GS Paper I'}
                       </span>
                       {q.subject && (
@@ -1104,27 +1302,65 @@ function MockTestAttemptInner() {
                       <button
                         type="button"
                         onClick={() => setTickedQuestions(prev => ({ ...prev, [i]: !prev[i] }))}
+                        aria-pressed={isDone}
                         style={{
-                          width: 30,
-                          height: 30,
-                          borderRadius: 10,
-                          border: `2px solid ${tickedQuestions[i] ? '#0F172B' : '#D1D5DB'}`,
-                          background: tickedQuestions[i] ? '#0F172B' : '#FFFFFF',
-                          cursor: 'pointer',
-                          display: 'flex',
+                          display: 'inline-flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
+                          gap: 6,
+                          height: 30,
+                          padding: '0 14px',
+                          borderRadius: 999,
+                          border: `1.5px solid ${isDone ? '#22C55E' : '#D1D5DB'}`,
+                          background: isDone ? '#DCFCE7' : '#FFFFFF',
+                          color: isDone ? '#15803D' : '#6B7280',
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          cursor: 'pointer',
                           flexShrink: 0,
                           transition: 'all 0.15s ease',
-                          padding: 0,
                         }}
                       >
-                        {tickedQuestions[i] && (
-                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <path d="M3 7.5L5.5 10L11 4" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        {isDone ? (
+                          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                            <path d="M3 7.5L5.5 10L11 4" stroke="#15803D" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
+                        ) : (
+                          <span style={{ width: 13, height: 13, borderRadius: '50%', border: '1.5px solid #CBD5E1', flexShrink: 0 }} />
                         )}
+                        Done
                       </button>
+                    )}
+                    {/* Upload screen: the completion capsule reflects the real
+                        upload state — green "Uploaded" once files are attached,
+                        neutral "Not uploaded" until then. Never hardcoded. */}
+                    {showUpload && (
+                      <span
+                        aria-label={isUploaded ? 'Answer uploaded' : isUnattempted ? 'Marked not attempted' : 'Answer not uploaded yet'}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          height: 30,
+                          padding: '0 14px',
+                          borderRadius: 999,
+                          border: `1.5px solid ${isUploaded ? '#22C55E' : isUnattempted ? '#FCD34D' : '#E5E7EB'}`,
+                          background: isUploaded ? '#DCFCE7' : isUnattempted ? '#FEF3C7' : '#F3F4F6',
+                          color: isUploaded ? '#15803D' : isUnattempted ? '#B45309' : '#9CA3AF',
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {isUploaded ? (
+                          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                            <path d="M3 7.5L5.5 10L11 4" stroke="#15803D" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        ) : (
+                          <span style={{ width: 13, height: 13, borderRadius: '50%', border: `1.5px solid ${isUnattempted ? '#D97706' : '#CBD5E1'}`, flexShrink: 0 }} />
+                        )}
+                        {isUploaded ? 'Uploaded' : isUnattempted ? 'Not attempted' : 'Not uploaded'}
+                      </span>
                     )}
                   </div>
 
@@ -1134,9 +1370,18 @@ function MockTestAttemptInner() {
                       QUESTION {i + 1} OF {totalQuestions}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>⏱️ {minPerQ} min</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>📝 250 words</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>⭐ {marksPerQ} marks</span>
+                      {(() => {
+                        const qMarks = q.marks ?? marksPerQ;
+                        const qWords = mainsWordLimit(qMarks);
+                        const qMin = mainsTimeLimit(qMarks);
+                        return (
+                          <>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>⏱️ {qMin} min</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>📝 {qWords} words</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>⭐ {qMarks} marks</span>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -1177,10 +1422,7 @@ function MockTestAttemptInner() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
                             <button
                               type="button"
-                              onClick={() => {
-                                const url = URL.createObjectURL(f);
-                                window.open(url, '_blank');
-                              }}
+                              onClick={() => setPreviewFile(f)}
                               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '8px 12px', background: 'none', border: '1px solid #E5E7EB', borderRadius: 10, cursor: 'pointer' }}
                             >
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="#6B7280" strokeWidth="2"/></svg>
@@ -1239,17 +1481,19 @@ function MockTestAttemptInner() {
                           e.target.value = '';
                         }}
                       />
-                      <p style={{ fontSize: 11.5, color: '#9CA3AF', margin: '2px 0 0' }}>JPG · PNG · PDF · Max 10MB per file · Multiple files allowed</p>
                     </div>
                   )}
 
                   {!isHandwrite && (() => {
-                    const isOpen = !!openEditors[i];
+                    // Type-answer editors are expanded by default so the writing
+                    // area is visible the moment the user enters Type Answer mode.
+                    // Only an explicit `false` (user collapsed it) hides it.
+                    const isOpen = openEditors[i] !== false;
                     return (
                       <div>
                         <button
                           type="button"
-                          onClick={() => setOpenEditors(prev => ({ ...prev, [i]: !prev[i] }))}
+                          onClick={() => setOpenEditors(prev => ({ ...prev, [i]: prev[i] === false }))}
                           className="w-full flex items-center justify-between"
                           style={{
                             padding: '12px 16px',
@@ -1280,7 +1524,7 @@ function MockTestAttemptInner() {
                               onChange={(e) => setAnswerText(i, e.target.value)}
                               placeholder="Write your answer here..."
                               rows={8}
-                              autoFocus
+                              autoFocus={i === 0}
                               disabled={timeUp}
                               style={{ width: '100%', padding: '14px 16px', border: '1.5px solid #E5E7EB', borderTop: 'none', borderRadius: '0 0 12px 12px', fontSize: 14, lineHeight: '24px', color: '#0F172B', fontFamily: 'Arimo, sans-serif', resize: 'vertical', boxSizing: 'border-box', background: timeUp ? '#F3F4F6' : '#FAFAFA', outline: 'none' }}
                             />
@@ -1312,7 +1556,7 @@ function MockTestAttemptInner() {
                 <button
                   type="button"
                   disabled={mainsSubmitting}
-                  onClick={handleMainsSubmitAll}
+                  onClick={requestMainsSubmit}
                   className="w-full flex items-center justify-center gap-2 text-white font-bold transition-transform hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                   style={{ height: '52px', background: '#17223E', borderRadius: '14px', fontSize: '16px', border: 'none', cursor: mainsSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)' }}
                 >
@@ -1335,48 +1579,99 @@ function MockTestAttemptInner() {
           <div style={{ width: isMobile ? '100%' : '280px', flexShrink: 0, order: isMobile ? -1 : 0, position: isMobile ? 'static' : 'sticky', top: 20, alignSelf: 'flex-start' }}>
             {!showUpload ? (
               <>
-                <div
-                  style={{
-                    background: '#FFFFFF',
-                    borderRadius: '20px',
-                    padding: '20px',
-                    boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
-                  }}
-                  className="flex flex-col items-center"
+                <WritingTimer
+                  timeLeft={timeLeft}
+                  totalSeconds={examTotalSeconds}
+                  statusLabel={timeUp ? 'time up' : examRunning ? 'in progress' : 'paused'}
                 >
-                  <p style={{ fontWeight: 600, fontSize: 11, letterSpacing: '0.08em', color: '#6A7282', textTransform: 'uppercase', marginBottom: 14, textAlign: 'center' }}>
-                    Exam Timer
-                  </p>
-                  <div style={{ position: 'relative', width: 110, height: 110, marginBottom: 12 }}>
-                    <svg width="110" height="110" style={{ transform: 'rotate(-90deg)' }}>
-                      <circle cx="55" cy="55" r="44" fill="none" stroke="#F3F4F6" strokeWidth="6" />
+                  {/* Timer controls stack vertically so the descriptive "Upload My Answer"
+                      option sits directly below the Pause/Resume button (see reference). */}
+                  <div className="flex flex-col gap-2 w-full">
+                    <button
+                      type="button"
+                      disabled={timeUp}
+                      onClick={() => setExamRunning(r => !r)}
+                      className="w-full flex items-center justify-center gap-2 font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ height: 44, background: examRunning ? '#EF4444' : '#00BC7D', border: 'none', borderRadius: '12px', fontSize: 14, cursor: timeUp ? 'not-allowed' : 'pointer' }}
+                    >
+                      {examRunning ? '⏸ Pause' : '▶ Resume'}
+                    </button>
+
+                    {/* Upload My Answer — descriptive (Write on Paper) only; reveals the
+                        upload step and scrolls to it. Never shown for objective/prelims. */}
+                    {isHandwrite && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDoneWriting(true);
+                            setTimeout(() => {
+                              document.getElementById('mains-upload-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }, 120);
+                          }}
+                          className="w-full flex items-center justify-center gap-2 font-bold text-white transition-transform hover:scale-[1.01]"
+                          style={{ height: 44, background: '#17223E', border: 'none', borderRadius: '12px', fontSize: 14, cursor: 'pointer' }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                            <path d="M12 16V4m0 0L8 8m4-4l4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          Upload My Answer
+                        </button>
+                        <p style={{ textAlign: 'center', fontSize: 12, color: '#6B7280', margin: 0 }}>
+                          Upload your scans to submit
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </WritingTimer>
+
+                {/* Progress — reflects the questions marked "Done" */}
+                <div
+                  className="bg-white flex flex-col items-center"
+                  style={{ borderRadius: 20, marginTop: 16, padding: 20, boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}
+                >
+                  <p style={{ fontWeight: 600, fontSize: 11, letterSpacing: '0.08em', color: '#6A7282', textTransform: 'uppercase', margin: '0 0 12px' }}>Progress</p>
+                  <div style={{ position: 'relative', width: 92, height: 92, marginBottom: 8 }}>
+                    <svg width="92" height="92" style={{ transform: 'rotate(-90deg)' }}>
+                      <circle cx="46" cy="46" r="38" fill="none" stroke="#F3F4F6" strokeWidth="7" />
                       <circle
-                        cx="55" cy="55" r="44" fill="none"
-                        stroke={ringColor}
-                        strokeWidth="6"
+                        cx="46" cy="46" r="38" fill="none"
+                        stroke="#16A34A"
+                        strokeWidth="7"
                         strokeLinecap="round"
-                        strokeDasharray={examCircumference}
-                        strokeDashoffset={examCircumference - examTimerPct * examCircumference}
-                        style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }}
+                        strokeDasharray={2 * Math.PI * 38}
+                        strokeDashoffset={2 * Math.PI * 38 - (answeredCount / Math.max(1, totalQuestions)) * 2 * Math.PI * 38}
+                        style={{ transition: 'stroke-dashoffset 0.4s ease' }}
                       />
                     </svg>
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontWeight: 700, fontSize: 22, color: '#101828' }}>{formatTime(timeLeft)}</span>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontWeight: 800, fontSize: 20, color: '#101828', lineHeight: 1 }}>{answeredCount}</span>
+                      <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>of {totalQuestions}</span>
                     </div>
                   </div>
-                  <p style={{ fontWeight: 600, fontSize: 10, letterSpacing: '0.07em', color: timeUp ? '#EF4444' : examRunning ? '#00BC7D' : '#9CA3AF', textTransform: 'uppercase', marginBottom: 16, textAlign: 'center' }}>
-                    {timeUp ? "TIME'S UP" : examRunning ? 'IN PROGRESS' : 'PAUSED'}
-                  </p>
+                  <p style={{ fontSize: 12, color: '#6B7280', fontWeight: 500, margin: 0 }}>answered</p>
+                </div>
+
+                {/* Quick nav: jump straight to the answer upload section on this same page */}
+                {isHandwrite && (
                   <button
                     type="button"
-                    disabled={timeUp}
-                    onClick={() => setExamRunning(r => !r)}
-                    className="w-full flex items-center justify-center gap-2 font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ height: 44, background: examRunning ? '#EF4444' : '#00BC7D', border: 'none', borderRadius: '12px', fontSize: 14, cursor: timeUp ? 'not-allowed' : 'pointer' }}
+                    onClick={() => {
+                      setDoneWriting(true); // reveal the upload step if still writing
+                      // Wait for the upload section to render, then smoothly bring it into view.
+                      setTimeout(() => {
+                        document.getElementById('mains-upload-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 120);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 hover:underline"
+                    style={{ marginTop: 12, background: 'transparent', border: 'none', color: '#155DFC', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
                   >
-                    {examRunning ? '⏸ Pause' : '▶ Resume'}
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                      <path d="M12 16V4m0 0L8 8m4-4l4 4M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Upload My Answers
                   </button>
-                </div>
+                )}
 
                 {/* Quick Tips (writing mode only) */}
                 {isHandwrite && (
@@ -1506,474 +1801,461 @@ function MockTestAttemptInner() {
             )}
           </div>
         </div>
+      {/* ── Missing-answer popup: a question has no upload at submit time ── */}
+      {missingAnswerIdx !== null && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mains-missing-title"
+          onClick={() => setMissingAnswerIdx(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 70,
+            display: 'grid', placeItems: 'center', padding: 20,
+            background: 'rgba(8,15,31,0.34)', backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            animation: 'mains-confirm-fade 160ms ease both',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(440px, 100%)',
+              background: '#FFFFFF',
+              border: '1px solid rgba(226,232,240,0.9)',
+              borderRadius: 24,
+              padding: 30,
+              boxShadow: '0 35px 90px rgba(5,12,29,0.28)',
+              animation: 'mains-confirm-pop 220ms cubic-bezier(.2,.75,.2,1) both',
+            }}
+          >
+            <div style={{
+              width: 56, height: 56, borderRadius: 16,
+              background: '#FEF3C7', display: 'grid', placeItems: 'center', marginBottom: 18,
+            }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3.2 1.8 20.5h20.4L12 3.2Z" stroke="#B45309" strokeWidth="1.8" strokeLinejoin="round" />
+                <path d="M12 9.5v4.6" stroke="#B45309" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx="12" cy="17.4" r="0.9" fill="#B45309" />
+              </svg>
+            </div>
+            <h2 id="mains-missing-title" style={{
+              margin: '0 0 10px', fontSize: 22, lineHeight: 1.2, letterSpacing: '-0.01em',
+              fontWeight: 700, color: '#0F172B',
+              fontFamily: "var(--font-playfair), Georgia, 'Times New Roman', serif",
+            }}>
+              ⚠️ Please upload your answer page for Question {missingAnswerIdx + 1} before submitting.
+            </h2>
+            <p style={{ margin: '0 0 24px', color: '#4F5D7B', fontSize: 15, lineHeight: 1.55, fontWeight: 500 }}>
+              If you didn&apos;t attempt this question, you can mark it as unattempted and continue — it won&apos;t be sent for evaluation.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <button
+                type="button"
+                onClick={handleUploadMissingAnswer}
+                style={{
+                  border: 'none', borderRadius: 12, padding: '14px 20px',
+                  fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  background: '#17223E', color: '#FFFFFF',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 16V4M12 4l-5 5M12 4l5 5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Upload
+              </button>
+              <button
+                type="button"
+                onClick={handleMarkUnattempted}
+                style={{
+                  border: '1px solid #E2E8F0', borderRadius: 12, padding: '14px 20px',
+                  fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  background: '#FFFFFF', color: '#475875',
+                }}
+              >
+                I didn&apos;t attempt this question
+              </button>
+            </div>
+          </div>
+          <style>{`
+            @keyframes mains-confirm-fade { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes mains-confirm-pop { from { opacity: 0; transform: translateY(12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+          `}</style>
+        </div>
+      )}
+
+      {/* ── Submit-all confirmation popup (blocks direct submit) ── */}
+      {mainsConfirmOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mains-confirm-title"
+          onClick={() => { if (!mainsSubmitting) setMainsConfirmOpen(false); }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 60,
+            display: 'grid', placeItems: 'center', padding: 20,
+            background: 'rgba(8,15,31,0.34)', backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            animation: 'mains-confirm-fade 160ms ease both',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(460px, 100%)',
+              background: '#FFFFFF',
+              border: '1px solid rgba(226,232,240,0.9)',
+              borderRadius: 24,
+              padding: 30,
+              boxShadow: '0 35px 90px rgba(5,12,29,0.28)',
+              animation: 'mains-confirm-pop 220ms cubic-bezier(.2,.75,.2,1) both',
+            }}
+          >
+            <div style={{
+              width: 56, height: 56, borderRadius: 16,
+              background: '#FEF3C7', display: 'grid', placeItems: 'center', marginBottom: 18,
+            }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3.2 1.8 20.5h20.4L12 3.2Z" stroke="#B45309" strokeWidth="1.8" strokeLinejoin="round" />
+                <path d="M12 9.5v4.6" stroke="#B45309" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx="12" cy="17.4" r="0.9" fill="#B45309" />
+              </svg>
+            </div>
+            <h2 id="mains-confirm-title" style={{
+              margin: '0 0 10px', fontSize: 26, lineHeight: 1.15, letterSpacing: '-0.02em',
+              fontWeight: 700, color: '#0F172B',
+              fontFamily: "var(--font-playfair), Georgia, 'Times New Roman', serif",
+            }}>
+              Submit all answers for evaluation?
+            </h2>
+            <p style={{ margin: '0 0 24px', color: '#4F5D7B', fontSize: 15, lineHeight: 1.55, fontWeight: 500 }}>
+              Once submitted, our AI evaluator will score each answer on content, structure, and presentation. This usually takes under a minute.
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setMainsConfirmOpen(false)}
+                disabled={mainsSubmitting}
+                style={{
+                  border: 'none', borderRadius: 12, padding: '13px 20px',
+                  fontSize: 15, fontWeight: 700,
+                  cursor: mainsSubmitting ? 'not-allowed' : 'pointer',
+                  background: '#EEF3FB', color: '#475875',
+                }}
+              >
+                Review again
+              </button>
+              <button
+                type="button"
+                disabled={mainsSubmitting}
+                onClick={handleMainsSubmitAll}
+                style={{
+                  border: 'none', borderRadius: 12, padding: '13px 20px',
+                  fontSize: 15, fontWeight: 700,
+                  cursor: mainsSubmitting ? 'not-allowed' : 'pointer',
+                  background: '#17223E', color: '#FFFFFF', opacity: mainsSubmitting ? 0.6 : 1,
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                }}
+              >
+                {mainsSubmitting ? (
+                  <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Submitting…</>
+                ) : 'Yes, submit'}
+              </button>
+            </div>
+          </div>
+          <style>{`
+            @keyframes mains-confirm-fade { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes mains-confirm-pop { from { opacity: 0; transform: translateY(12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+          `}</style>
+        </div>
+      )}
+
+      {/* In-page uploaded-answer preview — stays inside the upload flow (no new tab / no navigation) */}
+      <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
       </div>
     );
   }
   /* ─────────────────────────── END MAINS UI ─────────────────────────── */
 
-  // Reusable navigator card (inline aside on desktop, bottom-sheet drawer on mobile)
+  // Reusable navigator + session-stats column (mirrors Daily MCQ Challenge)
+  const cardStyle: React.CSSProperties = { background: '#FFFFFF', borderRadius: 16, border: '1px solid #E5E7EB', padding: 16, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)', flexShrink: 0 };
+  const sectionHeading: React.CSSProperties = { fontWeight: 700, fontSize: 11, letterSpacing: '0.14em', color: '#8892A4', textTransform: 'uppercase' };
   const navigatorCard = (
-    <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 14, boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.6px', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>
-        Question Navigator
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Question Navigator card */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={sectionHeading}>Question Navigator</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF' }}>{totalQuestions} total</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+          {questions.map((qu, idx) => {
+            const isCurrent = idx === currentIdx;
+            const isAnswered = !!selectedOptions[idx] && !flagged[String(qu.id)];
+            const isSkipped = !!skipped[idx] && !selectedOptions[idx] && !flagged[String(qu.id)];
+            const isMarked = !!flagged[String(qu.id)];
+            const isBookmarked = !!bookmarkedQuestions[String(qu.id)];
+
+            let bg = '#F4F6FA';
+            let color = '#475067';
+            if (isSkipped) { bg = '#FEE2E2'; color = '#9F1239'; }
+            if (isBookmarked) { bg = '#FFFBEB'; color = '#D97706'; }
+            if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
+            if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
+            if (isCurrent) { bg = '#060C1C'; color = '#FFFFFF'; }
+
+            return (
+              <button
+                key={qu.id ?? idx}
+                onClick={() => goToQuestion(idx)}
+                style={{ height: 38, borderRadius: 10, border: isCurrent ? '1px solid #060C1C' : '1px solid transparent', background: bg, color, fontWeight: 700, fontSize: 13, cursor: 'pointer', boxShadow: isCurrent ? '0 0 0 3px rgba(6,12,28,0.18)' : 'none' }}
+              >
+                {idx + 1}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Color-coded question buttons */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, overflow: 'auto', flex: 1, alignContent: 'flex-start' }}>
-        {questions.map((_, idx) => {
-          const status = questionStatuses[idx] || 'unattempted';
-          const isCurrent = idx === currentIdx;
-          const isAnswered = status === 'answered';
-          const isMarked = status === 'marked';
-
-          let bg = '#F3F4F6';
-          let color = '#6B7280';
-          if (isAnswered) { bg = '#DCFCE7'; color = '#166534'; }
-          if (isMarked) { bg = '#FEF3C7'; color = '#92400E'; }
-          if (isCurrent) { bg = '#0F172B'; color = '#FFFFFF'; }
-
-          return (
-            <button
-              key={idx}
-              onClick={() => { goToQuestion(idx); setNavOpen(false); }}
-              style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #E5E7EB', background: bg, color, fontWeight: 700, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}
-            >
-              {idx + 1}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
-      <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 8, marginBottom: 8 }}>
+      {/* Session Stats card */}
+      <div style={cardStyle}>
+        <div style={{ ...sectionHeading, marginBottom: 12 }}>Session Stats</div>
         {[
-          { label: 'Answered', color: '#00C950', value: answered },
-          { label: 'Unanswered', color: '#D1D5DB', value: Math.max(0, totalQuestions - answered - marked) },
-          { label: 'Marked for review', color: '#F59E0B', value: marked },
+          { label: 'Answered', color: '#22C55E', background: '#DCFCE7', value: answeredCount },
+          { label: 'Not Visited', color: '#D1D5DB', background: '#F3F4F6', value: notVisitedCount },
+          { label: 'Skipped', color: '#EF4444', background: '#FEE2E2', value: skippedCount },
+          { label: 'Mark for Review', color: '#F59E0B', background: '#FEF3C7', value: markedCount },
         ].map((row) => (
-          <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <div style={{ width: 14, height: 14, borderRadius: 3, background: row.label === 'Answered' ? '#DCFCE7' : row.label === 'Marked for review' ? '#FEF3C7' : '#F3F4F6', border: `1px solid ${row.color}` }} />
-              <span style={{ fontSize: 11, color: '#374151' }}>{row.label}</span>
+          <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 12, height: 12, borderRadius: 3, background: row.background, border: `1px solid ${row.color}` }} />
+              <span style={{ fontSize: 12, color: '#374151' }}>{row.label}</span>
             </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>{row.value}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#111827' }}>{row.value}</span>
           </div>
         ))}
-      </div>
 
-      <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 10 }}>
-        <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          style={{ width: '100%', height: 38, background: '#0F172B', border: 'none', borderRadius: 10, color: '#FFFFFF', fontWeight: 700, fontSize: 13, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
-        >
-          ✓ Submit Test
-        </button>
+        <div style={{ borderTop: '1px solid #F1F3F5', paddingTop: 12, marginTop: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#111827', marginBottom: 3 }}>Ready to submit?</div>
+          <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 12 }}>
+            {answeredCount} answered · {notVisitedCount} not visited · {skippedCount} skipped · {markedCount} marked
+          </div>
+          <button
+            onClick={() => setShowSubmitConfirm(true)}
+            disabled={submitting}
+            style={{ width: '100%', height: 44, background: 'linear-gradient(180deg, #F5C518, #E6A817)', border: 'none', borderRadius: 12, color: '#0B1426', fontWeight: 800, fontSize: 14, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, boxShadow: '0 6px 16px -6px rgba(245,197,24,0.6)' }}
+          >
+            {submitting ? 'Submitting...' : '✓ Submit Test'}
+          </button>
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : 0, background: '#E8EDF5', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif', overflow: isMobile ? 'visible' : 'hidden' }}>
+    <div style={{ height: isMobile ? 'auto' : '100%', minHeight: isMobile ? '100%' : undefined, background: '#FAFBFE', fontFamily: 'Inter, sans-serif', padding: isMobile ? '10px' : '12px 20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: isMobile ? 'auto' : 'hidden' }}>
+      <MainsEvaluationLimitModal
+        open={showMainsQuotaModal}
+        onClose={() => setShowMainsQuotaModal(false)}
+        tier={entitlements.tier}
+        used={entitlements.featureStatus('mains_evaluation')?.used}
+        limit={entitlements.featureStatus('mains_evaluation')?.limit}
+        backLabel="Back to Mock Tests"
+      />
+      <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0 }}>
 
-      {/* ── Prelims submitting overlay ── */}
-      {submitting && !isMains && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(248,250,252,0.92)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, fontFamily: 'Inter, sans-serif', padding: 24 }}>
-          {renderSubmitEvaluationCard(submitFlowProgress, submitFlowStep)}
-        </div>
-      )}
-
-      {/* ── Sub-header: title left + timer right ── */}
-      <div
-        style={{
-          background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
-          padding: '8px 24px 9px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          {/* Title */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-            <span aria-hidden="true" style={{ fontSize: 14, lineHeight: '16px', flexShrink: 0 }}>🏛️</span>
-            <div style={{ minWidth: 0 }}>
-              <span style={{ fontWeight: 700, fontSize: 13, lineHeight: '18px', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
-                {title}
-              </span>
-              <div style={{ fontWeight: 500, fontSize: 10, lineHeight: '14px', color: 'rgba(255,255,255,0.55)', marginTop: 1 }}>
-                Today Prelims Mock Test · {totalQuestions} Questions · +0.67 per wrong
-              </div>
-            </div>
+        {error && (
+          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <span style={{ fontSize: 14 }}>⚠️</span>
+            <span style={{ fontSize: 14, color: '#991B1B' }}>{error}</span>
           </div>
-          {/* Timer — white text on dark bg */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/timer-icon.png" alt="Timer" style={{ width: 32, height: 32, objectFit: 'contain' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 20, lineHeight: '24px', color: timeLeft < 60 ? '#FB2C36' : '#FFFFFF' }}>
-                {formatTime(timeLeft)}
-              </span>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
-                TIME LEFT
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+        )}
 
-      {/* ── Progress row ── */}
-      <div
-        style={{
-          background: '#FFFFFF',
-          borderBottom: '0.8px solid #D1D9E6',
-          display: 'flex',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 1400,
-            height: 32,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingLeft: 24,
-            paddingRight: 24,
-            boxSizing: 'border-box',
-          }}
-        >
-          <div style={{ flex: 1, marginRight: 16, height: 4, borderRadius: 999, background: '#D1D9E6', overflow: 'hidden' }}>
-            <div
-              style={{
-                width: `${Math.round((answered / Math.max(1, totalQuestions)) * 100)}%`,
-                height: '100%',
-                background: '#00C950',
-                transition: 'width 0.3s ease',
-              }}
-            />
-          </div>
-          <div style={{ fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#364153', whiteSpace: 'nowrap' }}>
-            Q {currentIdx + 1} / {totalQuestions} · {answered} Answered
-          </div>
-          {isMobile && (
-            <button
-              onClick={() => setNavOpen(true)}
-              style={{ marginLeft: 12, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, background: '#0F172B', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '6px 12px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3.5h12M2 8h12M2 12.5h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
-              Questions
-            </button>
-          )}
-        </div>
-      </div>
+        <div style={{ flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16, alignItems: isMobile ? 'stretch' : 'flex-start' }}>
 
-      {/* ── Submit Error Banner ── */}
-      {error && (
-        <div style={{
-          background: '#FEF2F2',
-          border: '1px solid #FECACA',
-          padding: '12px 32px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}>
-          <span style={{ fontSize: '14px' }}>⚠️</span>
-          <span style={{ fontSize: '14px', color: '#991B1B' }}>{error}</span>
-        </div>
-      )}
+          {/* LEFT: question card */}
+          <div style={{ flex: 1, minWidth: 0, width: '100%', display: isMobile ? 'block' : 'flex', minHeight: isMobile ? 'auto' : 0, maxHeight: isMobile ? 'none' : '100%' }}>
+            <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, maxHeight: isMobile ? 'none' : '100%', width: '100%', background: '#FFFFFF', borderRadius: 16, border: '1px solid #ECECF1', boxShadow: '0 4px 24px rgba(0,0,0,0.05)', overflow: isMobile ? 'visible' : 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Body (centered fixed frame) ── */}
-      <div
-        style={{
-          flex: 1,
-          padding: isMobile ? '8px' : '6px 6px 8px',
-          boxSizing: 'border-box',
-          display: 'flex',
-          justifyContent: 'center',
-          overflow: isMobile ? 'visible' : 'hidden',
-          minHeight: 0,
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: isMobile ? '100%' : 'calc(100vw - 96px)',
-            display: 'flex',
-            gap: 12,
-            boxSizing: 'border-box',
-            alignItems: 'flex-start',
-            height: isMobile ? 'auto' : '100%',
-          }}
-        >
-        {/* ─ Question Panel ── */}
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, height: isMobile ? 'auto' : '100%', overflow: isMobile ? 'visible' : 'hidden', width: '100%' }}>
-
-          {/* Question Card */}
-          <div
-            style={{
-              background: '#FFFFFF',
-              borderRadius: 10,
-              border: 'none',
-              padding: isMobile ? '14px 16px' : '16px 24px',
-              boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.10), 0px 1px 3px rgba(0,0,0,0.10)',
-              overflow: isMobile ? 'visible' : 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-              flex: isMobile ? 'none' : 1,
-            }}
-          >
-            {/* Subject pill + difficulty pill */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexShrink: 0 }}>
-              {/* Subject pill */}
-              <div className="flex items-center gap-2 bg-[#EFF6FF] px-4 rounded-full h-[34px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/tag-one.png" alt="Tag" className="w-4 h-4" />
-                <span className="font-arimo font-bold text-[#155DFC] text-[14px] leading-[16px]">{currentQ.subject || 'General'}</span>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 22px 11px', flexWrap: 'wrap', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/target-icon.png" alt="" style={{ width: 30, height: 30, objectFit: 'contain', flexShrink: 0 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                    <span style={{ fontFamily: 'Arimo, sans-serif', fontSize: 20, fontWeight: 700, lineHeight: '26px', color: '#101828' }}>{title}</span>
+                    <span style={{ fontFamily: 'Arimo, sans-serif', fontSize: 12.5, color: '#9CA3AF' }}>Prelims Mock Test · {totalQuestions} Questions · +2 correct / −0.67 wrong</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 999, padding: '4px 12px' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#DC2626' }}>Mock Test in Progress</span>
+                </div>
               </div>
-              {/* Difficulty pill */}
-              <div className="flex items-center gap-2 bg-[#FFF7ED] px-4 rounded-full h-[34px]">
-                <span className="font-arimo font-bold text-[#C2410C] text-[14px] leading-[16px]">{currentQ.difficulty || 'Medium'}</span>
-              </div>
-            </div>
+              <div style={{ height: 1, background: '#F1F3F5' }} />
 
-            {/* Question text */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14, flexShrink: 0 }}>
-              <div className="font-arimo font-bold text-[#101828]" style={{ flex: 1, fontSize: 13, lineHeight: '20px' }}>
-                <span style={{ fontWeight: 700 }}>Question {currentIdx + 1} of {totalQuestions}:</span>{' '}
-                <StructuredQuestionRenderer
-                  questionText={currentQ.text}
-                  textStyle={{ fontSize: 13, lineHeight: '20px', color: '#101828' }}
-                />
-              </div>
-            </div>
-
-            {/* Options */}
-            <div className="space-y-2" style={{ overflow: isMobile ? 'visible' : 'hidden', flex: isMobile ? 'none' : 1, minHeight: 0 }}>
-              {currentQ.options.map(opt => {
-                const isSelected = selectedOptions[currentIdx] === opt.label;
-
-                let bg = '#FFFFFF';
-                let border = '2px solid #E2E8F0';
-                let circleColor = '#CBD5E1';
-                let circleBg = 'transparent';
-                let circleText = '#64748B';
-                let circleIcon: string = opt.label;
-                let textColor = '#1E293B';
-                let fontWeight = 400;
-
-                if (isSelected) {
-                  bg = '#EFF6FF';
-                  border = '2px solid #2B7FFF';
-                  circleColor = '#2B7FFF';
-                  circleBg = '#DBEAFE';
-                  circleText = '#2B7FFF';
-                  fontWeight = 600;
-                }
-
-                return (
+              {/* Chips + timer */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 22px 0', flexShrink: 0, flexWrap: 'nowrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', flex: '1 1 auto', minWidth: 0 }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#EFF6FF', border: '1px solid #155DFC33', borderRadius: 999, padding: '5px 12px' }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#155DFC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#155DFC' }}>{currentQ.subject || 'General'}</span>
+                  </div>
+                  {/* Flag = Mark for Review */}
                   <button
-                    key={opt.label}
-                    onClick={() => handleSelectOption(opt.label)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '16px',
-                      padding: '10px 18px',
-                      borderRadius: '12px',
-                      minHeight: 58,
-                      border,
-                      background: bg,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease',
-                      width: '100%',
-                    }}
+                    type="button"
+                    onClick={() => handleToggleFlag(currentQ)}
+                    title={flagged[String(currentQ.id)] ? 'Unmark for review' : 'Mark for review'}
+                    aria-label={flagged[String(currentQ.id)] ? 'Unmark for review' : 'Mark for review'}
+                    style={{ width: 32, height: 32, borderRadius: 9, border: `1px solid ${flagged[String(currentQ.id)] ? '#F5C518' : '#E5E7EB'}`, background: flagged[String(currentQ.id)] ? '#FEF3C7' : '#FFFFFF', color: flagged[String(currentQ.id)] ? '#D97706' : '#6B7280', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
                   >
-                    <span style={{
-                      width: '30px',
-                      height: '30px',
-                      borderRadius: '50%',
-                      border: `2px solid ${circleColor}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: '14px',
-                      color: circleText,
-                      flexShrink: 0,
-                      background: circleBg,
-                    }}>
-                      {circleIcon}
-                    </span>
-                    <span style={{ fontSize: '14px', color: textColor, fontWeight }}>
-                      {opt.text}
-                    </span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill={flagged[String(currentQ.id)] ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                      <line x1="4" y1="22" x2="4" y2="15" />
+                    </svg>
                   </button>
-                );
-              })}
-            </div>
+                  {/* Bookmark */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleBookmark(currentQ)}
+                    title={bookmarkedQuestions[String(currentQ.id)] ? 'Remove bookmark' : 'Bookmark question'}
+                    aria-label={bookmarkedQuestions[String(currentQ.id)] ? 'Remove bookmark' : 'Bookmark question'}
+                    style={{ width: 32, height: 32, borderRadius: 9, border: `1px solid ${bookmarkedQuestions[String(currentQ.id)] ? '#BFDBFE' : '#E5E7EB'}`, background: bookmarkedQuestions[String(currentQ.id)] ? '#EFF6FF' : '#FFFFFF', color: bookmarkedQuestions[String(currentQ.id)] ? '#1E3A8A' : '#6B7280', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill={bookmarkedQuestions[String(currentQ.id)] ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </button>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/timer-icon.png" alt="Timer" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <span style={{ fontWeight: 800, fontSize: 19, lineHeight: '22px', color: timeLeft < 60 ? '#EF4444' : '#1A1D23' }}>{formatTime(timeLeft)}</span>
+                    <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>Time Left</span>
+                  </div>
+                </div>
+              </div>
 
-            {/* Explanations are hidden during the quiz and revealed only on the
-                results screen, so students focus on finishing first. */}
-          </div>
+              {/* Content: question (fills) + options (2-col grid) */}
+              <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, display: 'flex', flexDirection: 'column', padding: '12px 22px 14px', overflow: isMobile ? 'visible' : 'hidden' }}>
+                <div style={{ flex: isMobile ? 'none' : '0 1 auto', minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', fontSize: 14, lineHeight: '23px', color: '#1A1D23', paddingRight: 6 }}>
+                  <span style={{ fontWeight: 700 }}>Question {currentIdx + 1}: </span>
+                  <StructuredQuestionRenderer
+                    questionText={currentQ.text}
+                    textStyle={{ fontSize: 14, lineHeight: '23px', color: '#1A1D23' }}
+                  />
+                </div>
+                <div style={{ flexShrink: 0, marginTop: 12, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
+                  {currentQ.options.map((option) => {
+                    const optKey = option.label;
+                    const isSelected = selectedOptions[currentIdx] === optKey;
+                    return (
+                      <button
+                        key={optKey}
+                        onClick={() => handleSelectOption(optKey)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderRadius: 12, minHeight: 50,
+                          border: isSelected ? '1.5px solid #0B1426' : '1px solid #E5E7EB',
+                          background: isSelected ? '#0B1426' : '#FFFFFF',
+                          cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s ease', width: '100%',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                        }}
+                      >
+                        <span style={{
+                          width: 30, height: 30, borderRadius: 8,
+                          border: 'none',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontWeight: 700, fontSize: 13, color: isSelected ? '#0B1426' : '#475067',
+                          background: isSelected ? '#F5C518' : '#F1F4F9', flexShrink: 0,
+                        }}>{optKey}</span>
+                        <span style={{ fontSize: 13.5, color: isSelected ? '#FFFFFF' : '#1E293B', fontWeight: isSelected ? 600 : 400 }}>{option.text}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-          {/* Controls Bar */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: '#FFFFFF',
-            borderRadius: 10,
-            padding: '8px 12px',
-            border: '1px solid #E5E7EB',
-            flexShrink: 0,
-            position: isMobile ? 'sticky' : 'static',
-            bottom: isMobile ? 8 : undefined,
-            zIndex: isMobile ? 5 : undefined,
-            boxShadow: isMobile ? '0 -2px 8px rgba(0,0,0,0.06)' : undefined,
-          }}>
-            {/* Left actions */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <button
-                onClick={handleMark}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  color: '#FB2C36',
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  lineHeight: '20px',
-                }}
-              >
-                 Mark
-              </button>
-              <button
-                onClick={handleClear}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  width: '52px',
-                  height: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#6A7282',
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  lineHeight: '20px',
-                  letterSpacing: '0px',
-                  padding: 0,
-                }}
-              >
-                 Clear
-              </button>
-              <button
-                onClick={() => handleToggleBookmark(currentQ)}
-                title={bookmarkedQuestions[String(currentQ.id)] ? 'Remove bookmark' : 'Bookmark this question'}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  color: bookmarkedQuestions[String(currentQ.id)] ? '#C2410C' : '#6A7282',
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  lineHeight: '20px',
-                }}
-              >
-                <span style={{ fontSize: 15 }}>{bookmarkedQuestions[String(currentQ.id)] ? '★' : '☆'}</span>
-                {bookmarkedQuestions[String(currentQ.id)] ? 'Bookmarked' : 'Bookmark'}
-              </button>
-              <button
-                onClick={handleNext}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  color: '#155DFC',
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  lineHeight: '20px',
-                }}
-              >
-                Skip
-              </button>
-            </div>
+              {/* Bottom nav */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 22px', borderTop: '1px solid #F1F3F5', flexWrap: 'wrap', flexShrink: 0 }}>
+                <button
+                  onClick={handlePrev}
+                  disabled={currentIdx === 0}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 10, padding: '9px 18px', fontSize: 13, fontWeight: 600, color: currentIdx === 0 ? '#C7CDD6' : '#374151', cursor: currentIdx === 0 ? 'not-allowed' : 'pointer' }}
+                >
+                  ← Previous
+                </button>
 
-            {/* Right nav */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button
-                onClick={handlePrev}
-                disabled={currentIdx === 0}
-                style={{
-                  background: 'none',
-                  border: '1.5px solid #CBD5E1',
-                  borderRadius: '8px',
-                  padding: '5px 13px',
-                  color: currentIdx === 0 ? '#CBD5E1' : '#334155',
-                  cursor: currentIdx === 0 ? 'not-allowed' : 'pointer',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                }}
-              >
-                ← Prev
-              </button>
-              <button
-                onClick={handleNext}
-                disabled={currentIdx === totalQuestions - 1}
-                style={{
-                  background: currentIdx === totalQuestions - 1 ? '#1E293B' : '#2B7FFF',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '5px 18px',
-                  color: '#FFFFFF',
-                  cursor: currentIdx === totalQuestions - 1 ? 'not-allowed' : 'pointer',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                }}
-              >
-                Next →
-              </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <button
+                    onClick={handleSkip}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 10, padding: '9px 20px', fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer' }}
+                  >
+                    Skip
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (currentIdx === totalQuestions - 1) {
+                        setShowSubmitConfirm(true);
+                      } else {
+                        handleNext();
+                      }
+                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#0B1426', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: 'pointer' }}
+                  >
+                    {currentIdx === totalQuestions - 1 ? 'Finish' : 'Save & Next →'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </main>
 
-        {/* ── Right panel (Navigator card) — desktop only ── */}
-        {!isMobile && (
-          <aside style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {/* RIGHT: navigator + session stats */}
+          <aside style={{ width: isMobile ? '100%' : 312, flexShrink: 0, minHeight: isMobile ? 'auto' : 0, overflowY: isMobile ? 'visible' : 'auto', paddingRight: 2 }}>
             {navigatorCard}
           </aside>
-        )}
         </div>
       </div>
 
-      {/* ── Mobile navigator bottom-sheet drawer ── */}
-      {isMobile && navOpen && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'flex-end' }}
-          onClick={() => setNavOpen(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ width: '100%', maxHeight: '80vh', background: '#FFFFFF', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 14, boxShadow: '0 -8px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column' }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-              <div style={{ width: 40, height: 4, borderRadius: 999, background: '#D1D5DB' }} />
+      {/* Submit confirmation modal */}
+      {showSubmitConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 24, padding: '32px 36px', maxWidth: 460, width: '100%', textAlign: 'center', boxShadow: '0px 20px 40px -10px rgba(0,0,0,0.25)' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>📋</div>
+            <h2 style={{ fontFamily: 'Arimo, sans-serif', fontWeight: 800, letterSpacing: '-0.01em', color: '#17223E', fontSize: 22, marginBottom: 8 }}>Submit Test?</h2>
+            <p style={{ fontFamily: 'Arimo, sans-serif', fontWeight: 500, color: '#475467', fontSize: 14, marginBottom: 20 }}>
+              Are you sure you want to submit your answers?
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
+              <div style={{ background: '#F3F4F6', borderRadius: 12, padding: '14px 8px' }}>
+                <div style={{ fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: 24, color: '#22C55E' }}>{answeredCount}</div>
+                <div style={{ fontFamily: 'Arimo, sans-serif', fontSize: 12, color: '#6B7280', marginTop: 2 }}>Answered</div>
+              </div>
+              <div style={{ background: '#F3F4F6', borderRadius: 12, padding: '14px 8px' }}>
+                <div style={{ fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: 24, color: '#F59E0B' }}>{skippedCount}</div>
+                <div style={{ fontFamily: 'Arimo, sans-serif', fontSize: 12, color: '#6B7280', marginTop: 2 }}>Skipped</div>
+              </div>
+              <div style={{ background: '#F3F4F6', borderRadius: 12, padding: '14px 8px' }}>
+                <div style={{ fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: 24, color: '#F59E0B' }}>{bookmarkedCount}</div>
+                <div style={{ fontFamily: 'Arimo, sans-serif', fontSize: 12, color: '#6B7280', marginTop: 2 }}>Bookmarked</div>
+              </div>
             </div>
-            {navigatorCard}
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => setShowSubmitConfirm(false)}
+                style={{ flex: 1, height: 48, background: '#F3F4F6', border: 'none', borderRadius: 12, color: '#101828', fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+              >
+                Review More
+              </button>
+              <button
+                onClick={() => { setShowSubmitConfirm(false); handleSubmit(); }}
+                disabled={submitting}
+                style={{ flex: 1, height: 48, background: '#101828', border: 'none', borderRadius: 12, color: '#FFFFFF', fontFamily: 'Arimo, sans-serif', fontWeight: 700, fontSize: 15, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
+              >
+                Submit Now
+              </button>
+            </div>
           </div>
         </div>
       )}

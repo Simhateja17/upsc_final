@@ -288,7 +288,7 @@ export default function TermsContent() {
               <div className="lc-num">07</div>
               <div className="lc-h2">Intellectual Property</div>
               <p className="lc-p">
-                All content, materials, features, and functionality available on RiseWithJeet &mdash; including but not limited to video lectures, MCQ questions, test series, model answers, study notes, current affairs content, analytics, designs, branding, logos, software, AI-generated feedback, and platform features &mdash; are owned by or licensed to Jeetpath Academy Pvt. Ltd. and are protected under applicable copyright, trademark, intellectual property, and other laws.
+                All content, materials, features, and functionality available on RiseWithJeet, including but not limited to video lectures, MCQ questions, test series, model answers, study notes, current affairs content, analytics, designs, branding, logos, software, AI-generated feedback, and platform features, are owned by or licensed to Jeetpath Academy Pvt. Ltd. and are protected under applicable copyright, trademark, intellectual property, and other laws.
               </p>
               <p className="lc-p">
                 Your use of RiseWithJeet does not grant you ownership of any intellectual property rights in the platform or its content. Subject to these Terms, we grant you a limited, personal, non-exclusive, non-transferable, and revocable right to access and use platform content solely for your personal educational and UPSC preparation purposes.

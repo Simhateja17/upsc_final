@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { dashboardService, studyPlannerService, syllabusService, userService } from '@/lib/services';
-import { getSubjectEmoji } from '@/lib/subjectEmojis';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
+import SubjectSelect, { STUDY_TASK_SUBJECTS, displaySubjectLabel } from '@/components/SubjectSelect';
 
 function fmtTimer(secs: number): string {
   const s = Math.max(0, secs);
@@ -27,6 +29,20 @@ function taskDurationSecs(task: Task): number {
     if (diff > 0) return diff * 60;
   }
   return 3600;
+}
+
+function formatTaskTimeLabel(task: Task): string {
+  if (!task.startTime) return '';
+  const timeRange = `${task.startTime}${task.endTime ? ` - ${task.endTime}` : ''}`;
+  if (!task.endTime) return timeRange;
+
+  const minutes = Math.max(1, Math.round(taskDurationSecs(task) / 60));
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  const durationLabel = hours > 0
+    ? `${hours} Hr${hours > 1 ? 's' : ''}${remainingMins ? ` ${remainingMins} Min${remainingMins > 1 ? 's' : ''}` : ''}`
+    : `${minutes} Min${minutes > 1 ? 's' : ''}`;
+  return `${timeRange} (${durationLabel})`;
 }
 
 function toDateParam(date: Date): string {
@@ -151,30 +167,9 @@ function getRecurrenceDates(start: Date, type: RecurType, days: number[], end: R
   return result;
 }
 
-const SUBJECT_OPTIONS = [
-  'Polity',
-  'History',
-  'Geography',
-  'Economy',
-  'Environment & Ecology',
-  'Science & Technology',
-  'Current Affairs',
-  'Society',
-  'Governance',
-  'International Relations',
-  'Social Justice',
-  'Agriculture',
-  'Internal Security',
-  'Disaster Management',
-  'Ethics',
-  'GS1',
-  'GS2',
-  'GS3',
-  'GS4',
-  'Essay',
-  'Optional Paper 1',
-  'Optional Paper 2',
-];
+// Canonical Quick Add to Plan subject list — reuses the shared Dashboard
+// subject list so both modules stay in sync (list + order).
+const SUBJECT_OPTIONS = STUDY_TASK_SUBJECTS;
 
 // Maps syllabus subject short/full names to their canonical Quick Add to Plan
 // subject name. Subjects with no entry here (e.g. optional-paper subjects like
@@ -198,7 +193,6 @@ const SYLLABUS_SUBJECT_ALIASES: Record<string, string> = {
   IR: 'International Relations',
   'International Relations': 'International Relations',
   'Social Justice': 'Social Justice',
-  Agriculture: 'Agriculture',
   'Int. Security': 'Internal Security',
   'Internal Security': 'Internal Security',
   'Disaster Mgmt': 'Disaster Management',
@@ -207,33 +201,23 @@ const SYLLABUS_SUBJECT_ALIASES: Record<string, string> = {
   Essay: 'Essay',
 };
 
-const SUBJECT_ICON_MAP: Record<string, string> = {
-  Polity: '/study-planner-icons/polity.png',
-  Economy: '/study-planner-icons/economy.png',
-  Society: '/study-planner-icons/society.png',
-  'Indian Society': '/study-planner-icons/society.png',
-  Governance: '/study-planner-icons/governance.png',
-  'Social Justice': '/study-planner-icons/social-justice.png',
-  'International Relations': '/study-planner-icons/international-relations.png',
-  'Disaster Management': '/study-planner-icons/disaster-management.png',
-  Ethics: '/study-planner-icons/ethics.png',
-  'Ethics & Human Values': '/study-planner-icons/ethics.png',
-  CSAT: '/study-planner-icons/csat.png',
-  'Case Studies': '/study-planner-icons/case-studies.png',
-};
-
 const quickAddIconBoxStyle: React.CSSProperties = {
-  width: '24px',
-  height: '24px',
-  minWidth: '24px',
+  width: '38px',
+  height: '38px',
+  minWidth: '38px',
   flexShrink: 0,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   overflow: 'hidden',
+  borderRadius: '10px',
+  fontSize: '19px',
+  lineHeight: '20px',
+  boxShadow: '0 2px 8px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.3)',
 };
 
 export default function StudyPlannerPage() {
+  const router = useRouter();
   const [taskTitle, setTaskTitle] = useState('');
   const [taskSubject, setTaskSubject] = useState('');
   const [studyType, setStudyType] = useState('');
@@ -311,7 +295,13 @@ export default function StudyPlannerPage() {
           if (saved) { try { states = JSON.parse(saved); } catch {} }
         }
         const stateMap = states ?? {};
-        const stages: ('prelims' | 'mains' | 'optional')[] = ['prelims', 'mains', 'optional'];
+        // Only prelims/mains — the "optional" stage lists all 25 UPSC optional
+        // papers (Agriculture, Philosophy, Sociology, ...), not just the one the
+        // user picked, and some optional papers share a name with a core subject
+        // (Geography, History), which would silently merge unrelated syllabuses.
+        // Syllabus Tracker only ever shows the user's own optional separately, so
+        // Study Planner's coverage mirrors that by sticking to core GS subjects.
+        const stages: ('prelims' | 'mains')[] = ['prelims', 'mains'];
         const subjectMap = new Map<string, { subject: string; done: number; total: number }>();
         stages.forEach((stage) => {
           const subjects = Array.isArray(data[stage]) ? data[stage] : [];
@@ -434,14 +424,22 @@ export default function StudyPlannerPage() {
   const handleToggleTask = async (id: string, completed: boolean) => {
     try {
       await studyPlannerService.updateTask(id, { isCompleted: !completed });
-      setTasks(prev => prev.map(t => t.id === id ? { ...t, isCompleted: !completed } : t));
+      setTasks(prev => {
+        const nextTasks = prev.map(t => t.id === id ? { ...t, isCompleted: !completed } : t);
+        syncStudiedDayForCurrentDate(nextTasks);
+        return nextTasks;
+      });
     } catch {}
   };
 
   const handleDeleteTask = async (id: string) => {
     try {
       await studyPlannerService.deleteTask(id);
-      setTasks(prev => prev.filter(t => t.id !== id));
+      setTasks(prev => {
+        const nextTasks = prev.filter(t => t.id !== id);
+        syncStudiedDayForCurrentDate(nextTasks);
+        return nextTasks;
+      });
     } catch {}
   };
 
@@ -523,7 +521,11 @@ export default function StudyPlannerPage() {
     if (task && !task.isCompleted) {
       try {
         await studyPlannerService.updateTask(task.id, { isCompleted: true, actualDuration: focusTaskSecs });
-        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, isCompleted: true, actualDuration: focusTaskSecs } : t));
+        setTasks(prev => {
+          const nextTasks = prev.map(t => t.id === task.id ? { ...t, isCompleted: true, actualDuration: focusTaskSecs } : t);
+          syncStudiedDayForCurrentDate(nextTasks);
+          return nextTasks;
+        });
       } catch {}
     }
     const updated = focusSessionTasks.map((t, i) => i === focusTaskIdx ? { ...t, isCompleted: true } : t);
@@ -659,7 +661,20 @@ export default function StudyPlannerPage() {
     return timeOptions.includes(next) ? next : timeOptions[timeOptions.length - 1];
   };
 
-  // Compute total study time from tasks that have start/end times
+  const syncStudiedDayForCurrentDate = (nextTasks: Task[]) => {
+    if (currentDate.getFullYear() !== calYear || currentDate.getMonth() !== calMonthIdx) return;
+
+    const day = currentDate.getDate();
+    const hasCompletedTask = nextTasks.some((task) => task.isCompleted);
+    setStudiedDays((prev) => {
+      if (hasCompletedTask) {
+        return prev.includes(day) ? prev : [...prev, day].sort((a, b) => a - b);
+      }
+      return prev.filter((d) => d !== day);
+    });
+  };
+
+  // Compute Today's Study Time from tasks that have start/end times
   const totalStudyMinutes = tasks.reduce((sum, task) => {
     if (task.startTime && task.endTime) {
       const [sh, sm] = task.startTime.split(':').map(Number);
@@ -686,8 +701,8 @@ export default function StudyPlannerPage() {
   const completedStudyHours = Math.floor(completedStudyMinutes / 60);
 
   const totalStudyLabel = totalStudyMinutes > 0
-    ? `Total Study Time: ${totalStudyMinutes} minutes (${totalStudyHours}h ${totalStudyMins}m)`
-    : 'Total Study Time: -';
+    ? `Today's Study Time: ${totalStudyMinutes} minutes (${totalStudyHours}h ${totalStudyMins}m)`
+    : "Today's Study Time: -";
   const pendingTaskCount = tasks.filter((task) => !task.isCompleted).length;
   const sortedTasks = [...tasks].sort(compareTasksByTime);
 
@@ -720,7 +735,7 @@ export default function StudyPlannerPage() {
   const timeByType = Array.from(subjectSecondsMap.entries())
     .map(([subj, secs], idx) => ({
       id: subj,
-      label: subj,
+      label: displaySubjectLabel(subj),
       color: subjectColorPalette[idx % subjectColorPalette.length],
       seconds: secs,
     }))
@@ -748,7 +763,7 @@ export default function StudyPlannerPage() {
         <div className="flex flex-col xl:flex-row gap-5 p-4 md:p-6">
 
           {/* ═══════ Left Column: Main Content ═══════ */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col">
 
             {/* Hero Banner – matches Figma study planner design */}
             <div
@@ -1018,24 +1033,7 @@ export default function StudyPlannerPage() {
                     <label className="font-arimo font-bold block" style={{ fontSize: '14px', lineHeight: '20px', color: '#101828', marginBottom: '6px' }}>
                       Subject
                     </label>
-                    <div className="relative">
-                      <select
-                        value={taskSubject}
-                        onChange={(e) => setTaskSubject(e.target.value)}
-                        className="w-full font-arimo outline-none appearance-none cursor-pointer transition-colors"
-                        style={{ height: '44px', borderRadius: '10px', border: '0.8px solid #E5E7EB', padding: '0 36px 0 14px', fontSize: '16px', color: taskSubject ? '#0A0A0A' : '#9CA3AF', background: '#FFFFFF' }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = '#4F78F6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(79, 120, 246, 0.15)'; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }}
-                      >
-                        <option value="" disabled>Select Subject</option>
-                        {SUBJECT_OPTIONS.map((subject) => (
-                          <option key={subject} value={subject}>{subject}</option>
-                        ))}
-                      </select>
-                      <svg className="absolute pointer-events-none" style={{ right: '14px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none">
-                        <path d="M6 9l6 6 6-6" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
+                    <SubjectSelect value={taskSubject} onChange={setTaskSubject} aria-label="Subject" />
                   </div>
 
                   {/* Study Type */}
@@ -1336,8 +1334,9 @@ export default function StudyPlannerPage() {
                     {sortedTasks.map(task => (
                       <div
                         key={task.id}
-                        style={{ borderLeftWidth: '4px', borderLeftColor: task.isCompleted ? '#22C55E' : '#E5E7EB' }}
-                        className="group flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md hover:bg-indigo-50/30"
+                        className={`group flex items-center gap-3 p-3 rounded-lg border border-gray-200 border-l-4 transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 hover:shadow-md ${
+                          task.isCompleted ? 'border-l-[#22C55E] hover:border-green-200 hover:border-l-[#22C55E] hover:bg-green-50' : 'border-l-[#E5E7EB] hover:border-indigo-200 hover:border-l-[#94A3B8] hover:bg-indigo-50/30'
+                        }`}
                       >
                         <button onClick={() => handleToggleTask(task.id, task.isCompleted)}
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${task.isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
@@ -1348,7 +1347,7 @@ export default function StudyPlannerPage() {
                           {(task.startTime || task.type) && (
                             <p className="font-arimo text-xs text-gray-500 flex items-center gap-1.5 flex-wrap">
                               <span>
-                                {task.startTime && <>{task.startTime} - {task.endTime || ''}</>}
+                                {task.startTime && formatTaskTimeLabel(task)}
                                 {task.startTime && studyTypeLabel(task.type) && ' · '}
                                 {studyTypeLabel(task.type)}
                               </span>
@@ -1367,7 +1366,7 @@ export default function StudyPlannerPage() {
                           onClick={() => handleDeleteTask(task.id)}
                           title="Delete task"
                           aria-label="Delete task"
-                          className="flex-shrink-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity duration-200"
+                          className="flex-shrink-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-colors transition-opacity duration-200 cursor-pointer"
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
@@ -1381,7 +1380,7 @@ export default function StudyPlannerPage() {
 
                 {/* Bottom Stats — aligned with the left card's "Add to Today's Plan" button */}
                 <div style={{ paddingTop: '16px', marginTop: 'auto', marginBottom: '44px' }}>
-                  {/* Total Study Time */}
+                  {/* Today's Study Time */}
                   <div
                     className="flex items-center justify-center font-arimo"
                     style={{
@@ -1397,9 +1396,12 @@ export default function StudyPlannerPage() {
                     {totalStudyLabel}
                   </div>
 
-                  {/* Start Focus Session */}
+                  {/* Start Focus Session — hand off to the Live Study Room's
+                      existing Solo Focus tab (?tab=solo), reusing that timer /
+                      focus / tracking implementation rather than the in-page
+                      overlay. See study-groups/page.tsx searchParams handler. */}
                   <button
-                    onClick={startFocusSession}
+                    onClick={() => router.push('/dashboard/study-groups?tab=solo')}
                     disabled={pendingTaskCount === 0}
                     className="flex items-center justify-center gap-2 font-arimo font-bold text-white hover:opacity-90 transition-opacity w-full disabled:opacity-40"
                     style={{
@@ -1420,12 +1422,12 @@ export default function StudyPlannerPage() {
             </div>
             </div>
 
-            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals + Time Distribution ── */}
-            <div className="grid grid-cols-1 gap-4 mt-4 xl:grid-cols-[1fr_1fr_360px]">
+            {/* ── Bottom Row: Syllabus Coverage + Weekly Goals ── */}
+            <div className="grid grid-cols-1 gap-6 mt-4 flex-1 xl:grid-cols-[360px_minmax(360px,1fr)]">
 
               {/* Card 0: Syllabus Coverage */}
               <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] flex flex-col"
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] h-full flex flex-col"
               >
                 {/* Header (stays fixed — indentation preserved up to the pie-chart icon) */}
                 <div className="flex items-center gap-2 mb-4">
@@ -1453,7 +1455,7 @@ export default function StudyPlannerPage() {
                 })()}
 
                 {/* Scrollable subject list */}
-                <div className="flex-1 overflow-y-auto pr-1" style={{ maxHeight: '240px' }}>
+                <div className="flex-1 overflow-y-auto pr-1">
                   <div className="space-y-3">
                     {syllabusCoverage.length === 0 ? (
                       <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '13px' }}>No syllabus data yet.</p>
@@ -1462,7 +1464,7 @@ export default function StudyPlannerPage() {
                       return (
                         <div key={item.subject}>
                           <div className="flex justify-between items-center mb-1">
-                            <span className="font-arimo text-[#101828]" style={{ fontSize: '13px' }}>{item.subject}</span>
+                            <span className="font-arimo text-[#101828]" style={{ fontSize: '13px' }}>{displaySubjectLabel(item.subject)}</span>
                             <span className="font-arimo font-bold" style={{ fontSize: '13px', color }}>{item.percentage}%</span>
                           </div>
                           <div className="w-full bg-[#E5E7EB] rounded-full h-2">
@@ -1490,7 +1492,7 @@ export default function StudyPlannerPage() {
 
               {/* Card 1: Weekly Goals */}
               <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px]"
+                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] h-full flex flex-col"
               >
                 {/* Header */}
                 <div className="flex items-center gap-2 mb-4">
@@ -1521,7 +1523,7 @@ export default function StudyPlannerPage() {
                 })()}
 
                 {/* Goals list */}
-                <div className="space-y-3 mb-5">
+                <div className="flex-1 overflow-y-auto space-y-3 mb-5">
                   {weeklyGoals.length > 0 ? (
                     weeklyGoals.map((goal, i) => (
                       <div key={i} className="flex items-start gap-3 group">
@@ -1581,98 +1583,11 @@ export default function StudyPlannerPage() {
                 </div>
               </div>
 
-              {/* Card 2: Time Distribution – dimensions match surrounding row cards */}
-              <div
-                className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] flex flex-col"
-              >
-                <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
-                  <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>
-                    <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
-                  </div>
-                  <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
-                    Time Distribution
-                  </span>
-                </div>
-
-                {/* SVG Pie Chart */}
-                <div className="flex items-center justify-center" style={{ marginBottom: '12px' }}>
-                  {!hasCompletedTimeDistribution ? (
-                    <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
-                      Complete at least one task to see distribution
-                    </div>
-                  ) : (
-                    <svg viewBox="0 0 160 160" width="160" height="160">
-                      {(() => {
-                        const cx = 80, cy = 80, r = 60, strokeWidth = 20;
-                        const gap = timeByType.length > 1 ? 0.06 : 0; // small gap between segments
-                        let angle = -Math.PI / 2;
-                        return timeByType.map((slice) => {
-                          const sliceAngle = (slice.seconds / totalTypeSecs) * 2 * Math.PI;
-                          // Single full-ring segment: draw a plain circle (arc can't close 360°).
-                          if (timeByType.length === 1) {
-                            return (
-                              <circle
-                                key={slice.id}
-                                cx={cx}
-                                cy={cy}
-                                r={r}
-                                fill="none"
-                                stroke={slice.color}
-                                strokeWidth={strokeWidth}
-                              />
-                            );
-                          }
-                          const start = angle + gap / 2;
-                          const end = angle + sliceAngle - gap / 2;
-                          const path = donutArcPath(cx, cy, r, start, end);
-                          angle += sliceAngle;
-                          return (
-                            <path
-                              key={slice.id}
-                              d={path}
-                              fill="none"
-                              stroke={slice.color}
-                              strokeWidth={strokeWidth}
-                              strokeLinecap="round"
-                            />
-                          );
-                        });
-                      })()}
-                      <text x="80" y="74" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="26" fontFamily="Arimo, sans-serif">
-                        {fmtDuration(totalTypeSecs)}
-                      </text>
-                      <text x="80" y="96" textAnchor="middle" dominantBaseline="middle" fill="#9CA3AF" fontSize="12" fontFamily="Arimo, sans-serif">
-                        today
-                      </text>
-                    </svg>
-                  )}
-                </div>
-
-                {/* Legend */}
-                <div className="space-y-2">
-                  {!hasCompletedTimeDistribution ? (
-                    <div className="font-arimo text-[#9CA3AF] text-center" style={{ fontSize: '13px', paddingTop: '4px' }}>
-                      Complete tasks to see subject-wise distribution
-                    </div>
-                  ) : (
-                    timeByType.map(slice => (
-                      <div key={slice.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: slice.color }}></span>
-                          <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{slice.label}</span>
-                        </div>
-                        <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtDuration(slice.seconds)}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
             </div>
           </div>
 
-          {/* ═══════ Right Column (290px): Streak + Quick Add ═══════ */}
-          <div className="flex-shrink-0 flex flex-col gap-5 w-full xl:w-[290px]">
+          {/* ═══════ Right Column (340px): Streak + Quick Add ═══════ */}
+          <div className="flex-shrink-0 flex flex-col gap-5 w-full xl:w-[340px]">
 
             {/* Study Streak Card — converted from the reference study-streak/calendar design */}
             <div
@@ -1688,6 +1603,9 @@ export default function StudyPlannerPage() {
               <style>{`
                 .streak-cal .sc-arrow:hover { background: #f3f4f6; }
                 .streak-cal .sc-today:hover { background: #fafafa; }
+                .streak-cal .sc-day { transition: box-shadow .15s ease, background .15s ease; }
+                .streak-cal .sc-day:hover { box-shadow: inset 0 0 0 1.5px #c7d2fe; }
+                .streak-cal .sc-day:focus-visible { outline: none; box-shadow: inset 0 0 0 2px #2563eb; }
               `}</style>
 
               {/* Streak header */}
@@ -1742,13 +1660,23 @@ export default function StudyPlannerPage() {
                     today: { background: '#0f1626', color: '#f4b740' },
                     future: { background: 'transparent', color: '#9ca3af' },
                   }[item.status];
+                  const isSelected =
+                    currentDate.getFullYear() === calYear &&
+                    currentDate.getMonth() === calMonthIdx &&
+                    currentDate.getDate() === item.day;
                   return (
-                    <div
+                    <button
                       key={i}
-                      style={{ aspectRatio: '1 / 1', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, ...palette }}
+                      type="button"
+                      className="sc-day"
+                      onClick={() => setCurrentDate(new Date(calYear, calMonthIdx, item.day))}
+                      aria-pressed={isSelected}
+                      aria-label={`Open study plan for ${calendarMonthYear} ${item.day}`}
+                      title={`View plan for ${item.day} ${calendarMonthYear}`}
+                      style={{ aspectRatio: '1 / 1', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', border: 'none', padding: 0, cursor: 'pointer', ...palette }}
                     >
                       {item.day}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -1756,12 +1684,15 @@ export default function StudyPlannerPage() {
 
             {/* Quick Add to Plan */}
             <div
+              className="flex flex-col"
               style={{
                 width: '100%',
                 borderRadius: '16px',
                 border: '0.8px solid #E5E7EB',
                 background: '#FFFFFF',
+                boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
                 padding: '20px 16px',
+                overflow: 'hidden',
               }}
             >
               {/* Header */}
@@ -1773,54 +1704,139 @@ export default function StudyPlannerPage() {
                 </span>
               </div>
 
-              <div className="flex flex-wrap" style={{ gap: '8px' }}>
-                {quickAddSubjects.map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => handleQuickAdd(item)}
-                    className="font-arimo hover:bg-gray-100 transition-colors"
-                    style={{
-                      minHeight: '40px',
-                      borderRadius: '10px',
-                      border: '0.8px solid #E5E7EB',
-                      background: '#F9FAFB',
-                      fontSize: '12px',
-                      lineHeight: '16px',
-                      fontWeight: 500,
-                      color: '#374151',
-                      padding: '8px 10px',
-                      flex: '1 1 120px',
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      textAlign: 'left',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    {SUBJECT_ICON_MAP[item] ? (
-                      <span aria-hidden="true" style={quickAddIconBoxStyle}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={SUBJECT_ICON_MAP[item]}
-                          alt=""
-                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }}
-                        />
-                      </span>
-                    ) : (
+              <div className="flex flex-wrap overflow-y-auto pr-1" style={{ gap: '8px', minHeight: 0 }}>
+                {quickAddSubjects.map((item) => {
+                  const meta = getSubjectMetaStyle(item);
+                  return (
+                    <button
+                      key={item}
+                      onClick={() => handleQuickAdd(item)}
+                      className="font-arimo transition-all"
+                      style={{
+                        minHeight: '62px',
+                        borderRadius: '12px',
+                        border: '1.5px solid #E0E8F4',
+                        background: '#FFFFFF',
+                        boxShadow: '0 2px 8px rgba(15,31,61,.05)',
+                        fontSize: '12px',
+                        lineHeight: '16px',
+                        fontWeight: 700,
+                        color: meta.color,
+                        padding: '10px 12px',
+                        flex: '1 1 132px',
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textAlign: 'left',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-start',
+                        gap: '8px',
+                      }}
+                      onMouseEnter={(event) => {
+                        event.currentTarget.style.transform = 'translateY(-2px)';
+                        event.currentTarget.style.boxShadow = `0 8px 18px ${meta.accent}18`;
+                        event.currentTarget.style.borderColor = meta.border;
+                        event.currentTarget.style.background = '#FDFEFF';
+                      }}
+                      onMouseLeave={(event) => {
+                        event.currentTarget.style.transform = 'translateY(0)';
+                        event.currentTarget.style.boxShadow = '0 2px 8px rgba(15,31,61,.05)';
+                        event.currentTarget.style.borderColor = '#E0E8F4';
+                        event.currentTarget.style.background = '#FFFFFF';
+                      }}
+                    >
                       <span
                         aria-hidden="true"
-                        style={{ ...quickAddIconBoxStyle, fontSize: '18px', lineHeight: '24px' }}
+                        style={{ ...quickAddIconBoxStyle, background: meta.bg }}
                       >
-                        {getSubjectEmoji(item)}
+                        {meta.icon}
                       </span>
-                    )}
-                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item}
-                    </span>
-                  </button>
-                ))}
+                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Time Distribution */}
+            <div
+              className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] xl:flex-1 flex flex-col"
+            >
+              <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
+                <div style={{ width: '22px', height: '22px', flexShrink: 0 }}>
+                  <div className="w-full h-full rounded-full border-4 border-t-yellow-400 border-r-red-400 border-b-green-400 border-l-blue-500"></div>
+                </div>
+                <span className="font-arimo font-bold" style={{ fontSize: '18px', lineHeight: '24px', color: '#101828' }}>
+                  Time Distribution
+                </span>
+              </div>
+
+              <div className="flex items-center justify-center" style={{ marginBottom: '12px' }}>
+                {!hasCompletedTimeDistribution ? (
+                  <div className="flex items-center justify-center font-arimo text-[#9CA3AF] text-sm" style={{ height: '140px' }}>
+                    Complete at least one task to see distribution
+                  </div>
+                ) : (
+                  <svg viewBox="0 0 160 160" width="160" height="160">
+                    {(() => {
+                      const cx = 80, cy = 80, r = 60, strokeWidth = 20;
+                      const gap = timeByType.length > 1 ? 0.06 : 0;
+                      let angle = -Math.PI / 2;
+                      return timeByType.map((slice) => {
+                        const sliceAngle = (slice.seconds / totalTypeSecs) * 2 * Math.PI;
+                        if (timeByType.length === 1) {
+                          return (
+                            <circle
+                              key={slice.id}
+                              cx={cx}
+                              cy={cy}
+                              r={r}
+                              fill="none"
+                              stroke={slice.color}
+                              strokeWidth={strokeWidth}
+                            />
+                          );
+                        }
+                        const start = angle + gap / 2;
+                        const end = angle + sliceAngle - gap / 2;
+                        const path = donutArcPath(cx, cy, r, start, end);
+                        angle += sliceAngle;
+                        return (
+                          <path
+                            key={slice.id}
+                            d={path}
+                            fill="none"
+                            stroke={slice.color}
+                            strokeWidth={strokeWidth}
+                            strokeLinecap="round"
+                          />
+                        );
+                      });
+                    })()}
+                    <text x="80" y="74" textAnchor="middle" dominantBaseline="middle" fill="#17223E" fontWeight="bold" fontSize="26" fontFamily="Arimo, sans-serif">
+                      {fmtDuration(totalTypeSecs)}
+                    </text>
+                    <text x="80" y="96" textAnchor="middle" dominantBaseline="middle" fill="#9CA3AF" fontSize="12" fontFamily="Arimo, sans-serif">
+                      today
+                    </text>
+                  </svg>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {!hasCompletedTimeDistribution ? null : (
+                  timeByType.map(slice => (
+                    <div key={slice.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: slice.color }}></span>
+                        <span className="font-arimo text-[#374151]" style={{ fontSize: '13px' }}>{slice.label}</span>
+                      </div>
+                      <span className="font-arimo font-bold text-[#111827]" style={{ fontSize: '13px' }}>{fmtDuration(slice.seconds)}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -1943,11 +1959,14 @@ export default function StudyPlannerPage() {
                         Task {focusTaskIdx + 1} of {focusSessionTasks.length}
                       </p>
                       <h3 className="font-arimo font-bold text-[#101828]" style={{ fontSize: '20px', lineHeight: '1.3' }}>{task?.title ?? '-'}</h3>
-                      {task?.subject && (
-                        <span className="inline-block font-arimo text-[#312C85] mt-1" style={{ fontSize: '12px', background: '#EEF2FF', borderRadius: '6px', padding: '2px 8px' }}>
-                          {getSubjectEmoji(task.subject)} {task.subject}
-                        </span>
-                      )}
+                      {task?.subject && (() => {
+                        const meta = getSubjectMetaStyle(task.subject);
+                        return (
+                          <span className="inline-flex items-center gap-1 font-arimo mt-1" style={{ fontSize: '12px', background: meta.bg, color: meta.color, border: `1px solid ${meta.border}`, borderRadius: '999px', padding: '3px 9px', fontWeight: 700 }}>
+                            <span aria-hidden>{meta.icon}</span> {displaySubjectLabel(task.subject)}
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     {/* Countdown */}
@@ -2028,7 +2047,7 @@ export default function StudyPlannerPage() {
                             {task.title}
                           </p>
                           {task.startTime && (
-                            <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px' }}>{task.startTime}{task.endTime ? ` - ${task.endTime}` : ''}</p>
+                            <p className="font-arimo text-[#9CA3AF]" style={{ fontSize: '12px' }}>{formatTaskTimeLabel(task)}</p>
                           )}
                         </div>
                         {(isActive || isJustMarked) && (

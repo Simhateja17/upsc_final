@@ -53,6 +53,7 @@ export default function SpacedRepetitionSubjectPage() {
   const [filter, setFilter] = useState<FilterKey>('All');
   const [flashcardToast, setFlashcardToast] = useState<{ subjectId: string; subject: string } | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editTarget, setEditTarget] = useState<SpacedRepItem | null>(null);
   const [reviewTarget, setReviewTarget] = useState<SpacedRepItem | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
 
@@ -187,6 +188,26 @@ export default function SpacedRepetitionSubjectPage() {
     return false;
   };
 
+  const handleEditItem = async (payload: AddQuestionPayload): Promise<boolean> => {
+    const target = editTarget;
+    if (!target) return false;
+    const subjectName = subjectOptions.find((d) => d.id === payload.subjectId)?.label
+      ?? subjectHealthById(payload.subjectId)?.label
+      ?? payload.subjectId;
+    const res = await spacedRepService.updateItem(target.id, {
+      questionText: payload.questionText,
+      answer: payload.answer,
+      subject: subjectName,
+      source: sourceTypeToLabel(payload.sourceType),
+      sourceType: payload.sourceType,
+    });
+    if (res.status === 'success' && res.data) {
+      setItems((prev) => prev.map((i) => (i.id === target.id ? res.data : i)));
+      return true;
+    }
+    return false;
+  };
+
   const deleteItem = (q: SpacedRepItem) => {
     setItems((prev) => prev.filter((i) => i.id !== q.id));
     spacedRepService.deleteItem(q.id).catch(() => {
@@ -311,6 +332,13 @@ export default function SpacedRepetitionSubjectPage() {
                             </button>
                           )}
                           <button
+                            className="qv-edit-btn"
+                            onClick={(e) => { e.stopPropagation(); setEditTarget(q); }}
+                            title="Edit question"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
                             className="qv-delete-btn"
                             onClick={(e) => { e.stopPropagation(); deleteItem(q); }}
                             title="Delete question"
@@ -366,12 +394,13 @@ export default function SpacedRepetitionSubjectPage() {
         </div>
       </div>
 
-      {/* Add Question modal */}
+      {/* Add / Edit Question modal */}
       <AddQuestionModal
-        open={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        open={showAddModal || editTarget !== null}
+        onClose={() => { setShowAddModal(false); setEditTarget(null); }}
         defaultSubjectId={subjectId}
-        onSubmit={handleAddItem}
+        editItem={editTarget}
+        onSubmit={editTarget ? handleEditItem : handleAddItem}
       />
 
       {/* Review modal */}

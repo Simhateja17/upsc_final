@@ -11,11 +11,14 @@ import MilestonePopup from '@/components/MilestonePopup';
 import OnboardingFlow from '@/components/OnboardingFlow';
 import PhoneLinkPrompt from '@/components/PhoneLinkPrompt';
 import { EntitlementsProvider } from '@/contexts/EntitlementsContext';
+import { isDisabledDashboardRoute } from '@/lib/featureAvailability';
 
 const HIDE_SIDEBAR_ROUTES = ['/dashboard/profile', '/dashboard/settings', '/dashboard/billing', '/dashboard/feedback'];
-const PUBLIC_DASHBOARD_ROUTES = ['/dashboard/pyq'];
+const PUBLIC_DASHBOARD_ROUTES: string[] = [];
 // Routes that auto-collapse the left navigation sidebar on entry (focus modes).
-const AUTO_COLLAPSE_ROUTES = ['/dashboard/jeet-gpt', '/dashboard/daily-mcq'];
+// `/dashboard/daily-answer` covers both the Daily Mains landing page and its
+// challenge/results sub-pages (matched via startsWith in isAutoCollapseRoute).
+const AUTO_COLLAPSE_ROUTES = ['/dashboard/jeet-gpt', '/dashboard/daily-mcq', '/dashboard/daily-answer'];
 const isAutoCollapseRoute = (path: string) => AUTO_COLLAPSE_ROUTES.some((r) => path === r || path.startsWith(`${r}/`));
 const STREAK_MILESTONES = [3, 7, 10, 14, 21, 30] as const;
 
@@ -42,6 +45,9 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const didTryRefreshRef = useRef(false);
   const hideSidebar = HIDE_SIDEBAR_ROUTES.includes(pathname);
+  // Standalone, full-page routes that render their own header/footer (like the
+  // public /questions/[id] page) and must not show the dashboard chrome.
+  const isBareRoute = /^\/dashboard\/pyq\/essay\/[^/]+$/.test(pathname);
   const isPublicRoute = PUBLIC_DASHBOARD_ROUTES.some((r) => pathname.startsWith(r));
   const userId = user?.id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -52,6 +58,27 @@ export default function DashboardLayout({
   const [milestoneTitle, setMilestoneTitle] = useState<string | undefined>(undefined);
   const [milestoneDescription, setMilestoneDescription] = useState<string | undefined>(undefined);
   const [authTimedOut, setAuthTimedOut] = useState(false);
+
+  // Keep temporarily disabled community features inaccessible even when a user
+  // follows an old bookmark or an internal link.
+  //
+  // Exception: Solo Focus lives inside the otherwise-disabled Live Study Room
+  // (/dashboard/study-groups). The Study Planner's "Start Focus Session" reuses
+  // it via the ?tab=solo deep-link, so we let that one entry through while every
+  // other way into a disabled route (incl. the Rooms/My tabs) still redirects
+  // home. The query is read from window inside this client-only effect on
+  // purpose: useSearchParams() here would force a Suspense boundary on every
+  // statically-prerendered dashboard page.
+  useEffect(() => {
+    if (!isDisabledDashboardRoute(pathname)) return;
+    const search = typeof window !== 'undefined' ? window.location.search : '';
+    const isSoloFocusDeepLink =
+      pathname === '/dashboard/study-groups' &&
+      new URLSearchParams(search).get('tab') === 'solo';
+    if (!isSoloFocusDeepLink) {
+      router.replace('/dashboard');
+    }
+  }, [pathname, router]);
 
   // Show a streak milestone when the current streak crosses one of the supported thresholds.
   useEffect(() => {
@@ -180,6 +207,16 @@ export default function DashboardLayout({
           <p className="font-inter text-[#6B7280] text-sm">Loading dashboard...</p>
         </div>
       </div>
+    );
+  }
+
+  if (isBareRoute) {
+    return (
+      <EntitlementsProvider>
+        <div className="min-h-[100dvh] overflow-x-hidden" style={{ background: '#F8F9FB' }}>
+          {children}
+        </div>
+      </EntitlementsProvider>
     );
   }
 

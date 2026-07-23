@@ -2,7 +2,11 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { mockTestService, flashcardService, spacedRepService } from '@/lib/services';
+import { mockTestService, leaderboardService } from '@/lib/services';
+import MainsResultsView from '@/components/mains-results/MainsResultsView';
+import SmartNextStepsModal from '@/components/SmartNextStepsModal';
+import ShareScoreModal from '@/components/mcq-review/ShareScoreModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Question {
   id: number;
@@ -126,6 +130,8 @@ interface ResultsData {
   netScore: string | number;
   scorePct: number;
   perfLabel: string;
+  timeTaken?: number;
+  durationSeconds?: number;
   subjectStats: SubjectStat[];
   analysis: AnalysisItem[];
   testLabel?: string;
@@ -160,9 +166,10 @@ interface MainsPerQuestion {
   evaluatorConclusion?: string | null;
   modelAnswerKeyPoints?: string[];
   modelAnswerContent?: string;
+  curatedModelAnswer?: string | null;
+  curatedModelAnswerKeyPoints?: string[];
 }
 
-type MainsSlideKey = 'feedback' | 'markup' | 'rubric';
 
 /* ─── Next-steps types ─── */
 interface CardItem {
@@ -244,6 +251,7 @@ const fallbackCards: CardItem[] = [
 
 function MockTestResultsInner() {
   const router = useRouter();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const testId = searchParams.get('testId');
   const mode = searchParams.get('mode');
@@ -252,81 +260,36 @@ function MockTestResultsInner() {
   const title = searchParams.get('title') || 'Test Series';
 
   const [results, setResults] = useState<ResultsData | null>(null);
-  const [reviewQuestions, setReviewQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(1);
   const [mainsData, setMainsData] = useState<MainsPerQuestion[] | null>(null);
-  const [selectedQ, setSelectedQ] = useState(0);        // mains: which question's score card is shown
-  const [qSlide, setQSlide] = useState<MainsSlideKey>('feedback'); // mains: inner slide for the selected question
-  const [modelOpen, setModelOpen] = useState(false);    // mains: model answer modal
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+  // Real leaderboard rank (prelims/MCQ bucket) — powers the Rank stat tile.
+  const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank: number; realRankedCount: number } | null>(null);
 
-  /* ─── Next-steps tab state ─── */
-  // Both modes open on the review/answers view; "Next" reveals the recommendations.
-  const [activeTab, setActiveTab] = useState<'next-steps' | 'review'>('review');
+  // Score-screen popups — mirror the Daily MCQ Challenge flow: Smart Next Steps
+  // and Share Score open as modals (never inline sections below the score card).
+  const [showNextSteps, setShowNextSteps] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [cards, setCards] = useState<CardItem[]>(fallbackCards);
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [heroTitle, setHeroTitle] = useState('Great session!');
   const [heroSubtitle, setHeroSubtitle] = useState("You've completed today's practice. Here's what the best aspirants do next to keep climbing.");
+  const [showConfetti, setShowConfetti] = useState(false);
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
-  };
-
-  const handleAddToFlashcards = async (q: any) => {
-    setActionLoading(`flashcard-${q.idx}`);
-    try {
-      const correctOpt = q.options?.find((o: any) => o.label === q.correct);
-      await flashcardService.createCard({
-        subjectId: '',
-        subject: q.subject || 'General',
-        topic: q.subject || 'General',
-        question: q.text || q.questionText || '',
-        answer: correctOpt?.text || q.correct || '',
-        difficulty: q.difficulty || 'Medium',
-      });
-      showToast('Added to flashcards!');
-    } catch {
-      showToast('Failed to add to flashcards', 'error');
-    }
-    setActionLoading(null);
-  };
-
-  const handleNeedToRevise = async (q: any) => {
-    setActionLoading(`revise-${q.idx}`);
-    try {
-      await spacedRepService.addItem({
-        questionText: q.text || q.questionText || '',
-        subject: q.subject || 'General',
-        source: 'mock-test',
-        sourceType: 'mcq',
-        scheduleDay: 1,
-        scheduleDays: [1, 3, 7, 14, 30],
-        remindEnabled: true,
-      });
-      showToast('Added to spaced repetition!');
-    } catch {
-      showToast('Failed to add to revision', 'error');
-    }
-    setActionLoading(null);
-  };
-
-  const handleStudyNotes = (q: any) => {
-    if (typeof window !== 'undefined') {
-      const notes = JSON.parse(sessionStorage.getItem('studyNotes') || '[]');
-      notes.push({
-        questionId: q.idx,
-        question: q.text || q.questionText || '',
-        subject: q.subject || 'General',
-        addedAt: new Date().toISOString(),
-      });
-      sessionStorage.setItem('studyNotes', JSON.stringify(notes));
-    }
-    showToast('Saved to study notes!');
-  };
+  /* ─── Celebration confetti — fires once, only right after this specific
+     attempt is completed. Guarded by sessionStorage so revisiting the same
+     score screen (back button, refresh, re-opening the link) never replays
+     it; a newly generated testId gets its own key and celebrates again. ─── */
+  useEffect(() => {
+    if (isMains || !results || typeof window === 'undefined') return;
+    if (results.scorePct <= 50) return;
+    const key = `mockTestConfettiPlayed:${testId ?? `sample:${title}`}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+    setShowConfetti(true);
+    const hide = setTimeout(() => setShowConfetti(false), 4200);
+    return () => clearTimeout(hide);
+  }, [isMains, results, testId, title]);
 
   /* ─── Mains results loader ─── */
   useEffect(() => {
@@ -372,6 +335,8 @@ function MockTestResultsInner() {
             evaluatorConclusion: d.evaluatorConclusion,
             modelAnswerKeyPoints: Array.isArray(d.modelAnswerKeyPoints) ? d.modelAnswerKeyPoints : [],
             modelAnswerContent: d.modelAnswerContent,
+            curatedModelAnswer: d.curatedModelAnswer || null,
+            curatedModelAnswerKeyPoints: Array.isArray(d.curatedModelAnswerKeyPoints) ? d.curatedModelAnswerKeyPoints : [],
           });
         }
         if (!cancelled) {
@@ -390,6 +355,14 @@ function MockTestResultsInner() {
     return () => { cancelled = true; };
   }, [isMains, testId]);
 
+  // Real leaderboard rank for this aspirant (all-time, MCQ/prelims bucket).
+  useEffect(() => {
+    if (isMains) return;
+    leaderboardService.getMyRank('all')
+      .then(res => setMyRank(res.data || null))
+      .catch(() => setMyRank(null));
+  }, [isMains]);
+
   useEffect(() => {
     if (isMains) return;
     if (mode === 'sample') {
@@ -405,6 +378,8 @@ function MockTestResultsInner() {
           netScore: (Number(data.correct ?? 0) * 2 - Number(data.wrong ?? 0) * 0.67).toFixed(2),
           scorePct: data.accuracyPct ?? 0,
           perfLabel: 'Keep Going — Every Attempt Makes You Better!',
+          timeTaken: 0,
+          durationSeconds: 0,
           subjectStats: [],
           analysis: [],
           testLabel: title,
@@ -445,6 +420,10 @@ function MockTestResultsInner() {
           ?? (correct + wrong + skipped > 0 ? correct + wrong + skipped : (data.questions?.length ?? 0));
         const netScore = data.netScore ?? data.score ?? (correct * 2 - wrong * 0.67).toFixed(2);
         const scorePct = data.scorePct ?? data.scorePercentage ?? data.accuracy ?? (total > 0 ? Math.round((correct / total) * 100) : 0);
+        const timeTaken = Number(data.timeTaken ?? data.time_taken ?? data.timeTakenSeconds ?? data.time_taken_seconds ?? 0) || 0;
+        const rawDuration = Number(data.duration ?? data.durationSeconds ?? data.duration_seconds ?? 0) || 0;
+        // DB may store duration in minutes; normalize to seconds.
+        const durationSeconds = rawDuration > 0 && rawDuration <= 240 ? Math.round(rawDuration * 60) : Math.round(rawDuration);
 
         const perfLabel = data.perfLabel ?? data.performanceLabel ?? (
           scorePct >= 80 ? 'Excellent Work!' :
@@ -473,22 +452,6 @@ function MockTestResultsInner() {
           ];
         }
 
-        if (data.questions && Array.isArray(data.questions)) {
-          setReviewQuestions(data.questions.map((q: any, i: number) => ({
-            idx: i + 1,
-            text: q.questionText || q.text || '',
-            subject: q.subject || '',
-            options: (q.options || []).map((o: any) => ({ label: o.id || o.label, text: o.text })),
-            correct: q.correctOption || q.correct || '',
-            selected: q.selectedOption || q.selected || null,
-            isCorrect: q.isCorrect ?? false,
-            explanation: q.explanation || '',
-            status: !q.selectedOption && !q.selected ? 'skipped' : (q.isCorrect ? 'correct' : 'wrong'),
-            delta: !q.selectedOption && !q.selected ? 0 : (q.isCorrect ? 2 : -0.67),
-            timeSec: '-',
-          })));
-        }
-
         setResults({
           total,
           correct,
@@ -497,6 +460,8 @@ function MockTestResultsInner() {
           netScore: typeof netScore === 'number' ? netScore.toFixed(2) : netScore,
           scorePct,
           perfLabel,
+          timeTaken,
+          durationSeconds,
           subjectStats,
           analysis,
           testLabel: data.testLabel ?? 'Prelims · Daily MCQ',
@@ -607,674 +572,93 @@ function MockTestResultsInner() {
       : card
   );
 
-  /* ─── Shared: next steps content ─── */
-  const nextStepsContent = (
-    <div style={{ width: '100%', maxWidth: '988px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Header */}
-      <div className="text-center">
-        <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6A7282', marginBottom: '6px' }}>
-          🎯 SMART NEXT STEPS
-        </p>
-        <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#101828' }}>
-          Personalised recommendations based on your evaluation
-        </h2>
-      </div>
-
-      {/* 2x2 action cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Retake this test */}
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="flex items-start justify-between">
-            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🔄</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#FFFFFF', background: '#4338CA', borderRadius: '99px', padding: '3px 10px' }}>Recommended</span>
-          </div>
-          <div>
-            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Retake this Test</p>
-            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Same config, fresh attempt. Ideal for reinforcing weak areas.</p>
-          </div>
-          <button
-            onClick={() => router.push(`/dashboard/mock-tests/attempt?testId=${testId}`)}
-            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#17223E', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-          >
-            Retake Test →
-          </button>
-        </div>
-
-        {/* Build a new test */}
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="flex items-start justify-between">
-            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>➕</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#166534', background: '#DCFCE7', borderRadius: '99px', padding: '3px 10px' }}>Popular</span>
-          </div>
-          <div>
-            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Build a New Test</p>
-            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Change subject, difficulty or source. Keep the variety going.</p>
-          </div>
-          <button
-            onClick={() => router.push('/dashboard/mock-tests')}
-            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#16A34A', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-          >
-            Create New Test →
-          </button>
-        </div>
-
-        {/* Try Mains Writing */}
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="flex items-start justify-between">
-            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>✍️</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#1447E6', background: '#DBEAFE', borderRadius: '99px', padding: '3px 10px' }}>Mains prep</span>
-          </div>
-          <div>
-            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Try Mains Writing</p>
-            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Practice answer writing with AI markup feedback. Build answer skills.</p>
-          </div>
-          <button
-            onClick={() => router.push('/dashboard/daily-answer')}
-            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#FFFBEB', color: '#B45309', fontSize: '14px', fontWeight: 700, border: '1px solid #FDE68A', cursor: 'pointer' }}
-          >
-            Start Writing →
-          </button>
-        </div>
-
-        {/* Practice PYQs */}
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="flex items-start justify-between">
-            <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>📚</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#5B21B6', background: '#EDE9FE', borderRadius: '99px', padding: '3px 10px' }}>PYQ bank</span>
-          </div>
-          <div>
-            <p style={{ fontSize: '16px', fontWeight: 700, color: '#101828', marginBottom: '4px' }}>Practice Previous Years</p>
-            <p style={{ fontSize: '13px', color: '#4A5565', lineHeight: '20px' }}>Solve real UPSC questions from past years to build exam temperament.</p>
-          </div>
-          <button
-            onClick={() => router.push('/dashboard/pyq')}
-            style={{ width: '100%', padding: '10px', borderRadius: '10px', background: '#7C3AED', color: '#FFFFFF', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-          >
-            Browse PYQs →
-          </button>
-        </div>
-      </div>
-
-      {/* Other Actions */}
-      <div style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #E5E7EB', padding: '20px 24px' }}>
-        <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6A7282', marginBottom: '12px' }}>
-          OTHER ACTIONS
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => router.push('/dashboard')}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '99px', border: '1px solid #E5E7EB', background: '#FFFFFF', fontSize: '13px', fontWeight: 600, color: '#374151', cursor: 'pointer' }}
-          >
-            🏠 Back to Dashboard
-          </button>
-          <button
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '99px', border: '1px solid #FDE68A', background: '#FFFBEB', fontSize: '13px', fontWeight: 600, color: '#B45309', cursor: 'pointer' }}
-          >
-            🔗 Share Result
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   /* ─── Mains Results View ─── */
+  // Rendered by the shared MainsResultsView — identical to the Daily Mains
+  // Challenge results page (Feedback / Examiner's Markup / Score Breakdown /
+  // What's Next, plus the Model Answer modal), with question selector chips
+  // since a mock test has multiple mains questions. The Examiner's Markup tab
+  // is hidden per question when the answer was typed (no checked-copy pages).
   if (isMains && mainsData) {
-    const totalScore = mainsData.reduce((a, b) => a + (b.score || 0), 0);
-    const totalMax = mainsData.reduce((a, b) => a + (b.maxScore || 0), 0) || 1;
-    const pct = Math.round((totalScore / totalMax) * 100);
-    const headline =
-      pct >= 70 ? 'Strong attempt across all questions'
-      : pct >= 50 ? 'Good attempt — solid foundation'
-      : 'Keep practising — real progress ahead';
-
-    const selected = mainsData[Math.min(selectedQ, mainsData.length - 1)];
-
-    if (activeTab === 'next-steps') {
-      return (
-        <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
-          <div style={{ maxWidth: 988, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('review');
-                if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#374151', fontWeight: 700, fontSize: 14, cursor: 'pointer', padding: 0 }}
-            >
-              ← Back to results
-            </button>
-            {nextStepsContent}
-          </div>
-        </div>
-      );
-    }
-
     return (
-      <>
-      <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif', padding: '40px 24px' }}>
-        <div style={{ maxWidth: 960, margin: '0 auto' }}>
-          {/* Header card — always visible */}
-          <div style={{ borderRadius: 20, background: '#0F172B', overflow: 'hidden', marginBottom: 24 }}>
-            <div style={{ padding: '36px 40px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, background: '#0F172B', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', color: '#FBBF24', textTransform: 'uppercase', marginBottom: 16 }}>
-                  JEET AI &middot; EVALUATION READY
-                </div>
-                <h2 style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontSize: 36, fontWeight: 700, color: '#FFFFFF', margin: '0 0 12px', lineHeight: 1.15 }}>
-                  Your mock has been <em style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontStyle: 'italic', color: '#FBBF24' }}>evaluated</em>.
-                </h2>
-                <p style={{ fontSize: 15, color: '#94A3B8', margin: 0, lineHeight: 1.5 }}>
-                  Below is your aggregated scorecard along with model answers and improvement notes for each question.
-                </p>
-              </div>
-              <div style={{ position: 'relative', width: 120, height: 120, flexShrink: 0 }}>
-                <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
-                  <circle cx="60" cy="60" r="52" fill="none" stroke="#D4C9A8" strokeWidth="8" />
-                  <circle
-                    cx="60" cy="60" r="52" fill="none" stroke="#C8A84E" strokeWidth="8"
-                    strokeDasharray={`${2 * Math.PI * 52}`}
-                    strokeDashoffset={2 * Math.PI * 52 * (1 - Math.min(1, Math.max(0, pct / 100)))}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontSize: 34, fontWeight: 700, color: '#FFFFFF', lineHeight: 1, fontStyle: 'italic' }}>{totalScore}</span>
-                  <span style={{ fontSize: 16, color: '#64748B', fontWeight: 500, marginTop: 2 }}>/ {totalMax}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Per-question score card */}
-          {(() => {
-            const q = mainsData[Math.min(selectedQ, mainsData.length - 1)];
-            const qPct = q.maxScore > 0 ? Math.round((q.score / q.maxScore) * 100) : 0;
-            const detailedParas = (q.detailedFeedback || '').split(/\n+/).map((s) => s.trim()).filter(Boolean);
-            const checkedPages = (q.checkedCopyPages || []).filter((p) => p.checkedCopyUrl);
-            const displayPages = checkedPages.length > 0
-              ? checkedPages
-              : q.checkedCopyUrl ? [{ pageNumber: 1, checkedCopyUrl: q.checkedCopyUrl }] : [];
-            const markupReady = displayPages.length > 0;
-
-            const summaryCards = [
-              { id: 'score', label: 'Question Score', value: `${q.score}/${q.maxScore}`, hint: `${qPct}% examiner alignment`, variant: 'dramatic' as const, accent: '#FDC700', glow: 'rgba(253,199,0,0.35)', glowInner: 'rgba(253,199,0,0.08)' },
-              { id: 'str', label: 'Strong Points', value: `${q.strengths.length}`, hint: 'Well-handled elements', variant: 'dramatic' as const, accent: '#16A34A', glow: 'rgba(22,163,74,0.30)', glowInner: 'rgba(22,163,74,0.07)' },
-              { id: 'imp', label: 'Needs Work', value: `${q.improvements.length}`, hint: 'Priority fix areas', variant: 'dramatic' as const, accent: '#EF4444', glow: 'rgba(239,68,68,0.30)', glowInner: 'rgba(239,68,68,0.07)' },
-              { id: 'words', label: 'Word Count', value: `${q.wordCount ?? 0}`, hint: 'From your submission', variant: 'dramatic' as const, accent: '#6366F1', glow: 'rgba(99,102,241,0.30)', glowInner: 'rgba(99,102,241,0.07)' },
-            ];
-
-            const innerSlides: Array<{ key: MainsSlideKey; label: string }> = [
-              { key: 'feedback', label: 'Feedback' },
-              { key: 'markup', label: "Examiner's Markup" },
-              { key: 'rubric', label: 'Score Breakdown' },
-            ];
-
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {/* Question selector */}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {mainsData.map((mq, i) => {
-                    const active = i === selectedQ;
-                    const mPct = mq.maxScore > 0 ? Math.round((mq.score / mq.maxScore) * 100) : 0;
-                    const tone = mPct >= 60 ? '#16A34A' : mPct >= 40 ? '#D97706' : '#DC2626';
-                    return (
-                      <button
-                        key={mq.idx}
-                        onClick={() => { setSelectedQ(i); setQSlide('feedback'); }}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 8,
-                          padding: '9px 14px', borderRadius: 10, cursor: 'pointer',
-                          border: active ? '1.5px solid #17223E' : '1px solid #E5E7EB',
-                          background: active ? '#17223E' : '#FFFFFF',
-                          color: active ? '#FFFFFF' : '#374151',
-                          fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif',
-                        }}
-                      >
-                        Q{mq.idx}
-                        <span style={{ fontSize: 11, fontWeight: 700, color: active ? '#FDC700' : tone }}>
-                          {mq.score}/{mq.maxScore}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Question text + score hero */}
-                <div style={{ borderRadius: 14, background: '#FFFFFF', padding: '24px 28px', border: '1px solid #E5E7EB' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {q.paper && (
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#7C3AED', background: '#F3E8FF', borderRadius: 8, padding: '4px 10px' }}>
-                          {q.paper}
-                        </span>
-                      )}
-                      {q.subject && (
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#2563EB', background: '#DBEAFE', borderRadius: 8, padding: '4px 10px' }}>
-                          {q.subject}
-                        </span>
-                      )}
-                    </div>
-                    <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#6B7280', textTransform: 'uppercase' }}>
-                      Question {q.idx}
-                    </span>
-                  </div>
-                  <div className="p-5 rounded-[10px] bg-[#F9FAFB]" style={{ boxShadow: '0px 1px 2px -1px #0000001A', borderLeft: '4px solid #C9A84C' }}>
-                    <p className="text-[#101828] italic" style={{ fontSize: '16px', lineHeight: '26px', fontFamily: 'var(--font-merriweather)', margin: 0, whiteSpace: 'pre-line' }}>
-                      &quot;{q.questionText}&quot;
-                    </p>
-                  </div>
-                </div>
-
-                {/* Inner slide tabs */}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {innerSlides.map((s) => (
-                    <button
-                      key={s.key}
-                      onClick={() => setQSlide(s.key)}
-                      style={{
-                        padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                        border: qSlide === s.key ? 'none' : '1px solid #E5E7EB',
-                        background: qSlide === s.key ? '#17223E' : '#FFFFFF',
-                        color: qSlide === s.key ? '#FFFFFF' : '#4A5565',
-                      }}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* FEEDBACK slide */}
-                {qSlide === 'feedback' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {/* Summary metric cards */}
-                    <style>{`
-                      .stat-card-float {
-                        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
-                        cursor: default;
-                      }
-                      .stat-card-float .stat-glow-bar {
-                        transition: height 0.3s ease, opacity 0.3s ease;
-                        height: 2px;
-                        opacity: 0.4;
-                      }
-                      .stat-card-float:hover {
-                        transform: translateY(-6px) !important;
-                        box-shadow:
-                          0 20px 50px rgba(0,0,0,0.08),
-                          0 8px 20px rgba(0,0,0,0.05),
-                          0 0 0 1px rgba(255,255,255,0.95) inset !important;
-                      }
-                      .stat-card-float:hover .stat-glow-bar {
-                        height: 6px !important;
-                        opacity: 1 !important;
-                      }
-                    `}</style>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-                      {summaryCards.map((m) => (
-                        <div key={m.id} className="stat-card-float flex flex-col items-center justify-center rounded-[16px]" style={{
-                          padding: '22px 16px 20px',
-                          background: 'rgba(255,255,255,0.75)',
-                          backdropFilter: 'blur(16px)',
-                          WebkitBackdropFilter: 'blur(16px)',
-                          boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04), 0 0 0 1px rgba(255,255,255,0.9) inset',
-                          border: '1px solid rgba(255,255,255,0.6)',
-                          position: 'relative',
-                          overflow: 'hidden',
-                        }}>
-                          <div className="stat-glow-bar" style={{ position: 'absolute', top: 0, left: 0, right: 0, background: `linear-gradient(90deg, transparent 5%, ${m.accent} 50%, transparent 95%)`, borderRadius: '0 0 4px 4px' }} />
-                          <span style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 12, position: 'relative' }}>{m.label}</span>
-                          <span style={{ fontSize: 32, fontWeight: 800, color: m.accent, letterSpacing: '-1px', position: 'relative' }}>{m.value}</span>
-                          <span className="text-center" style={{ fontSize: 11, color: '#94A3B8', lineHeight: '16px', marginTop: 10, position: 'relative' }}>{m.hint}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Personalised Feedback */}
-                    <div style={{ background: '#FFFFFF', borderRadius: 14, boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '28px 28px 24px' }}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span style={{ fontSize: 20 }}>🎯</span>
-                        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#101828' }}>Personalised Feedback</h2>
-                      </div>
-                      <p style={{ fontSize: 13, color: '#6A7282', marginBottom: 24 }}>Actionable insights to help you improve, not just a score</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                        {/* Strengths */}
-                        <div>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span style={{ width: 28, height: 28, borderRadius: 7, background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>✅</span>
-                            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#101828' }}>What You Did Well</h3>
-                          </div>
-                          <div className="flex flex-col gap-2.5 rounded-[10px] px-4 py-3.5" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-                            {q.strengths.length > 0 ? q.strengths.map((item, i) => (
-                              <div key={i} className="flex items-start gap-2">
-                                <span style={{ color: '#16A34A', fontSize: 13, flexShrink: 0, marginTop: 1 }}>→</span>
-                                <span style={{ fontSize: 13, color: '#166534', lineHeight: '20px' }}>{item}</span>
-                              </div>
-                            )) : (
-                              <span style={{ fontSize: 13, color: '#166534' }}>No structured strengths returned yet.</span>
-                            )}
-                          </div>
-                        </div>
-                        {/* Improvements */}
-                        <div>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span style={{ width: 28, height: 28, borderRadius: 7, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>⚠️</span>
-                            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>Areas to Improve</h3>
-                          </div>
-                          <div className="flex flex-col gap-2.5 rounded-[10px] px-4 py-3.5" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
-                            {q.improvements.length > 0 ? q.improvements.map((item, i) => (
-                              <div key={i} className="flex items-start gap-2">
-                                <span style={{ color: '#D97706', fontSize: 13, flexShrink: 0, marginTop: 1 }}>▲</span>
-                                <span style={{ fontSize: 13, color: '#92400E', lineHeight: '20px' }}>{item}</span>
-                              </div>
-                            )) : (
-                              <span style={{ fontSize: 13, color: '#92400E' }}>No improvement bullets returned.</span>
-                            )}
-                          </div>
-                        </div>
-                        {/* Suggestions */}
-                        <div>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span style={{ width: 28, height: 28, borderRadius: 7, background: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>💡</span>
-                            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1D4ED8' }}>Value-Add Ideas</h3>
-                          </div>
-                          <div className="flex flex-col gap-2.5 rounded-[10px] px-4 py-3.5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
-                            {q.suggestions.length > 0 ? q.suggestions.map((item, i) => (
-                              <div key={i} className="flex items-start gap-2">
-                                <span style={{ color: '#2563EB', fontSize: 13, flexShrink: 0, marginTop: 1 }}>◆</span>
-                                <span style={{ fontSize: 13, color: '#1E40AF', lineHeight: '20px' }}>{item}</span>
-                              </div>
-                            )) : (
-                              <span style={{ fontSize: 13, color: '#1E40AF' }}>No extra suggestions returned yet.</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Key Terms */}
-                    {q.keyTerms && q.keyTerms.length > 0 && (
-                      <div style={{ background: '#FFFFFF', borderRadius: 14, boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: '24px 28px' }}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span style={{ fontSize: 18 }}>🔑</span>
-                          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#101828' }}>Key Terms Analysis</h2>
-                        </div>
-                        <p style={{ fontSize: 13, color: '#6A7282', marginBottom: 16 }}>Terms an examiner would expect in a {q.maxScore}-mark answer</p>
-                        <div className="flex flex-wrap gap-2">
-                          {q.keyTerms.map((kt, i) => (
-                            <span key={i} className="flex items-center gap-1.5 rounded-full px-3 py-1.5" style={{ fontSize: 13, fontWeight: 500, background: kt.found ? '#F0FDF4' : '#FEF2F2', border: `1px solid ${kt.found ? '#BBF7D0' : '#FECACA'}`, color: kt.found ? '#166534' : '#B91C1C' }}>
-                              <span>{kt.found ? '✓' : '✗'}</span>{kt.term}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Next Attempt Focus */}
-                    {q.nextAttemptFocus && (
-                      <div style={{ background: '#EEF2FF', borderRadius: 14, padding: '20px 24px', border: '1px solid #C7D2FE' }}>
-                        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#4338CA', marginBottom: 10 }}>🎯 Next Attempt Focus</p>
-                        <p style={{ fontSize: 14, color: '#3730A3', lineHeight: '22px' }}>{q.nextAttemptFocus}</p>
-                      </div>
-                    )}
-
-                    {/* Evaluator's Conclusion */}
-                    {q.evaluatorConclusion && (
-                      <div style={{ background: '#F0FDF4', borderRadius: 14, padding: '20px 24px', border: '1px solid #BBF7D0' }}>
-                        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#166534', marginBottom: 10 }}>✅ Evaluator&apos;s Conclusion</p>
-                        <p style={{ fontSize: 14, color: '#14532D', lineHeight: '22px' }}>{q.evaluatorConclusion}</p>
-                      </div>
-                    )}
-
-                    {/* Model Answer CTA */}
-                    {(q.modelAnswerContent || (q.modelAnswerKeyPoints && q.modelAnswerKeyPoints.length > 0)) && (
-                      <div style={{ background: 'linear-gradient(90deg, #101828 0%, #17223E 100%)', borderRadius: 14, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-                        <div>
-                          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#FDC700', marginBottom: 6 }}>📋 Model Answer Available</p>
-                          <p style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>See how an ideal answer looks</p>
-                          <p style={{ fontSize: 13, color: '#9CA3AF' }}>Compare your answer with an expert-crafted model answer.</p>
-                        </div>
-                        <button onClick={() => setModelOpen(true)} style={{ flexShrink: 0, background: '#FDC700', color: '#101828', fontWeight: 700, fontSize: 14, padding: '10px 20px', borderRadius: 10, whiteSpace: 'nowrap', border: 'none', cursor: 'pointer' }}>
-                          View Now →
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* MARKUP slide */}
-                {qSlide === 'markup' && (
-                  <div style={{ borderRadius: 14, background: '#FFFFFF', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: 32 }}>
-                    <h2 className="font-bold text-[#101828] mb-2" style={{ fontSize: 22 }}>{markupReady ? 'Checked Copy' : "Examiner's Markup"}</h2>
-                    <p className="text-[#4A5565] mb-6" style={{ fontSize: 14 }}>
-                      {markupReady ? 'Teacher-style checked copy is ready.' : 'Visual markup is generated for handwritten image uploads.'}
-                    </p>
-                    {markupReady ? (
-                      <div className="space-y-4">
-                        {displayPages.map((page) => (
-                          <div key={page.pageNumber} className="rounded-[12px] border border-[#E5E7EB] bg-[#F8FAFC] p-4">
-                            <div className="mb-3 flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2">
-                                <span className="rounded-full bg-[#FEE2E2] px-3 py-1 text-[12px] font-bold text-[#B91C1C]">BETA</span>
-                                <span className="text-[13px] font-bold text-[#364153]">Page {page.pageNumber}</span>
-                              </div>
-                              <a href={page.checkedCopyUrl || '#'} target="_blank" rel="noreferrer" className="text-[13px] font-bold text-[#2563EB]">Open full size</a>
-                            </div>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={page.checkedCopyUrl || ''} alt={`Checked copy page ${page.pageNumber}`} className="w-full rounded-[10px]" style={{ border: '1px solid #E5E7EB', background: '#FFFFFF' }} />
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <div className="rounded-[12px] border border-[#BBF7D0] bg-[#F0FDF4] p-5">
-                          <h3 className="font-bold text-[#166534] mb-3" style={{ fontSize: 15 }}>Positive examiner notes</h3>
-                          {q.strengths.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                              {q.strengths.map((item, i) => (
-                                <span key={i} className="rounded-full px-3 py-2" style={{ background: '#DCFCE7', color: '#166534', fontSize: 13, lineHeight: '18px' }}>{item}</span>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-[#166534]" style={{ fontSize: 13, lineHeight: '20px' }}>Positive markup will appear here when line-level comments are returned.</p>
-                          )}
-                        </div>
-                        <div className="rounded-[12px] border border-[#FDE68A] bg-[#FEFCE8] p-5">
-                          <h3 className="font-bold text-[#A16207] mb-3" style={{ fontSize: 15 }}>Attention areas</h3>
-                          {q.improvements.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                              {q.improvements.map((item, i) => (
-                                <span key={i} className="rounded-full px-3 py-2" style={{ background: '#FEF3C7', color: '#A16207', fontSize: 13, lineHeight: '18px' }}>{item}</span>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-[#A16207]" style={{ fontSize: 13, lineHeight: '20px' }}>Improvement markup will appear here when line-level comments are returned.</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    <div className="mt-6 rounded-[12px] border border-[#E5E7EB] bg-[#F9FAFB] p-6">
-                      <h3 className="font-bold text-[#101828] mb-3" style={{ fontSize: 16 }}>Detailed examiner commentary</h3>
-                      {detailedParas.length > 0 ? (
-                        <div className="space-y-3">
-                          {detailedParas.map((p, i) => (
-                            <p key={i} className="text-[#374151]" style={{ fontSize: 14, lineHeight: '24px' }}>{p}</p>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-[#4A5565]" style={{ fontSize: 14, lineHeight: '24px' }}>Detailed commentary was not returned for this submission.</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* RUBRIC slide */}
-                {qSlide === 'rubric' && (
-                  <div style={{ borderRadius: 14, background: '#FFFFFF', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A', padding: 32 }}>
-                    <div className="flex items-center gap-2 mb-6">
-                      <span style={{ fontSize: 22 }}>⭐</span>
-                      <h2 className="font-bold text-[#101828]" style={{ fontSize: 22 }}>Score Breakdown</h2>
-                    </div>
-                    {q.parameterScores && q.parameterScores.length > 0 ? (
-                      <div className="flex flex-col gap-5">
-                        {q.parameterScores.map((param, idx) => {
-                          const ppct = param.maxScore > 0 ? Math.round((param.score / param.maxScore) * 100) : 0;
-                          const COLORS = [
-                            { dot: '#2563EB', pctBg: '#DBEAFE', pctText: '#1D4ED8' },
-                            { dot: '#7C3AED', pctBg: '#EDE9FE', pctText: '#5B21B6' },
-                            { dot: '#4338CA', pctBg: '#E0E7FF', pctText: '#3730A3' },
-                            { dot: '#16A34A', pctBg: '#DCFCE7', pctText: '#15803D' },
-                            { dot: '#D97706', pctBg: '#FEF3C7', pctText: '#B45309' },
-                            { dot: '#DC2626', pctBg: '#FEE2E2', pctText: '#B91C1C' },
-                            { dot: '#0D9488', pctBg: '#CCFBF1', pctText: '#0F766E' },
-                          ];
-                          const c = COLORS[idx % COLORS.length];
-                          return (
-                            <div key={param.parameter}>
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: c.dot, flexShrink: 0, display: 'inline-block' }} />
-                                  <span style={{ fontSize: 15, fontWeight: 700, color: '#101828' }}>{param.parameter}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span style={{ fontSize: 15, fontWeight: 700, color: '#EA580C' }}>{param.score}/{param.maxScore}</span>
-                                  <span style={{ fontSize: 13, fontWeight: 700, color: c.pctText, background: c.pctBg, borderRadius: 6, padding: '2px 8px' }}>{ppct}%</span>
-                                </div>
-                              </div>
-                              <div style={{ width: '100%', height: 8, borderRadius: 99, background: '#E5E7EB', overflow: 'hidden', marginBottom: 8 }}>
-                                <div style={{ height: '100%', width: `${ppct}%`, background: c.dot, borderRadius: 99, transition: 'width 0.6s ease' }} />
-                              </div>
-                              {param.comment && (
-                                <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 8, padding: '10px 14px' }}>
-                                  <p style={{ fontSize: 13, color: '#374151', lineHeight: '20px' }}>{param.comment}</p>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-[#4A5565]" style={{ fontSize: 14, lineHeight: '24px' }}>
-                        A parameter-wise breakdown was not returned for this question.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* Next → What's next to do? */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('next-steps');
-                if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '13px 30px', borderRadius: 12, border: 'none', background: '#0F172B', color: '#FFFFFF', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
-            >
-              Next →
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Model Answer Modal (selected question) */}
-      {modelOpen && (
-        <div
-          onClick={() => setModelOpen(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ background: '#FFFFFF', borderRadius: 16, width: '100%', maxWidth: 640, maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-          >
-            <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
-              <div className="flex items-center gap-3">
-                <span style={{ fontSize: 28 }}>🌟</span>
-                <div>
-                  <p style={{ fontSize: 17, fontWeight: 700, color: '#101828' }}>AI Model Answer</p>
-                  <p style={{ fontSize: 13, color: '#6A7282' }}>Question {selected.idx} · Expert-crafted response for reference</p>
-                </div>
-              </div>
-              <button onClick={() => setModelOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#6A7282', lineHeight: 1, padding: 2 }}>×</button>
-            </div>
-            <div style={{ padding: '12px 24px', background: '#FFFBEB', borderBottom: '1px solid #FDE68A', flexShrink: 0 }}>
-              <p style={{ fontSize: 13, color: '#B45309', lineHeight: '20px' }}>
-                <strong>⚡ Reference Only</strong> — Read after you&apos;ve written your own answer. Use this to understand gaps, not to memorise.
-              </p>
-            </div>
-            <div style={{ overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {selected.modelAnswerKeyPoints && selected.modelAnswerKeyPoints.length > 0 && (
-                <div>
-                  <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#B45309', marginBottom: 14 }}>📌 KEY POINTS CHECKLIST</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {selected.modelAnswerKeyPoints.map((point, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: '12px 16px' }}>
-                        <span style={{ flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: '#17223E', color: '#FFFFFF', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
-                        <p style={{ fontSize: 14, color: '#374151', lineHeight: '22px' }}>{point}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div>
-                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6A7282', marginBottom: 16 }}>📄 FULL MODEL ANSWER</p>
-                {selected.modelAnswerContent ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    {selected.modelAnswerContent.split(/\n+/).map((p) => p.trim()).filter(Boolean).map((paragraph, i) => {
-                      const colonIdx = paragraph.indexOf(':');
-                      const looksLikeHeading = colonIdx > 0 && colonIdx < 60 && !paragraph.startsWith('"');
-                      return (
-                        <p key={i} style={{ fontSize: 15, color: '#1F2937', lineHeight: '26px' }}>
-                          {looksLikeHeading ? (<><strong>{paragraph.slice(0, colonIdx + 1)}</strong>{paragraph.slice(colonIdx + 1)}</>) : paragraph}
-                        </p>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p style={{ fontSize: 14, color: '#6A7282', fontStyle: 'italic' }}>Full model answer will appear here once available for this question.</p>
-                )}
-              </div>
-            </div>
-            <div style={{ padding: '16px 24px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: 12, flexShrink: 0 }}>
-              <button onClick={() => setModelOpen(false)} style={{ flex: 1, padding: 12, borderRadius: 10, border: '1px solid #E5E7EB', background: '#FFFFFF', fontSize: 14, fontWeight: 600, color: '#374151', cursor: 'pointer' }}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
-      </>
+      <MainsResultsView
+        results={mainsData.map((q) => ({
+          score: q.score,
+          maxScore: q.maxScore,
+          strengths: q.strengths,
+          improvements: q.improvements,
+          suggestions: q.suggestions,
+          detailedFeedback: q.detailedFeedback,
+          checkedCopyUrl: q.checkedCopyUrl,
+          checkedCopyPages: q.checkedCopyPages,
+          checkedCopyStatus: q.checkedCopyStatus,
+          wordCount: q.wordCount,
+          answerText: q.answerText,
+          keyTerms: q.keyTerms,
+          nextAttemptFocus: q.nextAttemptFocus,
+          evaluatorConclusion: q.evaluatorConclusion,
+          modelAnswerKeyPoints: q.modelAnswerKeyPoints,
+          modelAnswerContent: q.modelAnswerContent,
+          curatedModelAnswer: q.curatedModelAnswer,
+          curatedModelAnswerKeyPoints: q.curatedModelAnswerKeyPoints,
+          parameterScores: q.parameterScores,
+          question: {
+            questionText: q.questionText,
+            subject: q.subject,
+            paper: q.paper,
+            marks: q.maxScore,
+          },
+        }))}
+        shareHeading="MOCK TEST MAINS"
+        rewriteRoute="/dashboard/mock-tests"
+        backRoute="/dashboard/mock-tests"
+        breadcrumbLabel={title}
+      />
     );
   }
 
   /* ─── Prelims Results View ─── */
-  const { total, correct, wrong, skipped, scorePct } = results!;
-  const sample = (results as any)._sample as any | undefined;
-  const showConfetti = scorePct > 50;
+  const { total, correct, wrong, scorePct } = results!;
+
+  /* ─── Daily-MCQ-style completion card derivations ─── */
+  const timeTaken = Math.max(0, Math.round(results!.timeTaken ?? 0));
+  const durationSeconds = Math.max(0, Math.round(results!.durationSeconds ?? 0));
+  const timeMinutes = Math.floor(timeTaken / 60);
+  const timeSeconds = timeTaken % 60;
+  const durationLabel = durationSeconds > 0 ? `of ${Math.round(durationSeconds / 60)} min` : 'this attempt';
+  const attemptedCount = correct + wrong;
+  const speedPerQ = attemptedCount > 0 ? (timeTaken / 60 / attemptedCount).toFixed(2) : '0';
+  // Real leaderboard rank (prelims/MCQ bucket). Falls back to an unlock hint.
+  const rankUnlocked = !!myRank?.isRankUnlocked && !!myRank?.mcqRank;
+  const rankedTotal = myRank?.realRankedCount ?? 0;
+  const rankLabel = rankUnlocked
+    ? `#${(myRank!.mcqRank as number).toLocaleString('en-IN')}`
+    : myRank && myRank.attemptsToUnlockRank > 0
+      ? `${myRank.attemptsToUnlockRank} more to unlock`
+      : 'Rankings updating...';
+  const rankSubLabel = rankUnlocked && rankedTotal > 0
+    ? `of ${rankedTotal.toLocaleString('en-IN')} ranked`
+    : 'among aspirants today';
+  const rankBarPct = rankUnlocked && rankedTotal > 0
+    ? Math.max(4, Math.min(100, Math.round((1 - ((myRank!.mcqRank as number) - 1) / rankedTotal) * 100)))
+    : 0;
+  // Share Score: reuse the Daily MCQ Challenge share modal — build the same
+  // shareable slug URL (initials + date) so the popup behaves identically.
+  const reportName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Aspirant';
+  const reportInitials = (reportName.split(' ').map((w) => w[0]).join('').slice(0, 2) || 'AS').toUpperCase();
+  const shareDate = new Date();
+  const shareSlug = `${reportInitials}-${shareDate.getDate()}${shareDate.toLocaleString('en-US', { month: 'short' }).toLowerCase()}${String(shareDate.getFullYear()).slice(-2)}`;
+  const shareScoreUrl = `risewithjeet.com/share/mock-test/${shareSlug}`;
+  const retakeHref = mode === 'sample'
+    ? `/dashboard/mock-tests/attempt?mode=sample&title=${encodeURIComponent(title)}`
+    : `/dashboard/mock-tests/attempt?testId=${testId}`;
+  // Question-wise Review opens as its OWN screen (exactly like Daily MCQ) —
+  // never expanded inline below the score card.
+  const reviewHref = mode === 'sample'
+    ? `/dashboard/mock-tests/attempt/results/review?mode=sample&title=${encodeURIComponent(title)}`
+    : `/dashboard/mock-tests/attempt/results/review?testId=${testId}`;
 
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Inter, sans-serif' }}>
-      {/* Toast Notification */}
-      {toast.show && (
-        <div style={{
-          position: 'fixed',
-          top: '16px',
-          right: '16px',
-          zIndex: 9999,
-          padding: '12px 20px',
-          borderRadius: '10px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          background: toast.type === 'success' ? '#F0FDF4' : '#FEF2F2',
-          border: toast.type === 'success' ? '1px solid #86EFAC' : '1px solid #FCA5A5',
-          color: toast.type === 'success' ? '#166534' : '#991B1B',
-          fontSize: '14px',
-          fontWeight: 600,
-          fontFamily: 'Inter, sans-serif',
-          animation: 'slideDown 0.2s ease',
-        }}>
-          {toast.type === 'success' ? '✓' : '✕'} {toast.message}
-        </div>
-      )}
       {showConfetti && (
         <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 10 }}>
           {Array.from({ length: 36 }, (_, i) => (
@@ -1303,9 +687,8 @@ function MockTestResultsInner() {
       )}
       <div
         style={{
-          width: 'min(100%, 1280px)',
-          minHeight: 955.9750366210938,
-          marginTop: 52,
+          width: 'min(100%, 868px)',
+          marginTop: 'clamp(12px, 3vh, 40px)',
           marginLeft: 'auto',
           marginRight: 'auto',
           boxSizing: 'border-box',
@@ -1313,315 +696,201 @@ function MockTestResultsInner() {
           paddingRight: 24,
         }}
       >
-        <button
-          type="button"
-          onClick={() => router.push('/dashboard')}
-          style={{ background: 'transparent', border: 'none', color: '#374151', fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}
-        >
-          ← Back to Dashboard
-        </button>
-
-        {/* Score header card — always visible */}
+        {/* Completion card — mirrors Daily MCQ Challenge results (same narrow, centered width) */}
         <div
           style={{
+            width: 'clamp(640px, 42vw, 820px)',
+            maxWidth: '100%',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            background: '#FFFFFF',
             borderRadius: 16,
-            background: 'linear-gradient(90.38deg, #10182D 0.28%, #17223E 99.72%)',
-            padding: '28px 32px',
-            textAlign: 'center',
-            color: '#FFFFFF',
+            border: '1px solid #ECECF1',
+            padding: 'clamp(1.25rem,1.6vw,2rem) clamp(1.4rem,1.8vw,2.2rem)',
             marginBottom: 18,
+            boxShadow: '0 26px 60px -30px rgba(15,23,42,0.24), 0 12px 28px -20px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.9)',
           }}
         >
-          <div style={{ width: 96, height: 96, borderRadius: 999, background: '#FFFFFF', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ color: '#0F172B', fontWeight: 800, fontSize: 26, lineHeight: '28px' }}>
-              {correct}/{total}
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280' }}>Score</div>
-            </div>
+          <style>{`
+            .dmscore-card{position:relative;border-radius:16px;padding:clamp(12px,1vw,18px);overflow:hidden;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;border:1px solid #E5E7EB;box-shadow:0 1px 2px rgba(16,24,40,.04),0 6px 18px -10px rgba(16,24,40,.08);}
+            .dmscore-card:hover{transform:translateY(-2px);border-color:#D1D5DB;box-shadow:0 1px 2px rgba(16,24,40,.05),0 14px 28px -14px rgba(16,24,40,.15);}
+            .dmscore-card::after{content:"";position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.55),rgba(255,255,255,0));pointer-events:none;}
+            .dmscore-accuracy{border-color:#DCE8E1;background:linear-gradient(160deg,#FBFDFC 0%,#F1F7F4 100%);}
+            .dmscore-time{border-color:#DCE2EC;background:linear-gradient(160deg,#FBFCFE 0%,#F1F4F9 100%);}
+            .dmscore-speed{border-color:#E8DFCE;background:linear-gradient(160deg,#FDFCFA 0%,#F8F4EE 100%);}
+            .dmscore-rank{border-color:#E2DAEC;background:linear-gradient(160deg,#FCFBFD 0%,#F4F1F8 100%);}
+            .dmscore-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;}
+            .dmscore-icon-accuracy{background:#ECF5F0;color:#3F8C6E;}
+            .dmscore-icon-time{background:#EEF2F8;color:#4A6B96;}
+            .dmscore-icon-speed{background:#F6F0E6;color:#9C7A3F;}
+            .dmscore-icon-rank{background:#F1EDF6;color:#7A6699;}
+            .dmscore-bar{height:5px;border-radius:999px;background:rgba(255,255,255,.6);overflow:hidden;position:relative;z-index:1;}
+            .dmscore-bar>span{display:block;height:100%;border-radius:999px;transition:width .4s ease;}
+            .qw-review-btn{color:#0B1426;background:radial-gradient(120% 140% at 100% 0%, rgba(245,197,24,.18) 0%, rgba(245,197,24,0) 55%),linear-gradient(135deg,#FBF6E7 0%,#F4ECD8 55%,#EFE3BE 100%);box-shadow:0 10px 22px -14px rgba(107,83,32,.45), inset 0 1px 0 rgba(255,255,255,.6);border:1px solid #E4D8B5;letter-spacing:.01em;}
+            .qw-review-btn::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#F5C518,#B7860B);border-radius:12px 0 0 12px;}
+            .qw-review-btn:hover{filter:brightness(1.02);transform:translateY(-1px);box-shadow:0 16px 30px -16px rgba(107,83,32,.55);}
+            .qw-badge{position:relative;z-index:1;background:#0B1426;color:#F5C518;font-size:10.5px;font-weight:800;letter-spacing:.14em;padding:3px 8px;border-radius:999px;border:1px solid #0B1426;}
+            .mcq-act{display:flex;align-items:center;gap:clamp(8px,0.8vw,12px);padding:clamp(10px,0.85vw,14px) clamp(12px,1vw,16px);border-radius:14px;font-weight:700;font-size:clamp(12px,0.78vw,14px);border:1px solid transparent;cursor:pointer;transition:all .18s;background:#fff;width:100%;text-align:left;}
+            .mcq-act:hover{transform:translateY(-1px);box-shadow:0 10px 24px -16px rgba(11,20,38,.18);}
+            .mcq-act .ic{width:clamp(28px,2.2vw,34px);height:clamp(28px,2.2vw,34px);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+            .mcq-act-share{background:#EDF2EE;color:#34503F;border-color:#D6DFD9;}
+            .mcq-act-share .ic{background:#fff;color:#34503F;}
+            .mcq-act-download{background:#E8EDF5;color:#2E3C5C;border-color:#D2DAE8;}
+            .mcq-act-download .ic{background:#fff;color:#2E3C5C;}
+            .mcq-act-retake{background:#F4E2DD;color:#8A4A39;border-color:#E8CFC7;}
+            .mcq-act-retake .ic{background:#fff;color:#8A4A39;}
+            .mcq-act-next{background:linear-gradient(135deg,#0B1426,#1A2848);color:#fff;border-color:#0B1426;}
+            .mcq-act-next .ic{background:#F5C518;color:#0B1426;}
+            .mcq-act-dash{background:#FBFAF7;color:#3A4357;border-color:#ECE7DD;}
+            .mcq-act-dash .ic{background:#fff;color:#3A4357;}
+          `}</style>
+
+          {/* Completed badge */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'clamp(0.5rem,0.8vw,0.85rem)' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 999, fontWeight: 700, background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '4px 12px', fontSize: 12, color: '#047857' }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+              Test Completed
+            </span>
           </div>
 
-          <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Keep Going, Every Attempt Makes You Better!</div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 14 }}>
-            {title} · Mock Test · {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
+          {/* Heading */}
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(0.9rem,1.2vw,1.25rem)' }}>
+            <h1 style={{ fontWeight: 800, letterSpacing: '-0.02em', color: '#17223E', fontSize: 28, lineHeight: '34px', margin: '0 0 6px' }}>
+              Prelims Mock Test Evaluation Completed!
+            </h1>
+            <p style={{ fontWeight: 500, color: '#475467', fontSize: 14, lineHeight: '20px', margin: 0 }}>
+              Great effort! Here{'\''}s your performance analysis
+            </p>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 18 }}>
-            <StatMini label="CORRECT" value={correct} color="#00C950" />
-            <StatMini label="WRONG" value={wrong} color="#FB2C36" />
-            <StatMini label="SKIPPED" value={skipped} color="#60A5FA" />
-            <StatMini label="ACCURACY" value={`${scorePct}%`} color="#FFFFFF" />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
-            <button
-              type="button"
-              onClick={() => router.push(`/dashboard/mock-tests/attempt?mode=sample&title=${encodeURIComponent(title)}`)}
-              style={{ height: 36, borderRadius: 10, padding: '0 16px', border: 'none', background: 'linear-gradient(89.92deg, #F1A901 0.07%, #FD7302 99.93%)', color: '#0B1120', fontWeight: 800, cursor: 'pointer' }}
-            >
-              ↻ Reattempt
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('review');
-                setTimeout(() => {
-                  const el = document.getElementById('mt-full-analysis');
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  else router.push('/dashboard/test-analytics');
-                }, 50);
-              }}
-              style={{ height: 36, borderRadius: 10, padding: '0 16px', border: 'none', background: '#314158', color: '#FFFFFF', fontWeight: 700, cursor: 'pointer' }}
-            >
-              📊 Full Analysis
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== 'undefined') window.print();
-              }}
-              style={{ height: 36, borderRadius: 10, padding: '0 16px', border: 'none', background: '#314158', color: '#FFFFFF', fontWeight: 700, cursor: 'pointer' }}
-            >
-              📄 PDF Report
-            </button>
-          </div>
-        </div>
-
-        {/* Next steps view */}
-        {activeTab === 'next-steps' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <button
-              type="button"
-              onClick={() => setActiveTab('review')}
-              style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#374151', fontWeight: 700, fontSize: 14, cursor: 'pointer', padding: 0 }}
-            >
-              ← Back to answers
-            </button>
-            {nextStepsContent}
-          </div>
-        )}
-
-        {/* Review view */}
-        {activeTab === 'review' && (
-          <div id="mt-full-analysis" style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800, color: '#101828', marginBottom: 12 }}>
-              <span style={{ width: 18, height: 18, borderRadius: 4, border: '2px solid #00C950', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#00C950' }}>✓</span>
-              Answer Review
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {(sample?.review ?? reviewQuestions).map((row: any) => {
-                const questions: Question[] = (sample?.questions as Question[] | undefined) ?? SAMPLE_QUESTIONS;
-                const selectedOptions: Record<number, string> = (sample?.selectedOptions as Record<number, string> | undefined) ?? {};
-                const isSample = !!sample;
-                const q = isSample ? questions[(row.idx ?? 1) - 1] : {
-                  text: row.text,
-                  subject: row.subject,
-                  options: row.options || [],
-                  correct: row.correct,
-                  explanation: row.explanation,
-                  difficulty: 'Medium' as const,
-                  id: row.idx,
-                };
-                const selected = isSample ? selectedOptions[(row.idx ?? 1) - 1] : row.selected;
-                const isExpanded = expandedIdx === row.idx;
-                const borderColor = row.status === 'wrong' ? '#FB2C36' : row.status === 'correct' ? '#00C950' : '#E5E7EB';
-                const bg = row.status === 'wrong' ? '#FEF2F24D' : row.status === 'correct' ? '#F0FDF44D' : '#FFFFFF';
-                const height = row.status === 'wrong' ? 73.5999984741211 : 65.5999984741211;
-                const rightText = row.status === 'skipped' ? 'Skipped' : (row.delta < 0 ? row.delta.toFixed(2) : `+${row.delta}`);
-                const rightColor = row.status === 'wrong' ? '#FB2C36' : row.status === 'correct' ? '#00C950' : '#6B7280';
-                return (
-                  <div key={row.idx} style={{ width: '100%' }}>
-                    <button
-                      type="button"
-                      onClick={() => setExpandedIdx(prev => (prev === row.idx ? null : row.idx))}
-                      style={{
-                        width: '100%',
-                        height,
-                        borderRadius: 10,
-                        background: bg,
-                        borderStyle: 'solid',
-                        borderTopWidth: 0.8,
-                        borderRightWidth: 0.8,
-                        borderBottomWidth: 0.8,
-                        borderLeftWidth: 4,
-                        borderColor,
-                        boxSizing: 'border-box',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0 16px',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                        <div style={{ width: 28, height: 28, borderRadius: 999, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#6B7280', flexShrink: 0 }}>
-                          {row.idx}
-                        </div>
-                        <div style={{ fontSize: 13, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 720 }}>
-                          {row.text}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexShrink: 0 }}>
-                        <div style={{ fontSize: 12, color: '#6B7280' }}>🕒 {row.timeSec}s</div>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: rightColor, minWidth: 52, textAlign: 'right' }}>{rightText}</div>
-                        <div style={{ color: '#6B7280', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease' }}>⌄</div>
-                      </div>
-                    </button>
-
-                    {isExpanded && q ? (
-                      <div
-                        style={{
-                          width: '100%',
-                          marginTop: 10,
-                          borderRadius: 12,
-                          border: '1px solid #E5E7EB',
-                          background: '#FFFFFF',
-                          padding: 18,
-                          boxSizing: 'border-box',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                            <div style={{ width: 28, height: 28, borderRadius: 999, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#6B7280', flexShrink: 0 }}>
-                              {row.idx}
-                            </div>
-                            <div style={{ fontWeight: 700, fontSize: 14, color: '#111827', lineHeight: '20px', minWidth: 0 }}>
-                              {q.text.split('\n').slice(0, 1).join(' ')}
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-                            <div style={{ fontSize: 12, color: '#6B7280' }}>🕒 {row.timeSec}s</div>
-                            <div style={{ fontSize: 12, fontWeight: 800, color: rightColor, minWidth: 52, textAlign: 'right' }}>{rightText}</div>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', background: '#F3F4F6', borderRadius: 8, padding: '4px 8px' }}>
-                            {q.subject}
-                          </span>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#854D0E', background: '#FEF08A', borderRadius: 8, padding: '4px 8px' }}>
-                            PYQ 2019
-                          </span>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          {q.options.map((opt: any) => {
-                            const isCorrect = opt.label === q.correct;
-                            const isSelected = selected === opt.label;
-                            const isWrongSelected = isSelected && !isCorrect;
-                            const rowBg = isCorrect ? '#F0FDF4' : isWrongSelected ? '#FEF2F2' : '#FFFFFF';
-                            const rowBorder = isCorrect ? '1px solid #86EFAC' : isWrongSelected ? '1px solid #FCA5A5' : '1px solid #E5E7EB';
-                            const right = isCorrect ? '✓ Correct' : isWrongSelected ? '✕ Your Answer' : '';
-                            const rightCol = isCorrect ? '#16A34A' : isWrongSelected ? '#DC2626' : '#6B7280';
-                            return (
-                              <div
-                                key={opt.label}
-                                style={{
-                                  borderRadius: 10,
-                                  border: rowBorder,
-                                  background: rowBg,
-                                  padding: '12px 14px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  gap: 12,
-                                }}
-                              >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                                  <div style={{ width: 26, height: 26, borderRadius: 8, border: '1px solid #E5E7EB', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#111827', flexShrink: 0 }}>
-                                    {opt.label}
-                                  </div>
-                                  <div style={{ fontSize: 13, color: '#111827', minWidth: 0 }}>
-                                    {opt.text}
-                                  </div>
-                                </div>
-                                {right ? <div style={{ fontSize: 12, fontWeight: 700, color: rightCol, flexShrink: 0 }}>{right}</div> : <div />}
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {selected ? (
-                          <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>
-                            You picked:{' '}
-                            <span style={{ fontWeight: 800, color: row.status === 'wrong' ? '#DC2626' : '#16A34A' }}>
-                              {selected} — {(q.options.find((o: any) => o.label === selected)?.text ?? '')}
-                            </span>
-                          </div>
-                        ) : (
-                          <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>You picked: <span style={{ fontWeight: 800, color: '#6B7280' }}>Skipped</span></div>
-                        )}
-
-                        <div
-                          style={{
-                            marginTop: 12,
-                            background: '#EFF6FF',
-                            borderRadius: 10,
-                            padding: '14px 14px',
-                            border: '1px solid #BFDBFE',
-                          }}
-                        >
-                          <div style={{ fontSize: 12, fontWeight: 800, color: '#155DFC', marginBottom: 6 }}>
-                            Explanation:
-                          </div>
-                          <div style={{ fontSize: 13, color: '#1D4ED8', lineHeight: '18px' }}>
-                            {q.explanation}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14, fontSize: 12 }}>
-                          <button
-                            type="button"
-                            onClick={() => handleAddToFlashcards(row)}
-                            disabled={actionLoading === `flashcard-${row.idx}`}
-                            style={{ background: 'transparent', border: 'none', color: '#7C3AED', fontWeight: 700, cursor: actionLoading === `flashcard-${row.idx}` ? 'not-allowed' : 'pointer', padding: 0, opacity: actionLoading === `flashcard-${row.idx}` ? 0.5 : 1 }}>
-                            {actionLoading === `flashcard-${row.idx}` ? 'Adding...' : 'Add to Flashcards'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleNeedToRevise(row)}
-                            disabled={actionLoading === `revise-${row.idx}`}
-                            style={{ background: 'transparent', border: 'none', color: '#DC2626', fontWeight: 700, cursor: actionLoading === `revise-${row.idx}` ? 'not-allowed' : 'pointer', padding: 0, opacity: actionLoading === `revise-${row.idx}` ? 0.5 : 1 }}>
-                            {actionLoading === `revise-${row.idx}` ? 'Adding...' : 'Need to Revise'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleStudyNotes(row)}
-                            style={{ background: 'transparent', border: 'none', color: '#2563EB', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
-                            Study Notes
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
+          {/* Score ring */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'clamp(1rem,1.5vw,1.4rem)' }}>
+            {(() => {
+              const size = 140;
+              const stroke = 11;
+              const radius = (size - stroke) / 2;
+              const circ = 2 * Math.PI * radius;
+              const dash = (Math.max(0, Math.min(100, scorePct)) / 100) * circ;
+              return (
+                <div style={{ position: 'relative', width: size, height: size }}>
+                  <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+                    <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#E5E7EB" strokeWidth={stroke} />
+                    <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#10B981" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${dash} ${circ}`} />
+                  </svg>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1, fontSize: 38, color: '#17223E' }}>
+                      {correct}<span style={{ color: '#9CA3AF', fontSize: '0.58em' }}>/{total}</span>
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', color: '#10B981', marginTop: 6, textTransform: 'uppercase' }}>
+                      Score · {scorePct}%
+                    </div>
                   </div>
-                );
-              })}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Stat tiles */}
+          <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: 'clamp(0.65rem,0.9vw,1rem)', marginBottom: 'clamp(0.85rem,1.2vw,1.15rem)' }}>
+            {[
+              { label: 'Accuracy', value: `${scorePct}%`, sub: 'this attempt', valueSize: 26, cls: 'dmscore-accuracy', iconCls: 'dmscore-icon-accuracy', barColor: '#7FB29A', barPct: Math.max(0, Math.min(100, Math.round(scorePct))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>) },
+              { label: 'Time Taken', value: `${timeMinutes}m ${timeSeconds}s`, sub: durationLabel, valueSize: 26, cls: 'dmscore-time', iconCls: 'dmscore-icon-time', barColor: '#8AA3C4', barPct: durationSeconds > 0 ? Math.max(0, Math.min(100, Math.round((timeTaken / durationSeconds) * 100))) : 0, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg>) },
+              { label: 'Speed', value: `${speedPerQ} min/Q`, sub: 'Avg per question', valueSize: 22, cls: 'dmscore-speed', iconCls: 'dmscore-icon-speed', barColor: '#C9A876', barPct: Math.max(0, Math.min(100, Math.round(parseFloat(speedPerQ) * 100))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="currentColor" stroke="none"/></svg>) },
+              { label: 'Your Rank', value: rankLabel, sub: rankSubLabel, valueSize: 22, cls: 'dmscore-rank', iconCls: 'dmscore-icon-rank', barColor: '#A99BC4', barPct: rankBarPct, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4H3v2a3 3 0 0 0 3 3"/><path d="M19 4h2v2a3 3 0 0 1-3 3"/><path d="M12 13v4"/><path d="M8 21h8"/><path d="M9 17h6l1 4H8z" fill="currentColor" stroke="none"/></svg>) },
+            ].map((s) => (
+              <div key={s.label} className={`dmscore-card ${s.cls}`}>
+                <div className={`dmscore-icon ${s.iconCls}`}>{s.icon}</div>
+                <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', color: '#64748B', textTransform: 'uppercase', marginTop: 10, position: 'relative', zIndex: 1 }}>{s.label}</div>
+                <div style={{ fontWeight: 800, letterSpacing: '-0.02em', color: '#0F172A', fontSize: s.valueSize, lineHeight: 1.1, marginTop: 4, position: 'relative', zIndex: 1 }}>{s.value}</div>
+                <div className="dmscore-bar" style={{ marginTop: 8 }}><span style={{ width: `${s.barPct}%`, background: s.barColor }} /></div>
+                <div style={{ fontSize: 12, color: '#64748B', marginTop: 8, position: 'relative', zIndex: 1 }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Question-wise review + actions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.65rem,0.85vw,0.9rem)' }}>
+            <button
+              type="button"
+              onClick={() => router.push(reviewHref)}
+              className="qw-review-btn"
+              style={{ position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(8px,0.9vw,12px)', borderRadius: 14, padding: 'clamp(12px,1vw,16px)', fontSize: 'clamp(13px,0.8vw,15px)', fontWeight: 700, cursor: 'pointer' }}
+            >
+              <span className="qw-badge">{total} Q</span>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true" style={{ position: 'relative', zIndex: 1 }}>
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+              <span style={{ position: 'relative', zIndex: 1 }}>View Question-wise Review</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ position: 'relative', zIndex: 1 }}>
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+            </button>
+
+            <div className="grid grid-cols-3" style={{ gap: 'clamp(0.5rem,0.65vw,0.75rem)' }}>
+              <button type="button" onClick={() => setShowShareModal(true)} className="mcq-act mcq-act-share" style={{ justifyContent: 'center', textAlign: 'center' }}>
+                <span className="ic">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M6.5 5.5L10 3.5M6.5 10.5L10 12.5M6.5 8A2 2 0 1 1 2.5 8A2 2 0 0 1 6.5 8ZM13.5 3A2 2 0 1 1 9.5 3A2 2 0 0 1 13.5 3ZM13.5 13A2 2 0 1 1 9.5 13A2 2 0 0 1 13.5 13Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                Share Score
+              </button>
+              <button type="button" onClick={() => { if (typeof window !== 'undefined') window.print(); }} className="mcq-act mcq-act-download" style={{ justifyContent: 'center', textAlign: 'center' }}>
+                <span className="ic">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M8 2V9M8 9L5 6M8 9L11 6M3 12V13.5H13V12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                Download Report
+              </button>
+              <button type="button" onClick={() => router.push(retakeHref)} className="mcq-act mcq-act-retake" style={{ justifyContent: 'center', textAlign: 'center' }}>
+                <span className="ic">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M13 7A5 5 0 1 0 11.5 10.55M13 7V3.5M13 7H9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                Retake
+              </button>
             </div>
-            {/* Next → reveals the recommendations */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('next-steps');
-                  if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 28px', borderRadius: 12, border: 'none', background: '#17223E', color: '#FFFFFF', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
-              >
-                Next →
+
+            <div className="grid grid-cols-2" style={{ gap: 'clamp(0.5rem,0.8vw,1rem)' }}>
+              <button type="button" onClick={() => setShowNextSteps(true)} className="mcq-act mcq-act-next" style={{ justifyContent: 'center', textAlign: 'center' }}>
+                <span className="ic">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M8 2.5L9.15 6.85L13.5 8L9.15 9.15L8 13.5L6.85 9.15L2.5 8L6.85 6.85L8 2.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                View Smart Next Steps
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              </button>
+              <button type="button" onClick={() => router.push('/dashboard')} className="mcq-act mcq-act-dash" style={{ justifyContent: 'center', textAlign: 'center' }}>
+                <span className="ic">🏠</span>
+                Back to Dashboard
               </button>
             </div>
           </div>
-        )}
-      </div>
-    </div>
-  );
-}
+        </div>
 
-function StatMini({ label, value, color }: { label: string; value: any; color: string }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-      <div style={{ fontSize: 22, fontWeight: 900, color }}>{value}</div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em' }}>{label}</div>
+        {/* Smart Next Steps + Share Score open as modals — the exact Daily MCQ
+            Challenge flow (never inline sections below the score card). */}
+        <SmartNextStepsModal open={showNextSteps} onClose={() => setShowNextSteps(false)} />
+        <ShareScoreModal
+          open={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          brandLabel="RISEWITHJEET · PRELIMS MOCK TEST"
+          challengeName="Prelims Mock Test"
+          todayPrefix={false}
+          correctCount={correct}
+          totalCount={total}
+          accuracyPct={scorePct}
+          rankLabel={rankLabel}
+          streak={streak?.days ?? null}
+          shareUrl={shareScoreUrl}
+        />
+
+      </div>
     </div>
   );
 }

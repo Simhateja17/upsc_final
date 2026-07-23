@@ -7,8 +7,16 @@ import AddSubjectModal, { NewSubject } from '@/components/AddSubjectModal';
 import { flashcardService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import FlashcardScienceSections from '@/components/FlashcardScienceSections';
-import { UpgradePrompt } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import {
+  FlashcardVaultUpgradeModal,
+  FlashcardAddSubjectModal,
+  FlashcardAddFlashcardModal,
+  LockedSubjectCard,
+  LockedCardStyles,
+} from '@/components/upgrade/UpgradeModals';
+import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
+import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
 
 type Deck = {
   id: string;
@@ -57,6 +65,9 @@ export default function FlashcardsPage() {
   const [hoveredBin, setHoveredBin] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; subject: string; totalCards: number } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showVaultUpgradeModal, setShowVaultUpgradeModal] = useState(false);
+  const [showAddSubjectUpgradeModal, setShowAddSubjectUpgradeModal] = useState(false);
+  const [showAddFlashcardUpgradeModal, setShowAddFlashcardUpgradeModal] = useState(false);
 
   useEffect(() => {
     flashcardService.getSubjects()
@@ -113,10 +124,15 @@ export default function FlashcardsPage() {
   const customSubjectCards = Array.from(customCatalogItems.values()).map(withDeck);
 
   const hasFullAccess = entitlements.canAccess('flashcards', ['full']);
-  const previewCount = entitlements.preview.flashcard_subjects ?? subjectCards.length;
-  const visibleSubjectCards = hasFullAccess
-    ? [...subjectCards, ...customSubjectCards]
-    : subjectCards.slice(0, previewCount || 0);
+  // Free & Aspire: Polity and Economy stay open (listed first); every other
+  // subject remains visible but blurred + locked, per the approved design.
+  const FREE_SUBJECT_IDS = ['polity', 'economy'];
+  const unlockedFirst = [
+    ...subjectCards.filter((item) => FREE_SUBJECT_IDS.includes(item.id)),
+    ...subjectCards.filter((item) => !FREE_SUBJECT_IDS.includes(item.id)),
+  ];
+  const visibleSubjectCards = hasFullAccess ? [...subjectCards, ...customSubjectCards] : unlockedFirst;
+  const isCardLocked = (id: string) => !hasFullAccess && !FREE_SUBJECT_IDS.includes(id);
 
   function slugifySubject(name: string) {
     return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -137,10 +153,23 @@ export default function FlashcardsPage() {
 
   async function handleDeleteSubject() {
     if (!deleteTarget) return;
+    const target = deleteTarget;
+
+    // A subject added via "Add Subject" only exists in local state until the
+    // user creates its first flashcard — no deck was ever persisted, so
+    // there's nothing to delete on the backend, just drop it locally.
+    const hasPersistedDeck = decks.some((d) => d.id === target.id);
+    if (!hasPersistedDeck) {
+      setCustomSubjects((prev) => prev.filter((s) => s.id !== target.id));
+      setDeleteTarget(null);
+      return;
+    }
+
     setDeleting(true);
     try {
-      await flashcardService.deleteSubject(deleteTarget.id);
-      setDecks((prev) => prev.filter((d) => d.id !== deleteTarget.id));
+      await flashcardService.deleteSubject(target.id);
+      setDecks((prev) => prev.filter((d) => d.id !== target.id));
+      setCustomSubjects((prev) => prev.filter((s) => s.id !== target.id));
     } catch {}
     setDeleting(false);
     setDeleteTarget(null);
@@ -157,42 +186,36 @@ export default function FlashcardsPage() {
           stats={bannerMetrics.map((metric) => ({ value: metric.value, label: metric.label, color: metric.valueColor }))}
         />
 
-        <div className="w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-          {!hasFullAccess && (
-            <div className="mb-6">
-              <UpgradePrompt
-                title="Flashcards preview"
-                currentTier={entitlements.tier}
-                requiredTier="rise"
-                message={`Your plan includes ${previewCount || 0} preview subjects. Upgrade to Rise to create flashcards and unlock the full subject vault.`}
-              />
-            </div>
-          )}
-
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+        <div className="w-full max-w-[1120px] mx-auto px-4 py-6 sm:px-8 sm:py-8">
+          <SubjectChoiceCardStyles />
+          <LockedCardStyles />
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
               <div
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+                className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
                 style={{ background: '#101828', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}
               >
                 1
               </div>
-              <h2 style={{ fontFamily: 'Georgia', fontWeight: 700, fontSize: 36, lineHeight: '40px', color: '#101828' }}>
-                Choose a <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Subject</span>
-              </h2>
+              <div>
+                <h2 style={{ fontFamily: 'Georgia', fontWeight: 700, fontSize: 36, lineHeight: '40px', color: '#101828' }}>
+                  Choose a <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Subject</span>
+                </h2>
+                <p style={{ fontFamily: 'Georgia, serif', fontWeight: 400, fontSize: 15, lineHeight: '22px', color: '#6A7282', marginTop: 4 }}>
+                  Pick the subject you want to revise today
+                </p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
-                onClick={() => hasFullAccess ? setShowAddModal(true) : undefined}
-                disabled={!hasFullAccess}
+                onClick={() => hasFullAccess ? setShowAddModal(true) : setShowAddFlashcardUpgradeModal(true)}
                 className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
                 style={{
                   background: '#FFFFFF',
                   border: '1px solid #E5E7EB',
                   boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
-                  opacity: hasFullAccess ? 1 : 0.55,
                   fontFamily: 'Inter',
                   fontWeight: 600,
                   fontSize: 14,
@@ -206,20 +229,18 @@ export default function FlashcardsPage() {
 
               <button
                 type="button"
-                onClick={() => hasFullAccess ? setShowAddSubjectModal(true) : undefined}
-                disabled={!hasFullAccess}
+                onClick={() => hasFullAccess ? setShowAddSubjectModal(true) : setShowAddSubjectUpgradeModal(true)}
                 className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
                 style={{
-                  background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
+                  background: 'linear-gradient(180deg, #ffd24a, #f5b400)',
                   border: 'none',
-                  boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
-                  opacity: hasFullAccess ? 1 : 0.55,
+                  boxShadow: '0 4px 16px rgba(245,180,0,.35)',
                   fontFamily: 'Inter',
                   fontWeight: 700,
                   fontSize: 14,
                   lineHeight: '20px',
                   letterSpacing: 0,
-                  color: '#17223E',
+                  color: '#1a1407',
                 }}
               >
                 <span className="text-lg leading-none">+</span> Add Subject
@@ -227,15 +248,8 @@ export default function FlashcardsPage() {
             </div>
           </div>
 
-          <p
-            className="mb-6"
-            style={{ fontFamily: 'Georgia, serif', fontWeight: 400, fontSize: 15, lineHeight: '22px', color: '#6A7282' }}
-          >
-            Pick the subject you want to revise today
-          </p>
-
           {loading ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="subject-card-grid">
               {[...Array(10)].map((_, index) => (
                 <div
                   key={index}
@@ -245,136 +259,114 @@ export default function FlashcardsPage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="subject-card-grid">
               {visibleSubjectCards.map((item) => {
                 const hasDeck = Boolean(item.deck);
                 const due = item.totalCards - item.masteredCards;
                 const progressWidth = hasDeck ? Math.max(item.mastery, 10) : 0;
                 const title = item.shortLabel ?? displaySubjectName(item.subject);
+                const paletteCard = getSubjectCardStyle(item.subject);
+                const paletteMeta = getSubjectMetaStyle(item.subject);
 
-                const cardContent = (
+                const topRight = (
                   <>
-                    <div className="flex items-start justify-between gap-3">
+                    {item.isNew && (
                       <span
-                        aria-hidden
-                        className="flex items-center justify-center flex-shrink-0"
-                        style={{ width: 44, height: 44, borderRadius: 12, background: `${item.card.bar}1A`, fontSize: 24, lineHeight: 1 }}
+                        className="inline-flex items-center rounded-full px-2 py-0.5"
+                        style={{ background: '#FDB022', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '12px', color: '#FFFFFF' }}
                       >
-                        {item.icon}
+                        NEW
                       </span>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        {item.isNew && (
-                          <span
-                            className="inline-flex items-center rounded-full px-2 py-0.5"
-                            style={{ background: '#FDB022', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '12px', color: '#FFFFFF' }}
-                          >
-                            NEW
-                          </span>
-                        )}
-                        {hasDeck && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setDeleteTarget({ id: item.id, subject: item.subject, totalCards: item.totalCards });
-                            }}
-                            onMouseEnter={() => setHoveredBin(item.id)}
-                            onMouseLeave={() => setHoveredBin(null)}
-                            style={{
-                              opacity: hoveredCard === item.id ? 1 : 0,
-                              transition: 'opacity 0.15s, color 0.15s',
-                              background: 'none',
-                              border: 'none',
-                              cursor: 'pointer',
-                              padding: 4,
-                              lineHeight: 1,
-                              color: hoveredBin === item.id ? '#EF4444' : '#9CA3AF',
-                            }}
-                            aria-label={`Delete ${item.subject}`}
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                              <path d="M10 11v6" />
-                              <path d="M14 11v6" />
-                              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <h3
-                      className="mt-3"
-                      style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 17, lineHeight: '22px', color: '#22304D' }}
-                    >
-                      {title}
-                    </h3>
-
-                    <p
-                      className="mt-1"
-                      style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, lineHeight: '15px', color: '#8A94A6' }}
-                    >
-                      {hasDeck ? `${item.totalCards} cards · ${item.topics} topics · ${item.viewsLabel}` : '0 cards · Start here'}
-                    </p>
-
-                    <div className="mt-4 h-[4px] w-full rounded-full" style={{ background: 'rgba(0,0,0,0.08)' }}>
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{ width: `${progressWidth}%`, background: '#16A34A' }}
-                      />
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#16A34A' }}>
-                        {hasDeck ? `✓ ${item.masteredCards} mastered` : 'Create first card'}
-                      </span>
-                      <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', color: hasDeck && due === 0 ? '#16A34A' : '#EF4444' }}>
-                        {hasDeck ? (due === 0 ? '✓ All done' : `${due} to go`) : 'New deck'}
-                      </span>
-                    </div>
+                    )}
+                    {/* Curated catalog subjects only offer delete once they actually
+                        have a deck (always true in practice — they're pre-seeded).
+                        Custom subjects can be deleted immediately, even before their
+                        first flashcard/deck exists, since that's exactly the state a
+                        freshly "Add Subject"-ed entry starts in. */}
+                    {(hasDeck || !catalogIds.has(item.id)) && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDeleteTarget({ id: item.id, subject: item.subject, totalCards: item.totalCards });
+                        }}
+                        onMouseEnter={() => setHoveredBin(item.id)}
+                        onMouseLeave={() => setHoveredBin(null)}
+                        style={{
+                          opacity: hoveredCard === item.id ? 1 : 0,
+                          transition: 'opacity 0.15s, color 0.15s',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 4,
+                          lineHeight: 1,
+                          color: hoveredBin === item.id ? '#EF4444' : '#9CA3AF',
+                        }}
+                        aria-label={`Delete ${item.subject}`}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
+                      </button>
+                    )}
                   </>
                 );
 
-                if (hasDeck) {
+                if (isCardLocked(item.id)) {
                   return (
-                    <Link
-                      key={item.id}
-                      href={`/dashboard/flashcards/${item.id}`}
-                      className="block rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md flex flex-col"
-                      style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, height: 190 }}
-                      onMouseEnter={() => setHoveredCard(item.id)}
-                      onMouseLeave={() => setHoveredCard(null)}
-                    >
-                      {cardContent}
-                    </Link>
+                    <LockedSubjectCard key={item.id} onClick={() => setShowVaultUpgradeModal(true)}>
+                      <SubjectChoiceCard
+                        icon={paletteMeta.icon}
+                        iconBg={paletteMeta.bg}
+                        accentColor={paletteCard.bar}
+                        title={title}
+                        meta={hasDeck ? `${item.totalCards} cards · ${item.topics} topics · ${item.viewsLabel}` : `${item.viewsLabel}`}
+                        progressPercent={progressWidth}
+                        footerLeft={`✓ ${item.masteredCards} mastered`}
+                        footerRight={hasDeck ? `${due} to go` : 'Locked'}
+                        footerRightColor="#EF4444"
+                      />
+                    </LockedSubjectCard>
                   );
                 }
 
                 return (
-                  <button
+                  <SubjectChoiceCard
                     key={item.id}
-                    type="button"
-                    onClick={() => {
-                      if (!hasFullAccess) return;
+                    href={hasDeck ? `/dashboard/flashcards/${item.id}` : undefined}
+                    onClick={hasDeck ? undefined : () => {
+                      if (!hasFullAccess) {
+                        setShowAddFlashcardUpgradeModal(true);
+                        return;
+                      }
                       setPrefillSubject(item.subject);
                       setShowAddModal(true);
                     }}
-                    className="rounded-[16px] border p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md flex flex-col"
-                    style={{ border: `1px solid ${item.card.border}`, background: item.card.bg, height: 190 }}
+                    icon={paletteMeta.icon}
+                    iconBg={paletteMeta.bg}
+                    accentColor={paletteCard.bar}
+                    title={title}
+                    meta={hasDeck ? `${item.totalCards} cards · ${item.topics} topics · ${item.viewsLabel}` : '0 cards · Start here'}
+                    topRight={topRight}
+                    progressPercent={progressWidth}
+                    footerLeft={hasDeck ? `✓ ${item.masteredCards} mastered` : 'Create first card'}
+                    footerRight={hasDeck ? (due === 0 ? '✓ All done' : `${due} to go`) : 'New deck'}
+                    footerRightColor={hasDeck && due === 0 ? '#16A34A' : '#EF4444'}
                     onMouseEnter={() => setHoveredCard(item.id)}
                     onMouseLeave={() => setHoveredCard(null)}
-                  >
-                    {cardContent}
-                  </button>
+                  />
                 );
               })}
 
-              {hasFullAccess && (
+              {(
                 <button
                   type="button"
-                  onClick={() => setShowAddSubjectModal(true)}
+                  onClick={() => hasFullAccess ? setShowAddSubjectModal(true) : setShowAddSubjectUpgradeModal(true)}
                   className="rounded-[16px] border-2 border-dashed p-5 flex flex-col items-center justify-center text-center transition-all hover:bg-white hover:-translate-y-0.5 hover:shadow-md"
                   style={{ borderColor: '#E9EAEE', background: 'transparent', height: 190 }}
                   aria-label="Add new subject"
@@ -397,7 +389,7 @@ export default function FlashcardsPage() {
           )}
         </div>
 
-        <FlashcardScienceSections />
+        <FlashcardScienceSections onUpgradeClick={() => setShowVaultUpgradeModal(true)} />
       </div>
 
       <AddSubjectModal
@@ -414,6 +406,19 @@ export default function FlashcardsPage() {
         }}
         initialSubject={prefillSubject}
         initialDeck={prefillSubject}
+      />
+
+      <FlashcardVaultUpgradeModal
+        open={showVaultUpgradeModal}
+        onClose={() => setShowVaultUpgradeModal(false)}
+      />
+      <FlashcardAddSubjectModal
+        open={showAddSubjectUpgradeModal}
+        onClose={() => setShowAddSubjectUpgradeModal(false)}
+      />
+      <FlashcardAddFlashcardModal
+        open={showAddFlashcardUpgradeModal}
+        onClose={() => setShowAddFlashcardUpgradeModal(false)}
       />
 
       {deleteTarget && (

@@ -55,6 +55,12 @@ export default function AuthModal() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const continueAfterAuthentication = useCallback(() => {
+    const redirectTo = sessionStorage.getItem('rwj_post_auth_redirect');
+    sessionStorage.removeItem('rwj_post_auth_redirect');
+    router.replace(redirectTo?.startsWith('/') ? redirectTo : '/dashboard');
+  }, [router]);
+
   // Sync tab with defaultTab when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -191,7 +197,7 @@ export default function AuthModal() {
         localStorage.setItem('rwj_has_logged_in', '1');
         sessionStorage.setItem('rwj_login_success', '1');
         closeAuthModal();
-        router.replace('/dashboard');
+        continueAfterAuthentication();
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Invalid or expired code.';
         setError(msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid')
@@ -219,7 +225,7 @@ export default function AuthModal() {
       localStorage.setItem('rwj_has_logged_in', '1');
       sessionStorage.setItem('rwj_login_success', '1');
       closeAuthModal();
-      router.replace('/dashboard');
+      continueAfterAuthentication();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Invalid or expired code.';
       setError(msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid')
@@ -461,13 +467,14 @@ export default function AuthModal() {
               <h1 style={{ fontFamily: "var(--font-playfair),Georgia,serif", fontSize: 28, fontWeight: 700,
                 color: '#1A1A1A', marginBottom: 8, letterSpacing: '-0.3px' }}>
                 Welcome to{' '}
-                <em style={{ fontStyle: 'normal', color: '#C9933A', fontWeight: 800, fontFamily: "var(--font-playfair),Georgia,serif" }}>
-                  RiseWithJeet!
+                <em style={{ fontStyle: 'normal', fontWeight: 800, fontFamily: "var(--font-playfair),Georgia,serif" }}>
+                  <span style={{ color: '#1A1A1A' }}>RiseWith</span>
+                  <span style={{ color: '#C9933A' }}>Jeet!</span>
                 </em>
               </h1>
               <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.5, maxWidth: '85%',
                 margin: '0 auto', fontFamily: "var(--font-inter-rwj),sans-serif" }}>
-                Your personalized UPSC prep plan, daily practice, and AI-powered insights are just a step away.
+                Turn your UPSC preparation into a structured, measurable journey with personalized guidance and daily progress.
               </p>
             </div>
           )}
@@ -696,12 +703,13 @@ export default function AuthModal() {
 
               {/* Help row */}
               <p style={{ textAlign: 'center', fontSize: 12.5, color: '#6B7280', marginTop: 18, fontFamily: "var(--font-inter-rwj),sans-serif" }}>
-                <a
-                  onClick={() => window.alert('Contact support@risewithjeet.com for assistance.')}
+                <Link
+                  href="/contact"
+                  onClick={closeAuthModal}
                   style={{ color: '#C9933A', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
                 >
                   Trouble logging in?
-                </a>
+                </Link>
               </p>
 
               <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.55, textAlign: 'center', marginTop: 16, fontFamily: "var(--font-inter-rwj),sans-serif" }}>

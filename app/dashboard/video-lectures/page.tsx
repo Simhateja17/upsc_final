@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { videoService, libraryService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import StudyMaterialReaderModal from '@/components/StudyMaterialReaderModal';
+import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
+import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
 
 /* ─── Types ─── */
 interface VideoItem {
@@ -19,6 +21,12 @@ interface VideoItem {
   viewCount?: number;
   duration?: string;
   instructor?: string;
+  tags?: string[];
+  // Reference to a row in the Study Material module (single source of truth
+  // for PDFs). Set by an admin via the Video Lecture Manager. The backend
+  // returns it on GET /videos/:subject.
+  studyMaterialId?: string | null;
+  studyMaterialName?: string | null;
 }
 
 interface SubjectItem {
@@ -177,75 +185,18 @@ function normalizeSubjectKey(name: string) {
 }
 
 function subjectEmoji(name: string) {
-  const n = normalizeSubjectKey(name);
-  if (n.includes('polity')) return '⚖️';
-  if (n.includes('history')) return '🏛️';
-  if (n.includes('geography')) return '🌍';
-  if (n.includes('economy')) return '💰';
-  if (n.includes('environment')) return '🌿';
-  if (n.includes('science')) return '🔬';
-  if (n.includes('art')) return '🎨';
-  if (n.includes('current')) return '📰';
-  if (n.includes('international')) return '🌐';
-  if (n.includes('security')) return '🛡️';
-  if (n.includes('csat')) return '📊';
-  return '📹';
+  return getSubjectMetaStyle(name).icon;
 }
 
-/*
- * Exact subject palette from the supplied reference page.
- * Each subject has a foreground accent, card background, boundary and icon tile.
- */
-const SUBJECT_CARD_PALETTE: Array<{ key: string; color: string; bg: string; border: string; tag: string }> = [
-  { key: 'polity',       color: '#5B8DD9', bg: '#F5F9FF', border: '#D0E2FF', tag: '#DBEAFE' },
-  { key: 'history',      color: '#C0854E', bg: '#FFFBF5', border: '#FFE0B8', tag: '#FFF3E0' },
-  { key: 'geography',    color: '#5BAD7A', bg: '#F5FDF6', border: '#B8F0C8', tag: '#D1FAE5' },
-  { key: 'economy',      color: '#D4A853', bg: '#FFFDF5', border: '#F5E4B8', tag: '#FEF3C7' },
-  { key: 'environment',  color: '#3D9E5F', bg: '#F4FDF4', border: '#B8EFC8', tag: '#DCFCE7' },
-  { key: 'science',      color: '#4C6FD4', bg: '#F5F8FF', border: '#C8D8FF', tag: '#E0EBFF' },
-  { key: 'current',      color: '#D4608A', bg: '#FFF5F8', border: '#FFD0E0', tag: '#FFE4EC' },
-  { key: 'csat',         color: '#7C5CBF', bg: '#F8F5FF', border: '#DDD0FF', tag: '#EDE9FE' },
-  { key: 'society',      color: '#C0609A', bg: '#FFF6FB', border: '#F5C8E8', tag: '#FCE7F3' },
-  { key: 'governance',   color: '#7B6FA0', bg: '#F7F5FF', border: '#D8D0F8', tag: '#EDE9FE' },
-  { key: 'justice',      color: '#D4784A', bg: '#FFF5F0', border: '#FFD8C0', tag: '#FFE8D8' },
-  { key: 'relations',    color: '#3A8EC0', bg: '#F5FBFF', border: '#B8DFFF', tag: '#DBEEFE' },
-  { key: 'agriculture',  color: '#5A9E35', bg: '#F6FDF0', border: '#C8EEAD', tag: '#DCFCE7' },
-  { key: 'security',     color: '#C85858', bg: '#FFF5F5', border: '#FFD0D0', tag: '#FFE4E4' },
-  { key: 'disaster',     color: '#C87A30', bg: '#FFF8F2', border: '#FFD8A8', tag: '#FFE8C8' },
-  { key: 'ethics',       color: '#6A9BD4', bg: '#F6FAFF', border: '#C8DEFF', tag: '#E0EFFF' },
-  { key: 'case-studies', color: '#A8853A', bg: '#FDFAF5', border: '#EAD8B0', tag: '#FEF3C7' },
-];
-
-/* Canonical colour + progress/badge for the well-known subjects. */
-const CORE_SUBJECT_META: Array<{
-  match: (n: string) => boolean;
-  key: string;
-  progress: number;
-  showNew?: boolean;
-}> = [
-  { match: (n) => n.includes('polity'),                                  key: 'polity', progress: 80, showNew: true },
-  { match: (n) => n.includes('history'),                                 key: 'history', progress: 65 },
-  { match: (n) => n.includes('geography'),                               key: 'geography', progress: 55 },
-  { match: (n) => n.includes('economy'),                                 key: 'economy', progress: 70 },
-  { match: (n) => n.includes('environment'),                             key: 'environment', progress: 45 },
-  { match: (n) => n.includes('science'),                                 key: 'science', progress: 60, showNew: true },
-  { match: (n) => n.includes('current'),                                 key: 'current', progress: 45 },
-  { match: (n) => n.includes('csat'),                                    key: 'csat', progress: 45 },
-  { match: (n) => n.includes('society'),                                 key: 'society', progress: 45 },
-  { match: (n) => n.includes('governance'),                              key: 'governance', progress: 45 },
-  { match: (n) => n.includes('justice'),                                 key: 'justice', progress: 45 },
-  { match: (n) => n.includes('international') || n.includes('relation'), key: 'relations', progress: 35 },
-  { match: (n) => n.includes('agriculture'),                             key: 'agriculture', progress: 45 },
-  { match: (n) => n.includes('security'),                                key: 'security', progress: 22, showNew: true },
-  { match: (n) => n.includes('disaster'),                                key: 'disaster', progress: 45 },
-  { match: (n) => n.includes('case stud'),                               key: 'case-studies', progress: 45 },
-  { match: (n) => n.includes('ethics'),                                  key: 'ethics', progress: 40 },
-];
-
-function stableHash(s: string) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100000;
-  return h;
+/* Map an admin-entered tag to a badge style. Known labels keep their signature
+   colour (matching the original design); any custom tag falls back to gold. A
+   tag containing "PDF" also gets the little document icon. */
+function getTagPill(tag: string): { cls: string; pdf: boolean } {
+  const t = tag.trim().toUpperCase();
+  if (t === 'NEW') return { cls: 'vl-pill-red', pdf: false };
+  if (t === 'POPULAR') return { cls: 'vl-pill-gold', pdf: false };
+  if (t.includes('PDF')) return { cls: 'vl-pill-blue', pdf: true };
+  return { cls: 'vl-pill-gold', pdf: false };
 }
 
 /*
@@ -256,48 +207,24 @@ function stableHash(s: string) {
  */
 function buildSubjectThemeMap(subjects: SubjectItem[]): Map<string, SubjectCardTheme> {
   const map = new Map<string, SubjectCardTheme>();
-  const usedKeys = new Set<string>();
-
-  const meta = new Map<string, { key: string; progress: number; showNew?: boolean }>();
   for (const subject of subjects) {
-    const n = normalizeSubjectKey(subject.name);
-    const core = CORE_SUBJECT_META.find((m) => m.match(n));
-    meta.set(
-      subject.name,
-      core
-        ? { key: core.key, progress: core.progress, showNew: core.showNew }
-        : { key: '', progress: 30 + (stableHash(n) % 46) }, // 30-75, stable per name
-    );
-  }
-
-  // Pass 1: reserve each subject's canonical hue while it is still free.
-  for (const subject of subjects) {
-    const info = meta.get(subject.name)!;
-    if (info.key && !usedKeys.has(info.key)) {
-      const pal = SUBJECT_CARD_PALETTE.find((p) => p.key === info.key)!;
-      usedKeys.add(pal.key);
-      map.set(subject.name, { bg: pal.bg, border: pal.border, color: pal.color, tag: pal.tag, progress: info.progress, showNew: info.showNew });
-    }
-  }
-
-  // Pass 2: everyone left gets the next unused palette colour.
-  for (const subject of subjects) {
-    if (map.has(subject.name)) continue;
-    const info = meta.get(subject.name)!;
-    const pal =
-      SUBJECT_CARD_PALETTE.find((p) => !usedKeys.has(p.key)) ??
-      SUBJECT_CARD_PALETTE[stableHash(subject.name) % SUBJECT_CARD_PALETTE.length]; // palette exhausted: stable fallback
-    usedKeys.add(pal.key);
-    map.set(subject.name, { bg: pal.bg, border: pal.border, color: pal.color, tag: pal.tag, progress: info.progress, showNew: info.showNew });
+    const card = getSubjectCardStyle(subject.name);
+    map.set(subject.name, {
+      bg: card.bg,
+      border: card.border,
+      color: card.bar,
+      tag: card.iconBg,
+      progress: 45,
+      showNew: subject.isNew,
+    });
   }
 
   return map;
 }
 
 function getSubjectReferenceTheme(name: string) {
-  const n = normalizeSubjectKey(name);
-  const core = CORE_SUBJECT_META.find((meta) => meta.match(n));
-  return SUBJECT_CARD_PALETTE.find((palette) => palette.key === core?.key) ?? SUBJECT_CARD_PALETTE[0];
+  const card = getSubjectCardStyle(name);
+  return { bg: card.bg, border: card.border, color: card.bar, tag: card.iconBg };
 }
 
 function formatViews(n: number) {
@@ -319,7 +246,13 @@ function formatSubjectViews(n: number) {
 }
 
 function getSubjectHeroLabel(name: string) {
-  return name.replace(/^Indian\s+/i, '').trim();
+  const normalized = name
+    .replace(/^Indian\s+/i, '')
+    .replace(/^Modern History$/i, 'History')
+    .replace(/^Indian Polity(?:\s*&\s*Governance)?$/i, 'Polity')
+    .replace(/^Ethics,\s*Integrity\s*&\s*Aptitude$/i, 'Ethics')
+    .trim();
+  return normalized || name;
 }
 
 /* Topic subtitle shown under "<Subject> Simplified" in the playlist header.
@@ -571,60 +504,52 @@ export default function VideoLecturesPage() {
 
   /*
    * "Read" opens the SAME in-app PDF viewer used by the Study Material module
-   * (StudyMaterialReaderModal). Videos aren't yet mapped to their study
-   * materials in the Admin Panel, so as a sample integration we open the first
-   * available study-material note. Once the admin mapping exists, resolve the
-   * material linked to `video` instead of walking the library tree here.
+   * (StudyMaterialReaderModal). The admin links a video to an existing Study
+   * Material record from the Video Lecture Manager, so the video carries a
+   * `studyMaterialId` — we render that record through the very same endpoint
+   * the Study Material module uses (libraryService.getMaterialViewPages),
+   * keeping Study Material the single source of truth for PDFs.
+   *
+   * Fallback: a video linked via the older per-video upload path (before this
+   * change) exposes no studyMaterialId; for those we still render through the
+   * legacy video endpoint so nothing that already worked breaks.
    */
+  const extractPages = (res: any): string[] => {
+    const data = res?.data?.data || res?.data || {};
+    return Array.isArray(data.pages)
+      ? data.pages
+          .map((page: any) => page?.url)
+          .filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
+      : [];
+  };
+
   const handleRead = async (video: VideoItem) => {
     const key = String(video.id);
     if (loadingRead) return;
     setLoadingRead(key);
     try {
-      const subjRes: any = await libraryService.getSubjects();
-      const subjects: any[] = subjRes.data?.subjects || subjRes.data || [];
-
-      let material: any = null;
-      let subjectName = '';
-      for (const subj of subjects) {
-        if (!subj?.id) continue;
-        const chRes: any = await libraryService.getChapters(subj.id);
-        const chapters: any[] = chRes.data?.chapters || chRes.data || [];
-        for (const subSubject of chapters) {
-          for (const topic of (subSubject.topics || [])) {
-            const found = (topic.materials || []).find((m: any) => m?._id || m?.id);
-            if (found) { material = found; subjectName = subj.name; break; }
-          }
-          if (material) break;
-        }
-        if (material) break;
-      }
-
-      if (!material) {
-        alert('No study material is available to read yet.');
-        return;
-      }
-
-      const materialId = material._id || material.id;
-      const viewRes: any = await libraryService.getMaterialViewPages(materialId, 50);
-      const data = viewRes.data?.data || viewRes.data || {};
-      const pages: string[] = Array.isArray(data.pages)
-        ? data.pages
-            .map((page: any) => page?.url)
-            .filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
-        : [];
+      const res: any = video.studyMaterialId
+        ? await libraryService.getMaterialViewPages(video.studyMaterialId, 50)
+        : await videoService.getVideoMaterialPages(video.id, 50);
+      const pages = extractPages(res);
 
       if (pages.length > 0) {
+        const title = res?.data?.data?.title || res?.data?.title || video.studyMaterialName || video.title;
         setReadModal({
           pages,
-          title: data.title || material.title || material.name || video.title,
-          subject: subjectName || video.subject || '',
+          title,
+          subject: video.subject || selectedSubject || '',
         });
       } else {
-        alert('Could not load this note. Please try again.');
+        alert('No study material has been linked to this video yet.');
       }
-    } catch {
-      alert('Could not open the study material. Please try again.');
+    } catch (err: any) {
+      const status = err?.statusCode ?? err?.status ?? err?.response?.status;
+      if (status === 404) {
+        alert('No study material has been linked to this video yet.');
+      } else {
+        alert('Could not open the study material. Please try again.');
+      }
     } finally {
       setLoadingRead(null);
     }
@@ -811,6 +736,7 @@ export default function VideoLecturesPage() {
         </div>
 
         {/* Subject grid */}
+        <SubjectChoiceCardStyles />
         {subjectsLoading ? (
           <div className="flex flex-col items-center justify-center" style={{ padding: 'clamp(32px, 4vw, 56px) 0', color: '#9CA3AF' }}>
             <div className="w-10 h-10 border-4 border-[#e8a820] border-t-transparent rounded-full animate-spin mb-4" />
@@ -820,14 +746,8 @@ export default function VideoLecturesPage() {
           </div>
         ) : (
           <div
-            className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 justify-center"
-            style={{
-              justifyContent: 'center',
-              justifyItems: 'center',
-              columnGap: '20px',
-              rowGap: '22px',
-              marginBottom: selectedSubject ? 'clamp(24px, 2.5vw, 36px)' : '0',
-            }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5"
+            style={{ marginBottom: selectedSubject ? 'clamp(24px, 2.5vw, 36px)' : '0' }}
           >
             {visibleSubjects.map((subject) => {
               const theme = subjectThemeMap.get(subject.name) ?? { bg: '#F5F9FF', border: '#D0E2FF', color: '#5B8DD9', tag: '#DBEAFE', progress: 50 };
@@ -836,134 +756,38 @@ export default function VideoLecturesPage() {
               const watchedCount = (watchedBySubject[normalizeSubjectKey(subject.name)] || []).length;
               const totalCount = subject.videoCount ?? 0;
               const progressPct = totalCount > 0 ? Math.min(100, Math.round((watchedCount / totalCount) * 100)) : 0;
+              // Match the shared subject-card fill behaviour (min 10% so a started deck reads as progress).
+              const progressWidth = totalCount > 0 ? Math.max(progressPct, 10) : 0;
+              const toGo = Math.max(0, totalCount - watchedCount);
+              const status = progressPct === 100 ? 'Completed' : progressPct > 0 ? 'In progress' : 'Not started';
+              const statusColor = progressPct === 100 ? '#16A34A' : progressPct > 0 ? '#2563EB' : '#8A94A6';
+              const iconBg = getSubjectMetaStyle(subject.name).bg;
               return (
-                <button
-                  type="button"
+                <SubjectChoiceCard
                   key={subject.name}
                   onClick={() => handleSubjectClick(subject.name)}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = `0 12px 28px ${theme.color}30`;
-                    e.currentTarget.style.borderColor = theme.color;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = isSelected ? 'translateY(-2px) scale(1.01)' : 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = isSelected ? `0 8px 28px ${theme.color}45` : '0 1px 4px rgba(0,0,0,0.05)';
-                    e.currentTarget.style.borderColor = isSelected ? theme.color : theme.border;
-                  }}
-                  style={{
-                    width: '100%',
-                    minHeight: '188px',
-                    background: isSelected ? theme.color : theme.bg,
-                    borderRadius: '20px',
-                    padding: '20px 18px 18px',
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-                    border: `1.5px solid ${isSelected ? theme.color : theme.border}`,
-                    boxShadow: isSelected ? `0 8px 28px ${theme.color}45` : '0 1px 4px rgba(0,0,0,0.05)',
-                    transform: isSelected ? 'translateY(-2px) scale(1.01)' : 'translateY(0) scale(1)',
-                    position: 'relative',
-                    textAlign: 'left',
-                  }}
-                >
-                  {showNew && (
-                    <div
-                      className="font-arimo font-bold"
-                      style={{
-                        position: 'absolute',
-                        top: '12px',
-                        right: '12px',
-                        height: '22px',
-                        minWidth: '48px',
-                        padding: '3px 11px 0',
-                        borderRadius: '20px',
-                        background: '#3B82F6',
-                        color: '#FFFFFF',
-                        fontSize: '11px',
-                        lineHeight: '16px',
-                        letterSpacing: '0',
-                      }}
+                  selected={isSelected}
+                  icon={subjectEmoji(subject.name)}
+                  iconBg={iconBg}
+                  accentColor={theme.color}
+                  title={getSubjectHeroLabel(subject.name)}
+                  meta={`${totalCount} videos · ${formatSubjectViews(getSubjectViewCount(subject))} views`}
+                  topRight={showNew && (
+                    <span
+                      className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
+                      style={{ background: '#FDB022', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
                     >
                       NEW
-                    </div>
+                    </span>
                   )}
-
-                  <div
-                    className="flex items-center justify-center"
-                    style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '12px',
-                      background: isSelected ? 'rgba(255,255,255,0.22)' : theme.tag,
-                      fontSize: '24px',
-                      lineHeight: '32px',
-                      marginBottom: '12px',
-                    }}
-                  >
-                    {subjectEmoji(subject.name)}
-                  </div>
-                  <div
-                    className="font-arimo font-bold"
-                    title={subject.name}
-                    style={{
-                      fontSize: '17px',
-                      lineHeight: '22px',
-                      color: isSelected ? '#FFFFFF' : '#1E293B',
-                      letterSpacing: '-0.3px',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {subject.name}
-                  </div>
-                  <div
-                    className="font-arimo flex items-center"
-                    style={{ fontSize: '13px', lineHeight: '18px', color: isSelected ? 'rgba(255,255,255,0.75)' : '#64748B', marginTop: '6px', marginBottom: '12px', gap: '14px', whiteSpace: 'nowrap' }}
-                  >
-                    <span className="inline-flex items-center" style={{ gap: '5px' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10" />
-                        <polygon points="10 8 16 12 10 16 10 8" />
-                      </svg>
-                      {subject.videoCount ?? 0} videos
-                    </span>
-                    <span className="inline-flex items-center" style={{ gap: '5px' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                      {formatSubjectViews(getSubjectViewCount(subject))}
-                    </span>
-                  </div>
-                  {(() => {
-                    const status = progressPct === 100 ? 'Completed' : progressPct > 0 ? 'In progress' : 'Not started';
-                    const barColor = isSelected ? 'rgba(255,255,255,0.85)' : progressPct === 100 ? '#2563EB' : theme.color;
-                    const labelColor = isSelected ? 'rgba(255,255,255,0.9)' : '#64748B';
-                    return (
-                      <>
-                        {/* Status + completion percentage */}
-                        <div
-                          className="flex items-center justify-between font-arimo font-bold"
-                          style={{ fontSize: '11px', color: labelColor, marginBottom: '6px', width: '100%' }}
-                        >
-                          <span>{status}</span>
-                          <span>{progressPct}%</span>
-                        </div>
-                        <div
-                          className="rounded-full overflow-hidden"
-                          style={{ width: '100%', height: '6px', background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.7)' }}
-                        >
-                          <div
-                            className="h-full rounded-full"
-                            style={{ width: `${progressPct}%`, background: barColor, transition: 'width 0.3s ease' }}
-                          />
-                        </div>
-                      </>
-                    );
-                  })()}
-                </button>
+                  statusLine={status}
+                  statusLineColor={statusColor}
+                  progressPercent={progressWidth}
+                  progressColor={theme.color}
+                  footerLeft={`✓ ${watchedCount} watched`}
+                  footerRight={totalCount === 0 ? 'Start here' : toGo === 0 ? '✓ All done' : `${toGo} to go`}
+                  footerRightColor={totalCount > 0 && toGo === 0 ? '#16A34A' : '#EF4444'}
+                />
               );
             })}
           </div>
@@ -1009,8 +833,8 @@ export default function VideoLecturesPage() {
                   </div>
                   <div>
                     <h2
-                      className="font-arimo font-bold"
-                      style={{ fontSize: '24px', color: '#1E293B', lineHeight: '32px' }}
+                      className="font-bold"
+                      style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: '22px', color: '#101828', lineHeight: '28px' }}
                     >
                       {getSubjectHeroLabel(selectedSubject)} Simplified
                     </h2>
@@ -1093,6 +917,7 @@ export default function VideoLecturesPage() {
                   .vl-card:hover .vl-play-overlay{opacity:1;}
                   .vl-play-btn{width:56px;height:56px;border-radius:999px;background:#FF2D2D;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px -8px rgba(255,45,45,.6);border:none;cursor:pointer;}
                   .vl-pill{position:absolute;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.02em;padding:4px 9px;border-radius:999px;z-index:2;}
+                  .vl-badges{position:absolute;top:10px;left:10px;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100% - 20px);z-index:2;}
                   .vl-pill-dark{background:rgba(11,18,38,.85);color:#fff;backdrop-filter:blur(6px);}
                   .vl-pill-gold{background:#E9B949;color:#1A1206;}
                   .vl-pill-red{background:#FF2D2D;color:#fff;}
@@ -1128,12 +953,9 @@ export default function VideoLecturesPage() {
                   {filteredSubjectVideos.map((video) => {
                     const watchedIds = watchedBySubject[normalizeSubjectKey(selectedSubject ?? video.subject ?? '')] || [];
                     const isWatched = watchedIds.includes(String(video.id));
-                    const badges = [
-                      { label: 'NEW', cls: 'vl-pill-red', pdf: false },
-                      { label: 'POPULAR', cls: 'vl-pill-gold', pdf: false },
-                      { label: 'PDF INCLUDED', cls: 'vl-pill-blue', pdf: true },
-                    ];
-                    const badge = badges[stableHash(String(video.id)) % badges.length];
+                    const videoTags = Array.isArray(video.tags)
+                      ? video.tags.filter((t) => typeof t === 'string' && t.trim())
+                      : [];
                     return (
                     <article key={video.id} className="vl-card font-arimo">
                       <div className="vl-thumb">
@@ -1144,16 +966,25 @@ export default function VideoLecturesPage() {
                           <span style={{ fontSize: 'clamp(48px, 5vw, 64px)' }}>{subjectEmoji(selectedSubject)}</span>
                         )}
                         <div className="vl-scrim" />
-                        {/* Top-left badge */}
-                        <span className={`vl-pill ${badge.cls}`} style={{ top: '10px', left: '10px' }}>
-                          {badge.pdf && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                              <path d="M14 2v6h6" />
-                            </svg>
-                          )}
-                          {badge.label}
-                        </span>
+                        {/* Top-left tags (admin-managed) */}
+                        {videoTags.length > 0 && (
+                          <div className="vl-badges">
+                            {videoTags.map((tag, ti) => {
+                              const pill = getTagPill(tag);
+                              return (
+                                <span key={`${tag}-${ti}`} className={`vl-pill ${pill.cls}`} style={{ position: 'static' }}>
+                                  {pill.pdf && (
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                      <path d="M14 2v6h6" />
+                                    </svg>
+                                  )}
+                                  {tag}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
                         {/* Bookmark */}
                         <button className="vl-bookmark" aria-label="Bookmark" onClick={(e) => e.currentTarget.classList.toggle('active')}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B1226" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1468,6 +1299,12 @@ export default function VideoLecturesPage() {
         .vlm-copy-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#0b1226;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
         .vlm-copy-btn:hover{background:#1a2a4a;}
         .vlm-copy-btn.copied{background:#16a34a;}
+        /* Subject cards — shared 1:1 with Flashcards / Mindmaps / Spaced Repetition */
+        .subjhx-card{position:relative;overflow:hidden;border:1px solid var(--subjhx-border);transition:transform .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1),border-color .3s cubic-bezier(.4,0,.2,1);}
+        .subjhx-card:hover{transform:translateY(-3px);box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);border-color:transparent;}
+        .subjhx-accent{position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:opacity .3s;z-index:2;}
+        .subjhx-card:hover .subjhx-accent{opacity:1;}
+        .subjhx-card.is-selected .subjhx-accent{opacity:1;}
       `}</style>
 
       {/* ============ GET PDF POPUP (redirect to Study Material) ============ */}

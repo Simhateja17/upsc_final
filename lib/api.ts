@@ -55,6 +55,15 @@ async function request<T>(
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+      // Single-device enforcement: the account was signed in on another device.
+      // Broadcast so the app can sign this device out (handled by SessionGuard).
+      if (
+        response.status === 401 &&
+        data?.code === 'SESSION_SUPERSEDED' &&
+        typeof window !== 'undefined'
+      ) {
+        window.dispatchEvent(new CustomEvent('session-superseded'));
+      }
       throw new ApiRequestError(data.message || `Error: ${response.status} ${response.statusText}`, response.status, data);
     }
 

@@ -5,6 +5,7 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { leaderboardService } from '@/lib/services';
+import LeaderboardRankingCard from '@/components/LeaderboardRankingCard';
 
 type Tab = 'overall' | 'mcq' | 'mains';
 type Range = 'all' | 'week' | 'month';
@@ -50,7 +51,7 @@ function getInitial(name: string) {
 export default function LeaderboardPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('overall');
-  const [range, setRange] = useState<Range>('all');
+  const [range, setRange] = useState<Range>('week');
   const [showRangeMenu, setShowRangeMenu] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [communityStats, setCommunityStats] = useState<CommunityStats | null>(null);
@@ -64,8 +65,12 @@ export default function LeaderboardPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
+    const rangeParam = params.get('range');
     if (tabParam === 'overall' || tabParam === 'mcq' || tabParam === 'mains') {
       setTab(tabParam);
+    }
+    if (rangeParam === 'all' || rangeParam === 'week' || rangeParam === 'month') {
+      setRange(rangeParam);
     }
   }, []);
 
@@ -115,39 +120,14 @@ export default function LeaderboardPage() {
     };
   }, [range]);
 
-  const podium = useMemo(() => {
-    const top3 = leaderboard.slice(0, 3);
-    const ordered = [top3[1], top3[0], top3[2]].filter(Boolean);
-    return ordered.map((item, idx) => {
-      const place = idx === 1 ? 1 : idx === 0 ? 2 : 3;
-      const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : '🥉';
-      const winner = place === 1;
-      return {
-        place: place as 1 | 2 | 3,
-        medal,
-        initial: item.initial || getInitial(item.name),
-        name: item.name,
-        city: '',
-        points: (Math.round(item.totalScore * 10) / 10).toString(),
-        accuracy: `${item.accuracy}%`,
-        winner,
-      };
-    });
-  }, [leaderboard]);
-
-  const rows = useMemo(() => {
-    return leaderboard.slice(3).map((item) => ({
-      rank: String(item.rank),
-      initial: item.initial || getInitial(item.name),
+  const rankingRows = useMemo(() => {
+    return leaderboard.slice(0, 10).map((item) => ({
+      rank: item.rank,
+      userId: item.userId,
       name: item.name,
-      handle: item.handle || '',
-      city: '',
-      score: (Math.round(item.totalScore * 10) / 10).toString(),
-      accuracy: item.accuracy,
-      streak: String(item.streak),
-      hours: `${Math.round(item.studyHours)}h`,
+      value: tab === 'mains' ? item.mainsAvg : tab === 'mcq' ? item.mcqAvg : item.totalScore,
     }));
-  }, [leaderboard]);
+  }, [leaderboard, tab]);
 
   const myInitial = useMemo(() => {
     if (myRank?.name) return getInitial(myRank.name);
@@ -337,145 +317,29 @@ export default function LeaderboardPage() {
           Updates every 30 min
         </div>
 
-        {/* Leaderboard Content */}
-        <section className="mx-auto max-w-[964px]">
-          {loading ? (
-            <div className="py-20 text-center text-[14px] text-[#9AA3B8]">Loading leaderboard…</div>
-          ) : leaderboard.length === 0 ? (
-            <div className="py-20 text-center text-[14px] text-[#9AA3B8]">No data yet. Start practicing to appear on the leaderboard!</div>
-          ) : (
-            <>
-              {/* Podium */}
-              <div className="mb-8 grid grid-cols-1 items-end justify-center gap-4 md:grid-cols-[175px_230px_175px]">
-                {podium.map((item) => (
-                  <article
-                    key={item.place}
-                    className={`relative overflow-visible rounded-[16px] border text-center ${
-                      item.winner
-                        ? 'min-h-[309px] border-[rgba(232,184,75,0.3)] bg-[linear-gradient(160deg,#FFFDF7_0%,#FFF9ED_100%)] pt-[39px]'
-                        : 'min-h-[284px] border-[rgba(11,22,40,0.09)] bg-white pt-[28px]'
-                    }`}
-                  >
-                    {item.winner && (
-                      <>
-                        <div className="absolute left-0 right-0 top-0 h-[3px] rounded-tl-[16px] rounded-tr-[16px] bg-gradient-to-r from-[#C99730] via-[#E8B84B] to-[#F5CE72]" />
-                        <div className="absolute left-1/2 top-[-15px] -translate-x-1/2 text-[24px] leading-none">👑</div>
-                      </>
-                    )}
+        {/* Leaderboard Content — same ranking-card design as the Daily Mains Challenge's "Mains League" widget */}
+        <section className="mx-auto max-w-[964px] mb-8">
+          <LeaderboardRankingCard
+            icon={tab === 'mains' ? '✍️' : tab === 'mcq' ? '🎯' : '🏆'}
+            title={tab === 'mains' ? 'Mains League' : tab === 'mcq' ? 'Daily MCQ League' : 'Overall Leaderboard'}
+            rows={rankingRows}
+            you={{
+              rank: myRank?.rank ?? '—',
+              name: myRank?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You',
+            }}
+            loading={loading}
+          />
 
-                    <div
-                      className={`mx-auto mb-3 text-center leading-none ${item.winner ? 'text-[30px] text-[#C99730]' : item.place === 2 ? 'text-[25px] text-[#94A3B8]' : 'text-[22px] text-[#B87C4B]'}`}
-                      aria-hidden
-                    >
-                      {item.medal}
-                    </div>
-
-                    <div
-                      className={`mx-auto mb-4 flex items-center justify-center rounded-full font-extrabold text-white ${item.winner ? 'h-[72px] w-[72px]' : 'h-[60px] w-[60px]'}`}
-                      style={{
-                        border: item.winner ? '3px solid #E8B84B' : '2px solid #94A3B8',
-                        background: item.winner
-                          ? 'linear-gradient(135deg,#6F63F6,#7C5CF9)'
-                          : item.place === 2
-                            ? 'linear-gradient(135deg,#2DA2FF,#1F7AE0)'
-                            : 'linear-gradient(135deg,#16B68B,#0E9A78)',
-                        fontFamily: 'var(--font-dm-sans)',
-                        fontSize: item.winner ? '26px' : '22px',
-                        lineHeight: item.winner ? '41.6px' : '35.2px',
-                      }}
-                    >
-                      {item.initial}
-                    </div>
-
-                    <h3 className="text-[14px] font-bold leading-[22.4px] text-[#0C1424]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                      {item.name}
-                    </h3>
-
-                    <p className="mt-[2px] text-[11px] leading-[17.6px] text-[#9AA3B8]" style={{ fontFamily: 'var(--font-dm-sans)' }}>{item.city}</p>
-
-                    <div className={`mt-4 font-bold leading-none ${item.winner ? 'text-[28.8px] text-[#C99730]' : 'text-[24px] text-[#0C1424]'}`} style={{ fontFamily: 'var(--font-cormorant)' }}>
-                      {item.points}
-                    </div>
-                    <p className="mt-[1px] text-[10px] tracking-[0.5px] text-[#9AA3B8]" style={{ fontFamily: 'var(--font-dm-sans)' }}>Total Points</p>
-
-                    <div className="mx-auto mt-[10px] inline-flex rounded-[20px] border border-[rgba(29,164,92,0.25)] bg-[rgba(29,164,92,0.1)] px-[11px] py-[4px] text-[10px] font-bold leading-[16px] text-[#1DA45C]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                      ✓ {item.accuracy} accuracy
-                    </div>
-                  </article>
-                ))}
-              </div>
-
-              {/* Table */}
-              <div className="mx-auto mb-8 max-w-[964px] overflow-hidden rounded-[14px] border border-[rgba(11,22,40,0.09)] bg-white shadow-[0_2px_14px_rgba(11,22,40,0.07)]">
-                <div className="grid grid-cols-[70px_1fr_120px_100px_85px_100px] border-b border-[rgba(143,164,190,0.43)] px-5 py-[11px] text-[10px] font-bold uppercase tracking-[1px] text-[#9AA3B8]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                  <span>Rank</span>
-                  <span>Aspirant</span>
-                  <span className="text-center">Total Score</span>
-                  <span className="text-center">Accuracy</span>
-                  <span className="text-center">Streak</span>
-                  <span className="text-center">Total Hours</span>
-                </div>
-
-                {rows.map((row) => {
-                  const pillClass =
-                    row.accuracy >= 80
-                      ? 'border-[#B7E5C9] bg-[#EAF8EF] text-[#1DA45C]'
-                      : 'border-[#ECD9B3] bg-[#FFF6E6] text-[#C99730]';
-                  const avatarBg = avatarColorByInitial[row.initial] || '#3B82F6';
-
-                  return (
-                    <div key={`${row.rank}-${row.name}`} className="grid h-[66px] grid-cols-[70px_1fr_120px_100px_85px_100px] items-center border-b border-[rgba(11,22,40,0.09)] px-5 last:border-b-0">
-                      <div className="text-center text-[14px] font-extrabold text-[#6B7A99]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                        {row.rank}
-                      </div>
-
-                      <div className="flex items-center gap-3 pl-3">
-                        <div className="flex h-[36px] w-[36px] items-center justify-center rounded-full text-[13px] font-extrabold text-white" style={{ background: avatarBg, fontFamily: 'var(--font-dm-sans)' }}>
-                          {row.initial}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-[13px] font-semibold leading-[1.1] text-[#0C1424]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                            {row.name}
-                          </p>
-                          <p className="mt-[2px] truncate text-[11px] text-[#9AA3B8]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                            {row.handle} · {row.city}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="text-center text-[18.4px] font-bold leading-none text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)', fontVariantNumeric: 'lining-nums tabular-nums' }}>
-                        {row.score}
-                      </div>
-
-                      <div className="text-center">
-                        <span className={`inline-flex rounded-[20px] border px-[10px] py-[4px] text-[11px] font-bold leading-none ${pillClass}`} style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                          {row.accuracy}%
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-center gap-1 text-[#374560]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                        <span className="text-[13px] leading-none">🔥</span>
-                        <span className="text-[12px] font-semibold leading-none">{row.streak}</span>
-                      </div>
-
-                      <div className="text-center text-[18.4px] font-bold leading-none text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)', fontVariantNumeric: 'lining-nums tabular-nums' }}>
-                        {row.hours}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                <div className="py-5 text-center">
-                  <button
-                    className="rounded-[10px] border border-[rgba(11,22,40,0.17)] bg-[#FAF8F4] px-[23px] py-[10px] text-[13px] font-semibold text-[#374560]"
-                    style={{ fontFamily: 'var(--font-dm-sans)' }}
-                  >
-                    Show more aspirants ↓
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
+          {!loading && leaderboard.length > 0 ? (
+            <div className="py-5 text-center">
+              <button
+                className="rounded-[10px] border border-[rgba(11,22,40,0.17)] bg-[#FAF8F4] px-[23px] py-[10px] text-[13px] font-semibold text-[#374560]"
+                style={{ fontFamily: 'var(--font-dm-sans)' }}
+              >
+                Show more aspirants ↓
+              </button>
+            </div>
+          ) : null}
         </section>
 
         <section className="relative left-1/2 right-1/2 mt-20 w-screen -translate-x-1/2 overflow-hidden bg-[#090E1C] px-4 pb-[72px] pt-[71px] text-white">

@@ -4,10 +4,19 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { dashboardService, spacedRepService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import { EntitlementGate, UpgradePrompt } from '@/components/entitlements';
+import { EntitlementGate } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { ApiRequestError } from '@/lib/api';
+import {
+  SpacedRepOnboardingModal,
+  SpacedRepAddSubjectUpgradeModal,
+  SpacedRepLimitModal,
+} from '@/components/upgrade/UpgradeModals';
+import AddSubjectModal, { type NewSubject } from '@/components/AddSubjectModal';
 import SpacedRepStyles from './referenceStyles';
 import AddQuestionModal, { type AddQuestionPayload } from './AddQuestionModal';
+import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
+import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
 import {
   SUBJECT_HEALTH,
   isSameLocalDate,
@@ -18,18 +27,6 @@ import {
   type SpacedRepItem,
 } from './shared';
 
-// Per-subject card tint + accent colour, matching the reference layout exactly.
-const CARD_STYLE: Record<string, { tint: string; accent: string }> = {
-  polity: { tint: 'tint-yellow', accent: 'var(--orange)' },
-  geography: { tint: 'tint-green', accent: 'var(--green)' },
-  history: { tint: 'tint-peach', accent: 'var(--orange)' },
-  economy: { tint: 'tint-yellow', accent: 'var(--gold)' },
-  'environment-ecology': { tint: 'tint-mint', accent: 'var(--green)' },
-  'science-technology': { tint: 'tint-peach', accent: 'var(--orange)' },
-  'current-affairs': { tint: 'tint-rose', accent: 'var(--red)' },
-  ethics: { tint: 'tint-yellow', accent: 'var(--gold)' },
-};
-
 export default function SpacedRepetitionPage() {
   const entitlements = useEntitlements();
   const isLimited = entitlements.isLimited('spaced_repetition');
@@ -37,6 +34,35 @@ export default function SpacedRepetitionPage() {
   const [streakDays, setStreakDays] = useState(0);
   const [subjectAccuracy, setSubjectAccuracy] = useState<Record<string, number>>({});
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [showAddSubjectUpgradeModal, setShowAddSubjectUpgradeModal] = useState(false);
+  const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [customSubjects, setCustomSubjects] = useState<NewSubject[]>([]);
+
+  const FREE_QUESTION_LIMIT = 5;
+  const questionLimitReached = isLimited && items.length >= FREE_QUESTION_LIMIT;
+
+  // Onboarding popup greets every visit to the module (all plans).
+  useEffect(() => {
+    setShowOnboardingModal(true);
+  }, []);
+
+  const handleAddQuestionClick = () => {
+    if (questionLimitReached) {
+      setShowLimitModal(true);
+      return;
+    }
+    setShowAddModal(true);
+  };
+
+  const handleAddSubjectClick = () => {
+    if (isLimited) {
+      setShowAddSubjectUpgradeModal(true);
+      return;
+    }
+    setShowAddSubjectModal(true);
+  };
 
   useEffect(() => {
     spacedRepService.getItems()
@@ -78,19 +104,29 @@ export default function SpacedRepetitionPage() {
     const subjectLabel = subjectOptions.find((d) => d.id === payload.subjectId)?.label
       ?? SUBJECT_HEALTH.find((s) => s.id === payload.subjectId)?.label
       ?? payload.subjectId;
-    const res = await spacedRepService.addItem({
-      questionText: payload.questionText,
-      answer: payload.answer || undefined,
-      subject: subjectLabel,
-      source: sourceTypeToLabel(payload.sourceType),
-      sourceType: payload.sourceType,
-      scheduleDays: [payload.firstReviewDays],
-    });
-    if (res.status === 'success') {
-      setItems((prev) => [res.data, ...prev]);
-      return true;
+    try {
+      const res = await spacedRepService.addItem({
+        questionText: payload.questionText,
+        answer: payload.answer || undefined,
+        subject: subjectLabel,
+        source: sourceTypeToLabel(payload.sourceType),
+        sourceType: payload.sourceType,
+        scheduleDays: [payload.firstReviewDays],
+      });
+      if (res.status === 'success') {
+        setItems((prev) => [res.data, ...prev]);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      const code = err instanceof ApiRequestError ? err.payload?.code : null;
+      if (code === 'FEATURE_LIMIT_REACHED') {
+        setShowAddModal(false);
+        setShowLimitModal(true);
+        return false;
+      }
+      throw err;
     }
-    return false;
   };
 
   // Hero subject-health stats from real data
@@ -132,6 +168,7 @@ export default function SpacedRepetitionPage() {
       message="Free users can preview other revision tools. Aspire unlocks a 2-question spaced-repetition preview; Rise unlocks the full system."
     >
     <SpacedRepStyles />
+    <SubjectChoiceCardStyles />
     <div className="flex overflow-hidden" style={{ background: '#F9FAFB', height: '100%' }}>
       <div className="flex-1 overflow-y-auto">
         <DashboardPageHero
@@ -145,17 +182,6 @@ export default function SpacedRepetitionPage() {
 
         {/* Everything below the blue hero — ported from the reference exactly. */}
         <div className="sr-scope">
-          {isLimited && (
-            <div className="subjects-section" style={{ paddingBottom: 0 }}>
-              <UpgradePrompt
-                title="Aspire preview: 2 spaced-repetition questions"
-                currentTier={entitlements.tier}
-                requiredTier="rise"
-                message="Upgrade to Rise to add unlimited weak-area questions and unlock the full revision queue."
-              />
-            </div>
-          )}
-
           {/* SECTION 1: SUBJECT CARDS */}
           <section className="subjects-section">
             <div className="subjects-header">
@@ -163,37 +189,103 @@ export default function SpacedRepetitionPage() {
                 <h2>Choose a <em>Subject</em></h2>
                 <p>Pick the subject you want to revise today</p>
               </div>
-              <button className="add-q-btn" onClick={() => setShowAddModal(true)} disabled={isLimited}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
-                Add Question
-              </button>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button className="add-q-btn" onClick={handleAddQuestionClick}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+                  Add Question
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddSubjectClick}
+                  className="flex items-center gap-2 rounded-[10px] px-5 py-2.5"
+                  style={{
+                    background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)',
+                    border: 'none',
+                    boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1)',
+                    fontFamily: 'Inter',
+                    fontWeight: 700,
+                    fontSize: 14,
+                    lineHeight: '20px',
+                    color: '#17223E',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span className="text-lg leading-none">+</span> Add Subject
+                </button>
+              </div>
             </div>
-            <div className="subjects-grid">
+            <div className="subject-card-grid">
               {SUBJECT_HEALTH.map((s) => {
-                const style = CARD_STYLE[s.id] ?? { tint: 'tint-yellow', accent: 'var(--gold)' };
+                const style = getSubjectCardStyle(s.label);
+                const subjectMeta = getSubjectMetaStyle(s.label);
                 const acc = resolveAccuracy(subjectAccuracy, s);
                 const meta = strengthMeta(acc);
                 const barWidth = acc <= 0 ? 0 : Math.max(acc, 6);
                 const pending = subjectCounts[s.label] ?? 0;
-                const showStrengthBadge = pending === 0 && acc > 0 && (acc >= 65 || (acc >= 50 && acc < 65));
                 return (
-                  <Link key={s.id} href={`/dashboard/spaced-repetition/${s.id}`} className={`subject-card ${style.tint}`}>
-                    <div className="card-accent" style={{ background: style.accent }} />
-                    {pending > 0 && <span className="s-badge warn">{pending} to revisit</span>}
-                    {showStrengthBadge && (
-                      <span className={`s-badge ${acc >= 65 ? 'good' : 'mid'}`}>
-                        {acc >= 65 ? '✓ Excellent' : '⚡ Moderate'}
+                  <SubjectChoiceCard
+                    key={s.id}
+                    href={pending > 0 ? `/dashboard/spaced-repetition/${s.id}` : undefined}
+                    onClick={pending > 0 ? undefined : () => setShowOnboardingModal(true)}
+                    icon={subjectMeta.icon}
+                    iconBg={subjectMeta.bg}
+                    accentColor={style.bar}
+                    title={s.shortLabel ?? s.label}
+                    meta={acc > 0 ? `${acc}% ${meta.word}` : 'No data yet'}
+                    topRight={pending > 0 && (
+                      <span
+                        className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
+                        style={{ background: '#EF4444', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
+                      >
+                        {pending} to revisit
                       </span>
                     )}
-                    <span className="s-icon">{s.icon}</span>
-                    <h3>{s.shortLabel ?? s.label}</h3>
-                    <div className="s-status">{acc > 0 ? `${acc}% ${meta.word}` : 'No data yet'}</div>
-                    <div className="s-bar"><div className="s-bar-fill" style={{ width: `${barWidth}%`, background: style.accent }} /></div>
-                    <div className="s-action">⊕ Start revising</div>
-                    <span className="s-click-hint">Click to view →</span>
-                  </Link>
+                    statusLine={acc > 0 ? meta.status : undefined}
+                    statusLineColor={meta.color}
+                    progressPercent={barWidth}
+                    progressColor={style.bar}
+                    footerRight="Start revising →"
+                    footerRightColor="#6A7282"
+                  />
                 );
               })}
+
+              {customSubjects.map((s) => (
+                <SubjectChoiceCard
+                  key={`custom-${s.name}`}
+                  onClick={() => setShowOnboardingModal(true)}
+                  icon={s.icon}
+                  iconBg={s.tint}
+                  accentColor="#16A34A"
+                  title={s.name}
+                  meta="No data yet"
+                  progressPercent={0}
+                  footerRight="Start revising →"
+                  footerRightColor="#6A7282"
+                />
+              ))}
+
+              {/* Add-a-subject dotted box (gated for Free/Aspire) */}
+              <button
+                type="button"
+                onClick={handleAddSubjectClick}
+                className="rounded-[16px] border-2 border-dashed p-5 flex flex-col items-center justify-center text-center transition-all hover:bg-white hover:-translate-y-0.5 hover:shadow-md"
+                style={{ borderColor: '#E9EAEE', background: 'transparent', height: 190, cursor: 'pointer' }}
+                aria-label="Add a subject"
+              >
+                <span
+                  className="grid place-items-center rounded-2xl border-2 border-dashed"
+                  style={{ width: 48, height: 48, borderColor: '#D8E0EA', fontSize: 24, lineHeight: 1, color: '#6A7282' }}
+                >
+                  +
+                </span>
+                <span
+                  className="mt-3"
+                  style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}
+                >
+                  Add a Subject
+                </span>
+              </button>
             </div>
           </section>
 
@@ -296,6 +388,38 @@ export default function SpacedRepetitionPage() {
         open={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddItem}
+      />
+
+      <SpacedRepOnboardingModal
+        open={showOnboardingModal}
+        onClose={() => setShowOnboardingModal(false)}
+        onAddFirstQuestion={() => {
+          setShowOnboardingModal(false);
+          handleAddQuestionClick();
+        }}
+      />
+
+      <SpacedRepAddSubjectUpgradeModal
+        open={showAddSubjectUpgradeModal}
+        onClose={() => setShowAddSubjectUpgradeModal(false)}
+      />
+
+      <SpacedRepLimitModal
+        open={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        used={Math.min(items.length, FREE_QUESTION_LIMIT)}
+        limit={FREE_QUESTION_LIMIT}
+      />
+
+      <AddSubjectModal
+        open={showAddSubjectModal}
+        onClose={() => setShowAddSubjectModal(false)}
+        onCreate={(subject) => {
+          setCustomSubjects((prev) =>
+            prev.some((s) => s.name.toLowerCase() === subject.name.toLowerCase()) ? prev : [...prev, subject]
+          );
+          setShowAddSubjectModal(false);
+        }}
       />
     </div>
     </EntitlementGate>

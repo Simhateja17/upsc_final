@@ -1,13 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import type { MouseEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
 import { studyGroupService } from '@/lib/services';
+import MainsEvaluatorDemo from '@/components/landing/demos/MainsEvaluatorDemo';
+import MockTestDemo from '@/components/landing/demos/MockTestDemo';
+import CurrentAffairsDemo from '@/components/landing/demos/CurrentAffairsDemo';
 import '@/styles/landing.css';
+import '@/styles/landing-demos.css';
 
 const NAV_DROPDOWNS = {
   prepare: [
@@ -31,11 +36,17 @@ const NAV_DROPDOWNS = {
   ],
 };
 
+// `dwellMs` is how long each slide holds before auto-advancing. The
+// client's demo animations are much longer than the old uniform 4s
+// (mains loops every 8s, the CA cinematic runs ~15s to the end of its
+// modal scroll), so each slide now waits for its own animation instead
+// of cutting away mid-sequence. The gold progress line reads the same
+// value, so the two stay in step.
 const AI_SLIDES = [
-  { title: 'Mains Evaluator', iconSrc: '/sidebar-daily-answer-new.png', iconBg: 'rgba(232,184,75,0.14)', desc: 'Upload your handwritten or typed answers and receive structured feedback, marks, and personalized improvement tips. Our UPSC-examiner style analysis is delivered in under 60 seconds.' },
-  { title: 'Jeet AI Mentor Assistant', iconSrc: '/sidebar-jeet-gpt.png', iconBg: 'rgba(6,182,212,0.14)', desc: 'Get instant, precise answers for all your UPSC queries, covering everything from syllabus details and current affairs context to answer structuring and general doubt resolution.' },
-  { title: 'Adaptapic Mock Test Platform', iconSrc: '/sidebar-mock-tests-new.png', iconBg: 'rgba(139,92,246,0.14)', desc: 'Personalised mock tests targeting your weakest areas, ensuring every session moves the needle towards your goal.' },
-  { title: 'Current Affairs Digest', iconSrc: '/sidebar-current-affairs.png', iconBg: 'rgba(16,185,129,0.14)', desc: 'Our platform instantly connects daily news articles with the relevant UPSC syllabus. For each article, we provide a detailed summary, related practice MCQs and Mains examination questions.' },
+  { title: 'Mains Evaluator', dwellMs: 8000, iconSrc: '/sidebar-daily-answer-new.png', iconBg: 'rgba(232,184,75,0.14)', desc: 'Upload your handwritten or typed answers and receive structured feedback, marks, and personalized improvement tips. Our UPSC-examiner style analysis is delivered in under 60 seconds.' },
+  { title: 'Jeet AI Mentor Assistant', dwellMs: 5000, iconSrc: '/sidebar-jeet-gpt.png', iconBg: 'rgba(6,182,212,0.14)', desc: 'Get instant, precise answers for all your UPSC queries, covering everything from syllabus details and current affairs context to answer structuring and general doubt resolution.' },
+  { title: 'Adaptapic Mock Test Platform', dwellMs: 11000, iconSrc: '/sidebar-mock-tests-new.png', iconBg: 'rgba(139,92,246,0.14)', desc: 'Personalised mock tests targeting your weakest areas, ensuring every session moves the needle towards your goal.' },
+  { title: 'Current Affairs Digest', dwellMs: 15000, iconSrc: '/sidebar-current-affairs.png', iconBg: 'rgba(16,185,129,0.14)', desc: 'Our platform instantly connects daily news articles with the relevant UPSC syllabus. For each article, we provide a detailed summary, related practice MCQs and Mains examination questions.' },
 ];
 
 export default function LandingPage() {
@@ -163,12 +174,13 @@ export default function LandingPage() {
     return () => clearTimeout(t);
   }, [activeSlide]);
 
-  // Auto-advance the AI feature slides every 4s (matches the gold progress-line
-  // animation). Resets whenever activeSlide changes, so hover/click restarts the cycle.
+  // Auto-advance the AI feature slides once the current slide's demo has
+  // had time to play (see AI_SLIDES.dwellMs). Resets whenever activeSlide
+  // changes, so hover/click restarts the cycle.
   useEffect(() => {
     const t = setTimeout(() => {
       setActiveSlide((prev) => (prev + 1) % AI_SLIDES.length);
-    }, 4000);
+    }, AI_SLIDES[activeSlide].dwellMs);
     return () => clearTimeout(t);
   }, [activeSlide]);
 
@@ -185,6 +197,13 @@ export default function LandingPage() {
     setMobileNavOpen(false);
     document.body.style.overflow = '';
   }, []);
+
+  const guardDashboardLink = useCallback((event: MouseEvent<HTMLElement>, href: string) => {
+    if (!href.startsWith('/dashboard') || isAuthenticated) return;
+    event.preventDefault();
+    closeMobileNav();
+    openAuthModal('signup');
+  }, [closeMobileNav, isAuthenticated, openAuthModal]);
 
   const go = useCallback((path: string) => { router.push(path); closeMobileNav(); }, [router, closeMobileNav]);
 
@@ -214,7 +233,7 @@ export default function LandingPage() {
         {/* Desktop nav links */}
         <div className="hidden md:flex items-center" style={{ gap: 28 }}>
           <Link href="/dashboard/jeet-gpt" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Jeet AI Mentor</Link>
-          <Link href="/dashboard/daily-answer/challenge" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Daily Mains Challenge</Link>
+          <Link href="/dashboard/daily-answer/challenge" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap', transition: 'color 0.2s' }} className="hover:!text-[#E8B84B]">Daily Answer Writing</Link>
 
           {(['prepare', 'practice', 'revision'] as const).map((key) => {
             const labels: Record<string, string> = { prepare: 'Prepare', practice: 'Practice', revision: 'Revision Tools' };
@@ -247,8 +266,7 @@ export default function LandingPage() {
             );
           })}
 
-          <Link href="/community" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Community</Link>
-          <Link href="/dashboard/billing/plans" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Pricing</Link>
+          <Link href="/pricing" style={{ color: 'rgba(255,255,255,0.58)', textDecoration: 'none', fontSize: 14, fontWeight: 500, fontFamily: "'Outfit',sans-serif", whiteSpace: 'nowrap' }} className="hover:!text-[#E8B84B]">Pricing</Link>
         </div>
 
         <div className="nav-btns hidden md:flex">
@@ -271,7 +289,7 @@ export default function LandingPage() {
       {/* ── MOBILE NAV ── */}
       <div className={`mobile-nav${mobileNavOpen ? ' open' : ''}`}>
         <a href="/dashboard/jeet-gpt" onClick={closeMobileNav}>Jeet AI Mentor</a>
-        <a href="/dashboard/daily-answer/challenge" onClick={closeMobileNav}>Daily Mains Challenge</a>
+        <a href="/dashboard/daily-answer/challenge" onClick={closeMobileNav}>Daily Answer Writing</a>
         <div style={{ padding: '10px 0 4px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Prepare</div>
           {NAV_DROPDOWNS.prepare.map(i => <a key={i.href} href={i.href} onClick={closeMobileNav} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
@@ -284,8 +302,7 @@ export default function LandingPage() {
           <div style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Revision Tools</div>
           {NAV_DROPDOWNS.revision.map(i => <a key={i.href} href={i.href} onClick={closeMobileNav} style={{ paddingLeft: 12, fontSize: 14 }}>{i.label}</a>)}
         </div>
-        <a href="/community" onClick={closeMobileNav}>Community</a>
-        <a href="/dashboard/billing/plans" onClick={closeMobileNav}>Pricing</a>
+        <a href="/pricing" onClick={closeMobileNav}>Pricing</a>
         <div className="mobile-nav-btns">
           <button className="btn-nav-ghost" onClick={() => openAuthModal('login')}>Login</button>
           <button className="btn-nav-gold" onClick={() => openAuthModal('signup')}>Start Free →</button>
@@ -397,7 +414,13 @@ export default function LandingPage() {
                   </div>
                   <div className="ai-feat-desc">{slide.desc}</div>
                   <div className="ai-feat-progress">
-                    {activeSlide === i && <div className="ai-feat-progress-fill" key={activeSlide} />}
+                    {activeSlide === i && (
+                      <div
+                        className="ai-feat-progress-fill"
+                        key={activeSlide}
+                        style={{ animationDuration: `${slide.dwellMs}ms` }}
+                      />
+                    )}
                   </div>
                 </div>
               ))}
@@ -413,22 +436,15 @@ export default function LandingPage() {
                 <span className="device-title">{AI_SLIDES[activeSlide].title}</span>
               </div>
               <div className="demo-content">
-                {/* Slide 0: Mains Evaluator */}
-                <div className={`demo-slide${activeSlide === 0 ? ' active' : ''}`}>
-                  <div className="eval-q">Q: Discuss the role of Interstate Councils in maintaining cooperative federalism in India. (150 words)</div>
-                  <div className="eval-ans">Interstate Councils serve as a crucial forum for Centre-State deliberation… leading to concerns about &quot;Decline of Parliament&quot;. Interstate councils will lead to reduction in trust deficit between the Centre &amp; States…</div>
-                  <div className="eval-bar"><div className="eval-bar-fill" /></div>
-                  <div style={{ fontSize: 11, color: '#8A96B0', marginBottom: 10, fontFamily: "'JetBrains Mono', monospace" }}>AI analysing answer… 85% complete</div>
-                  <div className="eval-scores">
-                    <div className="es-item"><div className="es-val" style={{ color: '#C8960A' }}>7.5</div><div className="es-label">Content</div></div>
-                    <div className="es-item"><div className="es-val" style={{ color: '#06B6D4' }}>8.0</div><div className="es-label">Structure</div></div>
-                    <div className="es-item"><div className="es-val" style={{ color: '#10B981' }}>7.0</div><div className="es-label">Analysis</div></div>
-                  </div>
-                  <div className="eval-fb">✓ Good constitutional grounding. Add 2024 examples. Conclusion needs forward-looking dimension.</div>
+                {/* Slide 0: Mains Evaluator — client animation asset */}
+                <div className={`demo-slide demo-slide-asset${activeSlide === 0 ? ' active' : ''}`}>
+                  <MainsEvaluatorDemo />
                 </div>
 
-                {/* Slide 1: AI Assistant */}
-                <div className={`demo-slide${activeSlide === 1 ? ' active' : ''}`}>
+                {/* Slide 1: AI Assistant — still the hand-built demo; the
+                    client's chat animation asset has not been supplied yet
+                    (their link for it duplicated the Mains Evaluator file). */}
+                <div className={`demo-slide demo-slide-chat${activeSlide === 1 ? ' active' : ''}`}>
                   <div className="chat-wrap">
                     <div className="chat-bubble cb-user">How should I structure an answer on &quot;Judicial Overreach&quot;?</div>
                     <div className="chat-bubble cb-ai">
@@ -455,41 +471,14 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Slide 2: Mock Tests */}
-                <div className={`demo-slide${activeSlide === 2 ? ' active' : ''}`}>
-                  <div className="tgen-header">
-                    <div className="tgen-title">Adaptive Test – Weak Areas</div>
-                    <div className="tgen-badge">Modern History · 10Q</div>
-                  </div>
-                  <div className="tg-q">
-                    <div className="tg-q-text">Which of the following about the INC&apos;s Lahore Session (1929) is CORRECT?</div>
-                    <div className="tg-option"><div className="tg-opt-mark">A</div>It adopted the Poorna Swaraj resolution only</div>
-                    <div className="tg-option correct"><div className="tg-opt-mark">✓</div>Jawaharlal Nehru was elected President</div>
-                    <div className="tg-option wrong"><div className="tg-opt-mark">✗</div>Gandhi ji presided over the session</div>
-                    <div className="tg-option"><div className="tg-opt-mark">D</div>It was held in December 1930</div>
-                  </div>
-                  <div style={{ fontSize: 12, color: '#065F46', padding: '10px 13px', background: '#D1FAE5', border: '1px solid #A7F3D0', borderRadius: 8 }}>
-                    ✓ Correct! Nehru presided &amp; passed the Poorna Swaraj resolution on 31 Dec 1929.
-                  </div>
+                {/* Slide 2: Mock Tests — client animation asset */}
+                <div className={`demo-slide demo-slide-asset${activeSlide === 2 ? ' active' : ''}`}>
+                  <MockTestDemo active={activeSlide === 2} />
                 </div>
 
-                {/* Slide 3: Current Affairs */}
-                <div className={`demo-slide${activeSlide === 3 ? ' active' : ''}`}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0B1530', marginBottom: 14, fontFamily: "'Outfit', sans-serif" }}>Today&apos;s UPSC-Relevant News</div>
-                  <div className="ca-wrap">
-                    <div className="ca-item">
-                      <div><div className="ca-dot-item" style={{ background: '#C8960A' }} /></div>
-                      <div><div className="ca-text">RBI&apos;s MPC holds repo rate at 6.5% amid inflation concerns – GS3 Economy</div><div className="ca-tag" style={{ color: '#C8960A' }}>Economy · Prelims + Mains</div></div>
-                    </div>
-                    <div className="ca-item">
-                      <div><div className="ca-dot-item" style={{ background: '#06B6D4' }} /></div>
-                      <div><div className="ca-text">SC upholds Right to Privacy in digital data – link to PDPA 2023</div><div className="ca-tag" style={{ color: '#06B6D4' }}>Polity · Ethics</div></div>
-                    </div>
-                    <div className="ca-item">
-                      <div><div className="ca-dot-item" style={{ background: '#10B981' }} /></div>
-                      <div><div className="ca-text">India&apos;s forest cover increases by 1540 sq km – State of Forest Report 2025</div><div className="ca-tag" style={{ color: '#10B981' }}>Environment · Geography</div></div>
-                    </div>
-                  </div>
+                {/* Slide 3: Current Affairs — client animation asset */}
+                <div className={`demo-slide demo-slide-asset${activeSlide === 3 ? ' active' : ''}`}>
+                  <CurrentAffairsDemo active={activeSlide === 3} />
                 </div>
               </div>
             </div>
@@ -902,7 +891,7 @@ export default function LandingPage() {
               <div className="h-[2px] w-7 rounded bg-[#F4BF4C]" />
               <ul className="mt-3 space-y-1">
                 <li><Link href="/dashboard/daily-mcq" className="inline-flex items-center py-1 text-[13px] text-white/60 transition hover:text-white">Daily MCQ</Link></li>
-                <li><Link href="/dashboard/daily-answer" className="inline-flex items-center py-1 text-[13px] text-white/60 transition hover:text-white">Daily Mains Challenge</Link></li>
+                <li><Link href="/dashboard/daily-answer" className="inline-flex items-center py-1 text-[13px] text-white/60 transition hover:text-white">Daily Answer Writing</Link></li>
                 <li><Link href="/dashboard/mock-tests" className="inline-flex items-center py-1 text-[13px] text-white/60 transition hover:text-white">Mock Tests</Link></li>
                 <li><Link href="/dashboard/current-affairs" className="inline-flex items-center py-1 text-[13px] text-white/60 transition hover:text-white">Current Affairs</Link></li>
               </ul>

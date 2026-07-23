@@ -1,9 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 const PdfViewer = dynamic(() => import('@/components/PdfViewer'), { ssr: false });
+
+/* Page geometry — must stay in sync with PdfViewer so the fit-to-width
+   default zoom is computed against the same numbers the viewer renders at. */
+const BASE_PAGE_WIDTH = 980; // width of a page at 100% zoom (PdfViewer)
+const VIEWER_PADDING = 24;   // horizontal padding on each side of the scroller
+const MIN_ZOOM = 50;         // matches the zoom-out button floor
+const MAX_DEFAULT_ZOOM = 100; // never open a small page zoomed IN past 100%
 
 /* ------------------------------------------------------------------ */
 /*  Shared Study-Material PDF reader modal.                            */
@@ -59,17 +66,28 @@ export default function StudyMaterialReaderModal({
   const [docError, setDocError] = useState(false);
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
-  const [zoomLevel, setZoomLevel] = useState(100);
+  const [zoomLevel, setZoomLevel] = useState(MAX_DEFAULT_ZOOM);
   // Bumped on prev/next click so the viewer scrolls the requested page into view.
   const [scrollRequest, setScrollRequest] = useState<{ page: number; n: number }>({ page: 1, n: 0 });
+  // Wraps the PdfViewer so we can measure the available width for fit-to-width.
+  const viewerBodyRef = useRef<HTMLDivElement>(null);
 
-  // Reset viewer state whenever a new document is opened.
-  useEffect(() => {
+  // Reset viewer state whenever a new document is opened. Defaults the zoom to
+  // fit-to-width so notes open fully visible (zoomed out) instead of clipped;
+  // the +/- controls still let the user zoom manually afterwards. useLayoutEffect
+  // measures + applies this before paint so there's no flash of the clipped view.
+  useLayoutEffect(() => {
+    const el = viewerBodyRef.current;
+    const available = el ? el.clientWidth - VIEWER_PADDING * 2 : 0;
+    const fitZoom = available > 0
+      ? Math.max(MIN_ZOOM, Math.min(MAX_DEFAULT_ZOOM, Math.floor((available / BASE_PAGE_WIDTH) * 100)))
+      : MAX_DEFAULT_ZOOM;
+
     setDocLoaded(false);
     setDocError(false);
     setNumPages(pages.length);
     setPageNumber(1);
-    setZoomLevel(100);
+    setZoomLevel(fitZoom);
     setScrollRequest({ page: 1, n: 0 });
   }, [pages]);
 
@@ -191,7 +209,7 @@ export default function StudyMaterialReaderModal({
             )}
             <div className="font-arimo font-bold flex items-center" style={{
               height: '36px',
-              fontSize: '11px', padding: '0 12px', borderRadius: '10px',
+              fontSize: '12px', padding: '0 12px', borderRadius: '10px',
               background: '#FEF3C7', color: '#D97706', letterSpacing: '0.4px',
               whiteSpace: 'nowrap',
             }}>
@@ -200,7 +218,7 @@ export default function StudyMaterialReaderModal({
             <button
               onClick={handleGetPdf}
               className="font-arimo font-bold sm-btn sm-btn-gold sm-shine"
-              style={{ height: '36px', padding: '0 16px' }}
+              style={{ height: '36px', padding: '0 16px', borderRadius: '10px', fontSize: '12px' }}
             >
               <DownloadIcon />
               Get PDF
@@ -255,7 +273,7 @@ export default function StudyMaterialReaderModal({
           )}
 
           {/* Self-hosted PDF renderer — continuous scroll, no pop-out, no download UI */}
-          <div className="absolute inset-0">
+          <div className="absolute inset-0" ref={viewerBodyRef}>
             <PdfViewer
               pages={pages}
               zoomLevel={zoomLevel}

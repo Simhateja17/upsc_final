@@ -308,13 +308,37 @@
   background: #FFFFFF; border: 1px solid rgba(255,255,255,0.15);
   border-radius: 22px; overflow: hidden;
   box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+  /* Hug the 380px demo assets rather than stretching the full column,
+     so the frame reads as a device around them instead of leaving
+     empty white gutters either side. */
+  max-width: 380px;
+  margin: 0 auto;
 }
 .device-bar { background: #F1F3F8; border-bottom: 1px solid #E4EAF5; padding: 11px 16px; display: flex; align-items: center; gap: 8px; }
 .d-dot { width: 10px; height: 10px; border-radius: 50%; }
 .device-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-mid); margin-left: 6px; }
-.demo-content { padding: 0; min-height: 370px; position: relative; overflow: hidden; background: #FFFFFF; }
-.demo-slide { display: none; padding: 24px; flex-direction: column; background: #FFFFFF; min-height: 100%; }
+/* The client demo assets are authored at 380x660 and scale down to the
+   column width. `demo-content` derives that same height from its own
+   width (660/380 = 173.68cqw, capped at the authored 660px) so every
+   slide — assets and the hand-built chat slide alike — is exactly as
+   tall as the device frame. Without this the frame would jump height
+   each time the carousel advanced. */
+.demo-device { container-type: inline-size; }
+.demo-content {
+  padding: 0;
+  height: min(660px, 173.68cqw);
+  position: relative;
+  overflow: hidden;
+  background: #FFFFFF;
+}
+.demo-slide { display: none; padding: 24px; flex-direction: column; background: #FFFFFF; height: 100%; overflow: hidden; }
 .demo-slide.active { display: flex; }
+/* Asset slides supply their own internal padding and chrome. */
+.demo-slide-asset { padding: 0; }
+/* The chat slide was built for the old ~370px frame. In the taller
+   frame it anchors to the bottom, the way a real chat thread reads,
+   rather than leaving a void beneath the bubbles. */
+.demo-slide-chat { justify-content: flex-end; }
 .eval-q { font-size: 12.5px; color: var(--navy); padding: 13px; background: #F4F6FA; border-radius: 10px; border-left: 3px solid var(--gold-dark); line-height: 1.6; margin-bottom: 12px; font-weight: 500; font-family: 'Outfit', sans-serif; }
 .eval-ans { font-size: 12px; color: var(--text-mid); padding: 11px; background: #F8F9FC; border-radius: 10px; line-height: 1.6; font-style: italic; margin-bottom: 12px; border: 1px solid #E4EAF5; font-family: 'Outfit', sans-serif; }
 .eval-bar { height: 4px; background: #E4EAF5; border-radius: 2px; margin-bottom: 10px; overflow: hidden; }

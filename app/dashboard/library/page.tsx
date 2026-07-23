@@ -5,9 +5,11 @@ import { libraryService } from '@/lib/services';
 import { useCmsContent } from '@/hooks/useCmsContent';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { handleEntitlementError, UsageMeter } from '@/components/entitlements';
+import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import StudyMaterialReaderModal from '@/components/StudyMaterialReaderModal';
+import { StudyMaterialDownloadUpgradeModal } from '@/components/upgrade/UpgradeModals';
+import { getSubjectMetaStyle, getTagStyles as getSharedTagStyles } from '@/lib/subjectPalette';
 
 /* ------------------------------------------------------------------ */
 /*  Study-material action button styling (Read / Get PDF / Unlock)     */
@@ -77,131 +79,25 @@ const TrophyIcon = () => (
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const SUBJECT_ICONS: Record<string, string> = {
-  'polity': '⚖️',
-  'history': '🏛️',
-  'geography': '🌍',
-  'economy': '💰',
-  'environment': '🌿',
-  'science': '🔬',
-};
-
 function subjectIcon(name: string): string {
-  const lower = name.toLowerCase();
-  for (const [key, icon] of Object.entries(SUBJECT_ICONS)) {
-    if (lower.includes(key)) return icon;
-  }
-  return '\uD83D\uDCDA';
+  return getSubjectMetaStyle(name).icon;
 }
-
-// Static per-subject styling for the sidebar (icon-box tint).
-const SUBJECT_META: Record<string, { box: string }> = {
-  'history': { box: '#FEF3C7' },
-  'geography': { box: '#E0F2FE' },
-  'polity': { box: '#FFE4E6' },
-  'economy': { box: '#FEF9C3' },
-  'environment': { box: '#D1FAE5' },
-  'science': { box: '#E0E7FF' },
-  'current affairs': { box: '#FAE8FF' },
-};
 
 function subjectMeta(name: string): { box: string } {
-  const lower = name.toLowerCase();
-  for (const [key, val] of Object.entries(SUBJECT_META)) {
-    if (lower.includes(key)) return val;
-  }
-  return { box: '#F1F5F9' };
+  return { box: getSubjectMetaStyle(name).bg };
 }
 
-// Tag colors sourced from upsc_subject_color_palette.html
-const SUBJECT_PALETTE: Record<string, { bg: string; color: string; topic: string }[]> = {
-  history: [
-    { bg: '#F5E8D4', color: '#7A5230', topic: 'Ancient India' },
-    { bg: '#EDD5E6', color: '#7A3D72', topic: 'Medieval India' },
-    { bg: '#FDE9C0', color: '#8A6010', topic: 'Art & Culture' },
-    { bg: '#D8E4CC', color: '#445E38', topic: 'Modern History' },
-  ],
-  geography: [
-    { bg: '#C8E8F4', color: '#1E6A9A', topic: 'Physical Geo \u2013 World' },
-    { bg: '#D8F0DC', color: '#2E6E3E', topic: 'Physical Geo \u2013 India' },
-    { bg: '#F4EDD0', color: '#826020', topic: 'Economic Geography' },
-    { bg: '#ECD8F4', color: '#6A3A90', topic: 'Human Geography' },
-  ],
-  polity: [
-    { bg: '#D0DDF4', color: '#2A4490', topic: 'Polity' },
-  ],
-  economy: [
-    { bg: '#F8EDD8', color: '#7A5818', topic: 'Basic Economy' },
-    { bg: '#D0ECD8', color: '#2E6848', topic: 'Public Finance' },
-    { bg: '#C8ECF4', color: '#1E6880', topic: 'External Sector' },
-    { bg: '#D8F0CC', color: '#3A6828', topic: 'Agriculture' },
-    { bg: '#F4F0CC', color: '#6A6018', topic: 'Sectors of Economy' },
-    { bg: '#D4DCE8', color: '#3A4A62', topic: 'Infrastructure' },
-    { bg: '#F4E0D8', color: '#7A3A28', topic: 'Human Resource Dev.' },
-  ],
-  environment: [
-    { bg: '#C8ECCC', color: '#2A6438', topic: 'Ecology & Ecosystem' },
-    { bg: '#D0F0D4', color: '#1E5C34', topic: 'Biodiversity' },
-    { bg: '#E8E4DC', color: '#5A5248', topic: 'Pollution' },
-    { bg: '#D8ECF8', color: '#1E5A80', topic: 'Climate Change' },
-    { bg: '#D4EEDC', color: '#2A6040', topic: 'Conservation Efforts' },
-  ],
-  science: [
-    { bg: '#DCF0F8', color: '#1A5878', topic: 'General Science' },
-    { bg: '#CCF0D4', color: '#1A5830', topic: 'Biotechnology' },
-    { bg: '#F8DCDC', color: '#7A2828', topic: 'Human Health & Diseases' },
-    { bg: '#D4D0F4', color: '#3A2A90', topic: 'Space' },
-    { bg: '#D8E0CC', color: '#3A4828', topic: 'Defence' },
-    { bg: '#F4F0BC', color: '#6A6010', topic: 'Nuclear Energy' },
-    { bg: '#C8ECF8', color: '#1A5870', topic: 'Electronics & IT' },
-    { bg: '#E8E4F4', color: '#4A3880', topic: 'Nano Science' },
-  ],
-};
-
-function hashIndex(str: string, mod: number): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
-  return mod > 0 ? h % mod : 0;
-}
-
-const NEUTRAL_TAG_STYLE = { bg: '#F3F4F6', color: '#6A7282' };
-
-// Returns distinct pill colors for the topic tag and the sub-subject tag,
-// preferring an exact palette match for the sub-subject and never letting
-// the two pills land on the same color.
 function getTagStyles(subjectName: string, topicText: string, subSubjectText: string): {
   topic: { bg: string; color: string };
   subSubject: { bg: string; color: string };
 } {
-  const lower = subjectName.toLowerCase();
-  const chips = Object.entries(SUBJECT_PALETTE).find(([key]) => lower.includes(key))?.[1];
-  if (!chips || chips.length === 0) {
-    return { topic: NEUTRAL_TAG_STYLE, subSubject: NEUTRAL_TAG_STYLE };
-  }
-
-  const findChipIndex = (text: string) => {
-    const matchedIdx = chips.findIndex((c) => c.topic.toLowerCase() === text.toLowerCase());
-    return matchedIdx !== -1 ? matchedIdx : hashIndex(text, chips.length);
-  };
-
-  const subIdx = findChipIndex(subSubjectText);
-  let topicIdx = findChipIndex(topicText);
-  if (topicIdx === subIdx) {
-    topicIdx = chips.length > 1 ? (topicIdx + 1) % chips.length : topicIdx;
-  }
-
-  const subChip = chips[subIdx];
-  const topicChip = chips.length > 1 ? chips[topicIdx] : NEUTRAL_TAG_STYLE;
-  return {
-    topic: { bg: topicChip.bg, color: topicChip.color },
-    subSubject: { bg: subChip.bg, color: subChip.color },
-  };
+  return getSharedTagStyles(subjectName, topicText, subSubjectText);
 }
 
 const features = [
   { emoji: '\uD83C\uDFAF', bg: '#FEE2E2', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff, only what earns marks in Prelims and Mains.' },
   { emoji: '\uD83D\uDD04', bg: '#DBEAFE', title: 'Updated Every Week', desc: 'Budget, new schemes, policy shifts, our notes are refreshed weekly so your prep stays current.' },
-  { emoji: '\uD83D\uDC9C', bg: '#EDE9FE', title: 'YouTube + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s YouTube lessons. Watch, then revise, the most powerful UPSC loop.' },
+  { emoji: '\uD83D\uDC9C', bg: '#EDE9FE', title: 'Video + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s lessons. Watch, then revise \u2014 the most powerful UPSC loop.' },
   { emoji: '\uD83D\uDCCA', bg: '#DCFCE7', title: 'PYQ-Backed Content', desc: 'All notes are reviewed and weighted from 10 years of PYQs, calibrated to what UPSC asks every year.' },
   { emoji: '\uD83C\uDFC6', bg: '#FFEDD5', title: 'Toppers Trust It', desc: 'Used by 15,000+ aspirants building stronger Prelims, Mains, and interview preparation.' },
 ];
@@ -261,7 +157,7 @@ export default function LibraryPage() {
   const features = [
     { Icon: TargetIcon, iconBg: '#FFE4E6', iconColor: '#E11D48', tint: 'rgba(255,241,242,0.4)', title: 'UPSC-First Approach', desc: 'Every line written from the examiner\u2019s lens. No fluff, only what earns marks in Prelims and Mains.' },
     { Icon: RefreshIcon, iconBg: '#E0F2FE', iconColor: '#0284C7', tint: 'rgba(240,249,255,0.4)', title: 'Updated Every Week', desc: 'Budget, new schemes, policy shifts, our notes are refreshed weekly so your prep stays current.' },
-    { Icon: HeartIcon, iconBg: '#EDE9FE', iconColor: '#7C3AED', tint: 'rgba(245,243,255,0.4)', title: 'YouTube + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s YouTube lessons. Watch, then revise, the most powerful UPSC loop.' },
+    { Icon: HeartIcon, iconBg: '#EDE9FE', iconColor: '#7C3AED', tint: 'rgba(245,243,255,0.4)', title: 'Video + Notes Synced', desc: 'Every PDF maps directly to Jeet Sir\u2019s lessons. Watch, then revise \u2014 the most powerful UPSC loop.' },
     { Icon: BarChartIcon, iconBg: '#E0E7FF', iconColor: '#4F46E5', tint: 'rgba(238,242,255,0.4)', title: 'PYQ-Backed Content', desc: 'All notes are reviewed and weighted from 10 years of PYQs, calibrated to what UPSC asks every year.' },
     { Icon: TrophyIcon, iconBg: '#FEF3C7', iconColor: '#D97706', tint: 'rgba(255,251,235,0.4)', title: 'Toppers Trust It', desc: 'Used by 15,000+ aspirants building stronger Prelims, Mains, and interview preparation.' },
   ];
@@ -274,6 +170,10 @@ export default function LibraryPage() {
   const [stageIndicator, setStageIndicator] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  // Footer "Download PDFs" upgrade modal.
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  // Filters the left subject list (mirrors the Syllabus Tracker "Filter subjects" box).
+  const [subjectSearch, setSubjectSearch] = useState('');
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [apiSubjects, setApiSubjects] = useState<any[]>([]);
   const [apiChapters, setApiChapters] = useState<Record<string, any[]>>({});
@@ -444,12 +344,6 @@ export default function LibraryPage() {
           padding: '0 clamp(16px, 2vw, 30px)',
         }}
       >
-        <UsageMeter
-          status={entitlements.featureStatus('study_material_download')}
-          label="Study material download quota"
-          className="mb-5"
-        />
-
         {/* ============================================================ */}
         {/*  SECTION 2: SUBJECT SIDEBAR + CONTENT PANEL                   */}
         {/* ============================================================ */}
@@ -463,64 +357,53 @@ export default function LibraryPage() {
             flexWrap: isMobile ? ('nowrap' as const) : ('wrap' as const),
           }}
         >
-          {/* ── Left Sidebar ── */}
+          {/* ── Left Sidebar — mirrors the Syllabus Tracker "Subjects" box ── */}
           <div
+            className="bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm"
             style={{
               width: isMobile ? '100%' : 'clamp(240px, 24vw, 310px)',
               flexShrink: 0,
-              background: '#FFFFFF',
-              borderRadius: '16px',
-              border: '0.8px solid #E5E7EB',
-              boxShadow: '0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1)',
-              overflow: 'hidden',
             }}
           >
-            {/* Sidebar header */}
-            <div style={{ padding: 'clamp(12px, 1vw, 16px)' }}>
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, #0E182D 0%, #172240 100%)',
-                  borderRadius: '16px',
-                  padding: 'clamp(14px, 1.3vw, 18px)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  className="pointer-events-none"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    opacity: 0.5,
-                    backgroundImage:
-                      'radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px)',
-                    backgroundSize: '14px 14px',
-                  }}
+            {/* Sidebar header: Study Material icon + title + search */}
+            <div className="p-[11px_13px_9px] border-b-[1.5px] border-[#e0e8f4] flex-shrink-0">
+              <div className="mb-[10px] flex items-center gap-[8px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/sidebar-study-material-new2.png"
+                  alt=""
+                  width={22}
+                  height={22}
+                  className="h-[22px] w-[22px] object-contain"
+                  aria-hidden="true"
                 />
-                <div style={{ position: 'relative' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFD96B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                      <path d="M8 3v18" /><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H8v18H6.5A2.5 2.5 0 0 1 4 18.5z" />
-                      <path d="m12 3 6 18" /><path d="M11.5 4 18 2.5l4 17-6.5 1.5z" />
-                    </svg>
-                    <div className="font-arimo font-bold" style={{ fontSize: 'clamp(16px, 1.5vw, 18px)', color: '#FFFFFF', letterSpacing: '-0.2px' }}>
-                      {sidebarHeaderTitle}
-                    </div>
-                  </div>
-                  <div className="font-arimo" style={{ fontSize: 'clamp(11px, 1vw, 12px)', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>
-                    100+ PDFs across GS papers
-                  </div>
+                <div className="text-[24px] leading-[1] font-bold tracking-[-1px] text-[#101828]">
+                  {sidebarHeaderTitle}
                 </div>
+              </div>
+              <div className="relative">
+                <span className="absolute left-[9px] top-1/2 -translate-y-1/2 text-[#8795ae] text-[9px] font-bold uppercase tracking-[0.8px] pointer-events-none">
+                  Search
+                </span>
+                <input
+                  type="text"
+                  value={subjectSearch}
+                  onChange={(e) => setSubjectSearch(e.target.value)}
+                  placeholder="Filter subjects..."
+                  className="w-full bg-[#f3f6fb] border-[1.5px] border-[#e0e8f4] rounded-[8px] pl-[54px] pr-[10px] py-[6px] text-[11.5px] text-[#0f1f3d] outline-none transition-all duration-200 focus:border-[rgba(201,146,26,.30)] focus:bg-white"
+                />
               </div>
             </div>
 
             {/* Active subjects list */}
-            <div style={{ padding: '0 clamp(8px, 0.8vw, 12px) clamp(8px, 0.8vw, 12px)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div className="flex-1 overflow-y-auto" style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {apiSubjects.length === 0 ? (
                 <div className="font-arimo" style={{ padding: '12px 16px', color: '#9CA3AF', fontSize: '13px' }}>
                   Loading subjects...
                 </div>
-              ) : apiSubjects.map((subject) => {
+              ) : apiSubjects
+                .filter((subject) => !subjectSearch || subject.name.toLowerCase().includes(subjectSearch.toLowerCase()))
+                .map((subject) => {
                 const isSelected = selectedSubject === subject.name;
                 const meta = subjectMeta(subject.name);
                 const pdfCount = subject.pdfCount ?? subject.chapterCount ?? 0;
@@ -529,71 +412,52 @@ export default function LibraryPage() {
                   ? `${pdfCount} PDFs · ${pyqCount} PYQs`
                   : `${pdfCount} PDFs`;
                 return (
-                  <button
+                  <div
                     key={subject.id}
                     onClick={() => { setSelectedSubject(subject.name); setActiveTab('Notes'); setExamStage('prelims'); setSearchQuery(''); setShowSearch(false); }}
-                    className="w-full"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'clamp(8px, 0.8vw, 12px)',
-                      padding: 'clamp(10px, 1vw, 12px)',
-                      borderRadius: '12px',
-                      background: isSelected ? 'linear-gradient(135deg, #0F1A30 0%, #172240 100%)' : 'transparent',
-                      border: isSelected ? '1px solid rgba(255,217,107,0.55)' : '1px solid transparent',
-                      cursor: 'pointer',
-                      transition: 'all 0.18s ease',
-                      textAlign: 'left',
-                    }}
-                    onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = '#F8FAFC'; }}
-                    onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                    className={`
+                      flex items-center gap-[11px] p-[11px_13px] rounded-[12px] cursor-pointer border-[1.5px] relative overflow-hidden transition-all duration-200
+                      ${
+                        isSelected
+                          ? 'border-[#DBEAFE] bg-[#EFF6FF]'
+                          : 'border-[#e0e8f4] bg-white hover:border-[#d8e4f5] hover:bg-[#edf2fc] hover:-translate-y-[2px] hover:shadow-lg active:translate-y-0 active:shadow-sm'
+                      }
+                    `}
+                    style={{ boxShadow: '0 2px 8px rgba(15,31,61,.05)' }}
                   >
+                    <div
+                      className="absolute inset-0 rounded-[12px] pointer-events-none"
+                      style={{
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,.8), inset 0 -1px 0 rgba(15,31,61,.06)',
+                      }}
+                    />
+
                     {/* Icon box */}
                     <div
+                      className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-[19px] flex-shrink-0"
                       style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '10px',
-                        background: isSelected ? 'rgba(251,191,36,0.15)' : meta.box,
-                        display: 'grid',
-                        placeItems: 'center',
-                        fontSize: '20px',
-                        flexShrink: 0,
+                        background: meta.box,
+                        boxShadow: '0 2px 8px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.3)',
                       }}
                     >
                       {subjectIcon(subject.name)}
                     </div>
 
                     {/* Title + counts */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        className="font-arimo font-bold"
-                        style={{
-                          fontSize: 'clamp(12px, 1.05vw, 13.5px)',
-                          color: isSelected ? '#FFFFFF' : '#1E293B',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <div className="text-[12.5px] font-bold mb-[2px] leading-[1.25] text-[#0f1f3d] whitespace-nowrap overflow-hidden text-ellipsis" title={subject.name}>
                         {subject.name}
                       </div>
-                      <div
-                        className="font-arimo"
-                        style={{
-                          fontSize: 'clamp(10px, 0.82vw, 11px)',
-                          color: isSelected ? 'rgba(255,255,255,0.6)' : '#64748B',
-                        }}
-                      >
+                      <div className="text-[10px] text-[#8795ae] whitespace-nowrap overflow-hidden text-ellipsis">
                         {countLabel}
                       </div>
                     </div>
 
                     {/* Right: chevron */}
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isSelected ? '#FFD96B' : '#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isSelected ? '#17223E' : '#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, position: 'relative' }}>
                       <path d="m9 18 6-6-6-6" />
                     </svg>
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -934,7 +798,6 @@ export default function LibraryPage() {
                 const materialPages = material.pageCount || material.pages || 0;
                 const cardKey = materialId || materialTitle + idx;
                 const isHovered = hoveredCard === cardKey;
-                const tabColor = ACTIVE_TAB_COLOR;
                 return (
                 <div
                   key={cardKey}
@@ -946,11 +809,11 @@ export default function LibraryPage() {
                     flexWrap: isMobile ? 'wrap' : 'nowrap',
                     gap: '16px',
                     borderRadius: '14px',
-                    border: isHovered ? `1.5px solid ${tabColor}` : '0.8px solid #E5E7EB',
+                    border: isHovered ? '1px solid #CBD5E1' : '0.8px solid #E5E7EB',
                     padding: '16px',
                     transition: 'all 0.18s ease',
                     boxShadow: isHovered
-                      ? `0 4px 20px rgba(0,0,0,0.08), 0 0 0 3px ${tabColor}18`
+                      ? '0 4px 20px rgba(0,0,0,0.08)'
                       : '0 1px 2px rgba(0,0,0,0.04)',
                     transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
                     background: isHovered ? '#FAFBFF' : '#FFFFFF',
@@ -1219,7 +1082,7 @@ export default function LibraryPage() {
             marginBottom: 'clamp(40px, 4vw, 60px)',
           }}
         >
-          {/* Header — eyebrow + serif title (left), See methodology link (right) */}
+          {/* Header — eyebrow + serif title */}
           <div className="flex flex-wrap items-end justify-between" style={{ gap: 'clamp(8px, 1vw, 16px)' }}>
             <div style={{ minWidth: 'min(280px, 100%)' }}>
               <div
@@ -1247,19 +1110,6 @@ export default function LibraryPage() {
                 Built the way <span style={{ fontStyle: 'italic' }}>UPSC</span> tests you
               </h3>
             </div>
-            <a
-              href="/our-story"
-              className="font-arimo font-bold inline-flex items-center"
-              style={{ fontSize: '13px', color: '#334155', gap: '4px', textDecoration: 'none' }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = '#0F172A'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = '#334155'; }}
-            >
-              See methodology
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M7 17 17 7" />
-                <path d="M7 7h10v10" />
-              </svg>
-            </a>
           </div>
 
           {/* 5-up card grid */}
@@ -1374,6 +1224,7 @@ export default function LibraryPage() {
             <div className="flex items-center" style={{ gap: 'clamp(10px, 1vw, 14px)', flexWrap: 'wrap' }}>
               <button
                 className="font-arimo font-bold"
+                onClick={() => setShowDownloadModal(true)}
                 style={{
                   background: '#101828',
                   color: '#FFFFFF',
@@ -1444,6 +1295,12 @@ export default function LibraryPage() {
         onGetPdf={handleGetPdf}
       />
     )}
+
+    {/* ── Download PDFs upgrade modal (footer CTA) ── */}
+    <StudyMaterialDownloadUpgradeModal
+      open={showDownloadModal}
+      onClose={() => setShowDownloadModal(false)}
+    />
     </>
   );
 }

@@ -12,21 +12,44 @@ import { useEffect, useRef, useState } from 'react';
      then snaps to 100% and fires `onComplete`.
    ───────────────────────────────────────────────────────────── */
 
+type Variant = 'mains' | 'prelims';
+
 type Props = {
   /** becomes true once the test id is back from the server */
   isReady: boolean;
   /** called once the animation has reached 100% complete */
   onComplete: () => void;
+  /** selects the copy shown inside the (otherwise identical) popup */
+  variant?: Variant;
 };
 
-const STEPS = [
-  { label: 'Analyzing your preferences', emoji: '⚖️' },
-  { label: 'Selecting UPSC-standard questions', emoji: '📝' },
-  { label: 'Preparing evaluation rubric', emoji: '✨' },
-  { label: 'Launching your mock test…', emoji: '🚀' },
-] as const;
+/* Only the wording differs between exam modes — the design, animation,
+   progress behavior, speed and layout are shared. Prelims swaps the
+   Mains-only "evaluation rubric" step for an exam-simulation step and keeps
+   the same emojis so the center dribble animation is unchanged. */
+const CONTENT: Record<Variant, { title: string; steps: { label: string; emoji: string }[] }> = {
+  mains: {
+    title: 'Generating Your Mains Mock Test',
+    steps: [
+      { label: 'Analyzing your preferences', emoji: '⚖️' },
+      { label: 'Selecting UPSC-standard questions', emoji: '📝' },
+      { label: 'Preparing evaluation rubric', emoji: '✨' },
+      { label: 'Launching your mock test…', emoji: '🚀' },
+    ],
+  },
+  prelims: {
+    title: 'Generating Your Prelims Mock Test',
+    steps: [
+      { label: 'Analyzing your preferences', emoji: '⚖️' },
+      { label: 'Selecting UPSC-standard questions', emoji: '📝' },
+      { label: 'Building your exam simulation', emoji: '✨' },
+      { label: 'Launching your mock test…', emoji: '🚀' },
+    ],
+  },
+};
 
-export default function GeneratingTestModal({ isReady, onComplete }: Props) {
+export default function GeneratingTestModal({ isReady, onComplete, variant = 'mains' }: Props) {
+  const { title, steps: STEPS } = CONTENT[variant];
   const [progress, setProgress] = useState(0);
   const [dribble, setDribble] = useState(0); // index of center emoji while dribbling
   const completedRef = useRef(false);
@@ -159,7 +182,7 @@ export default function GeneratingTestModal({ isReady, onComplete }: Props) {
             letterSpacing: '-0.01em',
           }}
         >
-          Generating Your Mains Mock Test
+          {title}
         </h2>
 
         {/* ── Progress bar ── */}

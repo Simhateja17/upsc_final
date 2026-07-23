@@ -2,24 +2,69 @@
 
 import React, { useState, useEffect, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import { pyqService } from '@/lib/services';
+import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
+import CuratedModelAnswer from '@/components/mains-results/CuratedModelAnswer';
+import { bookmarkService, flashcardService, pyqService, spacedRepService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
 import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer';
-import prelimsSyllabus from '@/data/syllabus/prelimsSyllabus.json';
 import { handleEntitlementError, formatPeriod } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { MainsEvaluationLimitModal } from '@/components/upgrade/UpgradeModals';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
+import { isEssayQuestion } from '@/lib/essayModelAnswer';
 
 const AI_EVAL_STEPS = [
-  'Reading your answer',
-  'Identifying key points & arguments',
-  'Comparing with model answers',
-  'Preparing detailed markup & feedback',
-  'Generating detailed feedback',
+  {
+    id: 1,
+    emoji: '🔍',
+    bg: '#E3F2FD',
+    title: 'Uploading Answer Script',
+  },
+  {
+    id: 2,
+    emoji: '📝',
+    bg: '#FFF9C4',
+    title: 'Structural Analysis',
+  },
+  {
+    id: 3,
+    emoji: '📚',
+    bg: '#C8E6C9',
+    title: 'Content Depth Assessment',
+  },
+  {
+    id: 4,
+    emoji: '⚖️',
+    bg: '#F8BBD0',
+    title: 'Balance & Perspective Check',
+  },
+  {
+    id: 5,
+    emoji: '📊',
+    bg: '#B2DFDB',
+    title: 'Fact & Example Validation',
+  },
+  {
+    id: 6,
+    emoji: '🎯',
+    bg: '#E1BEE7',
+    title: '6-Pillar Rubric Scoring',
+  },
+  {
+    id: 7,
+    emoji: '💡',
+    bg: '#FFECB3',
+    title: 'Preparing Personalised Feedback',
+  },
 ];
 
 const PYQ_READING_WINDOW_SECONDS = 15;
+const PYQ_QUESTION_FONT = 'var(--font-sora), Inter, sans-serif';
 
 const LATEST_EXAM_YEAR = 2025;
 const EARLIEST_EXAM_YEAR = 2011;
@@ -43,10 +88,18 @@ type SubjectTreeNode = {
 
 type PYQCountData = {
   total: number;
+  byPaper?: Array<{ paper: string | null; count: number }>;
   bySubject: Array<{ subject: string | null; count: number }>;
   bySubSubject: Array<{ subject: string | null; subSubject: string | null; count: number }>;
   byTopic: Array<{ subject: string | null; subSubject: string | null; topic: string | null; count: number }>;
+  taxonomyLabels?: {
+    level1: string;
+    level2: string;
+    level3: string;
+  };
 };
+
+type FilterId = 'paper' | 'subject' | 'subSubject' | 'topic' | 'year';
 
 const EMPTY_COUNTS: PYQCountData = {
   total: 0,
@@ -56,13 +109,33 @@ const EMPTY_COUNTS: PYQCountData = {
 };
 
 const SUBJECT_ICONS: Record<string, string> = {
+  'Ancient History': '🏺',
+  'Art & Culture': '🎭',
   History: '🏛️',
+  'Medieval India': '🏰',
+  'Modern History': '🇮🇳',
   Geography: '🌍',
   Polity: '⚖️',
   Economy: '💰',
   'Environment & Ecology': '🌿',
   'Science & Technology': '🔬',
+  'International Relation': '🌐',
+  'International Relations': '🌐',
   'Current Affairs': '📰',
+};
+
+const iconForSubject = (subject: string) => {
+  if (SUBJECT_ICONS[subject]) return SUBJECT_ICONS[subject];
+  const normalized = subject.toLowerCase();
+  if (normalized.includes('history')) return '🏛️';
+  if (normalized.includes('culture')) return '🎭';
+  if (normalized.includes('geography')) return '🌍';
+  if (normalized.includes('polity')) return '⚖️';
+  if (normalized.includes('econom')) return '💰';
+  if (normalized.includes('environment')) return '🌿';
+  if (normalized.includes('science')) return '🔬';
+  if (normalized.includes('international')) return '🌐';
+  return '📘';
 };
 
 
@@ -76,6 +149,10 @@ const asTextList = (value: any): string[] => {
       .map((item) => {
         if (typeof item === 'string') return item;
         if (item && typeof item === 'object') {
+          if (typeof item.demand === 'string') {
+            const status = typeof item.status === 'string' ? humanizeKey(item.status) : '';
+            return status ? `${item.demand} -> ${status}` : item.demand;
+          }
           return item.text || item.feedback || item.comment || item.point || JSON.stringify(item);
         }
         return String(item);
@@ -90,6 +167,7 @@ const asTextList = (value: any): string[] => {
   }
   return [String(value)];
 };
+
 
 const humanizeKey = (key: string) =>
   key
@@ -116,6 +194,13 @@ const questionChips = (q: any, styles: Record<string, React.CSSProperties>) => {
     add('topic', q.topic, String(q.topic || '').toUpperCase(), 'topic'),
   ].filter(Boolean) as Array<{ key: string; label: string; style: React.CSSProperties }>;
 };
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'general';
 
 const getExplanationText = (question: any) =>
   question?.explanation ||
@@ -190,109 +275,278 @@ function ExplanationRenderer({ question }: { question: any }) {
   );
 }
 
-const PRELIMS_SUBJECT_TREE: SubjectTreeNode[] = [
-  ...(prelimsSyllabus as Array<{ subject: string; subSubjects: Array<{ label: string; topics: string[] }> }>).map((node) => ({
-    label: node.subject,
-    icon: SUBJECT_ICONS[node.subject] || '📘',
-    children: node.subSubjects.map((sub) => ({
-      label: sub.label,
-      microTopics: sub.topics,
-    })),
-  })),
-  {
-    label: 'Current Affairs',
-    icon: '📰',
-    children: [
-      {
-        label: 'Current Affairs and Miscellaneous',
-        microTopics: ['Current Affairs and Miscellaneous'],
-      },
-    ],
-  },
-];
+function ModelAnswerRenderer({ text }: { text: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        h1: ({ children }) => (
+          <h1 className="mb-4 mt-6 text-[24px] font-bold leading-[32px] text-[#101828] first:mt-0">{children}</h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="mb-3 mt-6 text-[21px] font-bold leading-[30px] text-[#101828] first:mt-0">{children}</h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="mb-3 mt-5 text-[18px] font-bold leading-[28px] text-[#111827] first:mt-0">{children}</h3>
+        ),
+        h4: ({ children }) => (
+          <h4 className="mb-2 mt-5 text-[16px] font-bold leading-[26px] text-[#1E2939] first:mt-0">{children}</h4>
+        ),
+        p: ({ children }) => (
+          <p className="mb-4 text-[15.5px] leading-[27px] text-[#364153] last:mb-0">{children}</p>
+        ),
+        ul: ({ children }) => (
+          <ul className="mb-5 ml-5 list-disc space-y-2 text-[15.5px] leading-[27px] text-[#364153]">{children}</ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="mb-5 ml-5 list-decimal space-y-2 text-[15.5px] leading-[27px] text-[#364153]">{children}</ol>
+        ),
+        li: ({ children }) => <li className="pl-1">{children}</li>,
+        strong: ({ children }) => <strong className="font-bold text-[#111827]">{children}</strong>,
+        blockquote: ({ children }) => (
+          <blockquote className="my-4 border-l-4 border-[#E8B84B] bg-[#FFFBEB] px-4 py-3 text-[#364153]">
+            {children}
+          </blockquote>
+        ),
+      }}
+    >
+      {text}
+    </ReactMarkdown>
+  );
+}
 
-const MAINS_OPTIONAL_SUBJECTS = {
-  science: [
-    'Agriculture',
-    'Animal Husbandry & Veterinary Science',
-    'Botany',
-    'Chemistry',
-    'Civil Engineering',
-    'Electrical Engineering',
-    'Geology',
-    'Mathematics',
-    'Mechanical Engineering',
-    'Medical Science',
-    'Physics',
-    'Statistics',
-    'Zoology',
-  ],
-  social: [
-    'Anthropology',
-    'Commerce & Accountancy',
-    'Economics',
-    'Geography (Optional)',
-    'History (Optional)',
-    'Law',
-    'Management',
-    'Philosophy',
-    'Political Science & International Relations',
-    'Psychology',
-    'Public Administration',
-    'Sociology',
-  ],
-  literature: [
-    'Literature: Assamese',
-    'Literature: Bengali',
-    'Literature: Bodo',
-    'Literature: Dogri',
-    'Literature: English',
-    'Literature: Gujarati',
-    'Literature: Hindi',
-    'Literature: Kannada',
-    'Literature: Kashmiri',
-    'Literature: Konkani',
-    'Literature: Maithili',
-    'Literature: Malayalam',
-    'Literature: Manipuri',
-    'Literature: Marathi',
-    'Literature: Nepali',
-    'Literature: Odia',
-    'Literature: Punjabi',
-    'Literature: Sanskrit',
-    'Literature: Santhali',
-    'Literature: Sindhi',
-    'Literature: Tamil',
-    'Literature: Telugu',
-    'Literature: Urdu',
-  ],
-};
-const MAINS_OPTIONAL_ALL = [
-  ...MAINS_OPTIONAL_SUBJECTS.science,
-  ...MAINS_OPTIONAL_SUBJECTS.social,
-  ...MAINS_OPTIONAL_SUBJECTS.literature,
-];
+type EssayPartKey = 'topicDecoding' | 'modelEssay' | 'valueAdditionRepository';
 
-const PYQ_SUBJECT_TREE: Record<'prelims' | 'mains', SubjectTreeNode[]> = {
-  prelims: PRELIMS_SUBJECT_TREE,
-  mains: [
-    { label: 'History', icon: '🏛️', children: [{ label: 'Ancient India' }, { label: 'Medieval India' }, { label: 'Modern India' }, { label: 'Post-Independence' }, { label: 'Art & Culture' }] },
-    { label: 'Geography', icon: '🌍', children: [{ label: 'Physical Geography' }, { label: 'Indian Geography' }, { label: 'World Geography' }] },
-    { label: 'Polity', icon: '⚖️', children: [{ label: 'Constitution' }, { label: 'Parliament & Executive' }, { label: 'Judiciary' }] },
-    { label: 'Economy', icon: '💰', children: [{ label: 'Growth & Development' }, { label: 'Inclusive Development' }, { label: 'Budgeting' }] },
-    { label: 'Environment & Ecology', icon: '🌿', children: [{ label: 'Conservation' }, { label: 'Climate Change' }, { label: 'Biodiversity' }] },
-    { label: 'Science & Technology', icon: '🔬', children: [{ label: 'Emerging Tech' }, { label: 'Space' }, { label: 'Biotech' }] },
-    { label: 'Society', icon: '👥', children: [{ label: 'Social Issues' }, { label: 'Women' }, { label: 'Globalization' }] },
-    { label: 'Governance', icon: '🏛', children: [{ label: 'Transparency' }, { label: 'Citizen Centricity' }, { label: 'E-Governance' }] },
-    { label: 'International Relations', icon: '🌐', children: [{ label: 'Neighbourhood' }, { label: 'Global Groupings' }, { label: 'Bilateral Relations' }] },
-    { label: 'Social Justice', icon: '🤝', children: [{ label: 'Welfare Schemes' }, { label: 'Education' }, { label: 'Health' }] },
-    { label: 'Agriculture', icon: '🌾', children: [{ label: 'Cropping' }, { label: 'Irrigation' }, { label: 'Food Processing' }] },
-    { label: 'Internal Security', icon: '🛡️', children: [{ label: 'Terrorism' }, { label: 'Cyber Security' }, { label: 'Border Management' }] },
-    { label: 'Disaster Management', icon: '🚨', children: [{ label: 'Preparedness' }, { label: 'Response' }, { label: 'Risk Reduction' }] },
-    { label: 'Ethics', icon: '🧭', children: [{ label: 'Ethics Theory' }, { label: 'Aptitude' }, { label: 'Case Studies' }] },
-    { label: 'Current Affairs', icon: '📰', children: [{ label: 'Government Initiatives' }, { label: 'International Developments' }, { label: 'Reports & Data' }] },
-  ],
+const ESSAY_PART_LABELS: Record<EssayPartKey, string> = {
+  topicDecoding: 'Topic Decoding',
+  modelEssay: 'Model Essay',
+  valueAdditionRepository: 'Value Addition Repository',
 };
+
+const getEssayModelAnswerParts = (question: any): Array<{ key: EssayPartKey; label: string; text: string }> => {
+  const parts = question?.structuredJson?.essay?.parts;
+  if (!parts || typeof parts !== 'object') return [];
+
+  return (['topicDecoding', 'modelEssay', 'valueAdditionRepository'] as EssayPartKey[])
+    .map((key) => ({
+      key,
+      label: ESSAY_PART_LABELS[key],
+      text: typeof parts[key] === 'string' ? parts[key].trim() : '',
+    }))
+    .filter((part) => part.text.length > 0);
+};
+
+const DEFAULT_MAINS_TIME_LIMIT = 20 * 60;
+const ESSAY_MAINS_TIME_LIMIT = 90 * 60;
+
+const MAINS_MARKS_PRESETS: Record<number, { minutes: number; words: number }> = {
+  10: { minutes: 7, words: 150 },
+  15: { minutes: 11, words: 200 },
+  20: { minutes: 14, words: 250 },
+};
+
+function getMainsMarks(question: any | null): number {
+  return question?.marks || question?.maxMarks || 15;
+}
+
+function getMainsTimeLimit(question: any | null): number {
+  if (isEssayQuestion(question)) return ESSAY_MAINS_TIME_LIMIT;
+  const preset = MAINS_MARKS_PRESETS[getMainsMarks(question)];
+  return preset ? preset.minutes * 60 : DEFAULT_MAINS_TIME_LIMIT;
+}
+
+function getMainsWordLimit(question: any | null): number {
+  const preset = MAINS_MARKS_PRESETS[getMainsMarks(question)];
+  return preset ? preset.words : 250;
+}
+
+function EssayModelAnswerRenderer({
+  question,
+  essayPartOrder,
+  onToggleOrder,
+}: {
+  question: any;
+  essayPartOrder: 'decode-first' | 'essay-first';
+  onToggleOrder: () => void;
+}) {
+  const parts = getEssayModelAnswerParts(question);
+  if (parts.length === 0) {
+    return (
+      <ModelAnswerRenderer
+        text={question?.modelAnswer || question?.answer || question?.explanation || 'Model answer is being prepared for this question.'}
+      />
+    );
+  }
+
+  const firstTwoKeys: EssayPartKey[] = essayPartOrder === 'essay-first'
+    ? ['modelEssay', 'topicDecoding']
+    : ['topicDecoding', 'modelEssay'];
+  const orderedParts = [...firstTwoKeys, 'valueAdditionRepository']
+    .map((key) => parts.find((part) => part.key === key))
+    .filter(Boolean) as Array<{ key: EssayPartKey; label: string; text: string }>;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-[13px] font-bold uppercase tracking-[0.08em] text-[#6A7282]">
+          Essay Answer Parts
+        </div>
+        {parts.length > 1 && (
+          <button
+            type="button"
+            onClick={onToggleOrder}
+            className="rounded-[10px] border border-[#D8DEE8] bg-white px-3 py-2 text-[13px] font-bold text-[#101828] shadow-sm hover:bg-[#F8FAFC]"
+          >
+            {essayPartOrder === 'decode-first' ? 'Show Essay First' : 'Show Decoding First'}
+          </button>
+        )}
+      </div>
+      <div className="space-y-6">
+        {orderedParts.map((part, index) => (
+          <section key={part.key} className={index > 0 ? 'border-t border-[#E6E8EE] pt-5' : undefined}>
+            <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#D4AF37]">
+              {part.label}
+            </div>
+            <ModelAnswerRenderer text={part.text} />
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const EvalCheckIcon = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" stroke="#22C55E" strokeWidth="2" />
+    <path d="M7 12.5L10.4 15.9L17 9.2" stroke="#22C55E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const EvalSpinnerIcon = () => (
+  <svg
+    width="28"
+    height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    className="animate-spin"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="10" stroke="#E6E8EE" strokeWidth="2.5" />
+    <path d="M12 2a10 10 0 0 1 10 10" stroke="#17223E" strokeWidth="2.5" strokeLinecap="round" />
+  </svg>
+);
+
+function PyqEvaluationProgressModal({
+  progress,
+  completedStepCount,
+}: {
+  progress: number;
+  completedStepCount: number;
+}) {
+  const normalizedProgress = Math.max(0, Math.min(100, progress));
+  const secondsRemaining = Math.max(0, Math.ceil(60 - (normalizedProgress / 100) * 60));
+  const completedCount = Math.max(0, Math.min(AI_EVAL_STEPS.length, completedStepCount));
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4"
+      style={{ background: 'rgba(245,246,248,0.86)', backdropFilter: 'blur(4px)' }}
+    >
+      <style>{`
+        @keyframes pyqBrainBreathe {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244,143,177,0.30); }
+          50% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(244,143,177,0); }
+        }
+        .pyq-thinking-brain {
+          width: 64px;
+          height: 64px;
+          margin: 0 auto;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(244,143,177,0.15) 0%, transparent 70%);
+          animation: pyqBrainBreathe 3s ease-in-out infinite;
+        }
+      `}</style>
+      <div
+        className="relative flex w-full max-w-[680px] flex-col px-6 py-5 sm:px-7"
+        style={{
+          borderRadius: '24px',
+          background: '#FFFFFF',
+          boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 24px 60px rgba(15,23,42,.16), inset 0 0 0 1px #E6E8EE',
+        }}
+      >
+        <div className="flex flex-col items-center" style={{ marginBottom: 8 }}>
+          <div className="pyq-thinking-brain">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9.5 2C7.567 2 6 3.567 6 5.5c0 .536.12 1.044.334 1.5H6c-1.657 0-3 1.343-3 3 0 1.135.63 2.122 1.556 2.625C4.207 13.285 4 14.118 4 15c0 2.21 1.79 4 4 4h1v1a2 2 0 002 2h2a2 2 0 002-2v-1h1c2.21 0 4-1.79 4-4 0-.882-.207-1.715-.556-2.375C20.37 13.122 21 12.135 21 11c0-1.657-1.343-3-3-3h-.334A3.5 3.5 0 0018 5.5C18 3.567 16.433 2 14.5 2c-1.12 0-2.117.527-2.75 1.35C11.117 2.527 10.12 2 9.5 2z" fill="#F48FB1" opacity="0.9" />
+              <path d="M12 4v16M9 8h6M10 12h4M9 16h6" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
+            </svg>
+          </div>
+          <h2 style={{ fontFamily: 'var(--font-dm-serif), Merriweather, serif', fontSize: '24px', letterSpacing: '-0.01em', lineHeight: '30px', color: '#0B1020', textAlign: 'center', marginTop: '8px', marginBottom: '3px' }}>
+            Evaluating Your Answer
+          </h2>
+          <p style={{ fontWeight: 400, fontSize: '14px', lineHeight: '20px', color: '#6B7280', textAlign: 'center', margin: 0 }}>
+            Analyzing with UPSC examiner&apos;s lens · Usually takes 30-60 seconds
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-0" style={{ marginTop: 12, marginBottom: 12 }}>
+          {AI_EVAL_STEPS.map((step, idx) => {
+            const done = idx < completedCount;
+            const active = idx === completedCount;
+            return (
+              <div key={step.id}>
+                <div className="flex items-center justify-between" style={{ padding: '9px 0', opacity: done || active ? 1 : 0.58, transition: 'opacity 0.4s' }}>
+                  <div className="flex items-center gap-3">
+                    <span
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: step.bg,
+                        display: 'grid',
+                        placeItems: 'center',
+                        fontSize: '16px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {step.emoji}
+                    </span>
+                    <p style={{ fontWeight: 700, fontSize: '15px', lineHeight: '20px', color: '#0B1020', margin: 0 }}>{step.title}</p>
+                  </div>
+                  <div className="flex items-center">
+                    {done ? <EvalCheckIcon /> : active ? <EvalSpinnerIcon /> : (
+                      <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #E6E8EE' }} />
+                    )}
+                  </div>
+                </div>
+                {idx < AI_EVAL_STEPS.length - 1 && <div style={{ width: '100%', height: '1px', background: '#E6E8EE' }} />}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ borderRadius: '12px', borderLeft: '4px solid #F5B800', background: '#FEFCE8', padding: '14px 18px', textAlign: 'center' }}>
+          <div className="flex items-center justify-center gap-2.5" style={{ marginBottom: 10 }}>
+            <span style={{ fontSize: '16px' }} aria-hidden="true">⏳</span>
+            <span style={{ fontWeight: 800, fontSize: '16px', lineHeight: '20px', color: '#0B1020' }}>
+              {secondsRemaining > 0 ? `${secondsRemaining} seconds remaining` : 'Almost done...'}
+            </span>
+          </div>
+
+          <div style={{ height: '5px', borderRadius: '99px', background: '#E5E7EB', overflow: 'hidden', marginBottom: 12 }}>
+            <div style={{ height: '100%', width: `${normalizedProgress}%`, borderRadius: '99px', background: 'linear-gradient(90deg,#0B1020,#F5B800)', transition: 'width 0.5s ease' }} />
+          </div>
+
+          <p style={{ fontSize: '13px', lineHeight: '1.5', color: '#0B1020', margin: 0 }}>
+            <strong>While you wait:</strong> In the actual exam, this is the time you&apos;d spend reviewing your answer.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function PyqPage() {
   const entitlements = useEntitlements();
@@ -305,9 +559,17 @@ export default function PyqPage() {
   const [showAttemptModal, setShowAttemptModal] = useState(false);
   const [prelimsSubmitError, setPrelimsSubmitError] = useState<string | null>(null);
   const [showMainsWriteModal, setShowMainsWriteModal] = useState(false);
-  const [showModelAnswerModal, setShowModelAnswerModal] = useState(false);
+  const [showMainsQuotaModal, setShowMainsQuotaModal] = useState(false);
+  const [expandedModelAnswerIds, setExpandedModelAnswerIds] = useState<Set<string>>(new Set());
+  const [essayPartOrder, setEssayPartOrder] = useState<'decode-first' | 'essay-first'>('decode-first');
+  const router = useRouter();
+  const [mainsBookmarkedIds, setMainsBookmarkedIds] = useState<Set<string>>(new Set());
+  const [mainsFlashcardIds, setMainsFlashcardIds] = useState<Set<string>>(new Set());
+  const [mainsReviewIds, setMainsReviewIds] = useState<Set<string>>(new Set());
+  const [mainsBookmarkBusyIds, setMainsBookmarkBusyIds] = useState<Set<string>>(new Set());
+  const [mainsFlashcardBusyIds, setMainsFlashcardBusyIds] = useState<Set<string>>(new Set());
+  const [mainsReviewBusyIds, setMainsReviewBusyIds] = useState<Set<string>>(new Set());
   const [showAiEvalModal, setShowAiEvalModal] = useState(false);
-  const [showAiEvalCompleteModal, setShowAiEvalCompleteModal] = useState(false);
   const [aiEvalProgress, setAiEvalProgress] = useState(0);
   const [aiEvalStepIndex, setAiEvalStepIndex] = useState(0);
   const [mode, setMode] = useState<'prelims' | 'mains'>('prelims');
@@ -316,23 +578,30 @@ export default function PyqPage() {
   const [mainsAnswerText, setMainsAnswerText] = useState('');
   const [mainsFile, setMainsFile] = useState<File | null>(null);
   const [mainsFiles, setMainsFiles] = useState<File[]>([]);
+  const removeMainsFile = (index: number) => {
+    setMainsFiles(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      setMainsFile(next[0] || null);
+      return next;
+    });
+  };
   const [mainsAttemptId, setMainsAttemptId] = useState<string | null>(null);
-  const [mainsEvalResults, setMainsEvalResults] = useState<any>(null);
   const [mainsSubmitting, setMainsSubmitting] = useState(false);
   const [mainsSubmitError, setMainsSubmitError] = useState<string | null>(null);
   const pageRootRef = useRef<HTMLDivElement>(null);
   const mainsFileInputRef = useRef<HTMLInputElement>(null);
-  const MAINS_TIME_LIMIT = 9 * 60; // 9 minutes in seconds
-  const [mainsTimeLeft, setMainsTimeLeft] = useState(MAINS_TIME_LIMIT);
+  const [mainsTimeLeft, setMainsTimeLeft] = useState(DEFAULT_MAINS_TIME_LIMIT);
   const [mainsTimerPaused, setMainsTimerPaused] = useState(false);
   const [mainsReadTimeLeft, setMainsReadTimeLeft] = useState<number | null>(null);
   const [textAnswerExpanded, setTextAnswerExpanded] = useState(false);
   const mainsAutoSubmitRef = useRef(false);
   const questionsRequestSeqRef = useRef(0);
+  const filterScrollPositionsRef = useRef<Partial<Record<FilterId, number>>>({});
 
   // Data state
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [navigatingQuestionHref, setNavigatingQuestionHref] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [page, setPage] = useState(1);
@@ -340,15 +609,123 @@ export default function PyqPage() {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [yearMode, setYearMode] = useState<'all' | 'custom'>('all');
   const [yearSearch, setYearSearch] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('All Papers');
-  const [selectedSubtopic, setSelectedSubtopic] = useState<string | null>(null);
+  const [selectedPapers, setSelectedPapers] = useState<string[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedSubSubjects, setSelectedSubSubjects] = useState<string[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
   const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
   const [questionCounts, setQuestionCounts] = useState<PYQCountData>(EMPTY_COUNTS);
-  const [openFilter, setOpenFilter] = useState<'paper' | 'subject' | 'subSubject' | 'topic' | 'year' | 'difficulty' | null>(null);
+  const [openFilter, setOpenFilter] = useState<FilterId | null>(null);
   const [filterDocked, setFilterDocked] = useState(false);
   const prefersReducedMotion = useReducedMotion();
+
+  const handleQuestionNavigation = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (
+      event.defaultPrevented ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.button !== 0
+    ) {
+      return;
+    }
+    setNavigatingQuestionHref(href);
+  };
+
+  const toggleMainsBookmark = async (q: any) => {
+    if (mainsBookmarkBusyIds.has(q.id)) return;
+    setMainsBookmarkBusyIds((prev) => new Set(prev).add(q.id));
+    try {
+      await bookmarkService.toggle({
+        entityType: 'pyq',
+        entityId: q.id,
+        title: String(q.questionText || '').slice(0, 90),
+        source: 'PYQ Mains',
+        sourceUrl: `/questions/${q.id}?mode=mains`,
+        tag: `${q.year || 'UPSC'} · ${q.subject || 'General'}`,
+        content: { mode: 'mains', year: q.year, subject: q.subject, topic: q.topic, difficulty: q.difficulty },
+      });
+      setMainsBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(q.id)) next.delete(q.id);
+        else next.add(q.id);
+        return next;
+      });
+    } catch {
+      // keep prior state — bookmark toggle failed
+    } finally {
+      setMainsBookmarkBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(q.id);
+        return next;
+      });
+    }
+  };
+
+  const addMainsFlashcard = async (q: any) => {
+    if (mainsFlashcardBusyIds.has(q.id)) return;
+    setMainsFlashcardBusyIds((prev) => new Set(prev).add(q.id));
+    try {
+      const subject = String(q.subject || 'General Studies');
+      const subjectId = slugify(subject);
+      const topic = String(q.topic || q.paper || 'Custom');
+      const topicId = slugify(topic);
+      const answer = q.modelAnswer || q.answer || getExplanationText(q) || 'Refer to the model answer on RiseWithJeet.';
+      const res = await flashcardService.createCard({
+        subjectId,
+        subject,
+        topicId,
+        topic,
+        question: q.questionText,
+        answer,
+        difficulty: q.difficulty || undefined,
+      });
+      setMainsFlashcardIds((prev) => new Set(prev).add(q.id));
+      const cardId = res?.data?.id;
+      router.push(`/dashboard/flashcards/${subjectId}/${topicId}${cardId ? `?cardId=${cardId}` : ''}`);
+    } catch {
+      // keep prior state — flashcard creation failed
+    } finally {
+      setMainsFlashcardBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(q.id);
+        return next;
+      });
+    }
+  };
+
+  const toggleMainsReview = async (q: any) => {
+    if (mainsReviewBusyIds.has(q.id)) return;
+    if (mainsReviewIds.has(q.id)) {
+      setMainsReviewIds((prev) => {
+        const next = new Set(prev);
+        next.delete(q.id);
+        return next;
+      });
+      return;
+    }
+    setMainsReviewBusyIds((prev) => new Set(prev).add(q.id));
+    try {
+      await spacedRepService.addItem({
+        questionText: q.questionText,
+        answer: q.modelAnswer || q.answer || getExplanationText(q) || undefined,
+        subject: String(q.subject || 'General Studies'),
+        source: 'PYQ Mains',
+        sourceType: 'pyq',
+      });
+      setMainsReviewIds((prev) => new Set(prev).add(q.id));
+    } catch {
+      // keep prior state — review save failed
+    } finally {
+      setMainsReviewBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(q.id);
+        return next;
+      });
+    }
+  };
 
   const fetchQuestions = useCallback(async () => {
     const requestSeq = ++questionsRequestSeqRef.current;
@@ -358,10 +735,9 @@ export default function PyqPage() {
       const res = await pyqService.getQuestions({
         mode,
         years: yearMode === 'custom' && selectedYears.length > 0 ? selectedYears : undefined,
-        subject: selectedSubject !== 'All Papers' ? selectedSubject : undefined,
-        ...(mode === 'mains'
-          ? { topic: selectedSubtopic || undefined }
-          : { subSubject: selectedSubtopic || undefined }),
+        paper: selectedPapers.length ? selectedPapers : undefined,
+        subject: selectedSubjects.length ? selectedSubjects : undefined,
+        subSubject: selectedSubSubjects.length ? selectedSubSubjects : undefined,
         topic: selectedTopics.length ? selectedTopics : undefined,
         page,
         limit: 20,
@@ -385,12 +761,12 @@ export default function PyqPage() {
         setLoading(false);
       }
     }
-  }, [mode, yearMode, selectedYears, selectedSubject, selectedSubtopic, selectedTopics, page]);
+  }, [mode, yearMode, selectedYears, selectedPapers, selectedSubjects, selectedSubSubjects, selectedTopics, page]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [mode, yearMode, selectedYears, selectedSubject, selectedSubtopic, selectedTopics]);
+  }, [mode, yearMode, selectedYears, selectedPapers, selectedSubjects, selectedSubSubjects, selectedTopics]);
 
   useEffect(() => {
     questionsRequestSeqRef.current += 1;
@@ -399,10 +775,11 @@ export default function PyqPage() {
     setTotalPages(0);
     setSelectedQuestion(null);
     setShowMainsWriteModal(false);
-    setShowModelAnswerModal(false);
+    setExpandedModelAnswerIds(new Set());
     setShowAttemptModal(false);
-    setSelectedSubject('All Papers');
-    setSelectedSubtopic(null);
+    setSelectedPapers([]);
+    setSelectedSubjects([]);
+    setSelectedSubSubjects([]);
     setSelectedTopics([]);
     setExpandedSubject(null);
     setExpandedSubtopic(null);
@@ -486,24 +863,9 @@ export default function PyqPage() {
     return counts;
   }, [questionCounts.bySubSubject]);
 
-  const getTopicQuestionCount = useCallback(
-    (subject: string, subSubject: string | null, topic: string) => {
-      const needle = topic.trim().toLowerCase();
-      return questionCounts.byTopic.reduce((sum, row) => {
-        const sameSubject = countKey(row.subject) === countKey(subject);
-        const sameSubSubject = !subSubject || countKey(row.subSubject) === countKey(subSubject);
-        const topicText = (row.topic || '').toLowerCase();
-        return sameSubject && sameSubSubject && topicText.includes(needle) ? sum + row.count : sum;
-      }, 0);
-    },
-    [questionCounts.byTopic]
-  );
-
   const subjectTree = useMemo(() => {
-    const baseTree = PYQ_SUBJECT_TREE[mode];
-    const existingSubjects = new Set(baseTree.map((node) => countKey(node.label)));
     const dynamicSubjects = questionCounts.bySubject
-      .filter((row) => row.subject && !existingSubjects.has(countKey(row.subject)))
+      .filter((row) => row.subject)
       .map((row) => {
         const label = row.subject as string;
         const children = questionCounts.bySubSubject
@@ -523,13 +885,13 @@ export default function PyqPage() {
 
         return {
           label,
-          icon: SUBJECT_ICONS[label] || '📘',
+          icon: iconForSubject(label),
           children: children.length ? children : undefined,
         };
       });
 
-    return [...baseTree, ...dynamicSubjects];
-  }, [mode, questionCounts.bySubject, questionCounts.bySubSubject, questionCounts.byTopic]);
+    return dynamicSubjects;
+  }, [questionCounts.bySubject, questionCounts.bySubSubject, questionCounts.byTopic]);
 
   const visibleQuestions = useMemo(() => {
     if (!selectedTopics.length) return questions;
@@ -578,8 +940,7 @@ export default function PyqPage() {
       setAiEvalStepIndex(0);
       return;
     }
-    setShowAiEvalCompleteModal(false);
-    setAiEvalStepIndex(1);
+    setAiEvalStepIndex(0);
     const start = Date.now();
 
     // Visual progress animation (cosmetic – doesn't block)
@@ -587,7 +948,7 @@ export default function PyqPage() {
       const elapsed = Date.now() - start;
       const pct = Math.min(95, (elapsed / 60000) * 100); // 60s ceiling, cap at 95%
       setAiEvalProgress(pct);
-      const step = 1 + Math.min(AI_EVAL_STEPS.length - 1, Math.floor((elapsed / 60000) * (AI_EVAL_STEPS.length - 1)));
+      const step = Math.min(AI_EVAL_STEPS.length - 1, Math.floor((elapsed / 60000) * AI_EVAL_STEPS.length));
       setAiEvalStepIndex(step);
     }, 500);
 
@@ -598,15 +959,17 @@ export default function PyqPage() {
         if (res.data?.evaluationStatus === 'completed' || res.data?.isComplete) {
           clearInterval(pollInterval);
           clearInterval(progressInterval);
-          // Fetch full results
-          const resultsRes = await pyqService.getMainsResults(selectedQuestion.id, mainsAttemptId);
-          if (resultsRes.data) {
-            setMainsEvalResults(resultsRes.data);
-          }
           setAiEvalProgress(100);
           setAiEvalStepIndex(AI_EVAL_STEPS.length);
           setShowAiEvalModal(false);
-          setShowAiEvalCompleteModal(true);
+          // Hand off to the dedicated results page (shared Daily-style UI).
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(
+              'pyqMainsResultsSession',
+              JSON.stringify({ questionId: selectedQuestion.id, attemptId: mainsAttemptId })
+            );
+          }
+          router.push(`/dashboard/pyq/results?questionId=${encodeURIComponent(selectedQuestion.id)}&attemptId=${encodeURIComponent(mainsAttemptId)}`);
         }
       } catch (err) {
         console.error('Polling eval status failed:', err);
@@ -617,36 +980,165 @@ export default function PyqPage() {
       clearInterval(progressInterval);
       clearInterval(pollInterval);
     };
-  }, [showAiEvalModal, mainsAttemptId, selectedQuestion]);
-
-  const resetAllFilters = () => {
-    setYearMode('all');
-    setSelectedYears([]);
-    setYearSearch('');
-    setSelectedSubject('All Papers');
-    setSelectedSubtopic(null);
-    setSelectedTopics([]);
-    setExpandedSubject(null);
-    setExpandedSubtopic(null);
-    setOpenFilter(null);
-  };
+  }, [showAiEvalModal, mainsAttemptId, selectedQuestion, router]);
 
   const hasActiveFilters =
     yearMode === 'custom' ||
-    selectedSubject !== 'All Papers' ||
-    Boolean(selectedSubtopic) ||
+    selectedPapers.length > 0 ||
+    selectedSubjects.length > 0 ||
+    selectedSubSubjects.length > 0 ||
     selectedTopics.length > 0;
 
-  const currentSubjectNode = subjectTree.find((node) => node.label === selectedSubject);
-  const currentSubTopicNode = currentSubjectNode?.children?.find((child) => child.label === selectedSubtopic);
+  const selectedSubjectKeys = useMemo(
+    () => new Set(selectedSubjects.map((s) => countKey(s))),
+    [selectedSubjects]
+  );
+  const selectedSubSubjectKeys = useMemo(
+    () => new Set(selectedSubSubjects.map((s) => countKey(s))),
+    [selectedSubSubjects]
+  );
+
+  // Subject-tree nodes for every currently selected subject.
+  const currentSubjectNodes = useMemo(
+    () => subjectTree.filter((node) => selectedSubjectKeys.has(countKey(node.label))),
+    [subjectTree, selectedSubjectKeys]
+  );
+
+  // Union of sub-subjects across the selected subjects, de-duplicated by label.
+  const availableSubSubjects = useMemo(() => {
+    const seen = new Set<string>();
+    const list: Array<{ label: string; subject: string }> = [];
+    currentSubjectNodes.forEach((node) => {
+      (node.children || []).forEach((child) => {
+        const key = countKey(child.label);
+        if (seen.has(key)) return;
+        seen.add(key);
+        list.push({ label: child.label, subject: node.label });
+      });
+    });
+    return list;
+  }, [currentSubjectNodes]);
+
+  // Union of micro-topics across the selected sub-subjects, de-duplicated.
+  const currentTopicOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const list: string[] = [];
+    currentSubjectNodes.forEach((node) => {
+      (node.children || []).forEach((child) => {
+        if (!selectedSubSubjectKeys.has(countKey(child.label))) return;
+        (child.microTopics || []).forEach((topic) => {
+          const key = topic.trim().toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          list.push(topic);
+        });
+      });
+    });
+    return list;
+  }, [currentSubjectNodes, selectedSubSubjectKeys]);
+
+  const currentSubSubjectHasUntaggedQuestions = Boolean(
+    selectedSubSubjects.length > 0 &&
+      currentTopicOptions.length === 0 &&
+      questionCounts.byTopic.some(
+        (row) =>
+          selectedSubSubjectKeys.has(countKey(row.subSubject)) &&
+          !String(row.topic || '').trim()
+      )
+  );
+
+  // Keep the hierarchy coherent: drop selected sub-subjects that are no longer
+  // reachable from the selected subjects, and topics no longer reachable from
+  // the selected sub-subjects. Runs only when the available options change, so
+  // it never fights an active selection.
+  useEffect(() => {
+    const allowed = new Set(availableSubSubjects.map((s) => countKey(s.label)));
+    setSelectedSubSubjects((prev) => {
+      const next = prev.filter((s) => allowed.has(countKey(s)));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [availableSubSubjects]);
+
+  useEffect(() => {
+    const allowed = new Set(currentTopicOptions.map((t) => t.trim().toLowerCase()));
+    setSelectedTopics((prev) => {
+      const next = prev.filter((t) => allowed.has(t.trim().toLowerCase()));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [currentTopicOptions]);
+
+  const toggleSubject = useCallback((label: string) => {
+    setSelectedSubjects((prev) =>
+      prev.some((s) => countKey(s) === countKey(label))
+        ? prev.filter((s) => countKey(s) !== countKey(label))
+        : [...prev, label]
+    );
+  }, []);
+
+  const toggleSubSubject = useCallback((label: string) => {
+    setSelectedSubSubjects((prev) =>
+      prev.some((s) => countKey(s) === countKey(label))
+        ? prev.filter((s) => countKey(s) !== countKey(label))
+        : [...prev, label]
+    );
+  }, []);
+
+  const togglePaper = useCallback((value: string) => {
+    setSelectedPapers((prev) =>
+      prev.some((p) => countKey(p) === countKey(value))
+        ? prev.filter((p) => countKey(p) !== countKey(value))
+        : [...prev, value]
+    );
+  }, []);
+
+  const paperCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    (questionCounts.byPaper || []).forEach((row) => {
+      counts.set(countKey(row.paper), row.count);
+    });
+    return counts;
+  }, [questionCounts.byPaper]);
+
+  const getPaperCount = useCallback(
+    (paper: string, aliases: string[] = []) => {
+      const keys = [paper, ...aliases].map((value) => countKey(value));
+      return keys.reduce((sum, key) => sum + (paperCounts.get(key) || 0), 0);
+    },
+    [paperCounts]
+  );
+
+  const taxonomyLabels = mode === 'mains'
+    ? { level1: 'Subject', level2: 'Theme', level3: 'Topic' }
+    : questionCounts.taxonomyLabels || { level1: 'Subject', level2: 'Theme', level3: 'Topic' };
+
+  const paperOptions = mode === 'prelims'
+    ? [
+        { label: 'GS Paper 1', value: 'GS Paper 1', icon: '🔑', aliases: ['GS-I', 'GS Paper I'], comingSoon: false },
+        { label: 'CSAT', value: 'CSAT', icon: '🧩', aliases: ['Paper II', 'CSAT Paper II'], comingSoon: false },
+      ]
+    : [
+        { label: 'GS Paper 1', value: 'GS Paper 1', icon: '📘', aliases: ['GS-I', 'GS Paper I'], comingSoon: false },
+        { label: 'GS Paper 2', value: 'GS Paper 2', icon: '📗', aliases: ['GS-II', 'GS Paper II'], comingSoon: false },
+        { label: 'GS Paper 3', value: 'GS Paper 3', icon: '📙', aliases: ['GS-III', 'GS Paper III'], comingSoon: false },
+        { label: 'GS Paper 4', value: 'GS Paper 4', icon: '📕', aliases: ['GS-IV', 'GS Paper IV'], comingSoon: false },
+        { label: 'Essay', value: 'Essay', icon: '✍️', aliases: ['Essay Paper'], comingSoon: false },
+        { label: 'Optional Paper 1', value: 'Optional Paper 1', icon: '📝', aliases: ['Optional-I', 'Optional Paper I'], comingSoon: true },
+        { label: 'Optional Paper 2', value: 'Optional Paper 2', icon: '📝', aliases: ['Optional-II', 'Optional Paper II'], comingSoon: true },
+      ];
+
+  const visiblePaperOptions = paperOptions.filter((paper) => {
+    if (paper.comingSoon) return true;
+    const count = getPaperCount(paper.value, paper.aliases);
+    return count > 0 || selectedPapers.some((p) => countKey(p) === countKey(paper.value));
+  });
 
   const filterButtonBase =
-    'inline-flex h-10 flex-shrink-0 items-center gap-2 rounded-[12px] px-2.5 text-[14px] font-bold text-[#101828] transition-colors hover:bg-[#F4F5F7]';
+    'inline-flex h-9 flex-shrink-0 items-center gap-2 rounded-[10px] px-2.5 text-[13px] font-bold text-[#101828] transition-colors hover:bg-[#F4F5F7]';
 
   const tinyIconStyle: React.CSSProperties = {
     width: 18,
     height: 18,
-    color: '#8B919B',
+    color: 'currentColor',
     flexShrink: 0,
   };
 
@@ -658,7 +1150,7 @@ export default function PyqPage() {
       style={{
         width: 300,
         maxWidth: '100%',
-        height: 64,
+        height: 54,
         borderRadius: 26843500,
         padding: compact ? 4 : 0,
         gap: 0,
@@ -675,8 +1167,8 @@ export default function PyqPage() {
             className="flex flex-1 items-center justify-center"
             style={{
               alignSelf: 'stretch',
-              paddingLeft: 24,
-              paddingRight: 24,
+              paddingLeft: 20,
+              paddingRight: 20,
               background: active ? '#0F172B' : 'transparent',
               gap: 10,
               borderRadius: active ? 9999 : 0,
@@ -688,14 +1180,14 @@ export default function PyqPage() {
               src={icon}
               alt=""
               aria-hidden
-              style={{ width: 21, height: 21, objectFit: 'contain', flexShrink: 0 }}
+              style={{ width: 18, height: 18, objectFit: 'contain', flexShrink: 0 }}
             />
             <span
               style={{
                 fontFamily: 'Inter, sans-serif',
                 fontWeight: 700,
-                fontSize: 16,
-                lineHeight: '24px',
+                fontSize: 14,
+                lineHeight: '20px',
                 letterSpacing: 0,
                 textAlign: 'center',
                 color: active ? '#FFFFFF' : '#4A5565',
@@ -712,41 +1204,100 @@ export default function PyqPage() {
   const FilterTrigger = ({
     id,
     label,
-    value,
     icon,
+    active = false,
+    count,
   }: {
     id: typeof openFilter;
     label: string;
-    value?: string;
     icon: React.ReactNode;
-  }) => (
-    <button
-      type="button"
-      onClick={() => setOpenFilter(openFilter === id ? null : id)}
-      className={filterButtonBase}
-      style={{ background: openFilter === id ? '#F4F5F7' : 'transparent' }}
-      aria-expanded={openFilter === id}
-    >
-      {icon}
-      <span className="whitespace-nowrap">{value || label}</span>
-      <span className="text-[#9AA3B2]">⌄</span>
-    </button>
-  );
+    // Whether this filter currently holds a selection (drives the dark highlight + badge).
+    active?: boolean;
+    // Number shown in the gold badge; defaults to 1 when active.
+    count?: number;
+  }) => {
+    const isOpen = openFilter === id;
+    // Highlight (dark pill) whenever a value is selected; light tint while only the popover is open.
+    const style: React.CSSProperties = active
+      ? {
+          background: '#0F172B',
+          color: '#FFFFFF',
+          boxShadow: '0 2px 10px rgba(15,17,26,0.18),0 1px 3px rgba(15,17,26,0.12)',
+        }
+      : { background: isOpen ? '#F4F5F7' : 'transparent', color: '#101828' };
+    const badgeCount = count ?? 1;
+    return (
+      <button
+        type="button"
+        onClick={() => setOpenFilter(isOpen ? null : id)}
+        className={filterButtonBase}
+        style={style}
+        aria-expanded={isOpen}
+        aria-pressed={active}
+      >
+        <span style={{ color: active ? '#FFFFFF' : '#8B919B', display: 'inline-flex' }}>{icon}</span>
+        <span className="whitespace-nowrap">{label}</span>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          style={{
+            width: 11,
+            height: 11,
+            opacity: active ? 0.8 : 0.4,
+            transition: 'transform .25s',
+            transform: isOpen ? 'rotate(180deg)' : 'none',
+            flexShrink: 0,
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+        {active ? (
+          <span
+            className="inline-flex min-w-[18px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold leading-[16px]"
+            style={{ background: '#D4AF37', color: '#0F172B', boxShadow: '0 1px 4px rgba(212,175,55,0.35)' }}
+          >
+            {badgeCount}
+          </span>
+        ) : null}
+      </button>
+    );
+  };
 
-  const FilterPopover = ({ id, children, width = 420 }: { id: typeof openFilter; children: React.ReactNode; width?: number }) => (
+  const FilterPopover = ({
+    id,
+    children,
+    width = 420,
+    align = 'start',
+  }: {
+    id: typeof openFilter;
+    children: React.ReactNode;
+    width?: number;
+    align?: 'start' | 'end';
+  }) => (
     openFilter === id ? (
       <div
-        className="absolute left-0 top-[calc(100%+10px)] z-50 max-h-[460px] overflow-hidden rounded-[18px] border border-[#E5E7EB] bg-[#F4F5F7] shadow-[0_18px_52px_rgba(15,17,26,0.14)]"
-        style={{ width: `min(${width}px, calc(100vw - 48px))` }}
+        className={`absolute top-[calc(100%+10px)] z-[70] max-h-[460px] max-w-[calc(100vw-32px)] overflow-hidden rounded-[18px] border border-[#E5E7EB] bg-[#F4F5F7] shadow-[0_18px_52px_rgba(15,17,26,0.14)] ${align === 'end' ? 'right-0' : 'left-0'}`}
+        style={{ width: `min(${width}px, calc(100vw - 32px))` }}
       >
         {children}
       </div>
     ) : null
   );
 
+  const scrollableFilterProps = (id: FilterId) => ({
+    ref: (node: HTMLDivElement | null) => {
+      if (node) node.scrollTop = filterScrollPositionsRef.current[id] || 0;
+    },
+    onScroll: (event: React.UIEvent<HTMLDivElement>) => {
+      filterScrollPositionsRef.current[id] = event.currentTarget.scrollTop;
+    },
+  });
+
   const SubjectTreePopover = () => (
     <FilterPopover id="subject" width={520}>
-      <div className="max-h-[440px] overflow-y-auto p-5">
+      <div {...scrollableFilterProps('subject')} className="max-h-[440px] overflow-x-hidden overflow-y-auto p-5">
         <div className="mb-4 flex items-center justify-between border-b border-[#E5E7EB] pb-3">
           <div className="text-[15px] font-bold text-[#101828]">Subject Filter</div>
           <button type="button" onClick={() => setOpenFilter(null)} className="h-8 w-8 rounded-[10px] bg-white text-[#6A7282]">×</button>
@@ -755,89 +1306,95 @@ export default function PyqPage() {
           <button
             type="button"
             onClick={() => {
-              setSelectedSubject('All Papers');
-              setSelectedSubtopic(null);
+              setSelectedSubjects([]);
+              setSelectedSubSubjects([]);
               setSelectedTopics([]);
               setExpandedSubject(null);
               setExpandedSubtopic(null);
             }}
             className="flex min-h-[50px] items-center justify-between rounded-[12px] px-3 text-left"
-            style={{ background: selectedSubject === 'All Papers' ? '#0F1A30' : '#FFFFFF', color: selectedSubject === 'All Papers' ? '#FFFFFF' : '#101828' }}
+            style={{ background: selectedSubjects.length === 0 ? '#0F1A30' : '#FFFFFF', color: selectedSubjects.length === 0 ? '#FFFFFF' : '#101828' }}
           >
             <span className="font-semibold">📘 All Papers</span>
             <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-bold">{questionCounts.total || total}</span>
           </button>
-          {mode === 'mains' && (
-            <select
-              value={MAINS_OPTIONAL_ALL.includes(selectedSubject) ? selectedSubject : ''}
-              onChange={(e) => {
-                const val = e.target.value;
-                setSelectedSubject(val || 'All Papers');
-                setSelectedSubtopic(null);
-                setSelectedTopics([]);
-                setExpandedSubject(null);
-                setExpandedSubtopic(null);
-              }}
-              className="h-11 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[13px] font-semibold text-[#374151] outline-none"
-            >
-              <option value="">Select Optional Subject</option>
-              <optgroup label="Science & Engineering">
-                {MAINS_OPTIONAL_SUBJECTS.science.map((s) => <option key={s} value={s}>{s}</option>)}
-              </optgroup>
-              <optgroup label="Social Sciences & Humanities">
-                {MAINS_OPTIONAL_SUBJECTS.social.map((s) => <option key={s} value={s}>{s}</option>)}
-              </optgroup>
-              <optgroup label="Literature">
-                {MAINS_OPTIONAL_SUBJECTS.literature.map((s) => <option key={s} value={s}>{s}</option>)}
-              </optgroup>
-            </select>
-          )}
           {subjectTree.map(({ label, icon, children }) => {
-            const selected = selectedSubject === label;
+            const selected = selectedSubjectKeys.has(countKey(label));
             const expanded = expandedSubject === label;
             const subjectCount = subjectQuestionCounts.get(countKey(label)) || 0;
             return (
               <div key={label} className="overflow-hidden rounded-[12px] bg-white">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedSubject(label);
-                    setSelectedSubtopic(null);
-                    setSelectedTopics([]);
-                    setExpandedSubtopic(null);
-                    setExpandedSubject(expanded ? null : label);
-                  }}
+                <div
                   className="flex min-h-[50px] w-full items-center justify-between px-3 text-left"
                   style={{ background: selected ? '#0F1A30' : '#FFFFFF', color: selected ? '#FFFFFF' : '#101828' }}
                 >
-                  <span className="flex min-w-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleSubject(label)}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  >
+                    <span
+                      className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-[6px] border text-[11px]"
+                      style={{
+                        borderColor: selected ? '#D4AF37' : '#CBD2DC',
+                        background: selected ? '#D4AF37' : 'transparent',
+                        color: selected ? '#0F172B' : 'transparent',
+                      }}
+                    >
+                      ✓
+                    </span>
                     <span aria-hidden>{icon}</span>
                     <span className="truncate text-[14px] font-semibold">{label}</span>
-                  </span>
+                  </button>
                   <span className="flex items-center gap-2">
                     <span className="rounded-full bg-[#F0F1F3] px-2 py-0.5 text-[10px] font-bold text-[#6A7282]">{subjectCount}</span>
-                    {children?.length ? <span style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>⌄</span> : null}
+                    {children?.length ? (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedSubject(expanded ? null : label)}
+                        aria-label={expanded ? 'Collapse' : 'Expand'}
+                        className="flex h-6 w-6 items-center justify-center"
+                        style={{ color: selected ? '#FFFFFF' : '#101828', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      >
+                        ⌄
+                      </button>
+                    ) : null}
                   </span>
-                </button>
+                </div>
                 {expanded && children?.length ? (
                   <div className="border-t border-[#E5E7EB]">
-                    {children.map((child) => (
-                      <button
-                        key={child.label}
-                        type="button"
-                        onClick={() => {
-                          setSelectedSubtopic(child.label);
-                          setSelectedTopics([]);
-                          setExpandedSubtopic(expandedSubtopic === child.label ? null : child.label);
-                        }}
-                        className="flex w-full items-center justify-between border-b border-[#EEF0F4] px-4 py-2.5 text-left last:border-b-0 hover:bg-[#F9FAFB]"
-                      >
-                        <span className="truncate text-[12px] font-semibold text-[#5A6478]">{child.label}</span>
-                        <span className="rounded-full bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-bold text-[#9AA3B2]">
-                          {subSubjectQuestionCounts.get(countKey(label, child.label)) || 0}
-                        </span>
-                      </button>
-                    ))}
+                    {children.map((child) => {
+                      const childSelected = selectedSubSubjectKeys.has(countKey(child.label));
+                      return (
+                        <button
+                          key={child.label}
+                          type="button"
+                          onClick={() => {
+                            if (!selected) toggleSubject(label);
+                            toggleSubSubject(child.label);
+                          }}
+                          className="flex w-full items-center justify-between border-b border-[#EEF0F4] px-4 py-2.5 text-left last:border-b-0 hover:bg-[#F9FAFB]"
+                          style={{ background: childSelected ? '#FFF3CC' : undefined }}
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span
+                              className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[5px] border text-[9px]"
+                              style={{
+                                borderColor: childSelected ? '#B45309' : '#CBD2DC',
+                                background: childSelected ? '#B45309' : 'transparent',
+                                color: childSelected ? '#FFFFFF' : 'transparent',
+                              }}
+                            >
+                              ✓
+                            </span>
+                            <span className="truncate text-[12px] font-semibold text-[#5A6478]">{child.label}</span>
+                          </span>
+                          <span className="rounded-full bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] font-bold text-[#9AA3B2]">
+                            {subSubjectQuestionCounts.get(countKey(label, child.label)) || 0}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : null}
               </div>
@@ -849,24 +1406,94 @@ export default function PyqPage() {
   );
 
   const FilterToolbar = () => (
-    <div className="sticky top-3 z-40 mb-8">
+    <div className="sticky top-3 z-40 mb-8 max-w-full">
       <div className="relative">
         <div
-          className="flex max-w-full items-center gap-1.5 overflow-visible rounded-[16px] border bg-white px-8 py-3 shadow-[0_2px_8px_rgba(15,17,26,0.05),0_12px_36px_rgba(15,17,26,0.07)]"
-          style={{ borderColor: '#F3E9C8', scrollbarWidth: 'none' }}
+          className="flex max-w-full flex-wrap items-center gap-1.5 overflow-visible rounded-[14px] border bg-white px-8 py-2 transition-[border-color,box-shadow] duration-300"
+          style={{
+            borderColor: hasActiveFilters ? 'rgba(212,175,55,0.35)' : '#F3E9C8',
+            boxShadow: hasActiveFilters
+              ? '0 2px 8px rgba(15,17,26,0.05),0 12px 36px rgba(15,17,26,0.07),0 0 0 1px rgba(212,175,55,0.12)'
+              : '0 2px 8px rgba(15,17,26,0.05),0 12px 36px rgba(15,17,26,0.07)',
+            scrollbarWidth: 'none',
+          }}
         >
           <div className="relative">
             <FilterTrigger
               id="paper"
               label="Paper"
-              value={mode === 'prelims' ? 'Paper' : 'Paper'}
+              active={selectedPapers.length > 0}
+              count={selectedPapers.length}
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="M7 3h8l4 4v14H7V3Z" stroke="currentColor" strokeWidth="2"/><path d="M15 3v5h5" stroke="currentColor" strokeWidth="2"/></svg>}
             />
-            <FilterPopover id="paper" width={280}>
-              <div className="p-4">
-                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Paper</div>
-                <div className="grid gap-2">
-                  {(['prelims', 'mains'] as const).map((nextMode) => (
+            <FilterPopover id="paper" width={440}>
+              <div className="p-5">
+                <div className="mb-4 flex items-center justify-between border-b border-[#E5E7EB] pb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-[11px] bg-[#0F172B] text-[18px] text-[#D4AF37]">
+                      📄
+                    </span>
+                    <div className="text-[17px] font-bold text-[#101828]">
+                      {mode === 'prelims' ? 'Prelims Papers' : 'Mains Papers'}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOpenFilter(null)}
+                    className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-white text-[22px] text-[#9AA3B2] shadow-sm"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-[#9AA3B2]">All Papers</div>
+                <div className="grid grid-cols-2 gap-3">
+                  {visiblePaperOptions.map((paper) => {
+                    const selected = selectedPapers.some((p) => countKey(p) === countKey(paper.value));
+                    const count = getPaperCount(paper.value, paper.aliases);
+                    const paperStyle = getSubjectMetaStyle(paper.value);
+                    return (
+                      <button
+                        key={paper.value}
+                        type="button"
+                        disabled={paper.comingSoon}
+                        onClick={() => !paper.comingSoon && togglePaper(paper.value)}
+                        className="flex min-h-[72px] items-center gap-3 rounded-[13px] border bg-white px-3 text-left transition-colors hover:border-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-[#E5E7EB]"
+                        style={{
+                          borderColor: selected ? paperStyle.accent : paperStyle.border,
+                          background: selected ? paperStyle.bg : '#FFFFFF',
+                          boxShadow: selected ? `0 0 0 1px ${paperStyle.accent}` : '0 1px 2px rgba(15,17,26,0.04)',
+                        }}
+                      >
+                        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] text-[19px]" style={{ background: '#FFFFFFAA', border: `1px solid ${paperStyle.border}` }}>
+                          {paper.icon}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          {paper.comingSoon && (
+                            <span className="mb-1 inline-block flex-shrink-0 rounded-full bg-[#F0F1F3] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#6A7282]">
+                              Coming soon
+                            </span>
+                          )}
+                          <span className="block whitespace-nowrap text-[15px] font-bold leading-5 text-[#101828]">{paper.label}</span>
+                          <span className="block text-[12px] font-medium leading-4 text-[#9AA3B2]">
+                            {paper.comingSoon ? 'PYQs not added yet' : `${count} questions`}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedPapers.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPapers([])}
+                    className="mt-4 rounded-full bg-white px-4 py-2 text-[13px] font-bold text-[#6A7282]"
+                  >
+                    Clear papers
+                  </button>
+                )}
+                {false && (
+                  <div className="grid gap-2">
+                    {(['prelims', 'mains'] as const).map((nextMode) => (
                     <button
                       key={nextMode}
                       type="button"
@@ -879,50 +1506,6 @@ export default function PyqPage() {
                     >
                       {nextMode === 'prelims' ? '◎ Prelims' : '✎ Mains'}
                     </button>
-                  ))}
-                </div>
-              </div>
-            </FilterPopover>
-          </div>
-
-          <div className="relative">
-            <FilterTrigger
-              id="subject"
-              label="Subject"
-              value={selectedSubject !== 'All Papers' ? selectedSubject : 'Subject'}
-              icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a3 3 0 0 1-3-3V5a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="2"/><path d="M8 17h11" stroke="currentColor" strokeWidth="2"/></svg>}
-            />
-            <SubjectTreePopover />
-          </div>
-
-          <div className="relative">
-            <FilterTrigger
-              id="subSubject"
-              label="Sub-Subject"
-              value={selectedSubtopic || 'Sub-Subject'}
-              icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21M12 3c-2.5 2.6-3.8 5.6-3.8 9s1.3 6.4 3.8 9" stroke="currentColor" strokeWidth="1.6"/></svg>}
-            />
-            <FilterPopover id="subSubject" width={360}>
-              <div className="max-h-[360px] overflow-y-auto p-4">
-                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Sub-Subject</div>
-                {!currentSubjectNode?.children?.length ? (
-                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a subject first.</div>
-                ) : (
-                  <div className="grid gap-2">
-                    {currentSubjectNode.children.map((child) => (
-                      <button
-                        key={child.label}
-                        type="button"
-                        onClick={() => {
-                          setSelectedSubtopic(child.label);
-                          setSelectedTopics([]);
-                          setOpenFilter(null);
-                        }}
-                        className="rounded-[12px] px-4 py-3 text-left text-[13px] font-bold"
-                        style={{ background: selectedSubtopic === child.label ? '#0F172B' : '#FFFFFF', color: selectedSubtopic === child.label ? '#FFFFFF' : '#101828' }}
-                      >
-                        {child.label}
-                      </button>
                     ))}
                   </div>
                 )}
@@ -932,20 +1515,92 @@ export default function PyqPage() {
 
           <div className="relative">
             <FilterTrigger
+              id="subject"
+              label="Subject"
+              active={selectedSubjects.length > 0}
+              count={selectedSubjects.length}
+              icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a3 3 0 0 1-3-3V5a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="2"/><path d="M8 17h11" stroke="currentColor" strokeWidth="2"/></svg>}
+            />
+            <SubjectTreePopover />
+          </div>
+
+          <div className="relative">
+            <FilterTrigger
+              id="subSubject"
+              label={taxonomyLabels.level2}
+              active={selectedSubSubjects.length > 0}
+              count={selectedSubSubjects.length}
+              icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21M12 3c-2.5 2.6-3.8 5.6-3.8 9s1.3 6.4 3.8 9" stroke="currentColor" strokeWidth="1.6"/></svg>}
+            />
+            <FilterPopover id="subSubject" width={360}>
+              <div {...scrollableFilterProps('subSubject')} className="max-h-[360px] overflow-x-hidden overflow-y-auto p-4">
+                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">{taxonomyLabels.level2}</div>
+                {!availableSubSubjects.length ? (
+                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a subject first.</div>
+                ) : (
+                  <div className="grid gap-2">
+                    {availableSubSubjects.map((child) => {
+                      const childSelected = selectedSubSubjectKeys.has(countKey(child.label));
+                      return (
+                        <button
+                          key={child.label}
+                          type="button"
+                          onClick={() => toggleSubSubject(child.label)}
+                          className="flex min-w-0 items-center gap-2 rounded-[12px] px-4 py-3 text-left text-[13px] font-bold"
+                          style={{ background: childSelected ? '#0F172B' : '#FFFFFF', color: childSelected ? '#FFFFFF' : '#101828' }}
+                        >
+                          <span
+                            className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[5px] border text-[9px]"
+                            style={{
+                              borderColor: childSelected ? '#D4AF37' : '#CBD2DC',
+                              background: childSelected ? '#D4AF37' : 'transparent',
+                              color: childSelected ? '#0F172B' : 'transparent',
+                            }}
+                          >
+                            ✓
+                          </span>
+                          <span className="min-w-0 break-words whitespace-normal">{child.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </FilterPopover>
+          </div>
+
+          <div className="relative">
+            <FilterTrigger
               id="topic"
-              label="Topic"
-              value={selectedTopics.length ? `${selectedTopics.length} topics` : 'Topic'}
+              label={taxonomyLabels.level3}
+              active={selectedTopics.length > 0}
+              count={selectedTopics.length}
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2"/><path d="m15 9-4.5 1.5L9 15l4.5-1.5L15 9Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>}
             />
             <FilterPopover id="topic" width={420}>
-              <div className="max-h-[360px] overflow-y-auto p-4">
-                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Topic</div>
-                {!currentSubTopicNode?.microTopics?.length ? (
-                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a sub-subject with topics first.</div>
+              <div {...scrollableFilterProps('topic')} className="max-h-[360px] overflow-x-hidden overflow-y-auto p-4">
+                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">{taxonomyLabels.level3}</div>
+                {selectedSubSubjects.length === 0 ? (
+                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a {taxonomyLabels.level2.toLowerCase()} first.</div>
+                ) : !currentTopicOptions.length ? (
+                  <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">
+                    {currentSubSubjectHasUntaggedQuestions
+                      ? `${selectedSubSubjects.join(', ')} ${selectedSubSubjects.length === 1 ? 'is' : 'are'} tagged at this level. These PYQs do not have a separate ${taxonomyLabels.level3.toLowerCase()} tag yet.`
+                      : `No ${taxonomyLabels.level3.toLowerCase()} values are assigned to the selected ${taxonomyLabels.level2.toLowerCase()} value(s).`}
+                  </div>
                 ) : (
-                  <div className="grid gap-1">
-                    {currentSubTopicNode.microTopics.map((topic) => {
+                  <div className="grid gap-2">
+                    {currentTopicOptions.map((topic) => {
                       const active = selectedTopics.includes(topic);
+                      const needle = topic.trim().toLowerCase();
+                      const topicCount = questionCounts.byTopic.reduce(
+                        (sum, row) =>
+                          selectedSubSubjectKeys.has(countKey(row.subSubject)) &&
+                          (row.topic || '').toLowerCase().includes(needle)
+                            ? sum + row.count
+                            : sum,
+                        0
+                      );
                       return (
                         <button
                           key={topic}
@@ -953,12 +1608,24 @@ export default function PyqPage() {
                           onClick={() => {
                             setSelectedTopics((prev) => active ? prev.filter((t) => t !== topic) : [...prev, topic]);
                           }}
-                          className="flex items-center justify-between rounded-[10px] px-3 py-2.5 text-left text-[12px] font-bold hover:bg-white"
-                          style={{ background: active ? '#FFF3CC' : 'transparent', color: active ? '#B45309' : '#5A6478' }}
+                          className="flex min-h-[50px] items-center justify-between rounded-[12px] bg-white px-4 py-3 text-left text-[13px] font-bold"
+                          style={{ background: active ? '#0F1A30' : '#FFFFFF', color: active ? '#FFFFFF' : '#101828' }}
                         >
-                          <span>{topic}</span>
-                          <span className="ml-3 rounded-full bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] text-[#9AA3B2]">
-                            {getTopicQuestionCount(selectedSubject, selectedSubtopic, topic)}
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span
+                              className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[5px] border text-[9px]"
+                              style={{
+                                borderColor: active ? '#D4AF37' : '#CBD2DC',
+                                background: active ? '#D4AF37' : 'transparent',
+                                color: active ? '#0F172B' : 'transparent',
+                              }}
+                            >
+                              ✓
+                            </span>
+                            <span className="min-w-0 break-words whitespace-normal">{topic}</span>
+                          </span>
+                          <span className="ml-3 flex-shrink-0 rounded-full bg-[#EDF0F5] px-1.5 py-0.5 text-[10px] text-[#9AA3B2]">
+                            {topicCount}
                           </span>
                         </button>
                       );
@@ -974,11 +1641,12 @@ export default function PyqPage() {
           <div className="relative">
             <FilterTrigger
               id="year"
-              label="Year"
-              value={yearMode === 'custom' && selectedYears.length ? `${selectedYears.length} years` : 'Year'}
+              label={yearMode === 'custom' && selectedYears.length ? `${selectedYears.length}Y` : 'Year'}
+              active={yearMode === 'custom' && selectedYears.length > 0}
+              count={selectedYears.length}
               icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="M7 3v4M17 3v4M4 9h16M5 5h14v15H5V5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>}
             />
-            <FilterPopover id="year" width={420}>
+            <FilterPopover id="year" width={420} align="end">
               <div className="p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Exam Year</div>
@@ -1031,38 +1699,12 @@ export default function PyqPage() {
             </FilterPopover>
           </div>
 
-          <div className="relative">
-            <FilterTrigger
-              id="difficulty"
-              label="Difficulty"
-              icon={<svg style={tinyIconStyle} viewBox="0 0 24 24" fill="none"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2 7.5 14 3 9.6l6.2-.9L12 3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>}
-            />
-            <FilterPopover id="difficulty" width={280}>
-              <div className="p-4">
-                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">Difficulty</div>
-                <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">
-                  Difficulty is shown on each question. The live PYQ API does not expose a difficulty filter yet.
-                </div>
-              </div>
-            </FilterPopover>
-          </div>
-
           {filterDocked && (
             <div className="hidden flex-shrink-0 px-1 lg:block">
               <ExamModeToggle compact />
             </div>
           )}
 
-          <div className="ml-auto flex flex-shrink-0 items-center gap-1.5">
-            <button
-              type="button"
-              onClick={resetAllFilters}
-              disabled={!hasActiveFilters}
-              className="rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-[14px] font-semibold text-[#9AA3B2] transition-colors hover:text-[#C10007] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              × Clear all
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -1075,13 +1717,48 @@ export default function PyqPage() {
       className="flex min-h-full flex-col items-stretch font-arimo"
       style={{ background: '#F9FAFB' }}
     >
+      <style>{`
+        .pyq-act-btn{position:relative;overflow:hidden;transition:transform .2s cubic-bezier(0.4,0,0.2,1),box-shadow .2s cubic-bezier(0.4,0,0.2,1),border-color .2s cubic-bezier(0.4,0,0.2,1);}
+        .pyq-act-btn:active{transform:translateY(0) scale(0.97);}
+        .pyq-act-btn--primary{box-shadow:0 1px 0 rgba(255,255,255,0.08) inset,0 2px 6px rgba(15,23,42,0.28),0 10px 22px -8px rgba(15,23,42,0.4);}
+        .pyq-act-btn--primary::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent);transition:left .5s cubic-bezier(0.4,0,0.2,1);pointer-events:none;}
+        .pyq-act-btn--primary:hover{transform:translateY(-2px);box-shadow:0 1px 0 rgba(255,255,255,0.1) inset,0 4px 10px rgba(15,23,42,0.32),0 16px 30px -8px rgba(212,175,55,0.35);}
+        .pyq-act-btn--primary:hover::before{left:100%;}
+        .pyq-act-btn--secondary{box-shadow:0 1px 2px rgba(16,24,40,0.05),0 1px 0 rgba(255,255,255,0.7) inset;}
+        .pyq-act-btn--secondary:hover{transform:translateY(-2px);border-color:#D4AF37 !important;box-shadow:0 8px 18px -6px rgba(212,175,55,0.22),0 2px 6px rgba(16,24,40,0.06);}
+        .pyq-act-pill{box-shadow:0 1px 2px rgba(16,24,40,0.05);}
+        .pyq-act-pill:hover{transform:translateY(-2px);}
+        .pyq-act-pill--bookmark:hover{border-color:#D4AF37 !important;box-shadow:0 8px 18px -6px rgba(212,175,55,0.3);}
+        .pyq-act-pill--flashcard:hover{border-color:#0891B2 !important;box-shadow:0 8px 18px -6px rgba(8,145,178,0.3);}
+        .pyq-act-pill--review:hover{border-color:#E65100 !important;box-shadow:0 8px 18px -6px rgba(230,81,0,0.3);}
+        .pyq-sparkle{display:inline-block;animation:pyqSparkle 2s ease-in-out infinite;}
+        @keyframes pyqSparkle{0%,100%{transform:scale(1) rotate(0deg);opacity:1}50%{transform:scale(1.15) rotate(12deg);opacity:.85}}
+      `}</style>
+      <MainsEvaluationLimitModal
+        open={showMainsQuotaModal}
+        onClose={() => setShowMainsQuotaModal(false)}
+        tier={entitlements.tier}
+        used={mainsQuota?.used}
+        limit={mainsQuota?.limit}
+        backLabel="Back to Dashboard"
+      />
+      {navigatingQuestionHref ? (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#F8F9FB]/85 backdrop-blur-sm">
+          <div className="rounded-[18px] border border-[#E5E7EB] bg-white px-8 py-7 text-center shadow-[0_16px_50px_rgba(15,23,42,0.16)]">
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#E5E7EB] border-t-[#D4AF37]" />
+            <p className="text-[16px] font-bold text-[#111827]">Opening question...</p>
+            <p className="mt-1 text-[13px] text-[#6B7280]">Preparing the full PYQ page</p>
+          </div>
+        </div>
+      ) : null}
+
       <DashboardPageHero
         // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/badge-pyq.png" alt="pyq" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />}
         badgeText="PREVIOUS YEAR QUESTIONS"
         title={
           <>
-            Decode <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>UPSC</em>
+            The Complete <em className="not-italic" style={{ color: '#E8B84B', fontStyle: 'italic' }}>PYQ Bank</em> to Decode UPSC
           </>
         }
         subtitle="Explore 6,500+ UPSC Previous Year Questions, organized by subject, topic, and year, with in-depth solutions and detailed explanations."
@@ -1093,17 +1770,81 @@ export default function PyqPage() {
         ]}
       />
 
-      <div className="w-full max-w-[1400px] mx-auto px-6 pt-3 pb-4">
+      <div className="w-full max-w-[1400px] mx-auto px-8 lg:px-12 pt-3 pb-4">
         <div className="mb-4 flex w-full justify-center">
           {!filterDocked && <ExamModeToggle />}
         </div>
 
         <FilterToolbar />
 
+        {/* Active filter pills */}
+        {(() => {
+          const pills: Array<{ key: string; label: string; onRemove: () => void }> = [];
+          selectedPapers.forEach((paper) => {
+            pills.push({
+              key: `paper:${paper}`,
+              label: `Paper: ${paper}`,
+              onRemove: () => setSelectedPapers((prev) => prev.filter((p) => p !== paper)),
+            });
+          });
+          selectedSubjects.forEach((subject) => {
+            pills.push({
+              key: `subject:${subject}`,
+              label: subject,
+              onRemove: () => setSelectedSubjects((prev) => prev.filter((s) => s !== subject)),
+            });
+          });
+          selectedSubSubjects.forEach((subSubject) => {
+            pills.push({
+              key: `subSubject:${subSubject}`,
+              label: subSubject,
+              onRemove: () => setSelectedSubSubjects((prev) => prev.filter((s) => s !== subSubject)),
+            });
+          });
+          selectedTopics.forEach((topic) => {
+            pills.push({
+              key: `topic:${topic}`,
+              label: topic,
+              onRemove: () => setSelectedTopics((prev) => prev.filter((t) => t !== topic)),
+            });
+          });
+          if (yearMode === 'custom' && selectedYears.length > 0) {
+            selectedYears.forEach((yr) => {
+              pills.push({
+                key: `year:${yr}`,
+                label: `Year: ${yr}`,
+                onRemove: () => setSelectedYears((prev) => prev.filter((y) => y !== yr)),
+              });
+            });
+          }
+          if (!pills.length) return null;
+          return (
+            <div className="mb-6 flex flex-wrap items-center gap-2">
+              <span className="mr-1 text-[13px] font-medium text-[#9AA3B2]">Active filters:</span>
+              {pills.map((pill) => (
+                <span
+                  key={pill.key}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#EEF0F3] bg-white py-1.5 pl-4 pr-1.5 text-[13px] font-medium text-[#101828] shadow-[0_1px_2px_rgba(15,17,26,0.04)]"
+                >
+                  {pill.label}
+                  <button
+                    type="button"
+                    aria-label={`Remove ${pill.label}`}
+                    onClick={pill.onRemove}
+                    className="flex h-5 w-5 items-center justify-center rounded-full bg-[#F0F1F3] text-[11px] text-[#9AA3B2] transition-colors hover:bg-[#C10007] hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          );
+        })()}
+
         {/* Content area */}
         <div className="flex flex-col gap-8">
           {/* Questions list */}
-          <section className="flex-1 min-w-0">
+          <section className="flex-1 min-w-0 px-2 lg:px-4">
             {mode === 'prelims' ? (
               <>
               {/* Header */}
@@ -1121,49 +1862,12 @@ export default function PyqPage() {
               <nav aria-label="Filter path" className="flex flex-wrap items-center gap-1.5 mb-4">
                 <button
                   type="button"
-                  onClick={() => { setSelectedSubject('All Papers'); setSelectedSubtopic(null); setSelectedTopics([]); setExpandedSubject(null); setExpandedSubtopic(null); }}
+                  onClick={() => { setSelectedSubjects([]); setSelectedSubSubjects([]); setSelectedTopics([]); setExpandedSubject(null); setExpandedSubtopic(null); }}
                   className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                  style={{ background: selectedSubject === 'All Papers' ? '#0F1A30' : '#EEF2FF', color: selectedSubject === 'All Papers' ? '#FFFFFF' : '#4338CA' }}
+                  style={{ background: selectedSubjects.length === 0 ? '#0F1A30' : '#EEF2FF', color: selectedSubjects.length === 0 ? '#FFFFFF' : '#4338CA' }}
                 >
                   📘 All Papers
                 </button>
-                {selectedSubject !== 'All Papers' && (
-                  <>
-                    <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedSubtopic(null); setSelectedTopics([]); setExpandedSubtopic(null); }}
-                      className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                      style={{ background: !selectedSubtopic ? '#0F1A30' : '#DBEAFE', color: !selectedSubtopic ? '#FFFFFF' : '#1D4ED8' }}
-                    >
-                      {SUBJECT_ICONS[selectedSubject] ?? '📘'} {selectedSubject}
-                    </button>
-                  </>
-                )}
-                {selectedSubtopic && (
-                  <>
-                    <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTopics([])}
-                      className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                      style={{ background: !selectedTopics[0] ? '#0F1A30' : '#FEF3C7', color: !selectedTopics[0] ? '#FFFFFF' : '#92400E' }}
-                    >
-                      {selectedSubtopic}
-                    </button>
-                  </>
-                )}
-                {selectedTopics[0] && (
-                  <>
-                    <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
-                    <span
-                      className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold"
-                      style={{ background: '#0F1A30', color: '#FFFFFF' }}
-                    >
-                      {selectedTopics[0]}
-                    </span>
-                  </>
-                )}
               </nav>
 
               {/* Loading skeleton */}
@@ -1206,6 +1910,7 @@ export default function PyqPage() {
                 const resetAnswer = () => {
                   setQuestionStates(s => ({ ...s, [q.id]: { selected: null, submitted: false } }));
                 };
+                const publicQuestionHref = `/questions/${encodeURIComponent(q.id)}`;
                 return (
                   <div
                     key={q.id}
@@ -1229,12 +1934,20 @@ export default function PyqPage() {
                     </div>
 
                     {/* Question text */}
-                    <StructuredQuestionRenderer
-                      questionStructure={(q as any).questionStructure}
-                      questionText={q.questionText}
-                      className="mb-5 text-[18px] font-[500] leading-[1.5] text-[#111827]"
-                      textClassName="text-[18px] font-[500] leading-[1.5] text-[#111827]"
-                    />
+                    <Link
+                      href={publicQuestionHref}
+                      onClick={(event) => handleQuestionNavigation(event, publicQuestionHref)}
+                      className="group block rounded-[12px] outline-none transition hover:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-[#D4AF37]/60"
+                      title="Open public question page"
+                    >
+                      <StructuredQuestionRenderer
+                        questionStructure={(q as any).questionStructure}
+                        questionText={q.questionText}
+                        className="mb-5 text-[18px] font-[500] leading-[1.5] text-[#111827] transition-colors group-hover:text-[#0F4C81]"
+                        textClassName="text-[18px] font-[500] leading-[1.5] text-[#111827] transition-colors group-hover:text-[#0F4C81]"
+                        textStyle={{ fontFamily: PYQ_QUESTION_FONT }}
+                      />
+                    </Link>
 
                     {/* Options — inline interactive (matches Daily MCQ Challenge design) */}
                     {opts.length > 0 && (
@@ -1277,7 +1990,7 @@ export default function PyqPage() {
                               >
                                 {opt.label}
                               </span>
-                              <span style={{ fontSize: 18, color: textColor, fontWeight: textWeight, whiteSpace: 'pre-wrap', lineHeight: '29.25px' }}>
+                              <span style={{ fontFamily: PYQ_QUESTION_FONT, fontSize: 18, color: textColor, fontWeight: textWeight, whiteSpace: 'pre-wrap', lineHeight: '29.25px' }}>
                                 {opt.text}
                               </span>
                             </button>
@@ -1518,49 +2231,12 @@ export default function PyqPage() {
                 <nav aria-label="Filter path" className="flex flex-wrap items-center gap-1.5 mb-5">
                   <button
                     type="button"
-                    onClick={() => { setSelectedSubject('All Papers'); setSelectedSubtopic(null); setSelectedTopics([]); setExpandedSubject(null); setExpandedSubtopic(null); }}
+                    onClick={() => { setSelectedSubjects([]); setSelectedSubSubjects([]); setSelectedTopics([]); setExpandedSubject(null); setExpandedSubtopic(null); }}
                     className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                    style={{ background: selectedSubject === 'All Papers' ? '#0F1A30' : '#EEF2FF', color: selectedSubject === 'All Papers' ? '#FFFFFF' : '#4338CA' }}
+                    style={{ background: selectedSubjects.length === 0 ? '#0F1A30' : '#EEF2FF', color: selectedSubjects.length === 0 ? '#FFFFFF' : '#4338CA' }}
                   >
                     📘 All Papers
                   </button>
-                  {selectedSubject !== 'All Papers' && (
-                    <>
-                      <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedSubtopic(null); setSelectedTopics([]); setExpandedSubtopic(null); }}
-                        className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                        style={{ background: !selectedSubtopic ? '#0F1A30' : '#DBEAFE', color: !selectedSubtopic ? '#FFFFFF' : '#1D4ED8' }}
-                      >
-                        {SUBJECT_ICONS[selectedSubject] ?? '📘'} {selectedSubject}
-                      </button>
-                    </>
-                  )}
-                  {selectedSubtopic && (
-                    <>
-                      <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedTopics([])}
-                        className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                        style={{ background: !selectedTopics[0] ? '#0F1A30' : '#FEF3C7', color: !selectedTopics[0] ? '#FFFFFF' : '#92400E' }}
-                      >
-                        {selectedSubtopic}
-                      </button>
-                    </>
-                  )}
-                  {selectedTopics[0] && (
-                    <>
-                      <span className="text-[#CBD5E1] text-[14px] font-bold select-none">›</span>
-                      <span
-                        className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold"
-                        style={{ background: '#0F1A30', color: '#FFFFFF' }}
-                      >
-                        {selectedTopics[0]}
-                      </span>
-                    </>
-                  )}
                 </nav>
 
                 {/* Loading skeleton */}
@@ -1587,6 +2263,7 @@ export default function PyqPage() {
                     ...chip,
                     label: chip.key === 'year' ? String(q.year) : chip.label,
                   }));
+                  const publicQuestionHref = `/questions/${encodeURIComponent(q.id)}?mode=mains`;
                   return (
                   <div
                     key={q.id}
@@ -1622,11 +2299,19 @@ export default function PyqPage() {
 
 
                     {/* Question text */}
-                    <QuestionTextRenderer
-                      text={q.questionText}
-                      className="mb-4 text-[16px] font-[500] leading-[26px] text-[#101828]"
-                      textClassName="text-[16px] font-[500] leading-[26px] text-[#101828]"
-                    />
+                    <Link
+                      href={publicQuestionHref}
+                      onClick={(event) => handleQuestionNavigation(event, publicQuestionHref)}
+                      className="group block rounded-[12px] outline-none transition hover:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-[#D4AF37]/60"
+                      title="Open public question page"
+                    >
+                      <QuestionTextRenderer
+                        text={q.questionText}
+                        className="mb-4 text-[16px] font-[500] leading-[26px] text-[#101828] transition-colors group-hover:text-[#0F4C81]"
+                        textClassName="text-[16px] font-[500] leading-[26px] text-[#101828] transition-colors group-hover:text-[#0F4C81]"
+                        textStyle={{ fontFamily: PYQ_QUESTION_FONT }}
+                      />
+                    </Link>
 
                     {/* Stats row */}
                     <div className="flex flex-wrap items-center gap-6 mb-6">
@@ -1648,34 +2333,148 @@ export default function PyqPage() {
                     <div className="flex items-center gap-3 mb-4">
                       <button
                         type="button"
-                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
-                        className="flex items-center justify-center"
-                        style={{ height: '59px', borderRadius: '14px', background: '#101828', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
+                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsSubmitError(null); setMainsTimeLeft(getMainsTimeLimit(q)); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                        className="pyq-act-btn pyq-act-btn--primary flex items-center justify-center"
+                        style={{ height: '59px', borderRadius: '14px', background: 'linear-gradient(135deg, #101828 0%, #1E2133 100%)', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
-                        <span aria-hidden style={{ marginRight: '8px' }}>✨</span>
+                        <span aria-hidden className="pyq-sparkle" style={{ marginRight: '8px' }}>✨</span>
                         <span>Write &amp; Evaluate</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => {
-                          setSelectedQuestion(q);
-                          setShowModelAnswerModal(true);
+                          // Essay questions open the dedicated model-answer experience;
+                          // all other papers keep the inline expand/collapse.
+                          if (isEssayQuestion(q)) {
+                            router.push(`/dashboard/pyq/essay/${encodeURIComponent(q.id)}`);
+                            return;
+                          }
+                          setExpandedModelAnswerIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(q.id)) next.delete(q.id);
+                            else next.add(q.id);
+                            return next;
+                          });
                         }}
-                        className="flex items-center justify-center"
-                        style={{ height: '59px', borderRadius: '14px', background: '#0F172A', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
+                        className="pyq-act-btn pyq-act-btn--secondary flex items-center justify-center gap-2"
+                        style={{ height: '59px', borderRadius: '14px', background: '#FFFFFF', color: '#101828', border: '1.5px solid #E5E7EB', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
+                        <span aria-hidden>📄</span>
                         <span>Model Answer</span>
                       </button>
-                      <button
-                        type="button"
-                        className="flex items-center justify-center"
-                        style={{ width: '59px', height: '59px', borderRadius: '14px', background: '#FFFFFF', border: '1.6px solid #FFC9C9', fontSize: '20px', cursor: 'pointer', flexShrink: 0 }}
-                        aria-label="Write answer"
-                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsEvalResults(null); setMainsSubmitError(null); setMainsTimeLeft(9 * 60); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
-                      >
-                        ✏️
-                      </button>
                     </div>
+
+                    {!isEssayQuestion(q) && expandedModelAnswerIds.has(q.id) && (
+                      <div
+                        className="mt-1"
+                        style={{
+                          padding: '20px',
+                          borderRadius: '14px',
+                          border: '1px solid rgba(212,175,55,0.25)',
+                          background: 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, rgba(212,175,55,0.02) 100%)',
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-4" style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '1px', color: '#101828', textTransform: 'uppercase' }}>
+                          <span aria-hidden style={{ color: '#D4AF37' }}>★</span>
+                          <span>Model Answer</span>
+                        </div>
+
+                        <CuratedModelAnswer
+                          markdown={q.modelAnswer || q.answer || q.explanation || 'Model answer is being prepared for this question.'}
+                        />
+
+                        <div className="flex flex-wrap items-center gap-3 pt-4 mt-2" style={{ borderTop: '1px solid rgba(212,175,55,0.15)' }}>
+                          <button
+                            type="button"
+                            onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsSubmitError(null); setMainsTimeLeft(getMainsTimeLimit(q)); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                            className="pyq-act-btn pyq-act-btn--primary flex items-center gap-2"
+                            style={{ padding: '10px 20px', borderRadius: '10px', background: 'linear-gradient(135deg, #101828 0%, #1E2133 100%)', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', border: 'none' }}
+                          >
+                            <span aria-hidden className="pyq-sparkle">✨</span>
+                            <span>Write &amp; Evaluate</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleMainsBookmark(q)}
+                            disabled={mainsBookmarkBusyIds.has(q.id)}
+                            className="pyq-act-btn pyq-act-pill pyq-act-pill--bookmark flex items-center gap-2"
+                            style={{
+                              padding: '9px 18px',
+                              borderRadius: '10px',
+                              fontFamily: 'Inter, sans-serif',
+                              fontWeight: 600,
+                              fontSize: '14px',
+                              border: mainsBookmarkedIds.has(q.id) ? '1.5px solid #D4AF37' : '1.5px solid #E5E7EB',
+                              background: mainsBookmarkedIds.has(q.id) ? 'rgba(212,175,55,0.1)' : '#FFFFFF',
+                              color: mainsBookmarkedIds.has(q.id) ? '#9A7B0E' : '#101828',
+                              opacity: mainsBookmarkBusyIds.has(q.id) ? 0.6 : 1,
+                            }}
+                          >
+                            <span aria-hidden>🔖</span>
+                            <span>{mainsBookmarkBusyIds.has(q.id) ? 'Saving...' : mainsBookmarkedIds.has(q.id) ? 'Bookmarked' : 'Bookmark'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addMainsFlashcard(q)}
+                            disabled={mainsFlashcardBusyIds.has(q.id)}
+                            className="pyq-act-btn pyq-act-pill pyq-act-pill--flashcard flex items-center gap-2"
+                            style={{
+                              padding: '9px 18px',
+                              borderRadius: '10px',
+                              fontFamily: 'Inter, sans-serif',
+                              fontWeight: 600,
+                              fontSize: '14px',
+                              border: mainsFlashcardIds.has(q.id) ? '1.5px solid #0891B2' : '1.5px solid #E5E7EB',
+                              background: mainsFlashcardIds.has(q.id) ? 'rgba(8,145,178,0.08)' : '#FFFFFF',
+                              color: mainsFlashcardIds.has(q.id) ? '#0891B2' : '#101828',
+                              opacity: mainsFlashcardBusyIds.has(q.id) ? 0.6 : 1,
+                            }}
+                          >
+                            <span aria-hidden>⚡</span>
+                            <span>{mainsFlashcardBusyIds.has(q.id) ? 'Adding...' : mainsFlashcardIds.has(q.id) ? 'In Flashcards' : 'Add to Flashcard'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleMainsReview(q)}
+                            disabled={mainsReviewBusyIds.has(q.id)}
+                            className="pyq-act-btn pyq-act-pill pyq-act-pill--review flex items-center gap-2"
+                            style={{
+                              padding: '9px 18px',
+                              borderRadius: '10px',
+                              fontFamily: 'Inter, sans-serif',
+                              fontWeight: 600,
+                              fontSize: '14px',
+                              border: mainsReviewIds.has(q.id) ? '1.5px solid #E65100' : '1.5px solid #E5E7EB',
+                              background: mainsReviewIds.has(q.id) ? 'rgba(230,81,0,0.08)' : '#FFFFFF',
+                              color: mainsReviewIds.has(q.id) ? '#E65100' : '#101828',
+                              opacity: mainsReviewBusyIds.has(q.id) ? 0.6 : 1,
+                            }}
+                          >
+                            <span aria-hidden>🕐</span>
+                            <span>{mainsReviewBusyIds.has(q.id) ? 'Saving...' : mainsReviewIds.has(q.id) ? 'Added to Review' : 'Need to Review'}</span>
+                          </button>
+                        </div>
+
+                        <div
+                          className="flex items-start gap-2 mt-4"
+                          style={{
+                            padding: '12px 14px',
+                            background: 'rgba(212,175,55,0.06)',
+                            borderLeft: '3px solid #D4AF37',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            lineHeight: 1.6,
+                            color: '#4A5565',
+                          }}
+                        >
+                          <span aria-hidden>ⓘ</span>
+                          <span>
+                            Model answers may exceed the prescribed word limit for better clarity and depth. Use them as a
+                            reference, always frame your final answer within the exam&apos;s word limit.
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
                   </div>
                   );
@@ -1684,6 +2483,29 @@ export default function PyqPage() {
                 {!loading && visibleQuestions.length === 0 && (
                   <div className="rounded-[16px] bg-white p-10 text-center text-[#6A7282]" style={{ border: '0.8px solid #E5E7EB' }}>
                     No mains questions found for the selected filters.
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {!loading && totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-4 mt-6">
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                      className="px-5 py-2.5 rounded-[12px] bg-white shadow text-[15px] font-semibold text-[#0F172B] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-[15px] text-[#6A7282]">
+                      Page {page} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                      className="px-5 py-2.5 rounded-[12px] bg-white shadow text-[15px] font-semibold text-[#0F172B] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >
+                      Next
+                    </button>
                   </div>
                 )}
               </>
@@ -1821,214 +2643,67 @@ export default function PyqPage() {
         </div>
       )}
 
-      {showModelAnswerModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(15,23,42,0.55)' }}
-          onClick={() => setShowModelAnswerModal(false)}
-        >
-          <div
-            className="rounded-[24px] bg-white p-8"
-            style={{ width: 720, maxWidth: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <h2 className="m-0 text-[24px] font-bold text-[#101828]">Model Answer</h2>
-              <button
-                type="button"
-                onClick={() => setShowModelAnswerModal(false)}
-                className="h-10 w-10 rounded-full bg-[#101828] text-white"
-                aria-label="Close model answer"
-              >
-                x
-              </button>
-            </div>
-            <QuestionTextRenderer
-              text={
-                selectedQuestion?.modelAnswer ||
-                selectedQuestion?.answer ||
-                selectedQuestion?.explanation ||
-                'Model answer is being prepared for this question.'
-              }
-              className="rounded-[16px] border border-[#E5E7EB] bg-[#F9FAFB] p-5"
-              textClassName="text-[16px] leading-[28px] text-[#1E2939]"
-            />
-          </div>
-        </div>
-      )}
-
       {/* Mains Write & AI Evaluate modal - opens from Write & Evaluate on Mains tab */}
       {showMainsWriteModal && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto"
-          style={{ background: 'rgba(15,23,42,0.5)' }}
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-4"
+          style={{ background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(8px)' }}
           onClick={() => setShowMainsWriteModal(false)}
         >
           <div
-            className="rounded-[24px] bg-white flex flex-col my-8 overflow-hidden"
+            className="flex flex-col overflow-hidden rounded-[24px] bg-white"
             style={{
-              width: '896px',
+              width: '1180px',
               maxWidth: '100%',
-              minHeight: '875px',
-              opacity: 1,
-              boxShadow: '0px 4px 6px -4px #0000001A, 0px 10px 15px -3px #0000001A',
+              height: 'min(760px, calc(100vh - 32px))',
+              boxShadow: '0px 28px 70px rgba(15,23,42,0.35)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ padding: '32px 32px 32px 32px', display: 'flex', flexDirection: 'column', gap: 0, flex: 1 }}>
-              {/* Header row: 2024, GS Paper I, Modern India, 15M, bookmark */}
-              <div
-                className="flex items-center justify-between flex-wrap gap-2"
-                style={{ width: 832, maxWidth: '100%', height: 40 }}
+            <div className="flex flex-shrink-0 items-center justify-between bg-[#0F1424] px-8 py-5 text-white">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#D9B84A] text-[24px] text-[#0F1424]">✎</div>
+                <div>
+                  <h2 className="m-0 font-bold" style={{ fontFamily: 'Merriweather, serif', fontSize: 22 }}>Craft Your Answer</h2>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {selectedQuestion?.paper && (() => {
+                      const style = getSubjectMetaStyle(selectedQuestion.paper);
+                      return <span className="inline-flex items-center gap-1 rounded-[7px] px-3 py-1 text-[12px] font-bold" style={{ border: `1px solid ${style.border}`, background: style.bg, color: style.color }}><span aria-hidden>{style.icon}</span>{selectedQuestion.paper}</span>;
+                    })()}
+                    {selectedQuestion?.subject && (() => {
+                      const style = getSubjectMetaStyle(selectedQuestion.subject);
+                      return <span className="inline-flex items-center gap-1 rounded-[7px] px-3 py-1 text-[12px] font-bold" style={{ border: `1px solid ${style.border}`, background: style.bg, color: style.color }}><span aria-hidden>{style.icon}</span>{selectedQuestion.subject}</span>;
+                    })()}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMainsWriteModal(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/15 bg-white/10 text-[24px] text-white/70"
+                aria-label="Close"
               >
-                <div className="flex items-center gap-2 flex-wrap">
-                  {selectedQuestion?.year && (
-                  <div
-                    className="flex items-center justify-center gap-1.5 rounded-[10px] flex-shrink-0 px-3"
-                    style={{ height: 32, background: '#1E2939' }}
-                  >
-                    <span aria-hidden style={{ fontSize: 14 }}>📅</span>
-                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}>{selectedQuestion.year}</span>
-                  </div>
-                  )}
-                  {selectedQuestion?.paper && (
-                  <div
-                    className="rounded-[10px] flex items-center justify-center flex-shrink-0 px-3"
-                    style={{ height: 33.6, border: '0.8px solid #D1D5DC', background: '#FFFFFF' }}
-                  >
-                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#364153' }}>{selectedQuestion.paper}</span>
-                  </div>
-                  )}
-                  {selectedQuestion?.subject && (
-                  <div
-                    className="rounded-[10px] flex items-center justify-center flex-shrink-0 px-3"
-                    style={{ height: 33.6, border: '0.8px solid #D1D5DC', background: '#FFFFFF' }}
-                  >
-                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#364153' }}>{selectedQuestion.subject}</span>
-                  </div>
-                  )}
+                ×
+              </button>
+            </div>
 
+            <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_300px]">
+              <div className="flex min-h-0 flex-col overflow-hidden px-8 py-5">
+                <div className="flex-shrink-0 rounded-[12px] bg-[#F9FAFB] p-4" style={{ borderLeft: '4px solid #D4AF37' }}>
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Question</div>
+                  <QuestionTextRenderer
+                    text={selectedQuestion?.questionText || 'Loading question...'}
+                    textClassName="italic text-[15px] leading-[26px] text-[#1E2939]"
+                    textStyle={{ fontFamily: PYQ_QUESTION_FONT }}
+                  />
                 </div>
-                <div className="flex items-center gap-2">
-                  <button type="button" className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#F3F4F6' }} aria-label="Bookmark">🔖</button>
-                  <button type="button" onClick={() => { setShowMainsWriteModal(false); }} className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[18px] font-bold" style={{ background: '#1E2939', color: '#FFF' }} aria-label="Close">×</button>
-                </div>
-              </div>
 
-              {/* Question text */}
-              <QuestionTextRenderer
-                text={selectedQuestion?.questionText || 'Loading question...'}
-                className="mt-6"
-                style={{ width: 832, maxWidth: '100%' }}
-                textClassName="font-[Inter] font-normal text-[16px] leading-[26px] text-[#1E2939]"
-              />
-
-              {/* Steps: 1 Write, 2 Upload, 3 AI Eval */}
-              <div className="flex items-center gap-3" style={{ width: 832, maxWidth: '100%', marginTop: 24, height: 32 }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#3B52D4' }}>
-                    <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}>1</span>
-                  </div>
-                  <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#3B52D4' }}>Write</span>
+                <div className="mt-3 flex flex-shrink-0 flex-wrap items-center gap-x-6 gap-y-2 text-[13px] font-semibold text-[#6A7282]">
+                  <span>◷ {Math.floor(getMainsTimeLimit(selectedQuestion) / 60)} min</span>
+                  <span>✍️ {getMainsWordLimit(selectedQuestion)} words</span>
+                  <span>☆ {getMainsMarks(selectedQuestion)} marks</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#E5E7EB' }}>
-                    <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>2</span>
-                  </div>
-                  <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#99A1AF' }}>Upload</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#E5E7EB' }}>
-                    <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, lineHeight: '20px', color: '#6A7282' }}>3</span>
-                  </div>
-                  <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#99A1AF' }}>AI Eval</span>
-                </div>
-              </div>
 
-              {/* Specs bar */}
-              <div
-                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-[14px]"
-                style={{ width: 832, maxWidth: '100%', marginTop: 24, minHeight: 69.6, padding: '12px 16px', border: '0.8px solid #E5E7EB', background: '#F9FAFB' }}
-              >
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#4A5565' }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4A5565" strokeWidth="1"/><path d="M8 5V8.5L10 10" stroke="#4A5565" strokeWidth="1.2" strokeLinecap="round"/></svg>
-                    7–9 min
-                  </span>
-                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#4A5565' }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10.5 2.5L13.5 5.5L5.5 13.5L2 14L2.5 10.5L10.5 2.5Z" stroke="#16A34A" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    ~100 words
-                  </span>
-                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#4A5565' }}>
-                    <span style={{ color: '#FF6900' }}>🏆</span>
-                    {selectedQuestion?.marks || selectedQuestion?.maxMarks || 15} marks
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 24, color: mainsTimeLeft <= 60 ? '#DC2626' : '#1E2939' }}>
-                    {Math.floor(mainsTimeLeft / 60)}:{String(mainsTimeLeft % 60).padStart(2, '0')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (mainsReadTimeLeft !== null) {
-                        setMainsReadTimeLeft(null);
-                        setMainsTimerPaused(false);
-                        return;
-                      }
-                      setMainsTimerPaused((p) => !p);
-                    }}
-                    className="flex items-center justify-center gap-2"
-                    style={{ height: 36, padding: '0 16px', borderRadius: 10, background: '#F3F4F6', border: 'none', cursor: 'pointer', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#364153', whiteSpace: 'nowrap' }}
-                  >
-                    {mainsReadTimeLeft !== null
-                      ? <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2L10 6L3 10V2Z" fill="#364153"/></svg> Start now</>
-                      : mainsTimerPaused
-                      ? <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2L10 6L3 10V2Z" fill="#364153"/></svg> Resume</>
-                      : <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="2" width="3" height="8" rx="1" fill="#364153"/><rect x="7" y="2" width="3" height="8" rx="1" fill="#364153"/></svg> Pause</>
-                    }
-                  </button>
-                  {mainsReadTimeLeft !== null && (
-                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: '#155DFC' }}>Auto-start in {mainsReadTimeLeft}s</span>
-                  )}
-                  {mainsTimeLeft <= 60 && mainsTimeLeft > 0 && (
-                    <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: '#DC2626' }}>Hurry up!</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Buttons: View Key Points, Ready to Upload */}
-              <div className="flex items-center gap-3 flex-wrap" style={{ width: 832, maxWidth: '100%', marginTop: 24, gap: 12 }}>
-                <button type="button" className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-3" style={{ border: '1.6px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 600, fontSize: 16, lineHeight: '24px', color: '#364153' }}><span aria-hidden>📄</span>View Key Points</button>
-                <button type="button" onClick={() => mainsFileInputRef.current?.click()} className="flex items-center justify-center gap-2 rounded-[14px] px-5 py-3" style={{ background: '#101828', fontFamily: 'Inter', fontWeight: 600, fontSize: 16, lineHeight: '24px', color: '#FFFFFF' }}><span aria-hidden>📷</span>Upload Handwritten Answer</button>
-              </div>
-
-              {/* Answer textarea */}
-              <div style={{ width: 832, maxWidth: '100%', marginTop: 16, order: 2 }}>
-                <button type="button" onClick={() => setTextAnswerExpanded((v) => !v)} className="w-full flex items-center gap-3">
-                  <div className="flex-1 h-px bg-[#E5E7EB]" />
-                  <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#364153' }}>
-                    Type your answer {textAnswerExpanded ? '−' : '+'}
-                  </span>
-                  <div className="flex-1 h-px bg-[#E5E7EB]" />
-                </button>
-                {textAnswerExpanded && (
-                  <div style={{ marginTop: 12 }}>
-                    <textarea
-                      value={mainsAnswerText}
-                      onChange={(e) => setMainsAnswerText(e.target.value)}
-                      placeholder="Write your answer here..."
-                      className="w-full rounded-[14px] p-4 resize-y"
-                      style={{ minHeight: 200, border: '1.6px solid #D1D5DC', fontFamily: 'Inter', fontSize: 15, lineHeight: '24px', color: '#1E2939', outline: 'none' }}
-                    />
-                    <div className="flex justify-end mt-1" style={{ fontFamily: 'Inter', fontSize: 13, color: '#6A7282' }}>
-                      {mainsAnswerText.trim().split(/\s+/).filter(Boolean).length} words
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Upload area */}
               <input
                 ref={mainsFileInputRef}
                 type="file"
@@ -2048,451 +2723,251 @@ export default function PyqPage() {
                   setMainsFile(selected[0] || null);
                 }}
               />
-              <div
-                className="rounded-[16px] flex flex-col items-center justify-center text-center cursor-pointer"
-                style={{ width: 832, maxWidth: '100%', marginTop: 16, padding: '50px 50px', border: mainsFiles.length > 0 ? '1.6px solid #3B52D4' : '1.6px solid #D1D5DC', background: mainsFiles.length > 0 ? '#EFF6FF' : '#FFF', order: 1 }}
-                onClick={() => mainsFileInputRef.current?.click()}
-              >
-                {/* Camera icon in gray square */}
-                <div style={{ width: 64, height: 64, borderRadius: 16, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                  {mainsFiles.length > 0
-                    ? <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M5 27L27 5" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"/><circle cx="16" cy="16" r="10" stroke="#22C55E" strokeWidth="2"/></svg>
-                    : <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M12 8H20L22 11H27C27.55 11 28 11.45 28 12V24C28 24.55 27.55 25 27 25H5C4.45 25 4 24.55 4 24V12C4 11.45 4.45 11 5 11H10L12 8Z" stroke="#9CA3AF" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="16" cy="18" r="4" stroke="#9CA3AF" strokeWidth="1.5"/></svg>
-                  }
-                </div>
-                <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 18, lineHeight: '28px', color: '#1E2939', marginBottom: 8 }}>
-                  {mainsFiles.length > 1
-                    ? `${mainsFiles.length} pages selected`
-                    : mainsFile ? mainsFile.name : 'Photograph your handwritten answer & upload'}
-                </p>
-                {mainsFiles.length > 1 && (
-                  <div style={{ fontFamily: 'Inter', fontSize: 13, color: '#4B5563', marginBottom: 12 }}>
-                    {mainsFiles.map((file, index) => (
-                      <div key={`${file.name}-${index}`}>Page {index + 1}: {file.name}</div>
-                    ))}
-                  </div>
-                )}
-                {!mainsFile && (
-                  <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: '20px', color: '#6A7282', marginBottom: 16 }}>
-                    Take clear photos of all pages, then select them in order. Good lighting = better AI evaluation.
-                  </p>
-                )}
-                {mainsFile
-                  ? <span style={{ fontFamily: 'Inter', fontSize: 13, color: '#6A7282' }}>Click to change files</span>
-                  : (
-                    <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                      {['JPG', 'PNG', 'PDF'].map((fmt) => (
-                        <button
-                          key={fmt}
-                          type="button"
-                          onClick={() => mainsFileInputRef.current?.click()}
-                          style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#155DFC', background: '#EFF6FF', border: '0.8px solid #BEDBFF', borderRadius: 10, height: 37.6, padding: '0 18px', cursor: 'pointer' }}
-                        >{fmt}</button>
-                      ))}
+
+                {!textAnswerExpanded && (
+                  <>
+                    <div className="mt-4 flex flex-shrink-0 items-center gap-2 text-[16px] font-bold text-[#0F172B]">
+                      <span className="text-[#D4AF37]">⇧</span>
+                      Upload your answer
                     </div>
-                  )
-                }
-              </div>
 
-              {mainsQuota && (
-                <div className="mt-3 flex items-center justify-between gap-3 text-sm" style={{ width: 832, maxWidth: '100%', fontFamily: 'Inter', color: '#4B5563' }}>
-                  <span>Mains evaluations</span>
-                  <span>
-                    {mainsQuota.limit === null || mainsQuota.period === 'unlimited'
-                      ? 'Unlimited'
-                      : `${mainsQuota.remaining ?? 0} left ${formatPeriod(mainsQuota.period)}`}
-                  </span>
-                </div>
-              )}
-
-              {/* Submit for AI Evaluation */}
-              <button
-                id="pyq-mains-submit-btn"
-                type="button"
-                disabled={mainsSubmitting || (!mainsAnswerText.trim() && mainsFiles.length === 0)}
-                onClick={async () => {
-                  if (!selectedQuestion) return;
-                  setMainsSubmitting(true);
-                  try {
-                    const res = await pyqService.submitMainsAnswer(selectedQuestion.id, {
-                      answerText: mainsAnswerText.trim() || undefined,
-                      files: mainsFiles.length > 0 ? mainsFiles : undefined,
-                    });
-                    if (res.data?.attemptId) {
-                      setMainsAttemptId(res.data.attemptId);
-                      setShowMainsWriteModal(false);
-                      setShowAiEvalModal(true);
-                      void entitlements.refreshEntitlements();
-                    }
-                  } catch (err: any) {
-                    const entitlementError = handleEntitlementError(err);
-                    const resetAt = formatResetAt(entitlementError.resetAt);
-                    const message = resetAt
-                      ? `${entitlementError.message} Try again after ${resetAt}.`
-                      : entitlementError.message;
-                    setMainsSubmitError(message || err.message || 'Failed to submit. Please try again.');
-                  } finally {
-                    setMainsSubmitting(false);
-                  }
-                }}
-                className="w-full flex items-center justify-center gap-2 rounded-[16px] py-4 mt-4 disabled:opacity-50"
-                style={{ width: 832, maxWidth: '100%', height: 60, background: '#0F172B', fontFamily: 'Inter', fontWeight: 700, fontSize: 18, lineHeight: '28px', color: '#F9FAFB' }}
-              >
-                <span aria-hidden>📤</span>{mainsSubmitting ? 'Submitting...' : 'Submit for AI Evaluation'}
-              </button>
-
-              {mainsSubmitError && (
-                <div className="mt-3 text-sm text-red-600" style={{ fontFamily: 'Inter', width: 832, maxWidth: '100%' }}>
-                  {mainsSubmitError}
-                </div>
-              )}
-
-              {/* Footer: views/evals stats | Save + Get AI Eval */}
-              <div className="flex items-center justify-between flex-wrap gap-3" style={{ width: 832, maxWidth: '100%', marginTop: 16, paddingTop: 16, borderTop: '0.8px solid #E5E7EB' }}>
-                <div className="flex items-center" style={{ gap: 24 }}>
-                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#6A7282' }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="7" ry="4.5" stroke="#6A7282" strokeWidth="1"/><circle cx="8" cy="8" r="2" stroke="#6A7282" strokeWidth="1"/></svg>
-                    {(selectedQuestion as any)?.views || 120} views
-                  </span>
-                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#6A7282' }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#16A34A" strokeWidth="1"/><path d="M5 8L7 10.5L11 5.5" stroke="#16A34A" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    {(selectedQuestion as any)?.aiEvalsDone || 34} AI evals done
-                  </span>
-                  <span className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#6A7282' }}>
-                    <span>⭐</span>
-                    {(selectedQuestion as any)?.avgRating || '3.9'}/5 avg
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button type="button" className="flex items-center justify-center gap-2 rounded-[14px]" style={{ height: 45.6, padding: '0 20px', border: '0.8px solid #D1D5DC', background: '#FFFFFF', fontFamily: 'Inter', fontWeight: 600, fontSize: 16, color: '#364153' }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 14V11L11 2L14 5L5 14H2Z" stroke="#364153" strokeWidth="1.2" strokeLinejoin="round"/><path d="M9 4L12 7" stroke="#364153" strokeWidth="1.2" strokeLinecap="round"/></svg>
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById('pyq-mains-submit-btn')?.click()}
-                    className="flex items-center justify-center rounded-[14px]"
-                    style={{ height: 45.6, padding: '0 20px', background: 'linear-gradient(90deg, #FF8904 0%, #FF6900 100%)', boxShadow: '0px 4px 6px 0px rgba(0,0,0,0.1), 0px 2px 4px 0px rgba(0,0,0,0.1)', fontFamily: 'Inter', fontWeight: 700, fontSize: 16, color: '#FFFFFF' }}
-                  >
-                    Submit Answer for Evaluation
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* AI is evaluating your answers... modal - opens after Submit for AI Evaluation */}
-      {showAiEvalModal && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.6)' }}
-        >
-          <div
-            className="rounded-[24px] flex flex-col items-center text-center px-10 py-10 max-w-md w-full"
-            style={{
-              background: 'linear-gradient(180deg, #1E3A5F 0%, #0F172B 100%)',
-              boxShadow: '0px 25px 50px -12px rgba(0,0,0,0.5)',
-            }}
-          >
-            <div className="mb-4" style={{ fontSize: 48 }} aria-hidden>🧠</div>
-            <h2
-              className="font-bold mb-2"
-              style={{ fontFamily: 'Inter', fontSize: 22, lineHeight: 1.3, color: '#FFFFFF' }}
-            >
-              AI is evaluating your answers...
-            </h2>
-            <p
-              className="mb-6"
-              style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, lineHeight: 1.4, color: '#94A3B8' }}
-            >
-              This usually takes about 30 seconds
-            </p>
-            {/* Progress bar - fills over 30 seconds */}
-            <div
-              className="w-full h-2 rounded-full mb-8 overflow-hidden"
-              style={{ background: '#334155', maxWidth: 320 }}
-            >
-              <div
-                className="h-full rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${aiEvalProgress}%`, background: 'linear-gradient(90deg, #FBBF24 0%, #F59E0B 100%)' }}
-              />
-            </div>
-            {/* Evaluation steps - advance over 30 seconds */}
-            <div className="flex flex-col gap-3 w-full text-left" style={{ maxWidth: 320 }}>
-              {AI_EVAL_STEPS.map((text, i) => {
-                const done = i < aiEvalStepIndex;
-                return (
-                  <div key={i} className="flex items-center gap-3">
-                    <span
-                      className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[12px]"
+                    <div
+                      className="mt-3 flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[14px] px-6 py-4 text-center"
                       style={{
-                        background: done ? '#FBBF24' : '#334155',
-                        color: done ? '#0F172B' : '#64748B',
+                        border: mainsFiles.length > 0 ? '1.5px dashed #17223E' : '1px dashed #CBD5E1',
+                        background: mainsFiles.length > 0 ? '#EFF6FF' : '#F9FAFB',
                       }}
+                      onClick={() => mainsFileInputRef.current?.click()}
                     >
-                      {done ? '✓' : ''}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: 'Inter',
-                        fontWeight: done ? 600 : 400,
-                        fontSize: 14,
-                        lineHeight: '20px',
-                        color: done ? '#FBBF24' : '#94A3B8',
-                      }}
-                    >
-                      {text}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Rich AI evaluation result - opens after real evaluation */}
-      {showAiEvalCompleteModal && mainsEvalResults && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto"
-          style={{ background: 'rgba(15,23,42,0.64)' }}
-          onClick={() => setShowAiEvalCompleteModal(false)}
-        >
-          <div
-            className="rounded-[28px] flex flex-col my-8 overflow-hidden w-full max-w-[840px]"
-            style={{
-              background: '#F8FAFC',
-              boxShadow: '0px 25px 50px -12px rgba(0,0,0,0.5)',
-              maxHeight: 'calc(100vh - 64px)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="px-8 pt-7 pb-6 flex flex-col md:flex-row md:items-start md:justify-between gap-4" style={{ background: '#FFFFFF', borderBottom: '1px solid #E5E7EB' }}>
-              <div>
-                <div className="flex items-center gap-2 mb-2" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, lineHeight: '16px', letterSpacing: '0.05em', color: '#2563EB', textTransform: 'uppercase' }}>
-                  Evaluation
-                </div>
-                <h2 className="font-bold mb-1" style={{ fontFamily: 'Inter', fontSize: 28, lineHeight: 1.2, color: '#111827' }}>
-                  Marks scored: {mainsEvalResults.score}/{mainsEvalResults.maxScore}
-                </h2>
-                <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, lineHeight: 1.4, color: '#6B7280' }}>
-                  {mainsEvalResults.question?.paper || 'Mains'} · {mainsEvalResults.question?.subject || ''} · {mainsEvalResults.wordCount || 0} words
-                </p>
-              </div>
-              {(() => {
-                const pct = mainsEvalResults.maxScore > 0 ? Math.round((mainsEvalResults.score / mainsEvalResults.maxScore) * 100) : 0;
-                return (
-                  <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 relative w-20 h-20 flex items-center justify-center">
-                      <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 80 80">
-                        <circle cx="40" cy="40" r="36" fill="none" stroke="#E5E7EB" strokeWidth="6" />
-                        <circle cx="40" cy="40" r="36" fill="none" stroke={pct >= 60 ? '#22C55E' : pct >= 35 ? '#F59E0B' : '#EF4444'} strokeWidth="6" strokeDasharray={`${2 * Math.PI * 36}`} strokeDashoffset={2 * Math.PI * 36 * (1 - pct / 100)} strokeLinecap="round" />
-                      </svg>
-                      <div className="relative flex flex-col items-center justify-center">
-                        <span className="font-bold block leading-none" style={{ fontFamily: 'Inter', fontSize: 18, color: '#111827' }}>{pct}%</span>
-                        <span className="block mt-0.5" style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, lineHeight: 1.2, color: '#6B7280' }}>MARKS</span>
+                      <div className="mb-3 grid h-12 w-12 flex-shrink-0 place-items-center rounded-[12px] bg-[#0F1424] text-[#D4AF37]">⇧</div>
+                      <p className="mb-2 text-[16px] font-bold text-[#0F172B]">
+                        {mainsFiles.length > 1 ? `${mainsFiles.length} pages selected` : mainsFile ? mainsFile.name : 'Drop your answer script here'}
+                      </p>
+                      <p className="mb-3 text-[14px] text-[#9AA3B2]">Upload handwritten answers for AI evaluation</p>
+                      {mainsFiles.length > 1 && (
+                        <div className="mb-3 max-w-full px-6 text-left text-[12px] text-[#4B5563]">
+                          {mainsFiles.map((file, index) => (
+                            <div key={`${file.name}-${index}`} className="truncate">Page {index + 1}: {file.name}</div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="mb-3 flex flex-wrap justify-center gap-2">
+                        {['JPG', 'PNG', 'PDF', 'Max 10MB'].map((fmt) => (
+                          <span key={fmt} className="rounded bg-[#E5E7EB] px-2.5 py-1 text-[12px] text-[#374151]">{fmt}</span>
+                        ))}
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          mainsFileInputRef.current?.click();
+                        }}
+                        className="flex-shrink-0 rounded-[8px] border border-[#D1D5DB] bg-white px-6 py-2 text-[14px] font-bold text-[#111827]"
+                      >
+                        Browse Files
+                      </button>
                     </div>
-                    <button type="button" onClick={() => setShowAiEvalCompleteModal(false)} className="h-11 w-11 rounded-full bg-[#111827] text-white text-[24px] leading-none" aria-label="Close evaluation modal">
-                      ×
-                    </button>
-                  </div>
-                );
-              })()}
-            </div>
 
-            <div className="flex-1 px-8 py-6 space-y-6 overflow-y-auto">
-              <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                <QuestionTextRenderer
-                  text={mainsEvalResults.question?.questionText}
-                  textClassName="font-[Inter] font-semibold text-[15px] leading-[1.55] text-[#111827]"
-                />
+                    {/* ── Uploaded file preview cards (image/PDF thumbnails) ── */}
+                    {mainsFiles.length > 0 && (
+                      <div className="mt-3">
+                        <UploadedAnswerFiles files={mainsFiles} onRemove={removeMainsFile} />
+                      </div>
+                    )}
+
+                    <button type="button" onClick={() => setTextAnswerExpanded(true)} className="mt-4 flex w-full flex-shrink-0 items-center gap-3">
+                      <div className="h-px flex-1 bg-[#E5E7EB]" />
+                      <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">
+                        <span
+                          aria-hidden="true"
+                          className="h-2 w-2 border-b-2 border-r-2 border-[#8B919B]"
+                          style={{ transform: 'rotate(45deg)' }}
+                        />
+                        OR Type your answer
+                      </span>
+                      <div className="h-px flex-1 bg-[#E5E7EB]" />
+                    </button>
+                  </>
+                )}
+
+                {textAnswerExpanded && (
+                  <>
+                    <button type="button" onClick={() => setTextAnswerExpanded(false)} className="mt-4 flex w-full flex-shrink-0 items-center gap-3">
+                      <div className="h-px flex-1 bg-[#E5E7EB]" />
+                      <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">
+                        <span
+                          aria-hidden="true"
+                          className="h-2 w-2 border-b-2 border-r-2 border-[#8B919B]"
+                          style={{ transform: 'rotate(225deg)' }}
+                        />
+                        Hide
+                      </span>
+                      <div className="h-px flex-1 bg-[#E5E7EB]" />
+                    </button>
+
+                    <div className="mt-4 flex min-h-0 flex-1 flex-col">
+                      <textarea
+                        value={mainsAnswerText}
+                        onChange={(e) => setMainsAnswerText(e.target.value)}
+                        placeholder="Write your answer here..."
+                        autoFocus
+                        className="w-full min-h-0 flex-1 resize-none rounded-[10px] border border-[#D1D5DB] bg-[#F9FAFB] p-4 text-[#101828] outline-none"
+                        style={{ fontSize: 15, lineHeight: '24px', overflowY: 'auto' }}
+                      />
+                      <p className="mt-1 flex-shrink-0 text-right text-[12px] text-[#6A7282]">{mainsAnswerText.trim().split(/\s+/).filter(Boolean).length} words</p>
+                    </div>
+                  </>
+                )}
+
+                {mainsSubmitError && (
+                  <div className="mt-4 flex-shrink-0 rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[13px] text-[#B91C1C]">
+                    {mainsSubmitError}
+                  </div>
+                )}
+
+                <button
+                  id="pyq-mains-submit-btn"
+                  type="button"
+                  disabled={mainsSubmitting || (!mainsAnswerText.trim() && mainsFiles.length === 0)}
+                  onClick={async () => {
+                    if (!selectedQuestion) return;
+                    if (!entitlements.loading && mainsQuota?.allowed === false) {
+                      setShowMainsQuotaModal(true);
+                      return;
+                    }
+                    setMainsSubmitting(true);
+                    try {
+                      const res = await pyqService.submitMainsAnswer(selectedQuestion.id, {
+                        answerText: mainsAnswerText.trim() || undefined,
+                        files: mainsFiles.length > 0 ? mainsFiles : undefined,
+                      });
+                      if (res.data?.attemptId) {
+                        setMainsAttemptId(res.data.attemptId);
+                        setShowMainsWriteModal(false);
+                        setShowAiEvalModal(true);
+                        void entitlements.refreshEntitlements();
+                      }
+                    } catch (err: any) {
+                      const entitlementError = handleEntitlementError(err);
+                      if (entitlementError.title === 'Limit reached' || entitlementError.title === 'Upgrade required') {
+                        setShowMainsQuotaModal(true);
+                      } else {
+                        const resetAt = formatResetAt(entitlementError.resetAt);
+                        const message = resetAt
+                          ? `${entitlementError.message} Try again after ${resetAt}.`
+                          : entitlementError.message;
+                        setMainsSubmitError(message || err.message || 'Failed to submit. Please try again.');
+                      }
+                    } finally {
+                      setMainsSubmitting(false);
+                    }
+                  }}
+                  className="mt-4 flex h-[48px] w-full flex-shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[#0F1424] text-[15px] font-bold text-white disabled:opacity-45"
+                >
+                  {mainsSubmitting ? (
+                    <>
+                      <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/Icon%20(13).png" alt="" style={{ width: '22px', height: '22px' }} />
+                      Submit Answer for Evaluation
+                    </>
+                  )}
+                </button>
               </div>
 
-              {(() => {
-                const checkedCopyPages = Array.isArray(mainsEvalResults.checkedCopyPages)
-                  ? mainsEvalResults.checkedCopyPages.filter((page: any) => page?.checkedCopyUrl)
-                  : [];
-                const displayCheckedCopyPages = checkedCopyPages.length > 0
-                  ? checkedCopyPages
-                  : mainsEvalResults.checkedCopyUrl
-                    ? [{ pageNumber: 1, checkedCopyUrl: mainsEvalResults.checkedCopyUrl }]
-                    : [];
-                return (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                  <div className="flex items-baseline justify-between gap-3 mb-4">
-                    <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, color: '#111827' }}>Word count: {mainsEvalResults.wordCount || 0}</p>
-                    <span className="rounded-full px-3 py-1" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, color: (mainsEvalResults.wordCount || 0) > 280 ? '#BE123C' : '#047857', border: `1px solid ${(mainsEvalResults.wordCount || 0) > 280 ? '#FDA4AF' : '#86EFAC'}` }}>
-                      {(mainsEvalResults.wordCount || 0) > 280 ? 'OVER LIMIT' : 'RECORDED'}
-                    </span>
-                  </div>
-                  <p style={{ fontFamily: 'Inter', fontSize: 14, lineHeight: 1.6, color: '#4B5563' }}>
-                    Word limit is considered while calculating your marks.
-                  </p>
-                </div>
-
-                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                  <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, color: '#111827' }}>Checked copy</p>
-                  <p style={{ fontFamily: 'Inter', fontSize: 14, lineHeight: 1.6, color: '#4B5563' }}>
-                    {displayCheckedCopyPages.length > 0
-                      ? `Teacher-style markup is ready for ${displayCheckedCopyPages.length} page${displayCheckedCopyPages.length === 1 ? '' : 's'}.`
-                      : mainsFile
-                        ? 'Markup is not available yet for this attempt.'
-                        : 'Upload a handwritten image to generate visual markup.'}
-                  </p>
-                  {displayCheckedCopyPages.length > 0 && (
+              <aside className="flex min-h-0 flex-col gap-4 overflow-hidden bg-[#F8F9FB] p-5">
+                <div className="rounded-[18px] bg-white p-4 text-center shadow-sm">
+                  <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Writing Timer</div>
+                  {(() => {
+                    const radius = 82;
+                    const circumference = 2 * Math.PI * radius;
+                    const pct = Math.max(0, Math.min(1, mainsTimeLeft / getMainsTimeLimit(selectedQuestion)));
+                    return (
+                      <div className="relative mx-auto mb-3 flex h-[180px] w-[180px] items-center justify-center">
+                        <svg width="180" height="180" viewBox="0 0 180 180" style={{ transform: 'rotate(-90deg)' }}>
+                          <circle cx="90" cy="90" r={radius} fill="none" stroke="#E6E8EE" strokeWidth="5" />
+                          <circle
+                            cx="90"
+                            cy="90"
+                            r={radius}
+                            fill="none"
+                            stroke={mainsTimeLeft <= 60 ? '#EF4444' : '#D4AF37'}
+                            strokeWidth="5"
+                            strokeLinecap="round"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={circumference * (1 - pct)}
+                          />
+                        </svg>
+                        <div className="absolute flex flex-col items-center">
+                          <div className="font-mono text-[32px] font-bold text-[#0B1020]" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                            {Math.floor(mainsTimeLeft / 60)}:{String(mainsTimeLeft % 60).padStart(2, '0')}
+                          </div>
+                          <div className="mt-1 whitespace-nowrap text-[9px] font-semibold uppercase tracking-[0.1em] text-[#9AA3B2]">
+                            {mainsReadTimeLeft !== null ? `Auto-start ${mainsReadTimeLeft}s` : 'Minutes left'}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={() => document.getElementById('pyq-examiner-markup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                      className="inline-flex mt-4 rounded-[12px] px-4 py-2"
-                      style={{ background: '#2563EB', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: 14 }}
+                      onClick={() => {
+                        if (mainsReadTimeLeft !== null) {
+                          setMainsReadTimeLeft(null);
+                          setMainsTimerPaused(false);
+                          return;
+                        }
+                        setMainsTimerPaused((p) => !p);
+                      }}
+                      className="rounded-[10px] bg-[#0F1424] px-3 py-2.5 text-[13px] font-bold text-white"
                     >
-                      View checked pages
+                      ▷ {mainsReadTimeLeft !== null ? 'Start now' : mainsTimerPaused ? 'Resume' : 'Pause'}
                     </button>
-                  )}
-                </div>
-              </div>
-                );
-              })()}
-
-              {(() => {
-                const checkedCopyPages = Array.isArray(mainsEvalResults.checkedCopyPages)
-                  ? mainsEvalResults.checkedCopyPages.filter((page: any) => page?.checkedCopyUrl)
-                  : [];
-                const displayCheckedCopyPages = checkedCopyPages.length > 0
-                  ? checkedCopyPages
-                  : mainsEvalResults.checkedCopyUrl
-                    ? [{ pageNumber: 1, checkedCopyUrl: mainsEvalResults.checkedCopyUrl }]
-                    : [];
-                if (displayCheckedCopyPages.length === 0) return null;
-                return (
-                  <div id="pyq-examiner-markup" className="rounded-[22px] p-5 scroll-mt-6" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                    <div className="flex items-center justify-between gap-3 mb-4">
-                      <p style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#111827' }}>Examiner markup</p>
-                      <span className="rounded-full px-3 py-1" style={{ background: '#FEE2E2', color: '#B91C1C', fontFamily: 'Inter', fontWeight: 800, fontSize: 12 }}>BETA</span>
-                    </div>
-                    <div className="space-y-4">
-                      {displayCheckedCopyPages.map((page: any) => (
-                        <div key={page.pageNumber || page.checkedCopyUrl}>
-                          <div className="mb-2 flex items-center justify-between">
-                            <span style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 14, color: '#364153' }}>Page {page.pageNumber || 1}</span>
-                            <a href={page.checkedCopyUrl} target="_blank" rel="noreferrer" style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 13, color: '#2563EB' }}>Open full size</a>
-                          </div>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={page.checkedCopyUrl}
-                            alt={`Checked copy page ${page.pageNumber || 1} with evaluator markup`}
-                            className="w-full rounded-[14px]"
-                            style={{ border: '1px solid #E5E7EB', background: '#F3F4F6' }}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMainsTimeLeft(getMainsTimeLimit(selectedQuestion));
+                        setMainsTimerPaused(true);
+                        setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS);
+                      }}
+                      className="rounded-[10px] border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[13px] font-bold text-[#4A5565]"
+                    >
+                      ↻ Reset
+                    </button>
                   </div>
-                );
-              })()}
+                </div>
 
-              {asTextList(mainsEvalResults.demandCoverage).length > 0 && (
-                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                  <p className="mb-4" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 22, color: '#111827' }}>Demand of the question</p>
-                  <ul className="space-y-3 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 16, lineHeight: 1.55, color: '#111827' }}>
-                    {asTextList(mainsEvalResults.demandCoverage).map((item, i) => (
-                      <li key={i}>{item}</li>
+                <div className="rounded-[18px] bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center gap-2 text-[14px] font-bold uppercase text-[#0F172B]">
+                    <span>💡</span> Quick Tips
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    {[
+                      ['✏️', 'Use blue/black ink'],
+                      ['📷', 'Clear photo in good lighting'],
+                      ['📝', 'Write legibly on white paper'],
+                    ].map(([icon, text]) => (
+                      <div key={text} className="flex items-center gap-3 rounded-[10px] bg-[#F4F5F7] p-2.5">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-white">{icon}</span>
+                        <span className="text-[13px] font-bold text-[#364153]">{text}</span>
+                      </div>
                     ))}
-                  </ul>
-                </div>
-              )}
-
-              {mainsEvalResults.answerText && (
-                <div className="rounded-[18px] p-5" style={{ background: '#E0F2FE', border: '1px solid #BAE6FD' }}>
-                  <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#0F172A' }}>What you wrote</p>
-                  <p style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.75, color: '#0F172A', whiteSpace: 'pre-line' }}>
-                    {mainsEvalResults.answerText}
-                  </p>
-                </div>
-              )}
-
-              {mainsEvalResults.sectionFeedback && typeof mainsEvalResults.sectionFeedback === 'object' && !Array.isArray(mainsEvalResults.sectionFeedback) && (
-                <div className="space-y-4">
-                  {Object.entries(mainsEvalResults.sectionFeedback).map(([section, feedback]) => (
-                    <div key={section} className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                      <p className="mb-3 uppercase" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 14, letterSpacing: '0.06em', color: '#6B7280' }}>
-                        {humanizeKey(section)}
-                      </p>
-                      <ul className="space-y-2 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.6, color: '#1F2937' }}>
-                        {asTextList(feedback).map((item, i) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {mainsEvalResults.strengths?.length > 0 && (
-                  <div className="rounded-[18px] p-5" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-                    <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#166534' }}>Strengths</p>
-                    <ul className="space-y-2 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.6, color: '#14532D' }}>
-                      {mainsEvalResults.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                    </ul>
                   </div>
-                )}
-
-                {mainsEvalResults.improvements?.length > 0 && (
-                  <div className="rounded-[18px] p-5" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
-                    <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#C2410C' }}>Areas to improve</p>
-                    <ul className="space-y-2 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.6, color: '#7C2D12' }}>
-                      {mainsEvalResults.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              {mainsEvalResults.suggestions?.length > 0 && (
-                <div className="rounded-[18px] p-5" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
-                  <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#1D4ED8' }}>Suggestions to improve</p>
-                  <ul className="space-y-3 pl-5 list-disc" style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.65, color: '#1E3A8A' }}>
-                    {mainsEvalResults.suggestions.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                  </ul>
                 </div>
-              )}
-
-              {mainsEvalResults.modelAnswer && (
-                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                  <p className="mb-3" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 20, color: '#111827' }}>Model answer</p>
-                  <p style={{ fontFamily: 'Inter', fontSize: 15, lineHeight: 1.7, color: '#1F2937', whiteSpace: 'pre-line' }}>
-                    {mainsEvalResults.modelAnswer}
-                  </p>
-                </div>
-              )}
-
-              {mainsEvalResults.detailedFeedback && (
-                <div className="rounded-[18px] p-5" style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
-                  <p className="mb-3 uppercase" style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 14, letterSpacing: '0.06em', color: '#6B7280' }}>Overall feedback</p>
-                  <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 16, lineHeight: 1.7, color: '#111827', whiteSpace: 'pre-line' }}>
-                    {mainsEvalResults.detailedFeedback}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Close button */}
-            <div className="px-8 pb-8 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowAiEvalCompleteModal(false)}
-                className="w-full flex items-center justify-center gap-2 rounded-[16px] py-4"
-                style={{ background: '#2563EB', fontFamily: 'Inter', fontWeight: 700, fontSize: 16, lineHeight: '24px', color: '#FFFFFF' }}
-              >
-                Close
-              </button>
+              </aside>
             </div>
           </div>
         </div>
+      )}
+
+      {/* AI evaluation progress modal - opens after Submit for AI Evaluation */}
+      {showAiEvalModal && (
+        <PyqEvaluationProgressModal progress={aiEvalProgress} completedStepCount={aiEvalStepIndex} />
       )}
 
       {/* Attempt / Question review modal - Prelims only */}
@@ -2522,13 +2997,20 @@ export default function PyqPage() {
             >
               <div className="flex items-center gap-2 flex-wrap">
                 <div
-                  className="rounded-[14px] flex items-center justify-center flex-shrink-0"
-                  style={{ width: 48, height: 48, background: '#1E293B', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: '18px', lineHeight: '28px' }}
+                  className="rounded-[14px] flex items-center justify-center flex-shrink-0 px-3"
+                  style={{ minWidth: 64, height: 48, background: '#1E293B', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: '15px', lineHeight: '22px' }}
                 >
-                  {selectedQuestion?.questionNum ?? '?'}
+                  {selectedQuestion?.paper || 'Mains'}
                 </div>
                 <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: '#1E293B', color: '#FFFFFF' }}>{selectedQuestion?.year}</span>
-                <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: '#FEF3C6', color: '#BB4D00' }}>{selectedQuestion?.subject}</span>
+                {selectedQuestion?.subject && (() => {
+                  const style = getSubjectMetaStyle(selectedQuestion.subject);
+                  return (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[14px] font-semibold flex-shrink-0" style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}>
+                      <span aria-hidden>{style.icon}</span>{selectedQuestion.subject}
+                    </span>
+                  );
+                })()}
                 <span className="px-3 py-1.5 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#FFEDD4', color: '#F54900' }}>🔥 {selectedQuestion?.difficulty}</span>
                 {hasSubmitted
                   ? <span className="px-3 py-1 rounded-full text-[14px] font-semibold flex items-center gap-1 flex-shrink-0" style={{ background: '#DCFCE7', color: '#008236' }}>✅ Attempted</span>
@@ -2546,7 +3028,8 @@ export default function PyqPage() {
             <QuestionTextRenderer
               text={selectedQuestion?.questionText}
               style={{ width: '824px', maxWidth: '100%' }}
-              textClassName="font-[Inter] font-normal text-[18px] leading-[29.25px] text-[#1E2939]"
+              textClassName="font-normal text-[18px] leading-[29.25px] text-[#1E2939]"
+              textStyle={{ fontFamily: PYQ_QUESTION_FONT }}
             />
 
             {/* Options */}

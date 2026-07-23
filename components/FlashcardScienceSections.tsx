@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
 /**
  * "How Smart Flashcards Work" + CTA banner.
@@ -11,8 +12,9 @@ import React, { useEffect, useRef } from 'react';
  * the scroll / forgetting-curve animations replicate the original
  * IntersectionObserver script.
  */
-export default function FlashcardScienceSections() {
+export default function FlashcardScienceSections({ onUpgradeClick }: { onUpgradeClick?: () => void } = {}) {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const root = rootRef.current;
@@ -62,7 +64,7 @@ export default function FlashcardScienceSections() {
     <div ref={rootRef} className="fc-science">
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:wght@300;400;500;600;700&display=swap"
         rel="stylesheet"
       />
 
@@ -251,7 +253,11 @@ export default function FlashcardScienceSections() {
           </h2>
           <p className="cta-desc">Get unlimited card creation, advanced spaced repetition analytics, priority AI mentor access, and exclusive subject decks crafted by toppers. Your competition is already ahead.</p>
           <div className="cta-actions">
-            <button className="cta-btn">
+            <button
+              className="cta-btn"
+              type="button"
+              onClick={() => onUpgradeClick ? onUpgradeClick() : router.push('/dashboard/billing/plans#upgrade-plans')}
+            >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>
@@ -265,7 +271,7 @@ export default function FlashcardScienceSections() {
                 <div className="cta-av" style={{ background: '#F59E0B' }}>AG</div>
               </div>
               <span className="cta-social-text">
-                <strong>12,000+</strong> aspirants learning smarter
+                <strong>15,000+</strong> aspirants learning smarter
               </span>
             </div>
           </div>
@@ -284,8 +290,9 @@ export default function FlashcardScienceSections() {
 
       <style jsx>{`
         .fc-science {
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-dm-sans), 'DM Sans', sans-serif;
           color: #1e293b;
+          background: #f8fafc;
         }
 
         /* === HOW IT WORKS SECTION === */
@@ -309,17 +316,22 @@ export default function FlashcardScienceSections() {
           margin-bottom: 48px;
         }
         .how-header h2 {
-          font-family: 'Playfair Display', serif;
+          font-family: var(--font-playfair), 'Playfair Display', serif;
           font-size: 34px;
+          font-weight: 900;
+          line-height: normal;
           color: #1e293b;
+          letter-spacing: 0;
+          margin-top: 0;
           margin-bottom: 10px;
         }
         .how-header h2 .gold {
-          color: #d4af37;
+          color: #e8b84b;
           font-style: italic;
         }
         .how-header p {
           font-size: 14.5px;
+          font-weight: 400;
           color: #64748b;
           max-width: 500px;
           margin: 0 auto;
@@ -392,8 +404,10 @@ export default function FlashcardScienceSections() {
         }
         .step-card p {
           font-size: 13px;
+          font-weight: 400;
           color: #64748b;
           line-height: 1.65;
+          margin: 0;
         }
 
         /* Science section */
@@ -429,15 +443,20 @@ export default function FlashcardScienceSections() {
           background: linear-gradient(90deg, #d4af37, #f59e0b);
         }
         .science-card h3 {
-          font-family: 'Playfair Display', serif;
+          font-family: var(--font-playfair), 'Playfair Display', serif;
           font-size: 20px;
+          font-weight: 700;
           color: #1e293b;
+          line-height: normal;
+          margin-top: 0;
           margin-bottom: 12px;
         }
         .science-card p {
           font-size: 13.5px;
+          font-weight: 400;
           color: #64748b;
           line-height: 1.7;
+          margin: 0;
         }
         .science-card :global(.highlight) {
           color: #d4af37;
@@ -461,14 +480,18 @@ export default function FlashcardScienceSections() {
           transform: translateY(0);
         }
         .curve-viz h3 {
-          font-family: 'Playfair Display', serif;
+          font-family: var(--font-playfair), 'Playfair Display', serif;
           font-size: 20px;
+          font-weight: 700;
           text-align: center;
+          line-height: normal;
+          margin-top: 0;
           margin-bottom: 6px;
         }
         .curve-viz .curve-sub {
           text-align: center;
           font-size: 13px;
+          font-weight: 400;
           color: #64748b;
           margin-bottom: 24px;
         }
@@ -487,6 +510,7 @@ export default function FlashcardScienceSections() {
           align-items: center;
           gap: 8px;
           font-size: 12px;
+          font-weight: 400;
           color: #64748b;
         }
         .legend-dot {
@@ -531,7 +555,8 @@ export default function FlashcardScienceSections() {
 
         /* === CTA BANNER === */
         .cta-banner {
-          margin: 24px 40px 48px;
+          max-width: 1000px;
+          margin: 24px auto 48px;
           border-radius: 20px;
           background: linear-gradient(135deg, #0f1018 0%, #1a1c29 100%);
           position: relative;
@@ -566,10 +591,13 @@ export default function FlashcardScienceSections() {
           margin-bottom: 14px;
         }
         .cta-banner h2 {
-          font-family: 'Playfair Display', serif;
+          font-family: var(--font-playfair), 'Playfair Display', serif;
           font-size: 36px;
+          font-weight: 700;
           color: #fff;
           line-height: 1.2;
+          letter-spacing: 0;
+          margin-top: 0;
           margin-bottom: 14px;
         }
         .cta-banner h2 .gold {

@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { flashcardService } from '@/lib/services';
+import Toast from '@/components/Toast';
 
 type Card = {
   id: string;
@@ -24,8 +25,10 @@ function pretty(slug: string) {
 
 export default function FlashcardReviewPage() {
   const params = useParams<{ subjectId: string; topicId: string }>();
+  const searchParams = useSearchParams();
   const subjectId = typeof params?.subjectId === 'string' ? params.subjectId : '';
   const topicId   = typeof params?.topicId   === 'string' ? params.topicId   : '';
+  const targetCardId = searchParams.get('cardId');
 
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +37,7 @@ export default function FlashcardReviewPage() {
   const [showSessionComplete, setShowSessionComplete] = useState(false);
   const [masteredCount, setMasteredCount] = useState(0);
   const [deletingCard, setDeletingCard] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     if (!subjectId || !topicId) return;
@@ -42,10 +46,15 @@ export default function FlashcardReviewPage() {
         if (res.status === 'success') {
           setCards(res.data);
           setMasteredCount(res.data.filter((c: Card) => c.mastered).length);
+          if (targetCardId) {
+            const index = res.data.findIndex((c: Card) => c.id === targetCardId);
+            if (index >= 0) setCurrentIndex(index);
+          }
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subjectId, topicId]);
 
   const totalCards = cards.length;
@@ -83,11 +92,14 @@ export default function FlashcardReviewPage() {
       .then(() => {
         const newCards = cards.filter((c) => c.id !== card.id);
         setCards(newCards);
+        setToast({ message: 'Card deleted', type: 'success' });
         if (newCards.length === 0) { setShowSessionComplete(true); return; }
         setCurrentIndex((i) => Math.min(i, newCards.length - 1));
         setRevealed(false);
       })
-      .catch(() => {})
+      .catch(() => {
+        setToast({ message: 'Could not delete this card. Please try again.', type: 'error' });
+      })
       .finally(() => setDeletingCard(false));
   };
 
@@ -113,6 +125,9 @@ export default function FlashcardReviewPage() {
 
   return (
     <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: '100%' }}>
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      )}
       <div className="flex-1 overflow-y-auto" style={{ background: '#FAFBFE' }}>
         <div className="w-full max-w-[1100px] mx-auto px-4 sm:px-6 py-5">
 
@@ -210,7 +225,9 @@ export default function FlashcardReviewPage() {
               className="flex items-center gap-1.5"
               style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 13, color: '#101828' }}
             >
-              🧠 Flashcards
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/flashcard-icon.png" alt="" aria-hidden className="w-4 h-4 object-contain flex-shrink-0" />
+              Flashcards
               <span
                 className="inline-flex items-center justify-center rounded-full"
                 style={{ background: '#101828', color: '#FFFFFF', fontFamily: 'Inter', fontWeight: 700, fontSize: 10, width: 20, height: 20, flexShrink: 0 }}
@@ -249,8 +266,9 @@ export default function FlashcardReviewPage() {
                 tabIndex={0}
                 onClick={handleFlip}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFlip(); } }}
-                className="relative cursor-pointer outline-none"
+                className="cursor-pointer outline-none"
                 style={{
+                  display: 'grid',
                   minHeight: 280,
                   transformStyle: 'preserve-3d',
                   transition: 'transform 600ms cubic-bezier(0.4, 0.2, 0.2, 1)',
@@ -259,8 +277,9 @@ export default function FlashcardReviewPage() {
               >
                 {/* Front */}
                 <div
-                  className="absolute inset-0 rounded-[24px] flex flex-col"
+                  className="rounded-[24px] flex flex-col"
                   style={{
+                    gridArea: '1 / 1',
                     backfaceVisibility: 'hidden',
                     background: 'linear-gradient(180deg, #0F1419 0%, #1A2332 50%, #0D1218 100%)',
                     border: '0.8px solid rgba(30,41,57,0.5)',
@@ -302,8 +321,9 @@ export default function FlashcardReviewPage() {
 
                 {/* Back */}
                 <div
-                  className="absolute inset-0 rounded-[16px] flex flex-col"
+                  className="rounded-[16px] flex flex-col"
                   style={{
+                    gridArea: '1 / 1',
                     backfaceVisibility: 'hidden',
                     transform: 'rotateY(180deg)',
                     background: '#FFFFFF',

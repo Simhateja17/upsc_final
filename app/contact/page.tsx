@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import DashboardHeader from '@/components/DashboardHeader';
+import LandingNav from '@/components/LandingNav';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { contactService } from '@/lib/services';
@@ -124,7 +124,7 @@ export default function ContactPage() {
   const capIcon = <img src="/help-support-icon.png" alt="help and support" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />;
   return (
     <main className="min-h-screen flex flex-col">
-      <DashboardHeader />
+      <LandingNav />
 
       <div style={{ background: '#0F131F' }}>
         <DashboardPageHero
@@ -154,13 +154,12 @@ export default function ContactPage() {
               </p>
             </div>
 
-            <h2 className="text-[clamp(2.3rem,3.3vw,2.6rem)] leading-[1.2] text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)', fontWeight: 600 }}>
+            <h2
+              className="mb-4 text-[clamp(2.3rem,3.3vw,2.6rem)] leading-[1.2] text-[#0C1424]"
+              style={{ fontFamily: 'var(--font-cormorant)', fontWeight: 600 }}
+            >
               We&apos;re here,
-            </h2>
-            <h2 className="mb-4 text-[clamp(2.3rem,3.3vw,2.6rem)] italic leading-[1.2] text-[#1E3060]" style={{ fontFamily: 'var(--font-cormorant)', fontWeight: 600 }}>
-              not behind a ticket
-              <br />
-              queue
+              <span className="block">not behind a ticket queue</span>
             </h2>
 
             <p className="mb-8 text-[14px] leading-[1.8] text-[#6B7A99]" style={{ fontFamily: 'var(--font-dm-sans)' }}>

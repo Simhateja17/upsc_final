@@ -14,6 +14,7 @@ import SubTopicsList from './components/SubTopicsList';
 import RightPanel from './components/RightPanel';
 import StatusModal from './components/StatusModal';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { SyllabusTrackerLimitModal } from '@/components/upgrade/UpgradeModals';
 
 export type Mode = 'prelims' | 'mains' | 'optional';
 export type Status = 'none' | 'done' | 'in-progress' | 'needs-revision' | 'weak';
@@ -118,6 +119,7 @@ export default function SyllabusTrackerPage() {
     topicIndex: number;
     subTopicIndex: number;
   } | null>(null);
+  const [showTrackerLimitModal, setShowTrackerLimitModal] = useState(false);
 
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -234,7 +236,8 @@ export default function SyllabusTrackerPage() {
       .then(res => {
         if (res.data && Object.keys(res.data.states).length > 0) {
           setStates(res.data.states);
-          setMode(res.data.mode || 'prelims');
+          // Always open on the Prelims tab (see initial `mode` state) regardless of
+          // the last-used tab persisted on the server; users can still switch tabs.
           localStorage.setItem('syllabusTrackerState', JSON.stringify(res.data.states));
         } else {
           const saved = localStorage.getItem('syllabusTrackerState');
@@ -301,6 +304,7 @@ export default function SyllabusTrackerPage() {
       nextStatus !== 'none' &&
       Object.values(states).filter((state) => state.status && state.status !== 'none').length >= 5
     ) {
+      setShowTrackerLimitModal(true);
       return;
     }
 
@@ -450,6 +454,10 @@ export default function SyllabusTrackerPage() {
 
   return (
     <div className="flex flex-col h-full bg-[#F9FAFB] font-arimo">
+      <SyllabusTrackerLimitModal
+        open={showTrackerLimitModal}
+        onClose={() => setShowTrackerLimitModal(false)}
+      />
       {/* Page Content - scrollable */}
       <div className="flex-1 overflow-y-auto">
         {/* Hero Section */}
@@ -473,43 +481,6 @@ export default function SyllabusTrackerPage() {
           />
         </div>
 
-        {/* Optional Subject picker — choose/change your optional right here,
-            no need to visit Profile settings. */}
-        {mode === 'optional' && (
-          <div className="px-[12px] pt-[12px]">
-            <div className="rounded-[14px] border border-[#E5E7EB] bg-white p-[16px] flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-arimo font-bold text-[#101828] text-[15px] mb-1">Pick your Optional Subject</h3>
-                <p className="font-arimo text-[#6B7280] text-[12px] mb-2">
-                  {optionalSubject
-                    ? <>Current: <span className="font-semibold text-[#374151]">{optionalSubject}</span>. Change it below anytime.</>
-                    : 'Select your optional to start tracking its syllabus.'}
-                </p>
-                <select
-                  value={optionalDraft}
-                  onChange={(e) => setOptionalDraft(e.target.value)}
-                  className="w-full sm:max-w-[360px] font-arimo outline-none transition-colors bg-white"
-                  style={{ height: '42px', borderRadius: '10px', border: '0.8px solid #E5E7EB', padding: '0 14px', fontSize: '14px', color: '#101828' }}
-                >
-                  <option value="">Select Optional</option>
-                  {OPTIONAL_SUBJECTS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="button"
-                onClick={handleSetOptional}
-                disabled={savingOptional || !optionalDraft.trim() || optionalDraft.trim() === optionalSubject}
-                className="font-arimo font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40 flex-shrink-0"
-                style={{ height: '42px', padding: '0 20px', borderRadius: '10px', background: '#17223E', fontSize: '13px' }}
-              >
-                {savingOptional ? 'Saving…' : 'Set Optional Subject'}
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Tracker Area – stacks on mobile, four side-by-side columns on xl+ */}
         <div className="flex flex-col xl:flex-row items-stretch gap-[14px] px-[12px] pb-[18px] pt-[10px] xl:min-w-[1180px]">
           {/* Column A - Subjects */}
@@ -523,6 +494,11 @@ export default function SyllabusTrackerPage() {
               states={states}
               mode={mode}
               optionalNoSelection={optionalNoSelection}
+              optionalSubjects={OPTIONAL_SUBJECTS}
+              optionalDraft={optionalDraft}
+              onOptionalDraftChange={setOptionalDraft}
+              onSetOptional={handleSetOptional}
+              savingOptional={savingOptional}
             />
           </div>
 

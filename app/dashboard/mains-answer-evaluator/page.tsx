@@ -3,16 +3,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import FilePreviewThumb from '@/components/FilePreviewThumb';
-import { dailyAnswerService } from '@/lib/services';
+import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
+import { mainsEvaluatorService } from '@/lib/services';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
+import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { ApiRequestError } from '@/lib/api';
+import { MainsEvaluationLimitModal } from '@/components/upgrade/UpgradeModals';
 
 /* ─── Static config ─── */
 
 const PAPERS = [
-  { id: 'gs1', emoji: '🏛️', label: 'GS Paper I', description: 'History · Geography · Society' },
-  { id: 'gs2', emoji: '⚖️', label: 'GS Paper II', description: 'Polity · Governance · IR' },
-  { id: 'gs3', emoji: '📈', label: 'GS Paper III', description: 'Economy · Environment · Sci-Tech' },
-  { id: 'gs4', emoji: '🎯', label: 'GS Paper IV', description: 'Ethics, Integrity & Aptitude' },
+  { id: 'gs1', emoji: '📘', label: 'GS Paper I', description: 'History · Geography · Society' },
+  { id: 'gs2', emoji: '📗', label: 'GS Paper II', description: 'Polity · Governance · IR' },
+  { id: 'gs3', emoji: '📙', label: 'GS Paper III', description: 'Economy · Environment · Sci-Tech' },
+  { id: 'gs4', emoji: '📕', label: 'GS Paper IV', description: 'Ethics, Integrity & Aptitude' },
   { id: 'essay', emoji: '✏️', label: 'Essay', description: 'Paper I · 2 essays' },
   { id: 'optional', emoji: '📚', label: 'Optional', description: 'Choose your optional subject' },
 ];
@@ -31,6 +35,12 @@ const MARK_OPTIONS = [
   { value: 10, mins: 7, words: 150 },
   { value: 15, mins: 11, words: 200 },
   { value: 20, mins: 15, words: 250 },
+];
+
+// Essay paper is scored out of 125 — a single fixed option, auto-selected
+// the moment "Essay" is chosen as the paper (no GS-style 10/15/20 tiers).
+const ESSAY_MARK_OPTIONS = [
+  { value: 125, mins: 90, words: 1200 },
 ];
 
 const SAMPLE_QUESTION = 'Analyze the role of technology in transforming Indian agriculture. What are the key barriers to its adoption?';
@@ -185,35 +195,41 @@ export default function MainsAnswerEvaluatorPage() {
   const [dropHover, setDropHover] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [previewFile, setPreviewFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-
-  /* ─── In-page file preview (modal) — build & revoke an object URL ─── */
-  useEffect(() => {
-    if (!previewFile) { setPreviewUrl(null); return; }
-    const url = URL.createObjectURL(previewFile);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [previewFile]);
-
-  // Close the preview modal on Escape
-  useEffect(() => {
-    if (!previewFile) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPreviewFile(null); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [previewFile]);
+  const entitlements = useEntitlements();
+  const mainsQuota = entitlements.featureStatus('mains_evaluation');
 
   const paperLabel = PAPERS.find(p => p.id === selectedPaper)?.label ?? 'GS Paper 1';
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('mainsEvaluatorPrefill');
+      if (!raw) return;
+      sessionStorage.removeItem('mainsEvaluatorPrefill');
+      const prefill = JSON.parse(raw) as { question?: string; paper?: string; answer?: string };
+      if (prefill.question) setQuestion(prefill.question);
+      if (prefill.paper) {
+        setSelectedPaper(prefill.paper);
+        setPaperTouched(true);
+        if (prefill.paper === 'essay') setSelectedMarks(125);
+      }
+      if (prefill.answer) {
+        setAnswerText(prefill.answer);
+        setShowTypeAnswer(true);
+      }
+    } catch {
+      // no prefill available — start blank
+    }
+  }, []);
 
   /* ─── Step completion ─── */
   const paperDone = paperTouched;
   const questionDone = question.trim().length > 0; // optional
   const answerDone = files.length > 0 || answerText.trim().length > 0;
   const marksDone = selectedMarks !== null;
-  const canEvaluate = paperDone && answerDone && marksDone;
+  const canEvaluate = paperDone && questionDone && answerDone && marksDone;
 
   const nodes = [
     { label: 'Select Paper', done: paperDone },
@@ -255,31 +271,51 @@ export default function MainsAnswerEvaluatorPage() {
 
   async function handleSubmit() {
     if (!canEvaluate || submitting) return;
+    if (!entitlements.loading && mainsQuota?.allowed === false) {
+      setShowQuotaModal(true);
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
-      // Reuse the existing Daily Mains Challenge evaluation pipeline:
-      // submit the answer, stash the attemptId, then hand off to the shared
-      // AI evaluation engine → results screens.
-      const res = files.length > 0
-        ? await dailyAnswerService.uploadFiles(files)
-        : await dailyAnswerService.submitText(answerText);
+      const res = await mainsEvaluatorService.submit({
+        questionText: question.trim(),
+        paper: paperLabel,
+        subject: focusSubject || PAPERS.find(p => p.id === selectedPaper)?.description.split(' · ')[0] || 'General Studies',
+        marks: selectedMarks || 15,
+        answerText: answerText.trim() || undefined,
+        files,
+      });
       const attemptId =
         (res as any)?.attemptId ||
         (res as any)?.data?.attemptId ||
         (res as any)?.data?.data?.attemptId;
       if (attemptId && typeof window !== 'undefined') {
-        sessionStorage.setItem('dailyAnswerAttemptId', attemptId);
+        sessionStorage.setItem('mainsEvaluatorAttemptId', attemptId);
       }
-      router.push('/dashboard/daily-answer/challenge/attempt/evaluating');
+      entitlements.refreshEntitlements();
+      router.push('/dashboard/mains-answer-evaluator/evaluating');
     } catch (err: any) {
-      setError(err?.message || 'Failed to submit answer. Please try again.');
+      const code = err instanceof ApiRequestError ? err.payload?.code : null;
+      if (code === 'FEATURE_LIMIT_REACHED' || code === 'FEATURE_ACCESS_REQUIRED') {
+        setShowQuotaModal(true);
+      } else {
+        setError(err?.message || 'Failed to submit answer. Please try again.');
+      }
       setSubmitting(false);
     }
   }
 
   return (
     <div className="flex overflow-hidden font-arimo" style={{ background: '#F9FAFB', height: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}>
+      <MainsEvaluationLimitModal
+        open={showQuotaModal}
+        onClose={() => setShowQuotaModal(false)}
+        tier={entitlements.tier}
+        used={mainsQuota?.used}
+        limit={mainsQuota?.limit}
+        backLabel="Back to Dashboard"
+      />
       <main className="flex-1 overflow-y-auto font-arimo" style={{ background: '#F9FAFB' }}>
 
         <DashboardPageHero
@@ -297,7 +333,7 @@ export default function MainsAnswerEvaluatorPage() {
             { value: '10,230+', label: 'Answers Evaluated', color: '#FDC700' },
             { value: '98.2%', label: 'Accuracy Rate', color: '#F97316' },
             { value: '< 60s', label: 'Evaluation Time', color: '#22C55E' },
-            { value: <>4.8<span style={{ color: '#FDC700' }}>★</span></>, label: 'Average Rating', color: '#FFFFFF' },
+            { value: <>4.8<span style={{ color: '#FDC700' }}>★</span></>, label: 'Average Rating', color: '#FDC700' },
           ]}
         />
 
@@ -341,13 +377,23 @@ export default function MainsAnswerEvaluatorPage() {
                   }}>
                     {PAPERS.map(paper => {
                       const isSelected = selectedPaper === paper.id;
+                      const paperStyle = getSubjectMetaStyle(paper.label);
                       return (
                         <button
                           key={paper.id}
-                          onClick={() => { setSelectedPaper(paper.id); setPaperTouched(true); setFocusSubject(''); }}
+                          onClick={() => {
+                            setSelectedPaper(paper.id);
+                            setPaperTouched(true);
+                            setFocusSubject('');
+                            if (paper.id === 'essay') {
+                              setSelectedMarks(125);
+                            } else if (selectedPaper === 'essay') {
+                              setSelectedMarks(null);
+                            }
+                          }}
                           style={{
-                            background: isSelected ? '#EFF6FF' : '#FAFAFA',
-                            border: isSelected ? '1.8px solid #17223E' : '1.6px solid #E5E7EB',
+                            background: isSelected ? paperStyle.bg : '#FAFAFA',
+                            border: isSelected ? `1.8px solid ${paperStyle.accent}` : `1.6px solid ${paperStyle.border}`,
                             borderRadius: '12px',
                             padding: '14px 12px',
                             cursor: 'pointer',
@@ -360,7 +406,7 @@ export default function MainsAnswerEvaluatorPage() {
                             transition: 'all 0.15s ease',
                           }}
                         >
-                          <span style={{ fontSize: '22px', flexShrink: 0, lineHeight: 1 }}>
+                          <span style={{ fontSize: '22px', flexShrink: 0, lineHeight: 1, width: 42, height: 42, borderRadius: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#FFFFFFAA', border: `1px solid ${paperStyle.border}` }}>
                             {paper.emoji}
                           </span>
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -373,7 +419,7 @@ export default function MainsAnswerEvaluatorPage() {
                           </div>
                           <div style={{
                             width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
-                            border: isSelected ? '5px solid #17223E' : '1.5px solid #D1D5DB',
+                            border: isSelected ? `5px solid ${paperStyle.accent}` : '1.5px solid #D1D5DB',
                             background: '#FFF', transition: 'all 0.15s ease',
                           }} />
                         </button>
@@ -430,7 +476,7 @@ export default function MainsAnswerEvaluatorPage() {
                 <div style={cardStyle}>
                   <StepHeader step={2} title="Maximum Question Marks" subtitle="Select marks for the question" state={stepState(1)} />
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    {MARK_OPTIONS.map(m => {
+                    {(selectedPaper === 'essay' ? ESSAY_MARK_OPTIONS : MARK_OPTIONS).map(m => {
                       const isSelected = selectedMarks === m.value;
                       return (
                         <button
@@ -461,9 +507,14 @@ export default function MainsAnswerEvaluatorPage() {
                 {/* ── Step 3: Question (Optional) ── */}
                 <div style={cardStyle}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                    <StepHeader step={3} title="Question" badge="Optional" subtitle="Type Your Question or let AI auto-detect from your answer sheet" state={stepState(2)} />
+                    <StepHeader step={3} title="Question" subtitle="Type the exact question to evaluate against" state={stepState(2)} />
                     <button
-                      onClick={() => setQuestion(SAMPLE_QUESTION)}
+                      onClick={() => {
+                        setQuestion(SAMPLE_QUESTION);
+                        setSelectedPaper('gs3');
+                        setFocusSubject('Agriculture');
+                        setSelectedMarks(15);
+                      }}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -487,7 +538,7 @@ export default function MainsAnswerEvaluatorPage() {
                   <textarea
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
-                    placeholder="Type or paste your question here (or leave blank to auto-detect from your answer)…"
+                    placeholder="Type or paste your question here..."
                     rows={4}
                     style={{
                       width: '100%',
@@ -583,52 +634,8 @@ export default function MainsAnswerEvaluatorPage() {
 
                       {/* ── Uploaded file preview cards (image/PDF thumbnails) ── */}
                       {files.length > 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
-                          {files.map((f, fi) => (
-                            <div
-                              key={`${f.name}-${fi}`}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: '14px',
-                                padding: '12px 14px', borderRadius: '14px',
-                                border: '1.5px solid #BBF7D0', background: '#F0FDF4',
-                              }}
-                            >
-                              <FilePreviewThumb file={f} size={56} />
-                              <div style={{ minWidth: 0, flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-                                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13.5px', fontWeight: 700, color: '#17223E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {f.name}
-                                  </span>
-                                  <svg width="16" height="16" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }} aria-hidden="true">
-                                    <circle cx="9" cy="9" r="9" fill="#16A34A" />
-                                    <path d="M5 9.5L7.5 12L13 6.5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                  </svg>
-                                </div>
-                                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: '#6A7282' }}>
-                                  {(f.size / 1024 / 1024).toFixed(1)} MB
-                                  {files.length > 1 && <> · Page {fi + 1} of {files.length}</>}
-                                </span>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                                <button
-                                  type="button"
-                                  onClick={() => setPreviewFile(f)}
-                                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '8px 12px', background: 'none', border: '1px solid #E5E7EB', borderRadius: '10px', cursor: 'pointer' }}
-                                >
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="#6B7280" strokeWidth="2"/></svg>
-                                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#6B7280' }}>Preview</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => removeFile(fi)}
-                                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '8px 12px', background: 'none', border: '1px solid #FECACA', borderRadius: '10px', cursor: 'pointer' }}
-                                >
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m2 0v14a1 1 0 01-1 1H7a1 1 0 01-1-1V6" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                  <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 600, color: '#DC2626' }}>Remove</span>
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                        <div style={{ marginTop: '12px' }}>
+                          <UploadedAnswerFiles files={files} onRemove={removeFile} />
                         </div>
                       )}
                     </>
@@ -935,59 +942,6 @@ export default function MainsAnswerEvaluatorPage() {
         </div>
       </main>
 
-      {/* ── In-page file preview modal ── */}
-      {previewFile && (
-        <div
-          onClick={() => setPreviewFile(null)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'rgba(15, 23, 43, 0.7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '24px',
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: '#FFFFFF', borderRadius: '16px', overflow: 'hidden',
-              width: 'min(900px, 100%)', maxHeight: '90vh',
-              display: 'flex', flexDirection: 'column',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
-            }}
-          >
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '14px 18px', borderBottom: '1px solid #E5E7EB' }}>
-              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', color: '#101828', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {previewFile.name}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPreviewFile(null)}
-                aria-label="Close preview"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#FFFFFF', cursor: 'pointer', flexShrink: 0 }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" /></svg>
-              </button>
-            </div>
-            {/* Body */}
-            <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {previewUrl && (
-                previewFile.type.startsWith('image/') ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={previewUrl} alt={previewFile.name} style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', display: 'block' }} />
-                ) : (previewFile.type === 'application/pdf' || previewFile.name.toLowerCase().endsWith('.pdf')) ? (
-                  <iframe src={previewUrl} title={previewFile.name} style={{ width: '100%', height: '80vh', border: 'none' }} />
-                ) : (
-                  <div style={{ padding: '48px 24px', textAlign: 'center', fontFamily: 'Inter, sans-serif', color: '#6B7280' }}>
-                    <div style={{ fontSize: '40px', marginBottom: '12px' }}>📄</div>
-                    <div style={{ fontSize: '14px' }}>Preview not available for this file type.</div>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

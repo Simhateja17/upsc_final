@@ -3,6 +3,8 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { AuthModalProvider } from '@/contexts/AuthModalContext'
 import AuthModal from '@/components/AuthModal'
+import SessionGuard from '@/components/SessionGuard'
+import { Analytics } from '@vercel/analytics/next'
 import { Cormorant_Garamond, DM_Sans, Sora, Playfair_Display, Inter, Merriweather, Plus_Jakarta_Sans, DM_Serif_Display, Fraunces } from 'next/font/google'
 
 const cormorant = Cormorant_Garamond({
@@ -59,7 +61,7 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 })
 
-// DM Serif Display — the Daily Mains Challenge reference's heading font.
+// DM Serif Display — the Daily Answer Writing reference's heading font.
 const dmSerif = DM_Serif_Display({
   subsets: ['latin'],
   weight: ['400'],
@@ -110,8 +112,10 @@ export default function RootLayout({
           <AuthModalProvider>
             {children}
             <AuthModal />
+            <SessionGuard />
           </AuthModalProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   )

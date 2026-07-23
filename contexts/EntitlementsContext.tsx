@@ -28,6 +28,13 @@ export type EntitlementSummary = {
   features: Record<string, FeatureStatus>;
   access: Record<string, AccessLevel>;
   preview: Record<string, number | null>;
+  override?: {
+    id: string;
+    planTierOverride: PlanTier | string | null;
+    reason: string | null;
+    expiresAt: string | null;
+    isAdminPlanSimulation?: boolean;
+  } | null;
 };
 
 type EntitlementsContextValue = {
@@ -112,4 +119,8 @@ export function useEntitlements() {
   const ctx = useContext(EntitlementsContext);
   if (!ctx) throw new Error('useEntitlements must be used inside EntitlementsProvider');
   return ctx;
+}
+
+export function useOptionalEntitlements() {
+  return useContext(EntitlementsContext);
 }

@@ -97,6 +97,10 @@ export const dashboardService = {
   getPerformance: () => api.get<any>('/user/performance', authConfig()),
   getPracticeStats: () => api.get<any>('/user/practice-stats', authConfig()),
   getBadges: () => api.get<any>('/user/badges', authConfig()),
+  getAchievements: () => api.get<any>('/user/achievements', authConfig()),
+  markBadgesSeen: (keys: string[]) =>
+    api.post<any>('/user/achievements/seen', { keys }, authConfig()),
+  getStreakCalendar: () => api.get<any>('/user/streak-calendar', authConfig()),
   getTestAnalytics: async () => {
     const config = { ...(await freshAuthConfig()), timeout: 5000 };
 
@@ -201,13 +205,58 @@ export const dailyAnswerService = {
   },
 };
 
+// ==================== Standalone Mains Answer Evaluator ====================
+
+export const mainsEvaluatorService = {
+  submit: async (opts: {
+    questionText: string;
+    paper: string;
+    subject?: string;
+    marks: number;
+    answerText?: string;
+    files?: File[];
+  }): Promise<{ status: string; data?: { attemptId: string; status: string }; message?: string }> => {
+    const fd = new FormData();
+    fd.append('questionText', opts.questionText);
+    fd.append('paper', opts.paper);
+    fd.append('subject', opts.subject || 'General Studies');
+    fd.append('marks', String(opts.marks));
+    if (opts.answerText) fd.append('answerText', opts.answerText);
+    opts.files?.forEach((file) => fd.append('files', file));
+
+    const token = getToken();
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/mains-evaluator/submit`,
+      {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      }
+    );
+    const json = await res.json();
+    if (!res.ok) throw new ApiRequestError(json.message || 'Submit failed', res.status, json);
+    return json;
+  },
+  getEvaluationStatus: (attemptId: string) =>
+    api.get<any>(
+      `/mains-evaluator/evaluation-status?attemptId=${encodeURIComponent(attemptId)}`,
+      authConfig()
+    ),
+  getResults: (attemptId: string) =>
+    api.get<any>(
+      `/mains-evaluator/results?attemptId=${encodeURIComponent(attemptId)}`,
+      authConfig()
+    ),
+};
+
 // ==================== Editorials ====================
 
 export const editorialService = {
-  getToday: (source?: string, date?: string) => {
+  getToday: (source?: string, date?: string, limit?: number) => {
     const qs: string[] = [];
     if (source && source !== 'all') qs.push(`source=${encodeURIComponent(source)}`);
     if (date) qs.push(`date=${encodeURIComponent(date)}`);
+    if (limit) qs.push(`limit=${limit}`);
     const suffix = qs.length ? `?${qs.join('&')}` : '';
     return api.get<any>(`/editorials/today${suffix}`, authConfig());
   },
@@ -423,14 +472,21 @@ export const pyqService = {
     years?: number[];
     yearFrom?: number;
     yearTo?: number;
-    subject?: string;
-    subSubject?: string;
+    subject?: string | string[];
+    subSubject?: string | string[];
     topic?: string | string[];
-    paper?: string;
+    paper?: string | string[];
     page?: number;
     limit?: number;
   }) => {
     const query = new URLSearchParams();
+    const appendMulti = (key: string, value: string | string[] | undefined) => {
+      if (value === undefined) return;
+      const values = Array.isArray(value) ? value : [value];
+      values.forEach((v) => {
+        if (v) query.append(key, v);
+      });
+    };
     if (params?.mode) query.set('mode', params.mode);
     if (params?.years && params.years.length > 0) {
       params.years.forEach((y) => query.append('years', String(y)));
@@ -439,22 +495,20 @@ export const pyqService = {
     }
     if (params?.yearFrom) query.set('yearFrom', String(params.yearFrom));
     if (params?.yearTo) query.set('yearTo', String(params.yearTo));
-    if (params?.subject) query.set('subject', params.subject);
-    if (params?.subSubject) query.set('subSubject', params.subSubject);
-    if (params?.topic) {
-      if (Array.isArray(params.topic)) {
-        params.topic.forEach((t) => {
-          if (t) query.append('topic', t);
-        });
-      } else {
-        query.set('topic', params.topic);
-      }
-    }
-    if (params?.paper) query.set('paper', params.paper);
+    appendMulti('subject', params?.subject);
+    appendMulti('subSubject', params?.subSubject);
+    appendMulti('topic', params?.topic);
+    appendMulti('paper', params?.paper);
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit));
     const qs = query.toString();
     return api.get<any>(`/pyq/questions${qs ? `?${qs}` : ''}`);
+  },
+  getQuestion: (questionId: string, params?: { mode?: 'prelims' | 'mains' }) => {
+    const query = new URLSearchParams();
+    if (params?.mode) query.set('mode', params.mode);
+    const qs = query.toString();
+    return api.get<any>(`/pyq/questions/${encodeURIComponent(questionId)}${qs ? `?${qs}` : ''}`);
   },
   getCounts: (params?: {
     mode?: 'prelims' | 'mains';
@@ -560,7 +614,17 @@ export const spacedRepService = {
   }) => api.post<any>('/spaced-repetition', data, authConfig()),
   updateItem: (
     id: string,
-    data: { scheduleDay?: number; scheduleDays?: number[]; remindEnabled?: boolean; addedToFlashcard?: boolean }
+    data: {
+      scheduleDay?: number;
+      scheduleDays?: number[];
+      remindEnabled?: boolean;
+      addedToFlashcard?: boolean;
+      questionText?: string;
+      answer?: string;
+      subject?: string;
+      source?: string;
+      sourceType?: string;
+    }
   ) =>
     api.patch<any>(`/spaced-repetition/${id}`, data, authConfig()),
   deleteItem: (id: string) => api.delete<any>(`/spaced-repetition/${id}`, authConfig()),
@@ -607,6 +671,15 @@ export const studyGroupService = {
   getMemberTimes: (id: string) => api.get<any>(`/study-groups/${id}/member-times`, authConfig()),
   postFocusTime: (id: string, seconds: number) =>
     api.post<any>(`/study-groups/${id}/focus-time`, { seconds }, authConfig()),
+  // Live "studying now" presence
+  startStudying: (id: string) => api.post<any>(`/study-groups/${id}/studying`, {}, authConfig()),
+  stopStudying: (id: string) => api.post<any>(`/study-groups/${id}/stop-studying`, {}, authConfig()),
+  // Join-request approval flow
+  getJoinRequests: () => api.get<any[]>('/study-groups/join-requests', authConfig()),
+  approveJoinRequest: (id: string, requestId: string) =>
+    api.post<any>(`/study-groups/${id}/requests/${requestId}/approve`, {}, authConfig()),
+  rejectJoinRequest: (id: string, requestId: string) =>
+    api.post<any>(`/study-groups/${id}/requests/${requestId}/reject`, {}, authConfig()),
 };
 
 // ==================== User Profile & Settings ====================
@@ -628,6 +701,7 @@ export const userService = {
   saveSyllabusTracker: (data: { mode: string; states: any }) =>
     api.put<any>('/user/syllabus-tracker', data, authConfig()),
   getSessions: () => api.get<any>('/user/sessions', authConfig()),
+  registerSession: () => api.post<any>('/user/sessions/register', {}, authConfig()),
   revokeSession: (sessionId: string) => api.delete<any>(`/user/sessions/${sessionId}`, authConfig()),
   getSubscription: () => api.get<any>('/user/subscription', authConfig()),
   startTrial: () => api.post<any>('/user/subscription/trial', {}, authConfig()),
@@ -638,6 +712,7 @@ export const userService = {
     api.post<any>('/user/notifications', data, authConfig()),
   markNotificationRead: (id: string) => api.patch<any>(`/user/notifications/${id}/read`, {}, authConfig()),
   markAllNotificationsRead: () => api.patch<any>('/user/notifications/read-all', {}, authConfig()),
+  clearAllNotifications: () => api.delete<any>('/user/notifications', authConfig()),
 };
 
 // ==================== Syllabus Data ====================
@@ -649,8 +724,8 @@ export const syllabusService = {
 // ==================== Leaderboard ====================
 
 export const leaderboardService = {
-  getLeaderboard: (tab: string = 'overall', range: string = 'all') =>
-    api.get<any>(`/leaderboard?tab=${encodeURIComponent(tab)}&range=${encodeURIComponent(range)}`, authConfig()),
+  getLeaderboard: (tab: string = 'overall', range: string = 'all', realOnly = false) =>
+    api.get<any>(`/leaderboard?tab=${encodeURIComponent(tab)}&range=${encodeURIComponent(range)}${realOnly ? '&realOnly=true' : ''}`, authConfig()),
   getMyRank: (range: string = 'all') =>
     api.get<any>(`/leaderboard/me?range=${encodeURIComponent(range)}`, authConfig()),
 };
@@ -679,6 +754,9 @@ export const adminService = {
   },
   updateUser: (id: string, data: { role?: string; status?: string }) =>
     api.put<any>(`/admin/users/${id}`, data, authConfig()),
+  setMyPlanSimulation: (tier: 'free' | 'aspire' | 'rise' | 'ascent') =>
+    api.post<any>('/admin/me/plan-simulation', { tier }, authConfig()),
+  clearMyPlanSimulation: () => api.delete<any>('/admin/me/plan-simulation', authConfig()),
 
   // PYQ Management
   uploadPYQ: async (file: File, mode: 'prelims' | 'mains' = 'prelims') => {
@@ -741,7 +819,7 @@ export const adminService = {
     api.post<any>('/admin/videos/subjects', data, authConfig()),
   updateVideoSubject: (id: string, data: any) => api.put<any>(`/admin/videos/subjects/${id}`, data, authConfig()),
   deleteVideoSubject: (id: string) => api.delete<any>(`/admin/videos/subjects/${id}`, authConfig()),
-  createVideo: (data: { subjectId: string; title: string; description?: string; videoUrl?: string; thumbnailUrl?: string; duration?: number; instructor?: string; order?: number }) =>
+  createVideo: (data: { subjectId: string; title: string; description?: string; videoUrl?: string; thumbnailUrl?: string; duration?: number; instructor?: string; order?: number; tags?: string[] }) =>
     api.post<any>('/admin/videos', data, authConfig()),
   updateVideo: (id: string, data: any) => api.put<any>(`/admin/videos/${id}`, data, authConfig()),
   deleteVideo: (id: string) => api.delete<any>(`/admin/videos/${id}`, authConfig()),
@@ -749,6 +827,27 @@ export const adminService = {
   createVideoQuestion: (videoId: string, data: { question: string; options: string[]; correctOption: number; explanation?: string; order?: number }) =>
     api.post<any>(`/admin/videos/${videoId}/questions`, data, authConfig()),
   deleteVideoQuestion: (videoId: string, qid: string) => api.delete<any>(`/admin/videos/${videoId}/questions/${qid}`, authConfig()),
+
+  /**
+   * Link (or unlink) an existing Study Material record to a video.
+   *
+   * A video does NOT get its own copy of a PDF — it only stores a reference to
+   * a row in the Study Material module (studyMaterialService.list()), which
+   * stays the single source of truth for PDFs. Pass `null` to unlink.
+   *
+   * ── Backend contract (production API, separate repo) ────────────────
+   *   PUT /admin/videos/:id  accepts and persists  { studyMaterialId: string | null }.
+   *   GET /videos and GET /videos/:subject  return each video with
+   *     `studyMaterialId` (and, for convenient display, `studyMaterialName`).
+   *   The student "Read" button then reuses the EXISTING study-material
+   *     viewer endpoint  GET /library/view/material/:studyMaterialId/pages
+   *     (libraryService.getMaterialViewPages) — no video-specific PDF render.
+   * Until the API persists/returns studyMaterialId the link simply won't
+   * "stick" (visible, not silent) — no separate storage is ever created.
+   * ───────────────────────────────────────────────────────────────────
+   */
+  linkVideoStudyMaterial: (videoId: string, studyMaterialId: string | null) =>
+    api.put<any>(`/admin/videos/${videoId}`, { studyMaterialId }, authConfig()),
 
   // Testimonials Management
   getTestimonials: () => api.get<any>('/admin/testimonials', authConfig()),
@@ -803,6 +902,13 @@ export const adminService = {
     api.post<any>('/admin/faqs', data, authConfig()),
   updateFaq: (id: string, data: any) => api.put<any>(`/admin/faqs/${id}`, data, authConfig()),
   deleteFaq: (id: string) => api.delete<any>(`/admin/faqs/${id}`, authConfig()),
+
+  // Custom Tags Management
+  getTags: () => api.get<any>('/admin/tags', authConfig()),
+  createTag: (data: { name: string; color?: string; description?: string; order?: number; isActive?: boolean }) =>
+    api.post<any>('/admin/tags', data, authConfig()),
+  updateTag: (id: string, data: any) => api.put<any>(`/admin/tags/${id}`, data, authConfig()),
+  deleteTag: (id: string) => api.delete<any>(`/admin/tags/${id}`, authConfig()),
 
   // CMS
   getCmsPages: () => api.get<any>('/admin/cms/pages', authConfig()),
@@ -1088,6 +1194,9 @@ export const videoService = {
   getStats: () => api.get<any>('/videos/stats', authConfig()),
   getVideosBySubject: (subject: string) => api.get<any>(`/videos/${encodeURIComponent(subject)}`, authConfig()),
   getQuestions: (videoId: string) => api.get<any>(`/videos/${videoId}/questions`, authConfig()),
+  // Rendered pages of the study-material PDF linked to a video (for the shared reader)
+  getVideoMaterialPages: (videoId: string, maxPages = 50) =>
+    api.get<any>(`/videos/${videoId}/material/pages?maxPages=${maxPages}`, { ...authConfig(), timeout: 120000 }),
   submitQuiz: (videoId: string, answers: Record<string, number>) =>
     api.post<any>(`/videos/${videoId}/submit`, { answers }, authConfig()),
   askMentor: (data: { question: string; name?: string }) => api.post<any>('/videos/mentor/ask', data, authConfig()),
