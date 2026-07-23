@@ -6,6 +6,7 @@
  *   10 marker → ~150 words → ~7 min
  *   15 marker → ~200 words → ~11 min
  *   20 marker → ~250 words → ~14 min
+ *   Essay (125 marker) → 1000–1200 words → 90 min
  */
 
 export interface MainsPatternRow {
@@ -18,10 +19,15 @@ export const MAINS_PATTERN: MainsPatternRow[] = [
   { marks: 10, words: 150, minutes: 7 },
   { marks: 15, words: 200, minutes: 11 },
   { marks: 20, words: 250, minutes: 14 },
+  { marks: 125, words: 1100, minutes: 90 },
 ];
+
+/** Marks threshold at and above which a question is treated as an Essay, not a GS answer. */
+const ESSAY_MARKS_THRESHOLD = 100;
 
 /** Expected answer length, in words, for a question worth `marks`. */
 export function mainsWordLimit(marks: number): number {
+  if (marks >= ESSAY_MARKS_THRESHOLD) return 1100;
   if (marks >= 20) return 250;
   if (marks >= 15) return 200;
   if (marks >= 10) return 150;
@@ -30,6 +36,7 @@ export function mainsWordLimit(marks: number): number {
 
 /** Suggested time budget, in minutes, for a question worth `marks`. */
 export function mainsTimeLimit(marks: number): number {
+  if (marks >= ESSAY_MARKS_THRESHOLD) return 90;
   if (marks >= 20) return 14;
   if (marks >= 15) return 11;
   if (marks >= 10) return 7;
@@ -50,11 +57,24 @@ export function wordCountStatus(wordCount: number, marks: number): WordCountStat
 
 export function mainsWordRange(marks: number): { limit: number; min: number; max: number } {
   const limit = mainsWordLimit(marks);
+  if (marks >= ESSAY_MARKS_THRESHOLD) {
+    return { limit, min: 1000, max: 1200 };
+  }
   return {
     limit,
     min: Math.round(limit * WORD_LIMIT_UNDER_TOLERANCE),
     max: Math.round(limit * WORD_LIMIT_OVER_TOLERANCE),
   };
+}
+
+/**
+ * Strip a trailing "(N marks)" annotation from question text. The marks are
+ * already shown separately as a badge next to the question, so leaving this
+ * in the text duplicates it — inconsistently, since only some source
+ * questions carry the annotation.
+ */
+export function stripMarksSuffix(text: string): string {
+  return text.replace(/\s*\(\s*\d+\s*marks?\s*\)\s*$/i, '').trim();
 }
 
 /** Presentation helper for the results-page word-count chip. */

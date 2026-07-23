@@ -13,6 +13,7 @@ import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 import Toast from '@/components/Toast';
 import WritingTimer from '@/components/WritingTimer';
 import LeaderboardRankingCard from '@/components/LeaderboardRankingCard';
+import { stripMarksSuffix } from '@/lib/mainsPattern';
 
 interface QuestionData {
   id: string;
@@ -232,7 +233,7 @@ function DailyMainsChallengeInner() {
           router.replace(`/dashboard/daily-answer/challenge/attempt/results?date=${selectedDate}`);
           return;
         }
-        setData(res.data);
+        setData(res.data ? { ...res.data, questionText: stripMarksSuffix(res.data.questionText || '') } : res.data);
         if (res.data?.timeLimit) setTimeLeft(res.data.timeLimit * 60);
       })
       .catch(err => setError(err.message))

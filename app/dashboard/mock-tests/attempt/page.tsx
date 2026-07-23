@@ -12,7 +12,7 @@ import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer'
 import FilePreviewThumb from '@/components/FilePreviewThumb';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import WritingTimer from '@/components/WritingTimer';
-import { mainsWordLimit, mainsTimeLimit } from '@/lib/mainsPattern';
+import { mainsWordLimit, mainsTimeLimit, mainsWordRange, stripMarksSuffix } from '@/lib/mainsPattern';
 
 interface Question {
   id: number;
@@ -1372,12 +1372,14 @@ function MockTestAttemptInner() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                       {(() => {
                         const qMarks = q.marks ?? marksPerQ;
-                        const qWords = mainsWordLimit(qMarks);
                         const qMin = mainsTimeLimit(qMarks);
+                        const qWordsLabel = qMarks >= 100
+                          ? (() => { const r = mainsWordRange(qMarks); return `${r.min}–${r.max}`; })()
+                          : String(mainsWordLimit(qMarks));
                         return (
                           <>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>⏱️ {qMin} min</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>📝 {qWords} words</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>📝 {qWordsLabel} words</span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#6A7282', fontWeight: 500 }}>⭐ {qMarks} marks</span>
                           </>
                         );
@@ -1388,7 +1390,7 @@ function MockTestAttemptInner() {
                   {/* Question text — gold-bordered serif blockquote (matches Daily Answer Writing) */}
                   <div style={{ borderRadius: 10, background: '#F9FAFB', padding: 16, boxShadow: '0px 1px 2px -1px #0000001A', borderLeft: '4px solid #C9A84C' }}>
                     <p className="italic" style={{ fontSize: 16, lineHeight: '26px', color: '#101828', fontFamily: 'var(--font-merriweather), Georgia, serif', margin: 0 }}>
-                      &quot;{q.text}&quot;
+                      &quot;{stripMarksSuffix(q.text)}&quot;
                     </p>
                   </div>
 

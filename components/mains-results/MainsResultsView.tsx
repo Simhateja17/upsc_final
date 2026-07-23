@@ -17,7 +17,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { wordCountChip, mainsWordLimit, mainsTimeLimit } from '@/lib/mainsPattern';
+import { wordCountChip, mainsWordLimit, mainsTimeLimit, stripMarksSuffix } from '@/lib/mainsPattern';
 import CuratedModelAnswer from './CuratedModelAnswer';
 
 export interface MainsParameterScore {
@@ -387,7 +387,7 @@ export default function MainsResultsView({
   const paperLabel = data.question?.paper || 'GS Paper';
   const subjectLabel = data.question?.subject || '';
   const marks = data.question?.marks ?? data.maxScore ?? 15;
-  const questionText = data.question?.questionText?.trim() || '';
+  const questionText = stripMarksSuffix(data.question?.questionText?.trim() || '');
   const questionTitle = data.question?.title?.trim() || questionText;
   // The model-answer modal shows the actual QUESTION it answers (not the topic
   // title). Prefer the real question text; fall back to the title only when the
@@ -486,7 +486,7 @@ export default function MainsResultsView({
       newPage('Detailed Evaluation');
       results.forEach((result, index) => {
         if (index > 0) newPage('Detailed Evaluation');
-        const q = result.question?.questionText || result.question?.title || `Question ${index + 1}`;
+        const q = stripMarksSuffix(result.question?.questionText || result.question?.title || `Question ${index + 1}`);
         doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(15, 23, 42); doc.text(`Question ${index + 1} Evaluation`, left, y); y += 18;
         doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(51, 65, 85); text(q, left, contentWidth, 12, 'Detailed Evaluation'); y += 10;
         const rows = result.parameterScores || [];
@@ -664,7 +664,7 @@ export default function MainsResultsView({
               {results.map((mq, i) => {
                 const mPct = mq.maxScore > 0 ? Math.round((mq.score / mq.maxScore) * 100) : 0;
                 const tone = mPct >= 60 ? '#16A34A' : mPct >= 40 ? '#D97706' : '#DC2626';
-                const qText = mq.question?.questionText?.trim() || mq.question?.title?.trim() || `Question ${i + 1}`;
+                const qText = stripMarksSuffix(mq.question?.questionText?.trim() || mq.question?.title?.trim() || `Question ${i + 1}`);
                 const qPaper = mq.question?.paper?.trim() || '';
                 const qSubject = mq.question?.subject?.trim() || '';
                 const qMarks = mq.question?.marks ?? mq.maxScore ?? 15;
