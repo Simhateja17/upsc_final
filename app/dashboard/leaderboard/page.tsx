@@ -327,6 +327,7 @@ export default function LeaderboardPage() {
               rank: myRank?.rank ?? '—',
               name: myRank?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You',
             }}
+            valueFormatter={(value) => value.toFixed(2)}
             loading={loading}
           />
 
