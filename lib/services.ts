@@ -809,6 +809,7 @@ export const adminService = {
 
   // Editorials
   getEditorials: () => api.get<any>('/admin/editorials', authConfig()),
+  getEditorialSyllabusPaths: () => api.get<any>('/admin/editorial-syllabus-paths', authConfig()),
   createEditorial: (data: any) => api.post<any>('/admin/editorials', data, authConfig()),
   updateEditorial: (id: string, data: any) => api.put<any>(`/admin/editorials/${id}`, data, authConfig()),
   deleteEditorial: (id: string) => api.delete<any>(`/admin/editorials/${id}`, authConfig()),
