@@ -4,7 +4,7 @@
  * examiner grades against.
  *
  *   10 marker → ~150 words → ~7 min
- *   15 marker → ~200 words → ~11 min
+ *   15 marker → ~250 words → ~11 min
  *   20 marker → ~250 words → ~14 min
  *   Essay (125 marker) → 1000–1200 words → 90 min
  */
@@ -17,7 +17,7 @@ export interface MainsPatternRow {
 
 export const MAINS_PATTERN: MainsPatternRow[] = [
   { marks: 10, words: 150, minutes: 7 },
-  { marks: 15, words: 200, minutes: 11 },
+  { marks: 15, words: 250, minutes: 11 },
   { marks: 20, words: 250, minutes: 14 },
   { marks: 125, words: 1100, minutes: 90 },
 ];
@@ -28,8 +28,7 @@ const ESSAY_MARKS_THRESHOLD = 100;
 /** Expected answer length, in words, for a question worth `marks`. */
 export function mainsWordLimit(marks: number): number {
   if (marks >= ESSAY_MARKS_THRESHOLD) return 1100;
-  if (marks >= 20) return 250;
-  if (marks >= 15) return 200;
+  if (marks >= 15) return 250;
   if (marks >= 10) return 150;
   return Math.max(80, Math.round(marks * 15));
 }
