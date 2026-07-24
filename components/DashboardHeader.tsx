@@ -370,18 +370,6 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
                 </Link>
 
                 <Link
-                  href="/dashboard/bookmarks"
-                  className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
-                  onClick={() => setShowDropdown(false)}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/nav-bookmark.png" alt="" className="w-4 h-4 object-contain opacity-60" />
-                  <span className="font-inter font-medium text-[13px] leading-none text-[#374151]">
-                    Bookmarks
-                  </span>
-                </Link>
-
-                <Link
                   href="/dashboard/settings"
                   className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowDropdown(false)}

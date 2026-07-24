@@ -83,6 +83,7 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
       items: [
         { id: 'flashcards', label: 'Flashcards', icon: '/sidebar-flashcards-new.png', path: '/dashboard/flashcards', accessKey: 'flashcards', allowed: ['full', 'limited'] },
         { id: 'mindmap', label: 'Mindmaps', icon: '/sidebar-mindmap-new.png', path: '/dashboard/mindmap', accessKey: 'mindmaps', allowed: ['full', 'limited'] },
+        { id: 'smart-notes', label: 'Smart Notes', icon: '/nav-bookmark.png', path: '/dashboard/saved-notes' },
         { id: 'spaced-repetition', label: 'Spaced Repetition', icon: '/sidebar-spaced-repetition.png', path: '/dashboard/spaced-repetition', accessKey: 'spaced_repetition', allowed: ['full', 'limited'] },
       ],
     },
