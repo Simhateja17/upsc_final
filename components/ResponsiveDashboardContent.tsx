@@ -1086,7 +1086,7 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
           </button>
         </div>
 
-        {/* Your Complete Test History Section — links to Tests History (Test Analytics) */}
+        {/* Your Complete Test History Section — links to Test History (Test Analytics) */}
         <Link
           href="/dashboard/test-analytics"
           className="group block mb-[clamp(2rem,2.5vw,3rem)]"

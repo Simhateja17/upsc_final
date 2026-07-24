@@ -1,4 +1,4 @@
-const summaryCards = ['Overall Percentile', 'Tests Attempted', 'Questions Attempted', 'Overall Accuracy', 'Best Rank'];
+const summaryCards = ['Overall Percentile', 'Tests Attempted', 'Questions Attempted', 'Overall Accuracy'];
 
 function SkeletonBlock({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse rounded-[12px] bg-[#EEF1F5] ${className}`} />;

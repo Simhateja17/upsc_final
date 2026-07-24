@@ -125,8 +125,10 @@ export const dailyMcqService = {
   getQuestions: () => api.get<any>('/daily-mcq/today/questions', authConfig()),
   submit: (answers: any[], timeTaken: number, retake?: boolean) =>
     api.post<any>('/daily-mcq/today/submit', { answers, timeTaken, retake }, authConfig()),
-  getResults: () => api.get<any>('/daily-mcq/today/results', authConfig()),
-  getReview: () => api.get<any>('/daily-mcq/today/review', authConfig()),
+  getResults: (attemptId?: string) =>
+    api.get<any>(`/daily-mcq/today/results${attemptId ? `?attemptId=${encodeURIComponent(attemptId)}` : ''}`, authConfig()),
+  getReview: (attemptId?: string) =>
+    api.get<any>(`/daily-mcq/today/review${attemptId ? `?attemptId=${encodeURIComponent(attemptId)}` : ''}`, authConfig()),
   getRecommendations: () => api.get<any>('/daily-mcq/today/recommendations', authConfig()),
 };
 
