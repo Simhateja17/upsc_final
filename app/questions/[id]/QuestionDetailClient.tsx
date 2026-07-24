@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MouseEvent, ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -16,6 +16,11 @@ import { useAuthModal } from '@/contexts/AuthModalContext';
 import { bookmarkService, flashcardService, pyqService, spacedRepService } from '@/lib/services';
 import { isEssayQuestion } from '@/lib/essayModelAnswer';
 import CuratedModelAnswer from '@/components/mains-results/CuratedModelAnswer';
+import MainsEvaluatingScreen from '@/components/mains-results/MainsEvaluatingScreen';
+import { handleEntitlementError } from '@/components/entitlements';
+import { EntitlementsProvider, useEntitlements } from '@/contexts/EntitlementsContext';
+import { MainsEvaluationLimitModal } from '@/components/upgrade/UpgradeModals';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 type PublicQuestion = {
   id: string;
@@ -28,6 +33,8 @@ type PublicQuestion = {
   subSubject?: string | null;
   topic?: string | null;
   difficulty?: string | null;
+  marks?: number | null;
+  maxMarks?: number | null;
   options?: Array<{ label: string; text: string }> | null;
   correctOption?: string | null;
   explanation?: string | null;
@@ -111,15 +118,6 @@ function slugify(value: string) {
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'general';
-}
-
-function paperCode(paper?: string | null) {
-  const normalized = cleanText(paper).toLowerCase();
-  if (normalized.includes('iv')) return 'gs4';
-  if (normalized.includes('iii')) return 'gs3';
-  if (normalized.includes('ii')) return 'gs2';
-  if (normalized.includes('i')) return 'gs1';
-  return 'gs1';
 }
 
 function optionList(question: PublicQuestion) {
@@ -363,80 +361,241 @@ function MainsAnswerWorkspace({
   isLoggedIn: boolean;
   onRequireAuth: () => void;
 }) {
+  return (
+    <EntitlementsProvider>
+      <MainsAnswerWorkspaceContent question={question} isLoggedIn={isLoggedIn} onRequireAuth={onRequireAuth} />
+    </EntitlementsProvider>
+  );
+}
+
+function MainsAnswerWorkspaceContent({
+  question,
+  isLoggedIn,
+  onRequireAuth,
+}: {
+  question: PublicQuestion;
+  isLoggedIn: boolean;
+  onRequireAuth: () => void;
+}) {
   const router = useRouter();
-  const [writeOpen, setWriteOpen] = useState(false);
+  const entitlements = useEntitlements();
+  const mainsQuota = entitlements.featureStatus('mains_evaluation');
+  const [open, setOpen] = useState(false);
   const [answerText, setAnswerText] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(() => getQuestionMainsTimeLimit(question));
+  const [readTimeLeft, setReadTimeLeft] = useState<number | null>(15);
+  const [timerPaused, setTimerPaused] = useState(true);
+  const [textAnswerExpanded, setTextAnswerExpanded] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const autoSubmitRef = useRef(false);
   const wordCount = answerText.trim() ? answerText.trim().split(/\s+/).length : 0;
 
-  const handleSubmit = () => {
+  const resetWriter = () => {
+    setAnswerText('');
+    setFiles([]);
+    setSubmitError(null);
+    setTimeLeft(getQuestionMainsTimeLimit(question));
+    setReadTimeLeft(15);
+    setTimerPaused(true);
+    setTextAnswerExpanded(false);
+    autoSubmitRef.current = false;
+  };
+
+  const openPyqWriteEvaluate = () => {
     if (!isLoggedIn) {
       onRequireAuth();
       return;
     }
-    try {
-      sessionStorage.setItem(
-        'mainsEvaluatorPrefill',
-        JSON.stringify({
-          question: question.questionText,
-          paper: paperCode(question.paper),
-          answer: answerText,
-        }),
-      );
-    } catch {
-      // sessionStorage unavailable — evaluator will just open blank
-    }
-    router.push('/dashboard/mains-answer-evaluator');
+    resetWriter();
+    setOpen(true);
   };
+
+  useEffect(() => {
+    if (!open || timerPaused || readTimeLeft !== null) return;
+    const timer = window.setInterval(() => {
+      setTimeLeft((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer);
+          if (!autoSubmitRef.current) {
+            autoSubmitRef.current = true;
+            document.getElementById(`question-page-pyq-submit-${question.id}`)?.click();
+          }
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [open, timerPaused, readTimeLeft, question.id]);
+
+  useEffect(() => {
+    if (!open || readTimeLeft === null) return;
+    if (readTimeLeft <= 0) {
+      setReadTimeLeft(null);
+      setTimerPaused(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setReadTimeLeft((current) => current === null ? null : current - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [open, readTimeLeft]);
+
+  const submitForEvaluation = async () => {
+    if (!answerText.trim() && files.length === 0) return;
+    if (!entitlements.loading && mainsQuota?.allowed === false) {
+      setShowQuotaModal(true);
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await pyqService.submitMainsAnswer(question.id, {
+        answerText: answerText.trim() || undefined,
+        files: files.length ? files : undefined,
+      });
+      const attemptId = res.data?.attemptId;
+      if (!attemptId) throw new Error(res.message || 'Could not start your evaluation.');
+      sessionStorage.setItem('pyqMainsQuestionPageAttemptId', attemptId);
+      sessionStorage.setItem('pyqMainsQuestionPageEvalStartedAt', String(Date.now()));
+      sessionStorage.setItem('pyqMainsResultsSession', JSON.stringify({ questionId: question.id, attemptId }));
+      setOpen(false);
+      setIsEvaluating(true);
+      void entitlements.refreshEntitlements();
+    } catch (error) {
+      const entitlementError = handleEntitlementError(error);
+      if (entitlementError.title === 'Limit reached' || entitlementError.title === 'Upgrade required') {
+        setShowQuotaModal(true);
+      } else {
+        const resetAt = formatQuestionPageResetAt(entitlementError.resetAt);
+        setSubmitError(resetAt ? `${entitlementError.message} Try again after ${resetAt}.` : entitlementError.message || 'Failed to submit. Please try again.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (isEvaluating) {
+    return (
+      <MainsEvaluatingScreen
+        attemptIdKey="pyqMainsQuestionPageAttemptId"
+        evalStartKey="pyqMainsQuestionPageEvalStartedAt"
+        service={{
+          getEvaluationStatus: (attemptId) => pyqService.getMainsEvaluationStatus(question.id, attemptId),
+          getResults: (attemptId) => pyqService.getMainsResults(question.id, attemptId),
+        }}
+        resultsRoute={`/dashboard/pyq/results?questionId=${encodeURIComponent(question.id)}&attemptId=${encodeURIComponent(sessionStorage.getItem('pyqMainsQuestionPageAttemptId') || '')}`}
+        backRoute={`/questions/${question.id}?mode=mains`}
+      />
+    );
+  }
 
   return (
     <div className="mt-4">
-      {!writeOpen ? (
-        <button
-          type="button"
-          onClick={() => setWriteOpen(true)}
-          className="shine-btn group inline-flex items-center gap-2.5 rounded-[12px] border-2 border-[#0B1229] bg-[#0B1229] px-5 py-3 text-[14px] font-semibold text-white transition hover:bg-[#141F42]"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ transform: 'scaleX(-1)' }}>
-            <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-          </svg>
-          Write &amp; Evaluate Your Answer
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="transition-transform group-hover:translate-x-1">
-            <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
-          </svg>
-        </button>
-      ) : (
-        <div className="rounded-[14px] border-2 border-dashed border-[#E2E6EE] bg-[#F8F9FB] p-5">
-          <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#0B1229]">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2}>
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
+      <button
+        type="button"
+        onClick={openPyqWriteEvaluate}
+        className="shine-btn group inline-flex items-center gap-2.5 rounded-[12px] border-2 border-[#0B1229] bg-[#0B1229] px-5 py-3 text-[14px] font-semibold text-white transition hover:bg-[#141F42]"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ transform: 'scaleX(-1)' }}>
+          <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
+        Write &amp; Evaluate Your Answer
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="transition-transform group-hover:translate-x-1">
+          <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+        </svg>
+      </button>
+      <MainsEvaluationLimitModal
+        open={showQuotaModal}
+        onClose={() => setShowQuotaModal(false)}
+        tier={entitlements.tier}
+        used={mainsQuota?.used}
+        limit={mainsQuota?.limit}
+        backLabel="Back to question"
+      />
+      {open && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden p-4" style={{ background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(8px)' }} onClick={() => setOpen(false)}>
+          <div className="flex h-[min(760px,calc(100vh-32px))] w-full max-w-[1180px] flex-col overflow-hidden rounded-[24px] bg-white shadow-[0px_28px_70px_rgba(15,23,42,0.35)]" onClick={(event) => event.stopPropagation()}>
+            <div className="flex flex-shrink-0 items-center justify-between bg-[#0F1424] px-8 py-5 text-white">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#D9B84A] text-[24px] text-[#0F1424]">✎</div>
+                <div>
+                  <h2 className="m-0 font-bold" style={{ fontFamily: 'Merriweather, serif', fontSize: 22 }}>Craft Your Answer</h2>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {[question.paper, question.subject].filter(Boolean).filter((label, index, labels) => index === 0 || String(label).toLowerCase() !== String(labels[0]).toLowerCase()).map((label) => {
+                      const style = getSubjectMetaStyle(String(label));
+                      return <span key={label} className="inline-flex items-center gap-1 rounded-[7px] px-3 py-1 text-[12px] font-bold" style={{ border: `1px solid ${style.border}`, background: style.bg, color: style.color }}><span aria-hidden>{style.icon}</span>{label}</span>;
+                    })}
+                  </div>
+                </div>
+              </div>
+              <button type="button" onClick={() => setOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/15 bg-white/10 text-[24px] text-white/70" aria-label="Close">×</button>
             </div>
-            <div>
-              <p className="text-[14px] font-bold text-[#1F2937]">Write Your Answer</p>
-              <p className="text-[12px] text-[#6B7280]">Draft here, then submit for AI evaluation</p>
+            <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_300px]">
+              <div className="flex min-h-0 flex-col overflow-hidden px-8 py-5">
+                <div className="flex-shrink-0 rounded-[12px] bg-[#F9FAFB] p-4" style={{ borderLeft: '4px solid #D4AF37' }}>
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Question</div>
+                  <QuestionTextRenderer text={question.questionText} textClassName="italic text-[15px] leading-[26px] text-[#1E2939]" />
+                </div>
+                <div className="mt-3 flex flex-shrink-0 flex-wrap items-center gap-x-6 gap-y-2 text-[13px] font-semibold text-[#6A7282]">
+                  <span>◷ {Math.floor(getQuestionMainsTimeLimit(question) / 60)} min</span><span>✍️ {getQuestionMainsWordLimit(question)} words</span><span>☆ {getQuestionMainsMarks(question)} marks</span>
+                </div>
+                <input ref={fileInputRef} type="file" multiple accept="image/jpeg,image/png,application/pdf" className="hidden" onChange={(event) => {
+                  const selected = Array.from(event.target.files || []);
+                  if (selected.some((file) => file.type === 'application/pdf') && selected.length > 1) { setSubmitError('Upload either one PDF or multiple image pages, not both.'); event.target.value = ''; return; }
+                  setFiles(selected); setSubmitError(null);
+                }} />
+                {!textAnswerExpanded ? <>
+                  <div className="mt-4 flex flex-shrink-0 items-center gap-2 text-[16px] font-bold text-[#0F172B]"><span className="text-[#D4AF37]">⇧</span>Upload your answer</div>
+                  <div className="mt-3 flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[14px] px-6 py-4 text-center" style={{ border: files.length ? '1.5px dashed #17223E' : '1px dashed #CBD5E1', background: files.length ? '#EFF6FF' : '#F9FAFB' }} onClick={() => fileInputRef.current?.click()}>
+                    <div className="mb-3 grid h-12 w-12 place-items-center rounded-[12px] bg-[#0F1424] text-[#D4AF37]">⇧</div><p className="mb-2 text-[16px] font-bold text-[#0F172B]">{files.length > 1 ? `${files.length} pages selected` : files[0]?.name || 'Drop your answer script here'}</p><p className="mb-3 text-[14px] text-[#9AA3B2]">Upload handwritten answers for AI evaluation</p>
+                    <div className="mb-3 flex flex-wrap justify-center gap-2">{['JPG', 'PNG', 'PDF', 'Max 10MB'].map((format) => <span key={format} className="rounded bg-[#E5E7EB] px-2.5 py-1 text-[12px] text-[#374151]">{format}</span>)}</div>
+                    <button type="button" onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-[8px] border border-[#D1D5DB] bg-white px-6 py-2 text-[14px] font-bold text-[#111827]">Browse Files</button>
+                  </div>
+                  <button type="button" onClick={() => setTextAnswerExpanded(true)} className="mt-4 flex w-full flex-shrink-0 items-center gap-3"><span className="h-px flex-1 bg-[#E5E7EB]" /><span className="rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">⌄ &nbsp; OR Type your answer</span><span className="h-px flex-1 bg-[#E5E7EB]" /></button>
+                </> : <>
+                  <button type="button" onClick={() => setTextAnswerExpanded(false)} className="mt-4 flex w-full flex-shrink-0 items-center gap-3"><span className="h-px flex-1 bg-[#E5E7EB]" /><span className="rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">⌃ &nbsp; Hide</span><span className="h-px flex-1 bg-[#E5E7EB]" /></button>
+                  <div className="mt-4 flex min-h-0 flex-1 flex-col"><textarea value={answerText} onChange={(event) => setAnswerText(event.target.value)} placeholder="Write your answer here..." autoFocus className="min-h-0 w-full flex-1 resize-none rounded-[10px] border border-[#D1D5DB] bg-[#F9FAFB] p-4 text-[#101828] outline-none" style={{ fontSize: 15, lineHeight: '24px' }} /><p className="mt-1 text-right text-[12px] text-[#6A7282]">{wordCount} words</p></div>
+                </>}
+                {submitError && <div className="mt-4 rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[13px] text-[#B91C1C]">{submitError}</div>}
+                <button id={`question-page-pyq-submit-${question.id}`} type="button" disabled={submitting || (!answerText.trim() && files.length === 0)} onClick={submitForEvaluation} className="mt-4 flex h-[48px] w-full flex-shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[#0F1424] text-[15px] font-bold text-white disabled:opacity-45">{submitting ? <><span className="h-5 w-5 animate-spin rounded-full border-b-2 border-white" />Submitting...</> : <>✈️ Submit Answer for Evaluation</>}</button>
+              </div>
+              <aside className="flex min-h-0 flex-col gap-4 overflow-hidden bg-[#F8F9FB] p-5">
+                <div className="rounded-[18px] bg-white p-4 text-center shadow-sm"><div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Writing Timer</div><div className="mx-auto mb-3 flex h-[180px] w-[180px] items-center justify-center rounded-full border-[5px] border-[#D4AF37]"><div><div className="font-mono text-[32px] font-bold text-[#0B1020]">{Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}</div><div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#9AA3B2]">{readTimeLeft !== null ? `Auto-start ${readTimeLeft}s` : 'Minutes left'}</div></div></div><div className="grid grid-cols-2 gap-2"><button type="button" onClick={() => { if (readTimeLeft !== null) { setReadTimeLeft(null); setTimerPaused(false); } else setTimerPaused((paused) => !paused); }} className="rounded-[10px] bg-[#0F1424] px-3 py-2.5 text-[13px] font-bold text-white">▷ {readTimeLeft !== null ? 'Start now' : timerPaused ? 'Resume' : 'Pause'}</button><button type="button" onClick={resetWriter} className="rounded-[10px] border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[13px] font-bold text-[#4A5565]">↻ Reset</button></div></div>
+                <div className="rounded-[18px] bg-white p-4 shadow-sm"><div className="mb-3 text-[14px] font-bold uppercase text-[#0F172B]">💡 Quick Tips</div>{[['✏️', 'Use blue/black ink'], ['📷', 'Clear photo in good lighting'], ['📝', 'Write legibly on white paper']].map(([icon, text]) => <div key={text} className="mb-3 flex items-center gap-3 rounded-[10px] bg-[#F4F5F7] p-2.5 last:mb-0"><span>{icon}</span><span className="text-[13px] font-bold text-[#364153]">{text}</span></div>)}</div>
+              </aside>
             </div>
-          </div>
-          <textarea
-            value={answerText}
-            onChange={(event) => setAnswerText(event.target.value)}
-            className="h-32 w-full resize-none rounded-[10px] border border-[#E2E6EE] bg-white p-3 text-[14px] text-[#364153] placeholder:text-[#9CA3AF] focus:border-[#D4AF37] focus:outline-none"
-            placeholder="Start writing your answer here..."
-          />
-          <div className="mt-3 flex items-center justify-between">
-            <p className="text-[12px] text-[#6B7280]">{wordCount} words</p>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              className="rounded-[10px] bg-gradient-to-r from-[#F5D06E] to-[#D4AF37] px-5 py-2 text-[13px] font-bold text-[#0B1229] transition hover:shadow-[0_4px_16px_rgba(212,175,55,0.4)]"
-            >
-              Submit for Evaluation
-            </button>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function getQuestionMainsMarks(question: PublicQuestion) {
+  if (isEssayQuestion(question)) return 125;
+  return Number(question.marks || question.maxMarks || question.structuredJson?.marks || question.structuredJson?.maxMarks || 15);
+}
+
+function formatQuestionPageResetAt(resetAt?: string | null) {
+  if (!resetAt) return null;
+  const date = new Date(resetAt);
+  return Number.isNaN(date.getTime()) ? null : date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function getQuestionMainsTimeLimit(question: PublicQuestion) {
+  if (isEssayQuestion(question)) return 90 * 60;
+  const marks = getQuestionMainsMarks(question);
+  return ({ 10: 7 * 60, 15: 11 * 60, 20: 14 * 60 } as Record<number, number>)[marks] || 20 * 60;
+}
+
+function getQuestionMainsWordLimit(question: PublicQuestion) {
+  if (isEssayQuestion(question)) return '1000–1200';
+  const marks = getQuestionMainsMarks(question);
+  return ({ 10: 150, 15: 200, 20: 250 } as Record<number, number>)[marks] || 250;
 }
 
 function QuestionActionButtons({
@@ -1311,7 +1470,7 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
 
       {!isLoggedIn ? (
         <section className="pyq-cta-section">
-          <style jsx>{`
+          <style>{`
             .pyq-cta-section { background: #F4F6FA; padding: 80px 20px; }
             .pyq-cta-box { max-width: 700px; margin: 0 auto; background: linear-gradient(135deg,#0B1530 0%,#0F2050 100%); border-radius: 24px; padding: 60px 40px; text-align: center; position: relative; overflow: hidden; box-shadow: 0 40px 80px rgba(11,29,58,0.24); border: 1px solid rgba(255,255,255,0.07); }
             .pyq-cta-box::before { content: ''; position: absolute; top: -80px; left: -80px; width: 320px; height: 320px; border-radius: 50%; background: rgba(232,184,75,0.06); pointer-events: none; }

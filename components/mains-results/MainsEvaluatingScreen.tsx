@@ -255,15 +255,13 @@ export default function MainsEvaluatingScreen({
         const next = prev + 1;
         // Once minimum wait is reached, navigate if results are already in
         if (next >= MIN_DISPLAY_SECONDS && resultsReadyRef.current && !navigatedRef.current) {
-          navigatedRef.current = true;
-          if (pollRef.current) clearInterval(pollRef.current);
-          router.push(resultsRoute);
+          navigateToResults();
         }
         return next;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [router, resultsRoute]);
+  }, [navigateToResults]);
 
   // Step ticks are purely time-driven: each step gets an equal slice of MIN_DISPLAY_SECONDS.
   // A step's tick appears only after its full interval has elapsed.
