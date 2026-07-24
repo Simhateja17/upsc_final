@@ -166,6 +166,7 @@ interface MainsPerQuestion {
   evaluatorConclusion?: string | null;
   modelAnswerKeyPoints?: string[];
   modelAnswerContent?: string;
+  modelAnswerStructure?: { introduction: string; sections: Array<{ heading: string; points: string[] }>; conclusion: string } | null;
   curatedModelAnswer?: string | null;
   curatedModelAnswerKeyPoints?: string[];
 }
@@ -335,6 +336,7 @@ function MockTestResultsInner() {
             evaluatorConclusion: d.evaluatorConclusion,
             modelAnswerKeyPoints: Array.isArray(d.modelAnswerKeyPoints) ? d.modelAnswerKeyPoints : [],
             modelAnswerContent: d.modelAnswerContent,
+            modelAnswerStructure: d.modelAnswerStructure || null,
             curatedModelAnswer: d.curatedModelAnswer || null,
             curatedModelAnswerKeyPoints: Array.isArray(d.curatedModelAnswerKeyPoints) ? d.curatedModelAnswerKeyPoints : [],
           });
@@ -598,6 +600,7 @@ function MockTestResultsInner() {
           evaluatorConclusion: q.evaluatorConclusion,
           modelAnswerKeyPoints: q.modelAnswerKeyPoints,
           modelAnswerContent: q.modelAnswerContent,
+          modelAnswerStructure: q.modelAnswerStructure,
           curatedModelAnswer: q.curatedModelAnswer,
           curatedModelAnswerKeyPoints: q.curatedModelAnswerKeyPoints,
           parameterScores: q.parameterScores,

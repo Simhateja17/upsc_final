@@ -114,11 +114,20 @@ const SUBJECT_ICONS: Record<string, string> = {
   History: '🏛️',
   'Medieval India': '🏰',
   'Modern History': '🇮🇳',
+  'Indian Society': '👥',
   Geography: '🌍',
   Polity: '⚖️',
+  Governance: '🏛️',
+  'Social Justice': '🤝',
   Economy: '💰',
   'Environment & Ecology': '🌿',
   'Science & Technology': '🔬',
+  'Internal Security': '🛡️',
+  'Disaster Management': '🚨',
+  Ethics: '🧭',
+  Essay: '✍️',
+  'Optional Paper 1': '📓',
+  'Optional Paper 2': '📔',
   'International Relation': '🌐',
   'International Relations': '🌐',
   'Current Affairs': '📰',
@@ -208,9 +217,26 @@ const getExplanationText = (question: any) =>
   question?.structuredJson?.explanation?.rawText ||
   '';
 
+const getExplanationConclusion = (question: any, structured: any) => {
+  const suppliedConclusion = String(structured?.conclusion || '').trim();
+  if (suppliedConclusion) return suppliedConclusion;
+
+  const correctOption = String(question?.correctOption || '').trim();
+  const correctOptionText = Array.isArray(question?.options)
+    ? String(question.options.find((option: any) => option?.label === correctOption)?.text || '').trim()
+    : '';
+
+  if (correctOption && correctOptionText) {
+    return `Hence, option ${correctOption} (${correctOptionText}) is the correct answer.`;
+  }
+  if (correctOption) return `Hence, option ${correctOption} is the correct answer.`;
+  return 'Hence, refer to the highlighted correct option as the answer.';
+};
+
 function ExplanationRenderer({ question }: { question: any }) {
   const explanation = getExplanationText(question);
   const structured = question?.structuredJson?.explanation?.structured;
+  const conclusion = getExplanationConclusion(question, structured);
   const paragraphFallback = String(explanation || '')
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
@@ -220,8 +246,6 @@ function ExplanationRenderer({ question }: { question: any }) {
     ['pair_analysis', 'Pair Analysis'],
     ['option_analysis', 'Option Analysis'],
   ] as const;
-
-  if (!explanation) return null;
 
   const hasAnalysisSections =
     sections.some(([key]) => Array.isArray(structured?.[key]) && structured[key].length > 0);
@@ -237,6 +261,14 @@ function ExplanationRenderer({ question }: { question: any }) {
             {paragraph}
           </p>
         ))}
+        <section className="rounded-[12px] bg-white/70 p-3" style={{ border: '1px solid #BBF7D0' }}>
+          <h4 className="mb-2 text-[13px] font-bold uppercase tracking-[0.06em]" style={{ color: '#016630' }}>
+            Conclusion
+          </h4>
+          <p style={{ fontSize: '15px', color: '#364153', lineHeight: '26px', whiteSpace: 'pre-wrap' }}>
+            {conclusion}
+          </p>
+        </section>
       </div>
     );
   }
@@ -261,16 +293,14 @@ function ExplanationRenderer({ question }: { question: any }) {
           </section>
         );
       })}
-      {structured?.conclusion && (
-        <section className="rounded-[12px] bg-white/70 p-3" style={{ border: '1px solid #BBF7D0' }}>
-          <h4 className="mb-2 text-[13px] font-bold uppercase tracking-[0.06em]" style={{ color: '#016630' }}>
-            Conclusion
-          </h4>
-          <p style={{ fontSize: '15px', color: '#364153', lineHeight: '26px', whiteSpace: 'pre-wrap' }}>
-            {structured.conclusion}
-          </p>
-        </section>
-      )}
+      <section className="rounded-[12px] bg-white/70 p-3" style={{ border: '1px solid #BBF7D0' }}>
+        <h4 className="mb-2 text-[13px] font-bold uppercase tracking-[0.06em]" style={{ color: '#016630' }}>
+          Conclusion
+        </h4>
+        <p style={{ fontSize: '15px', color: '#364153', lineHeight: '26px', whiteSpace: 'pre-wrap' }}>
+          {conclusion}
+        </p>
+      </section>
     </div>
   );
 }
@@ -346,6 +376,7 @@ const MAINS_MARKS_PRESETS: Record<number, { minutes: number; words: number }> = 
 };
 
 function getMainsMarks(question: any | null): number {
+  if (isEssayQuestion(question)) return 125;
   return question?.marks || question?.maxMarks || 15;
 }
 
@@ -355,7 +386,8 @@ function getMainsTimeLimit(question: any | null): number {
   return preset ? preset.minutes * 60 : DEFAULT_MAINS_TIME_LIMIT;
 }
 
-function getMainsWordLimit(question: any | null): number {
+function getMainsWordLimit(question: any | null): number | string {
+  if (isEssayQuestion(question)) return '1000–1200';
   const preset = MAINS_MARKS_PRESETS[getMainsMarks(question)];
   return preset ? preset.words : 250;
 }
@@ -619,6 +651,46 @@ export default function PyqPage() {
   const [openFilter, setOpenFilter] = useState<FilterId | null>(null);
   const [filterDocked, setFilterDocked] = useState(false);
   const prefersReducedMotion = useReducedMotion();
+
+  const scrollToAnswerSection = useCallback((id: string) => {
+    if (typeof window === 'undefined') return;
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document.getElementById(id)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      });
+    });
+  }, []);
+
+  const openMainsWriteModal = useCallback((question: any) => {
+    setSelectedQuestion(question);
+    setMainsAnswerText('');
+    setMainsFile(null);
+    setMainsFiles([]);
+    setMainsSubmitError(null);
+    setMainsTimeLeft(getMainsTimeLimit(question));
+    setMainsTimerPaused(true);
+    setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS);
+    setTextAnswerExpanded(false);
+    mainsAutoSubmitRef.current = false;
+    setShowMainsWriteModal(true);
+  }, []);
+
+  useEffect(() => {
+    if (!openFilter) return;
+
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Element && !target.closest('[data-pyq-filter-surface]')) {
+        setOpenFilter(null);
+      }
+    };
+
+    document.addEventListener('pointerdown', handleOutsidePointerDown);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointerDown);
+  }, [openFilter]);
 
   const handleQuestionNavigation = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (
@@ -1234,6 +1306,7 @@ export default function PyqPage() {
         style={style}
         aria-expanded={isOpen}
         aria-pressed={active}
+        data-pyq-filter-surface={id}
       >
         <span style={{ color: active ? '#FFFFFF' : '#8B919B', display: 'inline-flex' }}>{icon}</span>
         <span className="whitespace-nowrap">{label}</span>
@@ -1280,6 +1353,7 @@ export default function PyqPage() {
       <div
         className={`absolute top-[calc(100%+10px)] z-[70] max-h-[460px] max-w-[calc(100vw-32px)] overflow-hidden rounded-[18px] border border-[#E5E7EB] bg-[#F4F5F7] shadow-[0_18px_52px_rgba(15,17,26,0.14)] ${align === 'end' ? 'right-0' : 'left-0'}`}
         style={{ width: `min(${width}px, calc(100vw - 32px))` }}
+        data-pyq-filter-surface={id}
       >
         {children}
       </div>
@@ -1302,7 +1376,7 @@ export default function PyqPage() {
           <div className="text-[15px] font-bold text-[#101828]">Subject Filter</div>
           <button type="button" onClick={() => setOpenFilter(null)} className="h-8 w-8 rounded-[10px] bg-white text-[#6A7282]">×</button>
         </div>
-        <div className="grid gap-2">
+        <div className="grid gap-2 sm:grid-cols-2">
           <button
             type="button"
             onClick={() => {
@@ -1312,7 +1386,7 @@ export default function PyqPage() {
               setExpandedSubject(null);
               setExpandedSubtopic(null);
             }}
-            className="flex min-h-[50px] items-center justify-between rounded-[12px] px-3 text-left"
+            className="flex min-h-[50px] items-center justify-between rounded-[12px] px-3 text-left sm:col-span-2"
             style={{ background: selectedSubjects.length === 0 ? '#0F1A30' : '#FFFFFF', color: selectedSubjects.length === 0 ? '#FFFFFF' : '#101828' }}
           >
             <span className="font-semibold">📘 All Papers</span>
@@ -1406,7 +1480,7 @@ export default function PyqPage() {
   );
 
   const FilterToolbar = () => (
-    <div className="sticky top-3 z-40 mb-8 max-w-full">
+    <div className="sticky top-3 z-10 mb-8 max-w-full lg:z-40">
       <div className="relative">
         <div
           className="flex max-w-full flex-wrap items-center gap-1.5 overflow-visible rounded-[14px] border bg-white px-8 py-2 transition-[border-color,box-shadow] duration-300"
@@ -1534,7 +1608,10 @@ export default function PyqPage() {
             />
             <FilterPopover id="subSubject" width={360}>
               <div {...scrollableFilterProps('subSubject')} className="max-h-[360px] overflow-x-hidden overflow-y-auto p-4">
-                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">{taxonomyLabels.level2}</div>
+                <div className="mb-3 flex items-center justify-between border-b border-[#E5E7EB] pb-3">
+                  <div className="text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">{taxonomyLabels.level2}</div>
+                  <button type="button" onClick={() => setOpenFilter(null)} aria-label={`Close ${taxonomyLabels.level2} filter`} className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-white text-[20px] text-[#9AA3B2] shadow-sm">×</button>
+                </div>
                 {!availableSubSubjects.length ? (
                   <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a subject first.</div>
                 ) : (
@@ -1579,7 +1656,10 @@ export default function PyqPage() {
             />
             <FilterPopover id="topic" width={420}>
               <div {...scrollableFilterProps('topic')} className="max-h-[360px] overflow-x-hidden overflow-y-auto p-4">
-                <div className="mb-3 text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">{taxonomyLabels.level3}</div>
+                <div className="mb-3 flex items-center justify-between border-b border-[#E5E7EB] pb-3">
+                  <div className="text-[13px] font-bold uppercase tracking-[0.08em] text-[#9AA3B2]">{taxonomyLabels.level3}</div>
+                  <button type="button" onClick={() => setOpenFilter(null)} aria-label={`Close ${taxonomyLabels.level3} filter`} className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-white text-[20px] text-[#9AA3B2] shadow-sm">×</button>
+                </div>
                 {selectedSubSubjects.length === 0 ? (
                   <div className="rounded-[12px] bg-white p-4 text-[13px] font-semibold text-[#6A7282]">Choose a {taxonomyLabels.level2.toLowerCase()} first.</div>
                 ) : !currentTopicOptions.length ? (
@@ -1906,6 +1986,7 @@ export default function PyqPage() {
                 const submitAnswer = () => {
                   if (!qState.selected) return;
                   setQuestionStates(s => ({ ...s, [q.id]: { ...qState, submitted: true } }));
+                  scrollToAnswerSection(`pyq-explanation-${q.id}`);
                 };
                 const resetAnswer = () => {
                   setQuestionStates(s => ({ ...s, [q.id]: { selected: null, submitted: false } }));
@@ -2026,8 +2107,8 @@ export default function PyqPage() {
                     )}
 
                     {/* Explanation inline */}
-                    {qState.submitted && getExplanationText(q) && (
-                      <div className="mt-4 rounded-[14px] p-4" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                    {qState.submitted && (getExplanationText(q) || q.correctOption) && (
+                      <div id={`pyq-explanation-${q.id}`} className="mt-4 scroll-mt-24 rounded-[14px] p-4" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
                         <div className="flex items-center gap-2 mb-1" style={{ color: '#016630', fontWeight: 700, fontSize: '13px', textTransform: 'uppercase' }}>
                           <span>✅</span><span>Explanation</span>
                         </div>
@@ -2286,7 +2367,7 @@ export default function PyqPage() {
                         </span>
                       ))}
                       <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#F3E8FF', color: '#7E22CE' }}>
-                        {q.marks || 15} marks
+                        {getMainsMarks(q)} marks
                       </span>
                     </div>
 
@@ -2333,7 +2414,7 @@ export default function PyqPage() {
                     <div className="flex items-center gap-3 mb-4">
                       <button
                         type="button"
-                        onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsSubmitError(null); setMainsTimeLeft(getMainsTimeLimit(q)); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                        onClick={() => openMainsWriteModal(q)}
                         className="pyq-act-btn pyq-act-btn--primary flex items-center justify-center"
                         style={{ height: '59px', borderRadius: '14px', background: 'linear-gradient(135deg, #101828 0%, #1E2133 100%)', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
@@ -2349,12 +2430,14 @@ export default function PyqPage() {
                             router.push(`/dashboard/pyq/essay/${encodeURIComponent(q.id)}`);
                             return;
                           }
+                          const isExpanded = expandedModelAnswerIds.has(q.id);
                           setExpandedModelAnswerIds((prev) => {
                             const next = new Set(prev);
                             if (next.has(q.id)) next.delete(q.id);
                             else next.add(q.id);
                             return next;
                           });
+                          if (!isExpanded) scrollToAnswerSection(`pyq-model-answer-${q.id}`);
                         }}
                         className="pyq-act-btn pyq-act-btn--secondary flex items-center justify-center gap-2"
                         style={{ height: '59px', borderRadius: '14px', background: '#FFFFFF', color: '#101828', border: '1.5px solid #E5E7EB', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
@@ -2366,12 +2449,17 @@ export default function PyqPage() {
 
                     {!isEssayQuestion(q) && expandedModelAnswerIds.has(q.id) && (
                       <div
-                        className="mt-1"
+                        id={`pyq-model-answer-${q.id}`}
+                        className="mt-1 scroll-mt-24"
                         style={{
-                          padding: '20px',
+                          padding: '24px 26px 22px',
                           borderRadius: '14px',
-                          border: '1px solid rgba(212,175,55,0.25)',
-                          background: 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, rgba(212,175,55,0.02) 100%)',
+                          border: '1px solid rgba(212, 175, 55, 0.14)',
+                          background: `
+                            radial-gradient(ellipse 90% 70% at 90% 100%, rgba(212, 175, 55, 0.045) 0%, transparent 60%),
+                            radial-gradient(ellipse 80% 60% at 5% 0%, rgba(245, 208, 110, 0.035) 0%, transparent 55%),
+                            linear-gradient(180deg, #ffffff 0%, #fdfcf8 100%)
+                          `,
                         }}
                       >
                         <div className="flex items-center gap-2 mb-4" style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '1px', color: '#101828', textTransform: 'uppercase' }}>
@@ -2386,7 +2474,7 @@ export default function PyqPage() {
                         <div className="flex flex-wrap items-center gap-3 pt-4 mt-2" style={{ borderTop: '1px solid rgba(212,175,55,0.15)' }}>
                           <button
                             type="button"
-                            onClick={() => { setSelectedQuestion(q); setMainsAnswerText(''); setMainsFile(null); setMainsFiles([]); setMainsSubmitError(null); setMainsTimeLeft(getMainsTimeLimit(q)); setMainsTimerPaused(true); setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS); setTextAnswerExpanded(false); mainsAutoSubmitRef.current = false; setShowMainsWriteModal(true); }}
+                            onClick={() => openMainsWriteModal(q)}
                             className="pyq-act-btn pyq-act-btn--primary flex items-center gap-2"
                             style={{ padding: '10px 20px', borderRadius: '10px', background: 'linear-gradient(135deg, #101828 0%, #1E2133 100%)', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', border: 'none' }}
                           >
@@ -2670,7 +2758,7 @@ export default function PyqPage() {
                       const style = getSubjectMetaStyle(selectedQuestion.paper);
                       return <span className="inline-flex items-center gap-1 rounded-[7px] px-3 py-1 text-[12px] font-bold" style={{ border: `1px solid ${style.border}`, background: style.bg, color: style.color }}><span aria-hidden>{style.icon}</span>{selectedQuestion.paper}</span>;
                     })()}
-                    {selectedQuestion?.subject && (() => {
+                    {selectedQuestion?.subject && String(selectedQuestion.subject).toLowerCase() !== String(selectedQuestion.paper || '').toLowerCase() && (() => {
                       const style = getSubjectMetaStyle(selectedQuestion.subject);
                       return <span className="inline-flex items-center gap-1 rounded-[7px] px-3 py-1 text-[12px] font-bold" style={{ border: `1px solid ${style.border}`, background: style.bg, color: style.color }}><span aria-hidden>{style.icon}</span>{selectedQuestion.subject}</span>;
                     })()}
@@ -3081,8 +3169,8 @@ export default function PyqPage() {
             </div>
 
             {/* Explanation – shown only after submit */}
-            {hasSubmitted && getExplanationText(selectedQuestion) && (
-              <div style={{ width: '774.4px', maxWidth: '100%' }}>
+            {hasSubmitted && (getExplanationText(selectedQuestion) || selectedQuestion?.correctOption) && (
+              <div id="pyq-attempt-explanation" className="scroll-mt-24" style={{ width: '774.4px', maxWidth: '100%' }}>
                 <div className="flex items-center gap-2 mb-2" style={{ color: '#016630', fontWeight: 700, fontSize: '14px', textTransform: 'uppercase' }}>
                   <span>✅</span><span>Explanation</span>
                 </div>
@@ -3105,6 +3193,7 @@ export default function PyqPage() {
                     if (!selectedAnswer || !selectedQuestion?.id) return;
                     setHasSubmitted(true);
                     setPrelimsSubmitError(null);
+                    scrollToAnswerSection('pyq-attempt-explanation');
                     try {
                       await pyqService.submitPrelimsAnswer(selectedQuestion.id, selectedAnswer);
                     } catch (err) {

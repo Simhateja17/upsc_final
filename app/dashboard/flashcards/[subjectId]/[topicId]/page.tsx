@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { flashcardService } from '@/lib/services';
 import Toast from '@/components/Toast';
 
@@ -22,6 +24,33 @@ const SUBJECT_ICONS: Record<string, string> = {
 function pretty(slug: string) {
   return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+const FLASHCARD_MARKDOWN_COMPONENTS = {
+  h1: ({ children }: { children?: React.ReactNode }) => (
+    <h3 style={{ margin: '0 0 12px', fontSize: 20, lineHeight: '28px', fontWeight: 800, color: '#101828' }}>{children}</h3>
+  ),
+  h2: ({ children }: { children?: React.ReactNode }) => (
+    <h4 style={{ margin: '18px 0 8px', fontSize: 17, lineHeight: '24px', fontWeight: 800, color: '#101828' }}>{children}</h4>
+  ),
+  h3: ({ children }: { children?: React.ReactNode }) => (
+    <h5 style={{ margin: '16px 0 7px', fontSize: 15, lineHeight: '22px', fontWeight: 800, color: '#17223E' }}>{children}</h5>
+  ),
+  p: ({ children }: { children?: React.ReactNode }) => (
+    <p style={{ margin: '0 0 12px', fontSize: 16, lineHeight: '26px', color: '#364153' }}>{children}</p>
+  ),
+  ul: ({ children }: { children?: React.ReactNode }) => (
+    <ul style={{ margin: '0 0 14px', paddingLeft: 24, listStyleType: 'disc' }}>{children}</ul>
+  ),
+  ol: ({ children }: { children?: React.ReactNode }) => (
+    <ol style={{ margin: '0 0 14px', paddingLeft: 24, listStyleType: 'decimal' }}>{children}</ol>
+  ),
+  li: ({ children }: { children?: React.ReactNode }) => (
+    <li style={{ marginBottom: 7, paddingLeft: 3, fontSize: 16, lineHeight: '25px', color: '#364153' }}>{children}</li>
+  ),
+  strong: ({ children }: { children?: React.ReactNode }) => (
+    <strong style={{ fontWeight: 800, color: '#17223E' }}>{children}</strong>
+  ),
+};
 
 export default function FlashcardReviewPage() {
   const params = useParams<{ subjectId: string; topicId: string }>();
@@ -348,10 +377,13 @@ export default function FlashcardReviewPage() {
                   </div>
 
                   {/* Answer text */}
-                  <div className="flex-1 flex items-center px-12 py-6">
-                    <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 16, lineHeight: '26px', color: '#101828' }}>
+                  <div className="flex-1 px-12 py-6" style={{ maxHeight: 'min(620px, calc(100dvh - 230px))', overflowY: 'auto' }}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={FLASHCARD_MARKDOWN_COMPONENTS}
+                    >
                       {card.answer}
-                    </p>
+                    </ReactMarkdown>
                   </div>
 
                   {/* Divider + tap to hide hint */}

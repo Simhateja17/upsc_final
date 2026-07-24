@@ -434,6 +434,8 @@ function DailyMainsChallengeInner() {
       const attemptId = res.attemptId || res.data?.attemptId || res.data?.data?.attemptId;
       if (attemptId && typeof window !== 'undefined') {
         sessionStorage.setItem('dailyAnswerAttemptId', attemptId);
+        // Each submission, including a rewrite, gets its own full evaluation window.
+        sessionStorage.setItem('dailyAnswerEvalStart', String(Date.now()));
       }
       entitlements.refreshEntitlements();
       router.push('/dashboard/daily-answer/challenge/attempt/evaluating');
@@ -647,7 +649,7 @@ function DailyMainsChallengeInner() {
                       key={c.date}
                       href={`/dashboard/daily-answer/challenge?date=${c.date}`}
                       className="dms-pc-card block"
-                      style={{ ['--pc-accent' as string]: a.accent, ['--pc-bg' as string]: a.bg, padding: '16px 20px 16px 22px' } as React.CSSProperties}
+                      style={{ ['--pc-accent' as string]: '#D1D5DB', ['--pc-bg' as string]: a.bg, padding: '16px 20px 16px 22px' } as React.CSSProperties}
                     >
                       <div className="flex items-center gap-4">
                         <div style={{ flex: 1, minWidth: 0 }}>
