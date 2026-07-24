@@ -257,6 +257,7 @@ function MockTestResultsInner() {
   const testId = searchParams.get('testId');
   const mode = searchParams.get('mode');
   const examMode = searchParams.get('examMode') || 'prelims';
+  const attemptIdParam = searchParams.get('attemptId');
   const isMains = examMode === 'mains';
   const title = searchParams.get('title') || 'Test Series';
 
@@ -301,11 +302,13 @@ function MockTestResultsInner() {
       setLoading(true);
       setError(null);
       try {
-        const raw = typeof window !== 'undefined'
+        const raw = !attemptIdParam && typeof window !== 'undefined'
           ? sessionStorage.getItem(`mockTestMainsAttempts:${testId}`)
           : null;
-        if (!raw) throw new Error('No mains evaluation session found. Please re-attempt the test.');
-        const { attemptIds } = JSON.parse(raw) as { attemptIds: string[] };
+        if (!attemptIdParam && !raw) throw new Error('No mains evaluation session found. Please re-attempt the test.');
+        const attemptIds = attemptIdParam
+          ? [attemptIdParam]
+          : (JSON.parse(raw!) as { attemptIds: string[] }).attemptIds;
         if (!attemptIds?.length) throw new Error('No mains attempts recorded.');
 
         const out: MainsPerQuestion[] = [];
@@ -355,7 +358,7 @@ function MockTestResultsInner() {
 
     loadMains();
     return () => { cancelled = true; };
-  }, [isMains, testId]);
+  }, [attemptIdParam, isMains, testId]);
 
   // Real leaderboard rank for this aspirant (all-time, MCQ/prelims bucket).
   useEffect(() => {

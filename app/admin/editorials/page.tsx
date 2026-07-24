@@ -10,6 +10,9 @@ export default function EditorialManager() {
   const [creating, setCreating] = useState(false);
   const [msg, setMsg] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [syllabusPaths, setSyllabusPaths] = useState<any[]>([]);
+  const [overrideIds, setOverrideIds] = useState<Record<string, string>>({});
+  const [secondaryOverrideIds, setSecondaryOverrideIds] = useState<Record<string, string[]>>({});
 
   const [form, setForm] = useState({
     title: '',
@@ -29,7 +32,25 @@ export default function EditorialManager() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadEditorials(); }, []);
+  useEffect(() => {
+    loadEditorials();
+    adminService.getEditorialSyllabusPaths()
+      .then((res) => setSyllabusPaths(Array.isArray(res.data) ? res.data : []))
+      .catch(() => {});
+  }, []);
+
+  const handleOverride = async (id: string) => {
+    const primarySubTopicId = overrideIds[id];
+    if (!primarySubTopicId) return;
+    setMsg('');
+    try {
+      await adminService.updateEditorial(id, { primarySubTopicId, secondarySubTopicIds: secondaryOverrideIds[id] || [] });
+      setMsg('Syllabus mapping updated. This article will no longer be auto-classified.');
+      loadEditorials();
+    } catch (err: any) {
+      setMsg(`Error: ${err.message}`);
+    }
+  };
 
   const handleScrape = async () => {
     setScraping(true);
@@ -233,6 +254,43 @@ export default function EditorialManager() {
                     {ed.aiSummary && (
                       <p className="mt-2 text-xs text-[#059669] italic">AI Summary available</p>
                     )}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <select
+                        value={overrideIds[ed.id] ?? ed.primarySyllabusPath?.subTopicId ?? ''}
+                        onChange={(e) => setOverrideIds((current) => ({ ...current, [ed.id]: e.target.value }))}
+                        className="max-w-full rounded-lg border border-gray-300 px-2 py-1 text-xs"
+                      >
+                        <option value="">Override syllabus mapping…</option>
+                        {syllabusPaths.filter((path) => path.stage === 'prelims').map((path) => (
+                          <option key={path.subTopicId} value={path.subTopicId}>
+                            {path.subject} → {path.topic} → {path.subTopic}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => handleOverride(ed.id)}
+                        disabled={!overrideIds[ed.id] && !ed.primarySyllabusPath?.subTopicId}
+                        className="rounded-lg px-2 py-1 text-xs text-[#4F46E5] hover:bg-[#EEF2FF] disabled:opacity-40"
+                      >
+                        Save mapping
+                      </button>
+                      <select
+                        multiple
+                        value={secondaryOverrideIds[ed.id] || ed.secondarySyllabusPaths?.map((path: any) => path.subTopicId) || []}
+                        onChange={(e) => setSecondaryOverrideIds((current) => ({
+                          ...current,
+                          [ed.id]: Array.from(e.target.selectedOptions).map((option) => option.value).slice(0, 2),
+                        }))}
+                        aria-label="Secondary syllabus mappings"
+                        className="max-w-full rounded-lg border border-gray-300 px-2 py-1 text-xs"
+                      >
+                        {syllabusPaths.map((path) => (
+                          <option key={path.subTopicId} value={path.subTopicId}>
+                            {path.subject} → {path.topic} → {path.subTopic}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div className="flex flex-col gap-1 flex-shrink-0">
                     <button

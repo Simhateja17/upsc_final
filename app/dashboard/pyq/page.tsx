@@ -601,6 +601,13 @@ export default function PyqPage() {
   const [mainsBookmarkBusyIds, setMainsBookmarkBusyIds] = useState<Set<string>>(new Set());
   const [mainsFlashcardBusyIds, setMainsFlashcardBusyIds] = useState<Set<string>>(new Set());
   const [mainsReviewBusyIds, setMainsReviewBusyIds] = useState<Set<string>>(new Set());
+  const [prelimsBookmarkedIds, setPrelimsBookmarkedIds] = useState<Set<string>>(new Set());
+  const [prelimsFlashcardIds, setPrelimsFlashcardIds] = useState<Set<string>>(new Set());
+  const [prelimsReviewIds, setPrelimsReviewIds] = useState<Set<string>>(new Set());
+  const [prelimsReviewItemIds, setPrelimsReviewItemIds] = useState<Record<string, string>>({});
+  const [prelimsBookmarkBusyIds, setPrelimsBookmarkBusyIds] = useState<Set<string>>(new Set());
+  const [prelimsFlashcardBusyIds, setPrelimsFlashcardBusyIds] = useState<Set<string>>(new Set());
+  const [prelimsReviewBusyIds, setPrelimsReviewBusyIds] = useState<Set<string>>(new Set());
   const [showAiEvalModal, setShowAiEvalModal] = useState(false);
   const [aiEvalProgress, setAiEvalProgress] = useState(0);
   const [aiEvalStepIndex, setAiEvalStepIndex] = useState(0);
@@ -799,6 +806,133 @@ export default function PyqPage() {
     }
   };
 
+  const togglePrelimsBookmark = async (q: any) => {
+    if (prelimsBookmarkBusyIds.has(q.id)) return;
+    setPrelimsBookmarkBusyIds((prev) => new Set(prev).add(q.id));
+    try {
+      await bookmarkService.toggle({
+        entityType: 'pyq',
+        entityId: q.id,
+        title: String(q.questionText || '').slice(0, 90),
+        source: 'PYQ Prelims',
+        sourceUrl: `/questions/${q.id}`,
+        tag: `${q.year || 'UPSC'} · ${q.subject || 'General'}`,
+        content: {
+          mode: 'prelims',
+          year: q.year,
+          subject: q.subject,
+          topic: q.topic,
+          difficulty: q.difficulty,
+          options: q.options,
+          correctOption: q.correctOption,
+          explanation: getExplanationText(q),
+        },
+      });
+      setPrelimsBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(q.id)) next.delete(q.id);
+        else next.add(q.id);
+        return next;
+      });
+    } catch {
+      // keep prior state — bookmark toggle failed
+    } finally {
+      setPrelimsBookmarkBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(q.id);
+        return next;
+      });
+    }
+  };
+
+  const addPrelimsFlashcard = async (q: any) => {
+    if (prelimsFlashcardBusyIds.has(q.id)) return;
+    setPrelimsFlashcardBusyIds((prev) => new Set(prev).add(q.id));
+    try {
+      const subject = String(q.subject || 'General Studies');
+      const subjectId = slugify(subject);
+      const topic = String(q.topic || q.subSubject || 'Custom');
+      const topicId = slugify(topic);
+      const correctOption = Array.isArray(q.options)
+        ? q.options.find((option: any) => option.label === q.correctOption)
+        : null;
+      const answer = getExplanationText(q) || correctOption?.text || q.correctOption || 'Refer to the explanation on RiseWithJeet.';
+      const res = await flashcardService.createCard({
+        subjectId,
+        subject,
+        topicId,
+        topic,
+        question: q.questionText,
+        answer,
+        difficulty: q.difficulty || undefined,
+      });
+      setPrelimsFlashcardIds((prev) => new Set(prev).add(q.id));
+      const cardId = res?.data?.id;
+      router.push(`/dashboard/flashcards/${subjectId}/${topicId}${cardId ? `?cardId=${cardId}` : ''}`);
+    } catch {
+      // keep prior state — flashcard creation failed
+    } finally {
+      setPrelimsFlashcardBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(q.id);
+        return next;
+      });
+    }
+  };
+
+  const togglePrelimsReview = async (q: any) => {
+    if (prelimsReviewBusyIds.has(q.id)) return;
+    setPrelimsReviewBusyIds((prev) => new Set(prev).add(q.id));
+    if (prelimsReviewIds.has(q.id)) {
+      try {
+        const itemId = prelimsReviewItemIds[q.id];
+        if (itemId) await spacedRepService.deleteItem(itemId);
+        setPrelimsReviewIds((prev) => {
+          const next = new Set(prev);
+          next.delete(q.id);
+          return next;
+        });
+        setPrelimsReviewItemIds((prev) => {
+          const next = { ...prev };
+          delete next[q.id];
+          return next;
+        });
+      } catch {
+        // keep prior state — review removal failed
+      } finally {
+        setPrelimsReviewBusyIds((prev) => {
+          const next = new Set(prev);
+          next.delete(q.id);
+          return next;
+        });
+      }
+      return;
+    }
+    try {
+      const correctOption = Array.isArray(q.options)
+        ? q.options.find((option: any) => option.label === q.correctOption)
+        : null;
+      const res = await spacedRepService.addItem({
+        questionText: q.questionText,
+        answer: getExplanationText(q) || correctOption?.text || q.correctOption || undefined,
+        subject: String(q.subject || 'General Studies'),
+        source: 'PYQ Prelims',
+        sourceType: 'pyq',
+      });
+      setPrelimsReviewIds((prev) => new Set(prev).add(q.id));
+      const itemId = res?.data?.id;
+      if (itemId) setPrelimsReviewItemIds((prev) => ({ ...prev, [q.id]: itemId }));
+    } catch {
+      // keep prior state — review save failed
+    } finally {
+      setPrelimsReviewBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(q.id);
+        return next;
+      });
+    }
+  };
+
   const fetchQuestions = useCallback(async () => {
     const requestSeq = ++questionsRequestSeqRef.current;
     setLoading(true);
@@ -895,6 +1029,42 @@ export default function PyqPage() {
   useEffect(() => {
     fetchQuestions();
   }, [fetchQuestions]);
+
+  useEffect(() => {
+    if (mode !== 'prelims' || questions.length === 0) {
+      setPrelimsReviewIds(new Set());
+      setPrelimsReviewItemIds({});
+      return;
+    }
+
+    let cancelled = false;
+    spacedRepService.getItems()
+      .then((res) => {
+        if (cancelled) return;
+        const items: Array<{ id: string; questionText: string; source?: string; sourceType?: string }> = res.data?.items || res.data || [];
+        const pyqPrelimsItems = new Map(
+          items
+            .filter((item) => item.sourceType === 'pyq' && item.source === 'PYQ Prelims')
+            .map((item) => [item.questionText, item.id])
+        );
+        const nextReviewIds = new Set<string>();
+        const nextReviewItemIds: Record<string, string> = {};
+        questions.forEach((question) => {
+          const itemId = pyqPrelimsItems.get(question.questionText);
+          if (itemId) {
+            nextReviewIds.add(question.id);
+            nextReviewItemIds[question.id] = itemId;
+          }
+        });
+        setPrelimsReviewIds(nextReviewIds);
+        setPrelimsReviewItemIds(nextReviewItemIds);
+      })
+      .catch(() => {
+        // Review-state hydration is non-blocking; action buttons stay usable.
+      });
+
+    return () => { cancelled = true; };
+  }, [mode, questions]);
 
   useEffect(() => {
     let active = true;
@@ -2114,6 +2284,68 @@ export default function PyqPage() {
                         </div>
                         <ExplanationRenderer question={q} />
                         <p className="mt-2" style={{ fontSize: '13px', color: '#6A7282' }}>📖 UPSC CSE Prelims {q.year}</p>
+                        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[#BBF7D0] pt-4">
+                          <button
+                            type="button"
+                            onClick={() => togglePrelimsBookmark(q)}
+                            disabled={prelimsBookmarkBusyIds.has(q.id)}
+                            className="pyq-act-btn pyq-act-pill pyq-act-pill--bookmark flex items-center gap-2"
+                            style={{
+                              padding: '9px 18px',
+                              borderRadius: '10px',
+                              fontFamily: 'Inter, sans-serif',
+                              fontWeight: 600,
+                              fontSize: '14px',
+                              border: prelimsBookmarkedIds.has(q.id) ? '1.5px solid #D4AF37' : '1.5px solid #E5E7EB',
+                              background: prelimsBookmarkedIds.has(q.id) ? 'rgba(212,175,55,0.1)' : '#FFFFFF',
+                              color: prelimsBookmarkedIds.has(q.id) ? '#9A7B0E' : '#101828',
+                              opacity: prelimsBookmarkBusyIds.has(q.id) ? 0.6 : 1,
+                            }}
+                          >
+                            <span aria-hidden>🔖</span>
+                            <span>{prelimsBookmarkBusyIds.has(q.id) ? 'Saving...' : prelimsBookmarkedIds.has(q.id) ? 'Bookmarked' : 'Bookmark'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addPrelimsFlashcard(q)}
+                            disabled={prelimsFlashcardBusyIds.has(q.id)}
+                            className="pyq-act-btn pyq-act-pill pyq-act-pill--flashcard flex items-center gap-2"
+                            style={{
+                              padding: '9px 18px',
+                              borderRadius: '10px',
+                              fontFamily: 'Inter, sans-serif',
+                              fontWeight: 600,
+                              fontSize: '14px',
+                              border: prelimsFlashcardIds.has(q.id) ? '1.5px solid #0891B2' : '1.5px solid #E5E7EB',
+                              background: prelimsFlashcardIds.has(q.id) ? 'rgba(8,145,178,0.08)' : '#FFFFFF',
+                              color: prelimsFlashcardIds.has(q.id) ? '#0891B2' : '#101828',
+                              opacity: prelimsFlashcardBusyIds.has(q.id) ? 0.6 : 1,
+                            }}
+                          >
+                            <span aria-hidden>⚡</span>
+                            <span>{prelimsFlashcardBusyIds.has(q.id) ? 'Adding...' : prelimsFlashcardIds.has(q.id) ? 'In Flashcards' : 'Add to Flashcard'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => togglePrelimsReview(q)}
+                            disabled={prelimsReviewBusyIds.has(q.id)}
+                            className="pyq-act-btn pyq-act-pill pyq-act-pill--review flex items-center gap-2"
+                            style={{
+                              padding: '9px 18px',
+                              borderRadius: '10px',
+                              fontFamily: 'Inter, sans-serif',
+                              fontWeight: 600,
+                              fontSize: '14px',
+                              border: prelimsReviewIds.has(q.id) ? '1.5px solid #E65100' : '1.5px solid #E5E7EB',
+                              background: prelimsReviewIds.has(q.id) ? 'rgba(230,81,0,0.08)' : '#FFFFFF',
+                              color: prelimsReviewIds.has(q.id) ? '#E65100' : '#101828',
+                              opacity: prelimsReviewBusyIds.has(q.id) ? 0.6 : 1,
+                            }}
+                          >
+                            <span aria-hidden>🕐</span>
+                            <span>{prelimsReviewBusyIds.has(q.id) ? 'Saving...' : prelimsReviewIds.has(q.id) ? 'Added to Review' : 'Need to Review'}</span>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2472,15 +2704,6 @@ export default function PyqPage() {
                         />
 
                         <div className="flex flex-wrap items-center gap-3 pt-4 mt-2" style={{ borderTop: '1px solid rgba(212,175,55,0.15)' }}>
-                          <button
-                            type="button"
-                            onClick={() => openMainsWriteModal(q)}
-                            className="pyq-act-btn pyq-act-btn--primary flex items-center gap-2"
-                            style={{ padding: '10px 20px', borderRadius: '10px', background: 'linear-gradient(135deg, #101828 0%, #1E2133 100%)', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', border: 'none' }}
-                          >
-                            <span aria-hidden className="pyq-sparkle">✨</span>
-                            <span>Write &amp; Evaluate</span>
-                          </button>
                           <button
                             type="button"
                             onClick={() => toggleMainsBookmark(q)}

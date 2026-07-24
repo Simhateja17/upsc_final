@@ -125,8 +125,10 @@ export const dailyMcqService = {
   getQuestions: () => api.get<any>('/daily-mcq/today/questions', authConfig()),
   submit: (answers: any[], timeTaken: number, retake?: boolean) =>
     api.post<any>('/daily-mcq/today/submit', { answers, timeTaken, retake }, authConfig()),
-  getResults: () => api.get<any>('/daily-mcq/today/results', authConfig()),
-  getReview: () => api.get<any>('/daily-mcq/today/review', authConfig()),
+  getResults: (attemptId?: string) =>
+    api.get<any>(`/daily-mcq/today/results${attemptId ? `?attemptId=${encodeURIComponent(attemptId)}` : ''}`, authConfig()),
+  getReview: (attemptId?: string) =>
+    api.get<any>(`/daily-mcq/today/review${attemptId ? `?attemptId=${encodeURIComponent(attemptId)}` : ''}`, authConfig()),
   getRecommendations: () => api.get<any>('/daily-mcq/today/recommendations', authConfig()),
 };
 
@@ -807,6 +809,7 @@ export const adminService = {
 
   // Editorials
   getEditorials: () => api.get<any>('/admin/editorials', authConfig()),
+  getEditorialSyllabusPaths: () => api.get<any>('/admin/editorial-syllabus-paths', authConfig()),
   createEditorial: (data: any) => api.post<any>('/admin/editorials', data, authConfig()),
   updateEditorial: (id: string, data: any) => api.put<any>(`/admin/editorials/${id}`, data, authConfig()),
   deleteEditorial: (id: string) => api.delete<any>(`/admin/editorials/${id}`, authConfig()),
