@@ -82,6 +82,34 @@ const SHARED_CSS = `
 }
 .upm-icon svg { width: 42px; height: 42px; }
 .upm-icon img { width: 100%; height: 100%; object-fit: contain; display: block; }
+/* 3D card-flip icon reveal (Flashcard Vault modal only) */
+.upm-icon-flip { perspective: 500px; }
+.upm-icon-flip svg { animation: upmCardFlip 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both; }
+@keyframes upmCardFlip {
+  0% { transform: rotateY(0deg) scale(0.8); opacity: 0; }
+  50% { transform: rotateY(180deg) scale(1.1); }
+  100% { transform: rotateY(360deg) scale(1); opacity: 1; }
+}
+/* Staggered mindmap node reveal (Mindmap Library modal icon only) */
+.upm-mm-node-center, .upm-mm-node, .upm-mm-line { opacity: 0; transform-origin: center; }
+.upm-mm-node-center { animation: upmMmNodeAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both; }
+.upm-mm-line-1 { animation: upmMmLineDraw 0.3s ease 0.45s both; }
+.upm-mm-node-1 { animation: upmMmNodeAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.55s both; }
+.upm-mm-line-2 { animation: upmMmLineDraw 0.3s ease 0.7s both; }
+.upm-mm-node-2 { animation: upmMmNodeAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s both; }
+.upm-mm-line-3 { animation: upmMmLineDraw 0.3s ease 0.95s both; }
+.upm-mm-node-3 { animation: upmMmNodeAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 1.05s both; }
+.upm-mm-line-4 { animation: upmMmLineDraw 0.3s ease 1.2s both; }
+.upm-mm-node-4 { animation: upmMmNodeAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 1.3s both; }
+@keyframes upmMmNodeAppear {
+  0% { opacity: 0; transform: scale(0); }
+  60% { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes upmMmLineDraw {
+  0% { opacity: 0; stroke-dasharray: 20; stroke-dashoffset: 20; }
+  100% { opacity: 1; stroke-dasharray: 20; stroke-dashoffset: 0; }
+}
 .upm-title {
   font-family: var(--font-cormorant-garamond), 'Cormorant Garamond', serif;
   font-size: 26px;
@@ -734,15 +762,15 @@ const TopicFileIcon = () => (
 
 const MindmapIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="#F5C542" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 34, height: 34 }}>
-    <circle cx="12" cy="12" r="3" />
-    <path d="M9.5 10.5L5.5 7.5" />
-    <circle cx="4" cy="6" r="2" />
-    <path d="M14.5 10.5L18.5 7.5" />
-    <circle cx="20" cy="6" r="2" />
-    <path d="M9.5 13.5L5.5 16.5" />
-    <circle cx="4" cy="18" r="2" />
-    <path d="M14.5 13.5L18.5 16.5" />
-    <circle cx="20" cy="18" r="2" />
+    <circle className="upm-mm-node-center" cx="12" cy="12" r="3" />
+    <path className="upm-mm-line upm-mm-line-1" d="M9.5 10.5L5.5 7.5" />
+    <circle className="upm-mm-node upm-mm-node-1" cx="4" cy="6" r="2" />
+    <path className="upm-mm-line upm-mm-line-2" d="M14.5 10.5L18.5 7.5" />
+    <circle className="upm-mm-node upm-mm-node-2" cx="20" cy="6" r="2" />
+    <path className="upm-mm-line upm-mm-line-3" d="M9.5 13.5L5.5 16.5" />
+    <circle className="upm-mm-node upm-mm-node-3" cx="4" cy="18" r="2" />
+    <path className="upm-mm-line upm-mm-line-4" d="M14.5 13.5L18.5 16.5" />
+    <circle className="upm-mm-node upm-mm-node-4" cx="20" cy="18" r="2" />
   </svg>
 );
 
@@ -1019,7 +1047,7 @@ export function SyllabusTrackerLimitModal({
 export function FlashcardVaultUpgradeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <UpgradeModalShell open={open} onClose={onClose}>
-      <div className="upm-icon"><FlashcardIcon /></div>
+      <div className="upm-icon upm-icon-flip"><FlashcardIcon /></div>
       <h2 className="upm-title">Unlock Full Flashcard Vault</h2>
       <p className="upm-description">Continue your revision with all UPSC subjects and access thousands of expertly curated flashcards designed for smarter learning.</p>
       <div className="upm-plan-section">
@@ -1333,6 +1361,52 @@ export function SpacedRepLimitModal({
         ]}
       />
       <UpgradeActions onClose={onClose} backLabel="Back to Spaced Repetition" />
+    </UpgradeModalShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Study Material – download PDFs upgrade                              */
+/* Icon + copy ported 1:1 from study-material-upgrade-modal.html.      */
+/* ------------------------------------------------------------------ */
+
+const BookDownloadIcon = () => (
+  <svg width="38" height="38" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    {/* Open book base */}
+    <path d="M6 12C6 10.9 6.9 10 8 10H20C21.1 10 22 9.4 22 8.5V38C22 38 20 37 18 37H8C6.9 37 6 36.1 6 35V12Z" fill="#F5C542" opacity="0.85" />
+    <path d="M42 12C42 10.9 41.1 10 40 10H28C26.9 10 26 9.4 26 8.5V38C26 38 28 37 30 37H40C41.1 37 42 36.1 42 35V12Z" fill="#E8D48B" opacity="0.85" />
+    {/* Book spine */}
+    <rect x="22" y="8" width="4" height="30" rx="1" fill="#C9A227" />
+    {/* Page lines left */}
+    <line x1="10" y1="16" x2="19" y2="16" stroke="#1E2028" strokeWidth="1" opacity="0.2" />
+    <line x1="10" y1="20" x2="19" y2="20" stroke="#1E2028" strokeWidth="1" opacity="0.2" />
+    <line x1="10" y1="24" x2="17" y2="24" stroke="#1E2028" strokeWidth="1" opacity="0.2" />
+    {/* Page lines right */}
+    <line x1="29" y1="16" x2="38" y2="16" stroke="#1E2028" strokeWidth="1" opacity="0.15" />
+    <line x1="29" y1="20" x2="38" y2="20" stroke="#1E2028" strokeWidth="1" opacity="0.15" />
+    <line x1="29" y1="24" x2="36" y2="24" stroke="#1E2028" strokeWidth="1" opacity="0.15" />
+    {/* Download arrow overlay */}
+    <circle cx="36" cy="34" r="9" fill="#101827" stroke="#F5C542" strokeWidth="1.5" />
+    <path d="M36 29V37" stroke="#F5C542" strokeWidth="2" strokeLinecap="round" />
+    <path d="M32.5 34.5L36 38L39.5 34.5" stroke="#F5C542" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export function StudyMaterialDownloadUpgradeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <UpgradeModalShell open={open} onClose={onClose}>
+      <div className="upm-icon"><BookDownloadIcon /></div>
+      <h2 className="upm-title">Unlock Unlimited Study Material Downloads</h2>
+      <p className="upm-description">Upgrade to download unlimited notes, PDFs, handouts, and premium study resources to support every stage of your UPSC preparation.</p>
+      <BenefitsList
+        items={[
+          'Unlimited Study Material Downloads',
+          'Subject-wise Notes &amp; Resources',
+          'Current Affairs Compilations',
+          'Revision Notes &amp; Handouts',
+        ]}
+      />
+      <UpgradeActions onClose={onClose} backLabel="Back to Study Material" />
     </UpgradeModalShell>
   );
 }

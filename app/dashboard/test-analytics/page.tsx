@@ -7,15 +7,21 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import Toast from '@/components/Toast';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { LockedWidget, LockedWidgetStyles, TestAnalyticsUpgradeModal } from '@/components/upgrade/UpgradeModals';
+import { AnalyticsUiStyles, SectionDivider, StatCard } from '@/components/analytics/analyticsUi';
 import { getSubjectAccentColor } from '@/lib/subjectPalette';
 
 
 // ─── SVG Line Chart ───────────────────────────────────────────────────────────
-function LineChart({ data, width = 400, height = 120, color = '#00D5BE' }: {
+// Ported 1:1 from the HTML reference's inline SVG charts: a plain filled-circle
+// polyline over a gradient area fill, no background gridlines, no dot ring —
+// `dashed` mirrors the reference's Mains trend stroke-dasharray="6,4".
+function LineChart({ data, width = 400, height = 120, color = '#00D5BE', dashed = false, dotRadius = 4 }: {
   data: { label: string; value: number }[];
   width?: number;
   height?: number;
   color?: string;
+  dashed?: boolean;
+  dotRadius?: number;
 }) {
   if (!data.length) return (
     <div className="flex items-center justify-center text-[12px] text-[#6A7282]" style={{ height }}>
@@ -50,22 +56,18 @@ function LineChart({ data, width = 400, height = 120, color = '#00D5BE' }: {
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
-      {[0, 1, 2, 3].map((line) => (
-        <line
-          key={line}
-          x1={pad.left}
-          x2={width - pad.right}
-          y1={pad.top + (line / 3) * innerH}
-          y2={pad.top + (line / 3) * innerH}
-          stroke="#E5E7EB"
-          strokeWidth="0.8"
-          opacity="0.7"
-        />
-      ))}
       <path d={areaD} fill={`url(#${gradId})`} />
-      <path d={pathD} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+      <path
+        d={pathD}
+        fill="none"
+        stroke={color}
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        strokeDasharray={dashed ? '6,4' : undefined}
+      />
       {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="4" fill={color} stroke="#fff" strokeWidth="2" />
+        <circle key={i} cx={p.x} cy={p.y} r={dotRadius} fill={color} />
       ))}
       {data.map((d, i) => (
         <text key={i} x={pts[i].x} y={height - 4} textAnchor="middle"
@@ -87,12 +89,56 @@ function formatSeconds(s: number): string {
 
 function timeColor(s: number): string {
   if (s === 0) return '#6A7282';
-  if (s < 90) return '#22C55E';
-  if (s <= 120) return '#F59E0B';
-  return '#EF4444';
+  if (s < 90) return '#51cf66';
+  if (s <= 120) return '#ff9933';
+  return '#ef4444';
 }
 
 const WEEK_BAR_COLORS = ['#111827', '#111827', '#111827', '#111827', '#FDC700', '#D1D5DB', '#D1D5DB'];
+
+// Chart heading with the reference's coloured dot marker. Sizes ported 1:1 from
+// the HTML reference (.chart-header, .chart-dot, .chart-title, .chart-subtitle).
+function ChartHeading({ dotColor, title, subtitle, filterToggle }: { dotColor: string; title: React.ReactNode; subtitle?: string; filterToggle?: React.ReactNode }) {
+  return (
+    <div>
+      <h2
+        className="flex items-center gap-2"
+        style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3, color: '#1e293b', marginBottom: subtitle ? 0 : 16 }}
+      >
+        <span className="h-[10px] w-[10px] flex-shrink-0 rounded-full" style={{ background: dotColor }} />
+        {title}
+        {filterToggle}
+      </h2>
+      {subtitle && (
+        <div style={{ fontSize: 10.5, color: '#64748b', marginTop: -2, marginBottom: 14 }}>{subtitle}</div>
+      )}
+    </div>
+  );
+}
+
+// Day/Week/Month segmented toggle, ported 1:1 from the HTML reference's
+// .chart-filter-toggle / .chart-filter-btn (purely a display-period switch —
+// the reference's own setMainsPeriod() only swaps the active tab, it doesn't
+// re-fetch or recompute data, so this mirrors that exactly).
+const CHART_FILTER_PERIODS = ['day', 'week', 'month'] as const;
+type ChartFilterPeriod = typeof CHART_FILTER_PERIODS[number];
+
+function ChartFilterToggle({ value, onChange }: { value: ChartFilterPeriod; onChange: (period: ChartFilterPeriod) => void }) {
+  return (
+    <div className="pa-filter-toggle">
+      {CHART_FILTER_PERIODS.map((period) => (
+        <button
+          key={period}
+          type="button"
+          onClick={() => onChange(period)}
+          className={`pa-filter-btn capitalize ${value === period ? 'pa-filter-btn-active' : ''}`}
+        >
+          {period}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function TestAnalyticsPage() {
@@ -101,12 +147,25 @@ export default function TestAnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<any | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [mainsTrendPeriod, setMainsTrendPeriod] = useState<ChartFilterPeriod>('day');
+  const [timePerQuestionPeriod, setTimePerQuestionPeriod] = useState<ChartFilterPeriod>('day');
+  // Test History series filter + sort — pure client-side display state over the
+  // already-fetched `testHistory` list (same "swap the view, don't recompute"
+  // pattern as ChartFilterToggle above), ported 1:1 from the HTML reference's
+  // filterBySeries()/sortTests().
+  const [historySeriesFilter, setHistorySeriesFilter] = useState<'all' | 'daily_mcq' | 'mock' | 'pyq'>('all');
+  const [historySortField, setHistorySortField] = useState<'date' | 'accuracy' | 'score'>('date');
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const entitlements = useEntitlements();
   // Free & Aspire see the page with detailed widgets blurred + locked;
   // clicking a locked widget opens the tier-specific upgrade modal.
   const analyticsLocked = !entitlements.canAccess('test_analytics', ['full']);
   const openUpgradeModal = () => setShowUpgradeModal(true);
+  // Unlocked (Rise/Ascent) widgets get the reference 3D hover lift; locked
+  // widgets get their own hover from LockedWidget, so we don't double it up.
+  const widgetClass = `pa-card ${analyticsLocked ? '' : 'pa-card-3d'} overflow-hidden`;
+  // Padding + radius ported 1:1 from the HTML reference's .chart-widget (padding: 24px; border-radius: var(--radius) = 12px).
+  const widgetStyle = { borderRadius: 12, padding: 24 } as React.CSSProperties;
 
   useEffect(() => {
     if (authLoading) return;
@@ -151,12 +210,32 @@ export default function TestAnalyticsPage() {
   const timePerQuestion: any[] = data?.timePerQuestion ?? [];
   const testHistory: any[] = data?.testHistory ?? [];
 
+  // Series filter → matches the backend's `type` field per row (see
+  // dashboard.service.ts: daily-mcq / daily-answer / mock-prelims / mock-mains
+  // / pyq-mains / test-series). "All" always shows every row.
+  const displayedTestHistory = testHistory
+    .filter((row) => {
+      if (historySeriesFilter === 'all') return true;
+      if (historySeriesFilter === 'daily_mcq') return row.type === 'daily-mcq';
+      if (historySeriesFilter === 'mock') return row.type === 'mock-prelims' || row.type === 'mock-mains';
+      if (historySeriesFilter === 'pyq') return row.type === 'pyq-mains';
+      return true;
+    })
+    .slice()
+    .sort((a, b) => {
+      if (historySortField === 'accuracy') return (b.accuracy ?? 0) - (a.accuracy ?? 0);
+      if (historySortField === 'score') {
+        const scoreNum = (row: any) => parseInt(String(row.score ?? '0').split('/')[0], 10) || 0;
+        return scoreNum(b) - scoreNum(a);
+      }
+      return 0; // 'date' — testHistory already arrives most-recent-first from the backend
+    });
+
   const totalTests = summary.totalTests ?? 0;
   const avgAccuracy = summary.avgAccuracy ?? 0;
   const bestPercentile = summary.bestPercentile ?? 0;
   const currentStreak = summary.currentStreak ?? 0;
   const totalQuestions = summary.totalQuestions ?? 0;
-  const mcqAttempts = summary.mcqAttempts ?? 0;
 
   const mcqCorrect = summary.mcqCorrect ?? 0;
   const mcqWrong = summary.mcqWrong ?? 0;
@@ -169,12 +248,14 @@ export default function TestAnalyticsPage() {
     { label: 'DAY STREAK', value: String(currentStreak), valueColor: '#0e8a56' },
   ];
 
-  const summaryCards = [
-    { title: 'Overall Percentile', value: bestPercentile > 0 ? String(bestPercentile) : 'N/A', accent: '#00BBA7', icon: '📊', sub: 'Best percentile achieved' },
-    { title: 'Tests Attempted', value: String(totalTests), accent: '#FF6900', icon: '📝', sub: 'Full length & sectional mocks' },
-    { title: 'Questions Attempted', value: totalQuestions.toLocaleString('en-IN'), accent: '#155DFC', icon: '✍️', sub: 'MCQs, PYQs and mock tests' },
-    { title: 'Overall Accuracy', value: `${avgAccuracy}%`, accent: '#22C55E', icon: '🎯', sub: 'Net accuracy after negatives' },
-    { title: 'Best Rank', value: 'N/A', accent: '#8B5CF6', icon: '🏆', sub: 'Across all mock test series' },
+  // Icon-left stat cards (reference stats row), driven by real analytics data.
+  const summaryCards: { title: string; value: React.ReactNode; color: string; icon: string; sub: string }[] = [
+    { title: 'Percentile', value: bestPercentile > 0 ? String(bestPercentile) : 'N/A', color: '#14b8a6', icon: '📊', sub: 'Best percentile achieved' },
+    { title: 'Tests Attempted', value: String(totalTests), color: '#ff9933', icon: '✏️', sub: 'Full length & sectional mocks' },
+    { title: 'Questions Attempted', value: totalQuestions.toLocaleString('en-IN'), color: '#cc5de8', icon: '📝', sub: 'MCQs, PYQs and mock tests' },
+    { title: 'Overall Accuracy', value: `${avgAccuracy}%`, color: '#51cf66', icon: '🎯', sub: 'Net accuracy after negatives' },
+    { title: 'Best Rank', value: 'N/A', color: '#d4a843', icon: '🏆', sub: 'Across all mock test series' },
+    { title: 'Avg Score', value: String(summary.avgScore ?? 0), color: '#4dabf7', icon: '📈', sub: 'Average across attempts' },
   ];
 
   const weeklyChartData = weeklyMcqTrend.map(w => ({ label: w.week, value: w.score }));
@@ -187,6 +268,7 @@ export default function TestAnalyticsPage() {
       className="flex overflow-hidden font-arimo"
       style={{ background: '#F9FAFB', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
     >
+      <AnalyticsUiStyles />
       <LockedWidgetStyles />
       <TestAnalyticsUpgradeModal
         open={showUpgradeModal}
@@ -217,65 +299,42 @@ export default function TestAnalyticsPage() {
               // eslint-disable-next-line @next/next/no-img-element
               <img src="/sidebar-analytics-new.png" alt="test analytics" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
             }
-            badgeText="Analytics - Performance Dashboard"
-            title={<>{user?.firstName ?? 'Your'}&apos;s <span style={{ fontStyle: 'italic', color: '#e8b84b' }}>Progress.</span></>}
-            subtitle="Your complete UPSC test analytics, score trends, subject mastery, rank history, time management and AI-powered next steps."
+            badgeText="Analytics - Test Dashboard"
+            title={<>{user?.firstName ?? 'Your'}&apos;s <span style={{ fontStyle: 'italic', color: '#e8b84b' }}>Test Analytics</span></>}
+            subtitle="Your complete UPSC test analytics — score trends, subject mastery, rank history, time management and AI-powered next steps."
             stats={topStripCards.map(c => ({ value: c.value, label: c.label, color: c.valueColor }))}
           />
         </div>
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          {/* ── 5 Summary Cards (open on every plan) ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="mx-auto w-full max-w-[1100px] px-4 sm:px-6 lg:px-8 py-8">
+          {/* ── Stat cards (open on every plan) ── */}
+          <div className="grid grid-cols-2 gap-[10px] sm:grid-cols-3 lg:grid-cols-6">
             {summaryCards.map((card) => (
-              <div
+              <StatCard
                 key={card.title}
-                className="rounded-[14px] bg-white flex flex-col justify-between"
-                style={{
-                  borderTop: `4px solid ${card.accent}`,
-                  boxShadow: '0px 10px 24px -16px rgba(15,23,42,0.35), 0px 1px 3px rgba(0,0,0,0.1)',
-                  minHeight: 148,
-                }}
-              >
-                <div className="px-5 pt-6 pb-5">
-                  <div
-                    className="mb-4 flex h-11 w-11 items-center justify-center rounded-[12px] text-[22px]"
-                    style={{ background: `${card.accent}18`, border: `1px solid ${card.accent}2E` }}
-                  >
-                    {card.icon}
-                  </div>
-                  <div className="mb-2 text-[32px] leading-[38px] font-bold" style={{ color: '#101828' }}>
-                    {card.value}
-                  </div>
-                  <div className="uppercase text-[11px] tracking-[0.6px] mb-1" style={{ fontWeight: 600, color: '#6A7282' }}>
-                    {card.title}
-                  </div>
-                  <p className="text-[11px]" style={{ fontWeight: 400, color: '#6A7282' }}>
-                    {card.sub}
-                  </p>
-                </div>
-              </div>
+                label={card.title}
+                value={card.value}
+                icon={<span aria-hidden>{card.icon}</span>}
+                color={card.color}
+                sub={card.sub}
+                trend="none"
+              />
             ))}
           </div>
 
-          {/* ── Row 1: MCQ Trend + Subject Accuracy ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* ── MCQ & Subject Analytics ── */}
+          <SectionDivider label="MCQ &amp; Subject Analytics" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
             {/* MCQ Performance Trend */}
             <LockedWidget
               locked={analyticsLocked}
               onClick={openUpgradeModal}
-              className="rounded-[18px] bg-white"
-              style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}
-              heading={
-                <div className="px-8 pt-8">
-                  <h2 className="text-[18px] leading-[26px] font-bold mb-6 flex items-center gap-2" style={{ color: '#1A1F36' }}>
-                    <span aria-hidden>📊</span> MCQ Performance Trend
-                  </h2>
-                </div>
-              }
+              className={widgetClass}
+              style={widgetStyle}
+              heading={<ChartHeading dotColor="#cc5de8" title="MCQ Performance Trend" />}
             >
-              <div className="px-8 pb-6">
-                <div className="flex flex-wrap gap-5 mb-6">
+              <div>
+                <div className="flex flex-wrap gap-6 mb-5">
                   {[
                     { label: 'Correct', value: mcqCorrect, color: '#101828' },
                     { label: 'Wrong', value: mcqWrong, color: '#FB2C36' },
@@ -283,10 +342,10 @@ export default function TestAnalyticsPage() {
                     { label: 'Net Accuracy', value: `${avgAccuracy}%`, color: '#FF6900' },
                   ].map(item => (
                     <div key={item.label}>
-                      <div className="text-[28px] leading-[34px] font-bold" style={{ color: item.color }}>
+                      <div className="font-bold" style={{ fontSize: 15.4, lineHeight: 1.2, color: item.color }}>
                         {typeof item.value === 'number' ? item.value.toLocaleString('en-IN') : item.value}
                       </div>
-                      <div className="uppercase text-[11px] tracking-[0.6px]" style={{ fontWeight: 600, color: '#99A1AF' }}>
+                      <div className="uppercase" style={{ fontSize: 9.1, letterSpacing: '0.6px', fontWeight: 600, color: '#99A1AF' }}>
                         {item.label}
                       </div>
                     </div>
@@ -294,19 +353,19 @@ export default function TestAnalyticsPage() {
                 </div>
 
                 {/* Weekly line chart */}
-                <div className="rounded-[14px] overflow-hidden bg-[#F8F5FF] px-4 pt-4 pb-2 mb-5" style={{ border: '1px solid #E9D5FF' }}>
-                  <div className="text-[11px] uppercase tracking-[0.6px] mb-2" style={{ color: '#6A7282' }}>
+                <div>
+                  <div className="uppercase mb-2" style={{ fontSize: 9.1, fontWeight: 700, letterSpacing: '0.8px', color: '#64748b' }}>
                     Weekly Accuracy Trend
                   </div>
-                  <LineChart data={weeklyChartData} color="#A855F7" height={140} />
+                  <LineChart data={weeklyChartData} color="#cc5de8" height={140} />
                 </div>
 
                 {/* Daily bar chart */}
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.6px] mb-3" style={{ color: '#6A7282' }}>
+                <div className="mt-3">
+                  <div className="uppercase mb-2" style={{ fontSize: 9.1, fontWeight: 700, letterSpacing: '0.8px', color: '#64748b' }}>
                     Questions attempted this week
                   </div>
-                  <div className="flex items-end gap-2 h-[92px]">
+                  <div className="flex items-end gap-2 h-[60px]">
                     {dailyActivity.map((d, i) => {
                       const pct = (d.questionsAttempted / maxQuestions) * 100;
                       return (
@@ -315,9 +374,10 @@ export default function TestAnalyticsPage() {
                             {d.questionsAttempted || ''}
                           </div>
                           <div
-                            className="w-full rounded-t-[4px]"
+                            className="rounded-t-[4px] mx-auto"
                             style={{
-                              height: Math.max(pct * 0.36, pct > 0 ? 4 : 0),
+                              width: 28,
+                              height: Math.max(pct * 0.24, pct > 0 ? 4 : 0),
                               background: pct > 0 ? WEEK_BAR_COLORS[i % WEEK_BAR_COLORS.length] : 'transparent',
                               minHeight: pct > 0 ? 4 : 0,
                             }}
@@ -335,45 +395,41 @@ export default function TestAnalyticsPage() {
             <LockedWidget
               locked={analyticsLocked}
               onClick={openUpgradeModal}
-              className="rounded-[18px] bg-white"
-              style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}
-              heading={
-                <div className="px-8 pt-8">
-                  <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
-                    <span aria-hidden>🎯</span> Subject Accuracy
-                  </h2>
-                  <div className="mb-6 text-[12px] text-[#99A1AF]">Across all attempted MCQs</div>
-                </div>
-              }
+              className={widgetClass}
+              style={widgetStyle}
+              heading={<ChartHeading dotColor="#51cf66" title="Subject Accuracy" subtitle="Across all attempted MCQs" />}
             >
-              <div className="px-8 pb-6">
+              <div>
                 {subjectAccuracy.length === 0 ? (
                   <div className="flex items-center justify-center h-[200px] text-[13px] text-[#6A7282]">
                     No mock test data yet
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col">
                     {subjectAccuracy.slice(0, 8).map((s) => {
                       const subjectColor = getSubjectAccentColor(s.subject);
                       return (
-                        <div key={s.subject}>
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: subjectColor }} />
-                              <span className="text-[13px] font-medium" style={{ color: '#1A1F36' }}>{s.subject}</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-[12px]">
-                              <span style={{ color: '#22C55E' }}>{s.correct}✓</span>
-                              <span style={{ color: '#EF4444' }}>{s.wrong}✗</span>
-                              <span className="font-semibold" style={{ color: subjectColor }}>{s.accuracy}%</span>
-                            </div>
-                          </div>
-                          <div className="w-full rounded-full" style={{ height: 6, background: '#F3F4F6' }}>
+                        <div key={s.subject} className="flex items-center gap-2.5 border-b border-[#F1F5F9] py-2.5 last:border-b-0">
+                          <div className="h-2 w-2 flex-shrink-0 rounded-full" style={{ background: subjectColor }} />
+                          <span
+                            className="flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                            style={{ fontSize: 11.9, color: '#1A1F36', width: 160 }}
+                            title={s.subject}
+                          >
+                            {s.subject}
+                          </span>
+                          <div className="flex-1 overflow-hidden rounded-full" style={{ height: 8, background: '#F3F4F6' }}>
                             <div
                               className="h-full rounded-full transition-all"
                               style={{ width: `${s.accuracy}%`, background: subjectColor }}
                             />
                           </div>
+                          <span className="flex-shrink-0 whitespace-nowrap text-right" style={{ fontSize: 10.5, minWidth: 80 }}>
+                            <span style={{ color: '#22C55E' }}>{s.correct}✓</span> <span style={{ color: '#EF4444' }}>{s.wrong}✗</span>
+                          </span>
+                          <span className="flex-shrink-0 text-right font-semibold" style={{ fontSize: 11.2, width: 40, color: subjectColor }}>
+                            {s.accuracy}%
+                          </span>
                         </div>
                       );
                     })}
@@ -383,26 +439,27 @@ export default function TestAnalyticsPage() {
             </LockedWidget>
           </div>
 
-          {/* ── Row 2: Mains Trend + Time Per Question ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* ── Writing & Time Analysis ── */}
+          <SectionDivider label="Writing &amp; Time Analysis" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
             {/* Mains Answer Writing Trend */}
             <LockedWidget
               locked={analyticsLocked}
               onClick={openUpgradeModal}
-              className="rounded-[18px] bg-white"
-              style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}
+              className={widgetClass}
+              style={widgetStyle}
               heading={
-                <div className="px-8 pt-8">
-                  <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
-                    <span aria-hidden>📝</span> Mains Answer Writing Trend
-                  </h2>
-                  <div className="mb-5 text-[12px] text-[#99A1AF]">Answer scoring performance</div>
-                </div>
+                <ChartHeading
+                  dotColor="#ff9933"
+                  title="Mains Answer Writing Trend"
+                  subtitle="Answer scoring performance"
+                  filterToggle={<ChartFilterToggle value={mainsTrendPeriod} onChange={setMainsTrendPeriod} />}
+                />
               }
             >
-              <div className="px-8 pb-6">
-                <div className="flex flex-wrap gap-5 mb-5">
+              <div>
+                <div className="flex flex-wrap gap-6 mb-5">
                   {[
                     { label: 'Answers Written', value: mainsStats.totalAnswers ?? 0, color: '#101828' },
                     { label: 'Avg Score', value: mainsStats.avgScore ?? 0, color: '#155DFC' },
@@ -416,21 +473,21 @@ export default function TestAnalyticsPage() {
                     },
                   ].map(item => (
                     <div key={item.label}>
-                      <div className="text-[28px] leading-[34px] font-bold" style={{ color: item.color }}>
+                      <div className="font-bold" style={{ fontSize: 15.4, lineHeight: 1.2, color: item.color }}>
                         {item.value}
                       </div>
-                      <div className="uppercase text-[11px] tracking-[0.6px]" style={{ fontWeight: 600, color: '#99A1AF' }}>
+                      <div className="uppercase" style={{ fontSize: 9.1, letterSpacing: '0.6px', fontWeight: 600, color: '#99A1AF' }}>
                         {item.label}
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="rounded-[14px] overflow-hidden bg-[#FFF7ED] px-4 pt-4 pb-2" style={{ border: '1px solid #FED7AA' }}>
-                  <div className="text-[11px] uppercase tracking-[0.6px] mb-2" style={{ color: '#6A7282' }}>
+                <div>
+                  <div className="uppercase mb-2" style={{ fontSize: 9.1, fontWeight: 700, letterSpacing: '0.8px', color: '#64748b' }}>
                     Score progression
                   </div>
-                  <LineChart data={mainsChartData} color="#FB923C" height={140} />
+                  <LineChart data={mainsChartData} color="#ff9933" height={140} dashed dotRadius={3.5} />
                 </div>
               </div>
             </LockedWidget>
@@ -439,40 +496,42 @@ export default function TestAnalyticsPage() {
             <LockedWidget
               locked={analyticsLocked}
               onClick={openUpgradeModal}
-              className="rounded-[18px] bg-white"
-              style={{ boxShadow: '0px 14px 34px -22px rgba(15,23,42,0.4), 0px 1px 3px rgba(0,0,0,0.1)' }}
+              className={widgetClass}
+              style={widgetStyle}
               heading={
-                <div className="px-8 pt-8">
-                  <h2 className="text-[18px] leading-[26px] font-bold mb-1 flex items-center gap-2" style={{ color: '#1A1F36' }}>
-                    <span aria-hidden>⏱️</span> Time Spent per Question - Daily
-                  </h2>
-                  <div className="mb-5 text-[12px] text-[#99A1AF]">Average seconds per question</div>
-                </div>
+                <ChartHeading
+                  dotColor="#14b8a6"
+                  title="Time Spent per Question"
+                  subtitle="Average seconds per question"
+                  filterToggle={<ChartFilterToggle value={timePerQuestionPeriod} onChange={setTimePerQuestionPeriod} />}
+                />
               }
             >
-              <div className="px-8 pb-6">
-                <div className="grid grid-cols-7 gap-2 mb-6">
+              <div>
+                <div className="grid grid-cols-7 gap-2 mb-4">
                   {timePerQuestion.map((d) => (
-                    <div key={d.day} className="flex flex-col items-center gap-2">
-                      <div
-                        className="w-full rounded-[8px] flex items-center justify-center py-3 text-center"
-                        style={{ background: d.avgSeconds > 0 ? timeColor(d.avgSeconds) + '22' : '#F3F4F6' }}
-                      >
-                        <span className="text-[11px] font-semibold leading-tight" style={{ color: timeColor(d.avgSeconds) }}>
-                          {d.avgSeconds > 0 ? formatSeconds(d.avgSeconds) : '–'}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-[#6A7282]">{d.day}</span>
+                    <div
+                      key={d.day}
+                      className="flex aspect-square flex-col items-center justify-center gap-1 rounded-[10px]"
+                      style={{
+                        border: '1px solid #e5e7eb',
+                        background: d.avgSeconds > 0 ? timeColor(d.avgSeconds) + '1A' : '#fafafa',
+                      }}
+                    >
+                      <span className="uppercase" style={{ fontSize: 9.1, fontWeight: 700, color: '#64748b' }}>{d.day}</span>
+                      <span className="font-bold" style={{ fontSize: 15.4, color: d.avgSeconds > 0 ? timeColor(d.avgSeconds) : '#64748b' }}>
+                        {d.avgSeconds > 0 ? formatSeconds(d.avgSeconds) : '–'}
+                      </span>
                     </div>
                   ))}
                 </div>
 
                 {/* Legend */}
-                <div className="flex gap-4 mb-5">
-                  {[['#22C55E', '< 90s'], ['#F59E0B', '90–120s'], ['#EF4444', '> 120s']].map(([c, l]) => (
+                <div className="flex gap-4 mb-4">
+                  {[['#51cf66', '< 90s'], ['#ff9933', '90–120s'], ['#ef4444', '> 120s']].map(([c, l]) => (
                     <div key={l} className="flex items-center gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
-                      <span className="text-[11px] text-[#6A7282]">{l}</span>
+                      <div className="w-2 h-2 rounded-full" style={{ background: c }} />
+                      <span style={{ fontSize: 10.08, color: '#64748b' }}>{l}</span>
                     </div>
                   ))}
                 </div>
@@ -480,21 +539,21 @@ export default function TestAnalyticsPage() {
                 {/* Slowest / Fastest subjects */}
                 {subjectAccuracy.length >= 2 && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-[10px] px-4 py-3" style={{ background: '#FEF2F2' }}>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: '#EF4444' }}>Lowest Accuracy</div>
-                      <div className="text-[13px] font-semibold" style={{ color: '#1A1F36' }}>
+                    <div className="rounded-[10px] p-4 text-center" style={{ background: '#FEF2F2' }}>
+                      <div className="font-semibold uppercase mb-1.5" style={{ fontSize: 9.1, letterSpacing: '0.5px', color: '#EF4444' }}>Lowest Accuracy</div>
+                      <div className="font-semibold mb-0.5" style={{ fontSize: 11.9, color: '#1A1F36' }}>
                         {subjectAccuracy.at(-1)?.subject ?? '–'}
                       </div>
-                      <div className="text-[12px]" style={{ color: '#EF4444' }}>
+                      <div className="font-bold" style={{ fontSize: 16.8, color: '#EF4444' }}>
                         {subjectAccuracy.at(-1)?.accuracy ?? 0}%
                       </div>
                     </div>
-                    <div className="rounded-[10px] px-4 py-3" style={{ background: '#F0FDF4' }}>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: '#22C55E' }}>Highest Accuracy</div>
-                      <div className="text-[13px] font-semibold" style={{ color: '#1A1F36' }}>
+                    <div className="rounded-[10px] p-4 text-center" style={{ background: '#F0FDF4' }}>
+                      <div className="font-semibold uppercase mb-1.5" style={{ fontSize: 9.1, letterSpacing: '0.5px', color: '#22C55E' }}>Highest Accuracy</div>
+                      <div className="font-semibold mb-0.5" style={{ fontSize: 11.9, color: '#1A1F36' }}>
                         {subjectAccuracy[0]?.subject ?? '–'}
                       </div>
-                      <div className="text-[12px]" style={{ color: '#22C55E' }}>
+                      <div className="font-bold" style={{ fontSize: 16.8, color: '#22C55E' }}>
                         {subjectAccuracy[0]?.accuracy ?? 0}%
                       </div>
                     </div>
@@ -505,85 +564,129 @@ export default function TestAnalyticsPage() {
           </div>
 
           {/* ── Complete Test History ── */}
+          <SectionDivider label="Test History" />
           <LockedWidget
             locked={analyticsLocked}
             onClick={openUpgradeModal}
-            className="rounded-[14px] bg-white mb-8"
-            style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}
+            className={`pa-card ${analyticsLocked ? '' : 'pa-card-3d'} overflow-hidden`}
+            style={widgetStyle}
             heading={
-              <div className="px-8 pt-8 pb-2">
-                <h2 className="text-[18px] leading-[26px] font-bold mb-6" style={{ color: '#1A1F36' }}>
-                  Complete Test History
-                </h2>
+              <div className="mb-5 font-bold" style={{ fontSize: 16.1, color: '#1A1F36' }}>
+                Complete Test History
               </div>
             }
           >
             {testHistory.length === 0 ? (
-              <div className="px-8 pb-10 text-center">
+              <div className="py-10 text-center">
                 <p className="text-[14px] text-[#6A7282]">No tests attempted yet</p>
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
-                        {['#', 'Test Name', 'Series', 'Date', 'Score', 'Accuracy', 'Rank', 'Report'].map(h => (
-                          <th
-                            key={h}
-                            className="px-6 py-3 text-left text-[11px] uppercase tracking-[0.6px]"
-                            style={{ fontWeight: 600, color: '#99A1AF' }}
-                          >
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {testHistory.filter(Boolean).map((row, i) => (
-                        <tr
-                          key={row.id ?? i}
-                          style={{ borderBottom: i < testHistory.length - 1 ? '1px solid #F9FAFB' : undefined }}
-                          className="hover:bg-[#FAFAFA] transition-colors"
-                        >
-                          <td className="px-6 py-4 text-[13px]" style={{ color: '#6A7282' }}>{i + 1}</td>
-                          <td className="px-6 py-4">
-                            <div className="text-[13px] font-semibold" style={{ color: '#1A1F36' }}>{row.name}</div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-                              style={{ background: '#EFF6FF', color: '#155DFC' }}
-                            >
-                              {row.series}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-[13px]" style={{ color: '#6A7282' }}>{row.date}</td>
-                          <td className="px-6 py-4 text-[13px] font-semibold" style={{ color: '#1A1F36' }}>{row.score}</td>
-                          <td className="px-6 py-4">
-                            <span className="text-[13px] font-semibold" style={{ color: row.accuracy >= 70 ? '#22C55E' : row.accuracy >= 50 ? '#F59E0B' : '#EF4444' }}>
-                              {row.accuracy}%
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-[13px]" style={{ color: '#6A7282' }}>{row.rank ?? 'N/A'}</td>
-                          <td className="px-6 py-4">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedReport(row)}
-                              className="text-[13px] font-medium hover:underline"
-                              style={{ color: '#155DFC' }}
-                            >
-                              View report →
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {/* Series filter + sort — client-side view over testHistory, see displayedTestHistory above */}
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="pa-filter-label">Series:</span>
+                    {([
+                      { key: 'all', label: 'All' },
+                      { key: 'daily_mcq', label: 'Daily MCQ' },
+                      { key: 'mock', label: 'Mock Tests' },
+                      { key: 'pyq', label: 'PYQ' },
+                    ] as const).map((f) => (
+                      <button
+                        key={f.key}
+                        type="button"
+                        onClick={() => setHistorySeriesFilter(f.key)}
+                        className={`pa-history-btn ${historySeriesFilter === f.key ? 'pa-history-btn-active' : ''}`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="pa-filter-label">Sort:</span>
+                    {([
+                      { key: 'date', label: 'Recent' },
+                      { key: 'accuracy', label: 'Accuracy' },
+                      { key: 'score', label: 'Score' },
+                    ] as const).map((s) => (
+                      <button
+                        key={s.key}
+                        type="button"
+                        onClick={() => setHistorySortField(s.key)}
+                        className={`pa-history-btn ${historySortField === s.key ? 'pa-history-btn-active' : ''}`}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="px-8 py-4 border-t border-[#F3F4F6]">
+
+                {displayedTestHistory.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <p className="text-[14px] text-[#6A7282]">No tests match this filter</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                          {['#', 'Test Name', 'Series', 'Date', 'Score', 'Accuracy', 'Rank', 'Report'].map(h => (
+                            <th
+                              key={h}
+                              className="px-3 pb-3 text-left uppercase"
+                              style={{ fontSize: 9.52, letterSpacing: '0.8px', fontWeight: 700, color: '#64748b' }}
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayedTestHistory.filter(Boolean).map((row, i) => (
+                          <tr
+                            key={row.id ?? i}
+                            style={{ borderBottom: i < displayedTestHistory.length - 1 ? '1px solid #f5f5f5' : undefined }}
+                            className="hover:bg-[#FAFAFA] transition-colors"
+                          >
+                            <td className="px-3 py-3.5" style={{ fontSize: 11.9, color: '#6A7282' }}>{i + 1}</td>
+                            <td className="px-3 py-3.5">
+                              <div className="font-semibold" style={{ fontSize: 11.9, color: '#1A1F36' }}>{row.name}</div>
+                            </td>
+                            <td className="px-3 py-3.5">
+                              <span
+                                className="inline-flex items-center px-2.5 font-medium rounded-full"
+                                style={{ fontSize: 10.08, paddingTop: 3, paddingBottom: 3, background: '#EFF6FF', color: '#155DFC' }}
+                              >
+                                {row.series}
+                              </span>
+                            </td>
+                            <td className="px-3 py-3.5" style={{ fontSize: 11.9, color: '#6A7282' }}>{row.date}</td>
+                            <td className="px-3 py-3.5 font-semibold" style={{ fontSize: 11.9, color: '#1A1F36' }}>{row.score}</td>
+                            <td className="px-3 py-3.5">
+                              <span className="font-bold" style={{ fontSize: 11.9, color: row.accuracy >= 70 ? '#22C55E' : row.accuracy >= 50 ? '#F59E0B' : '#EF4444' }}>
+                                {row.accuracy}%
+                              </span>
+                            </td>
+                            <td className="px-3 py-3.5" style={{ fontSize: 11.9, color: '#6A7282' }}>{row.rank ?? 'N/A'}</td>
+                            <td className="px-3 py-3.5">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedReport(row)}
+                                className="pa-link-gold font-medium hover:underline"
+                                style={{ fontSize: 11.48, color: '#155DFC' }}
+                              >
+                                View report →
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <div className="pt-4 mt-2 border-t" style={{ borderColor: '#F3F4F6' }}>
                   <p className="text-[12px]" style={{ color: '#99A1AF' }}>
-                    Showing {testHistory.length} of {totalTests} tests
+                    Showing {displayedTestHistory.length} of {totalTests} tests
                   </p>
                 </div>
               </>

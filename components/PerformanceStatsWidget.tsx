@@ -207,7 +207,7 @@ const PerformanceStatsWidget = () => {
                 <div className="font-outfit font-bold text-[#0A1172] leading-none" style={{ fontSize: 'clamp(36px,2.19vw,42px)' }}>
                   {currentStreak ?? 0}
                 </div>
-                <p className="font-arimo text-[#0A1172] mt-[clamp(4px,0.31vw,6px)]" style={{ fontSize: 'clamp(13px,0.83vw,16px)', lineHeight: '1.2' }}>
+                <p className="font-arimo font-extrabold text-[#0A1172] mt-[clamp(4px,0.31vw,6px)]" style={{ fontSize: 'clamp(13px,0.83vw,16px)', lineHeight: '1.2' }}>
                   Day Study Streak
                 </p>
               </div>
@@ -261,7 +261,7 @@ const PerformanceStatsWidget = () => {
             {/* Syllabus Coverage */}
             <div className="mb-[clamp(12px,0.83vw,16px)]">
               <div className="flex items-center justify-between mb-[clamp(6px,0.42vw,8px)]">
-                <span className="font-arimo text-[#0A1172]" style={{ fontSize: 'clamp(12px,0.73vw,14px)' }}>
+                <span className="font-arimo font-extrabold text-[#0A1172]" style={{ fontSize: 'clamp(12px,0.73vw,14px)' }}>
                   Syllabus Coverage
                 </span>
                 <span className="font-arimo font-bold text-[#0A1172]" style={{ fontSize: 'clamp(13px,0.83vw,16px)' }}>
@@ -568,7 +568,7 @@ const PerformanceStatsWidget = () => {
                 <path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/>
               </svg>
             </div>
-            <p className="font-arimo text-[#0A1172] text-center" style={{ fontSize: 'clamp(11px,0.68vw,13px)', lineHeight: '1.25' }}>Downloads</p>
+            <p className="font-arimo font-extrabold text-[#0A1172] text-center" style={{ fontSize: 'clamp(11px,0.68vw,13px)', lineHeight: '1.25' }}>Downloads</p>
           </Link>
           <Link href="/dashboard/profile" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)] group p-2 rounded-lg border border-transparent transition-colors hover:bg-[#F3F5FB] hover:border-[#E5E7EB]">
             <div
@@ -584,7 +584,7 @@ const PerformanceStatsWidget = () => {
                 <path d="M4 20c0-3.31 3.58-6 8-6s8 2.69 8 6"/>
               </svg>
             </div>
-            <p className="font-arimo text-[#0A1172] text-center" style={{ fontSize: 'clamp(11px,0.68vw,13px)', lineHeight: '1.25' }}>Profile</p>
+            <p className="font-arimo font-extrabold text-[#0A1172] text-center" style={{ fontSize: 'clamp(11px,0.68vw,13px)', lineHeight: '1.25' }}>Profile</p>
           </Link>
           <Link href="/dashboard/settings" className="flex flex-col items-center gap-[clamp(6px,0.42vw,8px)] group p-2 rounded-lg border border-transparent transition-colors hover:bg-[#F3F5FB] hover:border-[#E5E7EB]">
             <div
@@ -600,7 +600,7 @@ const PerformanceStatsWidget = () => {
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
               </svg>
             </div>
-            <p className="font-arimo text-[#0A1172] text-center" style={{ fontSize: 'clamp(11px,0.68vw,13px)', lineHeight: '1.25' }}>All Settings</p>
+            <p className="font-arimo font-extrabold text-[#0A1172] text-center" style={{ fontSize: 'clamp(11px,0.68vw,13px)', lineHeight: '1.25' }}>All Settings</p>
           </Link>
         </div>
       </div>

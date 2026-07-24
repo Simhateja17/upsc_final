@@ -1,57 +1,39 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { flashcardService } from '@/lib/services';
+import React, { useState, useEffect, useMemo } from 'react';
+import { flashcardService, syllabusService } from '@/lib/services';
+import { SYLLABUS_DATA, type SyllabusData } from '@/data/syllabus/syllabusData';
 
-const FLASHCARD_SUBJECT_OPTIONS = [
-  'Polity',
-  'History',
-  'Geography',
-  'Economy',
-  'Environment & Ecology',
-  'Science & Technology',
-  'Current Affairs',
-  'Society',
-  'Governance',
-  'International Relations',
-  'Social Justice',
-  'Agriculture',
-  'Internal Security',
-  'Disaster Management',
-  'Ethics',
-  'GS1',
-  'GS2',
-  'GS3',
-  'GS4',
-  'Essay',
-  'Optional Paper 1',
-  'Optional Paper 2',
- ] as const;
+interface SyllabusSubjectOption {
+  id: string;
+  name: string;
+  topics: string[];
+}
 
-const SUBJECT_TO_ID: Record<string, string> = {
-  'Polity': 'polity',
-  'History': 'history',
-  'Geography': 'geography',
-  'Economy': 'economy',
-  'Environment & Ecology': 'environment-ecology',
-  'Science & Technology': 'science-technology',
-  'Current Affairs': 'current-affairs',
-  'Society': 'society',
-  'Governance': 'governance',
-  'International Relations': 'international-relations',
-  'Social Justice': 'social-justice',
-  'Agriculture': 'agriculture',
-  'Internal Security': 'internal-security',
-  'Disaster Management': 'disaster-management',
-  'Ethics': 'ethics',
-  'GS1': 'gs1',
-  'GS2': 'gs2',
-  'GS3': 'gs3',
-  'GS4': 'gs4',
-  'Essay': 'essay',
-  'Optional Paper 1': 'optional-paper-1',
-  'Optional Paper 2': 'optional-paper-2',
-};
+function slugify(value: string): string {
+  return value.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+// Same Subject → Topics hierarchy the Syllabus Tracker renders (prelims + mains
+// merged, deduped by subject id) so this picker can never drift out of sync
+// with it — no separately maintained flashcard subject list.
+function buildSyllabusSubjectOptions(data: SyllabusData): SyllabusSubjectOption[] {
+  const bySubjectId = new Map<string, SyllabusSubjectOption>();
+  for (const list of [data.prelims, data.mains]) {
+    for (const subject of list ?? []) {
+      const existing = bySubjectId.get(subject.id);
+      const topicNames = (subject.topics ?? []).map((t) => t.name);
+      if (existing) {
+        for (const name of topicNames) {
+          if (!existing.topics.includes(name)) existing.topics.push(name);
+        }
+      } else {
+        bySubjectId.set(subject.id, { id: subject.id, name: subject.name, topics: [...topicNames] });
+      }
+    }
+  }
+  return Array.from(bySubjectId.values());
+}
 
 const inputShadow = '0px 1px 3px 0px rgba(0,0,0,0.4), 0px 1px 2px -1px rgba(0,0,0,0.4)';
 
@@ -77,6 +59,27 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
   const [difficulty, setDifficulty] = useState<string>('medium');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  // Seeded synchronously from the same static file the Syllabus Tracker falls
+  // back to, then refreshed from the same `/syllabus` endpoint it fetches live
+  // data from — so a subject/topic added in the tracker shows up here too.
+  const [syllabusSubjects, setSyllabusSubjects] = useState<SyllabusSubjectOption[]>(
+    () => buildSyllabusSubjectOptions(SYLLABUS_DATA),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    syllabusService.getSyllabus()
+      .then((res) => {
+        if (!cancelled && res.data) setSyllabusSubjects(buildSyllabusSubjectOptions(res.data));
+      })
+      .catch(() => {
+        // Keep the static SYLLABUS_DATA seed — still the same hierarchy the
+        // tracker itself falls back to when the API is unavailable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -87,11 +90,29 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
     }
   }, [open, initialSubject, initialDeck]);
 
+  const selectedSubjectOption = useMemo(
+    () => syllabusSubjects.find((s) => s.name === subject),
+    [syllabusSubjects, subject],
+  );
+
+  // A subject/deck prefilled from an existing (pre-syllabus-taxonomy) custom
+  // flashcard subject may not exist in the syllabus hierarchy — keep it
+  // selectable so the <select>'s value always matches a rendered option.
+  const subjectSelectOptions = useMemo(() => {
+    const names = syllabusSubjects.map((s) => s.name);
+    return subject && !names.includes(subject) ? [subject, ...names] : names;
+  }, [syllabusSubjects, subject]);
+
+  const topicSelectOptions = useMemo(() => {
+    const topics = selectedSubjectOption?.topics ?? [];
+    return deck && !topics.includes(deck) ? [deck, ...topics] : topics;
+  }, [selectedSubjectOption, deck]);
+
   if (!open) return null;
 
-  const getSubjectId = () => {
-    const name = deck || subject;
-    return SUBJECT_TO_ID[name] ?? name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const handleSubjectChange = (name: string) => {
+    setSubject(name);
+    setDeck(''); // topics belong to a subject — clear the stale pick when the subject changes
   };
 
   const doSave = async (): Promise<boolean> => {
@@ -99,17 +120,17 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
       setError('Question and answer are required.');
       return false;
     }
-    const subjectName = deck || subject;
-    if (!subjectName) {
-      setError('Please select a subject or deck.');
+    if (!subject) {
+      setError('Please select a subject.');
       return false;
     }
     setError('');
     setSaving(true);
     try {
       const res = await flashcardService.createCard({
-        subjectId: getSubjectId(),
-        subject: subjectName,
+        subjectId: selectedSubjectOption?.id ?? slugify(subject),
+        subject,
+        ...(deck ? { topicId: slugify(deck), topic: deck } : {}),
         question: question.trim(),
         answer: answer.trim(),
         difficulty,
@@ -255,13 +276,13 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
               </label>
               <select
                 value={subject}
-                onChange={(e) => setSubject(e.target.value)}
+                onChange={(e) => handleSubjectChange(e.target.value)}
                 className="w-full rounded-[10px] px-4 py-2.5 border outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent"
                 style={fieldStyle}
               >
                 <option value="">Select subject</option>
-                {FLASHCARD_SUBJECT_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
+                {subjectSelectOptions.map((name) => (
+                  <option key={name} value={name}>{name}</option>
                 ))}
               </select>
             </div>
@@ -272,12 +293,13 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
               <select
                 value={deck}
                 onChange={(e) => setDeck(e.target.value)}
-                className="w-full rounded-[10px] px-4 py-2.5 border outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent"
+                disabled={!subject}
+                className="w-full rounded-[10px] px-4 py-2.5 border outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent disabled:cursor-not-allowed disabled:opacity-60"
                 style={fieldStyle}
               >
-                <option value="">Select topic</option>
-                {FLASHCARD_SUBJECT_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
+                <option value="">{subject ? 'Select topic' : 'Select a subject first'}</option>
+                {topicSelectOptions.map((topicName) => (
+                  <option key={topicName} value={topicName}>{topicName}</option>
                 ))}
               </select>
             </div>

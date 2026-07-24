@@ -143,14 +143,6 @@ export default function MindmapPage() {
                   accentColor={cardStyle.bar}
                   title={subjectName}
                   meta={`${subject.total} cards · ${subject.total} topics`}
-                  topRight={toGo > 0 && (
-                    <span
-                      className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
-                      style={{ background: '#EF4444', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
-                    >
-                      {toGo} due
-                    </span>
-                  )}
                   progressPercent={progressWidth}
                   footerLeft={`✓ ${subject.explored} mastered`}
                   footerRight={toGo === 0 ? '✓ All done' : `${toGo} to go`}
@@ -162,7 +154,7 @@ export default function MindmapPage() {
         )}
       </div>
 
-      <MindmapIntroSections />
+      <MindmapIntroSections onUpgradeClick={() => setShowUpgradeModal(true)} />
       </div>
 
       <MindmapUpgradeModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />

@@ -1,16 +1,11 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { dashboardService, studyPlannerService, syllabusService, userService } from '@/lib/services';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
-
-// Short display label for a subject value. Subject values sent to/from the
-// backend stay canonical (e.g. "Environment & Ecology"); this only shortens
-// what's shown in the UI, kept in sync with the Dashboard's quick-add subject list.
-function displaySubjectLabel(subject: string): string {
-  return subject === 'Environment & Ecology' ? 'Environment' : subject;
-}
+import SubjectSelect, { STUDY_TASK_SUBJECTS, displaySubjectLabel } from '@/components/SubjectSelect';
 
 function fmtTimer(secs: number): string {
   const s = Math.max(0, secs);
@@ -172,29 +167,9 @@ function getRecurrenceDates(start: Date, type: RecurType, days: number[], end: R
   return result;
 }
 
-const SUBJECT_OPTIONS = [
-  'Polity',
-  'History',
-  'Geography',
-  'Economy',
-  'Environment & Ecology',
-  'Science & Technology',
-  'Current Affairs',
-  'Society',
-  'Governance',
-  'International Relations',
-  'Social Justice',
-  'Internal Security',
-  'Disaster Management',
-  'Ethics',
-  'GS1',
-  'GS2',
-  'GS3',
-  'GS4',
-  'Essay',
-  'Optional Paper 1',
-  'Optional Paper 2',
-];
+// Canonical Quick Add to Plan subject list — reuses the shared Dashboard
+// subject list so both modules stay in sync (list + order).
+const SUBJECT_OPTIONS = STUDY_TASK_SUBJECTS;
 
 // Maps syllabus subject short/full names to their canonical Quick Add to Plan
 // subject name. Subjects with no entry here (e.g. optional-paper subjects like
@@ -242,6 +217,7 @@ const quickAddIconBoxStyle: React.CSSProperties = {
 };
 
 export default function StudyPlannerPage() {
+  const router = useRouter();
   const [taskTitle, setTaskTitle] = useState('');
   const [taskSubject, setTaskSubject] = useState('');
   const [studyType, setStudyType] = useState('');
@@ -1057,24 +1033,7 @@ export default function StudyPlannerPage() {
                     <label className="font-arimo font-bold block" style={{ fontSize: '14px', lineHeight: '20px', color: '#101828', marginBottom: '6px' }}>
                       Subject
                     </label>
-                    <div className="relative">
-                      <select
-                        value={taskSubject}
-                        onChange={(e) => setTaskSubject(e.target.value)}
-                        className="w-full font-arimo outline-none appearance-none cursor-pointer transition-colors"
-                        style={{ height: '44px', borderRadius: '10px', border: '0.8px solid #E5E7EB', padding: '0 36px 0 14px', fontSize: '16px', color: taskSubject ? '#0A0A0A' : '#9CA3AF', background: '#FFFFFF' }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = '#4F78F6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(79, 120, 246, 0.15)'; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; }}
-                      >
-                        <option value="" disabled>Select Subject</option>
-                        {SUBJECT_OPTIONS.map((subject) => (
-                          <option key={subject} value={subject}>{displaySubjectLabel(subject)}</option>
-                        ))}
-                      </select>
-                      <svg className="absolute pointer-events-none" style={{ right: '14px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none">
-                        <path d="M6 9l6 6 6-6" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
+                    <SubjectSelect value={taskSubject} onChange={setTaskSubject} aria-label="Subject" />
                   </div>
 
                   {/* Study Type */}
@@ -1437,9 +1396,12 @@ export default function StudyPlannerPage() {
                     {totalStudyLabel}
                   </div>
 
-                  {/* Start Focus Session */}
+                  {/* Start Focus Session — hand off to the Live Study Room's
+                      existing Solo Focus tab (?tab=solo), reusing that timer /
+                      focus / tracking implementation rather than the in-page
+                      overlay. See study-groups/page.tsx searchParams handler. */}
                   <button
-                    onClick={startFocusSession}
+                    onClick={() => router.push('/dashboard/study-groups?tab=solo')}
                     disabled={pendingTaskCount === 0}
                     className="flex items-center justify-center gap-2 font-arimo font-bold text-white hover:opacity-90 transition-opacity w-full disabled:opacity-40"
                     style={{

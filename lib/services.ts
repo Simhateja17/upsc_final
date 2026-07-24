@@ -819,7 +819,7 @@ export const adminService = {
     api.post<any>('/admin/videos/subjects', data, authConfig()),
   updateVideoSubject: (id: string, data: any) => api.put<any>(`/admin/videos/subjects/${id}`, data, authConfig()),
   deleteVideoSubject: (id: string) => api.delete<any>(`/admin/videos/subjects/${id}`, authConfig()),
-  createVideo: (data: { subjectId: string; title: string; description?: string; videoUrl?: string; thumbnailUrl?: string; duration?: number; instructor?: string; order?: number }) =>
+  createVideo: (data: { subjectId: string; title: string; description?: string; videoUrl?: string; thumbnailUrl?: string; duration?: number; instructor?: string; order?: number; tags?: string[] }) =>
     api.post<any>('/admin/videos', data, authConfig()),
   updateVideo: (id: string, data: any) => api.put<any>(`/admin/videos/${id}`, data, authConfig()),
   deleteVideo: (id: string) => api.delete<any>(`/admin/videos/${id}`, authConfig()),
@@ -827,6 +827,27 @@ export const adminService = {
   createVideoQuestion: (videoId: string, data: { question: string; options: string[]; correctOption: number; explanation?: string; order?: number }) =>
     api.post<any>(`/admin/videos/${videoId}/questions`, data, authConfig()),
   deleteVideoQuestion: (videoId: string, qid: string) => api.delete<any>(`/admin/videos/${videoId}/questions/${qid}`, authConfig()),
+
+  /**
+   * Link (or unlink) an existing Study Material record to a video.
+   *
+   * A video does NOT get its own copy of a PDF — it only stores a reference to
+   * a row in the Study Material module (studyMaterialService.list()), which
+   * stays the single source of truth for PDFs. Pass `null` to unlink.
+   *
+   * ── Backend contract (production API, separate repo) ────────────────
+   *   PUT /admin/videos/:id  accepts and persists  { studyMaterialId: string | null }.
+   *   GET /videos and GET /videos/:subject  return each video with
+   *     `studyMaterialId` (and, for convenient display, `studyMaterialName`).
+   *   The student "Read" button then reuses the EXISTING study-material
+   *     viewer endpoint  GET /library/view/material/:studyMaterialId/pages
+   *     (libraryService.getMaterialViewPages) — no video-specific PDF render.
+   * Until the API persists/returns studyMaterialId the link simply won't
+   * "stick" (visible, not silent) — no separate storage is ever created.
+   * ───────────────────────────────────────────────────────────────────
+   */
+  linkVideoStudyMaterial: (videoId: string, studyMaterialId: string | null) =>
+    api.put<any>(`/admin/videos/${videoId}`, { studyMaterialId }, authConfig()),
 
   // Testimonials Management
   getTestimonials: () => api.get<any>('/admin/testimonials', authConfig()),
@@ -1173,6 +1194,9 @@ export const videoService = {
   getStats: () => api.get<any>('/videos/stats', authConfig()),
   getVideosBySubject: (subject: string) => api.get<any>(`/videos/${encodeURIComponent(subject)}`, authConfig()),
   getQuestions: (videoId: string) => api.get<any>(`/videos/${videoId}/questions`, authConfig()),
+  // Rendered pages of the study-material PDF linked to a video (for the shared reader)
+  getVideoMaterialPages: (videoId: string, maxPages = 50) =>
+    api.get<any>(`/videos/${videoId}/material/pages?maxPages=${maxPages}`, { ...authConfig(), timeout: 120000 }),
   submitQuiz: (videoId: string, answers: Record<string, number>) =>
     api.post<any>(`/videos/${videoId}/submit`, { answers }, authConfig()),
   askMentor: (data: { question: string; name?: string }) => api.post<any>('/videos/mentor/ask', data, authConfig()),

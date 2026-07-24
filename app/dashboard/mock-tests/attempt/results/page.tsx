@@ -275,6 +275,22 @@ function MockTestResultsInner() {
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [heroTitle, setHeroTitle] = useState('Great session!');
   const [heroSubtitle, setHeroSubtitle] = useState("You've completed today's practice. Here's what the best aspirants do next to keep climbing.");
+  const [showConfetti, setShowConfetti] = useState(false);
+
+  /* ─── Celebration confetti — fires once, only right after this specific
+     attempt is completed. Guarded by sessionStorage so revisiting the same
+     score screen (back button, refresh, re-opening the link) never replays
+     it; a newly generated testId gets its own key and celebrates again. ─── */
+  useEffect(() => {
+    if (isMains || !results || typeof window === 'undefined') return;
+    if (results.scorePct <= 50) return;
+    const key = `mockTestConfettiPlayed:${testId ?? `sample:${title}`}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+    setShowConfetti(true);
+    const hide = setTimeout(() => setShowConfetti(false), 4200);
+    return () => clearTimeout(hide);
+  }, [isMains, results, testId, title]);
 
   /* ─── Mains results loader ─── */
   useEffect(() => {
@@ -605,7 +621,6 @@ function MockTestResultsInner() {
 
   /* ─── Prelims Results View ─── */
   const { total, correct, wrong, scorePct } = results!;
-  const showConfetti = scorePct > 50;
 
   /* ─── Daily-MCQ-style completion card derivations ─── */
   const timeTaken = Math.max(0, Math.round(results!.timeTaken ?? 0));
@@ -676,8 +691,7 @@ function MockTestResultsInner() {
       <div
         style={{
           width: 'min(100%, 868px)',
-          minHeight: 955.9750366210938,
-          marginTop: 52,
+          marginTop: 'clamp(12px, 3vh, 40px)',
           marginLeft: 'auto',
           marginRight: 'auto',
           boxSizing: 'border-box',
@@ -785,7 +799,7 @@ function MockTestResultsInner() {
               { label: 'Accuracy', value: `${scorePct}%`, sub: 'this attempt', valueSize: 26, cls: 'dmscore-accuracy', iconCls: 'dmscore-icon-accuracy', barColor: '#7FB29A', barPct: Math.max(0, Math.min(100, Math.round(scorePct))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>) },
               { label: 'Time Taken', value: `${timeMinutes}m ${timeSeconds}s`, sub: durationLabel, valueSize: 26, cls: 'dmscore-time', iconCls: 'dmscore-icon-time', barColor: '#8AA3C4', barPct: durationSeconds > 0 ? Math.max(0, Math.min(100, Math.round((timeTaken / durationSeconds) * 100))) : 0, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg>) },
               { label: 'Speed', value: `${speedPerQ} min/Q`, sub: 'Avg per question', valueSize: 22, cls: 'dmscore-speed', iconCls: 'dmscore-icon-speed', barColor: '#C9A876', barPct: Math.max(0, Math.min(100, Math.round(parseFloat(speedPerQ) * 100))), icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="currentColor" stroke="none"/></svg>) },
-              { label: 'Rank', value: rankLabel, sub: rankSubLabel, valueSize: 22, cls: 'dmscore-rank', iconCls: 'dmscore-icon-rank', barColor: '#A99BC4', barPct: rankBarPct, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4H3v2a3 3 0 0 0 3 3"/><path d="M19 4h2v2a3 3 0 0 1-3 3"/><path d="M12 13v4"/><path d="M8 21h8"/><path d="M9 17h6l1 4H8z" fill="currentColor" stroke="none"/></svg>) },
+              { label: 'Your Rank', value: rankLabel, sub: rankSubLabel, valueSize: 22, cls: 'dmscore-rank', iconCls: 'dmscore-icon-rank', barColor: '#A99BC4', barPct: rankBarPct, icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4H3v2a3 3 0 0 0 3 3"/><path d="M19 4h2v2a3 3 0 0 1-3 3"/><path d="M12 13v4"/><path d="M8 21h8"/><path d="M9 17h6l1 4H8z" fill="currentColor" stroke="none"/></svg>) },
             ].map((s) => (
               <div key={s.label} className={`dmscore-card ${s.cls}`}>
                 <div className={`dmscore-icon ${s.iconCls}`}>{s.icon}</div>

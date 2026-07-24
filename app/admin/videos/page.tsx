@@ -1,7 +1,75 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { adminService } from '@/lib/services';
+import { useEffect, useMemo, useState } from 'react';
+import { adminService, studyMaterialService } from '@/lib/services';
+
+interface StudyMaterialRow {
+  id: string;
+  file_name: string;
+  subject: string;
+  topic?: string | null;
+  status?: string;
+}
+
+// Common starting points offered as one-click chips. The admin is NOT limited to
+// these — any custom tag can be typed in the input below.
+const SUGGESTED_TAGS = ['Popular', 'New', 'PDF Included'];
+
+/**
+ * Free-form tag editor: type a tag and press Enter (or comma) to add it, click a
+ * suggestion chip, or hit Backspace on an empty field to remove the last tag.
+ * De-duplicates case-insensitively so "New" and "new" don't both appear.
+ */
+function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
+  const [draft, setDraft] = useState('');
+
+  const addTags = (raw: string) => {
+    const parts = raw.split(',').map((s) => s.trim()).filter(Boolean);
+    if (parts.length === 0) return;
+    const next = [...tags];
+    for (const p of parts) {
+      if (!next.some((t) => t.toLowerCase() === p.toLowerCase())) next.push(p);
+    }
+    onChange(next);
+    setDraft('');
+  };
+
+  const removeTag = (idx: number) => onChange(tags.filter((_, i) => i !== idx));
+
+  return (
+    <div>
+      <div className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm flex flex-wrap gap-1.5 items-center min-h-[38px]">
+        {tags.map((tag, i) => (
+          <span key={`${tag}-${i}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+            style={{ background: '#EEF2FF', color: '#4338CA' }}>
+            {tag}
+            <button type="button" onClick={() => removeTag(i)} aria-label={`Remove ${tag}`}
+              className="leading-none text-[#818CF8] hover:text-[#4338CA]" style={{ fontSize: '14px' }}>×</button>
+          </span>
+        ))}
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTags(draft); }
+            else if (e.key === 'Backspace' && !draft && tags.length) { removeTag(tags.length - 1); }
+          }}
+          onBlur={() => addTags(draft)}
+          placeholder={tags.length ? 'Add another…' : 'e.g. Popular, New, PDF Included'}
+          className="flex-1 min-w-[140px] outline-none text-sm bg-transparent"
+        />
+      </div>
+      <div className="flex flex-wrap gap-1.5 mt-2">
+        {SUGGESTED_TAGS.filter((s) => !tags.some((t) => t.toLowerCase() === s.toLowerCase())).map((s) => (
+          <button key={s} type="button" onClick={() => addTags(s)}
+            className="px-2 py-0.5 rounded-full text-xs border border-dashed border-[#C7D2FE] text-[#4F46E5] hover:bg-[#EEF2FF]">
+            + {s}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function VideoManager() {
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -15,9 +83,19 @@ export default function VideoManager() {
   const [showVideoForm, setShowVideoForm] = useState(false);
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [editingSubjectId, setEditingSubjectId] = useState<string | null>(null);
+  const [videoTags, setVideoTags] = useState<string[]>([]);
+  const [savingTags, setSavingTags] = useState(false);
+
+  // Existing Study Material records, offered as the pool to link from. These
+  // are the SAME rows managed on the Study Materials admin page — the single
+  // source of truth for PDFs. We never upload a PDF onto a video here.
+  const [studyMaterials, setStudyMaterials] = useState<StudyMaterialRow[]>([]);
+  const [materialsLoading, setMaterialsLoading] = useState(true);
+  const [materialFilter, setMaterialFilter] = useState('');
+  const [linkingMaterialId, setLinkingMaterialId] = useState<string | null>(null);
 
   const [subjectForm, setSubjectForm] = useState({ name: '', description: '', iconUrl: '', order: 0 });
-  const [videoForm, setVideoForm] = useState({ subjectId: '', title: '', description: '', videoUrl: '', thumbnailUrl: '', duration: '', instructor: '', order: 0 });
+  const [videoForm, setVideoForm] = useState<{ subjectId: string; title: string; description: string; videoUrl: string; thumbnailUrl: string; duration: string; instructor: string; order: number; tags: string[] }>({ subjectId: '', title: '', description: '', videoUrl: '', thumbnailUrl: '', duration: '', instructor: '', order: 0, tags: [] });
   const [questionForm, setQuestionForm] = useState({
     question: '',
     option0: '', option1: '', option2: '', option3: '',
@@ -34,7 +112,32 @@ export default function VideoManager() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadSubjects(); }, []);
+  const loadStudyMaterials = () => {
+    setMaterialsLoading(true);
+    studyMaterialService.list()
+      .then((res) => setStudyMaterials(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setStudyMaterials([]))
+      .finally(() => setMaterialsLoading(false));
+  };
+
+  useEffect(() => { loadSubjects(); loadStudyMaterials(); }, []);
+
+  // Resolve the display name of the currently-linked material: prefer the name
+  // the backend returns on the video, else look it up in the loaded list.
+  const linkedMaterial = useMemo(() => {
+    const id = selectedVideo?.studyMaterialId;
+    if (!id) return null;
+    const found = studyMaterials.find((m) => m.id === id);
+    return { id, file_name: selectedVideo?.studyMaterialName || found?.file_name || 'Linked material', subject: found?.subject };
+  }, [selectedVideo, studyMaterials]);
+
+  const filteredMaterials = useMemo(() => {
+    const q = materialFilter.trim().toLowerCase();
+    if (!q) return studyMaterials;
+    return studyMaterials.filter((m) =>
+      [m.file_name, m.subject, m.topic].filter(Boolean).some((v) => String(v).toLowerCase().includes(q)),
+    );
+  }, [studyMaterials, materialFilter]);
 
   const displaySubjectName = (name: string) =>
     name
@@ -97,7 +200,7 @@ export default function VideoManager() {
       await adminService.createVideo(data);
       setMsg('Video added!');
       setShowVideoForm(false);
-      setVideoForm({ subjectId: selectedSubject?.id || '', title: '', description: '', videoUrl: '', thumbnailUrl: '', duration: '', instructor: '', order: 0 });
+      setVideoForm({ subjectId: selectedSubject?.id || '', title: '', description: '', videoUrl: '', thumbnailUrl: '', duration: '', instructor: '', order: 0, tags: [] });
       if (selectedSubject) loadSubjectVideos(selectedSubject.id);
       loadSubjects();
     } catch (err: any) {
@@ -137,16 +240,33 @@ export default function VideoManager() {
   };
 
   const handleSelectVideo = (video: any) => {
+    setMaterialFilter('');
     if (selectedVideo?.id === video.id) {
       setSelectedVideo(null);
       setQuestions([]);
       return;
     }
     setSelectedVideo(video);
+    setVideoTags(Array.isArray(video.tags) ? video.tags : []);
     setShowQuestionForm(false);
     adminService.getVideoQuestions(video.id)
       .then(res => setQuestions(res.data || []))
       .catch(() => setQuestions([]));
+  };
+
+  const handleSaveVideoTags = async () => {
+    if (!selectedVideo) return;
+    setSavingTags(true);
+    setMsg('');
+    try {
+      const res = await adminService.updateVideo(selectedVideo.id, { tags: videoTags });
+      applyVideoUpdate(res?.data ?? { id: selectedVideo.id, tags: videoTags });
+      setMsg('Tags updated!');
+    } catch (err: any) {
+      setMsg(`Error: ${err.message}`);
+    } finally {
+      setSavingTags(false);
+    }
   };
 
   const handleCreateQuestion = async () => {
@@ -182,6 +302,38 @@ export default function VideoManager() {
       setQuestions(q => q.filter(x => x.id !== qid));
     } catch (err: any) {
       setMsg(`Error: ${err.message}`);
+    }
+  };
+
+  // Reflect an updated video (e.g. after PDF upload/removal) in both the
+  // selected-video panel and the list column.
+  const applyVideoUpdate = (updated: any) => {
+    if (!updated?.id) return;
+    setSelectedVideo((prev: any) => (prev?.id === updated.id ? { ...prev, ...updated } : prev));
+    setVideos((vs) => vs.map((v) => (v.id === updated.id ? { ...v, ...updated } : v)));
+  };
+
+  // Link an existing Study Material record to the selected video (or unlink
+  // with materialId = null). No PDF is uploaded or copied — we only store the
+  // reference, keeping the Study Material module the single source of truth.
+  const handleLinkMaterial = async (material: StudyMaterialRow | null) => {
+    if (!selectedVideo) return;
+    setMsg('');
+    setLinkingMaterialId(material?.id ?? '__unlink__');
+    try {
+      const res = await adminService.linkVideoStudyMaterial(selectedVideo.id, material?.id ?? null);
+      applyVideoUpdate(
+        res?.data ?? {
+          id: selectedVideo.id,
+          studyMaterialId: material?.id ?? null,
+          studyMaterialName: material?.file_name ?? null,
+        },
+      );
+      setMsg(material ? `Linked "${material.file_name}" to this video.` : 'Study material unlinked.');
+    } catch (err: any) {
+      setMsg(`Error: ${err.message}`);
+    } finally {
+      setLinkingMaterialId(null);
     }
   };
 
@@ -342,6 +494,10 @@ export default function VideoManager() {
                 </div>
                 <textarea value={videoForm.description} onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
                   placeholder="Description" rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                <div>
+                  <label className="block text-xs text-[#6B7280] mb-1">Tags</label>
+                  <TagInput tags={videoForm.tags} onChange={(tags) => setVideoForm({ ...videoForm, tags })} />
+                </div>
                 <button onClick={handleCreateVideo}
                   className="px-4 py-2 rounded-lg text-white text-sm font-inter font-medium" style={{ background: '#10B981' }}>
                   Add Video
@@ -371,6 +527,14 @@ export default function VideoManager() {
                       <p className="text-sm font-medium text-[#111827] truncate">{v.title}</p>
                       {v.instructor && <p className="text-xs text-[#6B7280]">by {v.instructor}</p>}
                       {v.duration && <p className="text-xs text-[#9CA3AF]">{Math.floor(v.duration / 60)}m {v.duration % 60}s</p>}
+                      {Array.isArray(v.tags) && v.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {v.tags.map((tag: string, i: number) => (
+                            <span key={`${tag}-${i}`} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium"
+                              style={{ background: '#EEF2FF', color: '#4338CA' }}>{tag}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDeleteVideo(v.id); }}
@@ -401,6 +565,96 @@ export default function VideoManager() {
               </button>
             )}
           </div>
+
+          {/* ── Linked Study Material (references an existing record) ── */}
+          {selectedVideo && (
+            <div className="mb-4 p-4 rounded-xl" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+              <p className="text-xs font-semibold text-[#1E3A8A] mb-1">Study Material PDF</p>
+              <p className="text-xs text-[#3B82F6] mb-3">
+                Link an existing Study Material record. Its PDF opens from the &quot;Read&quot;
+                button on the Video Lectures page — no separate upload, no duplicate copy.
+              </p>
+
+              {linkedMaterial ? (
+                <div className="flex items-center justify-between gap-2 mb-3 px-3 py-2 rounded-lg bg-white" style={{ border: '1px solid #E5E7EB' }}>
+                  <span className="text-xs text-[#111827] truncate flex items-center gap-1">
+                    📄 {linkedMaterial.file_name}
+                    {linkedMaterial.subject && <span className="text-[#9CA3AF]"> · {linkedMaterial.subject}</span>}
+                  </span>
+                  <button
+                    onClick={() => handleLinkMaterial(null)}
+                    disabled={linkingMaterialId === '__unlink__'}
+                    className="text-xs px-2 py-1 rounded text-[#EF4444] hover:bg-[#FEF2F2] flex-shrink-0 disabled:opacity-50"
+                  >
+                    {linkingMaterialId === '__unlink__' ? 'Unlinking…' : 'Unlink'}
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-[#6B7280] mb-3">No study material linked yet.</p>
+              )}
+
+              <input
+                value={materialFilter}
+                onChange={(e) => setMaterialFilter(e.target.value)}
+                placeholder="Search study materials by name, subject, topic…"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs mb-2"
+              />
+
+              {materialsLoading ? (
+                <p className="text-xs text-[#6B7280] py-3 text-center">Loading study materials…</p>
+              ) : studyMaterials.length === 0 ? (
+                <p className="text-xs text-[#6B7280] py-3 text-center">
+                  No study materials found. Upload PDFs on the Study Materials page first.
+                </p>
+              ) : filteredMaterials.length === 0 ? (
+                <p className="text-xs text-[#6B7280] py-3 text-center">No materials match &quot;{materialFilter}&quot;.</p>
+              ) : (
+                <div className="space-y-1 max-h-[220px] overflow-y-auto">
+                  {filteredMaterials.map((m) => {
+                    const isLinked = linkedMaterial?.id === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => !isLinked && handleLinkMaterial(m)}
+                        disabled={isLinked || linkingMaterialId === m.id}
+                        className="w-full text-left px-3 py-2 rounded-lg bg-white disabled:cursor-default hover:bg-[#F0F7FF]"
+                        style={{ border: `1px solid ${isLinked ? '#BFDBFE' : '#E5E7EB'}` }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs text-[#111827] truncate">
+                            📄 {m.file_name}
+                            <span className="text-[#9CA3AF]"> · {m.subject}{m.topic ? ` / ${m.topic}` : ''}</span>
+                          </span>
+                          <span className="text-[10px] flex-shrink-0" style={{ color: isLinked ? '#2563EB' : '#9CA3AF' }}>
+                            {linkingMaterialId === m.id ? 'Linking…' : isLinked ? 'Linked ✓' : 'Link'}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Custom Tags (per-video) ── */}
+          {selectedVideo && (
+            <div className="mb-4 p-4 rounded-xl" style={{ background: '#EEF2FF', border: '1px solid #C7D2FE' }}>
+              <p className="text-xs font-semibold text-[#3730A3] mb-1">Tags</p>
+              <p className="text-xs text-[#6366F1] mb-3">
+                Shown as badges on the Video Lectures cards. Add any custom label.
+              </p>
+              <TagInput tags={videoTags} onChange={setVideoTags} />
+              <button
+                onClick={handleSaveVideoTags}
+                disabled={savingTags}
+                className="mt-3 px-4 py-2 rounded-lg text-white text-sm font-inter font-medium disabled:opacity-50"
+                style={{ background: '#6366F1' }}
+              >
+                {savingTags ? 'Saving…' : 'Save Tags'}
+              </button>
+            </div>
+          )}
 
           {showQuestionForm && selectedVideo && (
             <div className="mb-4 p-4 rounded-xl space-y-2" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>

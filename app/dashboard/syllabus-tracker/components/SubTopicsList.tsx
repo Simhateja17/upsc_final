@@ -204,7 +204,7 @@ export default function SubTopicsList({
             <div className="text-[10px] text-[#8795ae] font-medium mt-[1px]">{statsStripLabels.total || 'Total'}</div>
           </div>
           <div className="bg-[#f3f6fb] border-[1.5px] border-[#e0e8f4] rounded-[9px] p-[8px_11px] transition-all duration-150 hover:border-[rgba(201,146,26,.30)]">
-            <div className="font-playfair text-[19px] font-bold" style={{ color: '#16a34a' }}>{done}</div>
+            <div className="font-playfair text-[19px] font-bold" style={{ color: '#15803d' }}>{done}</div>
             <div className="text-[10px] text-[#8795ae] font-medium mt-[1px]">{statsStripLabels.done || 'Done'}</div>
           </div>
           <div className="bg-[#f3f6fb] border-[1.5px] border-[#e0e8f4] rounded-[9px] p-[8px_11px] transition-all duration-150 hover:border-[rgba(201,146,26,.30)]">
@@ -254,8 +254,8 @@ export default function SubTopicsList({
                   className={`
                     w-[24px] h-[24px] rounded-[7px] border-2 flex items-center justify-center flex-shrink-0 cursor-pointer transition-all duration-200 text-[11px]
                     ${status === 'done' 
-                      ? 'bg-[#16a34a] border-[#16a34a] text-white' 
-                      : 'border-[#e0e8f4] bg-white text-transparent hover:border-[#16a34a] hover:bg-[#dcfce7] hover:text-[#16a34a] hover:scale-110'
+                      ? 'bg-[#dcfce7] border-[#15803d] text-[#15803d]' 
+                      : 'border-[#e0e8f4] bg-white text-transparent hover:border-[#15803d] hover:bg-[#dcfce7] hover:text-[#15803d] hover:scale-110'
                     }
                   `}
                   title="Quick mark done"
@@ -268,7 +268,7 @@ export default function SubTopicsList({
                   onClick={() => onOpenStatusModal(selectedTopic.subjectId, selectedTopic.topicIndex, si, sub)}
                   className={`
                     w-[18px] h-[18px] rounded-[5px] border-[1.5px] flex items-center justify-center flex-shrink-0 transition-all duration-150 text-[10px] cursor-pointer
-                    ${status === 'done' ? 'bg-[#16a34a] border-[#16a34a] text-white'
+                    ${status === 'done' ? 'bg-[#dcfce7] border-[#15803d] text-[#15803d]'
                       : status === 'in-progress' ? 'bg-[#fef3c7] border-[#d97706] text-[#d97706]'
                       : status === 'needs-revision' ? 'bg-[#dbeafe] border-[#1d6fa4] text-[#1d6fa4]'
                       : status === 'weak' ? 'bg-[#fee2e2] border-[#b91c1c] text-[#b91c1c]'

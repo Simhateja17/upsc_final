@@ -7,6 +7,7 @@ import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
 import CuratedModelAnswer from '@/components/mains-results/CuratedModelAnswer';
 import { bookmarkService, flashcardService, pyqService, spacedRepService } from '@/lib/services';
 import QuestionTextRenderer from '@/components/QuestionTextRenderer';
@@ -609,6 +610,13 @@ export default function PyqPage() {
   const [mainsAnswerText, setMainsAnswerText] = useState('');
   const [mainsFile, setMainsFile] = useState<File | null>(null);
   const [mainsFiles, setMainsFiles] = useState<File[]>([]);
+  const removeMainsFile = (index: number) => {
+    setMainsFiles(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      setMainsFile(next[0] || null);
+      return next;
+    });
+  };
   const [mainsAttemptId, setMainsAttemptId] = useState<string | null>(null);
   const [mainsSubmitting, setMainsSubmitting] = useState(false);
   const [mainsSubmitError, setMainsSubmitError] = useState<string | null>(null);
@@ -1789,6 +1797,23 @@ export default function PyqPage() {
       className="flex min-h-full flex-col items-stretch font-arimo"
       style={{ background: '#F9FAFB' }}
     >
+      <style>{`
+        .pyq-act-btn{position:relative;overflow:hidden;transition:transform .2s cubic-bezier(0.4,0,0.2,1),box-shadow .2s cubic-bezier(0.4,0,0.2,1),border-color .2s cubic-bezier(0.4,0,0.2,1);}
+        .pyq-act-btn:active{transform:translateY(0) scale(0.97);}
+        .pyq-act-btn--primary{box-shadow:0 1px 0 rgba(255,255,255,0.08) inset,0 2px 6px rgba(15,23,42,0.28),0 10px 22px -8px rgba(15,23,42,0.4);}
+        .pyq-act-btn--primary::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent);transition:left .5s cubic-bezier(0.4,0,0.2,1);pointer-events:none;}
+        .pyq-act-btn--primary:hover{transform:translateY(-2px);box-shadow:0 1px 0 rgba(255,255,255,0.1) inset,0 4px 10px rgba(15,23,42,0.32),0 16px 30px -8px rgba(212,175,55,0.35);}
+        .pyq-act-btn--primary:hover::before{left:100%;}
+        .pyq-act-btn--secondary{box-shadow:0 1px 2px rgba(16,24,40,0.05),0 1px 0 rgba(255,255,255,0.7) inset;}
+        .pyq-act-btn--secondary:hover{transform:translateY(-2px);border-color:#D4AF37 !important;box-shadow:0 8px 18px -6px rgba(212,175,55,0.22),0 2px 6px rgba(16,24,40,0.06);}
+        .pyq-act-pill{box-shadow:0 1px 2px rgba(16,24,40,0.05);}
+        .pyq-act-pill:hover{transform:translateY(-2px);}
+        .pyq-act-pill--bookmark:hover{border-color:#D4AF37 !important;box-shadow:0 8px 18px -6px rgba(212,175,55,0.3);}
+        .pyq-act-pill--flashcard:hover{border-color:#0891B2 !important;box-shadow:0 8px 18px -6px rgba(8,145,178,0.3);}
+        .pyq-act-pill--review:hover{border-color:#E65100 !important;box-shadow:0 8px 18px -6px rgba(230,81,0,0.3);}
+        .pyq-sparkle{display:inline-block;animation:pyqSparkle 2s ease-in-out infinite;}
+        @keyframes pyqSparkle{0%,100%{transform:scale(1) rotate(0deg);opacity:1}50%{transform:scale(1.15) rotate(12deg);opacity:.85}}
+      `}</style>
       <MainsEvaluationLimitModal
         open={showMainsQuotaModal}
         onClose={() => setShowMainsQuotaModal(false)}
@@ -2390,10 +2415,10 @@ export default function PyqPage() {
                       <button
                         type="button"
                         onClick={() => openMainsWriteModal(q)}
-                        className="flex items-center justify-center"
-                        style={{ height: '59px', borderRadius: '14px', background: '#101828', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
+                        className="pyq-act-btn pyq-act-btn--primary flex items-center justify-center"
+                        style={{ height: '59px', borderRadius: '14px', background: 'linear-gradient(135deg, #101828 0%, #1E2133 100%)', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
-                        <span aria-hidden style={{ marginRight: '8px' }}>✨</span>
+                        <span aria-hidden className="pyq-sparkle" style={{ marginRight: '8px' }}>✨</span>
                         <span>Write &amp; Evaluate</span>
                       </button>
                       <button
@@ -2414,7 +2439,7 @@ export default function PyqPage() {
                           });
                           if (!isExpanded) scrollToAnswerSection(`pyq-model-answer-${q.id}`);
                         }}
-                        className="flex items-center justify-center gap-2"
+                        className="pyq-act-btn pyq-act-btn--secondary flex items-center justify-center gap-2"
                         style={{ height: '59px', borderRadius: '14px', background: '#FFFFFF', color: '#101828', border: '1.5px solid #E5E7EB', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
                       >
                         <span aria-hidden>📄</span>
@@ -2450,17 +2475,17 @@ export default function PyqPage() {
                           <button
                             type="button"
                             onClick={() => openMainsWriteModal(q)}
-                            className="flex items-center gap-2"
-                            style={{ padding: '10px 20px', borderRadius: '10px', background: '#101828', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', border: 'none' }}
+                            className="pyq-act-btn pyq-act-btn--primary flex items-center gap-2"
+                            style={{ padding: '10px 20px', borderRadius: '10px', background: 'linear-gradient(135deg, #101828 0%, #1E2133 100%)', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '14px', border: 'none' }}
                           >
-                            <span aria-hidden>✨</span>
+                            <span aria-hidden className="pyq-sparkle">✨</span>
                             <span>Write &amp; Evaluate</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => toggleMainsBookmark(q)}
                             disabled={mainsBookmarkBusyIds.has(q.id)}
-                            className="flex items-center gap-2"
+                            className="pyq-act-btn pyq-act-pill pyq-act-pill--bookmark flex items-center gap-2"
                             style={{
                               padding: '9px 18px',
                               borderRadius: '10px',
@@ -2480,7 +2505,7 @@ export default function PyqPage() {
                             type="button"
                             onClick={() => addMainsFlashcard(q)}
                             disabled={mainsFlashcardBusyIds.has(q.id)}
-                            className="flex items-center gap-2"
+                            className="pyq-act-btn pyq-act-pill pyq-act-pill--flashcard flex items-center gap-2"
                             style={{
                               padding: '9px 18px',
                               borderRadius: '10px',
@@ -2500,7 +2525,7 @@ export default function PyqPage() {
                             type="button"
                             onClick={() => toggleMainsReview(q)}
                             disabled={mainsReviewBusyIds.has(q.id)}
-                            className="flex items-center gap-2"
+                            className="pyq-act-btn pyq-act-pill pyq-act-pill--review flex items-center gap-2"
                             style={{
                               padding: '9px 18px',
                               borderRadius: '10px',
@@ -2830,6 +2855,13 @@ export default function PyqPage() {
                         Browse Files
                       </button>
                     </div>
+
+                    {/* ── Uploaded file preview cards (image/PDF thumbnails) ── */}
+                    {mainsFiles.length > 0 && (
+                      <div className="mt-3">
+                        <UploadedAnswerFiles files={mainsFiles} onRemove={removeMainsFile} />
+                      </div>
+                    )}
 
                     <button type="button" onClick={() => setTextAnswerExpanded(true)} className="mt-4 flex w-full flex-shrink-0 items-center gap-3">
                       <div className="h-px flex-1 bg-[#E5E7EB]" />

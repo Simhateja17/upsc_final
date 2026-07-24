@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
  * the scroll / forgetting-curve animations replicate the original
  * IntersectionObserver script.
  */
-export default function FlashcardScienceSections() {
+export default function FlashcardScienceSections({ onUpgradeClick }: { onUpgradeClick?: () => void } = {}) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
 
@@ -253,7 +253,11 @@ export default function FlashcardScienceSections() {
           </h2>
           <p className="cta-desc">Get unlimited card creation, advanced spaced repetition analytics, priority AI mentor access, and exclusive subject decks crafted by toppers. Your competition is already ahead.</p>
           <div className="cta-actions">
-            <button className="cta-btn" type="button" onClick={() => router.push('/dashboard/billing/plans#upgrade-plans')}>
+            <button
+              className="cta-btn"
+              type="button"
+              onClick={() => onUpgradeClick ? onUpgradeClick() : router.push('/dashboard/billing/plans#upgrade-plans')}
+            >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>

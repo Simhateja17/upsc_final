@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { PerformanceAnalyticsUpgradeModal } from '@/components/upgrade/UpgradeModals';
+import { AnalyticsUiStyles, SectionDivider, StatCard } from '@/components/analytics/analyticsUi';
 
 type DayActivity = { questionsAttempted: number; hours: number };
 type SubjectRow = { name: string; accuracy: number; questions: number; tag?: string; color?: string };
@@ -51,25 +52,19 @@ function ProgressBar({ value, color }: { value: number; color: string }) {
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-5 text-center text-[12px] font-semibold uppercase tracking-[1.4px] text-[#6A7282]">
-      {children}
-    </div>
-  );
-}
-
+/* Non-lockable card (matches reference card + 3D hover). */
 function AnalyticsCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div
-      className={`rounded-[14px] border border-[#E5E7EB] bg-white shadow-sm ${className}`}
-      style={{ boxShadow: '0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)' }}
-    >
+    <div className={`pa-card pa-card-3d ${className}`}>
+      <span className="pa-glow" />
       {children}
     </div>
   );
 }
 
+/* Lockable analytics card — reference card treatment with the existing
+   entitlement blur/lock overlay (navy lock circle + gold lock + UPGRADE TO
+   UNLOCK on hover). Locked cards open the tier-specific upgrade modal. */
 function LockedAnalyticsCard({
   heading,
   children,
@@ -85,9 +80,10 @@ function LockedAnalyticsCard({
 }) {
   return (
     <div
-      className={`group relative overflow-hidden rounded-[14px] border border-[#E5E7EB] bg-white shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_rgba(0,0,0,0.1)] transition-all duration-300 ${locked ? 'cursor-pointer hover:-translate-y-1 hover:border-[#D8D8DE] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)]' : ''} ${className}`}
+      className={`group pa-card ${locked ? 'cursor-pointer hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)]' : 'pa-card-3d'} ${className}`}
       onClick={locked ? onUpgradeClick : undefined}
     >
+      {!locked && <span className="pa-glow" />}
       <div className="pointer-events-none relative z-[6]">{heading}</div>
       <div className={locked ? 'pointer-events-none select-none blur-[4px] transition-[filter] duration-300 group-hover:blur-[5px]' : ''}>
         {children}
@@ -136,18 +132,18 @@ function SubjectList({ rows, weak = false }: { rows: SubjectRow[]; weak?: boolea
             <div className="mb-3 flex items-center justify-between gap-4">
               <div className="flex min-w-0 items-center gap-2">
                 <span className="h-2 w-2 flex-none rounded-full" style={{ background: color }} />
-                <span className="truncate text-[16px] font-medium text-[#101828]">{row.name}</span>
+                <span className="truncate text-[11.9px] font-medium text-[#101828]">{row.name}</span>
                 {row.tag ? (
-                  <span className="rounded-[4px] bg-[#FDECEC] px-2 py-1 text-[10px] font-semibold text-[#E02424]">
+                  <span className="rounded-[4px] bg-[#FDECEC] px-2 py-1 text-[9.1px] font-semibold text-[#E02424]">
                     {row.tag}
                   </span>
                 ) : null}
               </div>
               <div className="flex flex-none items-center gap-3">
-                <span className="text-[16px] font-bold" style={{ color: weak ? '#E02424' : color }}>
+                <span className="flex-none whitespace-nowrap text-right text-[10.5px] text-[#6A7282]" style={{ width: 46 }}>{row.questions} Qs</span>
+                <span className="flex-none whitespace-nowrap text-right text-[11.2px] font-bold" style={{ width: 38, color: weak ? '#E02424' : color }}>
                   {Math.round(row.accuracy)}%
                 </span>
-                <span className="text-[13px] text-[#6A7282]">{row.questions} Qs</span>
               </div>
             </div>
             <ProgressBar value={row.accuracy} color={color} />
@@ -173,9 +169,24 @@ function DonutChart({ items, centerLabel }: { items: DistributionItem[]; centerL
       style={{ background: hasData ? `conic-gradient(${stops.join(', ')})` : '#EEF0F3' }}
     >
       <div className="absolute inset-[42px] flex flex-col items-center justify-center rounded-full bg-white">
-        <span className="text-[26px] font-bold leading-none text-[#101828]">{centerLabel}</span>
-        <span className="mt-1 text-[12px] uppercase text-[#6A7282]">Total</span>
+        <span className="text-[21px] font-bold leading-none text-[#101828]">{centerLabel}</span>
+        <span className="mt-1 text-[9.8px] uppercase text-[#6A7282]">Total</span>
       </div>
+    </div>
+  );
+}
+
+/* Chart/area heading with the reference's coloured dot marker.
+   Reference font sizes vary by section (chart/area titles 14px, streak/trio
+   18.7→15.4px, badges/leaderboard 16.8px) — pass `size`/`mb` to match. */
+function CardHeading({ dotColor, children, right, size = 14, mb = 16 }: { dotColor?: string; children: React.ReactNode; right?: React.ReactNode; size?: number; mb?: number }) {
+  return (
+    <div className="flex items-center justify-between gap-4" style={{ marginBottom: mb }}>
+      <h2 className="flex items-center gap-2 font-bold text-[#101828]" style={{ fontSize: size }}>
+        {dotColor && <span className="h-2.5 w-2.5 rounded-full" style={{ background: dotColor }} />}
+        {children}
+      </h2>
+      {right}
     </div>
   );
 }
@@ -348,49 +359,14 @@ export default function PerformancePage() {
   }));
   const earnedBadgeCount = earnedBadges.filter((badge: any) => badge.earned).length;
 
-  const summaryCards = [
-    {
-      title: 'Day Streak',
-      icon: '🔥',
-      value: String(currentStreak),
-      valueColor: '#F2742F',
-      subtitle: `${activeStudyDays} days this week`,
-    },
-    {
-      title: 'Qs Attempted',
-      icon: '📝',
-      value: totalQuestions.toLocaleString('en-IN'),
-      valueColor: '#4A7DFF',
-      subtitle: `${weeklyQuestions.toLocaleString('en-IN')} this week`,
-    },
-    {
-      title: 'Avg Accuracy',
-      icon: '🎯',
-      value: `${overallAccuracy}%`,
-      valueColor: '#55C96D',
-      subtitle: `${Math.round(analyticsData?.summary?.avgAccuracy ?? overallAccuracy)}% current avg`,
-    },
-    {
-      title: 'Study Time',
-      icon: '⏱️',
-      value: formatHours(totalStudyHours),
-      valueColor: '#9B51E0',
-      subtitle: `${formatHours(totalStudyHours)} this week`,
-    },
-    {
-      title: 'Mock Tests',
-      icon: '📊',
-      value: String(mockTests.totalAttempts ?? analyticsData?.summary?.totalTests ?? 0),
-      valueColor: '#5B5CF6',
-      subtitle: 'Full length + sectional',
-    },
-    {
-      title: 'Badges Earned',
-      icon: '🏆',
-      value: String(earnedBadgeCount),
-      valueColor: '#C9821F',
-      subtitle: `${earnedBadges.length - earnedBadgeCount} still locked`,
-    },
+  // Icon-left stat cards (reference stats row). Colours use the reference palette.
+  const summaryCards: { title: string; icon: string; value: string; color: string; subtitle: string; trend: 'up' | 'down' | 'none' }[] = [
+    { title: 'Day Streak', icon: '🔥', value: String(currentStreak), color: '#ff9933', subtitle: `${activeStudyDays} days this week`, trend: 'up' },
+    { title: 'Qs Attempted', icon: '✏️', value: totalQuestions.toLocaleString('en-IN'), color: '#4dabf7', subtitle: `${weeklyQuestions.toLocaleString('en-IN')} this week`, trend: 'up' },
+    { title: 'Avg Accuracy', icon: '🎯', value: `${overallAccuracy}%`, color: '#51cf66', subtitle: `${Math.round(analyticsData?.summary?.avgAccuracy ?? overallAccuracy)}% current avg`, trend: 'up' },
+    { title: 'Study Time', icon: '⏱️', value: formatHours(totalStudyHours), color: '#cc5de8', subtitle: `${formatHours(totalStudyHours)} this week`, trend: 'up' },
+    { title: 'Mock Tests', icon: '📊', value: String(mockTests.totalAttempts ?? analyticsData?.summary?.totalTests ?? 0), color: '#4dabf7', subtitle: 'Full length + sectional', trend: 'none' },
+    { title: 'Badges Earned', icon: '🏆', value: String(earnedBadgeCount), color: '#d4a843', subtitle: `${Math.max(0, earnedBadges.length - earnedBadgeCount)} still locked`, trend: 'none' },
   ];
 
   const userFirstName = user?.firstName || 'Arjun';
@@ -402,6 +378,7 @@ export default function PerformancePage() {
       className="flex overflow-hidden font-arimo"
       style={{ background: '#F9FAFB', minHeight: 'calc(100vh - clamp(90px, 5.78vw, 111px))' }}
     >
+      <AnalyticsUiStyles />
       <PerformanceAnalyticsUpgradeModal
         open={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
@@ -416,9 +393,9 @@ export default function PerformancePage() {
           badgeText="Analytics - Performance Dashboard"
           title={<>{userFirstName}&apos;s <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Progress.</span></>}
           subtitle="Your complete UPSC preparation analytics streaks, subject mastery, weak areas, spaced repetition & smart notes."
-          stats={summaryCards.slice(0, 4).map(c => ({ value: c.value, label: c.title.toUpperCase(), color: c.valueColor }))}
+          stats={summaryCards.slice(0, 4).map(c => ({ value: c.value, label: c.title.toUpperCase(), color: c.color }))}
         />
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mx-auto w-full max-w-[1100px] px-4 sm:px-6 lg:px-8 py-8">
           {loading && (
             <div className="mb-6 rounded-[10px] border border-[#DDE8FF] bg-[#F7F9FF] px-4 py-3 text-[13px] text-[#245CEB]">
               Loading your latest performance data…
@@ -429,47 +406,41 @@ export default function PerformancePage() {
               Some live data could not be loaded: {failedSections.join(', ')}. Refresh the page to try again.
             </div>
           )}
-          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+
+          {/* Stat cards — open on every plan */}
+          <div className="grid grid-cols-2 gap-[10px] sm:grid-cols-3 lg:grid-cols-6">
             {summaryCards.map((card) => (
-              <AnalyticsCard key={card.title} className="min-h-[142px] px-5 py-6">
-                <div className="mb-5 flex items-center justify-between gap-4">
-                  <span className="text-[12px] font-semibold uppercase tracking-[0.9px] text-[#99A1AF]">
-                    {card.title}
-                  </span>
-                  <span className="text-[20px]" aria-hidden>{card.icon}</span>
-                </div>
-                <div className="text-[36px] font-bold leading-[40px]" style={{ color: card.valueColor }}>
-                  {card.value}
-                </div>
-                <div className="mt-3 flex items-center gap-2 text-[13px] text-[#4B5563]">
-                  <span className="text-[#22C55E]">↗</span>
-                  <span>{card.subtitle}</span>
-                </div>
-              </AnalyticsCard>
+              <StatCard
+                key={card.title}
+                label={card.title}
+                value={card.value}
+                icon={<span aria-hidden>{card.icon}</span>}
+                color={card.color}
+                sub={card.subtitle}
+                trend={card.trend}
+              />
             ))}
           </div>
 
-          <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Weekly Analytics — Study Time + Time Distribution */}
+          <SectionDivider label="Weekly Analytics" />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
-              className="px-6 py-7"
-              heading={<h2 className="mb-8 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
-                <span className="h-2 w-2 rounded-full bg-[#8B35F6]" />
-                Study Time – This Week
-              </h2>}
+              className="p-6"
+              heading={<CardHeading dotColor="#cc5de8">Study Time – This Week</CardHeading>}
             >
-
-              <div className="mb-16 grid grid-cols-2 gap-5 sm:grid-cols-4">
+              <div className="mb-5 flex flex-wrap gap-6">
                 {[
                   ['Today', formatHours(todayHours), '#101828'],
                   ['Best Day', formatHours(bestDayHours), '#C9821F'],
                   ['Daily Avg', formatHours(dailyAvgHours), '#245CEB'],
                   ['Total Study Hours', formatHours(totalStudyHours), '#245CEB'],
                 ].map(([label, value, color]) => (
-                  <div key={label}>
-                    <div className="text-[26px] font-bold leading-8" style={{ color }}>{value}</div>
-                    <div className="mt-2 text-[11px] uppercase tracking-[0.8px] text-[#99A1AF]">{label}</div>
+                  <div key={label} className="text-center">
+                    <div className="text-[15.4px] font-bold" style={{ color }}>{value}</div>
+                    <div className="text-[9.1px] uppercase tracking-[0.6px] text-[#99A1AF]">{label}</div>
                   </div>
                 ))}
               </div>
@@ -494,13 +465,9 @@ export default function PerformancePage() {
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
-              className="px-6 py-7"
-              heading={<h2 className="mb-9 flex items-center gap-2 text-[20px] font-bold text-[#101828]">
-                <span className="h-2 w-2 rounded-full bg-[#F28C32]" />
-                Time Distribution – This Week
-              </h2>}
+              className="p-6"
+              heading={<CardHeading dotColor="#F28C32">Time Distribution – This Week</CardHeading>}
             >
-
               <div className="grid items-center gap-8 sm:grid-cols-[220px_1fr]">
                 <div className="flex justify-center">
                   <DonutChart items={distribution} centerLabel={formatHours(totalStudyHours)} />
@@ -510,9 +477,9 @@ export default function PerformancePage() {
                     <div key={item.label} className="flex items-center justify-between gap-6">
                       <div className="flex items-center gap-3">
                         <span className="h-3 w-3 rounded-full" style={{ background: item.color }} />
-                        <span className="text-[16px] text-[#4B5563]">{item.label}</span>
+                        <span className="text-[11.9px] text-[#4B5563]">{item.label}</span>
                       </div>
-                      <span className="text-[16px] font-bold text-[#101828]">{formatHours(item.hours)}</span>
+                      <span className="text-[11.2px] font-bold text-[#101828]">{formatHours(item.hours)}</span>
                     </div>
                   ))}
                 </div>
@@ -520,22 +487,21 @@ export default function PerformancePage() {
             </LockedAnalyticsCard>
           </div>
 
-          <SectionLabel>Strong &amp; Weak Areas</SectionLabel>
-          <div className="mb-9 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Strong & Weak Areas */}
+          <SectionDivider label="Strong &amp; Weak Areas" />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
-              className="px-6 py-7"
-              heading={<div className="mb-8 flex items-center justify-between gap-4">
-                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
-                  <span className="text-[24px]" aria-hidden>💪</span>
-                  Strong Areas
-                </h2>
-                <div className="hidden items-center gap-3 text-[13px] text-[#6A7282] sm:flex">
+              className="p-6"
+              heading={<CardHeading right={
+                <div className="hidden items-center gap-3 text-[9.8px] text-[#6A7282] sm:flex">
                   <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#4A7DFF]" />Accuracy</span>
                   <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#D1D5DB]" />Qs attempted</span>
                 </div>
-              </div>}
+              }>
+                <span className="text-[20px]" aria-hidden>💪</span> Strong Areas
+              </CardHeading>}
             >
               <SubjectList rows={strongAreas} />
             </LockedAnalyticsCard>
@@ -543,42 +509,37 @@ export default function PerformancePage() {
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
-              className="px-6 py-7"
-              heading={<div className="mb-8 flex items-center justify-between gap-4">
-                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
-                  <span className="text-[24px]" aria-hidden>⚠</span>
-                  Weak Areas
-                </h2>
-                <Link href="/dashboard/spaced-repetition" className="text-[16px] font-medium text-[#155DFC]">
+              className="p-6"
+              heading={<CardHeading right={
+                <Link href="/dashboard/spaced-repetition" className="pa-link-gold text-[11.2px] font-semibold text-[#155DFC]">
                   View Tracker +
                 </Link>
-              </div>}
+              }>
+                <span className="text-[20px]" aria-hidden>⚠</span> Weak Areas
+              </CardHeading>}
             >
               <SubjectList rows={weakAreas} weak />
             </LockedAnalyticsCard>
           </div>
 
-          <SectionLabel>Study Streak &amp; Daily Trio Progress</SectionLabel>
-          <div className="mb-9 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Study Streak & Daily Trio Progress */}
+          <SectionDivider label="Study Streak &amp; Daily Trio Progress" />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
-              className="px-6 py-7"
-              heading={<div className="mb-7 flex items-center justify-between gap-4">
-                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
-                  <span aria-hidden>📅</span>
-                  Study Streak – {streakCalendar?.monthLabel ?? new Date().toLocaleString('en-US', { month: 'long' })} {streakCalendar?.year ?? new Date().getFullYear()}
-                </h2>
-                <span className="font-bold text-[#F2742F]">🔥 {currentStreak} Days!</span>
-              </div>}
+              className="p-6"
+              heading={<CardHeading size={15.4} right={<span className="text-[13.3px] font-bold text-[#F2742F]">🔥 {currentStreak} Days!</span>}>
+                <span aria-hidden>📅</span>
+                Study Streak – {streakCalendar?.monthLabel ?? new Date().toLocaleString('en-US', { month: 'long' })} {streakCalendar?.year ?? new Date().getFullYear()}
+              </CardHeading>}
             >
-
-              <div className="mb-5 flex flex-wrap items-center gap-2 text-[10px] uppercase text-[#6A7282]">
+              <div className="mb-5 flex flex-wrap items-center gap-2 text-[10.5px] uppercase text-[#6A7282]">
                 <span>Intensity</span>
                 {['None', 'Light', 'Medium', 'Intense'].map((label, index) => (
                   <span key={label} className="flex items-center gap-1">
                     <span
-                      className="h-3 w-3 rounded-[3px]"
+                      className="h-4 w-4 rounded-[3px]"
                       style={{ background: ['#EEF0F3', '#D7F8E4', '#A8EBC7', '#58BE87'][index] }}
                     />
                     {label}
@@ -586,7 +547,7 @@ export default function PerformancePage() {
                 ))}
               </div>
 
-              <div className="mb-4 grid grid-cols-7 gap-2 text-center text-[12px] text-[#6A7282]">
+              <div className="mb-4 grid grid-cols-7 gap-[6px] text-center text-[9.8px] text-[#6A7282]">
                 {orderedDays.map((day) => <span key={day}>{day}</span>)}
                 {streakCalendar && (() => {
                   const firstWeekday = (new Date(streakCalendar.year, streakCalendar.month - 1, 1).getDay() + 6) % 7;
@@ -602,7 +563,7 @@ export default function PerformancePage() {
                       key={entry.day}
                       type="button"
                       onClick={() => setSelectedDay(entry.day)}
-                      className="flex aspect-square items-center justify-center rounded-[8px] text-[14px] font-semibold transition-shadow"
+                      className="pa-cal-day flex aspect-square items-center justify-center rounded-[6px] text-[11.9px] font-semibold"
                       style={{
                         background: isSelected ? '#0F1626' : isToday ? '#0A1172' : intensityColor,
                         border: isSelected
@@ -679,101 +640,93 @@ export default function PerformancePage() {
             <LockedAnalyticsCard
               locked={showAdvancedAnalyticsPreview}
               onUpgradeClick={() => setShowUpgradeModal(true)}
-              className="px-6 py-7"
-              heading={<h2 className="mb-7 flex items-center gap-3 text-[20px] font-bold text-[#101828]">
-                <span aria-hidden>⚡</span>
-                Daily Trio – This Week
-              </h2>}
+              className="p-6"
+              heading={<CardHeading size={15.4} mb={20}><span aria-hidden>⚡</span> Daily Trio – This Week</CardHeading>}
             >
-
               {[
-                { icon: '📚', title: 'Daily MCQ Challenge', subtitle: 'Polity, Economy, Geography', value: Math.min(analyticsData?.dailyTrio?.mcqDays ?? 0, 7), color: '#58BE87', href: '/dashboard/daily-mcq' },
-                { icon: '✍️', title: 'Daily Answer Writing', subtitle: 'Answer Writing, AI Evaluated', value: Math.min(analyticsData?.dailyTrio?.mainsDays ?? 0, 7), color: '#0E1830', href: '/dashboard/daily-answer' },
-                { icon: '📰', title: 'Daily News Analysis', subtitle: 'The Hindu, Indian Express', value: Math.min(analyticsData?.dailyTrio?.editorialDays ?? 0, 7), color: '#E8B84B', href: '/dashboard/daily-editorial' },
+                { icon: '📚', title: 'Daily MCQ Challenge', subtitle: 'Polity, Economy, Geography', value: Math.min(analyticsData?.dailyTrio?.mcqDays ?? 0, 7), color: '#58BE87', iconBg: '#dcfce7', href: '/dashboard/daily-mcq' },
+                { icon: '✍️', title: 'Daily Answer Writing', subtitle: 'Answer Writing, AI Evaluated', value: Math.min(analyticsData?.dailyTrio?.mainsDays ?? 0, 7), color: '#0E1830', iconBg: '#fef3c7', href: '/dashboard/daily-answer' },
+                { icon: '📰', title: 'Daily News Analysis', subtitle: 'The Hindu, Indian Express', value: Math.min(analyticsData?.dailyTrio?.editorialDays ?? 0, 7), color: '#E8B84B', iconBg: '#e0e7ff', href: '/dashboard/daily-editorial' },
               ].map((item) => (
                 <Link
                   key={item.title}
                   href={item.href}
-                  className="mb-8 block rounded-[10px] border border-[#E5E7EB] bg-white px-5 py-4 shadow-sm transition-colors hover:border-[#CBD5E1] last:mb-0"
-                  style={{ boxShadow: '0px 2px 4px rgba(0,0,0,0.12)' }}
+                  className="pa-trio mb-4 block rounded-[10px] border border-[#E5E7EB] bg-[#F8FAFC] p-4 last:mb-0"
                 >
                   <div className="mb-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[20px]" aria-hidden>{item.icon}</span>
+                    <div className="flex items-center gap-4">
+                      <span className="flex h-12 w-12 flex-none items-center justify-center rounded-[10px] text-[21px]" style={{ background: item.iconBg }} aria-hidden>{item.icon}</span>
                       <div>
-                        <div className="text-[16px] font-bold text-[#101828]">{item.title}</div>
-                        <div className="mt-1 text-[12px] text-[#6A7282]">{item.subtitle}</div>
+                        <div className="text-[13.3px] font-bold text-[#101828]">{item.title}</div>
+                        <div className="mt-1 text-[11.2px] text-[#6A7282]">{item.subtitle}</div>
                       </div>
                     </div>
                     <span className="text-[18px] text-[#99A1AF]" aria-hidden>→</span>
                   </div>
                   <div className="grid grid-cols-[1fr_auto] items-center gap-6">
                     <ProgressBar value={(item.value / 7) * 100} color={item.color} />
-                    <span className="text-[14px] font-bold text-[#101828]">{item.value}/7 days</span>
+                    <span className="text-[12.6px] font-bold text-[#101828]">{item.value}/7 days</span>
                   </div>
                 </Link>
               ))}
             </LockedAnalyticsCard>
           </div>
 
-          <SectionLabel>Recent Tests &amp; Achievements</SectionLabel>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <AnalyticsCard className="px-6 py-7">
-              <div className="mb-7 flex items-center justify-between gap-4">
-                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
-                  <span aria-hidden>🏆</span>
-                  Achievement Badges
-                </h2>
+          {/* Achievements & Rankings */}
+          <SectionDivider label="Achievements &amp; Rankings" />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <AnalyticsCard className="p-6">
+              <CardHeading size={16.8} mb={20} right={
                 <div className="flex items-center gap-3">
-                  <span className="rounded-[4px] bg-[#E8B84B] px-2 py-1 text-[12px] font-semibold text-white">
+                  <span className="rounded-full bg-[#E8B84B] px-[14px] py-[6px] text-[11.2px] font-semibold text-white">
                     {earnedBadgeCount} Earned
                   </span>
-                  <Link href="/dashboard/achievement-badges" className="text-[14px] text-[#4B5563] hover:underline">All →</Link>
+                  <Link href="/dashboard/achievement-badges" className="pa-link-gold text-[11.2px] text-[#4B5563]">All →</Link>
                 </div>
-              </div>
+              }>
+                <span aria-hidden>🏆</span> Achievement Badges
+              </CardHeading>
 
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3">
                 {earnedBadges.map((badge: any) => (
                   <div
                     key={badge.title}
-                    className="rounded-[10px] border px-3 py-5 text-center"
+                    className="rounded-[12px] border px-3 py-4 text-center"
                     style={{
                       borderColor: badge.earned ? '#F4D85A' : '#DDE8FF',
                       background: badge.earned ? 'linear-gradient(180deg,#FFFCEA,#FFFFFF)' : '#F7F9FF',
                       opacity: badge.earned ? 1 : 0.72,
                     }}
                   >
-                    <div className="mb-4 text-[26px]" aria-hidden>{badge.icon}</div>
-                    <div className="text-[12px] font-bold text-[#101828]">{badge.title}</div>
-                    <div className="mt-3 text-[10px]" style={{ color: badge.earned ? '#C9821F' : '#6A7282' }}>
+                    <div className="mb-2 text-[28px]" aria-hidden>{badge.icon}</div>
+                    <div className="mb-[3px] text-[11.9px] font-bold text-[#101828]">{badge.title}</div>
+                    <div className="mb-[3px] text-[10.5px]" style={{ color: badge.earned ? '#C9821F' : '#6A7282' }}>
                       {badge.earned ? '✓ Earned' : 'Locked'}
                     </div>
-                    <div className="mt-2 text-[10px] text-[#99A1AF]">{badge.note}</div>
+                    <div className="text-[10.5px] text-[#99A1AF]">{badge.note}</div>
                   </div>
                 ))}
               </div>
             </AnalyticsCard>
 
-            <AnalyticsCard className="px-6 py-7">
-              <div className="mb-7 flex items-center justify-between gap-4">
-                <h2 className="flex items-center gap-3 text-[20px] font-bold text-[#101828]">
-                  <span aria-hidden>🏅</span>
-                  Weekly Leaderboard
-                </h2>
-                <Link href="/dashboard/leaderboard?range=week" className="text-[13px] font-semibold text-[#258F7D] hover:underline">View All →</Link>
-              </div>
+            <AnalyticsCard className="p-6">
+              <CardHeading size={16.8} right={
+                <Link href="/dashboard/leaderboard?range=week" className="pa-link-gold text-[11.9px] font-semibold text-[#258F7D]">View All →</Link>
+              }>
+                <span aria-hidden>🏅</span> Weekly Leaderboard
+              </CardHeading>
 
               {weeklyLeaderboard?.length ? (
                 <div className="space-y-3">
                   {weeklyLeaderboard.slice(0, 8).map((entry: any, index: number) => (
-                    <div key={entry.userId ?? entry.name ?? index} className="flex items-center justify-between rounded-[8px] bg-[#F8FAFC] px-4 py-3">
+                    <div key={entry.userId ?? entry.name ?? index} className="flex items-center justify-between rounded-[8px] bg-[#F8FAFC] px-4 py-[14px]">
                       <div className="flex items-center gap-4">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4A7DFF] font-bold text-white">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4A7DFF] text-[12.6px] font-bold text-white">
                           {entry.rank ?? index + 1}
                         </span>
-                        <span className="font-semibold text-[#101828]">{entry.name}</span>
+                        <span className="text-[13.3px] font-semibold text-[#101828]">{entry.name}</span>
                       </div>
-                      <span className="font-bold text-[#258F7D]">{entry.totalScore}</span>
+                      <span className="text-[14px] font-bold text-[#258F7D]">{entry.totalScore}</span>
                     </div>
                   ))}
                 </div>

@@ -10,7 +10,9 @@ import { MainsEvaluationLimitModal } from '@/components/upgrade/UpgradeModals';
 import { useAuth } from '@/contexts/AuthContext';
 import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
+import Toast from '@/components/Toast';
 import WritingTimer from '@/components/WritingTimer';
+import LeaderboardRankingCard from '@/components/LeaderboardRankingCard';
 
 interface QuestionData {
   id: string;
@@ -217,6 +219,8 @@ function DailyMainsChallengeInner() {
   // Bookmark ("Save Question") state → stored in the Bookmarks Vault under Answer Writing
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkSaving, setBookmarkSaving] = useState(false);
+  // Non-interrupting acknowledgement shown after saving to the Bookmarks Vault.
+  const [savedToast, setSavedToast] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -367,6 +371,8 @@ function DailyMainsChallengeInner() {
           status: data.attempted ? 'Submitted' : 'Not Attempted',
         },
       });
+      // Acknowledge only a new save; un-saving stays silent.
+      if (!wasBookmarked) setSavedToast('Saved to Bookmarks');
     } catch {
       setIsBookmarked(wasBookmarked); // revert on failure
     } finally {
@@ -469,6 +475,14 @@ function DailyMainsChallengeInner() {
     return (
       <div className="flex flex-col bg-[#F5F6F8] font-jakarta" style={{ minHeight: '100%', overflowY: 'auto' }}>
         {quotaModal}
+        {savedToast && (
+          <Toast
+            message={savedToast}
+            type="success"
+            onClose={() => setSavedToast(null)}
+            autoCloseDuration={2500}
+          />
+        )}
         <div className="flex-1 flex flex-col items-center px-4 sm:px-6 py-8 w-full max-w-[1240px] mx-auto">
 
           <style>{`
@@ -578,20 +592,11 @@ function DailyMainsChallengeInner() {
               <span className="flex items-center gap-2">⭐ <strong>Marks:</strong> {data.marks}</span>
             </div>
 
-            {/* Actions + aspirants */}
+            {/* Actions */}
             <div className="flex flex-wrap items-center justify-between gap-4" style={{ marginTop: '24px' }}>
               <div className="flex flex-wrap items-center gap-3">
                 <button onClick={handleBeginChallenge} className="dms-btn-primary" style={{ padding: '14px 28px' }}>🚀 Begin Challenge</button>
                 <button type="button" className="dms-btn-secondary" style={{ padding: '14px 28px', background: '#FFFFFF' }}>📱 Attempt on App</button>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex">
-                  <span className="dms-av" style={{ background: '#3B82F6', zIndex: 4 }}>A</span>
-                  <span className="dms-av" style={{ background: '#10B981', marginLeft: '-8px', zIndex: 3 }}>M</span>
-                  <span className="dms-av" style={{ background: '#8B5CF6', marginLeft: '-8px', zIndex: 2 }}>K</span>
-                  <span className="dms-av" style={{ background: '#F59E0B', marginLeft: '-8px', zIndex: 1 }}>+</span>
-                </div>
-                <div className="dms-live-copy" style={{ fontSize: '14px', color: '#6B7280' }}><strong style={{ color: '#0B1020' }}>{data.attemptCount.toLocaleString('en-US')}</strong> aspirants already attempted</div>
               </div>
             </div>
           </div>
@@ -608,12 +613,12 @@ function DailyMainsChallengeInner() {
                   <h2 className="font-bold text-[#0B1020]" style={{ fontSize: '18px' }}>Past Challenges</h2>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center" style={{ gap: '4px', padding: '4px', borderRadius: '12px', background: '#F5F6F8', border: '1px solid #E6E8EE' }}>
-                    {['All', 'GS I', 'GS II', 'GS III', 'GS IV'].map((t, i) => (
+                  <div className="flex items-center" style={{ gap: '2px', padding: '3px', borderRadius: '12px', background: '#F5F6F8', border: '1px solid #E6E8EE' }}>
+                    {['All', 'GS Paper I', 'GS Paper II', 'GS Paper III', 'GS Paper IV'].map((t, i) => (
                       <span
                         key={t}
                         style={{
-                          padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap',
+                          padding: '6px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap',
                           color: i === 0 ? '#0B1020' : '#6B7280',
                           background: i === 0 ? '#FFFFFF' : 'transparent',
                           boxShadow: i === 0 ? '0 1px 2px rgba(15,23,42,.06)' : 'none',
@@ -798,63 +803,13 @@ function DailyMainsChallengeInner() {
             </div>
 
             {/* RIGHT COLUMN: Mains League */}
-            <div className="bg-white rounded-[24px]" style={{ padding: '24px', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE' }}>
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                <div className="flex items-center gap-2">
-                  <span style={{ fontSize: '20px' }}>🥇</span>
-                  <h3 className="font-bold" style={{ fontSize: '16px', background: 'linear-gradient(135deg,#F5B800,#E5A300)', padding: '2px 10px', borderRadius: '8px', color: '#0B1020' }}>Mains League</h3>
-                </div>
-                <Link href="/dashboard/leaderboard?tab=mains" className="hover:underline" style={{ fontSize: '14px', fontWeight: 600, color: '#0B1020' }}>View All →</Link>
-              </div>
-              <div className="flex flex-col">
-                {mainsLeague.map((row, i) => {
-                  const RANK_BG = [
-                    'linear-gradient(135deg,#F5B800,#E5A300)',
-                    'linear-gradient(135deg,#A8A9AD,#7F8284)',
-                    'linear-gradient(135deg,#CD7F32,#B06C2A)',
-                  ];
-                  const isMedal = i < 3;
-                  return (
-                    <div
-                      key={row.userId}
-                      className="flex min-w-0 items-center gap-3"
-                      style={{ padding: '10px 0', borderBottom: '1px solid #E6E8EE' }}
-                    >
-                      <div
-                        className="flex items-center justify-center font-bold flex-shrink-0"
-                        style={{
-                          width: '30px', height: '30px', borderRadius: '50%', fontSize: '12px',
-                          background: isMedal ? RANK_BG[i] : '#F1F3F5',
-                          color: isMedal ? '#fff' : '#6B7280',
-                          boxShadow: i === 0 ? '0 2px 8px rgba(245,184,0,0.3)' : i < 3 ? '0 2px 6px rgba(127,130,132,0.22)' : 'none',
-                        }}
-                      >
-                        {row.rank}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="font-semibold text-[#0B1020] truncate" style={{ fontSize: '13px' }}>{row.name}</div>
-                        <div style={{ fontSize: '10.5px', color: '#6B7280' }}>Rank #{row.rank}</div>
-                      </div>
-                      <div className="font-bold text-[#0B1020]" style={{ fontSize: '13px' }}>{Math.round(row.mainsAvg * 10) / 10}</div>
-                    </div>
-                  );
-                })}
-                {/* You row */}
-                <div
-                  className="flex min-w-0 items-center gap-3 rounded-[12px] mt-4"
-                  style={{ background: '#F5F6F8', padding: '12px' }}
-                >
-                  <div className="flex items-center justify-center font-bold flex-shrink-0" style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#0B1020', color: '#F5B800', fontSize: '13px' }}>
-                    {myMainsRank?.mainsRank ?? '—'}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="font-semibold text-[#0B1020] truncate" style={{ fontSize: '14px' }}>You · {myMainsRank?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You'}</div>
-                    <div style={{ fontSize: '11px', color: '#6B7280' }}>Rank #{myMainsRank?.mainsRank ?? '—'}</div>
-                  </div>
-                  <Link href="/dashboard/leaderboard?tab=mains" className="font-semibold text-[#0B1020] hover:underline" style={{ fontSize: '12px' }}>Climb →</Link>
-                </div>
-              </div>
-            </div>
+            <LeaderboardRankingCard
+              icon="🥇"
+              title="Mains League"
+              viewAllHref="/dashboard/leaderboard?tab=mains"
+              rows={mainsLeague.map((row) => ({ rank: row.rank, userId: row.userId, name: row.name, value: row.mainsAvg }))}
+              you={{ rank: myMainsRank?.mainsRank ?? '—', name: myMainsRank?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You' }}
+            />
           </div>
 
           {/* ── Achievements (full width) ── */}
@@ -1113,42 +1068,27 @@ function DailyMainsChallengeInner() {
             </>
           )}
 
-          {/* Evaluation quota status banner */}
-          {!entitlements.loading && mainsQuota && (
-            mainsQuota.allowed === false ? (
-              <div
-                className="mt-4 flex items-center justify-between gap-3 px-4 py-3 rounded-[12px]"
-                style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}
-              >
-                <div className="flex items-center gap-3">
-                  <span style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '16px' }}>⚠️</span>
-                  <div>
-                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#B91C1C' }}>🔒 Evaluation limit reached</p>
-                    <p style={{ fontSize: '12px', color: '#6A7282', marginTop: '1px' }}>
-                      {mainsQuota.message || 'You have used your 1 free lifetime evaluation. Upgrade to continue.'}
-                    </p>
-                  </div>
-                </div>
-                <Link href="/dashboard/billing/plans">
-                  <button style={{ flexShrink: 0, padding: '8px 18px', borderRadius: '10px', background: '#17223E', color: '#FFFFFF', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    Upgrade
-                  </button>
-                </Link>
-              </div>
-            ) : mainsQuota.remaining !== null ? (
-              <div
-                className="mt-4 flex items-center gap-3 px-4 py-3 rounded-[12px]"
-                style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}
-              >
-                <span style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '16px' }}>✅</span>
+          {/* Evaluation quota status banner — limit reached */}
+          {!entitlements.loading && mainsQuota && mainsQuota.allowed === false && (
+            <div
+              className="mt-4 flex items-center justify-between gap-3 px-4 py-3 rounded-[12px]"
+              style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}
+            >
+              <div className="flex items-center gap-3">
+                <span style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '16px' }}>⚠️</span>
                 <div>
-                  <p style={{ fontSize: '13px', fontWeight: 700, color: '#166534' }}>✅ Free evaluation available</p>
-                  <p style={{ fontSize: '12px', color: '#4A5565', marginTop: '1px' }}>
-                    {mainsQuota.remaining} of {mainsQuota.limit ?? mainsQuota.remaining} free evaluation{(mainsQuota.limit ?? mainsQuota.remaining) !== 1 ? 's' : ''} remaining
+                  <p style={{ fontSize: '13px', fontWeight: 700, color: '#B91C1C' }}>🔒 Evaluation limit reached</p>
+                  <p style={{ fontSize: '12px', color: '#6A7282', marginTop: '1px' }}>
+                    {mainsQuota.message || 'You have used your 1 free lifetime evaluation. Upgrade to continue.'}
                   </p>
                 </div>
               </div>
-            ) : null
+              <Link href="/dashboard/billing/plans">
+                <button style={{ flexShrink: 0, padding: '8px 18px', borderRadius: '10px', background: '#17223E', color: '#FFFFFF', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  Upgrade
+                </button>
+              </Link>
+            </div>
           )}
 
           {submitError && (
@@ -1173,6 +1113,18 @@ function DailyMainsChallengeInner() {
               </>
             )}
           </button>
+
+          {/* Free evaluation indicator — pill sits below the Submit button (per PRD reference) */}
+          {!entitlements.loading && mainsQuota && mainsQuota.allowed !== false && mainsQuota.remaining !== null && (
+            <div className="flex justify-center">
+              <span
+                className="inline-flex items-center gap-2"
+                style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', color: '#166534', borderRadius: '100px', padding: '6px 14px', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}
+              >
+                ✅ {mainsQuota.remaining} Free Evaluation{mainsQuota.remaining !== 1 ? 's' : ''} Remaining
+              </span>
+            </div>
+          )}
 
           </div>
         </div>

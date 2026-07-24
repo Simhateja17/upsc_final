@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { flashcardService } from '@/lib/services';
+import Toast from '@/components/Toast';
 
 type Card = {
   id: string;
@@ -65,6 +66,7 @@ export default function FlashcardReviewPage() {
   const [showSessionComplete, setShowSessionComplete] = useState(false);
   const [masteredCount, setMasteredCount] = useState(0);
   const [deletingCard, setDeletingCard] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     if (!subjectId || !topicId) return;
@@ -119,11 +121,14 @@ export default function FlashcardReviewPage() {
       .then(() => {
         const newCards = cards.filter((c) => c.id !== card.id);
         setCards(newCards);
+        setToast({ message: 'Card deleted', type: 'success' });
         if (newCards.length === 0) { setShowSessionComplete(true); return; }
         setCurrentIndex((i) => Math.min(i, newCards.length - 1));
         setRevealed(false);
       })
-      .catch(() => {})
+      .catch(() => {
+        setToast({ message: 'Could not delete this card. Please try again.', type: 'error' });
+      })
       .finally(() => setDeletingCard(false));
   };
 
@@ -149,6 +154,9 @@ export default function FlashcardReviewPage() {
 
   return (
     <div className="flex overflow-hidden" style={{ background: '#FAFBFE', height: '100%' }}>
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      )}
       <div className="flex-1 overflow-y-auto" style={{ background: '#FAFBFE' }}>
         <div className="w-full max-w-[1100px] mx-auto px-4 sm:px-6 py-5">
 

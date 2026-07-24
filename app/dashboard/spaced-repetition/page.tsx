@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { dashboardService, spacedRepService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
@@ -184,10 +184,22 @@ export default function SpacedRepetitionPage() {
         <div className="sr-scope">
           {/* SECTION 1: SUBJECT CARDS */}
           <section className="subjects-section">
-            <div className="subjects-header">
-              <div className="left">
-                <h2>Choose a <em>Subject</em></h2>
-                <p>Pick the subject you want to revise today</p>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div
+                  className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+                  style={{ background: '#101828', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, lineHeight: '20px', color: '#FFFFFF' }}
+                >
+                  1
+                </div>
+                <div>
+                  <h2 style={{ fontFamily: 'Georgia', fontWeight: 700, fontSize: 36, lineHeight: '40px', color: '#101828' }}>
+                    Choose a <span style={{ fontStyle: 'italic', color: '#E8B84B' }}>Subject</span>
+                  </h2>
+                  <p style={{ fontFamily: 'Georgia, serif', fontWeight: 400, fontSize: 15, lineHeight: '22px', color: '#6A7282', marginTop: 4 }}>
+                    Pick the subject you want to revise today
+                  </p>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <button className="add-q-btn" onClick={handleAddQuestionClick}>
@@ -428,13 +440,38 @@ export default function SpacedRepetitionPage() {
 
 // Timeline + retention curve, with the reference's scroll-reveal animations.
 function IntervalsSection() {
-  const [revealed, setRevealed] = useState(false);
+  const nodeRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const connectorRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const retentionRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    // Reveal once on mount (the reference uses IntersectionObserver; a simple
-    // reveal keeps the same visual result without observer plumbing).
-    const t = setTimeout(() => setRevealed(true), 100);
-    return () => clearTimeout(t);
+    const nodeEls = nodeRefs.current.filter((el): el is HTMLDivElement => el !== null);
+    const connectorEls = connectorRefs.current.filter((el): el is HTMLDivElement => el !== null);
+    const targets: HTMLElement[] = [...nodeEls, ...connectorEls];
+    if (retentionRef.current) targets.push(retentionRef.current);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target as HTMLElement;
+          if (el.dataset.anim === 'timeline') {
+            const idx = nodeEls.indexOf(el as HTMLDivElement);
+            setTimeout(() => el.classList.add('visible'), idx * 120);
+          } else if (el.dataset.anim === 'conn') {
+            const idx = connectorEls.indexOf(el as HTMLDivElement);
+            setTimeout(() => el.classList.add('visible'), idx * 120 + 80);
+          } else if (el.classList.contains('retention-curve')) {
+            el.classList.add('visible');
+          }
+          observer.unobserve(el);
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    targets.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
   }, []);
 
   const nodes = [
@@ -457,7 +494,11 @@ function IntervalsSection() {
         <div className="timeline-track">
           {nodes.map((n, i) => (
             <React.Fragment key={n.cls}>
-              <div className={`timeline-node ${n.cls}${revealed ? ' visible' : ''}`}>
+              <div
+                className={`timeline-node ${n.cls}`}
+                data-anim="timeline"
+                ref={(el) => { nodeRefs.current[i] = el; }}
+              >
                 <div className="node-card">
                   <div className="node-icon">{n.icon}</div>
                   <h4>{n.title}</h4>
@@ -466,7 +507,11 @@ function IntervalsSection() {
                 </div>
               </div>
               {i < nodes.length - 1 && (
-                <div className={`timeline-connector${revealed ? ' visible' : ''}`}>
+                <div
+                  className="timeline-connector"
+                  data-anim="conn"
+                  ref={(el) => { connectorRefs.current[i] = el; }}
+                >
                   <div className="conn-line" />
                   <div className="conn-arrow" />
                 </div>
@@ -484,7 +529,7 @@ function IntervalsSection() {
         <div className="legend-item"><div className="legend-dot" style={{ background: 'var(--green)' }} />Day 30 Mastered</div>
       </div>
 
-      <div className={`retention-curve${revealed ? ' visible' : ''}`}>
+      <div className="retention-curve" ref={retentionRef}>
         <h3>Memory Retention Curve</h3>
         <p className="curve-sub">Each review strengthens your memory. Spacing them out builds lasting knowledge.</p>
         <svg className="curve-svg" viewBox="0 0 700 180" preserveAspectRatio="none">
@@ -497,12 +542,12 @@ function IntervalsSection() {
           <path className="draw-line" d="M50,30 C150,35 250,100 400,140 S600,165 680,170" fill="none" stroke="#ef4444" strokeWidth="2" strokeDasharray="6,4" opacity=".5" />
           <text x="590" y="165" fill="#ef4444" fontSize="10" fontFamily="DM Sans" opacity=".7">Without review</text>
           <path className="draw-line" d="M50,30 C100,50 130,80 160,55 C190,75 230,95 260,50 C290,70 340,88 370,40 C400,58 450,75 480,35 C510,50 560,65 590,30 C620,42 660,50 680,25" fill="none" stroke="#10b981" strokeWidth="2.5" />
-          <circle cx="160" cy="55" r="5" fill="#10b981" opacity=".3" /><circle cx="160" cy="55" r="3" fill="#10b981" />
+          <circle className="curve-dot-ring" style={{ animationDelay: '0s' }} cx="160" cy="55" r="5" fill="#10b981" /><circle cx="160" cy="55" r="3" fill="#10b981" />
           <text x="148" y="75" fill="#10b981" fontSize="9" fontFamily="DM Sans" fontWeight="600">Review</text>
-          <circle cx="260" cy="50" r="5" fill="#10b981" opacity=".3" /><circle cx="260" cy="50" r="3" fill="#10b981" />
-          <circle cx="370" cy="40" r="5" fill="#10b981" opacity=".3" /><circle cx="370" cy="40" r="3" fill="#10b981" />
-          <circle cx="480" cy="35" r="5" fill="#10b981" opacity=".3" /><circle cx="480" cy="35" r="3" fill="#10b981" />
-          <circle cx="590" cy="30" r="5" fill="#10b981" opacity=".3" /><circle cx="590" cy="30" r="3" fill="#10b981" />
+          <circle className="curve-dot-ring" style={{ animationDelay: '.3s' }} cx="260" cy="50" r="5" fill="#10b981" /><circle cx="260" cy="50" r="3" fill="#10b981" />
+          <circle className="curve-dot-ring" style={{ animationDelay: '.6s' }} cx="370" cy="40" r="5" fill="#10b981" /><circle cx="370" cy="40" r="3" fill="#10b981" />
+          <circle className="curve-dot-ring" style={{ animationDelay: '.9s' }} cx="480" cy="35" r="5" fill="#10b981" /><circle cx="480" cy="35" r="3" fill="#10b981" />
+          <circle className="curve-dot-ring" style={{ animationDelay: '1.2s' }} cx="590" cy="30" r="5" fill="#10b981" /><circle cx="590" cy="30" r="3" fill="#10b981" />
           <text x="340" y="178" fill="#9ca3af" fontSize="10" fontFamily="DM Sans" textAnchor="middle">Days →</text>
         </svg>
         <div className="retention-info">

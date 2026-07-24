@@ -21,6 +21,12 @@ interface VideoItem {
   viewCount?: number;
   duration?: string;
   instructor?: string;
+  tags?: string[];
+  // Reference to a row in the Study Material module (single source of truth
+  // for PDFs). Set by an admin via the Video Lecture Manager. The backend
+  // returns it on GET /videos/:subject.
+  studyMaterialId?: string | null;
+  studyMaterialName?: string | null;
 }
 
 interface SubjectItem {
@@ -182,10 +188,15 @@ function subjectEmoji(name: string) {
   return getSubjectMetaStyle(name).icon;
 }
 
-function stableHash(s: string) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100000;
-  return h;
+/* Map an admin-entered tag to a badge style. Known labels keep their signature
+   colour (matching the original design); any custom tag falls back to gold. A
+   tag containing "PDF" also gets the little document icon. */
+function getTagPill(tag: string): { cls: string; pdf: boolean } {
+  const t = tag.trim().toUpperCase();
+  if (t === 'NEW') return { cls: 'vl-pill-red', pdf: false };
+  if (t === 'POPULAR') return { cls: 'vl-pill-gold', pdf: false };
+  if (t.includes('PDF')) return { cls: 'vl-pill-blue', pdf: true };
+  return { cls: 'vl-pill-gold', pdf: false };
 }
 
 /*
@@ -493,60 +504,52 @@ export default function VideoLecturesPage() {
 
   /*
    * "Read" opens the SAME in-app PDF viewer used by the Study Material module
-   * (StudyMaterialReaderModal). Videos aren't yet mapped to their study
-   * materials in the Admin Panel, so as a sample integration we open the first
-   * available study-material note. Once the admin mapping exists, resolve the
-   * material linked to `video` instead of walking the library tree here.
+   * (StudyMaterialReaderModal). The admin links a video to an existing Study
+   * Material record from the Video Lecture Manager, so the video carries a
+   * `studyMaterialId` — we render that record through the very same endpoint
+   * the Study Material module uses (libraryService.getMaterialViewPages),
+   * keeping Study Material the single source of truth for PDFs.
+   *
+   * Fallback: a video linked via the older per-video upload path (before this
+   * change) exposes no studyMaterialId; for those we still render through the
+   * legacy video endpoint so nothing that already worked breaks.
    */
+  const extractPages = (res: any): string[] => {
+    const data = res?.data?.data || res?.data || {};
+    return Array.isArray(data.pages)
+      ? data.pages
+          .map((page: any) => page?.url)
+          .filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
+      : [];
+  };
+
   const handleRead = async (video: VideoItem) => {
     const key = String(video.id);
     if (loadingRead) return;
     setLoadingRead(key);
     try {
-      const subjRes: any = await libraryService.getSubjects();
-      const subjects: any[] = subjRes.data?.subjects || subjRes.data || [];
-
-      let material: any = null;
-      let subjectName = '';
-      for (const subj of subjects) {
-        if (!subj?.id) continue;
-        const chRes: any = await libraryService.getChapters(subj.id);
-        const chapters: any[] = chRes.data?.chapters || chRes.data || [];
-        for (const subSubject of chapters) {
-          for (const topic of (subSubject.topics || [])) {
-            const found = (topic.materials || []).find((m: any) => m?._id || m?.id);
-            if (found) { material = found; subjectName = subj.name; break; }
-          }
-          if (material) break;
-        }
-        if (material) break;
-      }
-
-      if (!material) {
-        alert('No study material is available to read yet.');
-        return;
-      }
-
-      const materialId = material._id || material.id;
-      const viewRes: any = await libraryService.getMaterialViewPages(materialId, 50);
-      const data = viewRes.data?.data || viewRes.data || {};
-      const pages: string[] = Array.isArray(data.pages)
-        ? data.pages
-            .map((page: any) => page?.url)
-            .filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
-        : [];
+      const res: any = video.studyMaterialId
+        ? await libraryService.getMaterialViewPages(video.studyMaterialId, 50)
+        : await videoService.getVideoMaterialPages(video.id, 50);
+      const pages = extractPages(res);
 
       if (pages.length > 0) {
+        const title = res?.data?.data?.title || res?.data?.title || video.studyMaterialName || video.title;
         setReadModal({
           pages,
-          title: data.title || material.title || material.name || video.title,
-          subject: subjectName || video.subject || '',
+          title,
+          subject: video.subject || selectedSubject || '',
         });
       } else {
-        alert('Could not load this note. Please try again.');
+        alert('No study material has been linked to this video yet.');
       }
-    } catch {
-      alert('Could not open the study material. Please try again.');
+    } catch (err: any) {
+      const status = err?.statusCode ?? err?.status ?? err?.response?.status;
+      if (status === 404) {
+        alert('No study material has been linked to this video yet.');
+      } else {
+        alert('Could not open the study material. Please try again.');
+      }
     } finally {
       setLoadingRead(null);
     }
@@ -830,8 +833,8 @@ export default function VideoLecturesPage() {
                   </div>
                   <div>
                     <h2
-                      className="font-arimo font-bold"
-                      style={{ fontSize: '24px', color: '#1E293B', lineHeight: '32px' }}
+                      className="font-bold"
+                      style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: '22px', color: '#101828', lineHeight: '28px' }}
                     >
                       {getSubjectHeroLabel(selectedSubject)} Simplified
                     </h2>
@@ -914,6 +917,7 @@ export default function VideoLecturesPage() {
                   .vl-card:hover .vl-play-overlay{opacity:1;}
                   .vl-play-btn{width:56px;height:56px;border-radius:999px;background:#FF2D2D;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px -8px rgba(255,45,45,.6);border:none;cursor:pointer;}
                   .vl-pill{position:absolute;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.02em;padding:4px 9px;border-radius:999px;z-index:2;}
+                  .vl-badges{position:absolute;top:10px;left:10px;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100% - 20px);z-index:2;}
                   .vl-pill-dark{background:rgba(11,18,38,.85);color:#fff;backdrop-filter:blur(6px);}
                   .vl-pill-gold{background:#E9B949;color:#1A1206;}
                   .vl-pill-red{background:#FF2D2D;color:#fff;}
@@ -949,12 +953,9 @@ export default function VideoLecturesPage() {
                   {filteredSubjectVideos.map((video) => {
                     const watchedIds = watchedBySubject[normalizeSubjectKey(selectedSubject ?? video.subject ?? '')] || [];
                     const isWatched = watchedIds.includes(String(video.id));
-                    const badges = [
-                      { label: 'NEW', cls: 'vl-pill-red', pdf: false },
-                      { label: 'POPULAR', cls: 'vl-pill-gold', pdf: false },
-                      { label: 'PDF INCLUDED', cls: 'vl-pill-blue', pdf: true },
-                    ];
-                    const badge = badges[stableHash(String(video.id)) % badges.length];
+                    const videoTags = Array.isArray(video.tags)
+                      ? video.tags.filter((t) => typeof t === 'string' && t.trim())
+                      : [];
                     return (
                     <article key={video.id} className="vl-card font-arimo">
                       <div className="vl-thumb">
@@ -965,16 +966,25 @@ export default function VideoLecturesPage() {
                           <span style={{ fontSize: 'clamp(48px, 5vw, 64px)' }}>{subjectEmoji(selectedSubject)}</span>
                         )}
                         <div className="vl-scrim" />
-                        {/* Top-left badge */}
-                        <span className={`vl-pill ${badge.cls}`} style={{ top: '10px', left: '10px' }}>
-                          {badge.pdf && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                              <path d="M14 2v6h6" />
-                            </svg>
-                          )}
-                          {badge.label}
-                        </span>
+                        {/* Top-left tags (admin-managed) */}
+                        {videoTags.length > 0 && (
+                          <div className="vl-badges">
+                            {videoTags.map((tag, ti) => {
+                              const pill = getTagPill(tag);
+                              return (
+                                <span key={`${tag}-${ti}`} className={`vl-pill ${pill.cls}`} style={{ position: 'static' }}>
+                                  {pill.pdf && (
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                      <path d="M14 2v6h6" />
+                                    </svg>
+                                  )}
+                                  {tag}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
                         {/* Bookmark */}
                         <button className="vl-bookmark" aria-label="Bookmark" onClick={(e) => e.currentTarget.classList.toggle('active')}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B1226" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

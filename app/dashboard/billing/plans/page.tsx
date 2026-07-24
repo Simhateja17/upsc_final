@@ -1384,9 +1384,7 @@ export default function ExplorePlansPage() {
             <div style={{ padding: '28px 24px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
               <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}>Foundation</p>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Aspire</h3>
-              <p style={{ margin: '8px 0 20px', fontSize: 13, lineHeight: 1.6, color: '#6B7A99', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                Build strong UPSC fundamentals with daily practice, proper guidance &amp; consistent preparation.
-              </p>
+              <p aria-hidden="true" style={{ margin: '8px 0 20px', fontSize: 13, lineHeight: 1.6, minHeight: '1.6em' }} />
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
                 <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹299' : cycle === 'quarterly' ? '₹249' : '₹299'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '58%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
@@ -1613,11 +1611,11 @@ export default function ExplorePlansPage() {
                       { feature: 'Daily Leaderboard', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
                     ] },
                     { icon: '🔥', title: 'PRACTICE (EVALUATIONS & MOCK TESTS)', rows: [
-                      { feature: 'Mains Answer Evaluation', free: '3 / Lifetime', aspire: '5 / day', rise: '25 / day, 7 / hour', ascent: 'Unlimited / day, 10 / hour' },
-                      { feature: 'Prelims Mock Test', free: '1 Test / Lifetime', aspire: '5 Tests / day', rise: '50 / day, 5 / hour', ascent: 'Unlimited / day, 15 / hour' },
+                      { feature: 'Mains Answer Evaluation', free: '3 / Lifetime', aspire: '5 / day', rise: '25 / day', ascent: 'Unlimited / day' },
+                      { feature: 'Prelims Mock Test', free: '1 Test / Lifetime', aspire: '5 Tests / day', rise: '50 / day', ascent: 'Unlimited / day' },
                     ] },
                     { icon: '💬', title: '24*7 DOUBT RESOLUTION', rows: [
-                      { feature: 'Jeet AI Mentor', free: '20 lifetime, 10 / hour', aspire: '10 Queries / day', rise: '25 / hour, 100 / day', ascent: '50 / hour, unlimited / day' },
+                      { feature: 'Jeet AI Mentor', free: '20 lifetime', aspire: '10 Queries / day', rise: '100 / day', ascent: 'unlimited / day' },
                     ] },
                     { icon: '📊', title: 'ANALYTICS & TRACKER', rows: [
                       { feature: 'Performance Analytics Dashboard', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },

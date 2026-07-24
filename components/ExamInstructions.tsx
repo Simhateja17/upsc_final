@@ -15,6 +15,7 @@ type Props = {
   questionCount: number;
   totalTimeMinutes: number;
   paperLabel: string;       // e.g. "GS I · All Subjects"
+  difficultyLabel: string;  // e.g. "Medium"
   onBack: () => void;
   onStart: () => void;
 };
@@ -86,6 +87,7 @@ export default function ExamInstructions({
   questionCount,
   totalTimeMinutes,
   paperLabel,
+  difficultyLabel,
   onBack,
   onStart,
 }: Props) {
@@ -180,6 +182,7 @@ export default function ExamInstructions({
             <StatCard emoji="📋" tint="#FBEFD0" value={`${questionCount} Questions`} label="Total Questions" />
             <StatCard emoji="⏱️" tint="#D6F0E0" value={`${totalTimeMinutes} minutes`} label={isMains ? 'Total Writing Time' : 'Total Time'} />
             <StatCard emoji={paperStyle.icon} tint={paperStyle.bg} value={paperLabel} label="Paper" />
+            <StatCard emoji="⚡" tint="#E9E3FB" value={difficultyLabel} label="Difficulty" />
           </div>
 
           {/* Guidelines */}

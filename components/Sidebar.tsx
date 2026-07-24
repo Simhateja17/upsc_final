@@ -75,7 +75,7 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
       title: 'ANALYTICS',
       items: [
         { id: 'performance', label: 'Performance Analytics', icon: '/sidebar-performance-new.png', path: '/dashboard/performance', accessKey: 'analytics', allowed: ['full', 'limited'] },
-        { id: 'test-analytics', label: 'Test Analytics', icon: '/sidebar-analytics-new.png', path: '/dashboard/test-analytics', accessKey: 'test_analytics', allowed: ['full', 'limited'] },
+        { id: 'test-analytics', label: 'Tests History', icon: '/sidebar-analytics-new.png', path: '/dashboard/test-analytics', accessKey: 'test_analytics', allowed: ['full', 'limited'] },
       ],
     },
     {

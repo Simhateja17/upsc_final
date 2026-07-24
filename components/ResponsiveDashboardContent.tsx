@@ -6,40 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { dashboardService, studyPlannerService } from '@/lib/services';
 import { getSubjectEmoji } from '@/lib/subjectEmojis';
-
-// Complete study-planner subject list — mirrors SUBJECT_OPTIONS in the Study
-// Planner page and VALID_STUDY_PLANNER_SUBJECTS on the backend so custom tasks
-// offer every subject (not just the 6 core ones).
-const STUDY_TASK_SUBJECTS = [
-  'Polity',
-  'History',
-  'Geography',
-  'Economy',
-  'Environment & Ecology',
-  'Science & Technology',
-  'Current Affairs',
-  'Society',
-  'Governance',
-  'International Relations',
-  'Social Justice',
-  'Internal Security',
-  'Disaster Management',
-  'Ethics',
-  'GS1',
-  'GS2',
-  'GS3',
-  'GS4',
-  'Essay',
-  'Optional Paper 1',
-  'Optional Paper 2',
-];
-
-// Short display label for a subject value. Subject values sent to/from the
-// backend stay canonical (e.g. "Environment & Ecology"); this only shortens
-// what's shown in the UI, kept in sync with displaySubjectLabel in the Study Planner page.
-function displaySubjectLabel(subject: string): string {
-  return subject === 'Environment & Ecology' ? 'Environment' : subject;
-}
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
+import SubjectSelect, { displaySubjectLabel } from '@/components/SubjectSelect';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -252,18 +220,7 @@ const AddTaskModal = ({
           {/* Subject */}
           <div>
             <label className="block text-sm font-semibold text-[#0e1430] mb-2">Subject</label>
-            <select
-              value={subject}
-              onChange={e => setSubject(e.target.value)}
-              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#f5b400] focus:outline-none transition-colors text-sm bg-white"
-            >
-              <option value="">Select Subject</option>
-              {STUDY_TASK_SUBJECTS.map((s) => (
-                <option key={s} value={s}>
-                  {getSubjectEmoji(s)} {displaySubjectLabel(s)}
-                </option>
-              ))}
-            </select>
+            <SubjectSelect value={subject} onChange={setSubject} aria-label="Subject" />
             <input
               type="text"
               value={customSubject}
@@ -1004,6 +961,9 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
                 const completed = isTaskCompleted(task);
                 // Green left border only for completed tasks; incomplete tasks use a normal grey border.
                 const taskId = task._id || task.id || '';
+                // Per-subject colour so each subject pill (Polity, Current Affairs,
+                // Society…) reads as a distinct colour instead of all being purple.
+                const subjectStyle = getSubjectMetaStyle(task.subject || '');
                 const durationLabel = formatDurationLabel(taskDurationMinutes(task));
                 const timeLabel = task.startTime
                   ? `${task.startTime}${task.endTime ? ` - ${task.endTime}` : ''} ${durationLabel}`.trim()
@@ -1026,7 +986,7 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
                           <img src="/b.png" alt="Type" className="w-3.5 h-3.5" />
                           {(() => { const t = task.type || 'Reading'; return t.charAt(0).toUpperCase() + t.slice(1); })()}
                         </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[clamp(12px,0.68vw,13px)] font-medium text-purple-700" style={{ background: '#F3E8FF' }}>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[clamp(12px,0.68vw,13px)] font-medium" style={{ background: subjectStyle.bg, color: subjectStyle.accent }}>
                           {task.subject ? `${getSubjectEmoji(task.subject)} ${displaySubjectLabel(task.subject)}` : '📚 General'}
                         </span>
                         {timeLabel && (
@@ -1125,6 +1085,68 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
             Start Focus Session
           </button>
         </div>
+
+        {/* Your Complete Test History Section — links to Tests History (Test Analytics) */}
+        <Link
+          href="/dashboard/test-analytics"
+          className="group block mb-[clamp(2rem,2.5vw,3rem)]"
+          style={{ textDecoration: 'none' }}
+        >
+          <div
+            className="relative overflow-hidden rounded-2xl p-[clamp(1rem,1.5vw,1.5rem)] transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1"
+            style={{
+              background: 'linear-gradient(135deg,#0e1430 0%,#1a2550 50%,#0e1430 100%)',
+              color: '#fff',
+              border: '1px solid rgba(245,180,0,0.15)',
+            }}
+          >
+            {/* Decorative glow */}
+            <div className="absolute top-0 right-0 w-40 h-40 opacity-10" style={{ background: 'radial-gradient(circle,#f5b400 0%,transparent 70%)' }} />
+            <div className="absolute bottom-0 left-0 w-24 h-24 opacity-5" style={{ background: 'radial-gradient(circle,#f5b400 0%,transparent 70%)' }} />
+            <div className="relative z-10 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-[clamp(0.75rem,1vw,1rem)] min-w-0">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{
+                    background: 'linear-gradient(135deg,rgba(245,180,0,0.2),rgba(245,180,0,0.05))',
+                    border: '1px solid rgba(245,180,0,0.25)',
+                  }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f5b400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <path d="M9 15l2 2 4-4" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-inter font-extrabold text-[clamp(15px,1vw,16px)] flex items-center gap-2 flex-wrap">
+                    Your Complete Test History
+                    <span
+                      className="inline-flex items-center px-2.5 py-1 rounded-lg text-[clamp(11px,0.68vw,12px)] font-semibold tracking-wide"
+                      style={{ background: 'rgba(245,180,0,0.1)', color: '#f5b400', border: '1px solid rgba(245,180,0,0.2)' }}
+                    >
+                      All Tests
+                    </span>
+                  </h3>
+                  <p className="font-inter text-[clamp(12px,0.85vw,14px)] mt-1" style={{ color: '#9ca3be' }}>
+                    View detailed analytics, performance trends, and subject-wise breakdowns across all your attempts.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center flex-shrink-0">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:translate-x-1"
+                  style={{ background: 'linear-gradient(135deg,#f5b400,#ffcb3a)' }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1407" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14" />
+                    <path d="M12 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Link>
 
       </div>
     </div>

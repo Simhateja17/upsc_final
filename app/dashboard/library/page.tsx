@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { handleEntitlementError } from '@/components/entitlements';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import StudyMaterialReaderModal from '@/components/StudyMaterialReaderModal';
+import { StudyMaterialDownloadUpgradeModal } from '@/components/upgrade/UpgradeModals';
 import { getSubjectMetaStyle, getTagStyles as getSharedTagStyles } from '@/lib/subjectPalette';
 
 /* ------------------------------------------------------------------ */
@@ -169,6 +170,8 @@ export default function LibraryPage() {
   const [stageIndicator, setStageIndicator] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  // Footer "Download PDFs" upgrade modal.
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   // Filters the left subject list (mirrors the Syllabus Tracker "Filter subjects" box).
   const [subjectSearch, setSubjectSearch] = useState('');
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -416,28 +419,12 @@ export default function LibraryPage() {
                       flex items-center gap-[11px] p-[11px_13px] rounded-[12px] cursor-pointer border-[1.5px] relative overflow-hidden transition-all duration-200
                       ${
                         isSelected
-                          ? 'border-[rgba(201,146,26,.30)] shadow-md'
+                          ? 'border-[#DBEAFE] bg-[#EFF6FF]'
                           : 'border-[#e0e8f4] bg-white hover:border-[#d8e4f5] hover:bg-[#edf2fc] hover:-translate-y-[2px] hover:shadow-lg active:translate-y-0 active:shadow-sm'
                       }
                     `}
-                    style={
-                      isSelected
-                        ? {
-                            background: 'linear-gradient(135deg, rgba(232,168,32,.06), rgba(201,146,26,.03))',
-                            boxShadow: '0 4px 16px rgba(201,146,26,.16), 0 0 0 3px rgba(201,146,26,.08)',
-                          }
-                        : {
-                            boxShadow: '0 2px 8px rgba(15,31,61,.05)',
-                          }
-                    }
+                    style={{ boxShadow: '0 2px 8px rgba(15,31,61,.05)' }}
                   >
-                    {isSelected && (
-                      <div
-                        className="absolute left-0 top-0 bottom-0 w-[3.5px] rounded-r-[2px]"
-                        style={{ background: 'linear-gradient(180deg, #e8a820, #c9921a)' }}
-                      />
-                    )}
-
                     <div
                       className="absolute inset-0 rounded-[12px] pointer-events-none"
                       style={{
@@ -467,7 +454,7 @@ export default function LibraryPage() {
                     </div>
 
                     {/* Right: chevron */}
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isSelected ? '#c9921a' : '#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, position: 'relative' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isSelected ? '#17223E' : '#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, position: 'relative' }}>
                       <path d="m9 18 6-6-6-6" />
                     </svg>
                   </div>
@@ -811,7 +798,6 @@ export default function LibraryPage() {
                 const materialPages = material.pageCount || material.pages || 0;
                 const cardKey = materialId || materialTitle + idx;
                 const isHovered = hoveredCard === cardKey;
-                const tabColor = ACTIVE_TAB_COLOR;
                 return (
                 <div
                   key={cardKey}
@@ -823,11 +809,11 @@ export default function LibraryPage() {
                     flexWrap: isMobile ? 'wrap' : 'nowrap',
                     gap: '16px',
                     borderRadius: '14px',
-                    border: isHovered ? `1.5px solid ${tabColor}` : '0.8px solid #E5E7EB',
+                    border: isHovered ? '1px solid #CBD5E1' : '0.8px solid #E5E7EB',
                     padding: '16px',
                     transition: 'all 0.18s ease',
                     boxShadow: isHovered
-                      ? `0 4px 20px rgba(0,0,0,0.08), 0 0 0 3px ${tabColor}18`
+                      ? '0 4px 20px rgba(0,0,0,0.08)'
                       : '0 1px 2px rgba(0,0,0,0.04)',
                     transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
                     background: isHovered ? '#FAFBFF' : '#FFFFFF',
@@ -1238,6 +1224,7 @@ export default function LibraryPage() {
             <div className="flex items-center" style={{ gap: 'clamp(10px, 1vw, 14px)', flexWrap: 'wrap' }}>
               <button
                 className="font-arimo font-bold"
+                onClick={() => setShowDownloadModal(true)}
                 style={{
                   background: '#101828',
                   color: '#FFFFFF',
@@ -1308,6 +1295,12 @@ export default function LibraryPage() {
         onGetPdf={handleGetPdf}
       />
     )}
+
+    {/* ── Download PDFs upgrade modal (footer CTA) ── */}
+    <StudyMaterialDownloadUpgradeModal
+      open={showDownloadModal}
+      onClose={() => setShowDownloadModal(false)}
+    />
     </>
   );
 }
