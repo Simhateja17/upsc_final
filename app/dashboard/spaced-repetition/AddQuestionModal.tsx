@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { SUBJECT_HEALTH, scheduleOptions, subjectLabelToId, type SpacedRepItem } from './shared';
+import { subjectOptions, scheduleOptions, subjectLabelToId, type SpacedRepItem } from './shared';
 
 export type AddQuestionPayload = {
   questionText: string;
@@ -39,7 +39,7 @@ const DEFAULT_REVIEW_DAYS = scheduleOptions[0];
 export default function AddQuestionModal({ open, onClose, defaultSubjectId, editItem, onSubmit }: Props) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
-  const [subjectId, setSubjectId] = useState(defaultSubjectId ?? SUBJECT_HEALTH[0].id);
+  const [subjectId, setSubjectId] = useState(defaultSubjectId ?? subjectOptions[0].id);
   const [sourceType, setSourceType] = useState('mcq');
   const [firstReview, setFirstReview] = useState(DEFAULT_REVIEW_DAYS);
   const [saving, setSaving] = useState(false);
@@ -59,18 +59,18 @@ export default function AddQuestionModal({ open, onClose, defaultSubjectId, edit
     }
     setQuestion('');
     setAnswer('');
-    setSubjectId(defaultSubjectId ?? SUBJECT_HEALTH[0].id);
+    setSubjectId(defaultSubjectId ?? subjectOptions[0].id);
     setSourceType('mcq');
     setFirstReview(DEFAULT_REVIEW_DAYS);
   }, [open, editItem, defaultSubjectId]);
 
   if (!open) return null;
 
-  // An item may sit in a subject the health grid doesn't list (e.g. GS1) — keep it selectable
-  // so editing never silently reassigns it.
-  const subjectChoices = SUBJECT_HEALTH.some((s) => s.id === subjectId)
-    ? SUBJECT_HEALTH
-    : [...SUBJECT_HEALTH, { id: subjectId, label: editItem?.subject ?? subjectId, shortLabel: undefined }];
+  // An item may sit in a subject outside the standard list — keep it selectable so editing
+  // never silently reassigns it.
+  const subjectChoices = subjectOptions.some((s) => s.id === subjectId)
+    ? subjectOptions
+    : [...subjectOptions, { id: subjectId, label: editItem?.subject ?? subjectId, icon: '📄' }];
 
   const handleSubmit = async () => {
     if (!question.trim() || saving) return;
@@ -129,7 +129,7 @@ export default function AddQuestionModal({ open, onClose, defaultSubjectId, edit
             <label>Subject</label>
             <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
               {subjectChoices.map((s) => (
-                <option key={s.id} value={s.id}>{s.shortLabel ?? s.label}</option>
+                <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
               ))}
             </select>
           </div>

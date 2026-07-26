@@ -68,7 +68,6 @@ export default function ProfilePage() {
   const [perfStats, setPerfStats] = useState<any>(null);
   const [dashStats, setDashStats] = useState<any>(null);
   const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null);
-  const [showAllBadges, setShowAllBadges] = useState(false);
 
   const [showCalendar, setShowCalendar] = useState(false);
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
@@ -763,139 +762,99 @@ export default function ProfilePage() {
                 <img src="/icons/trophy.png" alt="" width={28} height={28} className="w-7 h-7 object-contain" />
                 <h3 className="font-semibold text-[18px] leading-[28px] text-[#0f172b]">Achievements</h3>
               </div>
-              <button
-                onClick={() => setShowAllBadges((v) => !v)}
+              <Link
+                href="/dashboard/achievement-badges"
                 className="font-semibold text-[12px] text-[#1E2875] hover:underline"
               >
-                {showAllBadges ? '← Less' : 'All →'}
-              </button>
+                View All →
+              </Link>
             </div>
 
             {(() => {
               const streakDays = dashStats?.streak?.currentStreak ?? 0;
-              const mcqs = perfStats?.questionsAttempted ?? 0;
               const tests = perfStats?.testsTaken ?? 0;
               const rankPercentile = perfStats?.rankPercentile ?? null;
               const syllabusCoverage = perfStats?.syllabusCoverage ?? 0;
               const jeetCoins = perfStats?.jeetCoins ?? 0;
 
-              if (showAllBadges) {
-                const allBadges: { title: string; note: string; icon?: string; status: 'earned' | 'in-progress' | 'locked'; accent: string; tint: string }[] = [
-                  {
-                    title: '30-Day Streak',
-                    note: `${streakDays} day streak`,
-                    icon: '/icons/dashboard/badge-streak.png',
-                    accent: '#F59E0B',
-                    tint: '#FFF7E8',
-                    status: streakDays >= 30 ? 'earned' : streakDays > 0 ? 'in-progress' : 'locked',
-                  },
-                  {
-                    title: 'Quick Learner',
-                    note: `${tests} tests done`,
-                    icon: '/icons/dashboard/badge-learner.png',
-                    accent: '#F59E0B',
-                    tint: '#FFF9EB',
-                    status: tests >= 10 ? 'earned' : tests > 0 ? 'in-progress' : 'locked',
-                  },
-                  {
-                    title: '95% Accuracy',
-                    note: rankPercentile !== null ? `Top ${rankPercentile}%` : 'Build accuracy',
-                    icon: '/icons/dashboard/badge-accuracy.png',
-                    accent: '#4F7CFF',
-                    tint: '#EEF4FF',
-                    status: tests > 0 && (rankPercentile ?? 100) <= 5 ? 'earned' : tests > 0 ? 'in-progress' : 'locked',
-                  },
-                  {
-                    title: 'Polity Pro',
-                    note: `${syllabusCoverage}% coverage`,
-                    accent: '#7C3AED',
-                    tint: '#F5F3FF',
-                    status: syllabusCoverage >= 60 ? 'earned' : syllabusCoverage > 0 ? 'in-progress' : 'locked',
-                  },
-                  {
-                    title: 'All-Rounder',
-                    note: 'Consistency badge',
-                    accent: '#2563EB',
-                    tint: '#EFF6FF',
-                    status: streakDays >= 7 && tests >= 5 && syllabusCoverage >= 40 ? 'earned' : (streakDays > 0 || tests > 0 || syllabusCoverage > 0) ? 'in-progress' : 'locked',
-                  },
-                  {
-                    title: 'Centurion',
-                    note: `${jeetCoins}/100 coins`,
-                    accent: '#0EA5A4',
-                    tint: '#ECFEFF',
-                    status: jeetCoins >= 100 ? 'earned' : jeetCoins > 0 ? 'in-progress' : 'locked',
-                  },
-                ];
+              const allBadges: { title: string; note: string; icon?: string; status: 'earned' | 'in-progress' | 'locked'; accent: string; tint: string }[] = [
+                {
+                  title: '30-Day Streak',
+                  note: `${streakDays} day streak`,
+                  icon: '/icons/dashboard/badge-streak.png',
+                  accent: '#F59E0B',
+                  tint: '#FFF7E8',
+                  status: streakDays >= 30 ? 'earned' : streakDays > 0 ? 'in-progress' : 'locked',
+                },
+                {
+                  title: 'Quick Learner',
+                  note: `${tests} tests done`,
+                  icon: '/icons/dashboard/badge-learner.png',
+                  accent: '#F59E0B',
+                  tint: '#FFF9EB',
+                  status: tests >= 10 ? 'earned' : tests > 0 ? 'in-progress' : 'locked',
+                },
+                {
+                  title: '95% Accuracy',
+                  note: rankPercentile !== null ? `Top ${rankPercentile}%` : 'Build accuracy',
+                  icon: '/icons/dashboard/badge-accuracy.png',
+                  accent: '#4F7CFF',
+                  tint: '#EEF4FF',
+                  status: tests > 0 && (rankPercentile ?? 100) <= 5 ? 'earned' : tests > 0 ? 'in-progress' : 'locked',
+                },
+                {
+                  title: 'Polity Pro',
+                  note: `${syllabusCoverage}% coverage`,
+                  accent: '#7C3AED',
+                  tint: '#F5F3FF',
+                  status: syllabusCoverage >= 60 ? 'earned' : syllabusCoverage > 0 ? 'in-progress' : 'locked',
+                },
+                {
+                  title: 'All-Rounder',
+                  note: 'Consistency badge',
+                  accent: '#2563EB',
+                  tint: '#EFF6FF',
+                  status: streakDays >= 7 && tests >= 5 && syllabusCoverage >= 40 ? 'earned' : (streakDays > 0 || tests > 0 || syllabusCoverage > 0) ? 'in-progress' : 'locked',
+                },
+                {
+                  title: 'Centurion',
+                  note: `${jeetCoins}/100 coins`,
+                  accent: '#0EA5A4',
+                  tint: '#ECFEFF',
+                  status: jeetCoins >= 100 ? 'earned' : jeetCoins > 0 ? 'in-progress' : 'locked',
+                },
+              ];
 
-                const statusLabel: Record<string, string> = { earned: 'Earned', 'in-progress': 'In Progress', locked: 'Locked' };
-                const statusColor: Record<string, string> = { earned: '#16a34a', 'in-progress': '#d08700', locked: '#94a3b8' };
-
-                return (
-                  <div className="grid grid-cols-2 gap-3">
-                    {allBadges.map((badge) => (
-                      <div
-                        key={badge.title}
-                        className="flex flex-col items-center rounded-[10px] pt-3 pb-3 px-2"
-                        style={{ background: badge.tint, opacity: badge.status === 'locked' ? 0.6 : 1 }}
-                      >
-                        <div
-                          className="w-12 h-12 rounded-full flex items-center justify-center mb-1.5"
-                          style={{ background: 'white', border: `1.5px solid ${badge.accent}22` }}
-                        >
-                          {badge.icon ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={badge.icon} alt="" width={28} height={28} className="w-7 h-7 object-contain" />
-                          ) : (
-                            <span style={{ color: badge.accent, fontSize: 20 }}>★</span>
-                          )}
-                        </div>
-                        <span className="font-medium text-[12px] leading-[16px] text-[#0f172b] text-center">{badge.title}</span>
-                        <span className="text-[10px] leading-[14px] text-[#62748e] text-center">{badge.note}</span>
-                        <span
-                          className="mt-1 font-semibold text-[10px] leading-[14px]"
-                          style={{ color: statusColor[badge.status] }}
-                        >
-                          {statusLabel[badge.status]}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              }
-
-              const earned: { icon: string; label: string }[] = [];
-              if (streakDays >= 3) earned.push({ icon: '/icons/fire.png', label: `${streakDays}-day streak` });
-              if (mcqs >= 100) earned.push({ icon: '/icons/target.png', label: `${mcqs.toLocaleString()} MCQs` });
-              if (tests >= 5) earned.push({ icon: '/icons/trophy2.png', label: `${tests} Tests` });
-              if (rankPercentile && rankPercentile <= 10) {
-                earned.push({ icon: '/icons/trophy2.png', label: `Top 10% rank` });
-              }
-
-              if (earned.length === 0) {
-                return (
-                  <div className="text-center py-4 px-2">
-                    <div className="text-[28px] mb-2">🌱</div>
-                    <p className="font-medium text-[14px] text-[#0f172b] mb-1">No badges yet</p>
-                    <p className="text-[12px] text-[#62748e]">
-                      Maintain a 3-day streak, attempt 100 MCQs, or evaluate 10 answers to earn your first badge.
-                    </p>
-                  </div>
-                );
-              }
+              const statusLabel: Record<string, string> = { earned: 'Earned', 'in-progress': 'In Progress', locked: 'Locked' };
+              const statusColor: Record<string, string> = { earned: '#16a34a', 'in-progress': '#d08700', locked: '#94a3b8' };
 
               return (
                 <div className="grid grid-cols-2 gap-3">
-                  {earned.map((achievement) => (
+                  {allBadges.map((badge) => (
                     <div
-                      key={achievement.label}
-                      className="flex flex-col items-center bg-[#f8fafc] rounded-[10px] pt-4 pb-4"
+                      key={badge.title}
+                      className="flex flex-col items-center rounded-[10px] pt-3 pb-3 px-2"
+                      style={{ background: badge.tint, opacity: badge.status === 'locked' ? 0.6 : 1 }}
                     >
-                      <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center mb-2">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={achievement.icon} alt="" width={36} height={36} className="w-9 h-9 object-contain" />
+                      <div
+                        className="w-12 h-12 rounded-full flex items-center justify-center mb-1.5"
+                        style={{ background: 'white', border: `1.5px solid ${badge.accent}22` }}
+                      >
+                        {badge.icon ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={badge.icon} alt="" width={28} height={28} className="w-7 h-7 object-contain" />
+                        ) : (
+                          <span style={{ color: badge.accent, fontSize: 20 }}>★</span>
+                        )}
                       </div>
-                      <span className="font-normal text-[12px] leading-[16px] text-[#45556c] text-center">{achievement.label}</span>
+                      <span className="font-medium text-[12px] leading-[16px] text-[#0f172b] text-center">{badge.title}</span>
+                      <span className="text-[10px] leading-[14px] text-[#62748e] text-center">{badge.note}</span>
+                      <span
+                        className="mt-1 font-semibold text-[10px] leading-[14px]"
+                        style={{ color: statusColor[badge.status] }}
+                      >
+                        {statusLabel[badge.status]}
+                      </span>
                     </div>
                   ))}
                 </div>

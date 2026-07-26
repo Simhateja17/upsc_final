@@ -116,8 +116,7 @@ export const SUBJECT_HEALTH: SubjectHealth[] = [
   { id: 'history', label: 'History', icon: '📜', border: '#FFD5A8', bar: '#E8B164' },
   { id: 'economy', label: 'Economy', icon: '📈', border: '#E8E1FD', bar: '#F16CB0' },
   { id: 'environment-ecology', label: 'Environment & Ecology', shortLabel: 'Environment', icon: '🌿', border: '#B2EDD0', bar: '#D6A437' },
-  { id: 'science-technology', label: 'Science & Technology', shortLabel: 'Science', icon: '🔬', border: '#C0D9F5', bar: '#E0A446' },
-  { id: 'current-affairs', label: 'Current Affairs', icon: '📰', border: '#FFD1AA', bar: '#F39A3C' },
+  { id: 'science-technology', label: 'Science & Technology', icon: '🔬', border: '#C0D9F5', bar: '#E0A446' },
   { id: 'ethics', label: 'Ethics', icon: '📘', border: '#C4C9F8', bar: '#4F46E5' },
 ];
 
@@ -133,7 +132,6 @@ const ACCURACY_KEYS: Record<string, string[]> = {
   economy: ['economy', 'economic'],
   'environment-ecology': ['environment', 'ecology'],
   'science-technology': ['science', 'technology'],
-  'current-affairs': ['current'],
   ethics: ['ethics'],
 };
 

@@ -90,6 +90,26 @@ const SHARED_CSS = `
   50% { transform: rotateY(180deg) scale(1.1); }
   100% { transform: rotateY(360deg) scale(1); opacity: 1; }
 }
+/* Staggered mindmap node reveal (Mindmap Library modal icon only) */
+.upm-mm-node-center, .upm-mm-node, .upm-mm-line { opacity: 0; transform-origin: center; }
+.upm-mm-node-center { animation: upmMmNodeAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both; }
+.upm-mm-line-1 { animation: upmMmLineDraw 0.3s ease 0.45s both; }
+.upm-mm-node-1 { animation: upmMmNodeAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.55s both; }
+.upm-mm-line-2 { animation: upmMmLineDraw 0.3s ease 0.7s both; }
+.upm-mm-node-2 { animation: upmMmNodeAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s both; }
+.upm-mm-line-3 { animation: upmMmLineDraw 0.3s ease 0.95s both; }
+.upm-mm-node-3 { animation: upmMmNodeAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 1.05s both; }
+.upm-mm-line-4 { animation: upmMmLineDraw 0.3s ease 1.2s both; }
+.upm-mm-node-4 { animation: upmMmNodeAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 1.3s both; }
+@keyframes upmMmNodeAppear {
+  0% { opacity: 0; transform: scale(0); }
+  60% { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes upmMmLineDraw {
+  0% { opacity: 0; stroke-dasharray: 20; stroke-dashoffset: 20; }
+  100% { opacity: 1; stroke-dasharray: 20; stroke-dashoffset: 0; }
+}
 .upm-title {
   font-family: var(--font-cormorant-garamond), 'Cormorant Garamond', serif;
   font-size: 26px;
@@ -742,15 +762,15 @@ const TopicFileIcon = () => (
 
 const MindmapIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="#F5C542" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 34, height: 34 }}>
-    <circle cx="12" cy="12" r="3" />
-    <path d="M9.5 10.5L5.5 7.5" />
-    <circle cx="4" cy="6" r="2" />
-    <path d="M14.5 10.5L18.5 7.5" />
-    <circle cx="20" cy="6" r="2" />
-    <path d="M9.5 13.5L5.5 16.5" />
-    <circle cx="4" cy="18" r="2" />
-    <path d="M14.5 13.5L18.5 16.5" />
-    <circle cx="20" cy="18" r="2" />
+    <circle className="upm-mm-node-center" cx="12" cy="12" r="3" />
+    <path className="upm-mm-line upm-mm-line-1" d="M9.5 10.5L5.5 7.5" />
+    <circle className="upm-mm-node upm-mm-node-1" cx="4" cy="6" r="2" />
+    <path className="upm-mm-line upm-mm-line-2" d="M14.5 10.5L18.5 7.5" />
+    <circle className="upm-mm-node upm-mm-node-2" cx="20" cy="6" r="2" />
+    <path className="upm-mm-line upm-mm-line-3" d="M9.5 13.5L5.5 16.5" />
+    <circle className="upm-mm-node upm-mm-node-3" cx="4" cy="18" r="2" />
+    <path className="upm-mm-line upm-mm-line-4" d="M14.5 13.5L18.5 16.5" />
+    <circle className="upm-mm-node upm-mm-node-4" cx="20" cy="18" r="2" />
   </svg>
 );
 

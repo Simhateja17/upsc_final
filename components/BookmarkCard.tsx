@@ -16,6 +16,9 @@ export interface BookmarkItem {
   content?: any;
   createdAt: string;
   isPinned: boolean;
+  /** Distinguishes articles saved via the live Current Affairs feed from ones saved
+   *  manually through "+ Add Bookmark" — they live in different backends. */
+  origin?: 'editorial-service' | 'bookmark';
 }
 
 type Props = {
@@ -80,6 +83,9 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; label: string; 
   notwatched: { bg: '#F3F4F6', color: '#6B7280', label: 'Not Watched' },
   watching: { bg: '#FEF3C7', color: '#92400E', label: 'Watching' },
   watched: { bg: '#DCFCE7', color: '#166534', label: 'Watched', icon: 'check' },
+  unread: { bg: '#FEF3C7', color: '#92400E', label: 'Unread' },
+  read: { bg: '#DCFCE7', color: '#166534', label: 'Read', icon: 'check' },
+  forrevision: { bg: '#EFF6FF', color: '#1D4ED8', label: 'For Revision' },
 };
 
 function StatusBadge({ status }: { status?: string | null }) {
@@ -256,6 +262,9 @@ function McqCard(props: Props) {
           {revealed ? 'Hide Answer' : 'Reveal Answer'}
         </button>
       )}
+      {revealed && c.explanation && (
+        <p className="mt-2 rounded-lg bg-[#F9FAFB] p-2.5 text-xs leading-5 text-[#5C6B85]">{c.explanation}</p>
+      )}
       <div className="mt-3 flex items-center justify-between border-t border-[#EEF2F8] pt-3">
         <StatusBadge status={c.status} />
         <div className="flex items-center gap-2">
@@ -277,10 +286,11 @@ function EditorialCard(props: Props) {
 
   return (
     <article className="rounded-2xl border-y border-r border-[#E8EDF5] bg-white p-4" style={{ boxShadow: 'inset 3px 0 0 0 #63BF7A' }}>
-      <div className="mb-3 flex items-center justify-between text-[11px] text-[#8A97AE]">
-        <div className="flex items-center gap-1.5">
-          <span className="rounded-full bg-[#EEF3FF] px-2 py-0.5 text-[#4F46E5]">GS</span>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-[#8A97AE]">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="rounded-full bg-[#EEF3FF] px-2 py-0.5 text-[#4F46E5]">{c.gsPaper || 'GS'}</span>
           <span>{item.source || 'Source'}</span>
+          {c.relevance && <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[#4B5563]">{c.relevance}</span>}
         </div>
         <span>{formatDate(item.createdAt)}</span>
       </div>
@@ -293,7 +303,14 @@ function EditorialCard(props: Props) {
           ))}
         </div>
       )}
-      <CardFooter {...props} />
+      <div className="mt-3 flex items-center justify-between border-t border-[#EEF2F8] pt-3">
+        <StatusBadge status={c.status} />
+        <div className="flex items-center gap-2">
+          {props.onTogglePin && <StarButton pinned={item.isPinned} onClick={() => props.onTogglePin!(item)} />}
+          <OpenButton item={item} />
+          <TrashButton onClick={() => props.onDelete(item)} />
+        </div>
+      </div>
     </article>
   );
 }
@@ -302,18 +319,24 @@ function AnswerWritingCard(props: Props) {
   const { item } = props;
   const c = item.content || {};
   const tags: string[] = c.tags || [];
+  const keyPoints: string[] = c.keyPoints || [];
 
   return (
     <article className="rounded-2xl border-y border-r border-[#E8EDF5] bg-white p-4" style={{ boxShadow: `inset 3px 0 0 0 ${accentColor(props.index)}` }}>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
         <div className="flex flex-wrap items-center gap-1.5">
           {c.gsPaper && <span className="rounded-full bg-[#EEF3FF] px-2 py-0.5 font-semibold text-[#4F46E5]">{c.gsPaper}</span>}
-          {c.marks && <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[#4B5563]">{c.marks} marks</span>}
+          {(c.wordLimit || c.marks) && <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[#4B5563]">{c.wordLimit || `${c.marks} marks`}</span>}
           {c.type && <span className="rounded-full bg-[#FFF4DD] px-2 py-0.5 text-[#C98A1D]">{c.type}</span>}
         </div>
         <span className="text-[#9AA7BD]">{formatDate(item.createdAt)}</span>
       </div>
       <p className="line-clamp-3 text-sm leading-6 text-[#121A2D]">{c.questionText || item.title}</p>
+      {keyPoints.length > 0 && (
+        <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-[#5C6B85]">
+          {keyPoints.slice(0, 4).map((point, i) => <li key={i}>{point}</li>)}
+        </ul>
+      )}
       {tags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {tags.slice(0, 4).map((tag) => (
@@ -341,12 +364,14 @@ function PyqCard(props: Props) {
   const isPrelims = (c.paper || '').toLowerCase() === 'prelims';
   const options: { id?: string; label?: string; text: string }[] = c.options || [];
   const keyPoints: string[] = c.keyPoints || [];
+  const tags: string[] = c.tags || [];
 
   return (
     <article className="rounded-2xl border-y border-r border-[#E8EDF5] bg-white p-4" style={{ boxShadow: `inset 3px 0 0 0 ${accentColor(props.index)}` }}>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
         <div className="flex flex-wrap items-center gap-1.5">
           {c.year && <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[#4B5563]">{c.year}</span>}
+          {c.gsPaper && <span className="rounded-full bg-[#EEF3FF] px-2 py-0.5 font-semibold text-[#4F46E5]">{c.gsPaper}</span>}
           {c.paper && <StatusBadge status={c.paper} />}
         </div>
         <span className="text-[#9AA7BD]">{formatDate(item.createdAt)}</span>
@@ -368,6 +393,13 @@ function PyqCard(props: Props) {
         <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-[#5C6B85]">
           {keyPoints.slice(0, 4).map((point, i) => <li key={i}>{point}</li>)}
         </ul>
+      )}
+      {tags.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {tags.slice(0, 4).map((tag) => (
+            <span key={tag} className="rounded-md bg-[#F3F4F6] px-2 py-1 text-[11px] text-[#4B5563]">{tag}</span>
+          ))}
+        </div>
       )}
       <div className="mt-3 flex items-center justify-between border-t border-[#EEF2F8] pt-3">
         <StatusBadge status={c.status} />
@@ -422,6 +454,7 @@ function VideoCard(props: Props) {
       </div>
       <h3 className="line-clamp-2 text-sm font-semibold leading-6 text-[#121A2D]">{item.title}</h3>
       {c.instructor && <p className="mt-1 text-xs text-[#9AA7BD]">{c.instructor}</p>}
+      {c.notes && <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#5C6B85]">{c.notes}</p>}
       {c.watchStatus === 'Watching' && progress !== null && (
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#F3F4F6]">
           <div className="h-full rounded-full bg-[#2563EB]" style={{ width: `${progress}%` }} />

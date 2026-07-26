@@ -70,7 +70,7 @@ const RAZORPAY_BRAND = {
   name: 'RiseWithJeet',
   primaryColor: '#0B1525',
   backdropColor: 'rgba(8, 15, 35, 0.74)',
-  logoPath: '/logo.png',
+  logoPath: '/icon-192x192.png',
 };
 
 declare global {

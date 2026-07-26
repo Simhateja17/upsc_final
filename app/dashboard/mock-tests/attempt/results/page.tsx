@@ -166,6 +166,7 @@ interface MainsPerQuestion {
   evaluatorConclusion?: string | null;
   modelAnswerKeyPoints?: string[];
   modelAnswerContent?: string;
+  modelAnswerStructure?: { introduction: string; sections: Array<{ heading: string; points: string[] }>; conclusion: string } | null;
   curatedModelAnswer?: string | null;
   curatedModelAnswerKeyPoints?: string[];
 }
@@ -256,6 +257,7 @@ function MockTestResultsInner() {
   const testId = searchParams.get('testId');
   const mode = searchParams.get('mode');
   const examMode = searchParams.get('examMode') || 'prelims';
+  const attemptIdParam = searchParams.get('attemptId');
   const isMains = examMode === 'mains';
   const title = searchParams.get('title') || 'Test Series';
 
@@ -300,11 +302,13 @@ function MockTestResultsInner() {
       setLoading(true);
       setError(null);
       try {
-        const raw = typeof window !== 'undefined'
+        const raw = !attemptIdParam && typeof window !== 'undefined'
           ? sessionStorage.getItem(`mockTestMainsAttempts:${testId}`)
           : null;
-        if (!raw) throw new Error('No mains evaluation session found. Please re-attempt the test.');
-        const { attemptIds } = JSON.parse(raw) as { attemptIds: string[] };
+        if (!attemptIdParam && !raw) throw new Error('No mains evaluation session found. Please re-attempt the test.');
+        const attemptIds = attemptIdParam
+          ? [attemptIdParam]
+          : (JSON.parse(raw!) as { attemptIds: string[] }).attemptIds;
         if (!attemptIds?.length) throw new Error('No mains attempts recorded.');
 
         const out: MainsPerQuestion[] = [];
@@ -335,6 +339,7 @@ function MockTestResultsInner() {
             evaluatorConclusion: d.evaluatorConclusion,
             modelAnswerKeyPoints: Array.isArray(d.modelAnswerKeyPoints) ? d.modelAnswerKeyPoints : [],
             modelAnswerContent: d.modelAnswerContent,
+            modelAnswerStructure: d.modelAnswerStructure || null,
             curatedModelAnswer: d.curatedModelAnswer || null,
             curatedModelAnswerKeyPoints: Array.isArray(d.curatedModelAnswerKeyPoints) ? d.curatedModelAnswerKeyPoints : [],
           });
@@ -353,7 +358,7 @@ function MockTestResultsInner() {
 
     loadMains();
     return () => { cancelled = true; };
-  }, [isMains, testId]);
+  }, [attemptIdParam, isMains, testId]);
 
   // Real leaderboard rank for this aspirant (all-time, MCQ/prelims bucket).
   useEffect(() => {
@@ -598,6 +603,7 @@ function MockTestResultsInner() {
           evaluatorConclusion: q.evaluatorConclusion,
           modelAnswerKeyPoints: q.modelAnswerKeyPoints,
           modelAnswerContent: q.modelAnswerContent,
+          modelAnswerStructure: q.modelAnswerStructure,
           curatedModelAnswer: q.curatedModelAnswer,
           curatedModelAnswerKeyPoints: q.curatedModelAnswerKeyPoints,
           parameterScores: q.parameterScores,

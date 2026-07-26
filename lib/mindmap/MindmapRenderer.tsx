@@ -3,7 +3,6 @@
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import {
   ReactFlow,
-  Controls,
   Background,
   BackgroundVariant,
   Panel,
@@ -208,10 +207,6 @@ function MindmapFlowInner({ tree, onNodeClick, className }: Props) {
         </Panel>
 
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#E2E8F0" />
-        <Controls
-          showInteractive={false}
-          className="!bg-white !border !border-gray-200 !rounded-xl !shadow-sm"
-        />
       </ReactFlow>
     </div>
   );

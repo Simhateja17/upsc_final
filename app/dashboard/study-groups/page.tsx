@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
-import { useSearchParams, usePathname } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef, type ReactNode, type CSSProperties } from 'react';
+import { useSearchParams } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
-import { studyGroupService, dashboardService, studyPlannerService } from '@/lib/services';
-import { isDisabledDashboardRoute } from '@/lib/featureAvailability';
+import { studyGroupService, dashboardService, studyPlannerService, adminService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
+import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
+import { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
 
 const ROOM_FILTERS = ['All', 'Open', 'Full'];
 
@@ -37,6 +38,29 @@ const SUBJECT_ICONS: Record<string, string> = {
   satellite: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l6-6 4 4-6 6z"/><path d="M14 8l2-2 4 4-2 2"/><path d="M8 14l2 2"/><path d="M12 18a6 6 0 006-6"/><path d="M15 21a9 9 0 009-9"/></svg>',
   map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 8 3 16 6 23 3 23 18 16 21 8 18 1 21 1 6"/><line x1="8" y1="3" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="21"/></svg>',
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
+  gavel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6-4 4-6-6z"/><path d="M11 7l-8 8 3 3 8-8"/><path d="M3 21h10"/></svg>',
+  emblem: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M8 12l-2 6h12l-2-6"/><path d="M4 21h16"/><path d="M12 4v-2"/><path d="M12 21v-3"/></svg>',
+  handshake: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12l4-4 4 4-2 2h-4z"/><path d="M2 12l4-4 3 3"/><path d="M22 12l-4-4-3 3"/><path d="M8 14l4 4 4-4"/></svg>',
+  agriculture: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V8"/><path d="M12 12c-3 0-6-2-6-6 3 0 6 2 6 6z"/><path d="M12 12c3 0 6-2 6-6-3 0-6 2-6 6z"/><path d="M12 18c-3 0-6-2-6-6 3 0 6 2 6 6z"/><path d="M12 18c3 0 6-2 6-6-3 0-6 2-6 6z"/></svg>',
+  defence: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3l7 7-4 4-7-7z"/><path d="M10 7l-7 7 4 4 7-7"/><circle cx="7" cy="17" r="1.2" fill="currentColor" stroke="none"/><circle cx="17" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg>',
+  police: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 4v6c0 5-4 9-9 10-5-1-9-5-9-10V6l9-4z"/><polygon points="12 8 13 11 16 11.2 13.7 13 14.5 16 12 14.5 9.5 16 10.3 13 8 11.2 11 11"/></svg>',
+  health: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-8-4.5-8-11a5 5 0 019-3 5 5 0 019 3c0 6.5-8 11-8 11z"/><path d="M12 8v6M9 11h6"/></svg>',
+  rural: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
+  urban: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="6" height="13"/><rect x="9" y="3" width="6" height="18"/><rect x="15" y="12" width="6" height="9"/><path d="M5 12h2M5 16h2M11 7h2M11 11h2M11 15h2M17 16h2"/></svg>',
+  energy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 4 14 12 14 11 22 20 10 12 10"/></svg>',
+  yoga: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><path d="M12 8v6"/><path d="M4 16c2-1 5-2 8-2s6 1 8 2"/><path d="M4 20c2-1 5-2 8-2s6 1 8 2"/></svg>',
+  culture: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c-4 4-4 10 0 14 4-4 4-10 0-14z"/><path d="M12 22c-4-4-4-10 0-14"/><path d="M22 12c-4 4-10 4-14 0"/></svg>',
+  women: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M12 12v10"/><path d="M9 18h6"/></svg>',
+  disaster: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L2 19a2 2 0 001.7 3h16.6A2 2 0 0022 19L13.7 3.9a2 2 0 00-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/></svg>',
+  globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M2 12c3.5-3 6.5-3 10 0s6.5 3 10 0"/><path d="M12 3a15 15 0 010 18"/><path d="M12 3a15 15 0 000 18"/></svg>',
+  medal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="6"/><polyline points="8 2 12 10 16 2"/><path d="M12 13v4"/></svg>',
+  interview: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H8l-5 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>',
+  math: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h3"/><path d="M13 12h3"/><path d="M8 17h3"/><path d="M13 17h3"/></svg>',
+  language: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14"/><path d="M9 4v4"/><path d="M11 20l4-9 4 9"/><path d="M12.5 17h5"/><path d="M4 13c2 3 5 5 8 5"/></svg>',
+  flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-2 4 2 4H4"/></svg>',
+  code: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="10"/><line x1="10" y1="20" x2="10" y2="4"/><line x1="16" y1="20" x2="16" y2="14"/><line x1="22" y1="20" x2="2" y2="20"/></svg>',
+  music: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
 };
 const SUBJECT_LABELS: Record<string, string> = {
   polity: 'Polity', history: 'History', economy: 'Economy', geography: 'Geography',
@@ -45,6 +69,13 @@ const SUBJECT_LABELS: Record<string, string> = {
   target: 'Goal', trophy: 'Achieve', flame: 'Streak', lightbulb: 'Ideas', star: 'Star',
   constitution: 'Constitution', parliament: 'Parliament', shield: 'IAS Shield',
   environment: 'Environment', satellite: 'Space & ISRO', map: 'Indian Map', clock: 'Focus',
+  gavel: 'Judiciary', emblem: 'National Emblem', handshake: 'Intl. Relations',
+  agriculture: 'Agriculture', defence: 'Defence', police: 'Internal Security',
+  health: 'Public Health', rural: 'Rural Dev.', urban: 'Urban Planning',
+  energy: 'Renewable Energy', yoga: 'Yoga & Wellness', culture: 'Art & Culture',
+  women: 'Women Empowerment', disaster: 'Disaster Mgmt', globe: 'International',
+  medal: 'Awards', interview: 'Interview Prep', math: 'Math', language: 'Language',
+  flag: 'Mission', code: 'Code', chart: 'Analytics', music: 'Music',
 };
 const ICON_PALETTE: Record<string, { bg: string; color: string }> = {
   slate: { bg: 'linear-gradient(135deg,#F7F7F5,#EEEEEB)', color: '#4B5563' },
@@ -64,6 +95,11 @@ const SUBJECT_STYLE_KEY: Record<string, keyof typeof ICON_PALETTE> = {
   flame: 'brick', lightbulb: 'ochre', star: 'ochre', constitution: 'ochre',
   parliament: 'brick', shield: 'indigo', environment: 'sage', satellite: 'slate',
   map: 'sage', clock: 'teal',
+  gavel: 'slate', emblem: 'ochre', handshake: 'sage', agriculture: 'sage',
+  defence: 'slate', police: 'indigo', health: 'rose', rural: 'ochre', urban: 'slate',
+  energy: 'ochre', yoga: 'ochre', culture: 'plum', women: 'rose', disaster: 'brick',
+  globe: 'teal', medal: 'ochre', interview: 'plum', math: 'ink', language: 'plum',
+  flag: 'indigo', code: 'ink', chart: 'sage', music: 'plum',
 };
 const iconStyle = (k: string) => ICON_PALETTE[SUBJECT_STYLE_KEY[k] || 'indigo'];
 type UpgradeIntent =
@@ -88,11 +124,15 @@ const PLAN_PRICES = {
   rise: { price: '399', suffix: '/mo', tag: 'Most students choose this', badge: 'RECOMMENDED' },
   ascent: { price: '699', suffix: '/mo', tag: 'For serious rankers', badge: 'PREMIUM' },
 };
-// Icons offered in the Create-Room icon picker.
+// Icons offered in the Create-Room icon picker, grouped like the reference:
+// core UPSC GS subjects, UPSC themes, then general study tools.
 const ICON_PICKER_KEYS = [
-  'polity', 'history', 'economy', 'geography', 'current', 'ethics', 'sci', 'constitution',
-  'parliament', 'shield', 'environment', 'satellite', 'map', 'books', 'graduation', 'pen',
-  'brain', 'rocket', 'target', 'trophy', 'flame', 'lightbulb', 'star', 'clock',
+  'polity', 'constitution', 'parliament', 'gavel', 'history', 'economy', 'geography', 'map',
+  'current', 'ethics', 'sci', 'satellite',
+  'shield', 'emblem', 'defence', 'police', 'disaster', 'handshake', 'globe', 'environment',
+  'agriculture', 'rural', 'urban', 'health', 'women', 'culture', 'yoga', 'energy', 'interview', 'medal',
+  'books', 'graduation', 'pen', 'math', 'language', 'brain', 'rocket', 'target', 'trophy',
+  'flame', 'lightbulb', 'star', 'flag', 'code', 'chart', 'music', 'clock',
 ];
 
 // Scoped design-system CSS ported from the client reference. Everything is
@@ -303,8 +343,7 @@ interface Group {
   maxMembers: number;
   memberCount: number;
   // Number of members currently in an active study session (clicked "Start
-  // Studying"). Populated by the presence API; falls back to memberCount until
-  // the real-time backend pass lands.
+  // Studying"). Always populated by the API — idle joiners are excluded.
   studyingNow?: number;
   isMember: boolean;
   // 'none' | 'pending' | 'rejected' | 'member' — my relationship to a room I
@@ -328,14 +367,28 @@ interface Message {
 
 export default function StudyGroupsPage() {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
-  // This route is otherwise disabled (see DISABLED_DASHBOARD_ROUTES); the only
-  // way to be here is the Solo Focus deep-link the dashboard layout lets
-  // through. In that mode we expose Solo Focus ONLY — the Rooms and My Study
-  // Group tabs stay hidden so the not-yet-ready room features remain disabled.
-  const soloFocusOnly = isDisabledDashboardRoute(pathname);
   const { user } = useAuth();
-  const { canAccess } = useEntitlements();
+  const { canAccess, tier, summary, refreshEntitlements } = useEntitlements();
+
+  // Admin-only QA widget — lets an admin preview the Free vs Rise gated UI by
+  // simulating the effective plan via the existing admin plan-simulation
+  // endpoint. Regular users never see this; their gating always reflects
+  // their real entitlements.
+  const isAdmin = user?.role === 'admin';
+  const isSimulatedPlan = Boolean(summary?.override?.isAdminPlanSimulation);
+  const [planSwitching, setPlanSwitching] = useState(false);
+  const handlePlanSwitch = useCallback(async (value: 'free' | 'rise' | 'real') => {
+    setPlanSwitching(true);
+    try {
+      if (value === 'real') await adminService.clearMyPlanSimulation();
+      else await adminService.setMyPlanSimulation(value);
+      await refreshEntitlements();
+    } catch {
+      // silent – switcher stays on its previous value, admin can retry
+    } finally {
+      setPlanSwitching(false);
+    }
+  }, [refreshEntitlements]);
   const userInitials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
 
   // Plan gating — Rise/Ascent get full Live Study Room access; Free/Aspire are
@@ -358,12 +411,13 @@ export default function StudyGroupsPage() {
   const [previewGroup, setPreviewGroup] = useState<Group | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'rooms' | 'solo' | 'my'>(soloFocusOnly ? 'solo' : 'rooms');
+  const [activeTab, setActiveTab] = useState<'rooms' | 'solo' | 'my'>('rooms');
   const [roomFilter, setRoomFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [messageInput, setMessageInput] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', description: '', subject: 'Polity', maxMembers: 50, focusTopic: '', subjects: [] as string[], timeGoal: 4 });
+  const [customTimeGoal, setCustomTimeGoal] = useState(false);
   const [sending, setSending] = useState(false);
   const [inRoom, setInRoom] = useState<Group | null>(null);
   const [chatTab, setChatTab] = useState<'chat' | 'goals' | 'board'>('chat');
@@ -1081,6 +1135,7 @@ export default function StudyGroupsPage() {
       if (res.status === 'success') {
         setShowCreate(false);
         setCreateForm({ name: '', description: '', subject: 'Polity', maxMembers: 50, focusTopic: '', subjects: [], timeGoal: 4 });
+        setCustomTimeGoal(false);
         await fetchGroups();
         await fetchMyGroups();
       }
@@ -1237,6 +1292,28 @@ export default function StudyGroupsPage() {
     <>
     <div className={`sg min-h-screen bg-[#F9FAFB] font-arimo text-[#0C1424]${locked ? ' plan-locked' : ''}`}>
       <style dangerouslySetInnerHTML={{ __html: SG_CSS }} />
+      <SubjectChoiceCardStyles />
+
+      {/* Admin-only QA widget: preview Free vs Rise gating without real billing */}
+      {isAdmin && (
+        <div
+          className="fixed top-3 right-4 z-[300] flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold"
+          style={{ background: 'rgba(11,16,33,0.85)', backdropFilter: 'blur(8px)', border: '1px solid rgba(244,196,48,0.25)', color: 'rgba(255,255,255,0.75)', boxShadow: '0 4px 16px rgba(0,0,0,0.25)' }}
+        >
+          <span>Plan:</span>
+          <select
+            value={isSimulatedPlan ? tier : 'real'}
+            disabled={planSwitching}
+            onChange={(e) => handlePlanSwitch(e.target.value as 'free' | 'rise' | 'real')}
+            className="rounded-full px-2.5 py-1 text-[11px] font-bold outline-none disabled:opacity-60"
+            style={{ background: 'rgba(244,196,48,0.15)', color: '#F4C430', border: '1px solid rgba(244,196,48,0.35)' }}
+          >
+            <option value="real">Real ({tier})</option>
+            <option value="free">Free</option>
+            <option value="rise">Rise</option>
+          </select>
+        </div>
+      )}
       <DashboardPageHero
         // eslint-disable-next-line @next/next/no-img-element
         badgeIcon={<img src="/study-together-icon.png" alt="Study Together" style={{ width: '26px', height: '26px', objectFit: 'contain' }} />}
@@ -1262,15 +1339,13 @@ export default function StudyGroupsPage() {
       <main className="mx-auto max-w-[1244px] px-4 pb-16">
         {/* Tabs */}
         <div className="flex flex-col gap-3 border-b border-[#E1E6EF] bg-white px-3 py-3 sm:px-5 md:h-14 md:flex-row md:items-center md:justify-between md:px-8 md:py-0">
-          <div className={`grid w-full gap-1 md:flex md:w-auto ${soloFocusOnly ? 'grid-cols-1' : 'grid-cols-3'}`}>
-            {!soloFocusOnly && (
-              <button
-                onClick={() => setActiveTab('rooms')}
-                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'rooms' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
-              >
-                ️ Study Rooms
-              </button>
-            )}
+          <div className="grid w-full grid-cols-3 gap-1 md:flex md:w-auto">
+            <button
+              onClick={() => setActiveTab('rooms')}
+              className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'rooms' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
+            >
+              ️ Study Rooms
+            </button>
             <button
               onClick={() => guard({ kind: 'solo' }, () => setActiveTab('solo'))}
               className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'solo' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
@@ -1281,14 +1356,12 @@ export default function StudyGroupsPage() {
               </svg>
               Solo Focus
             </button>
-            {!soloFocusOnly && (
-              <button
-                onClick={() => guard({ kind: 'mygroup' }, () => setActiveTab('my'))}
-                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'my' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
-              >
-                 My Study Group {myGroups.length > 0 ? `(${myGroups.length})` : ''}
-              </button>
-            )}
+            <button
+              onClick={() => guard({ kind: 'mygroup' }, () => setActiveTab('my'))}
+              className={`flex min-w-0 items-center justify-center gap-1.5 rounded-[8px] px-2 py-2 text-center text-[11px] font-semibold sm:text-[12px] md:px-5 md:text-[13px] ${activeTab === 'my' ? 'bg-[#090E1C] text-[#E8B84B]' : 'text-[#6B7A99]'}`}
+            >
+               My Study Group {myGroups.length > 0 ? `(${myGroups.length})` : ''}
+            </button>
           </div>
           <div className="grid w-full grid-cols-2 gap-2 md:flex md:w-auto md:gap-3">
             <button
@@ -1301,7 +1374,7 @@ export default function StudyGroupsPage() {
               </svg>
               Solo Session
             </button>
-            {!soloFocusOnly && joinRequests.length > 0 && (
+            {joinRequests.length > 0 && (
               <button
                 onClick={() => setShowRequests(true)}
                 className="relative col-span-2 flex min-w-0 items-center justify-center gap-2 rounded-[8px] border border-[#E8B84B] bg-[#FFFBEF] px-3 py-2 text-[12px] font-semibold text-[#C99730] md:col-span-1 md:px-4 md:text-[13px]"
@@ -1314,14 +1387,12 @@ export default function StudyGroupsPage() {
                 </span>
               </button>
             )}
-            {!soloFocusOnly && (
-              <button
-                onClick={() => guard({ kind: 'create' }, () => setShowCreate(true))}
-                className="min-w-0 rounded-[8px] bg-[#E8B84B] px-3 py-2 text-[12px] font-semibold text-[#090E1C] md:px-5 md:text-[13px]"
-              >
-                + Create Room
-              </button>
-            )}
+            <button
+              onClick={() => guard({ kind: 'create' }, () => setShowCreate(true))}
+              className="min-w-0 rounded-[8px] bg-[#E8B84B] px-3 py-2 text-[12px] font-semibold text-[#090E1C] md:px-5 md:text-[13px]"
+            >
+              + Create Room
+            </button>
           </div>
         </div>
 
@@ -1703,19 +1774,15 @@ export default function StudyGroupsPage() {
                     </button>
                   </div>
 
-                  {/* Back to Study Rooms — hidden when the Live Study Room is
-                      disabled and only Solo Focus is exposed (nowhere to go back to). */}
-                  {!soloFocusOnly && (
-                    <div className="mt-5 mb-2 flex justify-center">
-                      <button
-                        onClick={() => setActiveTab('rooms')}
-                        className="text-[12px] font-semibold underline underline-offset-2"
-                        style={{ color: '#6B7A99', background: 'none', border: 'none', cursor: 'pointer' }}
-                      >
-                        ← Back to Study Rooms
-                      </button>
-                    </div>
-                  )}
+                  <div className="mt-5 mb-2 flex justify-center">
+                    <button
+                      onClick={() => setActiveTab('rooms')}
+                      className="text-[12px] font-semibold underline underline-offset-2"
+                      style={{ color: '#6B7A99', background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                      ← Back to Study Rooms
+                    </button>
+                  </div>
                 </>
               );
             })()}
@@ -1777,56 +1844,90 @@ export default function StudyGroupsPage() {
           </div>
         ) : (
           <section className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {filteredGroups.map((group, index) => {
-              const meta = getSubjectMeta(group);
+            {filteredGroups.map((group) => {
+              const paletteMeta = getSubjectMetaStyle(group.subject || group.name || '');
+              const paletteCard = getSubjectCardStyle(group.subject || group.name || '');
               const isFull = getRoomFull(group);
               const members = group.members ?? [];
               const visibleMembers = members.slice(0, 3);
+              const occupancyPercent = group.maxMembers > 0
+                ? Math.min(100, Math.round((group.memberCount / group.maxMembers) * 100))
+                : 60;
+              const capacityState: 'ok' | 'warn' | 'full' = isFull ? 'full' : occupancyPercent >= 80 ? 'warn' : 'ok';
+              const capacityColors = {
+                ok: { fill: '#22C55E', text: '#166534' },
+                warn: { fill: '#F59E0B', text: '#B45309' },
+                full: { fill: '#EF4444', text: '#B91C1C' },
+              }[capacityState];
               return (
                 <article
                   key={group.id}
                   onClick={() => guard({ kind: 'room', title: group.name, subject: group.subject }, () => openGroup(group))}
-                  className={`cursor-pointer overflow-hidden rounded-[16px] border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${isFull && !group.isMember ? 'opacity-60 grayscale-[0.35]' : ''}`}
-                  style={{ borderColor: '#E1E6EF', borderTop: `4px solid ${roomTopBorderColors[index % roomTopBorderColors.length]}` }}
+                  className={`subject-choice-card relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] bg-white p-5 text-left${isFull && !group.isMember ? ' opacity-60 grayscale-[0.35]' : ''}`}
+                  style={{ ['--subject-choice-border']: '#E4EAF5', height: 190 } as CSSProperties}
                 >
-                  <div className="p-5">
-                    <div className="mb-5 flex items-center gap-3">
-                      <span
-                        className="flex size-10 shrink-0 items-center justify-center rounded-[11px] border border-black/5"
-                        style={{ background: meta.bg, color: meta.color }}
-                        aria-hidden
-                      >
-                        <span className="size-5">{meta.icon}</span>
+                  <div className="subject-choice-accent" style={{ background: paletteCard.bar }} />
+
+                  <span
+                    aria-hidden
+                    className="flex flex-shrink-0 items-center justify-center"
+                    style={{ width: 48, height: 48, borderRadius: 14, background: paletteMeta.bg, fontSize: 24, lineHeight: 1 }}
+                  >
+                    {paletteMeta.icon}
+                  </span>
+
+                  <h3
+                    className="mt-3 truncate"
+                    title={group.name}
+                    style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 16, lineHeight: '20px', color: '#22304D' }}
+                  >
+                    {group.name}
+                  </h3>
+                  <p className="mt-1 truncate" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, lineHeight: '15px', color: '#8A94A6' }}>
+                    {group.description || paletteMeta.label}
+                  </p>
+
+                  <div className="mt-auto">
+                    <div className="mb-1.5 flex min-w-0 items-center gap-2">
+                      <span className="flex shrink-0 -space-x-1.5">
+                        {visibleMembers.map((m, i) => {
+                          const colors = ['#1E3A5F', '#2D5016', '#5B2C6F', '#7C4A1E', '#1A4D4D'];
+                          return (
+                            <span
+                              key={`${group.id}-${i}`}
+                              style={{ background: colors[i % colors.length] }}
+                              className="flex size-6 items-center justify-center rounded-full border-2 border-white text-[9px] font-bold text-white"
+                            >
+                              {getMemberInitials(m)}
+                            </span>
+                          );
+                        })}
                       </span>
-                      <div className="min-w-0">
-                        <h3 className="truncate text-[18px] font-bold leading-tight text-[#0C1424]">{group.name}</h3>
-                        {group.description && (
-                          <p className="mt-1 truncate text-[12px] text-[#6B7A99]">{group.description}</p>
-                        )}
-                      </div>
+                      <span
+                        className="truncate"
+                        style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#8A94A6' }}
+                      >
+                        {group.studyingNow ?? group.memberCount} studying
+                      </span>
                     </div>
-
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="flex shrink-0 -space-x-1.5">
-                          {visibleMembers.map((m, i) => {
-                            const colors = ['#1E3A5F', '#2D5016', '#5B2C6F', '#7C4A1E', '#1A4D4D'];
-                            return (
-                              <span
-                                key={`${group.id}-${i}`}
-                                style={{ background: colors[i % colors.length] }}
-                                className="flex size-6 items-center justify-center rounded-full border-2 border-white text-[9px] font-bold text-white"
-                              >
-                                {getMemberInitials(m)}
-                              </span>
-                            );
-                          })}
-                        </span>
-                        <span className="truncate text-[12px] font-medium text-[#6B7A99]">
-                          {group.studyingNow ?? group.memberCount} studying
-                        </span>
+                    <div
+                      className="flex items-center gap-2 rounded-[8px] px-2.5 py-1.5"
+                      style={{ background: `${capacityColors.fill}0D`, border: `1px solid ${capacityColors.fill}26` }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={capacityColors.text} strokeWidth="2" style={{ flexShrink: 0, opacity: 0.6 }}>
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+                      </svg>
+                      <div className="h-[4px] flex-1 overflow-hidden rounded-full" style={{ background: 'rgba(15,23,42,0.08)' }}>
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${occupancyPercent}%`, background: capacityColors.fill }}
+                        />
                       </div>
-
+                      <span className="shrink-0 whitespace-nowrap text-[10.5px] font-bold" style={{ color: capacityColors.text }}>
+                        {group.memberCount}{group.maxMembers > 0 ? ` of ${group.maxMembers}` : ''}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-center justify-end gap-2">
                       {group.isMember ? (
                         <button
                           type="button"
@@ -2040,16 +2141,40 @@ export default function StudyGroupsPage() {
                     Daily Time Goal
                   </label>
                   <select
-                    value={createForm.timeGoal || 4}
-                    onChange={(e) => setCreateForm((p) => ({ ...p, timeGoal: Number(e.target.value) }))}
+                    value={customTimeGoal ? 'custom' : (createForm.timeGoal || 4)}
+                    onChange={(e) => {
+                      if (e.target.value === 'custom') { setCustomTimeGoal(true); return; }
+                      setCustomTimeGoal(false);
+                      setCreateForm((p) => ({ ...p, timeGoal: Number(e.target.value) }));
+                    }}
                     className="w-full appearance-none rounded-[12px] border border-[#DDE3EC] bg-white px-4 py-3 text-[14px] text-[#0C1424] outline-none focus:border-[#E8B84B]"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
                   >
                     {[1, 2, 3, 4, 5, 6, 8].map((h) => (
                       <option key={h} value={h}>{h} {h === 1 ? 'hour' : 'hours'} per day</option>
                     ))}
+                    <option value="custom">Custom</option>
                   </select>
+                  {customTimeGoal && (
+                    <input
+                      type="number"
+                      min={1}
+                      max={24}
+                      value={createForm.timeGoal || ''}
+                      onChange={(e) => setCreateForm((p) => ({ ...p, timeGoal: Number(e.target.value) }))}
+                      placeholder="Enter hours (e.g., 3)"
+                      className="mt-2.5 w-full rounded-[12px] border border-[#DDE3EC] bg-white px-4 py-3 text-[14px] text-[#0C1424] outline-none placeholder:text-[#9CA3AF] focus:border-[#E8B84B]"
+                    />
+                  )}
                 </div>
+              </div>
+
+              {/* Disclaimer */}
+              <div className="flex items-start gap-2.5 rounded-[12px] px-4 py-3" style={{ background: '#FFFBEB', border: '1px solid #FCD34D' }}>
+                <span className="shrink-0 text-[16px]">⚖️</span>
+                <span className="text-[12px] leading-[1.5]" style={{ color: '#92400E' }}>
+                  By creating a room, you agree to maintain a respectful environment. Misuse may lead to permanent deactivation from RiseWithJeet.
+                </span>
               </div>
             </div>
 
@@ -2059,6 +2184,7 @@ export default function StudyGroupsPage() {
                 onClick={() => {
                   setShowCreate(false);
                   setCreateForm({ name: '', description: '', subject: 'Polity', maxMembers: 50, focusTopic: '', subjects: [], timeGoal: 4 });
+                  setCustomTimeGoal(false);
                 }}
                 className="flex-1 rounded-[12px] border border-[#DDE3EC] bg-white py-3 text-[14px] font-semibold text-[#6B7A99] hover:bg-[#F9FAFB]"
               >
@@ -2310,7 +2436,7 @@ export default function StudyGroupsPage() {
 
     {/* ── Full-screen Room View ────────────────────────────────────────── */}
     {inRoom && (
-      <div className="fixed inset-0 z-[200] flex flex-col" style={{ background: '#F8F3EA' }}>
+      <div className="fixed inset-0 z-[200] flex flex-col" style={{ background: '#F4F5F7' }}>
 
         {/* Dark Navbar — matches DashboardHeader exactly */}
         <header
@@ -2351,26 +2477,34 @@ export default function StudyGroupsPage() {
               onClick={() => setRoomFocusMode((active) => !active)}
               aria-pressed={roomFocusMode}
               title={roomFocusMode ? 'Focus mode on - chat hidden' : 'Focus mode off - chat visible'}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
+              className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5"
               style={{
-                background: roomFocusMode ? 'rgba(239,68,68,0.16)' : 'rgba(34,197,94,0.12)',
-                border: `1px solid ${roomFocusMode ? 'rgba(239,68,68,0.34)' : 'rgba(34,197,94,0.28)'}`,
+                background: roomFocusMode ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.14)',
               }}
             >
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ background: roomFocusMode ? '#EF4444' : '#22C55E' }}
-              />
-              <span className="text-[12px] font-semibold text-white/80">🎯 Focus Mode</span>
+              <span className="text-[12px] text-white/80">⊙</span>
+              <span className="text-[12px] font-semibold text-white/80">Focus Mode</span>
             </button>
 
-            {/* Upgrade button — gold filled, matching Image #8 */}
+            {/* Upgrade button — gold filled pill */}
             <button
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-[12px] px-4 py-2 text-[13px] font-semibold"
+              className="hidden sm:inline-flex items-center rounded-full px-4 py-1.5 text-[13px] font-bold"
               style={{ background: '#E8B84B', color: '#0C1424', border: 'none' }}
             >
-              + Upgrade
+              Upgrade
             </button>
+
+            {/* Plan badge */}
+            <div className="hidden sm:flex items-center gap-1.5 text-[12px] font-semibold text-white/60">
+              <span>Plan:</span>
+              <span
+                className="rounded-full px-3 py-1 text-[11px] font-bold"
+                style={{ background: '#E8B84B', color: '#0C1424' }}
+              >
+                {tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Free'}
+              </span>
+            </div>
 
             {/* Bell — same style as DashboardHeader */}
             <button
@@ -2393,62 +2527,58 @@ export default function StudyGroupsPage() {
           </div>
         </header>
 
-        {/* Room header bar */}
-        <div
-          className="flex shrink-0 items-center justify-between px-6 py-3"
-          style={{ background: 'white', borderBottom: '1px solid #E8E3D8' }}
-        >
-          <div className="flex items-center gap-3">
-            <span
-              className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold text-[#EF4444]"
-              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
-            >
-              <span className="h-2 w-2 rounded-full bg-[#EF4444]" /> Live
-            </span>
-            <div>
-              <h1 className="text-[18px] font-bold text-[#0C1424]">{inRoom.name}</h1>
-              <p className="text-[12px] text-[#6B7A99]">{inRoom.description || inRoom.subject}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E1E6EF] bg-white text-[18px] hover:bg-[#F4F6FA] transition">
-              🔕
-            </button>
-            <button className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E1E6EF] bg-white text-[18px] hover:bg-[#F4F6FA] transition">
-              🎯
-            </button>
-            <button
-              onClick={handleLeaveRoom}
-              className="rounded-[10px] border border-[#EF4444] bg-[#FFF5F5] px-5 py-2 text-[13px] font-bold text-[#EF4444] hover:bg-[#FEF2F2] transition"
-            >
-              Leave Room
-            </button>
-          </div>
-        </div>
-
         {/* Body: main area + chat panel */}
         <div className="flex flex-1 overflow-hidden">
 
           {/* Main scrollable area */}
           <div className="flex-1 overflow-y-auto p-6">
 
-            {/* Study status message — only "studying" after clicking Start Studying */}
-            <div
-              className="mx-auto mb-3 w-fit rounded-full px-4 py-2 text-center text-[12px] font-semibold transition"
-              style={
-                isStudying
-                  ? { background: '#22C55E1A', color: '#16A34A' }
-                  : { background: '#F1F3F8', color: '#6B7A99' }
-              }
-            >
-              {isStudying
-                ? '● You are now studying'
-                : 'Click "Start Studying" to begin and make your day count'}
+            {/* Back to Dashboard + room utility actions */}
+            <div className="mb-5 flex items-center justify-between">
+              <button
+                onClick={async () => { await handleExitRoom(); window.location.assign('/dashboard'); }}
+                className="flex items-center gap-1.5 text-[13px] font-semibold text-[#6B7A99] transition hover:text-[#0C1424]"
+              >
+                <span className="text-[15px] leading-none">‹</span> Back to Dashboard
+              </button>
+              <div className="flex items-center gap-2">
+                <button className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#E1E6EF] bg-white text-[15px] hover:bg-[#F4F6FA] transition">
+                  🔕
+                </button>
+                <button
+                  onClick={handleLeaveRoom}
+                  className="rounded-[8px] border border-[#EF4444] bg-[#FFF5F5] px-4 py-1.5 text-[12px] font-bold text-[#EF4444] hover:bg-[#FEF2F2] transition"
+                >
+                  Leave Room
+                </button>
+              </div>
+            </div>
+
+            {/* Centered room header */}
+            <div className="mx-auto mb-6 max-w-[480px] text-center">
+              <span
+                className="mb-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold text-[#EF4444]"
+                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-[#EF4444]" /> LIVE
+              </span>
+              <h1
+                className="text-[24px] font-bold text-[#0C1424]"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                {inRoom.name}
+              </h1>
+              <p className="mt-0.5 text-[13px] text-[#6B7A99]">{inRoom.description || inRoom.subject}</p>
+              <p className="mt-3 text-[12px] text-[#9AA3B8]">
+                {isStudying
+                  ? '● You are now studying'
+                  : 'Click "Start Studying" to begin and make your day count'}
+              </p>
             </div>
 
             {/* Focus timer card */}
             <div
-              className="mb-5 rounded-[20px] bg-white p-8"
+              className="mx-auto mb-5 max-w-[420px] rounded-[20px] bg-white p-6"
               style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}
             >
               {/* Timer header — label + Active/Paused status */}
@@ -2496,19 +2626,19 @@ export default function StudyGroupsPage() {
                     >
                       {formatMMSS(roomElapsed)}
                     </div>
-                    <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[1.5px] text-[#6B7A99]">
+                    <div className="mt-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[1.5px]" style={{ color: '#C99730' }}>
                       Minutes : Seconds
                     </div>
                   </div>
                 </div>
 
                 {/* Controls */}
-                <div className="mt-6 flex items-center gap-3">
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
                   <button
                     onClick={handleRoomReset}
-                    className="flex items-center gap-2 rounded-[10px] border border-[#DDE3EC] bg-white px-5 py-2.5 text-[13px] font-semibold text-[#6B7A99] hover:bg-[#F9FAFB]"
+                    className="flex items-center gap-1.5 rounded-[10px] border border-[#DDE3EC] bg-white px-4 py-2 text-[12.5px] font-semibold text-[#6B7A99] hover:bg-[#F9FAFB]"
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                       <path d="M3 12a9 9 0 1 0 3-6.7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M3 4v5h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
@@ -2516,32 +2646,32 @@ export default function StudyGroupsPage() {
                   </button>
                   <button
                     onClick={handleRoomStart}
-                    className="flex items-center gap-2 rounded-[10px] px-7 py-2.5 text-[14px] font-bold text-[#0C1424] hover:brightness-105"
+                    className="flex items-center gap-1.5 rounded-[10px] px-6 py-2 text-[13px] font-bold text-[#0C1424] hover:brightness-105"
                     style={{ background: isStudying ? '#22C55E' : '#E8B84B', color: isStudying ? '#fff' : '#0C1424' }}
                   >
                     {roomRunning ? (
                       <>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
                         Pause Studying
                       </>
                     ) : (
                       <>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg>
                         Start Studying
                       </>
                     )}
                   </button>
                   <button
                     onClick={handleExitRoom}
-                    className="flex items-center gap-2 rounded-[10px] border border-[#EF4444] bg-[#FFF5F5] px-5 py-2.5 text-[13px] font-semibold text-[#EF4444] hover:bg-[#FEF2F2]"
+                    className="flex items-center gap-1.5 rounded-[10px] border border-[#EF4444] bg-[#FFF5F5] px-4 py-2 text-[12.5px] font-semibold text-[#EF4444] hover:bg-[#FEF2F2]"
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                     Exit
                   </button>
                 </div>
 
                 {/* Today total */}
-                <div className="mt-6 text-center">
+                <div className="mt-6 w-full pt-5 text-center" style={{ borderTop: '1px solid #EDE8DC' }}>
                   <div
                     className="text-[#C99730]"
                     style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', fontWeight: 700, fontSize: 26 }}
@@ -2701,18 +2831,20 @@ export default function StudyGroupsPage() {
             style={{ background: '#FAF6EE', borderLeft: '1px solid #E8E3D8' }}
           >
             {/* Tabs */}
-            <div className="flex shrink-0 border-b border-[#E8E3D8] bg-white px-4">
+            <div className="flex shrink-0 items-center gap-2 border-b border-[#E8E3D8] bg-white px-3 py-2.5">
               {(['chat', 'goals', 'board'] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setChatTab(t)}
-                  className="relative px-3 py-3 text-[13px] font-semibold capitalize transition"
-                  style={{ color: chatTab === t ? '#C99730' : '#6B7A99' }}
+                  className="flex items-center gap-1.5 rounded-[8px] px-2.5 py-1.5 text-[12.5px] font-semibold capitalize transition"
+                  style={
+                    chatTab === t
+                      ? { color: '#2563EB', border: '1px solid #93C5FD', background: 'rgba(37,99,235,0.06)' }
+                      : { color: '#6B7A99', border: '1px solid transparent' }
+                  }
                 >
-                  {t === 'chat' ? '💬' : t === 'goals' ? '🎯' : '🏆'} {t.charAt(0).toUpperCase() + t.slice(1)}
-                  {chatTab === t && (
-                    <span className="absolute bottom-0 left-0 right-0 h-[2px] rounded-t bg-[#C99730]" />
-                  )}
+                  <span className="text-[13px]">{t === 'chat' ? '💬' : t === 'goals' ? '🎯' : '↑'}</span>
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
               ))}
             </div>
@@ -2763,44 +2895,30 @@ export default function StudyGroupsPage() {
               )}
               {chatTab === 'goals' && (
                 <div className="flex flex-col gap-4">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-[11px] font-bold uppercase tracking-[1.2px] text-[#6B7A99]">🎯 Room Goals Today</p>
-                      <span className="text-[11px] font-semibold text-[#6B7A99]">
-                        {myCompletedGoalIds.size}/{roomGoals.length} completed
-                      </span>
-                    </div>
-                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#EDE8DC]">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: roomGoals.length ? `${(myCompletedGoalIds.size / roomGoals.length) * 100}%` : '0%',
-                          background: '#C99730',
-                          transition: 'width 0.2s ease',
-                        }}
-                      />
-                    </div>
+                  <div className="flex flex-col items-center pt-1 text-center">
+                    <span className="text-[26px]">🎯</span>
+                    <p className="mt-1.5 text-[15px] font-bold text-[#0C1424]">Today&apos;s Goals</p>
                   </div>
 
                   {roomGoals.length === 0 ? (
                     <p className="py-4 text-center text-[12px] text-[#9AA3B8]">No goals yet. Add one below to kick off the session.</p>
                   ) : (
-                    <ul className="flex flex-col gap-2">
+                    <ul className="flex flex-col gap-2.5">
                       {roomGoals.map((goal) => {
                         const done = myCompletedGoalIds.has(goal.id);
                         return (
-                          <li key={goal.id} className="flex items-center gap-2.5 rounded-[10px] bg-white px-3 py-2.5">
+                          <li key={goal.id} className="flex items-center gap-2.5">
                             <button
                               type="button"
                               onClick={() => handleToggleGoal(goal.id)}
                               disabled={togglingGoalIds.has(goal.id)}
                               style={{
                                 flexShrink: 0,
-                                width: 18,
-                                height: 18,
-                                borderRadius: 5,
-                                border: done ? '1px solid #22C55E' : '1px solid rgba(11,22,40,0.17)',
-                                background: done ? '#22C55E' : 'transparent',
+                                width: 16,
+                                height: 16,
+                                borderRadius: 4,
+                                border: done ? '1px solid #E8B84B' : '1px solid rgba(11,22,40,0.22)',
+                                background: done ? '#E8B84B' : 'transparent',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -2810,14 +2928,11 @@ export default function StudyGroupsPage() {
                             >
                               {done && (
                                 <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-                                  <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#0C1424" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                 </svg>
                               )}
                             </button>
-                            <span
-                              className="text-[12px]"
-                              style={{ color: done ? '#9AA3B8' : '#0C1424', textDecoration: done ? 'line-through' : 'none' }}
-                            >
+                            <span className="text-[13px] text-[#0C1424]">
                               {goal.title}
                             </span>
                           </li>
@@ -2831,16 +2946,16 @@ export default function StudyGroupsPage() {
                       type="text"
                       value={newGoalInput}
                       onChange={(e) => setNewGoalInput(e.target.value)}
-                      placeholder="Add a goal for the room..."
-                      className="flex-1 rounded-[8px] border border-[#E1E6EF] bg-[#F8F3EA] px-3 py-2 text-[12px] text-[#0C1424] outline-none placeholder:text-[#9CA3AF]"
+                      placeholder="Type a new goal..."
+                      className="flex-1 rounded-[8px] border border-[#E1E6EF] bg-white px-3 py-2 text-[12px] text-[#0C1424] outline-none placeholder:text-[#9CA3AF]"
                     />
                     <button
                       type="submit"
                       disabled={addingGoal || !newGoalInput.trim()}
-                      className="rounded-[8px] px-3 py-2 text-[12px] font-bold text-[#0C1424] disabled:opacity-50"
-                      style={{ background: '#C99730' }}
+                      className="rounded-[8px] px-4 py-2 text-[12px] font-bold text-[#0C1424] disabled:opacity-50"
+                      style={{ background: '#E8B84B' }}
                     >
-                      {addingGoal ? '…' : '+ Add'}
+                      {addingGoal ? '…' : 'Add'}
                     </button>
                   </form>
 
