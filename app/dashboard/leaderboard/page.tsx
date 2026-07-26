@@ -27,6 +27,17 @@ interface LeaderboardUser {
   handle: string;
 }
 
+const avatarColorByInitial: Record<string, string> = {
+  S: '#D98A0A',
+  A: '#EF4444',
+  K: '#D946A6',
+  V: '#0F9D90',
+  M: '#7C4DFF',
+  R: '#F97316',
+  D: '#1D9BF0',
+  N: '#10B981',
+};
+
 export default function LeaderboardPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('overall');
@@ -101,6 +112,14 @@ export default function LeaderboardPage() {
     }));
   }, [leaderboard, tab]);
 
+  const myInitial = useMemo(() => {
+    if (myRank?.name) return myRank.name[0].toUpperCase();
+    if (user?.firstName) return user.firstName[0].toUpperCase();
+    return 'Y';
+  }, [myRank, user]);
+
+  const myAvatarBg = avatarColorByInitial[myInitial] || '#7B61FF';
+
   return (
     <div className="min-h-screen bg-[#F9FAFB] font-arimo">
       <DashboardPageHero
@@ -119,6 +138,45 @@ export default function LeaderboardPage() {
       />
 
       <main className="mx-auto max-w-[1060px] px-4 pb-0">
+        {/* Your Rank Card */}
+        <section className="relative mx-auto mb-4 max-w-[964px] overflow-hidden rounded-[14px] border border-[#D7DEE9] bg-[linear-gradient(90deg,#0C1424_0%,#1B2C59_100%)] px-[22px] py-[18px] text-white shadow-[0_8px_22px_rgba(12,20,36,0.18)]" style={{ marginTop: '16px' }}>
+          <div className="absolute -right-16 -top-16 h-[220px] w-[220px] rounded-full bg-[#E8B84B]/8 blur-3xl" />
+          <div className="relative flex flex-wrap items-center gap-5">
+            {user?.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.avatarUrl} alt="" className="h-[46px] w-[46px] rounded-full object-cover" />
+            ) : (
+              <div className="flex h-[46px] w-[46px] items-center justify-center rounded-full text-[20px] font-bold text-white" style={{ background: myAvatarBg }}>
+                {myInitial}
+              </div>
+            )}
+
+            <div className="min-w-[250px] flex-1">
+              <p className="text-[15px] font-bold text-white" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                {myRank?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You'}
+                {user?.email && <span className="ml-1 text-[11px] font-normal text-white/40">· {user.email}</span>}
+              </p>
+              <p className="mt-[2px] text-[12px] text-white/45" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                {!myRank ? 'Loading stats…' : myRank.isOverallRankEligible === false ? 'Complete an MCQ and a Mains challenge to unlock your overall rank' : 'Keep pushing – every point counts'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-center sm:grid-cols-4 sm:gap-7">
+              {[
+                [`#${myRank?.rank ?? '-'}`, 'Overall Rank'],
+                [`#${myRank?.mcqRank ?? '-'}`, 'Daily MCQ'],
+                [`#${myRank?.mainsRank ?? '-'}`, 'Mains Challenge'],
+                [`${myRank?.streak ?? 0}🔥`, 'Day Streak'],
+              ].map(([value, label]) => (
+                <div key={label}>
+                  <div className="text-[24px] font-bold leading-none text-[#E8B84B]" style={{ fontFamily: 'var(--font-cormorant)' }}>{value}</div>
+                  <div className="mt-[4px] text-[10px] uppercase tracking-[0.8px] text-white/38" style={{ fontFamily: 'var(--font-dm-sans)' }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Tabs & Range */}
         <section className="mx-auto mb-1 flex max-w-[964px] flex-wrap items-center justify-between gap-4" style={{ marginTop: '16px' }}>
           <div className="rounded-[10px] border border-[rgba(0,0,0,0.07)] bg-white p-[4px]">

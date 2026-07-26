@@ -279,7 +279,7 @@ export default function DailyMcqResultsPage() {
 
   // Real leaderboard rank (prelims/MCQ bucket). Falls back to an unlock hint until
   // the aspirant has enough attempts, then to a neutral "updating" message.
-  const rankUnlocked = !!myRank?.isRankUnlocked && !!myRank?.mcqRank;
+  const rankUnlocked = typeof myRank?.mcqRank === 'number';
   // The API provides this from the exact list used to calculate `mcqRank`.
   // Do not use `realRankedCount` here: it excludes fallback community rows.
   const rankedTotal = myRank?.mcqRankedCount ?? myRank?.realRankedCount ?? 0;

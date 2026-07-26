@@ -634,7 +634,7 @@ function MockTestResultsInner() {
   const attemptedCount = correct + wrong;
   const speedPerQ = attemptedCount > 0 ? (timeTaken / 60 / attemptedCount).toFixed(2) : '0';
   // Real leaderboard rank (prelims/MCQ bucket). Falls back to an unlock hint.
-  const rankUnlocked = !!myRank?.isRankUnlocked && !!myRank?.mcqRank;
+  const rankUnlocked = typeof myRank?.mcqRank === 'number';
   const rankedTotal = myRank?.realRankedCount ?? 0;
   const rankLabel = rankUnlocked
     ? `#${(myRank!.mcqRank as number).toLocaleString('en-IN')}`
