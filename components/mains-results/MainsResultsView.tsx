@@ -17,7 +17,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { wordCountChip, mainsWordLimit, mainsTimeLimit } from '@/lib/mainsPattern';
+import { wordCountChip, mainsWordLimit, mainsTimeLimit, stripMarksSuffix } from '@/lib/mainsPattern';
 import { useAuth } from '@/contexts/AuthContext';
 import CuratedModelAnswer from './CuratedModelAnswer';
 
@@ -443,7 +443,7 @@ export default function MainsResultsView({
   const paperLabel = data.question?.paper || 'GS Paper';
   const subjectLabel = data.question?.subject || '';
   const marks = data.question?.marks ?? data.maxScore ?? 15;
-  const questionText = data.question?.questionText?.trim() || '';
+  const questionText = stripMarksSuffix(data.question?.questionText?.trim() || '');
   const questionTitle = data.question?.title?.trim() || questionText;
   // The model-answer modal shows the actual QUESTION it answers (not the topic
   // title). Prefer the real question text; fall back to the title only when the
@@ -602,6 +602,19 @@ export default function MainsResultsView({
           doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(100, 116, 139); doc.text(remarkLines, left + 248, y + 14); y += rowHeight;
         }
       }
+
+      newPage('Detailed Evaluation');
+      results.forEach((result, index) => {
+        if (index > 0) newPage('Detailed Evaluation');
+        const q = stripMarksSuffix(result.question?.questionText || result.question?.title || `Question ${index + 1}`);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(15, 23, 42); doc.text(`Question ${index + 1} Evaluation`, left, y); y += 18;
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(51, 65, 85); text(q, left, contentWidth, 12, 'Detailed Evaluation'); y += 10;
+        const rows = result.parameterScores || [];
+        if (rows.length) {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(37, 99, 235); doc.text('RUBRIC BREAKDOWN', left, y); y += 14;
+          rows.forEach((row) => { ensure(40, 'Detailed Evaluation'); card(left, y, contentWidth, 32, [255, 255, 255]); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(15, 23, 42); doc.text(plain(row.parameter), left + 12, y + 14); doc.setTextColor(217, 119, 6); doc.text(`${row.score}/${row.maxScore}`, right - 12, y + 14, { align: 'right' }); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.8); doc.setTextColor(100, 116, 139); doc.text(doc.splitTextToSize(plain(row.comment || ''), contentWidth - 24).slice(0, 1), left + 12, y + 26); y += 40; });
+        }
+      });
 
       newPage("Examiner's Comments");
       results.forEach((result, index) => {
@@ -822,7 +835,7 @@ export default function MainsResultsView({
               {results.map((mq, i) => {
                 const mPct = mq.maxScore > 0 ? Math.round((mq.score / mq.maxScore) * 100) : 0;
                 const tone = mPct >= 60 ? '#16A34A' : mPct >= 40 ? '#D97706' : '#DC2626';
-                const qText = mq.question?.questionText?.trim() || mq.question?.title?.trim() || `Question ${i + 1}`;
+                const qText = stripMarksSuffix(mq.question?.questionText?.trim() || mq.question?.title?.trim() || `Question ${i + 1}`);
                 const qPaper = mq.question?.paper?.trim() || '';
                 const qSubject = mq.question?.subject?.trim() || '';
                 const qMarks = mq.question?.marks ?? mq.maxScore ?? 15;

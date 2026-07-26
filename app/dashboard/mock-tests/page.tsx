@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { mockTestService, dashboardService, pricingService } from '@/lib/services';
+import { mockTestService, dashboardService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import GeneratingTestModal from '@/components/GeneratingTestModal';
 import { liveStudentCount } from '@/lib/liveCount';
@@ -239,11 +239,6 @@ const humanizeDifficultyId = (id: string) => {
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (ch) => ch.toUpperCase());
 };
-const fallbackUpgradePlans = [
-  { name: 'Monthly Pro', price: 299, duration: 'month', features: ['Unlimited tests, all subjects, PYQ, analytics'], isPopular: false },
-  { name: '6-Month Pro + Mentorship', price: 1299, duration: '6 months', features: ['Pro + personal mentorship with Jeet Sir'], isPopular: true },
-  { name: 'Annual Elite', price: 1999, duration: 'year', features: ['Full year + live classes + interview prep'], isPopular: false },
-];
 /* ─── StepHeader Helper ─── */
 
 function StepHeader({ step, label, subtitle }: { step: number; label: string; subtitle?: string }) {
@@ -297,56 +292,6 @@ function UpgradeSparkIcon({ size = 18, color = '#162456' }: { size?: number; col
   );
 }
 
-function MockTestUpgradeModal({ open, onClose, plans, used = 1, limit = 1 }: { open: boolean; onClose: () => void; plans: any[]; used?: number; limit?: number }) {
-  const router = useRouter();
-  if (!open) return null;
-
-  const goToPlans = (plan?: any) => {
-    onClose();
-    const tier = String(plan?.tier || plan?.planTier || plan?.name || 'aspire').toLowerCase().includes('rise') ? 'rise' : 'aspire';
-    router.push(`/dashboard/billing/plans?plan=${tier}&source=mock-tests#upgrade-plans`);
-  };
-
-  return (
-    <div role="presentation" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(8,15,35,0.68)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div role="dialog" aria-modal="true" aria-labelledby="mock-test-upgrade-title" onClick={(event) => event.stopPropagation()} style={{ width: '100%', maxWidth: 500, borderRadius: 20, background: '#FFFFFF', padding: '30px 28px 26px', boxShadow: '0 28px 80px rgba(0,0,0,0.28)', position: 'relative' }}>
-        <button type="button" aria-label="Close" onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, width: 32, height: 32, borderRadius: '50%', border: 'none', background: '#F3F4F6', color: '#475467', cursor: 'pointer', fontSize: 20, lineHeight: '32px' }}>x</button>
-        <div style={{ width: 64, height: 64, borderRadius: 18, background: '#0F172B', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px', boxShadow: '0 12px 30px rgba(15,23,43,0.24)' }}>
-          <UpgradeSparkIcon size={34} color="#FDC700" />
-        </div>
-        <h2 id="mock-test-upgrade-title" style={{ margin: 0, textAlign: 'center', fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 24, lineHeight: '31px', fontWeight: 850, color: '#101828' }}>Free Attempts Exhausted</h2>
-        <p style={{ margin: '10px auto 22px', maxWidth: 360, textAlign: 'center', fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 14, lineHeight: '22px', color: '#667085' }}>
-          You&apos;ve used the {limit} custom mock test included with your Free plan. Upgrade to keep creating Prelims Custom Mock Tests with full analytics.
-        </p>
-        <div role="group" aria-label="Free plan usage" style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 7 }}>
-            <span style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 12, fontWeight: 600, color: '#667085' }}>Total Custom Mock Tests</span>
-            <span style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 12, fontWeight: 850, color: '#C05A2A' }}>{used} / {limit} used</span>
-          </div>
-          <div style={{ width: '100%', height: 7, background: '#EFEFF2', borderRadius: 999, overflow: 'hidden' }} aria-hidden="true">
-            <div style={{ width: `${Math.min(100, Math.round((used / Math.max(1, limit)) * 100))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, #E14B2A 0%, #E86A2B 35%, #E89A2B 65%, #D9B65C 100%)' }} />
-          </div>
-        </div>
-        <div style={{ display: 'grid', gap: 10 }}>
-          {plans.map((plan, index) => (
-            <button key={`${plan.id || plan.name || 'plan'}-${index}`} type="button" onClick={() => goToPlans(plan)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '14px 16px', borderRadius: 12, border: plan.isPopular ? '1.5px solid #FDC700' : '1px solid #E5E7EB', background: plan.isPopular ? '#FFFBEB' : '#FFFFFF', cursor: 'pointer', textAlign: 'left' }}>
-              <span>
-                <span style={{ display: 'block', fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 15, fontWeight: 800, color: '#101828' }}>{plan.name}</span>
-                <span style={{ display: 'block', marginTop: 3, fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 12, color: '#667085' }}>{Array.isArray(plan.features) ? plan.features[0] : 'More mock tests, analytics and revision tools'}</span>
-              </span>
-              <span style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 14, fontWeight: 800, color: '#162456', whiteSpace: 'nowrap' }}>₹{plan.price}</span>
-            </button>
-          ))}
-        </div>
-        <button type="button" onClick={() => goToPlans()} style={{ width: '100%', marginTop: 18, border: 'none', borderRadius: 12, padding: '14px 16px', background: '#0F172B', color: '#FDC700', fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <UpgradeSparkIcon size={18} color="#FDC700" />
-          Unlock Unlimited Access
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function MockTestsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -381,8 +326,6 @@ function MockTestsPageInner() {
   const [hoveredSource, setHoveredSource] = useState<string | null>(null);
   const [hoveredDifficulty, setHoveredDifficulty] = useState<string | null>(null);
   const [hoveredCounter, setHoveredCounter] = useState<'minus' | 'plus' | null>(null);
-  const [pricingPlans, setPricingPlans] = useState<any[]>([]);
-  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   // Becomes true once we've pulled the user's live entitlement/usage on entry,
   // so the limit check runs against real, current data (not a stale cache).
   const [usageChecked, setUsageChecked] = useState(false);
@@ -440,12 +383,11 @@ function MockTestsPageInner() {
       setLoading(true);
       setError(null);
       try {
-        const [subjectsRes, configRes, statsRes, platformRes, plansRes] = await Promise.all([
+        const [subjectsRes, configRes, statsRes, platformRes] = await Promise.all([
           mockTestService.getSubjects(),
           mockTestService.getConfig(),
           dashboardService.getPracticeStats(),
           mockTestService.getPlatformStats(),
-          pricingService.getPlans(),
         ]);
 
         if (cancelled) return;
@@ -511,7 +453,6 @@ function MockTestsPageInner() {
         }
         if (statsRes.data) setPracticeStats(statsRes.data);
         if (platformRes.data) setPlatformStats(platformRes.data);
-        if (Array.isArray(plansRes?.data)) setPricingPlans(plansRes.data);
       } catch (err: any) {
         if (!cancelled) {
           console.error('Failed to load mock test config:', err);
@@ -588,11 +529,7 @@ function MockTestsPageInner() {
     const featureKey = selectedExamMode === 'mains' ? 'mains_evaluation' : 'prelims_mock_attempt';
     const quota = entitlements.featureStatus(featureKey);
     if (quota?.allowed === false) {
-      if (featureKey === 'prelims_mock_attempt' && entitlements.tier === 'free') {
-        setUpgradeModalOpen(true);
-      } else {
-        setShowLimitModal(true);
-      }
+      setShowLimitModal(true);
       setError(quota.message || 'You have used your current plan limit.');
       return;
     }
@@ -628,7 +565,7 @@ function MockTestsPageInner() {
       console.error('Failed to generate test:', err);
       const parsed = handleEntitlementError(err);
       if (parsed.action === 'Upgrade plan' && selectedExamMode === 'prelims' && entitlements.tier === 'free') {
-        setUpgradeModalOpen(true);
+        setShowLimitModal(true);
         setError(parsed.message || 'Failed to generate test. Please try again.');
       } else if (parsed.title === 'Limit reached' || parsed.title === 'Upgrade required') {
         setShowLimitModal(true);
@@ -644,7 +581,6 @@ function MockTestsPageInner() {
     ? mainsMarksPattern.reduce((total, marks) => total + mainsTimeLimit(marks), 0)
     // Prelims: 100 questions = 120 minutes, scaled proportionally (1.2 min/question).
     : Math.round(questionCount * 1.2);
-  const upgradePlans = (pricingPlans.length > 0 ? pricingPlans : fallbackUpgradePlans).slice(0, 3);
 
   /* Live setup progress for the Test Summary (4 required steps → 25% each) */
   // A default selection is already a completed selection.  Do not use click
@@ -686,7 +622,7 @@ function MockTestsPageInner() {
     if (autoUpgradePromptShown.current) return;
     if (isPrelimsAttemptsExhausted) {
       autoUpgradePromptShown.current = true;
-      setUpgradeModalOpen(true);
+      setShowLimitModal(true);
     }
   }, [usageChecked, entitlements.loading, isPrelimsAttemptsExhausted]);
 
@@ -783,17 +719,7 @@ function MockTestsPageInner() {
         />
       )}
 
-      {/* ── Pro Upgrade Modal ── */}
-
       {/* Main scrollable content */}
-      <MockTestUpgradeModal
-        open={upgradeModalOpen}
-        onClose={() => setUpgradeModalOpen(false)}
-        plans={upgradePlans}
-        used={prelimsQuota?.used ?? 1}
-        limit={prelimsQuota?.limit ?? 1}
-      />
-
       <main className="flex-1 overflow-y-auto font-arimo" style={{ background: '#F9FAFB' }}>
 
         <DashboardPageHero
@@ -1529,7 +1455,7 @@ function MockTestsPageInner() {
               {/* Generate Test Button */}
               <button
                 onClick={isPrelimsAttemptsExhausted
-                  ? () => setUpgradeModalOpen(true)
+                  ? () => setShowLimitModal(true)
                   : handleGenerateTest}
                 disabled={generating || loading || (!isPrelimsAttemptsExhausted && !canGenerate)}
                 onMouseEnter={() => setGenerateBtnHovered(true)}

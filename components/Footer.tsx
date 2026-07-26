@@ -151,7 +151,7 @@ export default function Footer() {
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/35">Email</p>
                 <a href="mailto:together@risewithjeet.com" className="mt-1 flex items-center gap-2 text-[13px] text-white/85 transition hover:text-white">
-                  <Image src="/emm.png" alt="Email" width={16} height={16} style={{ objectFit: 'contain' }} />
+                  <Image src="/icon-gmail.png" alt="Gmail" width={16} height={16} style={{ objectFit: 'contain' }} />
                   together@risewithjeet.com
                 </a>
               </div>

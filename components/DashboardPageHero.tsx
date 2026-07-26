@@ -15,7 +15,7 @@ interface DashboardPageHeroProps {
   badgeText: string;
   title: React.ReactNode;
   subtitle: string;
-  stats: HeroStat[];
+  stats?: HeroStat[];
   rightElement?: React.ReactNode;
   backHref?: string;
   backLabel?: string;
@@ -40,7 +40,7 @@ export default function DashboardPageHero({
   badgeText,
   title,
   subtitle,
-  stats,
+  stats = [],
   rightElement,
   backHref = '/dashboard',
   backLabel = 'Back to Dashboard',
@@ -145,7 +145,7 @@ export default function DashboardPageHero({
           style={{
             flex: 1,
             width: '100%',
-            paddingBottom: '88px',
+            paddingBottom: stats.length > 0 ? '88px' : 0,
             transform: `translateY(${typeof effectiveContentShiftY === 'number' ? `${effectiveContentShiftY}px` : effectiveContentShiftY})`,
           }}
         >
@@ -189,43 +189,45 @@ export default function DashboardPageHero({
         </div>
 
         {/* Stats strip – anchored for consistent cross-page vertical placement */}
-        <div
-          className="w-full flex gap-0 overflow-hidden"
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            border: '0.8px solid rgba(255,255,255,0.1)',
-            borderRadius: typeof effectiveStatsBorderRadius === 'number' ? `${effectiveStatsBorderRadius}px` : effectiveStatsBorderRadius,
-            flexShrink: 0,
-          }}
-        >
-          {stats.map((stat, i) => (
-            <div
-              key={stat.label}
-              className="flex-1 text-center"
-              style={{
-                background: '#0D1121',
-                borderRight: i < stats.length - 1 ? '0.8px solid rgba(255,255,255,0.08)' : undefined,
-                padding: '10px 16px',
-              }}
-            >
+        {stats.length > 0 && (
+          <div
+            className="w-full flex gap-0 overflow-hidden"
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              border: '0.8px solid rgba(255,255,255,0.1)',
+              borderRadius: typeof effectiveStatsBorderRadius === 'number' ? `${effectiveStatsBorderRadius}px` : effectiveStatsBorderRadius,
+              flexShrink: 0,
+            }}
+          >
+            {stats.map((stat, i) => (
               <div
-                className="font-arimo font-bold leading-none"
-                style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: stat.color }}
+                key={stat.label}
+                className="flex-1 text-center"
+                style={{
+                  background: '#0D1121',
+                  borderRight: i < stats.length - 1 ? '0.8px solid rgba(255,255,255,0.08)' : undefined,
+                  padding: '10px 16px',
+                }}
               >
-                {stat.value}
+                <div
+                  className="font-arimo font-bold leading-none"
+                  style={{ fontSize: 'clamp(20px, 2vw, 28px)', color: stat.color }}
+                >
+                  {stat.value}
+                </div>
+                <div
+                  className="font-arimo font-bold tracking-[0.8px] uppercase mt-[3px]"
+                  style={{ fontSize: '9px', color: 'rgba(255,255,255,0.35)' }}
+                >
+                  {stat.label}
+                </div>
               </div>
-              <div
-                className="font-arimo font-bold tracking-[0.8px] uppercase mt-[3px]"
-                style={{ fontSize: '9px', color: 'rgba(255,255,255,0.35)' }}
-              >
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
       <style>{`.hero-title * { font-style: normal !important; }`}</style>
     </PageHeroBackground>

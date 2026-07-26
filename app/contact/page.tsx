@@ -6,6 +6,7 @@ import LandingNav from '@/components/LandingNav';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { contactService } from '@/lib/services';
+import { ApiRequestError } from '@/lib/api';
 
 const subjectOptions = [
   'General inquiry',
@@ -62,6 +63,7 @@ export default function ContactPage() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const userFullName = useMemo(() => {
     if (!user) return '';
@@ -85,6 +87,7 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setSubmitError(null);
 
     const fullName = (isAuthenticated ? contactName : formData.fullName).trim();
     const nameParts = fullName.split(/\s+/).filter(Boolean);
@@ -92,13 +95,16 @@ export default function ContactPage() {
     const lastName = nameParts.slice(1).join(' ') || firstName;
 
     try {
-      await contactService.submit({
-        firstName,
-        lastName,
-        email: isAuthenticated ? contactEmail : formData.email.trim(),
-        subject: formData.subject || 'General inquiry',
-        message: formData.message.trim(),
-      });
+      await contactService.submit(
+        {
+          firstName,
+          lastName,
+          email: formData.email.trim(),
+          subject: formData.subject || 'General inquiry',
+          message: formData.message.trim(),
+        },
+        isAuthenticated
+      );
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 4000);
       setFormData({
@@ -107,8 +113,8 @@ export default function ContactPage() {
         subject: isAuthenticated ? 'General inquiry' : '',
         message: '',
       });
-    } catch {
-      // silently handle
+    } catch (err) {
+      setSubmitError(err instanceof ApiRequestError ? err.message : 'Something went wrong. Please try again.');
     }
 
     setSubmitting(false);
@@ -202,6 +208,12 @@ export default function ContactPage() {
               </div>
             )}
 
+            {submitError && (
+              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
+                {submitError}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               {isAuthenticated ? (
                 <div className="rounded-[12px] border border-[rgba(11,22,40,0.09)] bg-[#FAF8F4] px-4 py-3">
@@ -211,9 +223,26 @@ export default function ContactPage() {
                   <p className="mt-1 text-[14px] font-bold text-[#0C1424]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
                     {contactName}
                   </p>
-                  <p className="text-[13px] text-[#6B7A99]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                    {contactEmail}
-                  </p>
+                  {contactEmail ? (
+                    <p className="text-[13px] text-[#6B7A99]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                      {contactEmail}
+                    </p>
+                  ) : (
+                    <div className="mt-2">
+                      <label className="mb-1 block text-[11px] font-semibold text-[#374560]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                        Email address (no email on file — please add one)
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="you@example.com"
+                        required
+                        value={formData.email}
+                        onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
+                        className="h-[38px] w-full rounded-[8px] border border-[rgba(11,22,40,0.17)] bg-white px-3 text-[13px] text-[#0C1424] placeholder-[#9AA3B8] outline-none"
+                        style={{ fontFamily: 'var(--font-dm-sans)' }}
+                      />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>

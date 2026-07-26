@@ -63,11 +63,15 @@ const STATUS_LABEL_NORMALIZE: Record<string, string> = {
   notwatched: 'Not Watched',
   watching: 'Watching',
   watched: 'Watched',
+  unread: 'Unread',
+  read: 'Read',
+  forrevision: 'For Revision',
 };
 
 function statusFieldFor(tab: TabKey, item: BookmarkItem): string | undefined {
   const c = item.content || {};
   switch (tab) {
+    case 'editorial':
     case 'mcq':
     case 'answer-writing':
       return c.status;
@@ -103,14 +107,18 @@ export default function SavedNotesPage() {
     setLoading(true);
     Promise.all([
       editorialService.getStats().catch(() => null),
+      bookmarkService.list('editorial').catch(() => null),
       bookmarkService.list('mcq').catch(() => null),
       bookmarkService.list('answer-writing').catch(() => null),
       bookmarkService.list('pyq').catch(() => null),
       bookmarkService.list('flashcard').catch(() => null),
       bookmarkService.list('video').catch(() => null),
     ])
-      .then(([editorialRes, mcqRes, awRes, pyqRes, fcRes, videoRes]) => {
-        const editorialItems: BookmarkItem[] = (editorialRes?.data?.savedItems || []).map((note: any) => ({
+      .then(([editorialRes, editorialBookmarksRes, mcqRes, awRes, pyqRes, fcRes, videoRes]) => {
+        // Articles saved from the live Current Affairs feed (tracked by the editorial
+        // service) and articles saved manually via "+ Add Bookmark" (generic bookmark
+        // rows) are two different backends — merge both so every saved article shows up.
+        const feedArticles: BookmarkItem[] = (editorialRes?.data?.savedItems || []).map((note: any) => ({
           id: note.id,
           type: 'editorial',
           entityId: note.id,
@@ -122,7 +130,15 @@ export default function SavedNotesPage() {
           content: { summary: note.summary, tags: note.tags, category: note.category },
           createdAt: note.savedAt,
           isPinned: false,
+          origin: 'editorial-service',
         }));
+        const manualArticles: BookmarkItem[] = (editorialBookmarksRes?.data?.bookmarks || []).map((b: BookmarkItem) => ({
+          ...b,
+          origin: 'bookmark',
+        }));
+        const editorialItems = [...feedArticles, ...manualArticles].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
 
         setItemsByTab({
           editorial: editorialItems,
@@ -202,7 +218,7 @@ export default function SavedNotesPage() {
 
   const handleDelete = async (item: BookmarkItem) => {
     try {
-      if (item.type === 'editorial') {
+      if (item.type === 'editorial' && item.origin === 'editorial-service') {
         await editorialService.toggleSave(item.entityId);
       } else {
         await bookmarkService.remove(item.id);
@@ -227,7 +243,7 @@ export default function SavedNotesPage() {
         <div className="relative mx-auto max-w-5xl text-center">
           <p className="flex items-center justify-center gap-3 text-[11px] uppercase tracking-[0.28em] text-[#D6A94F]">
             <span style={{ display: 'block', width: 44, height: 1, background: 'linear-gradient(to right, transparent, #C8972A)' }} />
-            Your Bookmarks Vault
+            Your Smart Notes Vault
             <span style={{ display: 'block', width: 44, height: 1, background: 'linear-gradient(to left, transparent, #C8972A)' }} />
           </p>
           <h1
@@ -246,7 +262,7 @@ export default function SavedNotesPage() {
             className="mx-auto mt-5 max-w-[710px] text-[15px] leading-[26.25px] text-[rgba(255,255,255,0.48)]"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
-            Articles, MCQs, questions, flashcards, lectures all your bookmarks from every module, tagged and ready for revision.
+            Articles, MCQs, questions, flashcards, lectures all your saved notes from every module, tagged and ready for revision.
           </p>
 
           <div
@@ -350,10 +366,10 @@ export default function SavedNotesPage() {
         </div>
 
         {loading ? (
-          <div className="py-16 text-center text-[#5A6B85]">Loading bookmarks...</div>
+          <div className="py-16 text-center text-[#5A6B85]">Loading notes...</div>
         ) : filteredItems.length === 0 ? (
           <div className="rounded-2xl border border-[#E2E8F0] bg-white p-10 text-center text-[#5A6B85]">
-            No bookmarks found for this filter.
+            No notes found for this filter.
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
