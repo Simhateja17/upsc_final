@@ -75,6 +75,8 @@ const navigationSections: NavSection[] = [
       { id: 'pricing', label: 'Pricing Plans', path: '/admin/pricing', icon: '💳' },
       { id: 'faqs', label: 'FAQ Manager', path: '/admin/faqs', icon: '❓' },
       { id: 'tags', label: 'Custom Tags', path: '/admin/tags', icon: '🏷️' },
+      { id: 'contact-messages', label: 'Contact Messages', path: '/admin/contact-messages', icon: '✉️' },
+      { id: 'feedback', label: 'User Feedback', path: '/admin/feedback', icon: '💬' },
     ],
   },
   {
