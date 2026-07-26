@@ -180,7 +180,7 @@ export default function SpacedRepetitionSubjectPage() {
       subject: subjectName,
       source: sourceTypeToLabel(payload.sourceType),
       sourceType: payload.sourceType,
-      scheduleDays: [payload.firstReviewDays],
+      scheduleDays: payload.scheduleDays,
     });
     if (res.status === 'success') {
       setItems((prev) => [res.data, ...prev]);
@@ -217,8 +217,17 @@ export default function SpacedRepetitionSubjectPage() {
     });
   };
 
+  const completeReview = async () => {
+    if (!reviewTarget) return;
+    const res = await spacedRepService.updateItem(reviewTarget.id, { completeReview: true });
+    if (res.status !== 'success' || !res.data) return;
+    setItems((prev) => prev.map((item) => item.id === reviewTarget.id ? res.data : item));
+    setReviewTarget(null);
+    setShowAnswer(false);
+  };
+
   // All items for this subject — drives counts + the free-slot meter.
-  const subjectItems = items.filter((item) => item.subject === subjectLabel);
+  const subjectItems = items.filter((item) => item.subject === subjectLabel && item.status !== 'completed');
 
   const counts: Record<FilterKey, number> = {
     All: subjectItems.length,
@@ -437,7 +446,12 @@ export default function SpacedRepetitionSubjectPage() {
                     )}
                   </div>
                 )}
-                <button className="review-close-btn" onClick={close}>Close</button>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button className="review-close-btn" onClick={close}>Close</button>
+                  <button className="review-close-btn" style={{ background: '#0E8A56', color: '#fff' }} onClick={completeReview}>
+                    ✓ Mark review done
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -626,6 +626,7 @@ export const spacedRepService = {
       subject?: string;
       source?: string;
       sourceType?: string;
+      completeReview?: boolean;
     }
   ) =>
     api.patch<any>(`/spaced-repetition/${id}`, data, authConfig()),

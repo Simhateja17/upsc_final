@@ -389,11 +389,6 @@ function MockTestsPageInner() {
   // Ensures the on-entry upgrade popup is auto-shown at most once, so the user
   // can dismiss it without it re-opening on every render.
   const autoUpgradePromptShown = useRef(false);
-  /* ─── Mains setup progress: track which required steps the user has configured ─── */
-  const [paperTouched, setPaperTouched] = useState(false);
-  const [sourceTouched, setSourceTouched] = useState(false);
-  const [countTouched, setCountTouched] = useState(false);
-  const [difficultyTouched, setDifficultyTouched] = useState(false);
   const minQuestionCount = 1;
   const maxQuestionCount = selectedExamMode === 'mains' ? 20 : 100;
   const questionSliderProgress = ((questionCount - minQuestionCount) / (maxQuestionCount - minQuestionCount)) * 100;
@@ -651,16 +646,21 @@ function MockTestsPageInner() {
     : Math.round(questionCount * 1.2);
   const upgradePlans = (pricingPlans.length > 0 ? pricingPlans : fallbackUpgradePlans).slice(0, 3);
 
-  /* Live setup progress for the Mains Test Summary (4 required steps → 25% each) */
+  /* Live setup progress for the Test Summary (4 required steps → 25% each) */
+  // A default selection is already a completed selection.  Do not use click
+  // history here: that left the button disabled on first load and after
+  // presets (for example Full Length) changed multiple values at once.
+  const availablePaperTypes = selectedExamMode === 'mains' ? mainsPaperTypes : prelimsPaperTypes;
+  const availableSources = selectedExamMode === 'mains' ? mainsQuestionSources : questionSources;
   const setupNodes = [
-    { label: 'Paper', done: paperTouched },
-    { label: 'Question Source', done: sourceTouched },
-    { label: 'Number of Questions', done: countTouched },
-    { label: 'Difficulty', done: difficultyTouched },
+    { label: 'Paper', done: availablePaperTypes.some((paper) => paper.id === selectedPaperType && !(selectedExamMode === 'prelims' && paper.id === 'csat')) },
+    { label: 'Question Source', done: availableSources.some((source) => source.id === selectedSource) },
+    { label: 'Number of Questions', done: Number.isInteger(questionCount) && questionCount >= minQuestionCount && questionCount <= maxQuestionCount },
+    { label: 'Difficulty', done: difficulties.some((difficulty) => difficulty.id === selectedDifficulty) },
   ];
-  // Same validation as the Daily Answer Writing Evaluator (canEvaluate):
-  // enable only once all four required selections are completed.
-  const canGenerate = setupNodes.every(n => n.done);
+  const focusSubjectValid = selectedSource !== 'subject_wise' || selectedSubject !== 'All Subjects';
+  const canGenerate = setupNodes.every(n => n.done) && focusSubjectValid;
+  const progressPct = Math.round((setupNodes.filter(node => node.done).length / setupNodes.length) * 100);
 
   /* Derive display labels for summary */
   const paperLabel = selectedExamMode === 'mains'
@@ -668,6 +668,8 @@ function MockTestsPageInner() {
     : (prelimsPaperTypes.find(p => p.id === selectedPaperType)?.label ?? 'GS Paper I');
   const subjectLabel = availableSubjects.find(s => s.name === selectedSubject)?.name ?? selectedSubject ?? 'All Topics';
   const difficultyLabel = difficulties.find(d => d.id === selectedDifficulty)?.label ?? 'Medium';
+  const sourceLabel = (selectedExamMode === 'mains' ? mainsQuestionSources : questionSources)
+    .find(source => source.id === selectedSource)?.label ?? selectedSource;
   const prelimsQuota = entitlements.featureStatus('prelims_mock_attempt');
   const activeQuota = entitlements.featureStatus(selectedExamMode === 'mains' ? 'mains_evaluation' : 'prelims_mock_attempt');
   const quotaExhausted = activeQuota?.allowed === false;
@@ -831,7 +833,6 @@ function MockTestsPageInner() {
             <button
               onClick={() => {
                 setSelectedExamMode('prelims'); setSelectedSource('daily_mcq');
-                setPaperTouched(false); setSourceTouched(false); setCountTouched(false); setDifficultyTouched(false);
               }}
               style={{
                 display: 'flex',
@@ -854,7 +855,6 @@ function MockTestsPageInner() {
             <button
               onClick={() => {
                 setSelectedExamMode('mains'); setSelectedSource('daily-mains');
-                setPaperTouched(false); setSourceTouched(false); setCountTouched(false); setDifficultyTouched(false);
               }}
               style={{
                 display: 'flex',
@@ -931,7 +931,7 @@ function MockTestsPageInner() {
                   <button
                     key={paper.id}
                     onClick={() => {
-                      if (!isComingSoon) { setSelectedPaperType(paper.id); setPaperTouched(true); }
+                      if (!isComingSoon) setSelectedPaperType(paper.id);
                     }}
                     disabled={isComingSoon}
                     onMouseEnter={() => setHoveredPaperType(paper.id)}
@@ -1093,7 +1093,16 @@ function MockTestsPageInner() {
           {!loading && (
           <div style={cardStyle}>
                 <StepHeader step={2} label="Question Source" subtitle="Where should we pull your questions from?" />
-                <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '8px', overflowX: 'auto' }}>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'nowrap',
+                  gap: '8px',
+                  overflowX: 'auto',
+                  // The row is a horizontal scrollport, so reserve vertical
+                  // space for the hover lift and shadow instead of clipping
+                  // the highlighted card at its top edge.
+                  padding: '6px 2px',
+                }}>
               {(selectedExamMode === 'mains' ? mainsQuestionSources : questionSources).map(src => {
                 const isSelected = selectedSource === src.id;
                 const isHovered = hoveredSource === src.id && !isSelected;
@@ -1103,7 +1112,6 @@ function MockTestsPageInner() {
                     key={src.id}
                     onClick={() => {
                       setSelectedSource(src.id);
-                      setSourceTouched(true);
                       if (src.id === 'subject_wise') setFocusSubjectOpen(true);
                       if (src.id === 'full_length' && selectedExamMode === 'prelims') {
                         setQuestionCount(100);
@@ -1187,7 +1195,7 @@ function MockTestsPageInner() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(4px, 0.4vw, 8px)', marginBottom: 'clamp(16px, 1.2vw, 22px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(18px, 1.5vw, 28px)' }}>
                 <button
-                  onClick={() => { setQuestionCount(c => Math.max(minQuestionCount, c - 1)); setCountTouched(true); }}
+                  onClick={() => { setQuestionCount(c => Math.max(minQuestionCount, c - 1)); }}
                   onMouseEnter={() => setHoveredCounter('minus')}
                   onMouseLeave={() => setHoveredCounter(null)}
                   style={{
@@ -1240,7 +1248,7 @@ function MockTestsPageInner() {
                   </div>
                 </div>
                 <button
-                  onClick={() => { setQuestionCount(c => Math.min(maxQuestionCount, c + 1)); setCountTouched(true); }}
+                  onClick={() => { setQuestionCount(c => Math.min(maxQuestionCount, c + 1)); }}
                   onMouseEnter={() => setHoveredCounter('plus')}
                   onMouseLeave={() => setHoveredCounter(null)}
                   style={{
@@ -1272,7 +1280,7 @@ function MockTestsPageInner() {
                   min={minQuestionCount}
                   max={maxQuestionCount}
                   value={questionCount}
-                  onChange={(e) => { setQuestionCount(Number(e.target.value)); setCountTouched(true); }}
+                  onChange={(e) => { setQuestionCount(Number(e.target.value)); }}
                   className="question-count-slider"
                   style={{
                     width: '100%', height: '6px', borderRadius: '999px',
@@ -1288,7 +1296,7 @@ function MockTestsPageInner() {
                   return (
                     <span
                       key={val}
-                      onClick={() => { setQuestionCount(val); setCountTouched(true); }}
+                      onClick={() => { setQuestionCount(val); }}
                       onMouseEnter={() => setHoveredTick(val)}
                       onMouseLeave={() => setHoveredTick(null)}
                       style={{
@@ -1326,7 +1334,7 @@ function MockTestsPageInner() {
                 return (
                   <button
                     key={diff.id}
-                    onClick={() => { setSelectedDifficulty(diff.id); setDifficultyTouched(true); }}
+                    onClick={() => { setSelectedDifficulty(diff.id); }}
                     onMouseEnter={() => setHoveredDifficulty(diff.id)}
                     onMouseLeave={() => setHoveredDifficulty(null)}
                     style={{
@@ -1448,6 +1456,74 @@ function MockTestsPageInner() {
                     <div style={{ background: row.bar, borderRadius: '6px', height: '6px', width: '100%' }} />
                   </div>
                 ))}
+              </div>
+
+              {/* Test Summary — keeps the selected configuration visible while
+                  retaining the activity information above. */}
+              <div style={{
+                borderTop: '1px solid rgba(255,255,255,0.1)',
+                paddingTop: 'clamp(16px, 1.2vw, 20px)',
+                marginBottom: 'clamp(18px, 1.4vw, 26px)',
+              }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 'clamp(8px, 0.7vw, 12px)',
+                  marginBottom: 'clamp(14px, 1vw, 18px)',
+                }}>
+                  {[
+                    { emoji: '📋', value: `${questionCount}`, label: 'Questions' },
+                    { emoji: '⏱', value: `${estimatedMinutes} min`, label: 'Duration' },
+                    { emoji: '🔥', value: sourceLabel, label: 'Source' },
+                    { emoji: '📘', value: paperLabel, label: 'Paper' },
+                    { emoji: '⚡', value: difficultyLabel, label: 'Difficulty' },
+                    { emoji: '🎯', value: subjectLabel, label: 'Focus Subject' },
+                  ].map((item) => (
+                    <div key={item.label} style={{
+                      background: 'rgba(255,255,255,0.06)',
+                      borderRadius: '10px',
+                      padding: 'clamp(9px, 0.7vw, 12px)',
+                      minHeight: 'clamp(70px, 5.2vw, 84px)',
+                      minWidth: 0,
+                      boxSizing: 'border-box',
+                      display: 'flex',
+                      flexDirection: 'column',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px' }}>
+                        <span style={{ fontSize: 'clamp(12px, 0.8vw, 15px)', lineHeight: 1 }}>{item.emoji}</span>
+                        <span style={{
+                          fontFamily: 'var(--font-inter), Inter, sans-serif',
+                          fontWeight: 600,
+                          fontSize: 'clamp(8px, 0.56vw, 10px)',
+                          letterSpacing: '0.06em',
+                          color: '#94A3B8',
+                          textTransform: 'uppercase' as const,
+                        }}>{item.label}</span>
+                      </div>
+                      <div style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontFamily: 'var(--font-inter), Inter, sans-serif',
+                        fontWeight: 700,
+                        fontSize: 'clamp(11px, 0.75vw, 14px)',
+                        lineHeight: 1.2,
+                        color: '#FFF',
+                        minWidth: 0,
+                        wordBreak: 'break-word',
+                      }}>{item.value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 'clamp(10px, 0.68vw, 12px)', fontWeight: 600, color: '#94A3B8' }}>Setup Progress</span>
+                    <span style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: 'clamp(10px, 0.68vw, 12px)', fontWeight: 800, color: '#F97316' }}>{progressPct}%</span>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '6px', height: '6px', overflow: 'hidden' }}>
+                    <div style={{ background: 'linear-gradient(90deg, #FDC700, #FF8904)', width: `${progressPct}%`, height: '100%', borderRadius: '6px', transition: 'width 0.3s ease' }} />
+                  </div>
+                </div>
               </div>
 
               {/* Generate Test Button */}
