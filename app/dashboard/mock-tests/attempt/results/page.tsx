@@ -266,7 +266,7 @@ function MockTestResultsInner() {
   const [error, setError] = useState<string | null>(null);
   const [mainsData, setMainsData] = useState<MainsPerQuestion[] | null>(null);
   // Real leaderboard rank (prelims/MCQ bucket) — powers the Rank stat tile.
-  const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank: number; realRankedCount: number } | null>(null);
+  const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank?: number; mcqRankedCount?: number; realRankedCount: number } | null>(null);
 
   // Score-screen popups — mirror the Daily MCQ Challenge flow: Smart Next Steps
   // and Share Score open as modals (never inline sections below the score card).
@@ -634,11 +634,13 @@ function MockTestResultsInner() {
   const attemptedCount = correct + wrong;
   const speedPerQ = attemptedCount > 0 ? (timeTaken / 60 / attemptedCount).toFixed(2) : '0';
   // Real leaderboard rank (prelims/MCQ bucket). Falls back to an unlock hint.
-  const rankUnlocked = !!myRank?.isRankUnlocked && !!myRank?.mcqRank;
-  const rankedTotal = myRank?.realRankedCount ?? 0;
+  const rankUnlocked = typeof myRank?.mcqRank === 'number';
+  // Match the denominator to the same real + fallback population used for
+  // calculating mcqRank. realRankedCount is only the real-user metric.
+  const rankedTotal = myRank?.mcqRankedCount ?? myRank?.realRankedCount ?? 0;
   const rankLabel = rankUnlocked
     ? `#${(myRank!.mcqRank as number).toLocaleString('en-IN')}`
-    : myRank && myRank.attemptsToUnlockRank > 0
+    : myRank && (myRank.attemptsToUnlockRank ?? 0) > 0
       ? `${myRank.attemptsToUnlockRank} more to unlock`
       : 'Rankings updating...';
   const rankSubLabel = rankUnlocked && rankedTotal > 0

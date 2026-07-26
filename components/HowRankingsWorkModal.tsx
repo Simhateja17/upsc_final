@@ -106,8 +106,8 @@ export default function HowRankingsWorkModal({
             padding: '0 4px',
           }}
         >
-          Your Overall Rank reflects your average academic performance across all completed Daily MCQ and Daily
-          Answer Writing Challenges.
+          Your Overall Rank reflects your average academic performance across completed MCQ-type and Mains-type
+          challenges.
         </p>
 
         {/* Scoring Breakdown */}
@@ -180,7 +180,7 @@ export default function HowRankingsWorkModal({
             border: '1px solid rgba(245, 197, 66, 0.15)',
           }}
         >
-          Complete both Daily MCQ and Daily Answer Writing Challenges to improve your Overall Rank.
+          Complete at least one MCQ-type and one Mains-type challenge to unlock your Overall Rank.
         </div>
 
         {/* Actions */}

@@ -130,8 +130,14 @@ export default function LandingNav() {
         </div>
 
         <div className="nav-btns hidden md:flex">
-          <button className="btn-nav-ghost" onClick={() => openAuthModal('login')}>Login</button>
-          <button className="btn-nav-gold" onClick={() => openAuthModal('signup')}>Start Free →</button>
+          {isAuthenticated ? (
+            <Link href="/dashboard" className="btn-nav-gold">Back to Dashboard</Link>
+          ) : (
+            <>
+              <button className="btn-nav-ghost" onClick={() => openAuthModal('login')}>Login</button>
+              <button className="btn-nav-gold" onClick={() => openAuthModal('signup')}>Start Free →</button>
+            </>
+          )}
         </div>
 
         <button
@@ -165,8 +171,14 @@ export default function LandingNav() {
         </div>
         <a href="/pricing" onClick={closeMobileNav}>Pricing</a>
         <div className="mobile-nav-btns">
-          <button className="btn-nav-ghost" onClick={() => { closeMobileNav(); openAuthModal('login'); }}>Login</button>
-          <button className="btn-nav-gold" onClick={() => { closeMobileNav(); openAuthModal('signup'); }}>Start Free →</button>
+          {isAuthenticated ? (
+            <Link href="/dashboard" className="btn-nav-gold" onClick={closeMobileNav}>Back to Dashboard</Link>
+          ) : (
+            <>
+              <button className="btn-nav-ghost" onClick={() => { closeMobileNav(); openAuthModal('login'); }}>Login</button>
+              <button className="btn-nav-gold" onClick={() => { closeMobileNav(); openAuthModal('signup'); }}>Start Free →</button>
+            </>
+          )}
         </div>
       </div>
     </>

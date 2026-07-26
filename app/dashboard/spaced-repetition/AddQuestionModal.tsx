@@ -9,6 +9,7 @@ export type AddQuestionPayload = {
   subjectId: string;
   sourceType: string;
   firstReviewDays: number;
+  scheduleDays: number[];
 };
 
 type Props = {
@@ -41,7 +42,7 @@ export default function AddQuestionModal({ open, onClose, defaultSubjectId, edit
   const [answer, setAnswer] = useState('');
   const [subjectId, setSubjectId] = useState(defaultSubjectId ?? subjectOptions[0].id);
   const [sourceType, setSourceType] = useState('mcq');
-  const [firstReview, setFirstReview] = useState(DEFAULT_REVIEW_DAYS);
+  const [scheduleDays, setScheduleDays] = useState<number[]>([DEFAULT_REVIEW_DAYS]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +62,7 @@ export default function AddQuestionModal({ open, onClose, defaultSubjectId, edit
     setAnswer('');
     setSubjectId(defaultSubjectId ?? subjectOptions[0].id);
     setSourceType('mcq');
-    setFirstReview(DEFAULT_REVIEW_DAYS);
+    setScheduleDays([DEFAULT_REVIEW_DAYS]);
   }, [open, editItem, defaultSubjectId]);
 
   if (!open) return null;
@@ -82,7 +83,8 @@ export default function AddQuestionModal({ open, onClose, defaultSubjectId, edit
         answer: answer.trim(),
         subjectId,
         sourceType,
-        firstReviewDays: firstReview,
+        firstReviewDays: scheduleDays[0] ?? DEFAULT_REVIEW_DAYS,
+        scheduleDays,
       });
       if (ok) onClose();
     } catch (err) {
@@ -149,13 +151,16 @@ export default function AddQuestionModal({ open, onClose, defaultSubjectId, edit
           </div>
           {!isEdit && (
             <div className="modal-form-group">
-              <label>First review in</label>
+              <label>Review schedule <span className="optional-tag">(choose one or more)</span></label>
               <div className="modal-tags">
                 {REVIEW_OPTIONS.map((r) => (
                   <span
                     key={r.days}
-                    className={`modal-tag${firstReview === r.days ? ' selected' : ''}`}
-                    onClick={() => setFirstReview(r.days)}
+                    className={`modal-tag${scheduleDays.includes(r.days) ? ' selected' : ''}`}
+                    onClick={() => setScheduleDays((current) => {
+                      if (current.includes(r.days)) return current.length === 1 ? current : current.filter((day) => day !== r.days);
+                      return [...current, r.days].sort((a, b) => a - b);
+                    })}
                   >
                     {r.label}
                   </span>

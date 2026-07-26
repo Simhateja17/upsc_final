@@ -130,6 +130,18 @@ function ChartHeading({ dotColor, title, subtitle, filterToggle }: { dotColor: s
 const CHART_FILTER_PERIODS = ['day', 'week', 'month'] as const;
 type ChartFilterPeriod = typeof CHART_FILTER_PERIODS[number];
 
+const HISTORY_SERIES_FILTERS = [
+  { key: 'all', label: 'All', bg: '#F1F5F9', border: '#CBD5E1', color: '#334155', activeBg: '#1E293B' },
+  { key: 'daily-mcq', label: 'Daily MCQ', bg: '#ECFDF5', border: '#A7F3D0', color: '#047857', activeBg: '#047857' },
+  { key: 'daily-answer', label: 'Daily Answer Writing', bg: '#FFF7ED', border: '#FED7AA', color: '#C2410C', activeBg: '#C2410C' },
+  { key: 'mock-prelims', label: 'Mock Test · Prelims', bg: '#EFF6FF', border: '#BFDBFE', color: '#1D4ED8', activeBg: '#1D4ED8' },
+  { key: 'mock-mains', label: 'Mock Test · Mains', bg: '#F5F3FF', border: '#DDD6FE', color: '#6D28D9', activeBg: '#6D28D9' },
+  { key: 'pyq-prelims', label: 'PYQ · Prelims', bg: '#FEFCE8', border: '#FDE68A', color: '#A16207', activeBg: '#A16207' },
+  { key: 'pyq-mains', label: 'PYQ · Mains', bg: '#FFF1F2', border: '#FECDD3', color: '#BE123C', activeBg: '#BE123C' },
+  { key: 'mains-evaluator', label: 'Mains Answer Evaluator', bg: '#F0FDFA', border: '#99F6E4', color: '#0F766E', activeBg: '#0F766E' },
+] as const;
+type HistorySeriesFilter = typeof HISTORY_SERIES_FILTERS[number]['key'];
+
 function periodStart(period: ChartFilterPeriod, reference = new Date()): Date {
   const start = new Date(reference);
   start.setHours(0, 0, 0, 0);
@@ -172,7 +184,7 @@ export default function TestAnalyticsPage() {
   // already-fetched `testHistory` list (same "swap the view, don't recompute"
   // pattern as ChartFilterToggle above), ported 1:1 from the HTML reference's
   // filterBySeries()/sortTests().
-  const [historySeriesFilter, setHistorySeriesFilter] = useState<'all' | 'daily_mcq' | 'mock' | 'pyq'>('all');
+  const [historySeriesFilter, setHistorySeriesFilter] = useState<HistorySeriesFilter>('all');
   const [historySortField, setHistorySortField] = useState<'date' | 'accuracy' | 'score'>('date');
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const entitlements = useEntitlements();
@@ -231,16 +243,12 @@ export default function TestAnalyticsPage() {
   const timePerQuestionTrend: Record<ChartFilterPeriod, any[]> = data?.timePerQuestionTrend ?? {};
   const testHistory: any[] = data?.testHistory ?? [];
 
-  // Series filter → matches the backend's `type` field per row (see
-  // dashboard.service.ts: daily-mcq / daily-answer / mock-prelims / mock-mains
-  // / pyq-mains / test-series). "All" always shows every row.
+  // Series filter → matches the backend's specific activity type per row.
+  // "All" also retains Test Series attempts, which do not have a dedicated chip.
   const displayedTestHistory = testHistory
     .filter((row) => {
       if (historySeriesFilter === 'all') return true;
-      if (historySeriesFilter === 'daily_mcq') return row.type === 'daily-mcq';
-      if (historySeriesFilter === 'mock') return row.type === 'mock-prelims' || row.type === 'mock-mains';
-      if (historySeriesFilter === 'pyq') return row.type === 'pyq-mains';
-      return true;
+      return row.type === historySeriesFilter;
     })
     .slice()
     .sort((a, b) => {
@@ -264,8 +272,12 @@ export default function TestAnalyticsPage() {
       target = `/dashboard/mock-tests/attempt/results?testId=${encodeURIComponent(params.testId)}`;
     } else if (row.type === 'mock-mains' && params.testId) {
       target = `/dashboard/mock-tests/attempt/results?testId=${encodeURIComponent(params.testId)}&examMode=mains&attemptId=${encodeURIComponent(row.id)}&title=${encodeURIComponent(row.name ?? 'Mains Mock Test')}`;
+    } else if (row.type === 'pyq-prelims' && params.questionId) {
+      target = `/questions/${encodeURIComponent(params.questionId)}`;
     } else if (row.type === 'pyq-mains' && params.questionId && params.attemptId) {
       target = `/dashboard/pyq/results?questionId=${encodeURIComponent(params.questionId)}&attemptId=${encodeURIComponent(params.attemptId)}`;
+    } else if (row.type === 'mains-evaluator' && params.attemptId) {
+      target = `/dashboard/mains-answer-evaluator/results?attemptId=${encodeURIComponent(params.attemptId)}`;
     } else if (row.type === 'test-series' && params.seriesId && params.testId) {
       target = `/dashboard/test-series/${encodeURIComponent(params.seriesId)}/results/${encodeURIComponent(params.testId)}`;
     }
@@ -633,9 +645,9 @@ export default function TestAnalyticsPage() {
           {/* ── Complete Test History ── */}
           <SectionDivider label="Test History" />
           <LockedWidget
-            locked={analyticsLocked}
+            locked={false}
             onClick={openUpgradeModal}
-            className={`pa-card ${analyticsLocked ? '' : 'pa-card-3d'} overflow-hidden`}
+            className="pa-card pa-card-3d overflow-hidden"
             style={widgetStyle}
             heading={
               <div className="mb-5 font-bold" style={{ fontSize: 16.1, color: '#1A1F36' }}>
@@ -650,26 +662,29 @@ export default function TestAnalyticsPage() {
             ) : (
               <>
                 {/* Series filter + sort — client-side view over testHistory, see displayedTestHistory above */}
-                <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="pa-filter-label">Series:</span>
-                    {([
-                      { key: 'all', label: 'All' },
-                      { key: 'daily_mcq', label: 'Daily MCQ' },
-                      { key: 'mock', label: 'Mock Tests' },
-                      { key: 'pyq', label: 'PYQ' },
-                    ] as const).map((f) => (
-                      <button
-                        key={f.key}
-                        type="button"
-                        onClick={() => setHistorySeriesFilter(f.key)}
-                        className={`pa-history-btn ${historySeriesFilter === f.key ? 'pa-history-btn-active' : ''}`}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
+                <div className="mb-5 flex flex-col items-start justify-between gap-4 xl:flex-row">
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <span className="pa-filter-label shrink-0 self-center">Series:</span>
+                    <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
+                      {HISTORY_SERIES_FILTERS.map((f) => {
+                        const isActive = historySeriesFilter === f.key;
+                        return (
+                          <button
+                            key={f.key}
+                            type="button"
+                            onClick={() => setHistorySeriesFilter(f.key)}
+                            className={`pa-history-btn min-h-10 w-full ${historySeriesFilter === f.key ? 'pa-history-btn-active' : ''}`}
+                            style={isActive
+                              ? { background: f.activeBg, borderColor: f.activeBg, color: '#FFFFFF' }
+                              : { background: f.bg, borderColor: f.border, color: f.color }}
+                          >
+                            {f.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2 xl:self-center">
                     <span className="pa-filter-label">Sort:</span>
                     {([
                       { key: 'date', label: 'Recent' },
