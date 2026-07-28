@@ -107,6 +107,7 @@ export default function MyPlanBillingTab({
   features,
   syllabusCoverage,
   busy,
+  isPreview,
   onCancelClick,
   onUpgradeClick,
   onEditAddressClick,
@@ -118,19 +119,26 @@ export default function MyPlanBillingTab({
   features: Record<string, FeatureStatus>;
   syllabusCoverage: number | null;
   busy?: boolean;
+  /** Admin previewing this tier via the plan switcher — no real Subscription backs it, so
+   * dates/price/cancel/upgrade are all fictional and must be presented as a clear preview. */
+  isPreview?: boolean;
   onCancelClick: () => void;
   onUpgradeClick: () => void;
   onEditAddressClick: () => void;
   onResumeClick?: () => void;
 }) {
   const isTabletOrBelow = useIsTabletOrBelow();
-  const planName = plan?.name || 'Your Plan';
+  const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
+  // Aspire is free forever — genuinely no Subscription row to show billing/renewal for.
+  // (Distinct from isPreview: an admin simulating rise/ascent also has no subscription, but
+  // that's fake data being previewed, not a real free plan.)
+  const isFreeTierNoBilling = !subscription && !isPreview;
+  const planName = plan?.name || (isPreview || isFreeTierNoBilling ? `${tierLabel} Plan` : 'Your Plan');
   const cycleLabel = CYCLE_LABEL[plan?.billingCycle || 'yearly'] || 'Annual';
   const renewDate = subscription?.currentEnd || subscription?.endDate;
   const isActive = subscription?.status === 'active';
   const usageRows = buildUsageRows(features, syllabusCoverage);
   const includedFeatures = PLAN_INCLUDED_FEATURES[tier] || [];
-  const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -170,7 +178,45 @@ export default function MyPlanBillingTab({
               <h3 style={{ margin: 0, fontFamily: CORMORANT, fontWeight: 600, fontSize: 22.4, color: '#fff' }}>
                 {planName}
               </h3>
-              {isActive && (
+              {isPreview ? (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '5px 13px',
+                    borderRadius: 20,
+                    background: 'rgba(148,163,184,0.15)',
+                    border: '1px solid rgba(148,163,184,0.35)',
+                    fontFamily: FONT,
+                    fontWeight: 700,
+                    fontSize: 11,
+                    letterSpacing: '0.44px',
+                    color: '#cbd5e1',
+                  }}
+                >
+                  🔍 Preview
+                </span>
+              ) : isFreeTierNoBilling ? (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '5px 13px',
+                    borderRadius: 20,
+                    background: 'rgba(232,184,75,0.15)',
+                    border: '1px solid rgba(232,184,75,0.3)',
+                    fontFamily: FONT,
+                    fontWeight: 700,
+                    fontSize: 11,
+                    letterSpacing: '0.44px',
+                    color: '#e8b84b',
+                  }}
+                >
+                  Always Free
+                </span>
+              ) : isActive && (
                 <span
                   style={{
                     display: 'inline-flex',
@@ -193,10 +239,18 @@ export default function MyPlanBillingTab({
               )}
             </div>
             <p style={{ margin: '10px 0 0', fontFamily: FONT, fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
-              {cycleLabel} · Renews {formatDate(renewDate)} ·{' '}
-              <span style={{ color: '#e8b84b' }}>
-                {formatRupees(plan?.price)} / {plan?.billingCycle === 'monthly' ? 'month' : plan?.billingCycle === 'quarterly' ? 'quarter' : 'year'}
-              </span>
+              {isPreview ? (
+                <>Previewing as {tierLabel} · admin plan switcher — no real billing</>
+              ) : isFreeTierNoBilling ? (
+                <>Free, forever · no card, no billing</>
+              ) : (
+                <>
+                  {cycleLabel} · Renews {formatDate(renewDate)} ·{' '}
+                  <span style={{ color: '#e8b84b' }}>
+                    {formatRupees(plan?.price)} / {plan?.billingCycle === 'monthly' ? 'month' : plan?.billingCycle === 'quarterly' ? 'quarter' : 'year'}
+                  </span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -222,28 +276,33 @@ export default function MyPlanBillingTab({
             </button>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={onCancelClick}
-                disabled={busy}
-                style={{
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  background: 'transparent',
-                  borderRadius: 9,
-                  padding: '11px 23px',
-                  fontFamily: FONT,
-                  fontWeight: 600,
-                  fontSize: 13,
-                  color: 'rgba(255,255,255,0.7)',
-                  cursor: busy ? 'not-allowed' : 'pointer',
-                }}
-              >
-                Cancel Plan
-              </button>
+              {!isFreeTierNoBilling && (
+                <button
+                  type="button"
+                  onClick={onCancelClick}
+                  disabled={busy || isPreview}
+                  title={isPreview ? 'Not available while previewing a simulated plan' : undefined}
+                  style={{
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    background: 'transparent',
+                    borderRadius: 9,
+                    padding: '11px 23px',
+                    fontFamily: FONT,
+                    fontWeight: 600,
+                    fontSize: 13,
+                    color: 'rgba(255,255,255,0.7)',
+                    cursor: busy || isPreview ? 'not-allowed' : 'pointer',
+                    opacity: isPreview ? 0.45 : 1,
+                  }}
+                >
+                  Cancel Plan
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onUpgradeClick}
-                disabled={busy}
+                disabled={busy || isPreview}
+                title={isPreview ? 'Not available while previewing a simulated plan' : undefined}
                 style={{
                   border: 'none',
                   background: '#e8b84b',
@@ -253,10 +312,11 @@ export default function MyPlanBillingTab({
                   fontWeight: 600,
                   fontSize: 13,
                   color: '#090e1c',
-                  cursor: busy ? 'not-allowed' : 'pointer',
+                  cursor: busy || isPreview ? 'not-allowed' : 'pointer',
+                  opacity: isPreview ? 0.45 : 1,
                 }}
               >
-                Upgrade / Change Plan
+                {isFreeTierNoBilling ? 'Upgrade Plan' : 'Upgrade / Change Plan'}
               </button>
             </>
           )}
@@ -344,24 +404,36 @@ export default function MyPlanBillingTab({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 18 }}>📅</span>
-          <span style={{ fontFamily: FONT, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
-            Next billing date:{' '}
-            <strong style={{ fontFamily: FONT, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>
-              {formatDate(subscription?.chargeAt || renewDate)}
-            </strong>{' '}
-            · {cycleLabel} {planName} renewal
-          </span>
-          <button
-            type="button"
-            onClick={onEditAddressClick}
-            style={{ background: 'none', border: 'none', padding: 0, marginLeft: 4, fontFamily: FONT, fontSize: 12, color: '#e8b84b', textDecoration: 'underline', cursor: 'pointer' }}
-          >
-            Edit billing address
-          </button>
+          <span style={{ fontSize: 18 }}>{isPreview ? '🔍' : isFreeTierNoBilling ? '✨' : '📅'}</span>
+          {isPreview ? (
+            <span style={{ fontFamily: FONT, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
+              Preview mode — no real billing
+            </span>
+          ) : isFreeTierNoBilling ? (
+            <span style={{ fontFamily: FONT, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
+              No billing on the free plan — upgrade anytime for higher limits
+            </span>
+          ) : (
+            <span style={{ fontFamily: FONT, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
+              Next billing date:{' '}
+              <strong style={{ fontFamily: FONT, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>
+                {formatDate(subscription?.chargeAt || renewDate)}
+              </strong>{' '}
+              · {cycleLabel} {planName} renewal
+            </span>
+          )}
+          {!isFreeTierNoBilling && (
+            <button
+              type="button"
+              onClick={onEditAddressClick}
+              style={{ background: 'none', border: 'none', padding: 0, marginLeft: 4, fontFamily: FONT, fontSize: 12, color: '#e8b84b', textDecoration: 'underline', cursor: 'pointer' }}
+            >
+              Edit billing address
+            </button>
+          )}
         </div>
         <div style={{ fontFamily: CORMORANT, fontWeight: 700, fontSize: 19.2, color: '#e8b84b' }}>
-          {formatRupees(plan?.price)}
+          {isPreview || isFreeTierNoBilling ? '—' : formatRupees(plan?.price)}
         </div>
       </div>
     </div>

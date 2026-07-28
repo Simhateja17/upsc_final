@@ -1252,19 +1252,55 @@ export default function ExplorePlansPage() {
   const handleUpgrade = () => router.push('/dashboard');
   const currentTier = entitlements.tier;
   const currentRank = { free: 0, aspire: 1, rise: 2, ascent: 3 }[currentTier];
-  const isPaidValid = currentTier !== 'free' && !!entitlements.subscription;
+  const hasRealSubscription = currentTier !== 'free' && !!entitlements.subscription;
+
+  // Admins can preview any tier via the plan switcher in /admin. A pure simulation never
+  // attaches a real Subscription row, so treat a rise/ascent simulation as "paid" too —
+  // otherwise the My Plan & Billing preview they're testing for would never be reachable.
+  const isAdminSimulating = Boolean(entitlements.summary?.override?.isAdminPlanSimulation);
+  const isPreviewTier = isAdminSimulating && (currentTier === 'rise' || currentTier === 'ascent');
+  const isPreview = isPreviewTier && !hasRealSubscription;
+
+  // Aspire is a real, always-on tier now (never "no plan") — every authenticated user has
+  // *something* to show on My Plan & Billing, not just paying subscribers. currentTier only
+  // stays 'free' while logged out or before entitlements have finished their first load.
+  const canViewMyPlan = isAuthenticated && currentTier !== 'free';
   const canShowPlan = (plan: PlanKey) => ({ aspire: 1, rise: 2, ascent: 3 }[plan] > currentRank);
 
+  // Explore Plans always shows all 3 cards (matching Figma's static comparison layout) —
+  // canShowPlan above still gates whether checkout can actually open for a plan; this just
+  // decides what each card's CTA button says/does for the viewer's own tier and below.
+  const planCtaState = (plan: PlanKey): { label: string; disabled: boolean } => {
+    const rank = { aspire: 1, rise: 2, ascent: 3 }[plan];
+    if (rank === currentRank) return { label: 'Current Plan', disabled: true };
+    if (rank < currentRank) return { label: 'Included in your plan', disabled: true };
+    return { label: '', disabled: false };
+  };
+
   const wantsExploreTab = searchParams.get('tab') === 'explore';
-  const [activeTab, setActiveTab] = useState<'my-plan' | 'explore'>(wantsExploreTab || !isPaidValid ? 'explore' : 'my-plan');
 
+  // activeTab is derived fresh every render from live entitlements state (canViewMyPlan),
+  // rather than "decided once" in a useState initializer or a one-time sync effect — that
+  // earlier approach could go stale across Next.js client-side route-cache navigations or
+  // dev-mode Fast Refresh, since the async entitlements load doesn't reliably re-trigger a
+  // one-shot effect. manualTab only overrides this once the user (or an explicit deep link)
+  // actively picks a tab; until then, it just tracks reality on every render.
+  const [manualTab, setManualTabState] = useState<'my-plan' | 'explore' | null>(null);
+  const setActiveTab = (tab: 'my-plan' | 'explore') => setManualTabState(tab);
+  const defaultTab: 'my-plan' | 'explore' = wantsExploreTab || !canViewMyPlan ? 'explore' : 'my-plan';
+  const activeTab = manualTab ?? defaultTab;
+
+  // If a manually-pinned "My Plan & Billing" selection stops being valid (logged out mid-
+  // session), release the pin so the live default takes over.
   useEffect(() => {
-    if (!isPaidValid && activeTab === 'my-plan') setActiveTab('explore');
-  }, [isPaidValid, activeTab]);
+    if (!canViewMyPlan && manualTab === 'my-plan') setManualTabState(null);
+  }, [canViewMyPlan, manualTab]);
 
+  // Contextual "you hit a limit" upgrade prompts elsewhere in the app (e.g. Flashcards)
+  // link here with #upgrade-plans to jump straight to pricing regardless of current tier.
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.hash === '#upgrade-plans') {
-      setActiveTab('explore');
+      setManualTabState('explore');
     }
   }, []);
 
@@ -1341,9 +1377,10 @@ export default function ExplorePlansPage() {
       />
       <BillingHero />
 
-      {/* Tab switcher — only shown when there are two tabs to choose between */}
-      {isPaidValid && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: -28, position: 'relative', zIndex: 2, padding: '0 16px' }}>
+      {/* Tab switcher — only shown when there are two tabs to choose between. 32px gap
+          below the hero's bottom edge, matching Figma exactly (no overlap into the hero). */}
+      {canViewMyPlan && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, position: 'relative', zIndex: 2, padding: '0 16px' }}>
           <div style={{ display: 'inline-flex', gap: 4, background: '#fff', border: '1px solid rgba(11,22,40,0.09)', borderRadius: 12, padding: 5, boxShadow: '0 2px 7px rgba(11,22,40,0.07)' }}>
             <button type="button" onClick={() => setActiveTab('my-plan')} style={{
               borderRadius: 9, padding: '10px 28px', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
@@ -1366,7 +1403,7 @@ export default function ExplorePlansPage() {
       )}
 
       <div className="mx-auto mt-3 flex w-full max-w-[1120px] flex-col gap-8 px-4 pb-20 sm:px-6 lg:px-8">
-        {activeTab === 'my-plan' && isPaidValid && (
+        {activeTab === 'my-plan' && canViewMyPlan && (
           <MyPlanBillingTab
             tier={currentTier}
             plan={entitlements.plan}
@@ -1374,6 +1411,7 @@ export default function ExplorePlansPage() {
             features={entitlements.features}
             syllabusCoverage={syllabusCoverage}
             busy={!!manageBusy}
+            isPreview={isPreview}
             onCancelClick={() => setShowCancelModal(true)}
             onUpgradeClick={() => setActiveTab('explore')}
             onEditAddressClick={() => setShowEditAddressModal(true)}
@@ -1446,8 +1484,13 @@ export default function ExplorePlansPage() {
                   </li>
                 ))}
               </ul>
-              <button type="button" onClick={handleAspireCta} style={{ marginTop: 24, width: '100%', borderRadius: 11, padding: '13px 16px', fontSize: 13.9, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#FFFFFF', boxShadow: '0px 1px 1.5px rgba(0,0,0,0.1)', color: '#0F2040', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
-                Get Started Free →
+              <button
+                type="button"
+                onClick={planCtaState('aspire').disabled ? undefined : handleAspireCta}
+                disabled={planCtaState('aspire').disabled}
+                style={{ marginTop: 24, width: '100%', borderRadius: 11, padding: '13px 16px', fontSize: 13.9, fontWeight: 700, cursor: planCtaState('aspire').disabled ? 'default' : 'pointer', border: 'none', background: planCtaState('aspire').disabled ? '#F3F1EC' : '#FFFFFF', boxShadow: planCtaState('aspire').disabled ? 'none' : '0px 1px 1.5px rgba(0,0,0,0.1)', color: planCtaState('aspire').disabled ? '#8A8AAA' : '#0F2040', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}
+              >
+                {planCtaState('aspire').label || 'Get Started Free →'}
               </button>
               <p style={{ margin: '8px 0 0', fontSize: 11.2, color: '#8A8AAA', textAlign: 'center', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
                 No card needed • Upgrade anytime
@@ -1459,7 +1502,7 @@ export default function ExplorePlansPage() {
           <article
             onMouseEnter={() => setHoveredPlan('rise')}
             onMouseLeave={() => setHoveredPlan(null)}
-            style={{ borderRadius: 20, border: '2px solid #E8B84B', background: '#0B1525', overflow: 'hidden', position: 'relative', display: canShowPlan('rise') ? 'flex' : 'none', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'rise' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'rise' ? '0 16px 40px rgba(232,184,75,0.25)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
+            style={{ borderRadius: 20, border: '2px solid #E8B84B', background: '#0B1525', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'rise' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'rise' ? '0 16px 40px rgba(232,184,75,0.25)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
             <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', background: '#E8B84B', color: '#090E1C', padding: '5px 16px', borderRadius: '0 0 10px 10px', fontSize: 10, fontWeight: 800, letterSpacing: '0.8px', textTransform: 'uppercase', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}>
               ⭐ Most Popular
             </div>
@@ -1499,12 +1542,19 @@ export default function ExplorePlansPage() {
                   ))}
                 </div>
               ))}
-              <button type="button" onClick={handleOpenRiseCheckout} style={{ marginTop: 'auto', width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#E8B84B', color: '#090E1C', fontFamily: 'var(--font-dm-sans), "DM Sans", Inter, sans-serif' }}>
-                Unlock Rise Now →
+              <button
+                type="button"
+                onClick={planCtaState('rise').disabled ? undefined : handleOpenRiseCheckout}
+                disabled={planCtaState('rise').disabled}
+                style={{ marginTop: 'auto', width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: planCtaState('rise').disabled ? 'default' : 'pointer', border: 'none', background: planCtaState('rise').disabled ? 'rgba(255,255,255,0.1)' : '#E8B84B', color: planCtaState('rise').disabled ? 'rgba(255,255,255,0.5)' : '#090E1C', fontFamily: 'var(--font-dm-sans), "DM Sans", Inter, sans-serif' }}
+              >
+                {planCtaState('rise').label || 'Unlock Rise Now →'}
               </button>
-              <p style={{ margin: '9px 0 0', fontSize: 11.5, color: '#15803D', textAlign: 'center', fontWeight: 600, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                ↩️ 7-day money-back guarantee, no questions asked
-              </p>
+              {!planCtaState('rise').disabled && (
+                <p style={{ margin: '9px 0 0', fontSize: 11.5, color: '#15803D', textAlign: 'center', fontWeight: 600, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  ↩️ 7-day money-back guarantee, no questions asked
+                </p>
+              )}
             </div>
           </article>
 
@@ -1512,7 +1562,7 @@ export default function ExplorePlansPage() {
           <article
             onMouseEnter={() => setHoveredPlan('ascent')}
             onMouseLeave={() => setHoveredPlan(null)}
-            style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: canShowPlan('ascent') ? 'flex' : 'none', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'ascent' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'ascent' ? '0 16px 40px rgba(11,22,40,0.12)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
+            style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'ascent' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'ascent' ? '0 16px 40px rgba(11,22,40,0.12)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
             <div style={{ padding: '28px 24px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
               <p style={{ margin: '0 0 8px', fontSize: 10.2, fontWeight: 700, letterSpacing: '1.43px', textTransform: 'uppercase', color: '#D4900A', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Maximum Edge</p>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Ascent</h3>
@@ -1548,12 +1598,19 @@ export default function ExplorePlansPage() {
                   ))}
                 </div>
               ))}
-              <button type="button" onClick={handleOpenAscentCheckout} style={{ marginTop: 'auto', width: '100%', borderRadius: 11, padding: '13px 16px', fontSize: 13.9, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#0C1424', color: '#fff', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
-                Get Ascent Plan→
+              <button
+                type="button"
+                onClick={planCtaState('ascent').disabled ? undefined : handleOpenAscentCheckout}
+                disabled={planCtaState('ascent').disabled}
+                style={{ marginTop: 'auto', width: '100%', borderRadius: 11, padding: '13px 16px', fontSize: 13.9, fontWeight: 700, cursor: planCtaState('ascent').disabled ? 'default' : 'pointer', border: 'none', background: planCtaState('ascent').disabled ? '#F3F1EC' : '#0C1424', color: planCtaState('ascent').disabled ? '#8A8AAA' : '#fff', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}
+              >
+                {planCtaState('ascent').label || 'Get Ascent Plan→'}
               </button>
-              <p style={{ margin: '9px 0 0', fontSize: 11.2, color: '#15803D', textAlign: 'center', fontWeight: 600, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                ↩️ 7-day money-back guarantee included
-              </p>
+              {!planCtaState('ascent').disabled && (
+                <p style={{ margin: '9px 0 0', fontSize: 11.2, color: '#15803D', textAlign: 'center', fontWeight: 600, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  ↩️ 7-day money-back guarantee included
+                </p>
+              )}
             </div>
           </article>
 
@@ -1670,18 +1727,33 @@ export default function ExplorePlansPage() {
                 <tr style={{ background: '#fff' }}>
                   <td style={{ padding: '20px' }} />
                   <td style={{ padding: '20px 16px', textAlign: 'center' }}>
-                    <button type="button" onClick={handleAspireCta} style={{ borderRadius: 8, border: '1.5px solid #D1D5DB', background: 'transparent', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#1A1A2E', cursor: 'pointer', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}>
-                      Start Free
+                    <button
+                      type="button"
+                      onClick={planCtaState('aspire').disabled ? undefined : handleAspireCta}
+                      disabled={planCtaState('aspire').disabled}
+                      style={{ borderRadius: 8, border: '1.5px solid #D1D5DB', background: 'transparent', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: planCtaState('aspire').disabled ? '#B8B8C4' : '#1A1A2E', cursor: planCtaState('aspire').disabled ? 'default' : 'pointer', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}
+                    >
+                      {planCtaState('aspire').disabled ? planCtaState('aspire').label : 'Start Free'}
                     </button>
                   </td>
                   <td style={{ padding: '20px 16px', textAlign: 'center', background: 'rgba(212,144,10,0.02)' }}>
-                    <button type="button" onClick={handleOpenRiseCheckout} style={{ display: canShowPlan('rise') ? 'inline-block' : 'none', borderRadius: 8, border: 'none', background: '#E8B84B', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#090E1C', cursor: 'pointer', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}>
-                      Unlock Rise
+                    <button
+                      type="button"
+                      onClick={planCtaState('rise').disabled ? undefined : handleOpenRiseCheckout}
+                      disabled={planCtaState('rise').disabled}
+                      style={{ borderRadius: 8, border: 'none', background: planCtaState('rise').disabled ? '#EDE6D3' : '#E8B84B', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: planCtaState('rise').disabled ? '#A08C4E' : '#090E1C', cursor: planCtaState('rise').disabled ? 'default' : 'pointer', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}
+                    >
+                      {planCtaState('rise').disabled ? planCtaState('rise').label : 'Unlock Rise'}
                     </button>
                   </td>
                   <td style={{ padding: '20px 16px', textAlign: 'center' }}>
-                    <button type="button" onClick={handleOpenAscentCheckout} style={{ display: canShowPlan('ascent') ? 'inline-block' : 'none', borderRadius: 8, border: 'none', background: '#090E1C', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}>
-                      Get Ascent
+                    <button
+                      type="button"
+                      onClick={planCtaState('ascent').disabled ? undefined : handleOpenAscentCheckout}
+                      disabled={planCtaState('ascent').disabled}
+                      style={{ borderRadius: 8, border: 'none', background: planCtaState('ascent').disabled ? '#EDEBE6' : '#090E1C', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: planCtaState('ascent').disabled ? '#8A8AAA' : '#fff', cursor: planCtaState('ascent').disabled ? 'default' : 'pointer', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}
+                    >
+                      {planCtaState('ascent').disabled ? planCtaState('ascent').label : 'Get Ascent'}
                     </button>
                   </td>
                 </tr>
