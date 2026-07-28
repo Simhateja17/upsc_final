@@ -564,7 +564,7 @@ function MockTestsPageInner() {
     } catch (err: any) {
       console.error('Failed to generate test:', err);
       const parsed = handleEntitlementError(err);
-      if (parsed.action === 'Upgrade plan' && selectedExamMode === 'prelims' && entitlements.tier === 'free') {
+      if (parsed.action === 'Upgrade plan' && selectedExamMode === 'prelims' && entitlements.tier === 'aspire') {
         setShowLimitModal(true);
         setError(parsed.message || 'Failed to generate test. Please try again.');
       } else if (parsed.title === 'Limit reached' || parsed.title === 'Upgrade required') {
@@ -609,7 +609,7 @@ function MockTestsPageInner() {
   const prelimsQuota = entitlements.featureStatus('prelims_mock_attempt');
   const activeQuota = entitlements.featureStatus(selectedExamMode === 'mains' ? 'mains_evaluation' : 'prelims_mock_attempt');
   const quotaExhausted = activeQuota?.allowed === false;
-  const isPrelimsAttemptsExhausted = selectedExamMode === 'prelims' && entitlements.tier === 'free' && !!prelimsQuota && (
+  const isPrelimsAttemptsExhausted = selectedExamMode === 'prelims' && entitlements.tier === 'aspire' && !!prelimsQuota && (
     prelimsQuota.code === 'FEATURE_LIMIT_REACHED' ||
     (prelimsQuota.limit !== null && prelimsQuota.remaining !== null && prelimsQuota.remaining <= 0)
   );
