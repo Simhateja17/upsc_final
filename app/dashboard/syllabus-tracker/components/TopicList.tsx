@@ -55,13 +55,12 @@ const TOPIC_PALETTE: Record<string, { bg: string; color: string }> = {
 
 interface TopicListProps {
   subject: Subject | null | undefined;
-  openTopics: Set<string>;
   selectedTopic: { subjectId: string; topicIndex: number } | null;
   onToggleTopic: (subjectId: string, topicIndex: number) => void;
   states: TrackerState;
 }
 
-export default function TopicList({ subject, openTopics, selectedTopic, onToggleTopic, states }: TopicListProps) {
+export default function TopicList({ subject, selectedTopic, onToggleTopic, states }: TopicListProps) {
   // Calculate topic stats
   const getTopicStats = (subjectId: string, topicIndex: number, totalSubs: number) => {
     let done = 0;
@@ -181,8 +180,8 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
       {/* Topics List */}
       <div className="flex-1 overflow-y-auto p-[6px]">
         {subject.topics.map((topic, ti) => {
-          const topicKey = `${subject.id}__${ti}`;
-          const isOpen = openTopics.has(topicKey);
+          // Single-select: the sub-topics render in their own column, so
+          // exactly one topic is ever highlighted — the selected one.
           const isSelected = selectedTopic?.subjectId === subject.id && selectedTopic?.topicIndex === ti;
           const topicStats = stats[ti];
           const topicPalette = TOPIC_PALETTE[topic.name];
@@ -243,11 +242,11 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
               key={ti}
               className={`
                 relative border-[1.5px] rounded-[12px] mb-[4px] overflow-hidden transition-all duration-200 shadow-sm
-                ${isOpen || isSelected
+                ${isSelected
                   ? 'border-[#e0e8f4] bg-[#EFF6FF]'
                   : 'border-[#e0e8f4] bg-white hover:border-[rgba(15,31,61,.12)] hover:shadow-md'}
               `}
-              style={isOpen || isSelected ? { boxShadow: '0 2px 8px rgba(15,31,61,.05)' } : {}}
+              style={isSelected ? { boxShadow: '0 2px 8px rgba(15,31,61,.05)' } : {}}
             >
               {/* Palette left accent strip */}
               {topicPalette && (
@@ -296,7 +295,7 @@ export default function TopicList({ subject, openTopics, selectedTopic, onToggle
                 
                 <span 
                   className="text-[12px] text-[#8795ae] transition-transform duration-200 inline-block flex-shrink-0"
-                  style={{ transform: isOpen || isSelected ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  style={{ transform: isSelected ? 'rotate(180deg)' : 'rotate(0deg)' }}
                 >
                   ›
                 </span>

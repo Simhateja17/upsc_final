@@ -207,7 +207,16 @@ const PerformanceStatsWidget = () => {
                 <div className="font-outfit font-bold text-[#0A1172] leading-none" style={{ fontSize: 'clamp(36px,2.19vw,42px)' }}>
                   {currentStreak ?? 0}
                 </div>
-                <p className="font-arimo font-extrabold text-[#0A1172] mt-[clamp(4px,0.31vw,6px)]" style={{ fontSize: 'clamp(13px,0.83vw,16px)', lineHeight: '1.2' }}>
+                <p
+                  className="font-arimo font-black mt-[clamp(4px,0.31vw,6px)]"
+                  style={{
+                    fontSize: 'clamp(13px,0.83vw,16px)',
+                    lineHeight: '1.2',
+                    fontWeight: 900,
+                    color: '#070C4D',
+                    textRendering: 'optimizeLegibility',
+                  }}
+                >
                   Day Study Streak
                 </p>
               </div>
@@ -261,7 +270,16 @@ const PerformanceStatsWidget = () => {
             {/* Syllabus Coverage */}
             <div className="mb-[clamp(12px,0.83vw,16px)]">
               <div className="flex items-center justify-between mb-[clamp(6px,0.42vw,8px)]">
-                <span className="font-arimo font-extrabold text-[#0A1172]" style={{ fontSize: 'clamp(12px,0.73vw,14px)' }}>
+                <span
+                  className="font-arimo font-black"
+                  style={{
+                    fontSize: 'clamp(13px,0.83vw,16px)',
+                    fontWeight: 900,
+                    color: '#070C4D',
+                    textRendering: 'optimizeLegibility',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   Syllabus Coverage
                 </span>
                 <span className="font-arimo font-bold text-[#0A1172]" style={{ fontSize: 'clamp(13px,0.83vw,16px)' }}>

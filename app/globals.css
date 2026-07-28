@@ -327,6 +327,37 @@ html, body {
 .sm-shine:hover::after { transform: translateX(100%); }
 .sm-btn:disabled { opacity: .6; cursor: default; }
 
+/* Gold primary action — the single source of truth for the app's amber CTA
+   ("+ Add Subject" on Flashcards, "+ Add in Study Planner" on the Syllabus
+   Tracker). These had drifted into two different yellows defined inline; keep
+   new gold CTAs on this class rather than re-declaring the gradient. */
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* The Syllabus Tracker CTA lives in a 250px rail, so cap the width and let a
+     long label wrap instead of overflowing the dashed card. */
+  max-width: 100%;
+  text-align: center;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffd24a, #f5b400);
+  box-shadow: 0 4px 16px rgba(245, 180, 0, .35);
+  font-family: Inter, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0;
+  color: #1a1407;
+  cursor: pointer;
+  transition: filter .2s ease, box-shadow .15s ease, transform .15s ease;
+}
+.btn-gold:hover { filter: brightness(1.03); box-shadow: 0 6px 20px rgba(245, 180, 0, .45); }
+.btn-gold:active { transform: translateY(1px); box-shadow: 0 2px 10px rgba(245, 180, 0, .35); }
+.btn-gold:disabled { opacity: .6; cursor: default; transform: none; filter: none; }
+
 /* Subject card grid — shared by the Flashcards, Mindmaps and Spaced Repetition
    modules so the three stay visually identical.
    auto-fill keys the column count off the container's width rather than the

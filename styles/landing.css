@@ -320,9 +320,8 @@
 /* The client demo assets are authored at 380x660 and scale down to the
    column width. `demo-content` derives that same height from its own
    width (660/380 = 173.68cqw, capped at the authored 660px) so every
-   slide — assets and the hand-built chat slide alike — is exactly as
-   tall as the device frame. Without this the frame would jump height
-   each time the carousel advanced. */
+   slide is exactly as tall as the device frame. Without this the frame
+   would jump height each time the carousel advanced. */
 .demo-device { container-type: inline-size; }
 .demo-content {
   padding: 0;
@@ -335,10 +334,6 @@
 .demo-slide.active { display: flex; }
 /* Asset slides supply their own internal padding and chrome. */
 .demo-slide-asset { padding: 0; }
-/* The chat slide was built for the old ~370px frame. In the taller
-   frame it anchors to the bottom, the way a real chat thread reads,
-   rather than leaving a void beneath the bubbles. */
-.demo-slide-chat { justify-content: flex-end; }
 .eval-q { font-size: 12.5px; color: var(--navy); padding: 13px; background: #F4F6FA; border-radius: 10px; border-left: 3px solid var(--gold-dark); line-height: 1.6; margin-bottom: 12px; font-weight: 500; font-family: 'Outfit', sans-serif; }
 .eval-ans { font-size: 12px; color: var(--text-mid); padding: 11px; background: #F8F9FC; border-radius: 10px; line-height: 1.6; font-style: italic; margin-bottom: 12px; border: 1px solid #E4EAF5; font-family: 'Outfit', sans-serif; }
 .eval-bar { height: 4px; background: #E4EAF5; border-radius: 2px; margin-bottom: 10px; overflow: hidden; }
@@ -349,14 +344,6 @@
 .es-val { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 600; line-height: 1; margin-bottom: 3px; }
 .es-label { font-size: 10px; color: var(--text-light); font-family: 'Outfit', sans-serif; }
 .eval-fb { font-size: 12px; color: #065F46; padding: 10px 13px; background: #D1FAE5; border: 1px solid #A7F3D0; border-radius: 8px; line-height: 1.5; font-family: 'Outfit', sans-serif; }
-.chat-wrap { display: flex; flex-direction: column; gap: 10px; }
-.chat-bubble { padding: 10px 14px; border-radius: 12px; font-size: 12.5px; line-height: 1.5; max-width: 85%; font-family: 'Outfit', sans-serif; }
-.cb-user { background: linear-gradient(135deg,#0F1E42,#132550); color: #fff; align-self: flex-end; border-radius: 12px 12px 2px 12px; }
-.cb-ai { background: #F4F6FA; border: 1px solid #E4EAF5; color: var(--navy); border-radius: 12px 12px 12px 2px; }
-.cb-typing { display: flex; gap: 4px; align-items: center; padding: 12px 16px; }
-.cb-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-light); animation: typing 1.2s ease-in-out infinite; }
-.cb-dot:nth-child(2) { animation-delay: 0.2s } .cb-dot:nth-child(3) { animation-delay: 0.4s }
-@keyframes typing { 0%,80%,100% { opacity: 0.3; transform: scale(0.8) } 40% { opacity: 1; transform: scale(1) } }
 .tgen-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .tgen-title { font-size: 14px; font-weight: 700; color: var(--navy); font-family: 'Outfit', sans-serif; }
 .tgen-badge { padding: 4px 12px; background: #EDE9FE; border: 1px solid #C4B5FD; border-radius: 100px; font-size: 11px; color: #5B21B6; font-weight: 600; font-family: 'Outfit', sans-serif; }

@@ -271,6 +271,11 @@ const SCOPED_CSS = `
 /* ---- Model answer CTA ---- */
 #dmcResults .model-answer-cta{position:relative;overflow:hidden;min-height:88px;padding:20px 24px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:24px;background:linear-gradient(100deg,#FFFEF8 0%,#FDF8E8 48%,#F8F0D4 100%);border:1px solid rgba(200,175,90,.22);border-left:4px solid #D4BE6A;color:#0B1020;box-shadow:0 8px 20px rgba(129,98,22,.08),inset 0 1px 0 rgba(255,255,255,.78);}
 #dmcResults .model-answer-cta::before{content:"";position:absolute;width:240px;height:240px;top:-108px;right:-62px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.88) 0%,rgba(255,255,255,.36) 32%,transparent 70%);opacity:.95;}
+/* Hover: a small lift + a slightly deeper version of the same warm gold shadow.
+   Kept to 2px / 0.4% scale so the banner settles rather than pops. */
+#dmcResults .model-answer-cta{transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s ease;will-change:transform;}
+#dmcResults .model-answer-cta:hover{transform:translateY(-2px) scale(1.004);box-shadow:0 14px 30px rgba(129,98,22,.14),inset 0 1px 0 rgba(255,255,255,.9);}
+@media (prefers-reduced-motion: reduce){#dmcResults .model-answer-cta{transition:none;}#dmcResults .model-answer-cta:hover{transform:none;}}
 #dmcResults .model-banner-label{display:flex;align-items:center;gap:6px;color:#7A5510;letter-spacing:.15em;font-size:10px;font-weight:900;text-transform:uppercase;margin-bottom:8px;}
 #dmcResults .model-banner-headline{margin:0 0 5px;color:#0B1020;font-family:var(--font-heading);font-size:22px;font-weight:500;line-height:1.22;}
 #dmcResults .model-banner-sub{color:rgba(11,16,32,.62);font-size:12px;line-height:1.5;max-width:420px;font-weight:500;}

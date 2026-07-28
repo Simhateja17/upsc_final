@@ -11,6 +11,7 @@
      mains-evaluator-app-website.html   → .jd-mains
      mock-test-animation-website.html   → .jd-mock
      daily-current-affairs-app-*.html   → .jd-ca
+     jeet-ai-animation-app_website.html → .jd-chat
 
    Deviations from the raw assets, all deliberate:
    - The assets' own window chrome / dark page background is
@@ -1248,4 +1249,351 @@
   z-index: 38;
   pointer-events: none;
   will-change: transform, opacity;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   4. JEET AI MENTOR CHAT                  (.jd-chat)
+   ~11.6s JS-driven sequence: question types out → mentor thinks
+   → structured answer reveals block by block → follow-up doubt.
+   AiMentorChatDemo.tsx adds/removes `.visible`; every reveal here
+   is a transition off that class, so the demo can be reset by
+   stripping the class and replayed on each activation.
+   ═════════════════════════════════════════════════════════════ */
+
+.jd-chat .content {
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #FAFBFC;
+}
+
+/* ─── Chat header ─── */
+.jd-chat .chat-header {
+  padding: 5px 16px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.jd-chat .header-logo {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  position: relative;
+}
+.jd-chat .header-logo svg { width: 100%; height: 100%; }
+.jd-chat .header-info { flex: 1; }
+.jd-chat .header-name { font-size: 12.5px; font-weight: 700; color: #1F2937; }
+.jd-chat .header-name .jeet { color: #0A1E3F; }
+.jd-chat .header-name .ai { color: #F59E0B; }
+.jd-chat .header-sub { font-size: 9.5px; color: #9CA3AF; }
+.jd-chat .header-badges { display: flex; gap: 5px; }
+.jd-chat .badge {
+  padding: 3px 7px;
+  background: #F3F4F6;
+  border-radius: 10px;
+  font-size: 8.5px;
+  color: #6B7280;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ─── Chat area ─── */
+.jd-chat .chat-area {
+  flex: 1;
+  padding: 6px 16px 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ─── Student question ─── */
+.jd-chat .msg-user {
+  align-self: flex-end;
+  max-width: 82%;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.jd-chat .msg-user.visible { opacity: 1; transform: translateY(0); }
+.jd-chat .msg-user-bubble {
+  background: #1F2937;
+  color: #FFFFFF;
+  padding: 8px 12px;
+  border-radius: 16px 16px 4px 16px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  min-height: 18px;
+}
+/* Hidden by default; the sequence flips display inline while a
+   bubble is actively typing. */
+.jd-chat .typing-cursor {
+  display: none;
+  width: 1.5px;
+  height: 14px;
+  background: #F59E0B;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  animation: jdChatCursor 0.7s step-end infinite;
+}
+.jd-chat .msg-user-time,
+.jd-chat .msg-doubt-time {
+  font-size: 9px;
+  color: #9CA3AF;
+  text-align: right;
+  margin-top: 2px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.jd-chat .msg-user-time.visible,
+.jd-chat .msg-doubt-time.visible { opacity: 1; }
+
+/* ─── Mentor thinking ─── */
+.jd-chat .typing-indicator {
+  align-self: flex-start;
+  display: none;
+  align-items: flex-end;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.jd-chat .typing-indicator.visible {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+.jd-chat .typing-mini-logo { width: 22px; height: 22px; flex-shrink: 0; }
+.jd-chat .typing-mini-logo svg { width: 100%; height: 100%; }
+.jd-chat .typing-dots {
+  background: #F3F4F6;
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.jd-chat .typing-dot {
+  width: 6px;
+  height: 6px;
+  background: #9CA3AF;
+  border-radius: 50%;
+  animation: jdChatDotBounce 1.2s ease-in-out infinite;
+}
+.jd-chat .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.jd-chat .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+/* ─── Mentor answer ─── */
+.jd-chat .msg-ai {
+  align-self: flex-start;
+  max-width: 88%;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.jd-chat .msg-ai.visible { opacity: 1; }
+.jd-chat .msg-ai-logo { width: 24px; height: 24px; flex-shrink: 0; margin-top: 2px; }
+.jd-chat .msg-ai-logo svg { width: 100%; height: 100%; }
+.jd-chat .msg-ai-content { flex: 1; min-width: 0; }
+.jd-chat .msg-ai-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+.jd-chat .msg-ai-name { font-size: 11px; font-weight: 600; color: #1F2937; }
+.jd-chat .msg-ai-time { font-size: 9px; color: #9CA3AF; }
+.jd-chat .msg-ai-bubble {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  padding: 9px 12px;
+  border-radius: 4px 16px 16px 16px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.jd-chat .ai-line {
+  opacity: 0;
+  transform: translateY(5px);
+  transition: all 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.jd-chat .ai-line.visible { opacity: 1; transform: translateY(0); }
+.jd-chat .ai-line + .ai-line { margin-top: 3px; }
+
+.jd-chat .ai-concept { font-weight: 600; color: #1F2937; font-size: 11.5px; }
+.jd-chat .ai-highlight {
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+  color: #92400E;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.jd-chat .ai-blue { color: #2E8BFF; font-weight: 600; }
+
+.jd-chat .ai-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #E5E7EB, transparent);
+  margin: 5px 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.jd-chat .ai-divider.visible { opacity: 1; }
+
+.jd-chat .ai-articles-label {
+  font-size: 10px;
+  color: #6B7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.jd-chat .ai-article-list { display: flex; flex-direction: column; gap: 3px; }
+.jd-chat .ai-article-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 11px;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.jd-chat .ai-article-item.visible { opacity: 1; transform: translateX(0); }
+.jd-chat .article-icon {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8.5px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #D4A017;
+  font-weight: 700;
+}
+.jd-chat .article-text { color: #4B5563; font-size: 10.5px; }
+.jd-chat .article-text strong { color: #1F2937; }
+
+.jd-chat .ai-case-box {
+  background: linear-gradient(135deg, #FFFBEB, #FEF3C7);
+  border-left: 3px solid #D4A017;
+  border-radius: 0 8px 8px 0;
+  padding: 6px 9px;
+  margin-top: 3px;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.jd-chat .ai-case-box.visible { opacity: 1; transform: translateX(0); }
+.jd-chat .case-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #D4A017;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.jd-chat .case-text { font-size: 10.5px; color: #4B5563; line-height: 1.4; }
+.jd-chat .case-text strong { color: #1F2937; }
+
+/* ─── Follow-up doubt ─── */
+.jd-chat .msg-doubt {
+  align-self: flex-end;
+  max-width: 82%;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.jd-chat .msg-doubt.visible { opacity: 1; transform: translateY(0); }
+.jd-chat .msg-doubt-bubble {
+  background: #1F2937;
+  color: #FFFFFF;
+  padding: 8px 12px;
+  border-radius: 16px 16px 4px 16px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  min-height: 18px;
+}
+.jd-chat .msg-doubt-label {
+  font-size: 9px;
+  color: #F59E0B;
+  font-weight: 600;
+  margin-bottom: 3px;
+  letter-spacing: 0.3px;
+}
+
+/* ─── Input bar ─── */
+.jd-chat .input-bar {
+  padding: 8px 14px;
+  background: #FFFFFF;
+  border-top: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.jd-chat .input-field {
+  flex: 1;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 11px;
+  color: #9CA3AF;
+}
+.jd-chat .send-btn {
+  width: 30px;
+  height: 30px;
+  background: #F59E0B;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+.jd-chat .send-btn svg { width: 14px; height: 14px; fill: #fff; }
+
+/* ─── Ambient particles ─── */
+.jd-chat .particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+.jd-chat .particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  opacity: 0;
+}
+.jd-chat .p1 { background: rgba(212,160,23,0.25); top: 15%; left: 8%;   animation: jdChatFloat 8s ease infinite 0.5s; }
+.jd-chat .p2 { background: rgba(245,158,11,0.25); top: 35%; right: 12%; animation: jdChatFloat 8s ease infinite 1.5s; }
+.jd-chat .p3 { background: rgba(46,139,255,0.20); top: 55%; left: 18%;  animation: jdChatFloat 8s ease infinite 2.5s; }
+.jd-chat .p4 { background: rgba(212,160,23,0.15); top: 25%; right: 22%; animation: jdChatFloat 8s ease infinite 3.5s; }
+
+@keyframes jdChatCursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes jdChatDotBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+@keyframes jdChatFloat {
+  0%, 100% { opacity: 0; transform: translateY(0) scale(1); }
+  15% { opacity: 0.7; }
+  50% { opacity: 0.3; transform: translateY(-25px) scale(1.4); }
+  85% { opacity: 0; }
 }

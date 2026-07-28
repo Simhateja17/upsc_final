@@ -194,12 +194,13 @@ export const dailyAnswerService = {
     const suffix = qs.length ? `?${qs.join('&')}` : '';
     return api.get<any>(`/daily-answer/today/results${suffix}`, authConfig());
   },
-  getCalendar: (params?: { from?: string; to?: string; page?: number; limit?: number }) => {
+  getCalendar: (params?: { from?: string; to?: string; page?: number; limit?: number; paper?: string }) => {
     const qs: string[] = [];
     if (params?.from) qs.push(`from=${encodeURIComponent(params.from)}`);
     if (params?.to) qs.push(`to=${encodeURIComponent(params.to)}`);
     if (params?.page) qs.push(`page=${params.page}`);
     if (params?.limit) qs.push(`limit=${params.limit}`);
+    if (params?.paper) qs.push(`paper=${encodeURIComponent(params.paper)}`);
     const suffix = qs.length ? `?${qs.join('&')}` : '';
     return api.get<any>(`/daily-answer/calendar${suffix}`, authConfig());
   },
