@@ -231,8 +231,10 @@ export default function DashboardLayout({
           </main>
         </div>
 
-        {/* Onboarding flow – shown once for new users */}
-        <OnboardingFlow />
+        {/* Onboarding flow – disabled for now: feedback says it's too many
+            questions right after login and feels like a barrier. Plan is to
+            replace it with a lighter, deferrable "profile X% complete" prompt. */}
+        {/* <OnboardingFlow /> */}
         {/* Temporarily disabled for local dev */}
         {/* <PhoneLinkPrompt /> */}
 

@@ -125,8 +125,10 @@ export const dailyMcqService = {
   getQuestions: () => api.get<any>('/daily-mcq/today/questions', authConfig()),
   submit: (answers: any[], timeTaken: number, retake?: boolean) =>
     api.post<any>('/daily-mcq/today/submit', { answers, timeTaken, retake }, authConfig()),
-  getResults: () => api.get<any>('/daily-mcq/today/results', authConfig()),
-  getReview: () => api.get<any>('/daily-mcq/today/review', authConfig()),
+  getResults: (attemptId?: string) =>
+    api.get<any>(`/daily-mcq/today/results${attemptId ? `?attemptId=${encodeURIComponent(attemptId)}` : ''}`, authConfig()),
+  getReview: (attemptId?: string) =>
+    api.get<any>(`/daily-mcq/today/review${attemptId ? `?attemptId=${encodeURIComponent(attemptId)}` : ''}`, authConfig()),
   getRecommendations: () => api.get<any>('/daily-mcq/today/recommendations', authConfig()),
 };
 
@@ -418,6 +420,11 @@ export const billingService = {
   cancelRazorpaySubscription: (id: string) => api.post<any>(`/billing/subscriptions/${id}/cancel`, {}, authConfig()),
   pauseRazorpaySubscription: (id: string) => api.post<any>(`/billing/subscriptions/${id}/pause`, {}, authConfig()),
   resumeRazorpaySubscription: (id: string) => api.post<any>(`/billing/subscriptions/${id}/resume`, {}, authConfig()),
+  getBillingAddress: () => api.get<any>('/billing/address', authConfig()),
+  saveBillingAddress: (data: { fullName: string; email: string; phone?: string; city?: string; state?: string }) =>
+    api.put<any>('/billing/address', data, authConfig()),
+  submitCancellationFeedback: (id: string, data: { reason: string; wantsSupport: boolean }) =>
+    api.post<any>(`/billing/subscriptions/${id}/cancel-feedback`, data, authConfig()),
 };
 
 export const entitlementService = {
@@ -625,6 +632,7 @@ export const spacedRepService = {
       subject?: string;
       source?: string;
       sourceType?: string;
+      completeReview?: boolean;
     }
   ) =>
     api.patch<any>(`/spaced-repetition/${id}`, data, authConfig()),
@@ -808,6 +816,7 @@ export const adminService = {
 
   // Editorials
   getEditorials: () => api.get<any>('/admin/editorials', authConfig()),
+  getEditorialSyllabusPaths: () => api.get<any>('/admin/editorial-syllabus-paths', authConfig()),
   createEditorial: (data: any) => api.post<any>('/admin/editorials', data, authConfig()),
   updateEditorial: (id: string, data: any) => api.put<any>(`/admin/editorials/${id}`, data, authConfig()),
   deleteEditorial: (id: string) => api.delete<any>(`/admin/editorials/${id}`, authConfig()),

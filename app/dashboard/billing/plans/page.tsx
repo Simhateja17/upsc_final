@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { billingService } from '@/lib/services';
+import { billingService, dashboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
 import { PlanTier, useEntitlements } from '@/contexts/EntitlementsContext';
+import MyPlanBillingTab from '@/components/billing/MyPlanBillingTab';
+import CancelSubscriptionModal from '@/components/billing/CancelSubscriptionModal';
+import EditBillingAddressModal from '@/components/billing/EditBillingAddressModal';
 
 // ── Hero.  ──────────────────────────────────────────────────────────────────────
 function BillingHero() {
@@ -14,18 +17,20 @@ function BillingHero() {
     <div
       className="relative overflow-hidden flex flex-col items-center justify-center"
       style={{
-        background: 'linear-gradient(180deg, #090E1C 0%, #10192F 100%)',
+        background: 'linear-gradient(180deg, #090E1C 0%, #090E1C 85%, #10192F 100%)',
         minHeight: 260,
         padding: '40px 24px 44px',
       }}
     >
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: 'radial-gradient(rgba(255,255,255,.03) 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
-        }}
-      />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt=""
+          className="absolute left-0 w-full max-w-none"
+          style={{ height: '128%', top: '-14%' }}
+          src="/billing-hero-shine.png"
+        />
+      </div>
       <div className="relative z-10 flex items-center gap-3 mb-5">
         <span style={{ display: 'block', width: 44, height: 1, background: 'linear-gradient(to right, transparent, #C8972A)' }} />
         <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '2.5px', color: '#C8972A', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
@@ -635,73 +640,67 @@ type PlanConfig = {
 const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
   aspire: {
     name: 'Aspire',
-    badge: 'Aspire Plan',
-    description: 'Build strong UPSC fundamentals with daily practice, proper guidance, and consistent preparation.',
+    badge: 'Forever Free',
+    description: 'Build daily study habits. Begin your UPSC prep without spending a rupee.',
     features: [
       'Daily MCQ Challenge',
-      'Daily Answer Writing Challenge',
-      'Daily News Analysis – The Hindu & IE',
+      'Daily Mains Challenge',
+      'Daily News Analysis - Hindu & IE',
       '10,000+ Previous Year Questions',
-      '5 Mains Answer Evaluation / day',
-      'Simplified Video Lectures',
-      'Jeet AI Mentor – 10 Queries / day',
+      '2 Mains Evaluations / day',
+      'Jeet AI - 10 conversations / day',
       'Study Planner & Time Tracker',
-      'Smart Syllabus Tracker',
-      'Daily Leaderboard',
-      'Live Study Room',
-      'Discussion Forum',
+      'Daily Leaderboard & Discussion Forum',
       'Mental Health Buddy',
-      'Mock Tests – Limited access',
-      'Revision Suite – Limited access',
-      'Test Analytics – Limited view',
-      'Performance Analytics – Limited view',
+      'Mock Tests - Limited access',
+      'Revision Suite - Limited access',
+      'Performance Analytics - Limited view',
     ],
     cycles: {
-      monthly:   { label: 'Monthly',   total: '199.00',  perMonth: '199', save: '',         duration: '1 month',   gstStrike: '45.61'  },
-      quarterly: { label: 'Quarterly', total: '479.00',  perMonth: '159', save: 'Save 20%', duration: '3 months',  gstStrike: '73.07'  },
-      yearly:    { label: 'Yearly',    total: '1439.00', perMonth: '119', save: 'Save 40%', duration: '12 months', gstStrike: '219.51' },
+      monthly:   { label: 'Monthly',   total: '0.00', perMonth: '0', save: '', duration: '1 month',   gstStrike: '0' },
+      quarterly: { label: 'Quarterly', total: '0.00', perMonth: '0', save: '', duration: '3 months',  gstStrike: '0' },
+      yearly:    { label: 'Yearly',    total: '0.00', perMonth: '0', save: '', duration: '12 months', gstStrike: '0' },
     },
   },
   rise: {
     name: 'Rise',
-    badge: 'Rise Plan',
-    description: 'The complete ecosystem for focused, daily UPSC preparation.',
+    badge: 'Dedicated Study',
+    description: 'For serious aspirants who study daily and want measurable progress.',
     features: [
-      '25 Mains Answer Evaluation / day',
-      '50 Prelims Mock Test attempts / day',
-      'Jeet AI Mentor – 100 Queries / day',
+      '25 Mains Evaluations / day',
+      '25 Mock Test attempts / day',
       'Full Performance Analytics Dashboard',
-      'Comprehensive Test Analytics',
-      'Flashcards',
-      'Mindmaps',
-      'Spaced Repetition',
-      'Smart Notes',
+      'Test Analytics - In-depth insights',
+      'Full Revision Suite - Flashcards, Mindmaps, Spaced Rep.',
+      'Jeet AI - 100 conversations / day',
+      'Live Study Room 24×7',
+      'Smart Syllabus Tracker',
     ],
     cycles: {
       monthly:   { label: 'Monthly',   total: '499.00',  perMonth: '499', save: '',         duration: '1 month',   gstStrike: '89.82'  },
       quarterly: { label: 'Quarterly', total: '1197.00', perMonth: '399', save: 'Save 20%', duration: '3 months',  gstStrike: '239.46' },
-      yearly:    { label: 'Yearly',    total: '3599.00', perMonth: '299', save: 'Save 40%', duration: '12 months', gstStrike: '718.56' },
+      yearly:    { label: 'Yearly',    total: '3588.00', perMonth: '299', save: 'Save 40%', duration: '12 months', gstStrike: '717.60' },
     },
   },
   ascent: {
     name: 'Ascent',
-    badge: 'Ascent Plan',
-    description: 'Unlimited tools, personalised mentorship. For aspirants who leave nothing to chance.',
+    badge: 'Maximum Edge',
+    description: 'Unlimited tools, zero limits. For aspirants who leave nothing to chance.',
     features: [
-      'Unlimited Mains Answer Evaluations',
-      'Unlimited Prelims Mock Test practice',
-      'Jeet AI – Unlimited Queries',
-      'Bi-Weekly 1-on-1 Mentorship Sessions',
-      'Interview (Personality Test) prep module',
+      'Unlimited Mains Evaluations',
+      'Unlimited Mock Test practice',
+      'Jeet AI - Unlimited conversations',
+      'Weekly 1-on-1 mentorship (30 min)',
       'Personalised Study Roadmap',
-      'Dedicated Support with Quick Responses',
+      'Dedicated Q&A - Priority Responses',
       'Monthly Performance Review Call',
+      'Exclusive Ascent Community',
       'Early Access to New Features',
     ],
     cycles: {
-      monthly:   { label: 'Monthly',   total: '1999.00', perMonth: '1999', save: '',         duration: '1 month',   gstStrike: '304.93'  },
-      quarterly: { label: 'Quarterly', total: '4799.00', perMonth: '1599', save: 'Save 20%', duration: '3 months',  gstStrike: '732.59'  },
-      yearly:    { label: 'Yearly',    total: '14399.00', perMonth: '1199', save: 'Save 40%', duration: '12 months', gstStrike: '2194.78' },
+      monthly:   { label: 'Monthly',   total: '999.00',  perMonth: '999', save: '',         duration: '1 month',   gstStrike: '152.39' },
+      quarterly: { label: 'Quarterly', total: '2397.00', perMonth: '799', save: 'Save 20%', duration: '3 months',  gstStrike: '365.64' },
+      yearly:    { label: 'Yearly',    total: '7188.00', perMonth: '599', save: 'Save 40%', duration: '12 months', gstStrike: '1096.68' },
     },
   },
 };
@@ -728,7 +727,7 @@ function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => 
       setCouponMessage('Please enter a coupon code.');
       return;
     }
-    if (entitlements.tier !== 'free') {
+    if (entitlements.tier !== 'aspire') {
       setCouponStatus('invalid');
       setCouponDiscount(0);
       setCouponMessage('Coupons are available only for first paid purchases.');
@@ -1246,12 +1245,71 @@ export default function ExplorePlansPage() {
   const [manageBusy, setManageBusy] = useState<string | null>(null);
   const [manageMessage, setManageMessage] = useState('');
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showEditAddressModal, setShowEditAddressModal] = useState(false);
+  const [syllabusCoverage, setSyllabusCoverage] = useState<number | null>(null);
 
   const handleUpgrade = () => router.push('/dashboard');
   const currentTier = entitlements.tier;
   const currentRank = { free: 0, aspire: 1, rise: 2, ascent: 3 }[currentTier];
-  const isPaidValid = currentTier !== 'free' && !!entitlements.subscription;
+  const hasRealSubscription = currentTier !== 'free' && !!entitlements.subscription;
+
+  // Admins can preview any tier via the plan switcher in /admin. A pure simulation never
+  // attaches a real Subscription row, so treat a rise/ascent simulation as "paid" too —
+  // otherwise the My Plan & Billing preview they're testing for would never be reachable.
+  const isAdminSimulating = Boolean(entitlements.summary?.override?.isAdminPlanSimulation);
+  const isPreviewTier = isAdminSimulating && (currentTier === 'rise' || currentTier === 'ascent');
+  const isPreview = isPreviewTier && !hasRealSubscription;
+
+  // Aspire is a real, always-on tier now (never "no plan") — every authenticated user has
+  // *something* to show on My Plan & Billing, not just paying subscribers. currentTier only
+  // stays 'free' while logged out or before entitlements have finished their first load.
+  const canViewMyPlan = isAuthenticated && currentTier !== 'free';
   const canShowPlan = (plan: PlanKey) => ({ aspire: 1, rise: 2, ascent: 3 }[plan] > currentRank);
+
+  // Explore Plans always shows all 3 cards (matching Figma's static comparison layout) —
+  // canShowPlan above still gates whether checkout can actually open for a plan; this just
+  // decides what each card's CTA button says/does for the viewer's own tier and below.
+  const planCtaState = (plan: PlanKey): { label: string; disabled: boolean } => {
+    const rank = { aspire: 1, rise: 2, ascent: 3 }[plan];
+    if (rank === currentRank) return { label: 'Current Plan', disabled: true };
+    if (rank < currentRank) return { label: 'Included in your plan', disabled: true };
+    return { label: '', disabled: false };
+  };
+
+  const wantsExploreTab = searchParams.get('tab') === 'explore';
+
+  // activeTab is derived fresh every render from live entitlements state (canViewMyPlan),
+  // rather than "decided once" in a useState initializer or a one-time sync effect — that
+  // earlier approach could go stale across Next.js client-side route-cache navigations or
+  // dev-mode Fast Refresh, since the async entitlements load doesn't reliably re-trigger a
+  // one-shot effect. manualTab only overrides this once the user (or an explicit deep link)
+  // actively picks a tab; until then, it just tracks reality on every render.
+  const [manualTab, setManualTabState] = useState<'my-plan' | 'explore' | null>(null);
+  const setActiveTab = (tab: 'my-plan' | 'explore') => setManualTabState(tab);
+  const defaultTab: 'my-plan' | 'explore' = wantsExploreTab || !canViewMyPlan ? 'explore' : 'my-plan';
+  const activeTab = manualTab ?? defaultTab;
+
+  // If a manually-pinned "My Plan & Billing" selection stops being valid (logged out mid-
+  // session), release the pin so the live default takes over.
+  useEffect(() => {
+    if (!canViewMyPlan && manualTab === 'my-plan') setManualTabState(null);
+  }, [canViewMyPlan, manualTab]);
+
+  // Contextual "you hit a limit" upgrade prompts elsewhere in the app (e.g. Flashcards)
+  // link here with #upgrade-plans to jump straight to pricing regardless of current tier.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#upgrade-plans') {
+      setManualTabState('explore');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    dashboardService.getPerformance()
+      .then((res: any) => setSyllabusCoverage(typeof res?.data?.syllabusCoverage === 'number' ? res.data.syllabusCoverage : null))
+      .catch(() => setSyllabusCoverage(null));
+  }, [isAuthenticated]);
   const handleOpenCheckout = (plan: PlanKey) => {
     if (!isAuthenticated) {
       if (typeof window !== 'undefined') {
@@ -1263,24 +1321,26 @@ export default function ExplorePlansPage() {
     if (!canShowPlan(plan)) return;
     setCheckoutPlan(plan);
   };
-  const handleOpenAspireCheckout = () => handleOpenCheckout('aspire');
+  const handleAspireCta = () => {
+    if (!isAuthenticated) {
+      openAuthModal('signup');
+      return;
+    }
+    router.push('/dashboard');
+  };
   const handleOpenRiseCheckout = () => handleOpenCheckout('rise');
   const handleOpenAscentCheckout = () => handleOpenCheckout('ascent');
-  const currentPlanName = entitlements.plan?.name || (currentTier !== 'free' ? `${currentTier[0].toUpperCase()}${currentTier.slice(1)} plan` : 'Free');
   const currentSubscription = entitlements.subscription;
-  const formatMaybeDate = (value?: string | Date | null) => value ? formatDate(new Date(value)) : 'Not available';
-  const manageAction = async (action: 'cancel' | 'pause' | 'resume') => {
+  const handleResume = async () => {
     if (!currentSubscription?.id) return;
-    setManageBusy(action);
+    setManageBusy('resume');
     setManageMessage('');
     try {
-      if (action === 'cancel') await billingService.cancelRazorpaySubscription(currentSubscription.id);
-      if (action === 'pause') await billingService.pauseRazorpaySubscription(currentSubscription.id);
-      if (action === 'resume') await billingService.resumeRazorpaySubscription(currentSubscription.id);
+      await billingService.resumeRazorpaySubscription(currentSubscription.id);
       await entitlements.refreshEntitlements();
-      setManageMessage(action === 'cancel' ? 'AutoPay cancelled. Access continues until period end.' : action === 'pause' ? 'AutoPay paused. Access continues until period end.' : 'AutoPay resumed.');
+      setManageMessage('AutoPay resumed.');
     } catch (err: any) {
-      setManageMessage(err?.message || 'Unable to update subscription. Please try again.');
+      setManageMessage(err?.message || 'Unable to resume subscription. Please try again.');
     } finally {
       setManageBusy(null);
     }
@@ -1310,64 +1370,75 @@ export default function ExplorePlansPage() {
 
   return (
     <div className="min-h-screen" style={{ background: '#FAFBFE', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="afterInteractive"
+        onError={() => console.error('Failed to load Razorpay checkout script (network issue or blocked by an ad-blocker).')}
+      />
       <BillingHero />
 
+      {/* Tab switcher — only shown when there are two tabs to choose between. 32px gap
+          below the hero's bottom edge, matching Figma exactly (no overlap into the hero). */}
+      {canViewMyPlan && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, position: 'relative', zIndex: 2, padding: '0 16px' }}>
+          <div style={{ display: 'inline-flex', gap: 4, background: '#fff', border: '1px solid rgba(11,22,40,0.09)', borderRadius: 12, padding: 5, boxShadow: '0 2px 7px rgba(11,22,40,0.07)' }}>
+            <button type="button" onClick={() => setActiveTab('my-plan')} style={{
+              borderRadius: 9, padding: '10px 28px', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
+              background: activeTab === 'my-plan' ? '#090e1c' : 'transparent',
+              color: activeTab === 'my-plan' ? '#e8b84b' : '#6b7a99',
+              fontFamily: 'var(--font-dm-sans), Inter, system-ui, sans-serif', whiteSpace: 'nowrap',
+            }}>
+              My Plan &amp; Billing
+            </button>
+            <button type="button" onClick={() => setActiveTab('explore')} style={{
+              borderRadius: 9, padding: '10px 28px', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
+              background: activeTab === 'explore' ? '#090e1c' : 'transparent',
+              color: activeTab === 'explore' ? '#e8b84b' : '#6b7a99',
+              fontFamily: 'var(--font-dm-sans), Inter, system-ui, sans-serif', whiteSpace: 'nowrap',
+            }}>
+              Explore Plans
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto mt-3 flex w-full max-w-[1120px] flex-col gap-8 px-4 pb-20 sm:px-6 lg:px-8">
-        {isPaidValid && (
-          <section style={{ marginTop: 18, borderRadius: 14, border: '1px solid #E5E7EB', background: '#fff', padding: 20, boxShadow: '0 2px 10px rgba(11,22,40,0.06)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <div>
-                <p style={{ margin: '0 0 5px', fontSize: 11, fontWeight: 800, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#C8972A', fontFamily: 'Inter, system-ui, sans-serif' }}>Current subscription</p>
-                <h2 style={{ margin: 0, fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 30, color: '#101828' }}>{currentPlanName}</h2>
-                <p style={{ margin: '8px 0 0', fontSize: 13, color: '#667085', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                  Status: <strong>{currentSubscription?.status}</strong> · Access until {formatMaybeDate(currentSubscription?.endDate)}
-                  {currentSubscription?.graceEndsAt ? ` · Grace until ${formatMaybeDate(currentSubscription.graceEndsAt)}` : ''}
-                </p>
-                {currentSubscription?.chargeAt && currentSubscription?.autoRenew && (
-                  <p style={{ margin: '5px 0 0', fontSize: 13, color: '#667085', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                    Next charge: {formatMaybeDate(currentSubscription.chargeAt)}
-                  </p>
-                )}
-                {manageMessage && <p style={{ margin: '10px 0 0', fontSize: 13, color: '#166534', fontFamily: 'Inter, system-ui, sans-serif' }}>{manageMessage}</p>}
-              </div>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                {currentSubscription?.status === 'active' && currentSubscription?.autoRenew && (
-                  <button type="button" disabled={!!manageBusy} onClick={() => manageAction('pause')} style={{ borderRadius: 9, border: '1px solid #D0D5DD', background: '#fff', padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#344054', cursor: manageBusy ? 'not-allowed' : 'pointer' }}>
-                    {manageBusy === 'pause' ? 'Pausing...' : 'Pause AutoPay'}
-                  </button>
-                )}
-                {currentSubscription?.status === 'paused' && (
-                  <button type="button" disabled={!!manageBusy} onClick={() => manageAction('resume')} style={{ borderRadius: 9, border: 'none', background: '#0B1525', padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#fff', cursor: manageBusy ? 'not-allowed' : 'pointer' }}>
-                    {manageBusy === 'resume' ? 'Resuming...' : 'Resume AutoPay'}
-                  </button>
-                )}
-                {currentSubscription?.status === 'active' && currentSubscription?.autoRenew && (
-                  <button type="button" disabled={!!manageBusy} onClick={() => manageAction('cancel')} style={{ borderRadius: 9, border: '1px solid #FECACA', background: '#FEF2F2', padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#B42318', cursor: manageBusy ? 'not-allowed' : 'pointer' }}>
-                    {manageBusy === 'cancel' ? 'Cancelling...' : 'Cancel AutoPay'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </section>
+        {activeTab === 'my-plan' && canViewMyPlan && (
+          <MyPlanBillingTab
+            tier={currentTier}
+            plan={entitlements.plan}
+            subscription={entitlements.subscription}
+            features={entitlements.features}
+            syllabusCoverage={syllabusCoverage}
+            busy={!!manageBusy}
+            isPreview={isPreview}
+            onCancelClick={() => setShowCancelModal(true)}
+            onUpgradeClick={() => setActiveTab('explore')}
+            onEditAddressClick={() => setShowEditAddressModal(true)}
+            onResumeClick={currentSubscription?.status === 'paused' ? handleResume : undefined}
+          />
         )}
 
+        {manageMessage && <p style={{ margin: 0, fontSize: 13, color: '#166534', fontFamily: 'Inter, system-ui, sans-serif' }}>{manageMessage}</p>}
+
+        {activeTab === 'explore' && (
+        <>
         {/* Billing cycle toggle */}
         <div id="upgrade-plans" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: 16, scrollMarginTop: 128 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', background: '#fff', border: '1px solid rgba(11,22,40,0.09)', borderRadius: 999, padding: 4, boxShadow: '0 2px 8px rgba(11,22,40,0.07)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', background: '#fff', border: '1px solid #E8E4DA', borderRadius: 999, padding: 5, gap: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
             {(['monthly', 'quarterly', 'yearly'] as const).map((c) => (
               <button key={c} type="button" onClick={() => setCycle(c)} style={{
-                borderRadius: 999, padding: '9px 22px', fontSize: 13, fontWeight: 600,
+                borderRadius: 999, padding: '8px 20px', fontSize: 13.1, fontWeight: 600,
                 cursor: 'pointer', border: 'none', transition: 'background 0.18s, color 0.18s',
-                background: cycle === c ? '#090E1C' : 'transparent',
-                color: cycle === c ? '#fff' : '#374560',
-                fontFamily: 'Inter, system-ui, sans-serif',
+                background: cycle === c ? '#0D1B2E' : 'transparent',
+                color: cycle === c ? '#fff' : '#8A8AAA',
+                fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif',
                 whiteSpace: 'nowrap',
               }}>
                 {c.charAt(0).toUpperCase() + c.slice(1)}
               </button>
             ))}
-            <span style={{ borderRadius: 999, padding: '7px 14px', fontSize: 12, fontWeight: 600, background: 'rgba(34,197,94,0.12)', color: '#16A34A', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap', marginLeft: 4 }}>
+            <span style={{ borderRadius: 999, padding: '5px 13px', fontSize: 11.2, fontWeight: 700, background: '#DCFCE7', border: '1px solid rgba(21,128,61,0.15)', color: '#15803D', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap', marginLeft: 4 }}>
               Save up to 40%
             </span>
           </div>
@@ -1376,53 +1447,54 @@ export default function ExplorePlansPage() {
         {/* 3 plan cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 16, alignItems: 'stretch' }}>
 
-          {/* Aspire */}
+          {/* Aspire — forever free */}
           <article
             onMouseEnter={() => setHoveredPlan('aspire')}
             onMouseLeave={() => setHoveredPlan(null)}
-            style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: canShowPlan('aspire') ? 'flex' : 'none', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'aspire' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'aspire' ? '0 16px 40px rgba(11,22,40,0.12)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
-            <div style={{ padding: '28px 24px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}>Foundation</p>
-              <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Aspire</h3>
-              <p aria-hidden="true" style={{ margin: '8px 0 20px', fontSize: 13, lineHeight: 1.6, minHeight: '1.6em' }} />
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹299' : cycle === 'quarterly' ? '₹249' : '₹299'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '58%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
-                  <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>₹{cycle === 'monthly' ? '199' : cycle === 'quarterly' ? '159' : '119'}</span>
-                  <span style={{ fontSize: 13, color: '#9AA3B8', fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
-                </div>
+            style={{ borderRadius: 20, border: '1px solid #E8E4DA', background: '#FFFFFF', overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'aspire' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'aspire' ? '0 16px 40px rgba(11,22,40,0.12)' : '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '35px 29px 39px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <p style={{ margin: '0 0 8px', fontSize: 10.2, fontWeight: 700, letterSpacing: '1.4px', textTransform: 'uppercase', color: '#D4900A', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Forever Free</p>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Aspire</h3>
+              <p style={{ margin: '8px 0 0', fontSize: 12.6, lineHeight: '19.6px', color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
+                Build daily study habits. Begin your UPSC prep without spending a rupee.
+              </p>
+              <div style={{ paddingTop: 21 }}>
+                <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 41.6, fontWeight: 700, lineHeight: '41.6px', color: '#D4900A' }}>Free</span>
               </div>
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9AA3B8', fontFamily: 'Inter, system-ui, sans-serif' }}>{cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? '₹479 billed every 3 months – Save 20%' : '₹1,439 billed yearly – Save 40%'}</p>
-              <div style={{ height: 1, background: '#F0EDE8', margin: '20px 0' }} />
+              <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Always free, forever</p>
+              <div style={{ height: 1, background: '#F0ECE4', margin: '20px 0' }} />
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {[
                   { text: 'Daily MCQ Challenge', limited: false },
-                  { text: 'Daily Answer Writing Challenge', limited: false },
-                  { text: 'Daily News Analysis – The Hindu & IE', limited: false },
+                  { text: 'Daily Mains Challenge', limited: false },
+                  { text: 'Daily News Analysis - Hindu & IE', limited: false },
                   { text: '10,000+ Previous Year Questions', limited: false },
-                  { text: '5 Mains Answer Evaluation / day', limited: false },
-                  { text: 'Simplified Video Lectures', limited: false },
-                  { text: 'Jeet AI Mentor – 10 Queries / day', limited: false },
+                  { text: '2 Mains Evaluations / day', limited: false },
+                  { text: 'Jeet AI - 10 conversations / day', limited: false },
                   { text: 'Study Planner & Time Tracker', limited: false },
-                  { text: 'Smart Syllabus Tracker', limited: false },
-                  { text: 'Daily Leaderboard', limited: false },
-                  { text: 'Live Study Room', limited: false },
-                  { text: 'Discussion Forum', limited: false },
+                  { text: 'Daily Leaderboard & Discussion Forum', limited: false },
                   { text: 'Mental Health Buddy', limited: false },
-                  { text: 'Mock Tests – Limited access', limited: false },
-                  { text: 'Revision Suite – Limited access', limited: false },
-                  { text: 'Test Analytics – Limited view', limited: false },
-                  { text: 'Performance Analytics – Limited view', limited: false },
+                  { text: 'Mock Tests - Limited access', limited: true },
+                  { text: 'Revision Suite - Limited access', limited: true },
+                  { text: 'Performance Analytics - Limited view', limited: true },
                 ].map((item) => (
-                  <li key={item.text} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#374151', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                    <span style={{ flexShrink: 0, marginTop: 1, color: item.limited ? '#E8B84B' : '#22C55E', fontWeight: 700 }}>{item.limited ? '→' : '✓'}</span>
+                  <li key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13.1, color: '#4A4A68', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
+                    <span style={{ flexShrink: 0, width: 17, height: 17, borderRadius: 8.5, display: 'flex', alignItems: 'center', justifyContent: 'center', background: item.limited ? '#FEF3DC' : '#DCFCE7', color: item.limited ? '#D4900A' : '#16A34A', fontWeight: 800, fontSize: item.limited ? 9 : 11 }}>{item.limited ? '~' : '✓'}</span>
                     <span>{item.text}</span>
                   </li>
                 ))}
               </ul>
-              <button type="button" onClick={handleOpenAspireCheckout} style={{ marginTop: 'auto', width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: '1.5px solid #D1D5DB', background: 'transparent', color: '#0C1424', fontFamily: '"DM Sans", Inter, system-ui, sans-serif' }}>
-                Get Aspire →
+              <button
+                type="button"
+                onClick={planCtaState('aspire').disabled ? undefined : handleAspireCta}
+                disabled={planCtaState('aspire').disabled}
+                style={{ marginTop: 24, width: '100%', borderRadius: 11, padding: '13px 16px', fontSize: 13.9, fontWeight: 700, cursor: planCtaState('aspire').disabled ? 'default' : 'pointer', border: 'none', background: planCtaState('aspire').disabled ? '#F3F1EC' : '#FFFFFF', boxShadow: planCtaState('aspire').disabled ? 'none' : '0px 1px 1.5px rgba(0,0,0,0.1)', color: planCtaState('aspire').disabled ? '#8A8AAA' : '#0F2040', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}
+              >
+                {planCtaState('aspire').label || 'Get Started Free →'}
               </button>
+              <p style={{ margin: '8px 0 0', fontSize: 11.2, color: '#8A8AAA', textAlign: 'center', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
+                No card needed • Upgrade anytime
+              </p>
             </div>
           </article>
 
@@ -1430,55 +1502,59 @@ export default function ExplorePlansPage() {
           <article
             onMouseEnter={() => setHoveredPlan('rise')}
             onMouseLeave={() => setHoveredPlan(null)}
-            style={{ borderRadius: 20, border: '2px solid #E8B84B', background: '#0B1525', overflow: 'hidden', position: 'relative', display: canShowPlan('rise') ? 'flex' : 'none', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'rise' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'rise' ? '0 16px 40px rgba(232,184,75,0.25)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
-            <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', background: '#E8B84B', color: '#FFFFFF', padding: '5px 20px', borderRadius: '0 0 12px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
-              Most Popular
+            style={{ borderRadius: 20, border: '2px solid #E8B84B', background: '#0B1525', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'rise' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'rise' ? '0 16px 40px rgba(232,184,75,0.25)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
+            <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', background: '#E8B84B', color: '#090E1C', padding: '5px 16px', borderRadius: '0 0 10px 10px', fontSize: 10, fontWeight: 800, letterSpacing: '0.8px', textTransform: 'uppercase', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}>
+              ⭐ Most Popular
             </div>
             <div style={{ padding: '44px 24px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}>Serious Aspirant</p>
-              <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#fff' }}>Rise</h3>
-              <p style={{ margin: '8px 0 20px', fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                Everything in Aspire, plus:
+              <p style={{ margin: '0 0 8px', fontSize: 10.5, fontWeight: 700, letterSpacing: '1.47px', textTransform: 'uppercase', color: '#E8B84B', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Dedicated Study</p>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28.7, fontWeight: 700, lineHeight: 'normal', color: '#fff' }}>Rise</h3>
+              <p style={{ margin: '8px 0 0', fontSize: 12.9, lineHeight: '20px', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
+                For serious aspirants who study daily and want measurable progress.
               </p>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: 'rgba(255,255,255,0.4)' }}>{cycle === 'monthly' ? '₹699' : cycle === 'quarterly' ? '₹599' : '₹699'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '58%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
-                  <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>
-                    ₹{cycle === 'monthly' ? '499' : cycle === 'quarterly' ? '399' : '299'}
-                  </span>
-                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
-                </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, paddingTop: 22 }}>
+                <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 19.7, fontWeight: 600, color: '#E8B84B', paddingBottom: 6 }}>₹</span>
+                <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 49.2, fontWeight: 700, lineHeight: '49.2px', color: '#E8B84B' }}>
+                  {cycle === 'monthly' ? '499' : cycle === 'quarterly' ? '399' : '299'}
+                </span>
+                <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.38)', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', paddingBottom: 6 }}>/month</span>
               </div>
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? '₹1,197 billed every 3 months – Save 20%' : '₹3,599 billed yearly – Save 40%'}
+              <p style={{ margin: '4px 0 0', fontSize: 11.8, color: 'rgba(255,255,255,0.33)', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
+                {cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? '₹1,197 every 3 months - Save 20%' : '₹3,588 yearly - Save 40%'}
               </p>
               <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '20px 0' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <span style={{ color: '#E8B84B', fontWeight: 700 }}>✓</span>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>Everything in Aspire, plus:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>
+                <span style={{ color: '#E8B84B', fontSize: 12 }}>✓</span>
+                <span style={{ fontSize: 13.1, color: '#fff', fontWeight: 700, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Everything in Aspire, plus:</span>
               </div>
               {[
-                { title: 'EVALUATION', items: ['25 Mains Answer Evaluation / day', '50 Prelims Mock Tests attempts / day', 'Jeet AI Mentor – 100 Queries / day'] },
-                { title: 'ANALYTICS', items: ['Full Performance Analytics Dashboard', 'Comprehensive Test Analytics'] },
-                { title: 'REVISION & AI TOOLS', items: ['Flashcards', 'Mindmaps', 'Spaced Repetition', 'Smart Notes'] },
+                { title: 'Evaluation', items: ['25 Mains Evaluations / day', '25 Mock Test attempts / day'] },
+                { title: 'Analytics', items: ['Full Performance Analytics Dashboard', 'Test Analytics - In-depth insights'] },
+                { title: 'Revision Tools', items: ['Full Revision Suite - Flashcards, Mindmaps, Spaced Rep.', 'Jeet AI - 100 conversations / day', 'Live Study Room 24×7', 'Smart Syllabus Tracker'] },
               ].map((section) => (
                 <div key={section.title} style={{ marginBottom: 12 }}>
-                  <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 800, letterSpacing: '1.6px', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>{section.title}</p>
+                  <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 800, letterSpacing: '1.95px', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>{section.title}</p>
                   {section.items.map((item) => (
-                    <div key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 7, fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                      <span style={{ color: '#E8B84B', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
+                    <div key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 9, marginBottom: 7, fontSize: 13, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
+                      <span style={{ color: '#E8B84B', flexShrink: 0, marginTop: 1, fontSize: 12 }}>✓</span>
                       <span>{item}</span>
                     </div>
                   ))}
                 </div>
               ))}
-              <button type="button" onClick={handleOpenRiseCheckout} style={{ marginTop: 'auto', width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#E8B84B', color: '#090E1C', fontFamily: '"DM Sans", Inter, system-ui, sans-serif' }}>
-                Get Rise →
+              <button
+                type="button"
+                onClick={planCtaState('rise').disabled ? undefined : handleOpenRiseCheckout}
+                disabled={planCtaState('rise').disabled}
+                style={{ marginTop: 'auto', width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: planCtaState('rise').disabled ? 'default' : 'pointer', border: 'none', background: planCtaState('rise').disabled ? 'rgba(255,255,255,0.1)' : '#E8B84B', color: planCtaState('rise').disabled ? 'rgba(255,255,255,0.5)' : '#090E1C', fontFamily: 'var(--font-dm-sans), "DM Sans", Inter, sans-serif' }}
+              >
+                {planCtaState('rise').label || 'Unlock Rise Now →'}
               </button>
-              <p style={{ margin: '10px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                Not sure?{' '}
-                <button type="button" onClick={handleUpgrade} style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.7)', textDecoration: 'underline', cursor: 'pointer', fontSize: 11, fontFamily: 'Inter, system-ui, sans-serif' }}>Start free plan</button>
-              </p>
+              {!planCtaState('rise').disabled && (
+                <p style={{ margin: '9px 0 0', fontSize: 11.5, color: '#15803D', textAlign: 'center', fontWeight: 600, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  ↩️ 7-day money-back guarantee, no questions asked
+                </p>
+              )}
             </div>
           </article>
 
@@ -1486,50 +1562,67 @@ export default function ExplorePlansPage() {
           <article
             onMouseEnter={() => setHoveredPlan('ascent')}
             onMouseLeave={() => setHoveredPlan(null)}
-            style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: canShowPlan('ascent') ? 'flex' : 'none', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'ascent' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'ascent' ? '0 16px 40px rgba(11,22,40,0.12)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
+            style={{ borderRadius: 20, border: '1px solid #E5E7EB', background: '#FFFFFF', overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'ascent' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'ascent' ? '0 16px 40px rgba(11,22,40,0.12)' : '0 1px 4px rgba(11,22,40,0.05)' }}>
             <div style={{ padding: '28px 24px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: '#E8B84B', fontFamily: 'Inter, system-ui, sans-serif' }}>Maximum Edge</p>
-              <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Ascent</h3>
-              <p style={{ margin: '8px 0 20px', fontSize: 13, lineHeight: 1.6, color: '#6B7A99', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                Everything in Rise, plus:
+              <p style={{ margin: '0 0 8px', fontSize: 10.2, fontWeight: 700, letterSpacing: '1.43px', textTransform: 'uppercase', color: '#D4900A', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Maximum Edge</p>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Ascent</h3>
+              <p style={{ margin: '8px 0 0', fontSize: 12.6, lineHeight: '19.6px', color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
+                Unlimited tools, zero limits. For aspirants who leave nothing to chance.
               </p>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{ position: 'relative', display: 'inline-block', fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 20, fontStyle: 'normal', fontWeight: 700, lineHeight: 1, color: '#9AA3B8' }}>{cycle === 'monthly' ? '₹2,499' : cycle === 'quarterly' ? '₹2,249' : '₹2,499'}<span aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '58%', borderTop: '1.6px solid currentColor', transform: 'translateY(-50%)', pointerEvents: 'none' }} /></span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
-                  <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 28, fontStyle: 'normal', fontWeight: 700, lineHeight: 'normal', color: '#E8B84B' }}>
-                    ₹{cycle === 'monthly' ? '1,999' : cycle === 'quarterly' ? '1,599' : '1,199'}
-                  </span>
-                  <span style={{ fontSize: 13, color: '#9AA3B8', fontFamily: 'Inter, system-ui, sans-serif' }}>/month</span>
-                </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, paddingTop: 21 }}>
+                <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 19.2, fontWeight: 600, color: '#D4900A', paddingBottom: 6 }}>₹</span>
+                <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 48, fontWeight: 700, lineHeight: '48px', color: '#D4900A' }}>
+                  {cycle === 'monthly' ? '999' : cycle === 'quarterly' ? '799' : '599'}
+                </span>
+                <span style={{ fontSize: 12.2, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', paddingBottom: 6 }}>/month</span>
               </div>
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9AA3B8', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? '₹4,799 billed every 3 months – Save 20%' : '₹14,399 billed yearly – Save 40%'}
+              <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
+                {cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? '₹2,397 every 3 months - Save 20%' : '₹7,188 yearly - Save 40%'}
               </p>
-              <div style={{ height: 1, background: '#F0EDE8', margin: '20px 0' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <span style={{ color: '#22C55E', fontWeight: 700 }}>✓</span>
-                <span style={{ fontSize: 13, color: '#0C1424', fontWeight: 600, fontFamily: 'Inter, system-ui, sans-serif' }}>Everything in Rise, plus:</span>
+              <div style={{ height: 1, background: '#F0ECE4', margin: '20px 0' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>
+                <span style={{ color: '#22C55E', fontSize: 12 }}>✓</span>
+                <span style={{ fontSize: 13.1, color: '#1A1A2E', fontWeight: 700, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Everything in Rise, plus:</span>
               </div>
               {[
-                { title: 'EVALUATION', items: ['Unlimited Mains Answer Evaluations', 'Unlimited Prelims Mock Test practice', 'Jeet AI – Unlimited Queries'] },
-                { title: 'MENTOR-LED GROWTH', items: ['Bi-Weekly 1-on-1 mentorship sessions', 'Interview (Personality Test) prep module', 'Personalised Study Roadmap', 'Dedicated Support with Quick Responses', 'Monthly Performance Review Call', 'Early Access to New Features'] },
+                { title: 'Evaluation', items: ['Unlimited Mains Evaluations', 'Unlimited Mock Test practice', 'Jeet AI - Unlimited conversations'] },
+                { title: 'Mentor-Led Growth', items: ['Weekly 1-on-1 mentorship (30 min)', 'Personalised Study Roadmap', 'Dedicated Q&A - Priority Responses', 'Monthly Performance Review Call', 'Exclusive Ascent Community', 'Early Access to New Features'] },
               ].map((section) => (
                 <div key={section.title} style={{ marginBottom: 12 }}>
-                  <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 800, letterSpacing: '1.6px', color: '#9AA3B8', textTransform: 'uppercase', fontFamily: 'Inter, system-ui, sans-serif' }}>{section.title}</p>
+                  <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 800, letterSpacing: '1.29px', color: '#8A8AAA', textTransform: 'uppercase', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>{section.title}</p>
                   {section.items.map((item) => (
-                    <div key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 7, fontSize: 13, color: '#374151', fontFamily: 'Inter, system-ui, sans-serif' }}>
-                      <span style={{ color: '#22C55E', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
+                    <div key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 9, marginBottom: 7, fontSize: 13.1, color: '#4A4A68', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
+                      <span style={{ color: '#22C55E', flexShrink: 0, marginTop: 1, fontSize: 12 }}>✓</span>
                       <span>{item}</span>
                     </div>
                   ))}
                 </div>
               ))}
-              <button type="button" onClick={handleOpenAscentCheckout} style={{ marginTop: 'auto', width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#090E1C', color: '#fff', fontFamily: '"DM Sans", Inter, system-ui, sans-serif' }}>
-                Join Ascent →
+              <button
+                type="button"
+                onClick={planCtaState('ascent').disabled ? undefined : handleOpenAscentCheckout}
+                disabled={planCtaState('ascent').disabled}
+                style={{ marginTop: 'auto', width: '100%', borderRadius: 11, padding: '13px 16px', fontSize: 13.9, fontWeight: 700, cursor: planCtaState('ascent').disabled ? 'default' : 'pointer', border: 'none', background: planCtaState('ascent').disabled ? '#F3F1EC' : '#0C1424', color: planCtaState('ascent').disabled ? '#8A8AAA' : '#fff', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}
+              >
+                {planCtaState('ascent').label || 'Get Ascent Plan→'}
               </button>
+              {!planCtaState('ascent').disabled && (
+                <p style={{ margin: '9px 0 0', fontSize: 11.2, color: '#15803D', textAlign: 'center', fontWeight: 600, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  ↩️ 7-day money-back guarantee included
+                </p>
+              )}
             </div>
           </article>
 
+        </div>
+
+        {/* Trust badges */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', justifyContent: 'center' }}>
+          {['🔒 Secure Payments', '↩️ 7-Day Money-Back Guarantee', '❌ Cancel Anytime', '👥15,000+ UPSC aspirants'].map((label) => (
+            <div key={label} style={{ background: '#fff', border: '1px solid #E8E4DA', borderRadius: 50, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', padding: '8px 17px' }}>
+              <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 12.2, color: '#4a4a68', whiteSpace: 'nowrap' }}>{label}</span>
+            </div>
+          ))}
         </div>
 
         {/* ── Feature Breakdown ── */}
@@ -1539,24 +1632,22 @@ export default function ExplorePlansPage() {
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
               <span style={{ display: 'block', width: 36, height: 1, background: 'linear-gradient(to right, transparent, #C8972A)' }} />
-              <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 700, fontSize: 10, letterSpacing: '2px', color: '#C8972A', textTransform: 'uppercase' }}>
+              <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontWeight: 700, fontSize: 10.9, letterSpacing: '1.74px', color: '#D4900A', textTransform: 'uppercase' }}>
                 Feature Breakdown
               </span>
               <span style={{ display: 'block', width: 36, height: 1, background: 'linear-gradient(to left, transparent, #C8972A)' }} />
             </div>
-            <h2 style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 44, fontStyle: 'normal', fontWeight: 400, lineHeight: '51.92px', color: '#1A1A2E', textAlign: 'center', margin: 0 }}>
-              Compare All Features & Pricing
+            <h2 style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 44, fontStyle: 'normal', fontWeight: 700, lineHeight: '51.92px', color: '#1A1A2E', textAlign: 'center', margin: 0 }}>
+              Everything, Side by Side
             </h2>
           </div>
 
           {/* Comparison table */}
           <style>{`
-            .cmp-table-wrap { border-radius: 16px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; border: 1px solid #E5E7EB; }
-            .cmp-table { width: 100%; min-width: 560px; border-collapse: collapse; font-family: Inter, system-ui, sans-serif; }
-            .cmp-h { font-family: var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif; font-size: 44px; font-weight: 400; line-height: 51.92px; }
+            .cmp-table-wrap { border-radius: 20px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; border: 1px solid #E8E4DA; box-shadow: 0 24px 72px rgba(0,0,0,0.14); }
+            .cmp-table { width: 100%; min-width: 560px; border-collapse: collapse; font-family: var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif; }
             @media (max-width: 640px) {
               .cmp-table { min-width: 480px; }
-              .cmp-h { font-size: 26px; line-height: 1.2; }
               .cmp-th { padding: 14px 10px !important; }
               .cmp-td-feature { padding: 11px 12px !important; }
               .cmp-td { padding: 11px 8px !important; }
@@ -1566,21 +1657,17 @@ export default function ExplorePlansPage() {
             <table className="cmp-table">
               {/* Header row */}
               <thead>
-                <tr style={{ background: '#0B1525' }}>
-                  <th className="cmp-th cmp-h" style={{ padding: '18px 20px', textAlign: 'left', width: '40%', color: '#fff' }}>
+                <tr style={{ background: '#0c1424' }}>
+                  <th className="cmp-th" style={{ padding: '22px 20px', textAlign: 'left', width: '40%', color: '#fff', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 600 }}>
                     Features
                   </th>
-                  <th className="cmp-th cmp-h" style={{ padding: '18px 16px', textAlign: 'center', color: '#fff' }}>
-                    Free
-                  </th>
-                  <th className="cmp-th cmp-h" style={{ padding: '18px 16px', textAlign: 'center', color: '#fff' }}>
+                  <th className="cmp-th" style={{ padding: '22px 16px', textAlign: 'center', color: '#fff', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 700 }}>
                     Aspire
                   </th>
-                  <th className="cmp-th" style={{ padding: '18px 16px', textAlign: 'center', background: 'rgba(232,184,75,0.12)' }}>
-                    <span className="cmp-h" style={{ color: '#E8B84B' }}>Rise</span>
-                    <span style={{ marginLeft: 6, fontSize: 20 }}>⭐</span>
+                  <th className="cmp-th" style={{ padding: '22px 16px', textAlign: 'center', background: 'rgba(212,144,10,0.13)' }}>
+                    <span style={{ color: '#f2ab2e', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 700 }}>Rise ⭐</span>
                   </th>
-                  <th className="cmp-th cmp-h" style={{ padding: '18px 16px', textAlign: 'center', color: '#fff' }}>
+                  <th className="cmp-th" style={{ padding: '22px 16px', textAlign: 'center', color: '#fff', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 700 }}>
                     Ascent
                   </th>
                 </tr>
@@ -1591,104 +1678,82 @@ export default function ExplorePlansPage() {
                     padding: '13px 16px',
                     whiteSpace: 'nowrap' as const,
                     textAlign: 'center' as const,
-                    fontSize: 13,
-                    fontWeight: val === '✓' || val === '–' ? 600 : 500,
-                    color: val === '✓' ? '#22C55E'
-                      : val === '–' ? '#CBD5E1'
-                      : val === 'Limited' || val === 'Unlimited' || val === 'Full Access' || val === 'Weekly' ? '#E8B84B'
-                      : '#1A2540',
-                    background: isRise ? 'rgba(232,184,75,0.04)' : 'transparent',
-                    borderBottom: '1px solid #F3F4F6',
+                    fontSize: val === '✓' ? 16 : 13,
+                    fontWeight: val === '✓' ? 400 : 700,
+                    color: val === '✓' ? '#15803d'
+                      : val === '—' ? '#CBD5E1'
+                      : ['Limited', 'Unlimited', 'Full Access', 'Weekly'].includes(val) || val.includes('/') ? '#d4900a'
+                      : '#1a1a2e',
+                    background: isRise ? 'rgba(212,144,10,0.02)' : 'transparent',
+                    borderBottom: '1px solid #f0ece4',
                   });
 
-                  const sections: { icon: string; title: string; rows: { feature: string; free: string; aspire: string; rise: string; ascent: string }[] }[] = [
-                    { icon: '📝', title: 'DAILY PRACTICE', rows: [
-                      { feature: 'Daily MCQ Challenge', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
-                      { feature: 'Daily Answer Writing Challenge', free: '3 Evaluations / Lifetime', aspire: '✓', rise: '✓', ascent: '✓' },
-                      { feature: 'Daily News Analysis – The Hindu & IE', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
-                      { feature: '10,000+ Previous Year Questions', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
-                      { feature: 'Study Planner & Time Tracker', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
-                      { feature: 'Daily Leaderboard', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
-                    ] },
-                    { icon: '🔥', title: 'PRACTICE (EVALUATIONS & MOCK TESTS)', rows: [
-                      { feature: 'Mains Answer Evaluation', free: '3 / Lifetime', aspire: '5 / day', rise: '25 / day', ascent: 'Unlimited / day' },
-                      { feature: 'Prelims Mock Test', free: '1 Test / Lifetime', aspire: '5 Tests / day', rise: '50 / day', ascent: 'Unlimited / day' },
-                    ] },
-                    { icon: '💬', title: '24*7 DOUBT RESOLUTION', rows: [
-                      { feature: 'Jeet AI Mentor', free: '20 lifetime', aspire: '10 Queries / day', rise: '100 / day', ascent: 'unlimited / day' },
-                    ] },
-                    { icon: '📊', title: 'ANALYTICS & TRACKER', rows: [
-                      { feature: 'Performance Analytics Dashboard', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
-                      { feature: 'Test Analytics', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
-                      { feature: 'Smart Syllabus Tracker', free: '5 tracked items', aspire: '5 tracked items', rise: 'Full Access', ascent: 'Full Access' },
-                    ] },
-                    { icon: '🗂️', title: 'REVISION SUITE', rows: [
-                      { feature: 'Flashcards', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
-                      { feature: 'Mindmaps', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
-                      { feature: 'Spaced Repetition', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
-                    ] },
-                    { icon: '👥', title: 'COMMUNITY & WELLNESS', rows: [
-                      { feature: 'Discussion Forum', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
-                      { feature: 'Mental Health Buddy', free: '–', aspire: '✓', rise: '✓', ascent: '✓' },
-                      { feature: 'Study Groups', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
-                    ] },
-                    { icon: '👑', title: 'MENTOR-LED GROWTH (ASCENT ONLY)', rows: [
-                      { feature: 'Bi-Weekly 1-on-1 Mentorship', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
-                      { feature: 'Personalised Study Roadmap', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
-                      { feature: 'Interview (Personality Test) prep module', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
-                      { feature: 'Dedicated Support with Quick Responses', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
-                      { feature: 'Monthly Performance Review Call', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
-                      { feature: 'Early Access to New Features', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
-                    ] },
+                  const rows: { feature: string; sub?: string; aspire: string; rise: string; ascent: string }[] = [
+                    { feature: 'Daily MCQ Challenge', sub: 'Subject & topic-wise with explanations', aspire: '10 / day', rise: 'Unlimited', ascent: 'Unlimited' },
+                    { feature: 'Daily Mains Challenge', aspire: '✓', rise: '✓', ascent: '✓' },
+                    { feature: 'Daily News Analysis', sub: 'The Hindu & Indian Express', aspire: '✓', rise: '✓', ascent: '✓' },
+                    { feature: 'Daily Leaderboard', aspire: '✓', rise: '✓', ascent: '✓' },
+                    { feature: 'Mains Evaluations', sub: 'Instant UPSC marking scheme feedback', aspire: '2 / day', rise: '25 / day', ascent: 'Unlimited' },
+                    { feature: '10,000+ Previous Year Questions', aspire: '✓', rise: '✓', ascent: '✓' },
+                    { feature: 'Mock Test Attempts', sub: 'Full-length Prelims & Mains simulations', aspire: 'Limited', rise: '25 / day', ascent: 'Unlimited' },
+                    { feature: 'Syllabus Tracker', sub: 'Personalized UPSC Syllabus Mapping', aspire: 'Limited', rise: 'Unlimited', ascent: 'Unlimited' },
+                    { feature: 'Jeet AI Conversations', sub: 'UPSC-preparation partner', aspire: '10 / day', rise: '100 / day', ascent: 'Unlimited' },
+                    { feature: 'Performance Analytics Dashboard', aspire: 'Limited', rise: '✓', ascent: '✓' },
+                    { feature: 'Test Analytics', sub: 'Deep score breakdowns', aspire: '—', rise: '✓', ascent: '✓' },
+                    { feature: 'Revision Suite', sub: 'Flashcards, Mindmaps, Spaced Repetition', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
+                    { feature: 'Discussion Forum', aspire: '✓', rise: '✓', ascent: '✓' },
+                    { feature: 'Live Study Room 24×7', aspire: 'Limited', rise: '✓', ascent: '✓' },
+                    { feature: 'Mental Health Buddy', aspire: '✓', rise: '✓', ascent: '✓' },
+                    { feature: 'Weekly 1-on-1 Mentorship', sub: '30 minutes per session', aspire: '—', rise: '—', ascent: 'Weekly' },
+                    { feature: 'Personalised Study Roadmap', aspire: '—', rise: '—', ascent: '✓' },
+                    { feature: 'Dedicated Q&A Priority Responses', aspire: '—', rise: '—', ascent: '✓' },
+                    { feature: 'Monthly Performance Review Call', aspire: '—', rise: '—', ascent: '✓' },
                   ];
 
-                  let rowIdx = 0;
-                  return sections.flatMap((section) => [
-                    <tr key={section.title}>
-                      <td colSpan={5} style={{ padding: '11px 20px', background: '#F5F1EA', borderBottom: '1px solid #F3F4F6' }}>
-                        <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '1.2px', color: '#C8972A', textTransform: 'uppercase' }}>
-                          {section.icon} {section.title}
-                        </span>
+                  return rows.map((row) => (
+                    <tr key={row.feature} style={{ background: '#fff' }}>
+                      <td className="cmp-td-feature" style={{ padding: '13px 20px', borderBottom: '1px solid #f0ece4' }}>
+                        <span style={{ fontSize: 13.4, fontWeight: 500, color: '#4a4a68', display: 'block' }}>{row.feature}</span>
+                        {row.sub && <span style={{ fontSize: 11.2, color: '#8a8aaa', display: 'block', marginTop: 2 }}>{row.sub}</span>}
                       </td>
-                    </tr>,
-                    ...section.rows.map((row) => {
-                      const bg = rowIdx++ % 2 === 0 ? '#fff' : '#FAFAFA';
-                      return (
-                        <tr key={row.feature} style={{ background: bg }}>
-                          <td className="cmp-td-feature" style={{ padding: '13px 20px', borderBottom: '1px solid #F3F4F6' }}>
-                            <span style={{ fontSize: 13, fontWeight: 500, color: '#1A2540', display: 'block' }}>{row.feature}</span>
-                          </td>
-                          <td className="cmp-td" style={cellStyle(row.free)}>{row.free}</td>
-                          <td className="cmp-td" style={cellStyle(row.aspire)}>{row.aspire}</td>
-                          <td className="cmp-td" style={cellStyle(row.rise, true)}>{row.rise}</td>
-                          <td className="cmp-td" style={cellStyle(row.ascent)}>{row.ascent}</td>
-                        </tr>
-                      );
-                    }),
-                  ]);
+                      <td className="cmp-td" style={cellStyle(row.aspire)}>{row.aspire}</td>
+                      <td className="cmp-td" style={cellStyle(row.rise, true)}>{row.rise}</td>
+                      <td className="cmp-td" style={cellStyle(row.ascent)}>{row.ascent}</td>
+                    </tr>
+                  ));
                 })()}
 
                 {/* CTA row */}
                 <tr style={{ background: '#fff' }}>
                   <td style={{ padding: '20px' }} />
                   <td style={{ padding: '20px 16px', textAlign: 'center' }}>
-                    <button type="button" onClick={handleUpgrade} style={{ borderRadius: 8, border: '1.5px solid #D1D5DB', background: 'transparent', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#1A2540', cursor: 'pointer', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
-                      Start Free
+                    <button
+                      type="button"
+                      onClick={planCtaState('aspire').disabled ? undefined : handleAspireCta}
+                      disabled={planCtaState('aspire').disabled}
+                      style={{ borderRadius: 8, border: '1.5px solid #D1D5DB', background: 'transparent', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: planCtaState('aspire').disabled ? '#B8B8C4' : '#1A1A2E', cursor: planCtaState('aspire').disabled ? 'default' : 'pointer', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}
+                    >
+                      {planCtaState('aspire').disabled ? planCtaState('aspire').label : 'Start Free'}
+                    </button>
+                  </td>
+                  <td style={{ padding: '20px 16px', textAlign: 'center', background: 'rgba(212,144,10,0.02)' }}>
+                    <button
+                      type="button"
+                      onClick={planCtaState('rise').disabled ? undefined : handleOpenRiseCheckout}
+                      disabled={planCtaState('rise').disabled}
+                      style={{ borderRadius: 8, border: 'none', background: planCtaState('rise').disabled ? '#EDE6D3' : '#E8B84B', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: planCtaState('rise').disabled ? '#A08C4E' : '#090E1C', cursor: planCtaState('rise').disabled ? 'default' : 'pointer', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}
+                    >
+                      {planCtaState('rise').disabled ? planCtaState('rise').label : 'Unlock Rise'}
                     </button>
                   </td>
                   <td style={{ padding: '20px 16px', textAlign: 'center' }}>
-                    <button type="button" onClick={handleOpenAspireCheckout} style={{ display: canShowPlan('aspire') ? 'inline-block' : 'none', borderRadius: 8, border: '1.5px solid #D1D5DB', background: 'transparent', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#1A2540', cursor: 'pointer', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
-                      Get Aspire
-                    </button>
-                  </td>
-                  <td style={{ padding: '20px 16px', textAlign: 'center', background: 'rgba(232,184,75,0.04)' }}>
-                    <button type="button" onClick={handleOpenRiseCheckout} style={{ display: canShowPlan('rise') ? 'inline-block' : 'none', borderRadius: 8, border: 'none', background: '#E8B84B', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#090E1C', cursor: 'pointer', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
-                      Unlock Rise
-                    </button>
-                  </td>
-                  <td style={{ padding: '20px 16px', textAlign: 'center' }}>
-                    <button type="button" onClick={handleOpenAscentCheckout} style={{ display: canShowPlan('ascent') ? 'inline-block' : 'none', borderRadius: 8, border: 'none', background: '#090E1C', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', whiteSpace: 'nowrap' }}>
-                      Join Ascent
+                    <button
+                      type="button"
+                      onClick={planCtaState('ascent').disabled ? undefined : handleOpenAscentCheckout}
+                      disabled={planCtaState('ascent').disabled}
+                      style={{ borderRadius: 8, border: 'none', background: planCtaState('ascent').disabled ? '#EDEBE6' : '#090E1C', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: planCtaState('ascent').disabled ? '#8A8AAA' : '#fff', cursor: planCtaState('ascent').disabled ? 'default' : 'pointer', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}
+                    >
+                      {planCtaState('ascent').disabled ? planCtaState('ascent').label : 'Get Ascent'}
                     </button>
                   </td>
                 </tr>
@@ -1703,36 +1768,36 @@ export default function ExplorePlansPage() {
           <div style={{ textAlign: 'center', marginBottom: 36 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
               <span style={{ display: 'block', width: 36, height: 1, background: 'linear-gradient(to right, transparent, #C8972A)' }} />
-              <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 700, fontSize: 10, letterSpacing: '2px', color: '#C8972A', textTransform: 'uppercase' }}>The Ecosystem</span>
+              <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontWeight: 700, fontSize: 10.9, letterSpacing: '1.74px', color: '#D4900A', textTransform: 'uppercase' }}>The Ecosystem</span>
               <span style={{ display: 'block', width: 36, height: 1, background: 'linear-gradient(to left, transparent, #C8972A)' }} />
             </div>
-            <h2 style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 44, fontWeight: 400, lineHeight: '51.92px', color: '#1A1A2E', margin: '0 0 12px' }}>
+            <h2 style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 44, fontWeight: 700, lineHeight: '51.92px', color: '#1A1A2E', margin: '0 0 12px' }}>
               Why Rise With Jeet?
             </h2>
-            <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, color: '#6B7A99', margin: 0, maxWidth: 440, marginInline: 'auto', lineHeight: 1.6, textAlign: 'center' }}>
-              Not just another coaching – the complete UPSC operating system for India&apos;s brightest minds.
+            <p style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 15.2, color: '#8A8AAA', margin: 0, maxWidth: 480, marginInline: 'auto', lineHeight: '26.14px', textAlign: 'center' }}>
+              Not just another coaching the complete UPSC operating system for India&apos;s brightest minds.
             </p>
           </div>
 
           {/* 4×2 feature grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 16 }}>
             {[
-              { icon: '🎯', iconBg: '#FEF3C7', title: 'Daily MCQ Practice', desc: 'Subject-wise & topic-wise MCQs with detailed explanations. New questions every day, curated by experts.' },
-              { icon: '📊', iconBg: '#EFF6FF', title: 'Deep Analytics', desc: 'Topic-level breakdowns, readiness scores, and weak-area detection.' },
-              { icon: '📅', iconBg: '#FFFBEB', title: 'Smart Planning', desc: 'Syllabus tracker, planner and spaced repetition so nothing slips through.' },
-              { icon: '👥', iconBg: '#F0FDF4', title: 'Live Community', desc: 'Study alongside 15,000 aspirants in live rooms and accountability groups.' },
-              { icon: '📰', iconBg: '#F8FAFC', title: 'Daily Current Affairs', desc: 'Hindu & IE analysis connecting today\'s news directly to the UPSC syllabus.' },
-              { icon: '✍️', iconBg: '#FFFBEB', title: 'Daily Answer Writing', desc: 'Daily mains practice with AI-powered instant evaluation and UPSC-style marking schemes.' },
-              { icon: '🧠', iconBg: '#FFF0F3', title: 'Smart Revision', desc: 'Flashcards, mindmaps, spaced repetition – study once, remember forever.' },
-              { icon: '📚', iconBg: '#F8FAFC', title: 'Previous Year Questions', desc: '30 years of PYQs with trend analysis, topic clustering, and examiner insights.' },
+              { icon: '🎯', title: 'Daily MCQ Practice', desc: 'Subject-wise & topic-wise MCQs with detailed explanations. New questions every day, curated by experts.' },
+              { icon: '📊', title: 'Deep Analytics', desc: 'Topic-level breakdowns, readiness scores, and weak-area detection.' },
+              { icon: '📅', title: 'Smart Planning', desc: 'Syllabus tracker, planner and spaced repetition so nothing slips through.' },
+              { icon: '👥', title: 'Live Community', desc: 'Study alongside 15,000 aspirants in live rooms and accountability groups.' },
+              { icon: '📰', title: 'Daily Current Affairs', desc: 'Hindu & IE analysis connecting today\'s news directly to the UPSC syllabus.' },
+              { icon: '✍️', title: 'Daily Answer Writing', desc: 'Daily mains practice with AI-powered instant evaluation and UPSC-style marking schemes.' },
+              { icon: '🧠', title: 'Smart Revision', desc: 'Flashcards, mindmaps, spaced repetition — study once, remember forever.' },
+              { icon: '📃', title: 'Previous Year Questions', desc: '30 years of PYQs with trend analysis, topic clustering, and examiner insights.' },
             ].map((card) => (
-              <div key={card.title} className="ecosystem-card" style={{ background: '#fff', borderRadius: 14, border: '1px solid #F0EDE8', padding: '20px 18px', boxShadow: '0 1px 4px rgba(11,22,40,0.05)' }}>
+              <div key={card.title} className="ecosystem-card" style={{ background: '#fff', borderRadius: 15, border: '1px solid #E8E4DA', padding: '23px 19px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
                 <span className="ecosystem-card-accent" style={{ background: '#E8B84B' }} />
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 14 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 11, background: '#FEF3DC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19.2, marginBottom: 14 }}>
                   {card.icon}
                 </div>
-                <p style={{ margin: '0 0 6px', fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, fontWeight: 700, color: '#1A2540' }}>{card.title}</p>
-                <p style={{ margin: 0, fontFamily: 'Inter, system-ui, sans-serif', fontSize: 12, color: '#6B7A99', lineHeight: 1.6 }}>{card.desc}</p>
+                <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 13.9, fontWeight: 700, color: '#1A1A2E' }}>{card.title}</p>
+                <p style={{ margin: 0, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 12.2, color: '#8A8AAA', lineHeight: '19.46px' }}>{card.desc}</p>
               </div>
             ))}
           </div>
@@ -1768,10 +1833,10 @@ export default function ExplorePlansPage() {
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
               <span style={{ display: 'block', width: 36, height: 1, background: 'linear-gradient(to right, transparent, #C8972A)' }} />
-              <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 700, fontSize: 10, letterSpacing: '2px', color: '#C8972A', textTransform: 'uppercase' }}>Aspirant Stories</span>
+              <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontWeight: 700, fontSize: 10.9, letterSpacing: '1.74px', color: '#D4900A', textTransform: 'uppercase' }}>Aspirant Stories</span>
               <span style={{ display: 'block', width: 36, height: 1, background: 'linear-gradient(to left, transparent, #C8972A)' }} />
             </div>
-            <h2 style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 44, fontWeight: 400, lineHeight: '51.92px', color: '#1A1A2E', margin: 0 }}>
+            <h2 style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 30.4, fontWeight: 700, lineHeight: '35.87px', color: '#1A1A2E', margin: 0 }}>
               What Our Learners Are Saying
             </h2>
           </div>
@@ -1783,17 +1848,17 @@ export default function ExplorePlansPage() {
                 stars: 5,
                 quote: '"The AI evaluation changed everything. Waiting weeks for mains feedback was killing my momentum now I get detailed marking in seconds. My answer quality improved significantly."',
                 name: 'Priya Sharma',
-                role: 'UPSC CSE 2025 Mains Aspirant',
+                role: 'UPSC CSE 2025 Prelims Aspirant',
                 initial: 'P',
-                color: '#7C3AED',
+                gradient: 'linear-gradient(135deg, rgb(233, 160, 18) 0%, rgb(184, 120, 10) 100%)',
               },
               {
                 stars: 5,
-                quote: '"Daily MCQs and the leaderboard kept me disciplined across 6 months. Analytics showed me exactly which paper needed attention – saved me months of scattered prep."',
+                quote: '"Daily MCQs and the leaderboard kept me disciplined across 6 months. Analytics showed me exactly which paper needed attention saved me months of scattered prep."',
                 name: 'Rahul',
                 role: 'UPSC CSE 2025 Mains Qualified',
                 initial: 'R',
-                color: '#2563EB',
+                gradient: 'linear-gradient(135deg, rgb(59, 130, 246) 0%, rgb(29, 78, 216) 100%)',
               },
               {
                 stars: 5,
@@ -1801,19 +1866,19 @@ export default function ExplorePlansPage() {
                 name: 'Anjali',
                 role: 'UPSC CSE 2025 Prelims Qualified',
                 initial: 'A',
-                color: '#16A34A',
+                gradient: 'linear-gradient(135deg, rgb(34, 197, 94) 0%, rgb(22, 163, 74) 100%)',
               },
             ].map((t) => (
-              <div key={t.name} style={{ background: '#fff', borderRadius: 16, border: '1px solid #F0EDE8', padding: '24px 22px', boxShadow: '0 1px 4px rgba(11,22,40,0.05)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ color: '#E8B84B', fontSize: 14, letterSpacing: 2 }}>{'★'.repeat(t.stars)}</div>
-                <p style={{ margin: 0, fontFamily: 'Inter, system-ui, sans-serif', fontSize: 13, color: '#374151', lineHeight: 1.75, flex: 1 }}>{t.quote}</p>
+              <div key={t.name} style={{ background: '#fff', borderRadius: 15, border: '1px solid #E8E4DA', padding: '25px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ color: '#F2AB2E', fontSize: 12.8, letterSpacing: 2 }}>{'★'.repeat(t.stars)}</div>
+                <p style={{ margin: 0, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 13.3, fontStyle: 'italic', color: '#4A4A68', lineHeight: '22.58px', flex: 1 }}>{t.quote}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: t.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: '50%', backgroundImage: t.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 13.6, flexShrink: 0, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
                     {t.initial}
                   </div>
                   <div>
-                    <p style={{ margin: 0, fontFamily: 'Inter, system-ui, sans-serif', fontSize: 13, fontWeight: 700, color: '#1A2540' }}>{t.name}</p>
-                    <p style={{ margin: 0, fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, color: '#9AA3B8' }}>{t.role}</p>
+                    <p style={{ margin: 0, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 13.4, fontWeight: 700, color: '#1A1A2E' }}>{t.name}</p>
+                    <p style={{ margin: 0, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 11.4, color: '#8A8AAA' }}>{t.role}</p>
                   </div>
                 </div>
               </div>
@@ -1826,13 +1891,13 @@ export default function ExplorePlansPage() {
           <div style={{ textAlign: 'center', marginBottom: 36 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
               <span style={{ display: 'block', width: 36, height: 1, background: 'linear-gradient(to right, transparent, #C8972A)' }} />
-              <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 700, fontSize: 10, letterSpacing: '2px', color: '#C8972A', textTransform: 'uppercase' }}>FAQ</span>
+              <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontWeight: 700, fontSize: 10.9, letterSpacing: '1.74px', color: '#D4900A', textTransform: 'uppercase' }}>FAQ</span>
               <span style={{ display: 'block', width: 36, height: 1, background: 'linear-gradient(to left, transparent, #C8972A)' }} />
             </div>
-            <h2 style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 44, fontWeight: 400, lineHeight: '51.92px', color: '#1A1A2E', margin: '0 0 10px' }}>
+            <h2 style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 44, fontWeight: 700, lineHeight: '51.92px', color: '#1A1A2E', margin: '0 0 10px' }}>
               Frequently Asked Questions
             </h2>
-            <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, color: '#6B7A99', margin: 0 }}>
+            <p style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 15.2, color: '#8A8AAA', margin: 0 }}>
               Everything you need to know before you begin your journey.
             </p>
           </div>
@@ -1840,14 +1905,14 @@ export default function ExplorePlansPage() {
           {/* 2-column FAQ grid */}
           {(() => {
             const faqs = [
-              { q: 'Is free plan really free forever?', a: 'Yes, absolutely. Our Free plan gives you lifetime free access to daily MCQ, daily news analysis, 10,000+ PYQs, study planner, leaderboard, plus 3 mains evaluations (lifetime), 1 Prelims test (lifetime) and 1 Jeet AI chat session. No card, no expiry, no hidden upgrades.' },
-              { q: 'Are the current prices a promotional offer?', a: 'Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, and any updated pricing will apply to all users.' },
-              { q: 'Can I upgrade or cancel my subscription anytime?', a: 'Absolutely. You can upgrade from Aspire to Rise or Ascent instantly (pro-rated). Cancellation is self-serve from your dashboard - you keep full access until the end of your billing cycle. No cancellation fees, no hassle.' },
-              { q: 'What is the refund policy?', a: 'We offer a 3-day, no-questions-asked refund on all paid subscriptions. Just reach out to support within 3 days of your purchase and we will process the refund within 24 hours. After 3 days, refunds are not applicable but you can cancel future billing.' },
-              { q: "What's the difference between Aspire, Rise and Ascent?", a: 'Aspire: 5 mains evaluations/day, 5 Prelims tests/day, 5 Jeet AI messages/day, limited analytics & revision suite. Rise: 25 mains evals/day, 50 Prelims tests/day, 100 AI messages, full analytics dashboard, full revision suite (flashcards, mindmaps, spaced repetition), smart syllabus tracker, live study room. Ascent: Everything in Rise, plus unlimited evaluations & tests, unlimited AI messages, bi-weekly 1-on-1 mentorship, interview prep module, personalised roadmap, priority support, monthly review call and early access.' },
-              { q: 'How much do I save on quarterly & yearly plans?', a: "As we are running promotional offers currently, Quarterly plans save you 20% compared to monthly billing. Yearly plans save you 40% - that's almost 5 months free. For example, Rise monthly is ₹499, but yearly brings it down to ₹299/month. Discounts are automatically applied at checkout." },
+              { q: 'Is Aspire really free forever?', a: 'Yes, absolutely. Aspire is free for life, no card required. You get 2 mains evaluations/day, 10 MCQ Challenge questions/day, 10 Jeet AI conversations/day, 10,000+ PYQs, study planner, leaderboard and more, forever.' },
+              { q: "What's the difference between Rise and Ascent?", a: 'Rise gives you 25 mains evaluations/day, 25 mock test attempts/day, 100 Jeet AI conversations/day, full performance & test analytics, and the complete revision suite. Ascent removes every limit entirely unlimited evaluations, mock tests and Jeet AI plus weekly 1-on-1 mentorship, a personalised roadmap, priority Q&A and a monthly performance review call.' },
+              { q: 'Is there a money-back guarantee?', a: "Yes. Every paid plan comes with a 7-day money-back guarantee Rise's is no-questions-asked, and Ascent's is included as standard. Just reach out to support within 7 days of your purchase." },
+              { q: 'How much do I save on quarterly & yearly plans?', a: "Quarterly billing saves you 20% compared to monthly, and yearly billing saves you 40% almost 5 months free. For example, Rise monthly is ₹499, but yearly brings it down to ₹299/month. Discounts are automatically applied at checkout." },
+              { q: 'Can I upgrade or cancel anytime?', a: 'Absolutely. You can upgrade from Aspire to Rise or Ascent instantly (pro-rated). Cancellation is self-serve from your dashboard - you keep full access until the end of your billing cycle. No cancellation fees, no hassle.' },
               { q: 'How does AI Mains Evaluation work?', a: 'You can upload a photo of your handwritten answer. Jeet AI evaluates it against UPSC marking schemes - structure, content, keyword density, presentation, relevance etc. You get detailed feedback in under 60 seconds, including a score and actionable suggestions to improve.' },
-              { q: 'Is this suitable for first-attempt aspirants?', a: "Absolutely. Our study planner, syllabus tracker, daily MCQs, mains answer evaluation and simplified video lectures are designed to guide you from day one - whether it's your first attempt or your third. Start with the Aspire to build momentum, then upgrade as you get more serious as you master consistency." },
+              { q: 'What is the refund policy?', a: 'We offer a 7-day, no-questions-asked refund on all paid subscriptions. Just reach out to support within 7 days of your purchase and we will process the refund within 24 hours. After 7 days, refunds are not applicable but you can cancel future billing.' },
+              { q: 'Is this suitable for first-attempt aspirants?', a: "Absolutely. Our study planner, syllabus tracker, daily MCQs and mains answer evaluation are designed to guide you from day one - whether it's your first attempt or your third. Start free with Aspire to build momentum, then upgrade as you get more serious." },
             ];
             const left = faqs.filter((_, i) => i % 2 === 0);
             const right = faqs.filter((_, i) => i % 2 === 1);
@@ -1855,19 +1920,19 @@ export default function ExplorePlansPage() {
             const FaqItem = ({ item, idx }: { item: typeof faqs[0]; idx: number }) => {
               const isOpen = openFaq === idx;
               return (
-                <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #F0EDE8', overflow: 'hidden', boxShadow: '0 1px 4px rgba(11,22,40,0.05)' }}>
+                <div style={{ background: '#fff', borderRadius: 13, border: '1px solid #E8E4DA', overflow: 'hidden' }}>
                   <button
                     type="button"
                     onClick={() => setOpenFaq(isOpen ? null : idx)}
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', gap: 12 }}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '17px 20px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', gap: 12 }}
                   >
-                    <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, fontWeight: 500, color: '#1A2540' }}>{item.q}</span>
-                    <span style={{ width: 28, height: 28, borderRadius: '50%', background: '#FEF3C7', border: '1px solid rgba(232,184,75,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#D97706', fontSize: 16, fontWeight: 400 }}>
+                    <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 13.9, fontWeight: 600, color: '#1A1A2E' }}>{item.q}</span>
+                    <span style={{ width: 25, height: 25, borderRadius: '50%', background: '#F0ECE4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#D4900A', fontSize: 16, fontWeight: 700 }}>
                       {isOpen ? '−' : '+'}
                     </span>
                   </button>
                   {isOpen && (
-                    <div style={{ padding: '0 18px 16px', fontFamily: 'Inter, system-ui, sans-serif', fontSize: 13, color: '#6B7A99', lineHeight: 1.7 }}>
+                    <div style={{ padding: '0 20px 17px', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 13, color: '#8A8AAA', lineHeight: 1.7 }}>
                       {item.a}
                     </div>
                   )}
@@ -1887,68 +1952,77 @@ export default function ExplorePlansPage() {
             );
           })()}
         </section>
+        </>
+        )}
 
       </div>
 
       {/* ── CTA Banner – full width outside the constrained container ── */}
+      {activeTab === 'explore' && (
       <section style={{ margin: 0, borderRadius: 0, background: 'linear-gradient(160deg, #0A1120 0%, #0F1C35 100%)', padding: '52px 48px 44px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.025) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 20 }}>
             <span style={{ display: 'block', width: 36, height: 1, background: 'linear-gradient(to right, transparent, #C8972A)' }} />
-            <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 700, fontSize: 10, letterSpacing: '2px', color: '#C8972A', textTransform: 'uppercase' }}>Still Have Doubts?</span>
+            <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontWeight: 700, fontSize: 10.9, letterSpacing: '1.74px', color: '#E8B84B', textTransform: 'uppercase' }}>Still Have Doubts?</span>
             <span style={{ display: 'block', width: 36, height: 1, background: 'linear-gradient(to left, transparent, #C8972A)' }} />
           </div>
-          <h2 style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 400, color: '#fff', lineHeight: 1.2, margin: '0 0 16px' }}>
+          <h2 style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 700, color: '#fff', lineHeight: 1.2, margin: '0 0 16px' }}>
             Start Your{' '}
             <em style={{ color: '#E8B84B', fontStyle: 'italic' }}>UPSC Journey</em>
             <br />the Right Way
           </h2>
-          <p style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.5)', maxWidth: 480, margin: '0 auto 32px', lineHeight: 1.65 }}>
-            Join 15,000+ aspirants. Start with free access, or choose Aspire, Rise, or Ascent when you need higher limits.
+          <p style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 14.9, color: 'rgba(255,255,255,0.52)', maxWidth: 480, margin: '0 auto 32px', lineHeight: '25.59px' }}>
+            Join 15,000+ aspirants. Start free with Aspire — no card, no commitment, no expiry. Upgrade only when you feel it.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
-            {canShowPlan('aspire') && (
-              <button type="button" onClick={handleOpenAspireCheckout} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                Get Aspire →
-              </button>
-            )}
-            {!canShowPlan('aspire') && canShowPlan('rise') && (
-              <button type="button" onClick={handleOpenRiseCheckout} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                Upgrade to Rise →
-              </button>
-            )}
-            {!canShowPlan('rise') && canShowPlan('ascent') && (
-              <button type="button" onClick={handleOpenAscentCheckout} style={{ borderRadius: 10, border: 'none', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 700, color: '#090E1C', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                Upgrade to Ascent →
-              </button>
-            )}
-            <button type="button" onClick={() => router.push('/help-support')} style={{ borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.2)', padding: '14px 28px', fontFamily: '"DM Sans", Inter, system-ui, sans-serif', fontSize: 15, fontWeight: 600, color: '#fff', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <button type="button" onClick={handleAspireCta} style={{ borderRadius: 10, border: 'none', padding: '13px 34px', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 14.6, fontWeight: 800, color: '#0C1424', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              Start Free with Aspire →
+            </button>
+            <button type="button" onClick={() => router.push('/contact')} style={{ borderRadius: 10, border: '1px solid rgba(255,255,255,0.14)', padding: '14px 27px', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 14.6, fontWeight: 600, color: 'rgba(255,255,255,0.78)', background: 'rgba(255,255,255,0.07)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               Contact Us
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, borderRadius: 999, background: 'rgba(37,211,102,0.15)', border: '1px solid rgba(37,211,102,0.3)', padding: '7px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, borderRadius: 999, background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.2)', padding: '7px 16px' }}>
               <span style={{ fontSize: 14 }}>💬</span>
-              <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 12, fontWeight: 600, color: '#25D366' }}>Text on WhatsApp</span>
+              <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 12, fontWeight: 700, color: '#4ADE80' }}>Text on WhatsApp</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <span style={{ fontSize: 14 }}>📧</span>
-              <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>together@risewithjeet.com</span>
+              <span style={{ fontSize: 14 }}>✉️</span>
+              <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 13.1, color: '#E8B84B' }}>together@risewithjeet.com</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
               <span style={{ fontSize: 14 }}>📞</span>
-              <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>+91 83570 56891</span>
+              <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 13.1, color: '#E8B84B' }}>+91 83570 56891</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, borderRadius: 999, background: 'rgba(0,136,204,0.15)', border: '1px solid rgba(0,136,204,0.3)', padding: '7px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, borderRadius: 999, background: 'rgba(41,182,246,0.1)', border: '1px solid rgba(41,182,246,0.2)', padding: '7px 16px' }}>
               <span style={{ fontSize: 14 }}>✈️</span>
-              <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 12, fontWeight: 600, color: '#29B6F6' }}>Text on Telegram</span>
+              <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 12, fontWeight: 700, color: '#7DD3FC' }}>Text on Telegram</span>
             </div>
           </div>
         </div>
       </section>
+      )}
 
       {checkoutPlan && <CheckoutModal planKey={checkoutPlan} onClose={() => setCheckoutPlan(null)} />}
+      {showCancelModal && currentSubscription?.id && (
+        <CancelSubscriptionModal
+          subscriptionId={currentSubscription.id}
+          accessUntil={currentSubscription.endDate}
+          onClose={() => setShowCancelModal(false)}
+          onCancelled={async () => {
+            setShowCancelModal(false);
+            await entitlements.refreshEntitlements();
+          }}
+        />
+      )}
+      {showEditAddressModal && (
+        <EditBillingAddressModal
+          onClose={() => setShowEditAddressModal(false)}
+          onSaved={() => setShowEditAddressModal(false)}
+        />
+      )}
     </div>
   );
 }

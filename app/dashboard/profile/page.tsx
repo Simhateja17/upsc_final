@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { dashboardService, userService } from '@/lib/services';
+import { dashboardService, leaderboardService, userService } from '@/lib/services';
 
 const MONTHS = [
   'January','February','March','April','May','June',
@@ -66,6 +66,7 @@ export default function ProfilePage() {
   const [initialProfile, setInitialProfile] = useState<ProfileSnapshot | null>(null);
   const [saving, setSaving] = useState(false);
   const [perfStats, setPerfStats] = useState<any>(null);
+  const [leaderboardRank, setLeaderboardRank] = useState<number | null>(null);
   const [dashStats, setDashStats] = useState<any>(null);
   const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null);
 
@@ -160,12 +161,21 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
-    dashboardService.getPerformance().then((res) => {
-      if (res.data) setPerfStats(res.data);
-    }).catch(() => {});
-    dashboardService.getDashboard().then((res) => {
-      if (res.data) setDashStats(res.data);
-    }).catch(() => {});
+    Promise.allSettled([
+      dashboardService.getPerformance(),
+      dashboardService.getDashboard(),
+      leaderboardService.getMyRank('all'),
+    ]).then(([performanceResult, dashboardResult, leaderboardResult]) => {
+      if (performanceResult.status === 'fulfilled' && performanceResult.value.data) {
+        setPerfStats(performanceResult.value.data);
+      }
+      if (dashboardResult.status === 'fulfilled' && dashboardResult.value.data) {
+        setDashStats(dashboardResult.value.data);
+      }
+      if (leaderboardResult.status === 'fulfilled' && leaderboardResult.value.data) {
+        setLeaderboardRank(leaderboardResult.value.data.rank ?? null);
+      }
+    });
   }, []);
 
   const initials = `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
@@ -745,7 +755,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <span className="font-normal text-[14px] leading-[20px] text-[#45556c]">Current rank</span>
                 <span className="font-semibold text-[14px] leading-[20px] text-[#d08700]">
-                  {perfStats?.rank ? `#${perfStats.rank.toLocaleString()}` : '-'}
+                  {leaderboardRank ? `#${leaderboardRank.toLocaleString()}` : '-'}
                 </span>
               </div>
             </div>

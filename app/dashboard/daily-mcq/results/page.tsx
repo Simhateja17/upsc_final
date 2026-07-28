@@ -192,6 +192,7 @@ export default function DailyMcqResultsPage() {
   const { user } = useAuth();
   const [results, setResults] = useState<ResultsData | null>(null);
   const [reviewQuestions, setReviewQuestions] = useState<ReviewQuestion[]>([]);
+  const [reportAttemptId, setReportAttemptId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
@@ -228,9 +229,13 @@ export default function DailyMcqResultsPage() {
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   useEffect(() => {
+    const attemptId = typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('attemptId') || undefined
+      : undefined;
+    setReportAttemptId(attemptId ?? null);
     Promise.allSettled([
-      dailyMcqService.getResults(),
-      dailyMcqService.getReview(),
+      dailyMcqService.getResults(attemptId),
+      dailyMcqService.getReview(attemptId),
     ])
       .then(([resultsRes, reviewRes]) => {
         if (resultsRes.status === 'fulfilled') {
@@ -274,7 +279,7 @@ export default function DailyMcqResultsPage() {
 
   // Real leaderboard rank (prelims/MCQ bucket). Falls back to an unlock hint until
   // the aspirant has enough attempts, then to a neutral "updating" message.
-  const rankUnlocked = !!myRank?.isRankUnlocked && !!myRank?.mcqRank;
+  const rankUnlocked = typeof myRank?.mcqRank === 'number';
   // The API provides this from the exact list used to calculate `mcqRank`.
   // Do not use `realRankedCount` here: it excludes fallback community rows.
   const rankedTotal = myRank?.mcqRankedCount ?? myRank?.realRankedCount ?? 0;
@@ -799,7 +804,7 @@ export default function DailyMcqResultsPage() {
             </div>
 
             <div className="space-y-[clamp(0.65rem,0.85vw,0.9rem)]">
-              <Link href="/dashboard/daily-mcq/review">
+              <Link href={`/dashboard/daily-mcq/review${reportAttemptId ? `?attemptId=${encodeURIComponent(reportAttemptId)}` : ''}`}>
                 <button
                   type="button"
                   className="qw-review-btn w-full font-arimo font-bold"

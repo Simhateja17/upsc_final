@@ -20,9 +20,7 @@ import SubjectChoiceCard, { SubjectChoiceCardStyles } from '@/components/Subject
 import {
   SUBJECT_HEALTH,
   isSameLocalDate,
-  resolveAccuracy,
   sourceTypeToLabel,
-  strengthMeta,
   subjectOptions,
   type SpacedRepItem,
 } from './shared';
@@ -32,7 +30,6 @@ export default function SpacedRepetitionPage() {
   const isLimited = entitlements.isLimited('spaced_repetition');
   const [items, setItems] = useState<SpacedRepItem[]>([]);
   const [streakDays, setStreakDays] = useState(0);
-  const [subjectAccuracy, setSubjectAccuracy] = useState<Record<string, number>>({});
   const [showAddModal, setShowAddModal] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [showAddSubjectUpgradeModal, setShowAddSubjectUpgradeModal] = useState(false);
@@ -84,22 +81,6 @@ export default function SpacedRepetitionPage() {
     return () => { mounted = false; };
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
-    dashboardService.getTestAnalytics()
-      .then((res) => {
-        const rows = res?.data?.subjectAccuracy;
-        if (!mounted || !Array.isArray(rows)) return;
-        const map: Record<string, number> = {};
-        for (const row of rows) {
-          if (row?.subject) map[String(row.subject).toLowerCase()] = Number(row.accuracy ?? 0);
-        }
-        setSubjectAccuracy(map);
-      })
-      .catch(() => {});
-    return () => { mounted = false; };
-  }, []);
-
   const handleAddItem = async (payload: AddQuestionPayload): Promise<boolean> => {
     const subjectLabel = subjectOptions.find((d) => d.id === payload.subjectId)?.label
       ?? SUBJECT_HEALTH.find((s) => s.id === payload.subjectId)?.label
@@ -111,7 +92,7 @@ export default function SpacedRepetitionPage() {
         subject: subjectLabel,
         source: sourceTypeToLabel(payload.sourceType),
         sourceType: payload.sourceType,
-        scheduleDays: [payload.firstReviewDays],
+        scheduleDays: payload.scheduleDays,
       });
       if (res.status === 'success') {
         setItems((prev) => [res.data, ...prev]);
@@ -137,9 +118,10 @@ export default function SpacedRepetitionPage() {
     const endOfToday = new Date(now);
     endOfToday.setHours(23, 59, 59, 999);
 
-    const overdue = items.filter((item) => new Date(item.nextReviewAt) < startOfToday).length;
-    const scheduled = items.length;
-    const dueToday = items.filter((item) => {
+    const pendingItems = items.filter((item) => item.status !== 'completed');
+    const overdue = pendingItems.filter((item) => new Date(item.nextReviewAt) < startOfToday).length;
+    const scheduled = pendingItems.length;
+    const dueToday = pendingItems.filter((item) => {
       const reviewAt = new Date(item.nextReviewAt);
       return isSameLocalDate(reviewAt, now) || (reviewAt >= startOfToday && reviewAt <= endOfToday);
     }).length;
@@ -152,11 +134,24 @@ export default function SpacedRepetitionPage() {
     ];
   })();
 
-  // Count of pending questions per subject (shown on each card).
-  const subjectCounts = (() => {
-    const counts: Record<string, number> = {};
-    for (const item of items) counts[item.subject] = (counts[item.subject] ?? 0) + 1;
-    return counts;
+  // The subject grid is driven only by outstanding SR reviews — never by MCQ accuracy.
+  const subjectReviewState = (() => {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(startOfToday);
+    endOfToday.setHours(23, 59, 59, 999);
+    const states: Record<string, { pending: number; overdue: number; dueToday: number; nextReviewAt?: Date }> = {};
+    for (const item of items) {
+      if (item.status === 'completed') continue;
+      const state = states[item.subject] ?? { pending: 0, overdue: 0, dueToday: 0 };
+      const due = new Date(item.nextReviewAt);
+      state.pending++;
+      if (due < startOfToday) state.overdue++;
+      else if (due <= endOfToday) state.dueToday++;
+      if (!state.nextReviewAt || due < state.nextReviewAt) state.nextReviewAt = due;
+      states[item.subject] = state;
+    }
+    return states;
   })();
 
   return (
@@ -230,10 +225,29 @@ export default function SpacedRepetitionPage() {
               {SUBJECT_HEALTH.map((s) => {
                 const style = getSubjectCardStyle(s.label);
                 const subjectMeta = getSubjectMetaStyle(s.label);
-                const acc = resolveAccuracy(subjectAccuracy, s);
-                const meta = strengthMeta(acc);
-                const barWidth = acc <= 0 ? 0 : Math.max(acc, 6);
-                const pending = subjectCounts[s.label] ?? 0;
+                const review = subjectReviewState[s.label] ?? { pending: 0, overdue: 0, dueToday: 0 };
+                const pending = review.pending;
+                const isOverdue = review.overdue > 0;
+                const isDueToday = !isOverdue && review.dueToday > 0;
+                const nextReviewLabel = review.nextReviewAt
+                  ? review.nextReviewAt.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+                  : '';
+                const meta = isOverdue
+                  ? `${review.overdue} overdue`
+                  : isDueToday
+                    ? `${review.dueToday} due today`
+                    : pending > 0
+                      ? `${pending} scheduled · next ${nextReviewLabel}`
+                      : 'No reviews scheduled';
+                const statusLine = isOverdue
+                  ? '⚠ Review now'
+                  : isDueToday
+                    ? '⚡ Due today'
+                    : pending > 0
+                      ? '📅 Upcoming review'
+                      : undefined;
+                const statusColor = isOverdue ? '#E02424' : isDueToday ? '#D97706' : '#6A7282';
+                const barColor = isOverdue ? '#EF4444' : isDueToday ? '#E8B84B' : style.bar;
                 return (
                   <SubjectChoiceCard
                     key={s.id}
@@ -243,20 +257,20 @@ export default function SpacedRepetitionPage() {
                     iconBg={subjectMeta.bg}
                     accentColor={style.bar}
                     title={s.shortLabel ?? s.label}
-                    meta={acc > 0 ? `${acc}% ${meta.word}` : 'No data yet'}
-                    topRight={pending > 0 && (
+                    meta={meta}
+                    topRight={(isOverdue || isDueToday) && (
                       <span
                         className="inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5"
                         style={{ background: '#EF4444', fontFamily: 'Inter', fontWeight: 700, fontSize: 9, lineHeight: '14px', color: '#FFFFFF', whiteSpace: 'nowrap' }}
                       >
-                        {pending} to revisit
+                        {isOverdue ? `${review.overdue} overdue` : `${review.dueToday} due`}
                       </span>
                     )}
-                    statusLine={acc > 0 ? meta.status : undefined}
-                    statusLineColor={meta.color}
-                    progressPercent={barWidth}
-                    progressColor={style.bar}
-                    footerRight="Start revising →"
+                    statusLine={statusLine}
+                    statusLineColor={statusColor}
+                    progressPercent={pending > 0 ? 100 : 0}
+                    progressColor={barColor}
+                    footerRight={isOverdue || isDueToday ? 'Review now →' : pending > 0 ? 'View schedule →' : 'Add a question →'}
                     footerRightColor="#6A7282"
                   />
                 );

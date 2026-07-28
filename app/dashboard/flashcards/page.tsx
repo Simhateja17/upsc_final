@@ -83,14 +83,21 @@ export default function FlashcardsPage() {
   const coverage = totalCards > 0 ? Math.round((totalMastered / totalCards) * 100) : 0;
   const needReview = decks.reduce((sum, deck) => sum + (deck.totalCards - deck.masteredCards), 0);
 
+  // "Your Cards" = cards in subjects the user created themselves (not part
+  // of the curated SUBJECT_CATALOG), as opposed to the platform-wide total.
+  const catalogIds = new Set(SUBJECT_CATALOG.map((item) => item.id));
+  const yourCards = decks
+    .filter((deck) => !catalogIds.has(deck.id))
+    .reduce((sum, deck) => sum + deck.totalCards, 0);
+
   const bannerMetrics = [
     { label: 'TOTAL CARDS', value: String(totalCards), valueColor: '#F5A623' },
+    { label: 'YOUR CARDS', value: String(yourCards), valueColor: '#4ADE80' },
     { label: 'MASTERED', value: String(totalMastered), valueColor: '#FF7070' },
     { label: 'COVERAGE', value: `${coverage}%`, valueColor: '#FFFFFF' },
   ];
 
   const deckMap = new Map(decks.map((deck) => [deck.id, deck]));
-  const catalogIds = new Set(SUBJECT_CATALOG.map((item) => item.id));
   const withDeck = (item: SubjectCatalogItem) => {
     const deck = deckMap.get(item.id);
     return {

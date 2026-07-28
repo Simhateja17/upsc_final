@@ -13,6 +13,7 @@ export type SpacedRepItem = {
   remindEnabled: boolean;
   addedToFlashcard: boolean;
   nextReviewAt: string;
+  status: string;
 };
 
 export const SUBJECT_LABEL_TO_ID: Record<string, string> = {

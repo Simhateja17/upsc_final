@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { mainsEvaluatorService } from '@/lib/services';
 import MainsResultsView, { MainsQuestionResultData } from '@/components/mains-results/MainsResultsView';
 
@@ -12,6 +13,7 @@ import MainsResultsView, { MainsQuestionResultData } from '@/components/mains-re
  * of the old /daily-answer/challenge/attempt/results?source=custom.
  */
 function MainsEvaluatorResultsInner() {
+  const searchParams = useSearchParams();
   const [data, setData] = useState<MainsQuestionResultData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,11 +21,12 @@ function MainsEvaluatorResultsInner() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const stored = sessionStorage.getItem('mainsEvaluatorAttemptId');
+      const attemptIdFromHistory = searchParams.get('attemptId');
+      const stored = attemptIdFromHistory || sessionStorage.getItem('mainsEvaluatorAttemptId');
       if (stored) setAttemptId(stored);
       else setError('No standalone Mains evaluation session found. Please submit again.');
     }
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!attemptId) return;

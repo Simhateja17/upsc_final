@@ -55,7 +55,7 @@ const PerformanceStatsWidget = () => {
   const [loading, setLoading] = useState(true);
   // Upcoming Test card is shown only to users who have purchased a test series.
   const [hasPurchasedTestSeries, setHasPurchasedTestSeries] = useState(false);
-  const [weeklyRank, setWeeklyRank] = useState<number | null>(null);
+  const [leaderboardRank, setLeaderboardRank] = useState<number | null>(null);
   const [badges, setBadges] = useState<BadgeData[] | null>(null);
   // "How streak works?" slide-out drawer (opened via the chevron beside the heading).
   const [streakDrawerOpen, setStreakDrawerOpen] = useState(false);
@@ -79,11 +79,11 @@ const PerformanceStatsWidget = () => {
     let mounted = true;
     async function fetchData() {
       try {
-        const [perfRes, streakRes, enrolledRes, weeklyRankRes, badgesRes] = await Promise.allSettled([
+        const [perfRes, streakRes, enrolledRes, leaderboardRankRes, badgesRes] = await Promise.allSettled([
           dashboardService.getPerformance(),
           dashboardService.getStreak(),
           testSeriesService.getEnrolled(),
-          leaderboardService.getMyRank('week'),
+          leaderboardService.getMyRank('all'),
           dashboardService.getAchievements(),
         ]);
         if (mounted) {
@@ -97,8 +97,8 @@ const PerformanceStatsWidget = () => {
             const enrolled = enrolledRes.value?.data;
             setHasPurchasedTestSeries(Array.isArray(enrolled) && enrolled.length > 0);
           }
-          if (weeklyRankRes.status === 'fulfilled' && weeklyRankRes.value?.data) {
-            setWeeklyRank(weeklyRankRes.value.data.rank ?? null);
+          if (leaderboardRankRes.status === 'fulfilled' && leaderboardRankRes.value?.data) {
+            setLeaderboardRank(leaderboardRankRes.value.data.rank ?? null);
           }
           if (badgesRes.status === 'fulfilled' && badgesRes.value?.data?.badges) {
             setBadges(badgesRes.value.data.badges);
@@ -121,7 +121,7 @@ const PerformanceStatsWidget = () => {
   const syllabusCoverage = performance?.syllabusCoverage ?? (loading ? null : 0);
   const studyTimeToday = performance?.studyTimeToday ?? (loading ? null : '0h 0m');
   const testsTaken = performance?.testsTaken ?? (loading ? null : 0);
-  const rank = performance?.rank ?? null;
+  const rank = leaderboardRank;
   const mcqsAttempted = performance?.mcq?.totalAttempts ?? (loading ? null : 0);
   const mainsWritten = performance?.mains?.totalAttempts ?? (loading ? null : 0);
 

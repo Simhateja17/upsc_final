@@ -33,7 +33,7 @@ const FOCUS_SUBJECTS: Record<string, string[]> = {
 
 const MARK_OPTIONS = [
   { value: 10, mins: 7, words: 150 },
-  { value: 15, mins: 11, words: 200 },
+  { value: 15, mins: 11, words: 250 },
   { value: 20, mins: 15, words: 250 },
 ];
 
@@ -181,7 +181,7 @@ function ProgressStepper({ nodes, currentStep }: { nodes: { label: string; done:
 
 export default function MainsAnswerEvaluatorPage() {
   const [selectedPaper, setSelectedPaper] = useState('gs1');
-  const [paperTouched, setPaperTouched] = useState(true);
+  const [paperTouched, setPaperTouched] = useState(false);
   const [focusSubjectOpen, setFocusSubjectOpen] = useState(false);
   const [focusSubject, setFocusSubject] = useState('');
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
@@ -206,7 +206,7 @@ const subjects = [
 ] as const;
 
 const defaultLearningStats = [
-  { icon: '/dark.png', label: 'Editorials read', value: '0', color: '#047857' },
+  { icon: '/dark.png', label: 'Editorials read today', value: '0', color: '#047857' },
   { icon: '/tatal.png', label: 'Total saved', value: '0', color: '#1D4ED8' },
 ];
 
@@ -279,6 +279,30 @@ export default function DailyEditorialPage() {
     error: string | null;
   }>({ open: false, loading: false, editorial: null, summary: null, loadStep: 0, error: null });
 
+  const refreshLearningStats = useCallback(async () => {
+    try {
+      const res = await editorialService.getStats();
+      if (!res.data) return;
+
+      const d = res.data;
+      setLearningStats([
+        { icon: '/dark.png', label: 'Editorials read today', value: `${d.readToday || 0}`, color: '#047857' },
+        { icon: '/tatal.png', label: 'Total saved', value: `${d.totalSaved || 0}`, color: '#1D4ED8' },
+      ]);
+      const weekChecks = Array.isArray(d.weekChecks) && d.weekChecks.length === 7
+        ? d.weekChecks.map(Boolean)
+        : [false, false, false, false, false, false, false];
+      setStreakData({
+        streak: d.streak || 0,
+        weekChecks,
+        readToday: d.readToday || 0,
+        targetToday: d.dailyTarget || 7,
+      });
+    } catch {
+      // The editorial card remains usable if the non-critical stats refresh fails.
+    }
+  }, []);
+
   useEffect(() => {
     const source = activeNewspaper === 'hindu' ? 'The Hindu' : 'Indian Express';
     const month = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
@@ -324,28 +348,8 @@ export default function DailyEditorialPage() {
   }, [activeNewspaper, selectedDate]);
 
   useEffect(() => {
-    editorialService.getStats()
-      .then(res => {
-        if (res.data) {
-          const d = res.data;
-          setLearningStats([
-            { icon: '/dark.png', label: 'Editorials read', value: `${d.totalRead || 0}`, color: '#047857' },
-            { icon: '/tatal.png', label: 'Total saved', value: `${d.totalSaved || 0}`, color: '#1D4ED8' },
-          ]);
-          // Real per-day activity for the current week, supplied by the backend.
-          const weekChecks = Array.isArray(d.weekChecks) && d.weekChecks.length === 7
-            ? d.weekChecks.map(Boolean)
-            : [false, false, false, false, false, false, false];
-          setStreakData({
-            streak: d.streak || 0,
-            weekChecks,
-            readToday: d.readToday || 0,
-            targetToday: d.dailyTarget || 7,
-          });
-        }
-      })
-      .catch(() => {});
-  }, []);
+    void refreshLearningStats();
+  }, [refreshLearningStats]);
 
   useEffect(() => {
     setGlanceStats(prev => ({
@@ -364,6 +368,7 @@ export default function DailyEditorialPage() {
     try {
       const res = await editorialService.toggleSave(id);
       setEditorials(prev => prev.map(e => e.id === id ? { ...e, isSaved: res.data?.saved ?? !e.isSaved } : e));
+      void refreshLearningStats();
     } catch {}
   };
 
@@ -374,6 +379,7 @@ export default function DailyEditorialPage() {
     setEditorials(prev => prev.map(e => e.id === id ? { ...e, isRead: true } : e));
     try {
       await editorialService.markRead(id);
+      await refreshLearningStats();
     } catch (err) {
       console.error('Failed to mark editorial as read:', err);
       setEditorials(prev => prev.map(e => e.id === id ? { ...e, isRead: false } : e));
@@ -1216,7 +1222,7 @@ export default function DailyEditorialPage() {
                       <path d="M4 8L7 11L12 5" stroke="#16A34A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   ),
-                  label: 'Editorials read',
+                  label: 'Editorials read today',
                   value: learningStats[0]?.value ?? '0',
                 },
                 {
@@ -1250,7 +1256,7 @@ export default function DailyEditorialPage() {
                       <path d="M4 8L7 11L12 5" stroke="#16A34A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   ),
-                  label: 'Editorials read',
+                  label: 'Editorials read today',
                   value: learningStats[0]?.value ?? '0',
                 },
                 {
